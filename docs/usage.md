@@ -46,8 +46,8 @@ previous track played. (So if you intended to play the track that appears after 
 ***Play next/previous track***: Shift + Left and Right arrow keys  
 ***Toggle Gallery View***: Mouse button 4
 
-Transcoding albums (Experimental feature):
-====================================
+#### Transcoding albums (Experimental feature):
+
 
 Current function: Folder of tracks -> folder + opus + cue + jpg  
 
