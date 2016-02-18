@@ -16,7 +16,7 @@ Designed to have an easy to use, comfortable and compact user interface.
 
 ### Getting Started
 
-Download latest binary release from releases section (todo).
+Download latest binary release from releases section.
 Extract archive to a user directory of your choosing.
 On Windows start program by running 'tmb.exe'. For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature list see [features](docs/features.md).
 
