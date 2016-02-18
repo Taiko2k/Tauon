@@ -69,6 +69,6 @@ User data files
 Web components (enable in config)
 =================================
 
-localhost:5000/remote - Remote player control with album art and track info
-localhost:5000/radio - Album art and track info for broadcasting
+***localhost:5000/remote*** - Remote player control with album art and track info  
+***localhost:5000/radio*** - Album art and track info for broadcasting
 
