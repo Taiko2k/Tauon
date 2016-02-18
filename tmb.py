@@ -825,7 +825,7 @@ class PlayerCtl():
         return 0
 
 
-    def show_current(self, select=True):
+    def show_current(self, select=True, playing=False):
 
 
         # Switch to source playlist
@@ -846,6 +846,8 @@ class PlayerCtl():
 
                 if select:
                     playlist_selected = i
+                if playing:
+                    self.playlist_playing = i
 
                 if i == playlist_position - 1 and playlist_position > 1:
                     playlist_position -= 1
@@ -932,8 +934,12 @@ class PlayerCtl():
         else:
             print("BACK: NO CASE!")
 
+
         if self.playlist_active == self.active_playlist_playing:
-            self.show_current(False)
+            self.show_current(False, True)
+
+        if album_mode:
+            goto_album(self.playlist_playing)
 
         self.render_playlist()
 
@@ -1056,7 +1062,11 @@ class PlayerCtl():
             print("ADVANCE: NO CASE!")
 
         if self.playlist_active == self.active_playlist_playing:
-            self.show_current()
+            self.show_current(playing=True)
+
+        if album_mode:
+            goto_album(self.playlist_playing)
+
 
         self.render_playlist()
 
@@ -4283,6 +4293,7 @@ def standard_size():
 
 
 def goto_album(playlist_no):
+
     global album_pos_px
     global album_dex
 
@@ -4300,6 +4311,7 @@ def goto_album(playlist_no):
             px += album_mode_art_size + album_v_gap
 
     album_pos_px = px - 60 - album_mode_art_size - album_v_gap
+    album_pos_px += 10
 
     if album_pos_px < 500:
         album_pos_px = -55
