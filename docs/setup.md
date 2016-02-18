@@ -1,6 +1,6 @@
 # Binary setup on Windows
 
-Release bundle should 'just work' by running tmb.exe. Otherwise make sure Visual C++ Runtime and DirectX installed on older windows editions.
+Release bundle should 'just work' by running tmb.exe. Otherwise make sure Visual C++ Runtime and DirectX are installed.
 
 # Source setup on Linux
 
