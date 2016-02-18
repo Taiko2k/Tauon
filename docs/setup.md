@@ -1,4 +1,8 @@
-# Linux Install Instructions
+# Binary setup on Windows
+
+Release bundle should 'just work' by running tmb.exe. Otherwise make sure Visual C++ Runtime and DirectX installed for older windows editions.
+
+# Source setup on Linux
 
 BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions). Stagger and pyxhook also included in release due to failing to install with pip.
 
