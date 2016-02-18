@@ -1,6 +1,6 @@
 # Linux Install Instructions
 
-BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions). Stagger and pyxhook also included in release due to failing to install with pip
+BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions). Stagger and pyxhook also included in release due to failing to install with pip.
 
 Use the following commands to install other dependencies:
 
