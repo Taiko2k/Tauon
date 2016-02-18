@@ -16,7 +16,6 @@ Ubuntu (not recently tested):
 
 
 
-Finally run using python 3, alternatively create a desktop or launcher shortcut
-(Make sure to set the working directory to the directory you extracted the program files to).
+Finally run using python 3 (Alternatively create a desktop or launcher shortcut. Make sure to set the working directory to the directory you extracted the program files to).
 
     $ python3.5 tmb.py
