@@ -1,0 +1,77 @@
+﻿## Tauon Music Box config file
+
+
+## View-------------------------------------
+
+##Disables system window frame/title bar and draws own
+#draw-border
+
+#Shows option for transcoding in context menu (currently only opus+cue supported)
+enable-transcode
+
+## Playback--------------------------------------------------------------
+
+## Prevent seeking while paused
+#seek-pause-lock
+
+#Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
+pause-fade-time: 400
+cross-fade-time: 700
+
+## Mark where a scrobble will occur
+scrobble-mark
+
+## System----------------------------------------------------------
+
+## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
+mediakey:2
+
+#Show progress in windows taskbar (Win7+) (No effect under linux)
+taskbar-progress
+
+## Webserver------------------------------------------------------
+
+## enable-web will load the web interface for the local computer, in addition, expose-web will expose the web interface to other computers
+## (Warning: Feature has not been tested for security. Expose to internet at your own risk)
+## (Note: Feature is experimental and may be modified or removed in future versions)
+## current urls are :5000/remote for player control and :5000/radio for broadcasting tracks album art and title
+
+enable-web
+allow-remote (disable for broadcast album art only)
+#expose-web (careful!) (needed for accessing from other computers)
+
+## Encoding----------
+
+opus-bitrate:64
+
+## Streaming-----------------------------------------------------------
+
+## Mount Point for Icecast server
+icecast-mount:localhost:8000/test
+
+## Password for Icecast server source
+icecast-pass:hackme
+
+## MP3 or OGG, requires lame.exe or oggenc2.exe in Encoder subdirectory respectively
+icecast-codec:OGG
+icecase-bitrate:128
+
+## Playlist-----------------
+
+custom-format:"r3;t;r55;o;l;r3;n;p0.33;a;p0.63;b"
+
+## Note: Experimental function. May not work as expected. May change in future versions.
+
+##(starts at right align)
+##t track length
+##r space - px(int)
+##o playcount
+##s playline
+##l switch to left align
+##n title
+##p proportion - decimal
+##a artist
+##b album
+##d date
+##i tracknumber - custom text(optional)
+##c custom - custom text

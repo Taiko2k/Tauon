@@ -1,0 +1,56 @@
+﻿#Tau Player theme file
+
+27,27,27		player background
+27,27,27	  	playlist panel
+27,27,27		side panel
+27,27,27		bottom panel
+
+150,150,150		track line
+204,204,204		track playing
+85,85,85		track missing
+150,150,150		track time
+150,150,150		track index
+204,120,164		track artist
+
+204,204,204		index playing
+255,150,205		artist playing
+159,83,166		album line
+200,109,214		album playing
+204,204,204		time playing
+
+180,180,180		fav line
+40,40,40		folder line
+159,175,255		folder title
+
+25,25,25,0		playing highlight
+38,38,38,255		select highlight
+
+70,70,70		buttons off
+245,245,245		buttons over
+233,233,233		buttons active
+
+159,175,255		playing time
+
+235,235,235		tab active line
+235,235,235		tab line
+30,30,30		tab background
+65,65,65		tab over
+159,83,166		tab active background
+
+220,220,220		title info
+195,195,195		extra info
+27,27,27		art border
+
+209,109,218		seek bar
+209,109,218		volume bar
+38,38,38		seek bg
+35,35,35		volume bg
+50,50,50		scroll bar
+
+60,60,60		mode off
+140,140,140		mode over
+120,120,120		mode on
+
+50,50,50		sep line
+50,50,50		bb line
+50,50,50		tb line
