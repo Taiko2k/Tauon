@@ -30,7 +30,7 @@ Ubuntu (not recently tested):
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip xclip python3-pil
         $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 python3-xlib flask
 
-Finally run using python 3, alternatively create a desktop or launcher shortcut 
+Finally run using python 3, alternatively create a desktop or launcher shortcut
 (Make sure to set the working directory to the directory you extracted the program files to).
 
     $ python3.5 tmb.py
