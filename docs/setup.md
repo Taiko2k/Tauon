@@ -11,12 +11,12 @@ Use the following commands to install other dependencies:
 Arch Linux:
 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf xclip python-pip python-pillow
-        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 python3-xlib flask
+        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask
 
 Ubuntu (not recently tested):
 
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip xclip python3-pil
-        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 python3-xlib flask
+        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask
 
 
 
