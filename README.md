@@ -4,6 +4,11 @@ Tauon Music Box is a streamlined standalone desktop music player with a focus on
 Designed to have an easy to use, comfortable and compact user interface.
 Uses BASS audio library as backend.
 
+
+### Screenshot
+
+![Screenshot - Gallery View](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-gallery1.jpg)
+
 ### Features
 
   - Playback support for MP3, OGG, FLAC + others
