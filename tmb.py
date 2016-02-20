@@ -4608,13 +4608,13 @@ if default_player == 'BASS':
 def last_fm_menu_deco():
     if lastfm.connected:
         line = 'Lastfm Scrobbling is Active'
-        bg = [20, 80 , 20, 255]
+        bg = [20, 60 , 20, 255]
     else:
         line = 'Engage Lastfm Scrobbling'
         bg = bottom_panel_colour
     if lastfm.hold:
         line = "Scrobbling Has Stopped"
-        bg = [90, 30 , 30, 255]
+        bg = [60, 30 , 30, 255]
     return [[150, 150, 150, 255], bg, line]
 
 
@@ -8369,9 +8369,12 @@ while running:
                         xoff = 0
                         # if len(line) > 5:
                         #     xoff = (len(line) - 5) * 6
+                        xoff = text_calc(line, 12)[0] + 12
 
-                        draw_rect((playlist_width + 40 + box - 40 - xoff, 36 + box - 19), (40 + xoff, 18),
+
+                        draw_rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
                                   [0, 0, 0, 190], True)
+
                         draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
 
                     if pctl.playing_state > 0:
