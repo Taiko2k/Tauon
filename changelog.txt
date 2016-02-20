@@ -1,0 +1,188 @@
+
+Changelog-------------------------------------
+
+v1.2.1b
+
+ - Minor interface tweak
+
+v1.2.1
+
+ - Cleaner starting when some program files missing
+ - Galley view now jumps to album when selecting 'back'
+
+
+v1.2.0
+
+ - Improved rendering performance
+ - Improved window drag handling
+ - Added top menu buttons display
+ - Fixed random mode not working with cue tracks
+ - Interface tweaks
+
+v1.1.6
+
+ - Minor interface fixes
+ - Improved re-import performance
+ - Added import progress counter
+
+v1.1.5
+
+ - Minor interface fixes
+ - Tweaked context menu categories
+ - Tweaked selection behavior
+ - Tweaked icon colour
+ - Fixed visual error with shift moving tracks
+ - Fixed a rare crash when clicking album in album view
+ - Fixed a crash when playing a track detected as zero length (windows)
+ - Changed top list to sort by playtime rather than playcount
+ - Added config to disable transcode menu entry
+ - Added time playing colour to themes
+ - Added keybinds for repeat and show playing (. and ' respectively)
+
+v1.1.0
+
+ - Fixed high cpu usage when dragging
+ - Fixed black window in some cases
+ - Fixed title bar text not updating in some cases
+ - Tweaked button hitboxes
+ - Tweaked some menu entries
+ - Tweaked track selection behavior
+ - Added thick row option
+ - Added side panel background as themeable
+
+v1.0.9
+
+ - Fixed opus+cue encoding on linux
+ - Fixed stream progress bar overlapping level meter
+ - Fixed toggle gallery view not remembering side panel width
+ - Moved sort tracks to playlist menu
+ - Tweaked gallery layout
+ - Tweaked certain themes colors
+ - Improved gallery view performance
+ - Added top genre/album/artist readout
+ - Added playlist filtering by genre to playlist menu
+ - Added spectrum analyzer (may incur high cpu usage)
+ - Added option for player following playlist
+ - Added option for switching to double digit track numbers
+ - Added option for toggling scroll bar
+ - Added option for playlist folder separation
+ - Added jump playlist ability to 'show playing' function
+ - Added taskbar progress on windows
+ - Added Page Up / Page Down function
+ - Added seek bar background and various line colours to themes
+ - Added custom playlist line format option
+
+
+v1.0.1
+
+ - Fixed lastfm scrobbling not submitting album info
+ - Fixed inconsistent track number format
+ - Added opus encoding bitrate to config file
+ - Added transpose playlist option
+ - Improved cue sheet handling when transcoding (still has some limitations)
+
+v1.0.0
+
+ - Reduced CPU usage with level meter
+ - Improved level meter animation
+ - Fixed level meter not persisting after restart
+ - Fixed a crash in album view
+ - Added batch encode folder to opus + cue
+ - Added scrobble marker
+
+v0.9.9
+
+ - Moved some UI elements to new options frame
+ - Added delete key functionality
+ - Added built in folder picker for importing
+ - Added About panel
+ - Added periodic saving of playtimes to disk
+ - Tweaked scroll bar appearance
+ - Tweaked playlist tab layout to avoid overlapping
+ - Tweaked GUI CPU usage and performance
+
+v0.9.8
+
+ - Fixed a bug with broadcasting not playing tracks defined by CUE sheets
+ - Fixed a bug with player taking too long to play again after stopping
+ - Fixed a bug with incorrect selection on playlist change
+ - Fixed opening external images on linux
+ - Fixed some misc crashes
+ - Added support for samplerates other than 44100 to broadcasting
+ - Added experimental web interface (remote control and broadcast album art, enable in config)
+ - Added experimental borderless mode
+ - Added right click seek bar to pause/play
+ - Added support for dragging tracks to other playlists
+ - Added support for renaming playlists
+ - Added fade time setting to config file
+ - Moved renaming tracks function to new modify submenu
+ - Moved csv export to new database submenu
+ - Tweaked playlist generator functions
+ - Tweaked volume and playlist tabs scrollable area
+ - Tweaked album view behavior with track switching
+ - Minor GUI tweaks
+ - Improved latin character support
+
+v0.9.5
+
+ - Improved gallery view switching and layout
+ - Improved image compatibility
+ - Removed and altered various menu options
+ - Added menu box for changing settings
+ - Added hidden command for exporting database to csv
+ - Added hidden dialog for renaming files
+ - Added 'copy' for multiple track selection
+
+v0.9.0
+
+ - Redesigned context menu
+ - Fixed album art resize scaling
+ - Fixed colour flickering on single track playlists
+ - Expanded colourable items
+ - Expanded image subfolder search names
+ - Updated track number colour to dark if track missing
+ - Tweaked art counter box
+ - Player now saves window size on reset
+ - Partially added multi select and drag to reorder (hold shift)
+ - Moved built in theme to file
+ - Added seek during pause as config option
+ - Added reset missing flag function to menu
+ - Added right click to toggle mute volume bar
+ - Added mouse scroll to seek bar
+ - Added right click play button to show now playing
+
+v0.8.5
+
+ - Bottom bar colour can now be defined in theme file
+ - Added mediakey toggle to config
+
+v0.8.0
+
+ - Added album view (experimental)
+ - Enhanced scrolling performance
+ - Reworked menu system
+ - Added copy/paste like functionality for tracks and folders in playlists
+ - Minor UI and usability alterations
+
+v0.7.5
+
+ - Fixed bug with some cue sheets not loading
+ - Moderate performance optimisations
+
+v0.7
+
+- Fixed window not rendering on certain video drivers (Linux)
+- Switched media key detection to use Dbus for better Gnome integration (Linux)
+- Added a track information box option to context menu
+- Minor UI tweaks, removed some redundant options
+- Moved some options to new playlist context menu
+- Improved IME support
+- Improved search reliability
+- Implemented text cursor animation
+- Small performance tweaks
+
+v0.6.5
+
+- Fixed bug with not being able to rearrange playlists
+- Improved theme loading
+- First public release
