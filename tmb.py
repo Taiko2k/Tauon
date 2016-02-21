@@ -7628,7 +7628,7 @@ while running:
                         pctl.playerCommand = 'seek'
                         pctl.playerCommandReady = True
                         pctl.playing_time = new_time
-                        if system == 'windows':
+                        if system == 'windows'and taskbar_progress:
                             windows_progress.update(True)
                             # elif pctl.playing_state == 2:
                             #     new_time = pctl.playing_length / 100 * seek
