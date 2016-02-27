@@ -1,9 +1,12 @@
 
 Changelog-------------------------------------
 
-v1.2.1b
+v1.2.5
 
  - Minor interface tweak
+ - Binded - + keys to seek function
+ - Fixed crash when deleting a playlist while in gallery view
+ - Added radio random function (M3 click forward or comma key)
 
 v1.2.1
 
