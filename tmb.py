@@ -776,6 +776,7 @@ class PlayerCtl():
         self.playerCommandReady = False
         self.playing_state = 0
         self.playing_length = 0
+        self.jump_time = 0
         self.random_mode = random_mode
         self.repeat_mode = repeat_mode
         self.last_playing_time = 0
@@ -879,6 +880,24 @@ class PlayerCtl():
 
         self.playerCommand = 'volume'
         self.playerCommandReady = True
+
+    def play_target_rr(self):
+
+        self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+        random_start = random.randrange(1,self.playing_length - 20 if self.playing_length > 30 else self.playing_length)
+
+        self.playing_time = random_start
+        self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
+        self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
+        self.jump_time = random_start
+        self.playerCommand = 'open'
+        self.playerCommandReady = True
+        self.playing_state = 1
+
+        self.last_playing_time = random_start
+
+        if update_title:
+            update_title_do()
 
     def play_target(self):
 
@@ -991,7 +1010,7 @@ class PlayerCtl():
 
         self.render_playlist()
 
-    def advance(self):
+    def advance(self, rr=False):
 
         pctl.playing_length = 100
         pctl.playing_time = 0
@@ -1020,14 +1039,16 @@ class PlayerCtl():
             return 0
 
         # If random, jump to random track
-        elif self.random_mode and len(self.playing_playlist()) > 0:
+        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0:
             self.queue_step += 1
             if self.queue_step == len(self.track_queue):
                 random_jump = random.randrange(len(self.playing_playlist()))
                 self.playlist_playing = random_jump
                 self.track_queue.append(self.playing_playlist()[random_jump])
-
-            self.play_target()
+            if rr:
+                self.play_target_rr()
+            else:
+                self.play_target()
             if album_mode:
                 goto_album(self.playlist_playing)
 
@@ -1956,17 +1977,18 @@ def player():
                             tlen = BASS_ChannelBytes2Seconds(handle2, blen)
                             master_library[pctl.track_queue[pctl.queue_step]]['length'] = tlen
                             pctl.playing_length = tlen
-                    if pctl.start_time > 0:
+                    if pctl.start_time > 0 or pctl.jump_time > 0:
                         if player1_status == 'playing':
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time)
+                            bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
                             BASS_ChannelSetPosition(handle1, bytes_position, 0)
                         elif player2_status == 'playing':
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time)
+                            bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time + pctl.jump_time)
                             BASS_ChannelSetPosition(handle2, bytes_position, 0)
 
                     # print(BASS_ErrorGetCode())
-                    pctl.playing_time = 0
+                    #pctl.playing_time = 0
                     pctl.last_playing_time = 0
+                    pctl.jump_time = 0
                     p_timer()
 
                 # PAUSE COMMAND
@@ -3748,6 +3770,8 @@ def delete_playlist(index):
 
     pctl.active_playlist_playing = pctl.playlist_active
     del pctl.multi_playlist[index]
+    if album_mode:
+        reload_albums()
 
 
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True)
@@ -6522,6 +6546,7 @@ while running:
     key_eq_press = False
     key_slash_press = False
     key_period_press = False
+    key_comma_press = False
     key_quote_hit = False
     key_return_press_w = False
     mouse_wheel = 0
@@ -6671,6 +6696,8 @@ while running:
                 key_slash_press = True
             elif event.key.keysym.sym == SDLK_PERIOD:
                 key_period_press = True
+            elif event.key.keysym.sym == SDLK_COMMA:
+                key_comma_press = True
             elif event.key.keysym.sym == SDLK_QUOTE:
                 key_quote_hit = True
 
@@ -6904,6 +6931,24 @@ while running:
 
     if key_F4:
         standard_size()
+
+    if key_comma_press:
+        pctl.advance(rr=True)
+
+    if key_dash_press:
+        new_time = pctl.playing_time - 15
+        pctl.playing_time -= 15
+        if new_time < 0:
+            new_time = 0
+            pctl.playing_time = 0
+        pctl.playerCommand = 'seek'
+        pctl.playerCommandReady = True
+
+    if key_eq_press:
+        new_time = pctl.playing_time + 15
+        pctl.playing_time += 15
+        pctl.playerCommand = 'seek'
+        pctl.playerCommandReady = True
 
     if key_F7:
         # spec_smoothing ^= True
@@ -8732,6 +8777,8 @@ while running:
                     pctl.advance()
                 if right_click:
                     pctl.random_mode ^= True
+                if middle_click:
+                    pctl.advance(rr=True)
             draw_rect((240, window_size[1] - control_line_bottom), (28, 14), forward_colour, True)
             # draw_rect_r(rect,[255,0,0,255], True)
             SDL_RenderCopy(renderer, c2, None, dst2)
