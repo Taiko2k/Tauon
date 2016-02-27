@@ -1,6 +1,6 @@
 # Tauon Music Box
 
-Tauon Music Box is a streamlined standalone desktop music player with a focus on minimal configuration and user file organisation.
+Tauon Music Box is a streamlined standalone desktop music player with a focus on minimal configuration and user library management.
 Designed to have an easy to use, comfortable and compact user interface.
 Uses BASS audio library as backend.
 
