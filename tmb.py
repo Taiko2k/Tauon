@@ -884,7 +884,10 @@ class PlayerCtl():
     def play_target_rr(self):
 
         self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
-        random_start = random.randrange(1,self.playing_length - 20 if self.playing_length > 30 else self.playing_length)
+        if self.playing_length > 2:
+            random_start = random.randrange(1,self.playing_length - 20 if self.playing_length > 30 else self.playing_length)
+        else:
+            random_start = 0
 
         self.playing_time = random_start
         self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
