@@ -4990,14 +4990,15 @@ def loader():
 
         #bm.get("done pre check")
 
-        # for i in range(len(master_library)):
-        #     if master_library[i]['filepath'] == path:
-        #         if master_library[i]['filepath'] in cue_list:
-        #             bm.get("dupe cue")
-        #             return
-        #         added.append(i)
-        #         bm.get("dupe track")
-        #         return
+        for i in range(len(master_library)):
+            if master_library[i]['filepath'] == path:
+                if master_library[i]['filepath'] in cue_list:
+                    bm.get("dupe cue")
+                    return
+                added.append(i)
+                bm.get("dupe track")
+                return
+
         if path in loaded_pathes_cache:
             de = loaded_pathes_cache[path]
             if master_library[de]['filepath'] in cue_list:
