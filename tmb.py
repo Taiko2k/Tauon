@@ -49,7 +49,7 @@ import pyperclip
 
 from ctypes import *
 
-t_version = "v1.2.1"
+t_version = "v1.2.5"
 version_line = "Tauon Music Box " + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
@@ -2488,38 +2488,39 @@ SDL_RenderPresent(renderer)
 
 fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
 
+if system != 'windows':
 
-def hit_callback(win,point,data):
+    def hit_callback(win,point,data):
 
 
-    if point.contents.y < 0 and point.contents.x > window_size[0]:
-        return SDL_HITTEST_RESIZE_TOPRIGHT
+        if point.contents.y < 0 and point.contents.x > window_size[0]:
+            return SDL_HITTEST_RESIZE_TOPRIGHT
 
-    elif point.contents.y < 0 and point.contents.x < 1:
-        return SDL_HITTEST_RESIZE_TOPLEFT
+        elif point.contents.y < 0 and point.contents.x < 1:
+            return SDL_HITTEST_RESIZE_TOPLEFT
 
-    elif point.contents.y < 0:
-        return SDL_HITTEST_RESIZE_TOP
+        elif point.contents.y < 0:
+            return SDL_HITTEST_RESIZE_TOP
 
-    elif point.contents.y < 30 and m_l < point.contents.x < window_size[0] - 90:
-        return SDL_HITTEST_DRAGGABLE
-    elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
-        return SDL_HITTEST_RESIZE_BOTTOMRIGHT
-    elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
-        return SDL_HITTEST_RESIZE_BOTTOMLEFT
-    elif point.contents.y > window_size[1] - 5:
-        return SDL_HITTEST_RESIZE_BOTTOM
+        elif point.contents.y < 30 and m_l < point.contents.x < window_size[0] - 90:
+            return SDL_HITTEST_DRAGGABLE
+        elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
+            return SDL_HITTEST_RESIZE_BOTTOMRIGHT
+        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
+            return SDL_HITTEST_RESIZE_BOTTOMLEFT
+        elif point.contents.y > window_size[1] - 5:
+            return SDL_HITTEST_RESIZE_BOTTOM
 
-    elif point.contents.x > window_size[0] - 1:
-        return SDL_HITTEST_RESIZE_RIGHT
-    elif point.contents.x <  5:
-        return SDL_HITTEST_RESIZE_LEFT
+        elif point.contents.x > window_size[0] - 1:
+            return SDL_HITTEST_RESIZE_RIGHT
+        elif point.contents.x <  5:
+            return SDL_HITTEST_RESIZE_LEFT
 
-    else:
-        return SDL_HITTEST_NORMAL
+        else:
+            return SDL_HITTEST_NORMAL
 
-c_hit_callback = SDL_HitTest(hit_callback)
-SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
+    c_hit_callback = SDL_HitTest(hit_callback)
+    SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 
 if system == 'windows' and taskbar_progress:
@@ -3899,7 +3900,7 @@ tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
 
 def get_playing_line():
-    if pctl.playing_state > 0:
+    if 3 > pctl.playing_state > 0:
         title = master_library[pctl.track_queue[pctl.queue_step]]['title']
         artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
         return artist + " - " + title
@@ -9700,7 +9701,7 @@ while running:
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
-                draw_text((x + 10, y + 10,), "Open Audio Stream / URL:", GREY6, 12)
+                draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", GREY6, 12)
                 draw_text((x + 14, y + 40,), NXN + cursor, GREY6, 12)
                 c_blink = 200
 
@@ -10290,6 +10291,26 @@ while running:
             cursor = "|"
             UPDATE_RENDER += 1
 
+    if system == 'windows':
+
+        if mouse_down is False:
+            dragmode = False
+
+
+        if mouse_click and mouse_down and 1 < mouse_position[1] < 30 and m_l < mouse_position[0] < window_size[
+            0] - 80 and dragmode is False and clicked is False:
+
+            dragmode = True
+
+            lm = copy.deepcopy(mouse_position)
+
+        if mouse_up:
+            dragmode = False
+
+        if dragmode:
+            mp = win32api.GetCursorPos()
+            time.sleep(0.005)
+            SDL_SetWindowPosition(t_window, mp[0] - lm[0], mp[1] - lm[1])
 
     # auto save
     if total_playtime - time_last_save > 600:
