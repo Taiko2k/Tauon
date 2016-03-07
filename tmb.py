@@ -4392,7 +4392,9 @@ def activate_info_box():
 
 x_menu.add("Go To Playing", pctl.show_current)
 
-x_menu.add("Stats/Config...", activate_info_box)
+x_menu.add("Create Playlist", new_playlist)
+
+x_menu.add("Settings...", activate_info_box)
 
 
 
@@ -4489,7 +4491,7 @@ def export_database():
 
 
 x_menu.add_to_sub("Export as CSV", 0, export_database)
-x_menu.add_to_sub("Get Readout", 0, export_stats)
+x_menu.add_to_sub("Get Playlist Readout", 0, export_stats)
 
 
 def test():
@@ -4623,7 +4625,7 @@ def activate_radio_box():
 
 
 if default_player == 'BASS':
-    x_menu.add("Open URL...", activate_radio_box, bass_features_deco)
+    x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
 
 
 # def activate_info_box():
@@ -7857,7 +7859,7 @@ while running:
                     this_line_playing = False
 
                     if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
-                            default_playlist[i + playlist_position]:
+                            default_playlist[i + playlist_position]: # and i + playlist_position == pctl.playlist_playing:
                         draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
                                   (playlist_width + highlight_x_offset, playlist_row_height - 1), lineBGplaying, True)
                         this_line_playing = True
@@ -9006,25 +9008,25 @@ while running:
 
                     # ----------------
 
-            l += 6
+            l += 10
 
             if draw_alt:
                 l += 20
+            #
+            # x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
+            # y = 8
+            # rect = [x - 6, y - 4, 31, 23]
+            # fields.add(rect)
+            # if coll_point(mouse_position, rect):
+            #     draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NPL", GREY5, 12)
+            #     if mouse_click:
+            #         new_playlist_box = True
+            #         mouse_click = False
+            #         NPN = ""
+            # else:
+            #     draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NEW PLAYLIST", GREY4, 12)
 
-            x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
-            y = 8
-            rect = [x - 6, y - 4, 31, 23]
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NPL", GREY5, 12)
-                if mouse_click:
-                    new_playlist_box = True
-                    mouse_click = False
-                    NPN = ""
-            else:
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NPL", GREY4, 12)
-
-            l += 38
+            # l += 38
 
             x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
             y = 8
@@ -9050,26 +9052,26 @@ while running:
 
             x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
             y = 8
-            rect = [x - 6, y - 4, 36, 23]
+            rect = [x - 6, y - 4, 60, 23]
             fields.add(rect)
 
             if album_mode:
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GAL", GREY5, 12)
+                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
                 if coll_point(mouse_position, rect) and mouse_click:
                     toggle_album_mode()
 
             else:
                 if coll_point(mouse_position, rect):
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GAL", GREY5, 12)
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
                     if mouse_click:
                         toggle_album_mode()
                 else:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GAL", GREY4, 12)
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY4, 12)
 
 
 
             if lastfm.connected:
-                l += 37
+                l += 64
 
                 x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
                 y = 8
@@ -9089,14 +9091,10 @@ while running:
                     else:
                         draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LFM", GREY4, 12)
 
-            # if draw_alt:
-            #     x += 100
 
             m_l = x + 60
 
-
-
-            l += 45
+            l += 75
 
             if broadcast is False:
                 if loading_in_progress:
