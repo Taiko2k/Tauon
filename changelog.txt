@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v1.2.5
 
- - Minor interface tweak
- - Binded - + keys to seek function
+ - Minor interface tweaks and string changes
+ - Fixed crash when opening a stream
  - Fixed crash when deleting a playlist while in gallery view
+ - Binded - and + keys to seek functions
  - Added radio random function (M3 click forward or comma key)
 
 v1.2.1
