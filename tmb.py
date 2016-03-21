@@ -885,7 +885,7 @@ class PlayerCtl():
 
         self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
         if self.playing_length > 2:
-            random_start = random.randrange(1,self.playing_length - 20 if self.playing_length > 30 else self.playing_length)
+            random_start = random.randrange(1,self.playing_length - 45 if self.playing_length > 50 else self.playing_length)
         else:
             random_start = 0
 
@@ -3584,7 +3584,7 @@ def append_here():
 playlist_menu.add('Paste', append_here)
 
 # Create playlist tab menu
-tab_menu = Menu(100)
+tab_menu = Menu(120)
 
 tab_menu.add_sub("New Playlist...", 100)
 
@@ -3614,14 +3614,36 @@ def gen_top_100(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=best, reverse=True)
 
-    if len(playlist) > 1000:
-        playlist = playlist[:1000]
+    # if len(playlist) > 1000:
+    #     playlist = playlist[:1000]
 
     pctl.multi_playlist.append(
-            [pctl.multi_playlist[index][0] + " Top 1000", 0, copy.deepcopy(playlist), 0, 1, 0])
+            [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Top 1000", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Most Listened", 0, gen_top_100, pass_ref=True)
+
+
+def gen_sort_len(index):
+    global pctl
+
+    def length(index):
+
+        if master_library[index]['length'] < 1:
+            return 0
+        else:
+            return int(master_library[index]['length'])
+
+    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = sorted(playlist, key=length, reverse=True)
+
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
+
+
+tab_menu.add_to_sub("Duration Sorted", 0, gen_sort_len, pass_ref=True)
+
 
 
 def gen_500_random(index):
@@ -3638,7 +3660,7 @@ def gen_500_random(index):
     random.shuffle(playlist)
 
     pctl.multi_playlist.append(
-            [pctl.multi_playlist[index][0] + " Shuffled", 0, copy.deepcopy(playlist), 0,
+            [pctl.multi_playlist[index][0] + " <Shuffled>", 0, copy.deepcopy(playlist), 0,
              1, 0])
 
 
@@ -3657,7 +3679,7 @@ def gen_best_random(index):
                 playlist.append(p)
     random.shuffle(playlist)
     pctl.multi_playlist.append(
-            [pctl.multi_playlist[index][0] + " Random Played", 0, copy.deepcopy(playlist), 0, 1, 0])
+            [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
 tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
@@ -4996,10 +5018,10 @@ def loader():
         for i in range(len(master_library)):
             if master_library[i]['filepath'] == path:
                 if master_library[i]['filepath'] in cue_list:
-                    bm.get("dupe cue")
+                    #bm.get("dupe cue")
                     return
                 added.append(i)
-                bm.get("dupe track")
+                #bm.get("dupe track")
                 return
 
         if path in loaded_pathes_cache:
@@ -5170,7 +5192,8 @@ def loader():
             UPDATE_RENDER += 1
 
             print(shlex.split(command))
-            subprocess.call(shlex.split(command), stdout=subprocess.PIPE)
+
+            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
 
             print('done ffmpeg')
 
@@ -5183,7 +5206,7 @@ def loader():
                 command = 'opusenc --bitrate ' + str(transcode_bitrate) + ' output.wav output.opus'
 
             print(shlex.split(command))
-            subprocess.call(shlex.split(command), stdout=subprocess.PIPE)
+            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
             print('done')
 
             os.remove('output.wav')
@@ -6940,7 +6963,8 @@ while running:
         standard_size()
 
     if key_comma_press:
-        pctl.advance(rr=True)
+        pctl.repeat_mode ^= True
+
 
     if key_dash_press:
         new_time = pctl.playing_time - 15
@@ -6991,9 +7015,13 @@ while running:
         pctl.back()
 
     if key_slash_press:
+        pctl.advance(rr=True)
         pctl.random_mode ^= True
     if key_period_press:
-        pctl.repeat_mode ^= True
+        pctl.random_mode ^= True
+
+
+
     if key_quote_hit:
         pctl.show_current()
 
@@ -7793,10 +7821,23 @@ while running:
                 SDL_SetRenderDrawColor(renderer, BPanel[0], BPanel[1], BPanel[2], BPanel[3])
                 SDL_RenderClear(renderer)
 
+
+                if len(default_playlist) == 0:
+
+                    draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65), 2), "Playlist is empty", lineOFF, 13 )
+                    draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65 + 30), 2), "Drag and drop files to import", lineOFF, 13 )
+
+                elif playlist_position > len(default_playlist) - 1:
+
+                    draw_text((int(playlist_width / 2) + 10, int(window_size[1] * 0.15), 2), "End of Playlist", lineOFF, 13 )
+
+
                 for i in range(playlist_view_length + 1):
 
                     move_on_title = False
 
+                    if playlist_position < 0:
+                        playlist_position = 0
                     if len(default_playlist) <= i + playlist_position:
                         break
 
@@ -7846,6 +7887,8 @@ while running:
                         playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
                         line_hit = True
                     else:
+                        line_hit = False
+                    if scroll_enable and mouse_position[0] < 30:
                         line_hit = False
 
                     if key_shift_down is False and d_mouse_click and line_hit and i + playlist_position == playlist_selected:
@@ -8251,7 +8294,7 @@ while running:
                         pass
                     else:
 
-                        playlist_position -= mouse_wheel * 2
+                        playlist_position -= mouse_wheel * 3
                         # if playlist_view_length > 15:
                         #     playlist_position -= mouse_wheel
                         if playlist_view_length > 40:
@@ -8270,36 +8313,51 @@ while running:
 
             # ------------------------------------------------
             # Scroll Bar
+
+
+
             if scroll_enable:
 
                 sy = 31
                 ey = window_size[1] - 30 - 22
 
+
+
                 if len(default_playlist) < 50:
-                    sbl = 100
+                    sbl = 85
+                    if len(default_playlist) == 0:
+                        sbp = panelY
                 else:
                     sbl = 70
 
-                fields.add((2, sbp, 17, sbl))
-                if coll_point(mouse_position, (0, panelY, 20, ey - panelY)) and (mouse_down or right_click):
+                fields.add((2, sbp, 20, sbl))
+                if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and (mouse_down or right_click):
 
                     renplay += 1
                     if right_click:
-                        sbp = mouse_position[1]
+                        sbp = mouse_position[1] - int(sbl/2)
                         if sbp + sbl > ey:
                             sbp = ey - sbl
                         elif sbp < panelY:
                             sbp = panelY
                         per = (sbp - panelY) / (ey - panelY - sbl)
                         playlist_position = int(len(default_playlist) * per)
+
+                        if playlist_position < 0:
+                            playlist_position = 0
                     elif mouse_position[1] < sbp:
                         playlist_position -= 2
                     elif mouse_position[1] > sbp + sbl:
                         playlist_position += 2
                     elif mouse_click:
 
+
+                        p_y = pointer(c_int(0))
+                        p_x = pointer(c_int(0))
+                        SDL_GetGlobalMouseState(p_x,p_y)
+
                         scroll_hold = True
-                        scroll_point = mouse_position[1]
+                        scroll_point = p_y.contents.value #mouse_position[1]
                         scroll_bpoint = sbp
 
                 if not mouse_down:
@@ -8307,22 +8365,27 @@ while running:
 
                 if scroll_hold and not mouse_click:
                     renplay += 1
-                    sbp = mouse_position[1] - (scroll_point - scroll_bpoint)
+                    p_y = pointer(c_int(0))
+                    p_x = pointer(c_int(0))
+                    SDL_GetGlobalMouseState(p_x,p_y)
+                    sbp = p_y.contents.value - (scroll_point - scroll_bpoint) #mouse_position[1] - (scroll_point - scroll_bpoint)
                     if sbp + sbl > ey:
                         sbp = ey - sbl
                     elif sbp < panelY:
                         sbp = panelY
                     per = (sbp - panelY) / (ey - panelY - sbl)
                     playlist_position = int(len(default_playlist) * per)
+
+
                 else:
                     if len(default_playlist) > 0:
                         per = playlist_position / len(default_playlist)
                         sbp = int((ey - panelY - sbl) * per) + panelY + 1
 
-                draw_rect((3, sbp), (11, sbl), scroll_colour, True)
+                draw_rect((1, sbp), (14, sbl), scroll_colour, True)
 
-                if (coll_point(mouse_position, (2, sbp, 17, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                    draw_rect((3, sbp), (11, sbl), [255, 255, 255, 11], True)
+                if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
+                    draw_rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
 
             # Switch Vis:
 
@@ -8839,6 +8902,8 @@ while running:
                 y += 8
                 draw_rect((x, y), (50, 4), rpbc, True)
 
+                #draw_text((x,y), "RANDOM", rpbc, 13)
+
                 # REPEAT
                 x = window_size[0] - 350
                 y = window_size[1] - 27
@@ -8866,7 +8931,7 @@ while running:
                 else:
                     repeat_click_off = False
 
-
+                #draw_text((x,y), "REPEAT", rpbc, 13)
                 y += 10
                 w = 4
 
@@ -9031,9 +9096,11 @@ while running:
             x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
             y = 8
             rect = [x - 8, y - 4, 50, 23]
+
             fields.add(rect)
 
             if x_menu.active:
+
                 draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
                 if coll_point(mouse_position, rect) and (mouse_click or right_click):
                     x_menu.active = False
@@ -9053,9 +9120,11 @@ while running:
             x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
             y = 8
             rect = [x - 6, y - 4, 60, 23]
+
             fields.add(rect)
 
             if album_mode:
+
                 draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
                 if coll_point(mouse_position, rect) and mouse_click:
                     toggle_album_mode()
@@ -9071,26 +9140,28 @@ while running:
 
 
             if lastfm.connected:
-                l += 64
+                l += 62
 
                 x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
                 y = 8
-                rect = [x - 6, y - 4, 36, 23]
+                rect = [x - 6, y - 4, 58, 23]
+
                 fields.add(rect)
 
                 if not lastfm.hold:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LFM", GREY5, 12)
+                    #draw_rect_r(rect, [70,70,70,70], True)
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
                     if coll_point(mouse_position, rect) and mouse_click:
                         lastfm.toggle()
 
                 else:
                     if coll_point(mouse_position, rect):
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LFM", GREY5, 12)
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
                         if mouse_click:
                             lastfm.toggle()
                     else:
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LFM", GREY4, 12)
-
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY4, 12)
+                l += 20
 
             m_l = x + 60
 
@@ -10306,7 +10377,13 @@ while running:
             dragmode = False
 
         if dragmode:
-            mp = win32api.GetCursorPos()
+            #mp = win32api.GetCursorPos()
+
+            p_x = pointer(c_int(0))
+            p_y = pointer(c_int(0))
+            SDL_GetGlobalMouseState(p_x,p_y)
+            mp = [p_x.contents.value, p_y.contents.value]
+
             time.sleep(0.005)
             SDL_SetWindowPosition(t_window, mp[0] - lm[0], mp[1] - lm[1])
 

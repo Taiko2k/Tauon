@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v1.3.0
+
+ - Added hints for empty playlist
+ - Tweaked scrollbar behavior
+ - Minor interface tweaks and bug fixes
+
 v1.2.5
 
  - Minor interface tweaks and string changes
