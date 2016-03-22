@@ -41,7 +41,7 @@ previous track played. (So if you intended to play the track that appears after 
 ***Show playing***: Quote '   
 ***Random Mode***: Period .   
 ***Repeat Mode***: Comma ,   
-***Radio Random****: Slash /  
+***Radio Random***: Slash /  
 ***Change Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
 ***Play next/previous track***: Shift + Left and Right arrow keys  
