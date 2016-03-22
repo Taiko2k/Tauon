@@ -30,12 +30,3 @@
  - Bookmarks
  - Audio CD
 
-##### Wont implement:
- 
- - WMA
- - RealAudio
- - Audiobooks
- - DRM formats
- - Automatic file organisation
- - Device sync
- 
