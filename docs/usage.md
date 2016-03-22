@@ -38,10 +38,11 @@ previous track played. (So if you intended to play the track that appears after 
 ##### Shortcuts:
 
 - ***Search***: Backslash \ or Ctrl + F  
-***Show playing***: Quote ' or Right click play button  
-***Random Mode***: Slash / or Right click forward button  
-***Repeat Mode***: Period . or Right click back button  
-***Change Theme***: F2  
+***Show playing***: Quote '   
+***Random Mode***: Period .   
+***Repeat Mode***: Comma ,   
+***Radio Random****: Slash /  
+***Change Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
 ***Play next/previous track***: Shift + Left and Right arrow keys  
 ***Toggle Gallery View***: Mouse button 4
