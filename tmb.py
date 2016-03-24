@@ -2273,7 +2273,7 @@ class GStats:
                 pt = 0
                 key = master_library[index]['title'] + master_library[index]['filename']
                 if artist == "":
-                    artist = "Unknown Artist"
+                    artist = "<Artist Unspecified>"
                 if key in star_library:
                     pt = int(star_library[key])
 
@@ -2372,7 +2372,7 @@ class GStats:
                 pt = 0
                 key = master_library[index]['title'] + master_library[index]['filename']
                 if album == "":
-                    album = "Unknown Album"
+                    album = "<Album Unspecified>"
 
                 if key in star_library:
                     pt = int(star_library[key])
@@ -9381,7 +9381,7 @@ while running:
                         continue
 
                 for item in selection_list:
-                    if item[0] == 'Unknown Genre':
+                    if item[0] == '<Genre Unspecified>':
                         selection_list.remove(item)
                         break
 
