@@ -5,7 +5,7 @@ v1.3.0
 
  - Added hints for empty playlist
  - Added search on RYM function
- - Tweaked scrollbar behavior
+ - Tweaked scrollbar behaviour
  - Minor interface tweaks and bug fixes
 
 v1.2.5
