@@ -38,7 +38,7 @@ previous track played. (So if you intended to play the track that appears after 
 ***Radio Random***: Slash /  
 ***Change Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
-***Seek***: + and -
+***Seek***: + and -   
 ***Play next/previous track***: Shift + Left and Right arrow keys  
 ***Toggle Gallery View***: Mouse button 4
 
