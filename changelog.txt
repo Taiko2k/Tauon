@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v1.3.0
 
  - Added hints for empty playlist
+ - Added search on RYM function
  - Tweaked scrollbar behavior
  - Minor interface tweaks and bug fixes
 
