@@ -45,11 +45,13 @@ import shutil
 import shlex
 import math
 import locale
+import webbrowser
 import pyperclip
+
 
 from ctypes import *
 
-t_version = "v1.2.5"
+t_version = "v1.3.0"
 version_line = "Tauon Music Box " + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
@@ -147,7 +149,7 @@ class Timer2(object):
 bm = Timer(True)
 
 # GUI Variables -------------------------------------------------------------------------------------------
-GUI_Mode = 1  # no longer holds any function
+GUI_Mode = 1
 input_text_mode = False
 
 draw_border = False
@@ -3383,7 +3385,7 @@ dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
 dst3.w = 28
 dst3.h = 14
 
-GUI_Mode = 4
+
 
 panelY = 30
 panelBY = 51 #51
@@ -4201,12 +4203,19 @@ track_menu.add_to_sub("Insert After", 1, transfer, pass_ref=True, args=[2, 2])
 track_menu.add_to_sub("Insert End", 1, transfer, pass_ref=True, args=[2, 3])
 
 
+def ser_rym(index):
+
+    if len(master_library[index]['artist']) < 2:
+        return
+    line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + master_library[index]['artist']
+    webbrowser.open(line, new=2, autoraise=True)
+
 def clip_ar_al(index):
     line = master_library[index]['artist'] + " - " + \
            master_library[index]['album']
     pyperclip.copy(line)
 
-
+track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
 track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
 
 
@@ -7221,6 +7230,187 @@ while running:
 
         update_layout = False
 
+    # -----------------------------------------------------
+    # THEME SWITCHER--------------------------------------------------------------------
+    if key_F2:
+        themeChange = True
+        theme += 1
+
+    if themeChange is True:
+        renplay += 2
+        if theme > 25:
+            theme = 0
+        if theme > 0:
+            theme_number = theme - 1
+            try:
+                theme_files = os.listdir('theme')
+
+                for i in range(len(theme_files)):
+                    # print(theme_files[i])
+                    if i == theme_number and 'ttheme' in theme_files[i]:
+                        with open("theme/" + theme_files[i], encoding="utf_8") as f:
+                            content = f.readlines()
+                            for p in content:
+                                if "#" in p:
+                                    continue
+                                if 'index playing' in p:
+                                    index_playing_cl = get_colour_from_line(p)
+                                if 'time playing' in p:
+                                    time_playing_cl = get_colour_from_line(p)
+                                if 'artist playing' in p:
+                                    artist_playing_cl = get_colour_from_line(p)
+                                if 'album line' in p:
+                                    album_cl = get_colour_from_line(p)
+                                if 'album playing' in p:
+                                    album_playing = get_colour_from_line(p)
+                                if 'player background' in p:
+                                    background = get_colour_from_line(p)
+                                if 'side panel' in p:
+                                    side_panel_bg = get_colour_from_line(p)
+                                if 'playlist panel' in p:
+                                    BPanel = get_colour_from_line(p)
+                                if 'track line' in p:
+                                    lineON = get_colour_from_line(p)
+                                if 'track missing' in p:
+                                    lineOFF = get_colour_from_line(p)
+                                if 'playing highlight' in p:
+                                    lineBGplaying = get_colour_from_line(p)
+                                if 'track time' in p:
+                                    timeColour = get_colour_from_line(p)
+                                if 'fav line' in p:
+                                    starLineColour = get_colour_from_line(p)
+                                if 'folder title' in p:
+                                    folderTitleColour = get_colour_from_line(p)
+                                if 'folder line' in p:
+                                    folderLineColour = get_colour_from_line(p)
+                                if 'buttons off' in p:
+                                    ButtonsBG = get_colour_from_line(p)
+                                if 'buttons over' in p:
+                                    ButtonsOverG = get_colour_from_line(p)
+                                if 'buttons active' in p:
+                                    ButtonsActive = get_colour_from_line(p)
+                                if 'playing time' in p:
+                                    PlayingTimeColour = get_colour_from_line(p)
+                                if 'track index' in p:
+                                    indexColour = get_colour_from_line(p)
+                                if 'track playing' in p:
+                                    linePlaying = get_colour_from_line(p)
+                                if 'select highlight' in p:
+                                    lineBGSelect = get_colour_from_line(p)
+                                if 'track artist' in p:
+                                    artist_colour = get_colour_from_line(p)
+                                if 'tab active line' in p:
+                                    playlist_line_active = get_colour_from_line(p)
+                                if 'tab line' in p:
+                                    playlist_line = get_colour_from_line(p)
+                                if 'tab background' in p:
+                                    playlist_bg = get_colour_from_line(p)
+                                if 'tab over' in p:
+                                    playlist_over = get_colour_from_line(p)
+                                if 'tab active background' in p:
+                                    playlist_bg_active = get_colour_from_line(p)
+                                if 'title info' in p:
+                                    side_bar_line1 = get_colour_from_line(p)
+                                if 'extra info' in p:
+                                    side_bar_line2 = get_colour_from_line(p)
+                                if 'scroll bar' in p:
+                                    scroll_colour = get_colour_from_line(p)
+                                if 'seek bar' in p:
+                                    seek_bar_fill_colour = get_colour_from_line(p)
+                                if 'seek bg' in p:
+                                    seek_bg = get_colour_from_line(p)
+                                if 'volume bar' in p:
+                                    volume_bar_fill_colour = get_colour_from_line(p)
+                                if 'volume bg' in p:
+                                    volume_bar_bg = get_colour_from_line(p)
+                                if 'mode off' in p:
+                                    stepctloff = get_colour_from_line(p)
+                                if 'mode over' in p:
+                                    stepctlover = get_colour_from_line(p)
+                                if 'mode on' in p:
+                                    stepctlon = get_colour_from_line(p)
+                                if 'art border' in p:
+                                    art_box = get_colour_from_line(p)
+                                if 'sep line' in p:
+                                    sep_line = get_colour_from_line(p)
+                                if 'bb line' in p:
+                                    bb_line = get_colour_from_line(p)
+                                if 'tb line' in p:
+                                    tb_line = get_colour_from_line(p)
+                                if 'bottom panel' in p:
+                                    bottom_panel_colour = get_colour_from_line(p)
+
+                                    SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1],
+                                                           bottom_panel_colour[2])
+                                    SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1],
+                                                           bottom_panel_colour[2])
+                                    SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1],
+                                                           bottom_panel_colour[2])
+                        break
+                else:
+                    theme = 0
+            except:
+                message_box = True
+                message_box_text = "Error loading theme file"
+
+        if theme == 0:
+            background = BLACK
+            side_panel_bg = background
+            BPanel = GREY(5)
+            lineON = GREEN5
+            lineOFF = GREY2
+            lineBGplaying = [15, 15, 15, 255]
+            timeColour = lineON
+            starLineColour = [140, 140, 0, 255]
+            folderTitleColour = [200, 200, 0, 255]
+            folderLineColour = [140, 140, 0, 255]
+            ButtonsBG = GREY(30)
+            PlayingTimeColour = GREY8
+            indexColour = timeColour
+            linePlaying = lineON
+            lineBGSelect = [15, 15, 15, 255]
+            bottom_panel_colour = [8, 8, 8, 255]
+            artist_colour = [50, 170, 5, 255]
+            art_box = GREY(20)
+
+            playlist_line_active = GREY(170)
+            playlist_line = GREY(140)
+            playlist_bg = [14, 14, 14, 255]
+            playlist_over = [18, 18, 18, 255]
+            playlist_bg_active = [27, 27, 27, 255]
+
+            SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+            SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+            SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+
+            side_bar_line1 = GREY(175)
+            side_bar_line2 = GREY(155)
+            ButtonsOver = GREY(200)
+            ButtonsActive = GREY(150)
+
+            seek_bar_fill_colour = GREY(110)  # 4
+            seek_bar_outline_colour = [45, 45, 45, 255]
+            volume_bar_outline_colour = [45, 45, 45, 255]
+            volume_bar_fill_colour = GREY(95)
+            scroll_colour = [30, 30, 30, 255]
+            volume_bar_bg = [19, 19, 19, 255]
+            seek_bg = [28, 28, 28, 255]
+            sep_line = [16, 16, 16, 255]
+            bb_line = [50, 50, 50, 255]
+            tb_line = [50, 50, 50, 255]
+
+            stepctloff = GREY(20)
+            stepctlover = GREY(40)
+            stepctlon = GREY(120)
+
+            index_playing_cl = indexColour
+            time_playing_cl = indexColour
+            artist_playing_cl = artist_colour
+            album_cl = lineON
+            album_playing = artist_colour
+
+        themeChange = False
+
     # ---------------------------------------------------------------------------------------------------------
     # GUI DRAWING------
     # print(UPDATE_RENDER)
@@ -7237,1105 +7427,963 @@ while running:
         # rect = [1, 1, window_size[0] - 2, panelY + 20]
         # fields.add(rect)
 
-        # Side Bar Draging----------
 
-        if mouse_down is not True:
-            side_drag = False
+        if GUI_Mode == 1:
 
-        rect = (window_size[0] - side_panel_size - 5, panelY, 15, window_size[1] - 90)
-        fields.add(rect)
+            # Side Bar Draging----------
 
-        if (coll_point(mouse_position,
-                       (window_size[0] - side_panel_size - 5, panelY, 15, window_size[1] - 90)) or side_drag is True) \
-                and renamebox is False \
-                and radiobox is False \
-                and encoding_box is False \
-                and rename_playlist_box is False \
-                and new_playlist_box is False \
-                and message_box is False \
-                and pref_box.enabled is False \
-                and track_box is False \
-                and genre_box is False:
+            if mouse_down is not True:
+                side_drag = False
 
-            update_layout = True
+            rect = (window_size[0] - side_panel_size - 5, panelY, 15, window_size[1] - 90)
+            fields.add(rect)
 
-            if side_drag != True:
-                draw_sep_hl = True
+            if (coll_point(mouse_position,
+                           (window_size[0] - side_panel_size - 5, panelY, 15, window_size[1] - 90)) or side_drag is True) \
+                    and renamebox is False \
+                    and radiobox is False \
+                    and encoding_box is False \
+                    and rename_playlist_box is False \
+                    and new_playlist_box is False \
+                    and message_box is False \
+                    and pref_box.enabled is False \
+                    and track_box is False \
+                    and genre_box is False:
 
-            if mouse_click:
-                side_drag = True
+                update_layout = True
 
-        if side_drag is True:
-            side_panel_size = window_size[0] - mouse_position[0]
+                if side_drag != True:
+                    draw_sep_hl = True
 
-        if side_panel_size < 100:
-            side_panel_size = 100
-        if side_panel_size > window_size[1] - 77 and album_mode is not True:
-            side_panel_size = window_size[1] - 77
+                if mouse_click:
+                    side_drag = True
 
-        if album_mode is True:
-            if side_panel_size > window_size[0] - 300:
-                side_panel_size = window_size[0] - 300
-            playlist_width = window_size[0] - side_panel_size - 30
+            if side_drag is True:
+                side_panel_size = window_size[0] - mouse_position[0]
 
-        # playlist_width = window_size[0] - side_panel_size - 30
-        if side_drag is True:
-            draw_line(window_size[0] - side_panel_size + 1, 30, window_size[0] - side_panel_size + 1,
-                      window_size[1] - 50, GREY(50))
+            if side_panel_size < 100:
+                side_panel_size = 100
+            if side_panel_size > window_size[1] - 77 and album_mode is not True:
+                side_panel_size = window_size[1] - 77
 
-        if side_panel_enable:
-            draw_rect((0, panelY), (playlist_width + 30, window_size[1] - panelY - 30), BPanel, True)
-            draw_line(playlist_width + 30, panelY, playlist_width + 30, window_size[1] - 30, sep_line)
-            playlist_width = window_size[0] - side_panel_size - 30
-        else:
-            draw_rect((0, panelY), (window_size[0], window_size[1] - panelY - 30), BPanel, True)
+            if album_mode is True:
+                if side_panel_size > window_size[0] - 300:
+                    side_panel_size = window_size[0] - 300
+                playlist_width = window_size[0] - side_panel_size - 30
 
-        if draw_sep_hl:
-            draw_line(window_size[0] - side_panel_size + 0, 30, window_size[0] - side_panel_size + 0,
-                      window_size[1] - 50, [100, 100, 100, 70])
-            draw_sep_hl = False
+            # playlist_width = window_size[0] - side_panel_size - 30
+            if side_drag is True:
+                draw_line(window_size[0] - side_panel_size + 1, 30, window_size[0] - side_panel_size + 1,
+                          window_size[1] - 50, GREY(50))
 
-        # ALBUM GALLERY RENDERING:
-        if album_mode:
+            if side_panel_enable:
+                draw_rect((0, panelY), (playlist_width + 30, window_size[1] - panelY - 30), BPanel, True)
+                draw_line(playlist_width + 30, panelY, playlist_width + 30, window_size[1] - 30, sep_line)
+                playlist_width = window_size[0] - side_panel_size - 30
+            else:
+                draw_rect((0, panelY), (window_size[0], window_size[1] - panelY - 30), BPanel, True)
 
-            rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
-                    window_size[1] - panelY - panelBY - 1]
-            draw_rect_r(rect, side_panel_bg, True)
+            if draw_sep_hl:
+                draw_line(window_size[0] - side_panel_size + 0, 30, window_size[0] - side_panel_size + 0,
+                          window_size[1] - 50, [100, 100, 100, 70])
+                draw_sep_hl = False
 
-            # if b_info_bar:
-            #     BPanel = background
+            # ALBUM GALLERY RENDERING:
+            if album_mode:
 
-            area_x = window_size[0] - playlist_width + 20
+                rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
+                        window_size[1] - panelY - panelBY - 1]
+                draw_rect_r(rect, side_panel_bg, True)
 
-            row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
+                # if b_info_bar:
+                #     BPanel = background
 
-            # print(row_len)
+                area_x = window_size[0] - playlist_width + 20
 
-            compact = 40
-            a_offset = 7
+                row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
 
-            l_area = playlist_width + 35
-            r_area = window_size[0] - l_area
-            c_area = int((window_size[0] - l_area) / 2) + l_area
+                # print(row_len)
 
-            if row_len == 0:
-                row_len = 1
-            dev = int((r_area - compact) / (row_len + 0))
+                compact = 40
+                a_offset = 7
 
-            render_pos = 0
-            album_on = 0
-            if mouse_position[0] > playlist_width + 35 and mouse_position[1] < window_size[1] - panelBY:
-                album_pos_px -= mouse_wheel * 90
+                l_area = playlist_width + 35
+                r_area = window_size[0] - l_area
+                c_area = int((window_size[0] - l_area) / 2) + l_area
 
-            if last_row != row_len:
-                last_row = row_len
+                if row_len == 0:
+                    row_len = 1
+                dev = int((r_area - compact) / (row_len + 0))
 
-                goto_album(pctl.playlist_playing)
+                render_pos = 0
+                album_on = 0
+                if mouse_position[0] > playlist_width + 35 and mouse_position[1] < window_size[1] - panelBY:
+                    album_pos_px -= mouse_wheel * 90
 
-            render_new = False
+                if last_row != row_len:
+                    last_row = row_len
 
-            while render_pos < album_pos_px + window_size[1]:
+                    goto_album(pctl.playlist_playing)
 
-                if b_info_bar and render_pos - album_pos_px > b_info_y:
-                    break
+                render_new = False
 
-                if render_pos < album_pos_px - album_mode_art_size - album_v_gap:
-                    # Skip row
-                    render_pos += album_mode_art_size + album_v_gap
-                    album_on += row_len
-                else:
-                    # render row
-                    y = render_pos - album_pos_px
+                while render_pos < album_pos_px + window_size[1]:
 
-                    row_x = 0
-
-                    for a in range(row_len):
-
-                        if album_on > len(album_dex) - 1:
-                            break
-
-                        x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
-                            compact / 2) - a_offset
-
-                        if album_dex[album_on] > len(default_playlist):
-                            break
-                        info = get_album_info(album_dex[album_on])
-
-                        albumtitle = GREY(220)
-
-                        if info[0] == 1 and pctl.playing_state != 0:
-                            draw_rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
-                                      [200, 200, 200, 15], True)
-
-                        draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
-
-                        gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
-
-                        if info[0] != 1 and pctl.playing_state != 0 and dim_art:
-                            draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                            albumtitle = GREY(150)
-
-                        if mouse_click and not focused and coll_point(mouse_position, (
-                        x, y, album_mode_art_size, album_mode_art_size + 40)) and panelY < mouse_position[1] < \
-                                        window_size[1] - panelBY:
-
-                            if info[0] == 1 and pctl.playing_state == 2:
-                                pctl.play()
-                            elif info[0] == 1 and pctl.playing_state > 0:
-                                playlist_position = album_dex[album_on]
-                            else:
-                                playlist_position = album_dex[album_on]
-                                pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
-                            pctl.show_current()
-
-                        line = master_library[default_playlist[album_dex[album_on]]]['artist']
-                        draw_text2((x, y + album_mode_art_size + 8),
-                                   line,
-                                   albumtitle,
-                                   11,
-                                   album_mode_art_size,
-                                   3,
-                                   default_playlist[album_dex[album_on]]
-                                   )
-
-                        line = master_library[default_playlist[album_dex[album_on]]]['album']
-                        draw_text2((x, y + album_mode_art_size + 10 + 13),
-                                   line,
-                                   albumtitle,
-                                   12,
-                                   album_mode_art_size - 5,
-                                   3,
-                                   default_playlist[album_dex[album_on]]
-                                   )
-
-                        album_on += 1
-
-                    if album_on > len(album_dex):
+                    if b_info_bar and render_pos - album_pos_px > b_info_y:
                         break
-                    render_pos += album_mode_art_size + album_v_gap
 
-            draw_rect((0, 0), (window_size[0], panelY), background, True)
+                    if render_pos < album_pos_px - album_mode_art_size - album_v_gap:
+                        # Skip row
+                        render_pos += album_mode_art_size + album_v_gap
+                        album_on += row_len
+                    else:
+                        # render row
+                        y = render_pos - album_pos_px
 
-            if b_info_bar:
-                x = playlist_width + 31
-                w = window_size[0] - x
-                b_info_y = int(window_size[1] * 0.7)
-                y = b_info_y
-                h = window_size[1] - y - 51
+                        row_x = 0
 
-                if h < 5:
-                    h = 5
+                        for a in range(row_len):
 
-                draw_rect_r((x, y, w, h), background, True)
-                draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                draw_line(x, y, x + w, y, GREY(50))
-
-                box = h - 20
-
-                showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                          (window_size[0] - 15 - box, y + 10), (box, box))
-
-        # if tb_line != BPanel:
-        #     draw_line(0, panelY, window_size[0], panelY, tb_line)
-
-
-        if True:
-
-            # THEME SWITCHER--------------------------------------------------------------------
-            if key_F2:
-                themeChange = True
-                theme += 1
-
-            if themeChange is True:
-                renplay += 2
-                if theme > 25:
-                    theme = 0
-                if theme > 0:
-                    theme_number = theme - 1
-                    try:
-                        theme_files = os.listdir('theme')
-
-                        for i in range(len(theme_files)):
-                            # print(theme_files[i])
-                            if i == theme_number and 'ttheme' in theme_files[i]:
-                                with open("theme/" + theme_files[i], encoding="utf_8") as f:
-                                    content = f.readlines()
-                                    for p in content:
-                                        if "#" in p:
-                                            continue
-                                        if 'index playing' in p:
-                                            index_playing_cl = get_colour_from_line(p)
-                                        if 'time playing' in p:
-                                            time_playing_cl = get_colour_from_line(p)
-                                        if 'artist playing' in p:
-                                            artist_playing_cl = get_colour_from_line(p)
-                                        if 'album line' in p:
-                                            album_cl = get_colour_from_line(p)
-                                        if 'album playing' in p:
-                                            album_playing = get_colour_from_line(p)
-                                        if 'player background' in p:
-                                            background = get_colour_from_line(p)
-                                        if 'side panel' in p:
-                                            side_panel_bg = get_colour_from_line(p)
-                                        if 'playlist panel' in p:
-                                            BPanel = get_colour_from_line(p)
-                                        if 'track line' in p:
-                                            lineON = get_colour_from_line(p)
-                                        if 'track missing' in p:
-                                            lineOFF = get_colour_from_line(p)
-                                        if 'playing highlight' in p:
-                                            lineBGplaying = get_colour_from_line(p)
-                                        if 'track time' in p:
-                                            timeColour = get_colour_from_line(p)
-                                        if 'fav line' in p:
-                                            starLineColour = get_colour_from_line(p)
-                                        if 'folder title' in p:
-                                            folderTitleColour = get_colour_from_line(p)
-                                        if 'folder line' in p:
-                                            folderLineColour = get_colour_from_line(p)
-                                        if 'buttons off' in p:
-                                            ButtonsBG = get_colour_from_line(p)
-                                        if 'buttons over' in p:
-                                            ButtonsOverG = get_colour_from_line(p)
-                                        if 'buttons active' in p:
-                                            ButtonsActive = get_colour_from_line(p)
-                                        if 'playing time' in p:
-                                            PlayingTimeColour = get_colour_from_line(p)
-                                        if 'track index' in p:
-                                            indexColour = get_colour_from_line(p)
-                                        if 'track playing' in p:
-                                            linePlaying = get_colour_from_line(p)
-                                        if 'select highlight' in p:
-                                            lineBGSelect = get_colour_from_line(p)
-                                        if 'track artist' in p:
-                                            artist_colour = get_colour_from_line(p)
-                                        if 'tab active line' in p:
-                                            playlist_line_active = get_colour_from_line(p)
-                                        if 'tab line' in p:
-                                            playlist_line = get_colour_from_line(p)
-                                        if 'tab background' in p:
-                                            playlist_bg = get_colour_from_line(p)
-                                        if 'tab over' in p:
-                                            playlist_over = get_colour_from_line(p)
-                                        if 'tab active background' in p:
-                                            playlist_bg_active = get_colour_from_line(p)
-                                        if 'title info' in p:
-                                            side_bar_line1 = get_colour_from_line(p)
-                                        if 'extra info' in p:
-                                            side_bar_line2 = get_colour_from_line(p)
-                                        if 'scroll bar' in p:
-                                            scroll_colour = get_colour_from_line(p)
-                                        if 'seek bar' in p:
-                                            seek_bar_fill_colour = get_colour_from_line(p)
-                                        if 'seek bg' in p:
-                                            seek_bg = get_colour_from_line(p)
-                                        if 'volume bar' in p:
-                                            volume_bar_fill_colour = get_colour_from_line(p)
-                                        if 'volume bg' in p:
-                                            volume_bar_bg = get_colour_from_line(p)
-                                        if 'mode off' in p:
-                                            stepctloff = get_colour_from_line(p)
-                                        if 'mode over' in p:
-                                            stepctlover = get_colour_from_line(p)
-                                        if 'mode on' in p:
-                                            stepctlon = get_colour_from_line(p)
-                                        if 'art border' in p:
-                                            art_box = get_colour_from_line(p)
-                                        if 'sep line' in p:
-                                            sep_line = get_colour_from_line(p)
-                                        if 'bb line' in p:
-                                            bb_line = get_colour_from_line(p)
-                                        if 'tb line' in p:
-                                            tb_line = get_colour_from_line(p)
-                                        if 'bottom panel' in p:
-                                            bottom_panel_colour = get_colour_from_line(p)
-
-                                            SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                                   bottom_panel_colour[2])
-                                            SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                                   bottom_panel_colour[2])
-                                            SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                                   bottom_panel_colour[2])
+                            if album_on > len(album_dex) - 1:
                                 break
+
+                            x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
+                                compact / 2) - a_offset
+
+                            if album_dex[album_on] > len(default_playlist):
+                                break
+                            info = get_album_info(album_dex[album_on])
+
+                            albumtitle = GREY(220)
+
+                            if info[0] == 1 and pctl.playing_state != 0:
+                                draw_rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
+                                          [200, 200, 200, 15], True)
+
+                            draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
+
+                            gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
+
+                            if info[0] != 1 and pctl.playing_state != 0 and dim_art:
+                                draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                albumtitle = GREY(150)
+
+                            if mouse_click and not focused and coll_point(mouse_position, (
+                            x, y, album_mode_art_size, album_mode_art_size + 40)) and panelY < mouse_position[1] < \
+                                            window_size[1] - panelBY:
+
+                                if info[0] == 1 and pctl.playing_state == 2:
+                                    pctl.play()
+                                elif info[0] == 1 and pctl.playing_state > 0:
+                                    playlist_position = album_dex[album_on]
+                                else:
+                                    playlist_position = album_dex[album_on]
+                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                pctl.show_current()
+
+                            line = master_library[default_playlist[album_dex[album_on]]]['artist']
+                            draw_text2((x, y + album_mode_art_size + 8),
+                                       line,
+                                       albumtitle,
+                                       11,
+                                       album_mode_art_size,
+                                       3,
+                                       default_playlist[album_dex[album_on]]
+                                       )
+
+                            line = master_library[default_playlist[album_dex[album_on]]]['album']
+                            draw_text2((x, y + album_mode_art_size + 10 + 13),
+                                       line,
+                                       albumtitle,
+                                       12,
+                                       album_mode_art_size - 5,
+                                       3,
+                                       default_playlist[album_dex[album_on]]
+                                       )
+
+                            album_on += 1
+
+                        if album_on > len(album_dex):
+                            break
+                        render_pos += album_mode_art_size + album_v_gap
+
+                draw_rect((0, 0), (window_size[0], panelY), background, True)
+
+                if b_info_bar:
+                    x = playlist_width + 31
+                    w = window_size[0] - x
+                    b_info_y = int(window_size[1] * 0.7)
+                    y = b_info_y
+                    h = window_size[1] - y - 51
+
+                    if h < 5:
+                        h = 5
+
+                    draw_rect_r((x, y, w, h), background, True)
+                    draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
+                    draw_line(x, y, x + w, y, GREY(50))
+
+                    box = h - 20
+
+                    showc = display_album_art(pctl.track_queue[pctl.queue_step],
+                                              (window_size[0] - 15 - box, y + 10), (box, box))
+
+            # if tb_line != BPanel:
+            #     draw_line(0, panelY, window_size[0], panelY, tb_line)
+
+
+            if True:
+
+
+
+                # LEVEL METER-----------------------------------
+                # Moved
+                # -------------
+
+                # Deco Stuff -----------
+
+                # BOTTOM BAR!
+
+                if True:  # not compact_bar:
+
+                    draw_rect((0, window_size[1] - panelBY), (window_size[0], panelBY), bottom_panel_colour, True)
+                    draw_rect(seek_bar_position, seek_bar_size, seek_bg, True)
+
+                    draw_line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, bb_line)
+                    draw_line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], bb_line)
+                    draw_line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], bb_line)
+
+                    # Scrobble marker
+
+                    if scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
+                        l_target = 0
+                        if master_library[pctl.track_queue[pctl.queue_step]]['length'] > 240 * 2:
+                            l_target = 240
                         else:
-                            theme = 0
-                    except:
-                        message_box = True
-                        message_box_text = "Error loading theme file"
+                            l_target = int(master_library[pctl.track_queue[pctl.queue_step]]['length'] * 0.50)
+                        l_lead = l_target - a_time
 
-                if theme == 0:
-                    background = BLACK
-                    side_panel_bg = background
-                    BPanel = GREY(5)
-                    lineON = GREEN5
-                    lineOFF = GREY2
-                    lineBGplaying = [15, 15, 15, 255]
-                    timeColour = lineON
-                    starLineColour = [140, 140, 0, 255]
-                    folderTitleColour = [200, 200, 0, 255]
-                    folderLineColour = [140, 140, 0, 255]
-                    ButtonsBG = GREY(30)
-                    PlayingTimeColour = GREY8
-                    indexColour = timeColour
-                    linePlaying = lineON
-                    lineBGSelect = [15, 15, 15, 255]
-                    bottom_panel_colour = [8, 8, 8, 255]
-                    artist_colour = [50, 170, 5, 255]
-                    art_box = GREY(20)
+                        if l_lead > 0 and master_library[pctl.track_queue[pctl.queue_step]]['length'] > 30:
+                            l_x = seek_bar_position[0] + int(
+                                pctl.playing_time * seek_bar_size[0] / int(pctl.playing_length))
+                            l_x += int(seek_bar_size[0] / int(pctl.playing_length) * l_lead)
+                            draw_rect_r((l_x, seek_bar_position[1] + 13, 2, 2), [255, 0, 0, 100], True)
+                            # seek_bar_size[1]
 
-                    playlist_line_active = GREY(170)
-                    playlist_line = GREY(140)
-                    playlist_bg = [14, 14, 14, 255]
-                    playlist_over = [18, 18, 18, 255]
-                    playlist_bg_active = [27, 27, 27, 255]
+                    # SEEK BAR------------------
 
-                    SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
-                    SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
-                    SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+                    if pctl.playing_length > 0:
+                        draw_rect((seek_bar_position[0], seek_bar_position[1]),
+                                  (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
+                                  seek_bar_fill_colour, True)
 
-                    side_bar_line1 = GREY(175)
-                    side_bar_line2 = GREY(155)
-                    ButtonsOver = GREY(200)
-                    ButtonsActive = GREY(150)
+                    if mouse_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
+                        volume_hit = True
+                        seek_down = True
+                    if right_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
+                        pctl.pause()
+                        if pctl.playing_state == 0:
+                            pctl.play()
+                    if coll_point(mouse_position, seek_bar_position + seek_bar_size):
+                        clicked = True
+                        if mouse_wheel != 0:
+                            new_time = pctl.playing_time + (mouse_wheel * 3)
+                            pctl.playing_time += mouse_wheel * 3
+                            if new_time < 0:
+                                new_time = 0
+                                pctl.playing_time = 0
+                            pctl.playerCommand = 'seek'
+                            pctl.playerCommandReady = True
 
-                    seek_bar_fill_colour = GREY(110)  # 4
-                    seek_bar_outline_colour = [45, 45, 45, 255]
-                    volume_bar_outline_colour = [45, 45, 45, 255]
-                    volume_bar_fill_colour = GREY(95)
-                    scroll_colour = [30, 30, 30, 255]
-                    volume_bar_bg = [19, 19, 19, 255]
-                    seek_bg = [28, 28, 28, 255]
-                    sep_line = [16, 16, 16, 255]
-                    bb_line = [50, 50, 50, 255]
-                    tb_line = [50, 50, 50, 255]
+                            # pctl.playing_time = new_time
 
-                    stepctloff = GREY(20)
-                    stepctlover = GREY(40)
-                    stepctlon = GREY(120)
+                    if seek_down is True:
+                        if mouse_position[0] == 0:
+                            seek_down = False
+                            seek_hit = True
 
-                    index_playing_cl = indexColour
-                    time_playing_cl = indexColour
-                    artist_playing_cl = artist_colour
-                    album_cl = lineON
-                    album_playing = artist_colour
-
-            themeChange = False
-
-            # LEVEL METER-----------------------------------
-            # Moved
-            # -------------
-
-            # Deco Stuff -----------
-
-            # BOTTOM BAR!
-
-            if True:  # not compact_bar:
-
-                draw_rect((0, window_size[1] - panelBY), (window_size[0], panelBY), bottom_panel_colour, True)
-                draw_rect(seek_bar_position, seek_bar_size, seek_bg, True)
-
-                draw_line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, bb_line)
-                draw_line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], bb_line)
-                draw_line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], bb_line)
-
-                # Scrobble marker
-
-                if scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
-                    l_target = 0
-                    if master_library[pctl.track_queue[pctl.queue_step]]['length'] > 240 * 2:
-                        l_target = 240
-                    else:
-                        l_target = int(master_library[pctl.track_queue[pctl.queue_step]]['length'] * 0.50)
-                    l_lead = l_target - a_time
-
-                    if l_lead > 0 and master_library[pctl.track_queue[pctl.queue_step]]['length'] > 30:
-                        l_x = seek_bar_position[0] + int(
-                            pctl.playing_time * seek_bar_size[0] / int(pctl.playing_length))
-                        l_x += int(seek_bar_size[0] / int(pctl.playing_length) * l_lead)
-                        draw_rect_r((l_x, seek_bar_position[1] + 13, 2, 2), [255, 0, 0, 100], True)
-                        # seek_bar_size[1]
-
-                # SEEK BAR------------------
-
-                if pctl.playing_length > 0:
-                    draw_rect((seek_bar_position[0], seek_bar_position[1]),
-                              (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
-                              seek_bar_fill_colour, True)
-
-                if mouse_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
-                    volume_hit = True
-                    seek_down = True
-                if right_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
-                    pctl.pause()
-                    if pctl.playing_state == 0:
-                        pctl.play()
-                if coll_point(mouse_position, seek_bar_position + seek_bar_size):
-                    clicked = True
-                    if mouse_wheel != 0:
-                        new_time = pctl.playing_time + (mouse_wheel * 3)
-                        pctl.playing_time += mouse_wheel * 3
-                        if new_time < 0:
-                            new_time = 0
-                            pctl.playing_time = 0
-                        pctl.playerCommand = 'seek'
-                        pctl.playerCommandReady = True
-
-                        # pctl.playing_time = new_time
-
-                if seek_down is True:
-                    if mouse_position[0] == 0:
+                    if (mouse_up and coll_point(mouse_position,
+                                                seek_bar_position + seek_bar_size)) or mouse_up and volume_hit or seek_hit:
+                        volume_hit = False
                         seek_down = False
-                        seek_hit = True
+                        seek_hit = False
 
-                if (mouse_up and coll_point(mouse_position,
-                                            seek_bar_position + seek_bar_size)) or mouse_up and volume_hit or seek_hit:
-                    volume_hit = False
-                    seek_down = False
-                    seek_hit = False
+                        bargetX = mouse_position[0]
+                        if bargetX > seek_bar_position[0] + seek_bar_size[0]:
+                            bargetX = seek_bar_position[0] + seek_bar_size[0]
+                        if bargetX < seek_bar_position[0]:
+                            bargetX = seek_bar_position[0]
+                        bargetX -= seek_bar_position[0]
+                        seek = bargetX / seek_bar_size[0] * 100
+                        # print(seek)
+                        if pctl.playing_state == 1 or (pctl.playing_state == 2 and pause_lock is False):
+                            new_time = pctl.playing_length / 100 * seek
+                            # print('seek to:' + str(new_time))
+                            pctl.playerCommand = 'seek'
+                            pctl.playerCommandReady = True
+                            pctl.playing_time = new_time
+                            if system == 'windows'and taskbar_progress:
+                                windows_progress.update(True)
+                                # elif pctl.playing_state == 2:
+                                #     new_time = pctl.playing_length / 100 * seek
+                                #     reset_playing = True
 
-                    bargetX = mouse_position[0]
-                    if bargetX > seek_bar_position[0] + seek_bar_size[0]:
-                        bargetX = seek_bar_position[0] + seek_bar_size[0]
-                    if bargetX < seek_bar_position[0]:
-                        bargetX = seek_bar_position[0]
-                    bargetX -= seek_bar_position[0]
-                    seek = bargetX / seek_bar_size[0] * 100
-                    # print(seek)
-                    if pctl.playing_state == 1 or (pctl.playing_state == 2 and pause_lock is False):
-                        new_time = pctl.playing_length / 100 * seek
-                        # print('seek to:' + str(new_time))
-                        pctl.playerCommand = 'seek'
-                        pctl.playerCommandReady = True
-                        pctl.playing_time = new_time
-                        if system == 'windows'and taskbar_progress:
-                            windows_progress.update(True)
-                            # elif pctl.playing_state == 2:
-                            #     new_time = pctl.playing_length / 100 * seek
-                            #     reset_playing = True
+                    # Activate top menu if right clicked in top bar past tabs
+                    # if right_click and mouse_position[1] < panelY and mouse_position[0] > l + 50:
+                    #     x_menu.activate()
 
-                # Activate top menu if right clicked in top bar past tabs
-                # if right_click and mouse_position[1] < panelY and mouse_position[0] > l + 50:
-                #     x_menu.activate()
+                    # Volume Bar--------------------------------------------------------
 
-                # Volume Bar--------------------------------------------------------
+                    if mouse_click and coll_point(mouse_position, volume_bar_position + volume_bar_size) or \
+                                    volume_bar_being_dragged is True:
+                        clicked = True
+                        if mouse_click is True or volume_bar_being_dragged is True:
+                            UPDATE_RENDER += 1
+                            volume_bar_being_dragged = True
+                            volgetX = mouse_position[0]
+                            if volgetX > volume_bar_position[0] + volume_bar_size[0]:
+                                volgetX = volume_bar_position[0] + volume_bar_size[0]
+                            if volgetX < volume_bar_position[0]:
+                                volgetX = volume_bar_position[0]
+                            volgetX -= volume_bar_position[0]
+                            volume = volgetX / volume_bar_size[0] * 100
+                            if mouse_down is False:
+                                volume_bar_being_dragged = False
 
-                if mouse_click and coll_point(mouse_position, volume_bar_position + volume_bar_size) or \
-                                volume_bar_being_dragged is True:
-                    clicked = True
-                    if mouse_click is True or volume_bar_being_dragged is True:
-                        UPDATE_RENDER += 1
-                        volume_bar_being_dragged = True
-                        volgetX = mouse_position[0]
-                        if volgetX > volume_bar_position[0] + volume_bar_size[0]:
-                            volgetX = volume_bar_position[0] + volume_bar_size[0]
-                        if volgetX < volume_bar_position[0]:
-                            volgetX = volume_bar_position[0]
-                        volgetX -= volume_bar_position[0]
-                        volume = volgetX / volume_bar_size[0] * 100
-                        if mouse_down is False:
-                            volume_bar_being_dragged = False
+                        volume = int(volume)
+                        pctl.set_volume()
 
-                    volume = int(volume)
-                    pctl.set_volume()
+                    # if mouse_wheel != 0 and coll_point(mouse_position, (
+                    #            volume_bar_position[0] - 15, volume_bar_position[1] - 10, volume_bar_size[0] + 30,
+                    #            volume_bar_size[1] + 20 )):
+                    if mouse_wheel != 0 and mouse_position[1] > seek_bar_position[1] + 4 and not coll_point(mouse_position,
+                                                                                                            seek_bar_position + seek_bar_size):
 
-                # if mouse_wheel != 0 and coll_point(mouse_position, (
-                #            volume_bar_position[0] - 15, volume_bar_position[1] - 10, volume_bar_size[0] + 30,
-                #            volume_bar_size[1] + 20 )):
-                if mouse_wheel != 0 and mouse_position[1] > seek_bar_position[1] + 4 and not coll_point(mouse_position,
-                                                                                                        seek_bar_position + seek_bar_size):
-
-                    if volume + (mouse_wheel * volume_bar_increment) < 1:
-                        volume = 0
-                    elif volume + (mouse_wheel * volume_bar_increment) > 100:
-                        volume = 100
-                    else:
-                        volume += mouse_wheel * volume_bar_increment
-                    volume = int(volume)
-                    pctl.set_volume()
-
-                if right_click and coll_point(mouse_position, (
-                            volume_bar_position[0] - 15, volume_bar_position[1] - 10, volume_bar_size[0] + 30,
-                            volume_bar_size[1] + 20)):
-                    if volume > 0:
-                        volume_store = volume
-                        volume = 0
-                    else:
-                        volume = volume_store
-
-                    pctl.set_volume()
-
-                draw_rect(volume_bar_position, volume_bar_size, volume_bar_bg, True)  # 22
-                draw_rect(volume_bar_position, (int(volume * volume_bar_size[0] / 100), volume_bar_size[1]),
-                          volume_bar_fill_colour, True)
-
-                if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
-
-                    title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                    artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
-
-                    line = ""
-                    if title != "":
-                        line += title
-                    if artist != "":
-                        if line != "":
-                            line += "  -  "
-                        line += artist
-                    line = trunc_line(line, 13, window_size[0] - 710)
-                    draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, side_bar_line1, 13)  # fontb1
-                    if mouse_click and coll_point(mouse_position, (
-                        seek_bar_position[0] - 10, seek_bar_position[1] + 20, window_size[0] - 710, 30)):
-                        pctl.show_current()
-                        if pctl.playing_state > 0:
-                            goto_album(pctl.playlist_playing)
+                        if volume + (mouse_wheel * volume_bar_increment) < 1:
+                            volume = 0
+                        elif volume + (mouse_wheel * volume_bar_increment) > 100:
+                            volume = 100
                         else:
-                            goto_album(playlist_selected)
+                            volume += mouse_wheel * volume_bar_increment
+                        volume = int(volume)
+                        pctl.set_volume()
 
-            # TIME----------------------
-            text_time = time.strftime("%M:%S", time.gmtime(pctl.playing_time))
-
-            draw_text((time_display_position[0] + 140 + 2, window_size[1] - 29 + 1), text_time, PlayingTimeColour,
-                      12)
-
-            bx = 35
-            by = window_size[1] - 30
-
-        if GUI_Mode == 4:
-            if len(items_loaded) > 0:
-                pctl.multi_playlist[load_to[0]][2] += items_loaded
-                del load_to[0]
-                items_loaded = []
-                UPDATE_RENDER += 1
-
-            w = 0
-
-            if coll_point(mouse_position, (10, 31, play_wh[0], play_wh[1])) and not dragmode and (
-                                        mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
-                renplay += 2
-
-            if renplay > 0:
-
-                renplay -= 1
-
-                SDL_SetRenderTarget(renderer, ttext)
-                SDL_SetRenderDrawColor(renderer, BPanel[0], BPanel[1], BPanel[2], BPanel[3])
-                SDL_RenderClear(renderer)
-
-
-                if len(default_playlist) == 0:
-
-                    draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65), 2), "Playlist is empty", lineOFF, 13 )
-                    draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65 + 30), 2), "Drag and drop files to import", lineOFF, 13 )
-
-                elif playlist_position > len(default_playlist) - 1:
-
-                    draw_text((int(playlist_width / 2) + 10, int(window_size[1] * 0.15), 2), "End of Playlist", lineOFF, 13 )
-
-
-                for i in range(playlist_view_length + 1):
-
-                    move_on_title = False
-
-                    if playlist_position < 0:
-                        playlist_position = 0
-                    if len(default_playlist) <= i + playlist_position:
-                        break
-
-                    # fade other tracks in ablbum mode
-                    albumfade = 255
-                    if album_mode and pctl.playing_state != 0 and dim_art and \
-                                    master_library[default_playlist[i + playlist_position]][
-                                        'parent'] != master_library[pctl.track_queue[pctl.queue_step]]['parent']:
-                        albumfade = 150
-
-                    if row_alt and w % 2 == 0:
-                        draw_rect((playlist_left, playlist_top + playlist_row_height * w),
-                                  (playlist_width, playlist_row_height - 1), [0, 0, 0, 30], True)
-                    # Folder Break
-                    if (i + playlist_position == 0 or master_library[default_playlist[i + playlist_position]][
-                        'parent'] != master_library[default_playlist[i + playlist_position - 1]]['parent']) and \
-                                    pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
-
-                        line = master_library[default_playlist[i + playlist_position]]['parent']
-                        if thick_lines:
-                            draw_text((playlist_width + playlist_left,
-                                       playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
-                                      alpha_mod(folderTitleColour, albumfade),
-                                      11)
+                    if right_click and coll_point(mouse_position, (
+                                volume_bar_position[0] - 15, volume_bar_position[1] - 10, volume_bar_size[0] + 30,
+                                volume_bar_size[1] + 20)):
+                        if volume > 0:
+                            volume_store = volume
+                            volume = 0
                         else:
-                            draw_text((playlist_width + playlist_left,
-                                       playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
-                                      alpha_mod(folderTitleColour, albumfade),
-                                      11)
-                        draw_line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
-                                  playlist_width + playlist_left,
-                                  playlist_top + playlist_row_height - 1 + playlist_row_height * w, folderLineColour)
+                            volume = volume_store
 
-                        if playlist_hold is True and coll_point(mouse_position, (
-                        playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
-                        playlist_row_height)):
-                            # draw_line(playlist_left, playlist_top + 15 + playlist_row_height * w, playlist_width + playlist_left,
-                            #       playlist_top + 15 + playlist_row_height * w, [35, 45, 90, 255])
-                            if mouse_up and key_shift_down:
-                                move_on_title = True
+                        pctl.set_volume()
 
-                        w += 1
+                    draw_rect(volume_bar_position, volume_bar_size, volume_bar_bg, True)  # 22
+                    draw_rect(volume_bar_position, (int(volume * volume_bar_size[0] / 100), volume_bar_size[1]),
+                              volume_bar_fill_colour, True)
 
-                    # test if line hit
-                    if (mouse_click or right_click or middle_click) and coll_point(mouse_position, (
-                        playlist_left + 10, playlist_top + 31 + playlist_row_height * w, playlist_width,
-                        playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
-                        line_hit = True
-                    else:
-                        line_hit = False
-                    if scroll_enable and mouse_position[0] < 30:
-                        line_hit = False
+                    if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
 
-                    if key_shift_down is False and d_mouse_click and line_hit and i + playlist_position == playlist_selected:
+                        title = master_library[pctl.track_queue[pctl.queue_step]]['title']
+                        artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
 
-                        click_time -= 1.5
-                        pctl.jump(default_playlist[i + playlist_position], i + playlist_position)
+                        line = ""
+                        if title != "":
+                            line += title
+                        if artist != "":
+                            if line != "":
+                                line += "  -  "
+                            line += artist
+                        line = trunc_line(line, 13, window_size[0] - 710)
+                        draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, side_bar_line1, 13)  # fontb1
+                        if mouse_click and coll_point(mouse_position, (
+                            seek_bar_position[0] - 10, seek_bar_position[1] + 20, window_size[0] - 710, 30)):
+                            pctl.show_current()
+                            if pctl.playing_state > 0:
+                                goto_album(pctl.playlist_playing)
+                            else:
+                                goto_album(playlist_selected)
 
-                        if album_mode:
-                            goto_album(pctl.playlist_playing)
+                # TIME----------------------
+                text_time = time.strftime("%M:%S", time.gmtime(pctl.playing_time))
 
-                    this_line_playing = False
+                draw_text((time_display_position[0] + 140 + 2, window_size[1] - 29 + 1), text_time, PlayingTimeColour,
+                          12)
 
-                    if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
-                            default_playlist[i + playlist_position]: # and i + playlist_position == pctl.playlist_playing:
-                        draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
-                                  (playlist_width + highlight_x_offset, playlist_row_height - 1), lineBGplaying, True)
-                        this_line_playing = True
+                bx = 35
+                by = window_size[1] - 30
 
-                    # if (i + playlist_position) % 2 == 0:
-                    #     draw_rect((playlist_left, playlist_top + playlist_row_height * w), (playlist_width, playlist_row_height - 1), [0,0,0,20], True)
+            if True:
+                if len(items_loaded) > 0:
+                    pctl.multi_playlist[load_to[0]][2] += items_loaded
+                    del load_to[0]
+                    items_loaded = []
+                    UPDATE_RENDER += 1
 
-                    if default_playlist[i + playlist_position] == broadcast_index and broadcast and not join_broadcast:
-                        draw_rect((playlist_left, playlist_top + playlist_row_height * w),
-                                  (playlist_width, playlist_row_height - 1), [10, 20, 180, 70], True)
+                w = 0
 
-                    if middle_click and line_hit:
-                        pctl.force_queue.append([default_playlist[i + playlist_position],
-                                                 i + playlist_position, pctl.playlist_active])
+                if coll_point(mouse_position, (10, 31, play_wh[0], play_wh[1])) and not dragmode and (
+                                            mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
+                    renplay += 2
 
-                    for item in pctl.force_queue:
-                        if default_playlist[i + playlist_position] == item[0] and item[1] == i + playlist_position:
+                if renplay > 0:
+
+                    renplay -= 1
+
+                    SDL_SetRenderTarget(renderer, ttext)
+                    SDL_SetRenderDrawColor(renderer, BPanel[0], BPanel[1], BPanel[2], BPanel[3])
+                    SDL_RenderClear(renderer)
+
+
+                    if len(default_playlist) == 0:
+
+                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65), 2), "Playlist is empty", lineOFF, 13 )
+                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65 + 30), 2), "Drag and drop files to import", lineOFF, 13 )
+
+                    elif playlist_position > len(default_playlist) - 1:
+
+                        draw_text((int(playlist_width / 2) + 10, int(window_size[1] * 0.15), 2), "End of Playlist", lineOFF, 13 )
+
+
+                    for i in range(playlist_view_length + 1):
+
+                        move_on_title = False
+
+                        if playlist_position < 0:
+                            playlist_position = 0
+                        if len(default_playlist) <= i + playlist_position:
+                            break
+
+                        # fade other tracks in ablbum mode
+                        albumfade = 255
+                        if album_mode and pctl.playing_state != 0 and dim_art and \
+                                        master_library[default_playlist[i + playlist_position]][
+                                            'parent'] != master_library[pctl.track_queue[pctl.queue_step]]['parent']:
+                            albumfade = 150
+
+                        if row_alt and w % 2 == 0:
                             draw_rect((playlist_left, playlist_top + playlist_row_height * w),
-                                      (playlist_width, playlist_row_height - 1), [30, 170, 30, 35],
-                                      True)
+                                      (playlist_width, playlist_row_height - 1), [0, 0, 0, 30], True)
+                        # Folder Break
+                        if (i + playlist_position == 0 or master_library[default_playlist[i + playlist_position]][
+                            'parent'] != master_library[default_playlist[i + playlist_position - 1]]['parent']) and \
+                                        pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
 
-                    if right_click and line_hit:
-                        if i + playlist_position not in shift_selection:
+                            line = master_library[default_playlist[i + playlist_position]]['parent']
+                            if thick_lines:
+                                draw_text((playlist_width + playlist_left,
+                                           playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
+                                          alpha_mod(folderTitleColour, albumfade),
+                                          11)
+                            else:
+                                draw_text((playlist_width + playlist_left,
+                                           playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
+                                          alpha_mod(folderTitleColour, albumfade),
+                                          11)
+                            draw_line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
+                                      playlist_width + playlist_left,
+                                      playlist_top + playlist_row_height - 1 + playlist_row_height * w, folderLineColour)
+
+                            if playlist_hold is True and coll_point(mouse_position, (
+                            playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
+                            playlist_row_height)):
+                                # draw_line(playlist_left, playlist_top + 15 + playlist_row_height * w, playlist_width + playlist_left,
+                                #       playlist_top + 15 + playlist_row_height * w, [35, 45, 90, 255])
+                                if mouse_up and key_shift_down:
+                                    move_on_title = True
+
+                            w += 1
+
+                        # test if line hit
+                        if (mouse_click or right_click or middle_click) and coll_point(mouse_position, (
+                            playlist_left + 10, playlist_top + 31 + playlist_row_height * w, playlist_width,
+                            playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
+                            line_hit = True
+                        else:
+                            line_hit = False
+                        if scroll_enable and mouse_position[0] < 30:
+                            line_hit = False
+
+                        if key_shift_down is False and d_mouse_click and line_hit and i + playlist_position == playlist_selected:
+
+                            click_time -= 1.5
+                            pctl.jump(default_playlist[i + playlist_position], i + playlist_position)
+
+                            if album_mode:
+                                goto_album(pctl.playlist_playing)
+
+                        this_line_playing = False
+
+                        if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
+                                default_playlist[i + playlist_position]: # and i + playlist_position == pctl.playlist_playing:
+                            draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
+                                      (playlist_width + highlight_x_offset, playlist_row_height - 1), lineBGplaying, True)
+                            this_line_playing = True
+
+                        # if (i + playlist_position) % 2 == 0:
+                        #     draw_rect((playlist_left, playlist_top + playlist_row_height * w), (playlist_width, playlist_row_height - 1), [0,0,0,20], True)
+
+                        if default_playlist[i + playlist_position] == broadcast_index and broadcast and not join_broadcast:
+                            draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                                      (playlist_width, playlist_row_height - 1), [10, 20, 180, 70], True)
+
+                        if middle_click and line_hit:
+                            pctl.force_queue.append([default_playlist[i + playlist_position],
+                                                     i + playlist_position, pctl.playlist_active])
+
+                        for item in pctl.force_queue:
+                            if default_playlist[i + playlist_position] == item[0] and item[1] == i + playlist_position:
+                                draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                                          (playlist_width, playlist_row_height - 1), [30, 170, 30, 35],
+                                          True)
+
+                        if right_click and line_hit:
+                            if i + playlist_position not in shift_selection:
+                                shift_selection = [i + playlist_position]
+
+                        if mouse_click and key_shift_down is False and line_hit:
+                            # shift_selection = []
                             shift_selection = [i + playlist_position]
+                        if mouse_click and line_hit:
+                            quick_drag = True
 
-                    if mouse_click and key_shift_down is False and line_hit:
-                        # shift_selection = []
-                        shift_selection = [i + playlist_position]
-                    if mouse_click and line_hit:
-                        quick_drag = True
+                        if (mouse_click and key_shift_down is False and line_hit or
+                                    playlist_selected == i + playlist_position):
+                            draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
+                                      (playlist_width + highlight_x_offset, playlist_row_height - 1), lineBGSelect, True)
+                            playlist_selected = i + playlist_position
 
-                    if (mouse_click and key_shift_down is False and line_hit or
-                                playlist_selected == i + playlist_position):
-                        draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
-                                  (playlist_width + highlight_x_offset, playlist_row_height - 1), lineBGSelect, True)
-                        playlist_selected = i + playlist_position
+                        # Shift Move Selection
+                        if move_on_title or mouse_up and playlist_hold is True and coll_point(mouse_position, (
+                        playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width, playlist_row_height)):
 
-                    # Shift Move Selection
-                    if move_on_title or mouse_up and playlist_hold is True and coll_point(mouse_position, (
-                    playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width, playlist_row_height)):
+                            if i + playlist_position != playlist_hold_position and i + playlist_position not in shift_selection:
+                                if len(shift_selection) == 0:
+                                    temp_index = default_playlist[playlist_hold_position]
 
-                        if i + playlist_position != playlist_hold_position and i + playlist_position not in shift_selection:
-                            if len(shift_selection) == 0:
-                                temp_index = default_playlist[playlist_hold_position]
+                                    del default_playlist[playlist_hold_position]
 
-                                del default_playlist[playlist_hold_position]
+                                    if move_on_title:
+                                        if i + playlist_position < playlist_hold_position:
+                                            default_playlist.insert(i + playlist_position, temp_index)
+                                        else:
+                                            default_playlist.insert(i + playlist_position - 1, temp_index)
 
-                                if move_on_title:
-                                    if i + playlist_position < playlist_hold_position:
-                                        default_playlist.insert(i + playlist_position, temp_index)
                                     else:
-                                        default_playlist.insert(i + playlist_position - 1, temp_index)
+                                        if i + playlist_position < playlist_hold_position:
+                                            default_playlist.insert(i + playlist_position + 1, temp_index)
+                                        else:
+                                            default_playlist.insert(i + playlist_position, temp_index)
+
+                                    renplay += 1
+                                    playlist_selected = i + playlist_position
 
                                 else:
-                                    if i + playlist_position < playlist_hold_position:
-                                        default_playlist.insert(i + playlist_position + 1, temp_index)
-                                    else:
-                                        default_playlist.insert(i + playlist_position, temp_index)
+                                    count = 0
+                                    temp_ref = []
+                                    if move_on_title:
+                                        count -= 1
+                                    for a in range(0, i + playlist_position):
+                                        print(a)
+                                        if a not in shift_selection:
+                                            count += 1
+                                    for b in reversed(range(len(default_playlist))):
+                                        if b in shift_selection:
+                                            temp_ref.append(default_playlist[b])
+                                            del default_playlist[b]
 
-                                renplay += 1
-                                playlist_selected = i + playlist_position
+                                    for c in temp_ref:
+                                        default_playlist.insert(count + 1, c)
+                                    shift_selection = []
 
-                            else:
-                                count = 0
-                                temp_ref = []
-                                if move_on_title:
-                                    count -= 1
-                                for a in range(0, i + playlist_position):
-                                    print(a)
-                                    if a not in shift_selection:
-                                        count += 1
-                                for b in reversed(range(len(default_playlist))):
-                                    if b in shift_selection:
-                                        temp_ref.append(default_playlist[b])
-                                        del default_playlist[b]
+                        if mouse_down and playlist_hold and coll_point(mouse_position, (
+                        playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
+                        playlist_row_height)) and playlist_hold_position != i + playlist_position:
+                            draw_line(playlist_left, playlist_top + playlist_row_height + playlist_row_height * w,
+                                      playlist_width + playlist_left,
+                                      playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
 
-                                for c in temp_ref:
-                                    default_playlist.insert(count + 1, c)
-                                shift_selection = []
+                        # Shift click actions
+                        if mouse_click and line_hit and key_shift_down:
 
-                    if mouse_down and playlist_hold and coll_point(mouse_position, (
-                    playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
-                    playlist_row_height)) and playlist_hold_position != i + playlist_position:
-                        draw_line(playlist_left, playlist_top + playlist_row_height + playlist_row_height * w,
-                                  playlist_width + playlist_left,
-                                  playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
+                            if i + playlist_position != playlist_selected:
 
-                    # Shift click actions
-                    if mouse_click and line_hit and key_shift_down:
+                                start_s = i + playlist_position
+                                end_s = playlist_selected
+                                if end_s < start_s:
+                                    end_s, start_s = start_s, end_s
+                                for y in range(start_s, end_s + 1):
+                                    if y not in shift_selection:
+                                        shift_selection.append(y)
+                                shift_selection.sort()
 
-                        if i + playlist_position != playlist_selected:
+                            # else:
+                            playlist_hold = True
+                            playlist_hold_position = i + playlist_position
 
-                            start_s = i + playlist_position
-                            end_s = playlist_selected
-                            if end_s < start_s:
-                                end_s, start_s = start_s, end_s
-                            for y in range(start_s, end_s + 1):
-                                if y not in shift_selection:
-                                    shift_selection.append(y)
-                            shift_selection.sort()
+                        # Multi Select Highlight
+                        if i + playlist_position in shift_selection and i + playlist_position != playlist_selected:
+                            draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
+                                      (playlist_width + highlight_x_offset, playlist_row_height), lineBGSelect, True)
 
-                        # else:
-                        playlist_hold = True
-                        playlist_hold_position = i + playlist_position
+                        if right_click and line_hit and mouse_position[0] > playlist_left + 10:
+                            track_menu.activate(default_playlist[i + playlist_position])
 
-                    # Multi Select Highlight
-                    if i + playlist_position in shift_selection and i + playlist_position != playlist_selected:
-                        draw_rect((playlist_left - highlight_x_offset, playlist_top + playlist_row_height * w),
-                                  (playlist_width + highlight_x_offset, playlist_row_height), lineBGSelect, True)
+                            playlist_selected = i + playlist_position
 
-                    if right_click and line_hit and mouse_position[0] > playlist_left + 10:
-                        track_menu.activate(default_playlist[i + playlist_position])
+                        # time.sleep(0.1)
+                        if custom_line_mode:
 
-                        playlist_selected = i + playlist_position
+                            timec = timeColour
+                            titlec = lineON
+                            indexc = indexColour
+                            artistc = artist_colour
+                            albumc = album_cl
 
-                    # time.sleep(0.1)
-                    if custom_line_mode:
+                            if this_line_playing is True:
+                                timec = time_playing_cl
+                                titlec = linePlaying
+                                indexc = index_playing_cl
+                                artistc = artist_playing_cl
+                                albumc = album_playing
 
-                        timec = timeColour
-                        titlec = lineON
-                        indexc = indexColour
-                        artistc = artist_colour
-                        albumc = album_cl
+                            if master_library[default_playlist[i + playlist_position]]['found'] is False:
+                                timec = lineOFF
+                                titlec = lineOFF
+                                indexc = lineOFF
+                                artistc = lineOFF
+                                albumc = lineOFF
 
-                        if this_line_playing is True:
-                            timec = time_playing_cl
-                            titlec = linePlaying
-                            indexc = index_playing_cl
-                            artistc = artist_playing_cl
-                            albumc = album_playing
+                            offs = 0
 
-                        if master_library[default_playlist[i + playlist_position]]['found'] is False:
-                            timec = lineOFF
-                            titlec = lineOFF
-                            indexc = lineOFF
-                            artistc = lineOFF
-                            albumc = lineOFF
+                            for item in cust:
 
-                        offs = 0
+                                if item[0] == 't':
+                                    lineTime = timeColour
+                                    lineColour = lineON
+                                    line = time.strftime('%M:%S',
+                                                         time.gmtime(
+                                                                 master_library[default_playlist[i + playlist_position]][
+                                                                     'length']))
+                                    draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                                               item[2]), line, alpha_mod(timec, albumfade), 12)
 
-                        for item in cust:
+                                elif item[0] == 'i':
+                                    line = str(master_library[default_playlist[i + playlist_position]]['tracknumber'])
+                                    line = line.split("/", 1)[0]
+                                    if dd_index and len(line) == 1:
+                                        line = "0" + line
+                                    line += item[3]
 
-                            if item[0] == 't':
-                                lineTime = timeColour
-                                lineColour = lineON
-                                line = time.strftime('%M:%S',
-                                                     time.gmtime(
-                                                             master_library[default_playlist[i + playlist_position]][
-                                                                 'length']))
-                                draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                                           item[2]), line, alpha_mod(timec, albumfade), 12)
+                                    draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                                               item[2]), line, alpha_mod(indexc, albumfade), 12)
 
-                            elif item[0] == 'i':
+                                elif item[0] == 'o':
+                                    key = master_library[default_playlist[i + playlist_position]]['title'] + \
+                                          master_library[default_playlist[i + playlist_position]]['filename']
+                                    total = 0
+                                    ratio = 0
+                                    if (key in star_library) and star_library[key] != 0 and \
+                                                    master_library[default_playlist[i + playlist_position]][
+                                                        'length'] != 0:
+                                        total = star_library[key]
+                                        ratio = total / master_library[default_playlist[i + playlist_position]]['length']
+
+                                    line = str(int(ratio))
+                                    # if True:
+                                    #     if dd_index and len(line) == 1:
+                                    #         line = "0" + line
+
+                                    draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                                               item[2]), line, alpha_mod(indexc, albumfade), 12)
+
+                                elif item[0] == 'c':
+                                    line = item[3]
+                                    draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                                               item[2]), line, alpha_mod(titlec, albumfade), 12)
+
+                                elif item[0] == 'a':
+                                    line = master_library[default_playlist[i + playlist_position]]['artist']
+
+                                    offs += draw_text2((item[1],
+                                                        playlist_text_offset + playlist_top + playlist_row_height * w,
+                                                        item[2]),
+                                                       line,
+                                                       alpha_mod(artistc, albumfade),
+                                                       12,
+                                                       item[3],
+                                                       1,
+                                                       default_playlist[i + playlist_position])
+
+                                elif item[0] == 'n':
+                                    line = master_library[default_playlist[i + playlist_position]]['title']
+
+                                    offs += draw_text2((item[1],
+                                                        playlist_text_offset + playlist_top + playlist_row_height * w,
+                                                        item[2]),
+                                                       line,
+                                                       alpha_mod(titlec, albumfade),
+                                                       12,
+                                                       item[3],
+                                                       2,
+                                                       default_playlist[i + playlist_position])
+
+                                elif item[0] == 'b':
+                                    line = master_library[default_playlist[i + playlist_position]]['album']
+
+                                    offs = draw_text2((item[1],
+                                                       playlist_text_offset + playlist_top + playlist_row_height * w,
+                                                       item[2]),
+                                                      line,
+                                                      alpha_mod(albumc, albumfade),
+                                                      12,
+                                                      item[3],
+                                                      3,
+                                                      default_playlist[i + playlist_position])
+
+                                elif item[0] == 'd':
+                                    line = str(master_library[default_playlist[i + playlist_position]]['date'])
+
+                                    offs = draw_text2((item[1],
+                                                       playlist_text_offset + playlist_top + playlist_row_height * w,
+                                                       item[2]),
+                                                      line,
+                                                      alpha_mod(albumc, albumfade),
+                                                      12,
+                                                      item[3],
+                                                      3,
+                                                      default_playlist[i + playlist_position])
+
+                                elif item[0] == 's':
+
+                                    ratio = 0
+
+                                    index = default_playlist[i + playlist_position]
+                                    key = master_library[index]['title'] + master_library[index]['filename']
+                                    if star_lines and (key in star_library) and star_library[key] != 0 and \
+                                                    master_library[index][
+                                                        'length'] != 0:
+                                        total = star_library[key]
+                                        ratio = total / master_library[index]['length']
+                                        if ratio > 15:
+                                            ratio = 15
+                                        if ratio > 0.55:
+                                            ratio = int(ratio * 4)
+
+                                            draw_line(item[1] - ratio,
+                                                      playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+                                                      item[1],
+                                                      playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+                                                      alpha_mod(starLineColour, albumfade))
+
+                        if not custom_line_mode:
+                            lineTime = timeColour
+                            lineColour = lineON
+
+                            timec = timeColour
+                            titlec = lineON
+                            indexc = indexColour
+                            artistc = artist_colour
+                            albumc = album_cl
+
+                            if this_line_playing is True:
+                                timec = time_playing_cl
+                                titlec = linePlaying
+                                indexc = index_playing_cl
+                                artistc = artist_playing_cl
+                                albumc = album_playing
+
+                            if master_library[default_playlist[i + playlist_position]]['found'] is False:
+                                timec = lineOFF
+                                titlec = lineOFF
+                                indexc = lineOFF
+                                artistc = lineOFF
+                                albumc = lineOFF
+
+                            indexoffset = 0
+                            artistoffset = 0
+                            indexLine = ""
+                            if master_library[default_playlist[i + playlist_position]]['artist'] != "" or \
+                                            master_library[default_playlist[i + playlist_position]]['title'] != "":
                                 line = str(master_library[default_playlist[i + playlist_position]]['tracknumber'])
                                 line = line.split("/", 1)[0]
-                                if dd_index and len(line) == 1:
+                                if len(line) > 0:
+                                    line += ". "
+                                if dd_index and len(line) == 3:
                                     line = "0" + line
-                                line += item[3]
+                                if len(line) == 3:
+                                    line += "  "
 
-                                draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                                           item[2]), line, alpha_mod(indexc, albumfade), 12)
+                                if len(line) > 1:
+                                    indexoffset = 21
 
-                            elif item[0] == 'o':
-                                key = master_library[default_playlist[i + playlist_position]]['title'] + \
-                                      master_library[default_playlist[i + playlist_position]]['filename']
-                                total = 0
-                                ratio = 0
-                                if (key in star_library) and star_library[key] != 0 and \
-                                                master_library[default_playlist[i + playlist_position]][
-                                                    'length'] != 0:
-                                    total = star_library[key]
-                                    ratio = total / master_library[default_playlist[i + playlist_position]]['length']
+                                indexLine = line
 
-                                line = str(int(ratio))
-                                # if True:
-                                #     if dd_index and len(line) == 1:
-                                #         line = "0" + line
+                                line = ""
+                                if dd_index:
+                                    indexoffset += 2
 
-                                draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                                           item[2]), line, alpha_mod(indexc, albumfade), 12)
+                                indexoffset += playlist_line_x_offset
 
-                            elif item[0] == 'c':
-                                line = item[3]
-                                draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                                           item[2]), line, alpha_mod(titlec, albumfade), 12)
+                                if master_library[default_playlist[i + playlist_position]]['artist'] != "":
+                                    if split_line and artist_colour != lineON:
+                                        line0 = master_library[default_playlist[i + playlist_position]]['artist']
 
-                            elif item[0] == 'a':
-                                line = master_library[default_playlist[i + playlist_position]]['artist']
+                                        artistoffset = draw_text2((playlist_left + indexoffset,
+                                                                   playlist_text_offset + playlist_top + playlist_row_height * w),
+                                                                  line0,
+                                                                  alpha_mod(artistc, albumfade),
+                                                                  12,
+                                                                  300,
+                                                                  1,
+                                                                  default_playlist[i + playlist_position])
 
-                                offs += draw_text2((item[1],
-                                                    playlist_text_offset + playlist_top + playlist_row_height * w,
-                                                    item[2]),
-                                                   line,
-                                                   alpha_mod(artistc, albumfade),
-                                                   12,
-                                                   item[3],
-                                                   1,
-                                                   default_playlist[i + playlist_position])
-
-                            elif item[0] == 'n':
-                                line = master_library[default_playlist[i + playlist_position]]['title']
-
-                                offs += draw_text2((item[1],
-                                                    playlist_text_offset + playlist_top + playlist_row_height * w,
-                                                    item[2]),
-                                                   line,
-                                                   alpha_mod(titlec, albumfade),
-                                                   12,
-                                                   item[3],
-                                                   2,
-                                                   default_playlist[i + playlist_position])
-
-                            elif item[0] == 'b':
-                                line = master_library[default_playlist[i + playlist_position]]['album']
-
-                                offs = draw_text2((item[1],
-                                                   playlist_text_offset + playlist_top + playlist_row_height * w,
-                                                   item[2]),
-                                                  line,
-                                                  alpha_mod(albumc, albumfade),
-                                                  12,
-                                                  item[3],
-                                                  3,
-                                                  default_playlist[i + playlist_position])
-
-                            elif item[0] == 'd':
-                                line = str(master_library[default_playlist[i + playlist_position]]['date'])
-
-                                offs = draw_text2((item[1],
-                                                   playlist_text_offset + playlist_top + playlist_row_height * w,
-                                                   item[2]),
-                                                  line,
-                                                  alpha_mod(albumc, albumfade),
-                                                  12,
-                                                  item[3],
-                                                  3,
-                                                  default_playlist[i + playlist_position])
-
-                            elif item[0] == 's':
-
-                                ratio = 0
-
-                                index = default_playlist[i + playlist_position]
-                                key = master_library[index]['title'] + master_library[index]['filename']
-                                if star_lines and (key in star_library) and star_library[key] != 0 and \
-                                                master_library[index][
-                                                    'length'] != 0:
-                                    total = star_library[key]
-                                    ratio = total / master_library[index]['length']
-                                    if ratio > 15:
-                                        ratio = 15
-                                    if ratio > 0.55:
-                                        ratio = int(ratio * 4)
-
-                                        draw_line(item[1] - ratio,
-                                                  playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                                  item[1],
-                                                  playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                                  alpha_mod(starLineColour, albumfade))
-
-                    if not custom_line_mode:
-                        lineTime = timeColour
-                        lineColour = lineON
-
-                        timec = timeColour
-                        titlec = lineON
-                        indexc = indexColour
-                        artistc = artist_colour
-                        albumc = album_cl
-
-                        if this_line_playing is True:
-                            timec = time_playing_cl
-                            titlec = linePlaying
-                            indexc = index_playing_cl
-                            artistc = artist_playing_cl
-                            albumc = album_playing
-
-                        if master_library[default_playlist[i + playlist_position]]['found'] is False:
-                            timec = lineOFF
-                            titlec = lineOFF
-                            indexc = lineOFF
-                            artistc = lineOFF
-                            albumc = lineOFF
-
-                        indexoffset = 0
-                        artistoffset = 0
-                        indexLine = ""
-                        if master_library[default_playlist[i + playlist_position]]['artist'] != "" or \
-                                        master_library[default_playlist[i + playlist_position]]['title'] != "":
-                            line = str(master_library[default_playlist[i + playlist_position]]['tracknumber'])
-                            line = line.split("/", 1)[0]
-                            if len(line) > 0:
-                                line += ". "
-                            if dd_index and len(line) == 3:
-                                line = "0" + line
-                            if len(line) == 3:
-                                line += "  "
-
-                            if len(line) > 1:
-                                indexoffset = 21
-
-                            indexLine = line
-
-                            line = ""
-                            if dd_index:
-                                indexoffset += 2
-
-                            indexoffset += playlist_line_x_offset
-
-                            if master_library[default_playlist[i + playlist_position]]['artist'] != "":
-                                if split_line and artist_colour != lineON:
-                                    line0 = master_library[default_playlist[i + playlist_position]]['artist']
-
-                                    artistoffset = draw_text2((playlist_left + indexoffset,
-                                                               playlist_text_offset + playlist_top + playlist_row_height * w),
-                                                              line0,
-                                                              alpha_mod(artistc, albumfade),
-                                                              12,
-                                                              300,
-                                                              1,
-                                                              default_playlist[i + playlist_position])
-
-                                    line = master_library[default_playlist[i + playlist_position]]['title']
+                                        line = master_library[default_playlist[i + playlist_position]]['title']
+                                    else:
+                                        line += master_library[default_playlist[i + playlist_position]]['artist'] + " - " + \
+                                                master_library[default_playlist[i + playlist_position]]['title']
                                 else:
-                                    line += master_library[default_playlist[i + playlist_position]]['artist'] + " - " + \
-                                            master_library[default_playlist[i + playlist_position]]['title']
+                                    line += master_library[default_playlist[i + playlist_position]]['title']
+
                             else:
-                                line += master_library[default_playlist[i + playlist_position]]['title']
+                                line = \
+                                os.path.splitext((master_library[default_playlist[i + playlist_position]]['filename']))[
+                                    0]
+                            trunk = False
 
+                            ratio = 0
+                            index = default_playlist[i + playlist_position]
+                            key = master_library[index]['title'] + master_library[index]['filename']
+                            if star_lines and (key in star_library) and star_library[key] != 0 and master_library[index][
+                                'length'] != 0:
+                                total = star_library[key]
+                                ratio = total / master_library[index]['length']
+                                if ratio > 15:
+                                    ratio = 15
+                                if ratio > 0.55:
+                                    ratio = int(ratio * 4)
+
+                                    draw_line(playlist_width - playlist_line_x_offset + playlist_left - ratio - 40,
+                                              playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+                                              playlist_width - playlist_line_x_offset + playlist_left - 37,
+                                              playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+                                              alpha_mod(starLineColour, albumfade))
+
+                            draw_text((playlist_left + playlist_line_x_offset,
+                                       playlist_text_offset + playlist_top + playlist_row_height * w), indexLine,
+                                      alpha_mod(indexc, albumfade), 12)
+
+                            if artistoffset != 0:
+                                artistoffset += 7
+
+                            draw_text2((playlist_left + indexoffset + artistoffset,
+                                        playlist_text_offset + playlist_top + playlist_row_height * w),
+                                       line,
+                                       alpha_mod(titlec, albumfade),
+                                       12,
+                                       playlist_width - 71 - artistoffset - ratio,
+                                       2,
+                                       default_playlist[i + playlist_position])
+
+                            line = time.strftime('%M:%S',
+                                                 time.gmtime(
+                                                         master_library[default_playlist[i + playlist_position]]['length']))
+                            draw_text((playlist_width + playlist_left - playlist_line_x_offset,
+                                       playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
+                                      alpha_mod(timec, albumfade), 12)
+
+                        w += 1
+                        if w > playlist_view_length:
+                            break
+
+                    if (right_click and playlist_top + 40 + playlist_row_height * w < mouse_position[1] < window_size[
+                        1] - 55 and
+                                mouse_position[0] > playlist_left + 15):
+                        playlist_menu.activate()
+
+                    if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top:
+
+                        if album_mode and mouse_position[0] > playlist_width + 40:
+                            pass
                         else:
-                            line = \
-                            os.path.splitext((master_library[default_playlist[i + playlist_position]]['filename']))[
-                                0]
-                        trunk = False
 
-                        ratio = 0
-                        index = default_playlist[i + playlist_position]
-                        key = master_library[index]['title'] + master_library[index]['filename']
-                        if star_lines and (key in star_library) and star_library[key] != 0 and master_library[index][
-                            'length'] != 0:
-                            total = star_library[key]
-                            ratio = total / master_library[index]['length']
-                            if ratio > 15:
-                                ratio = 15
-                            if ratio > 0.55:
-                                ratio = int(ratio * 4)
+                            playlist_position -= mouse_wheel * 3
+                            # if playlist_view_length > 15:
+                            #     playlist_position -= mouse_wheel
+                            if playlist_view_length > 40:
+                                playlist_position -= mouse_wheel
 
-                                draw_line(playlist_width - playlist_line_x_offset + playlist_left - ratio - 40,
-                                          playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                          playlist_width - playlist_line_x_offset + playlist_left - 37,
-                                          playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                          alpha_mod(starLineColour, albumfade))
+                            if playlist_position > len(default_playlist):
+                                playlist_position = len(default_playlist)
+                            if playlist_position < 1:
+                                playlist_position = 0
 
-                        draw_text((playlist_left + playlist_line_x_offset,
-                                   playlist_text_offset + playlist_top + playlist_row_height * w), indexLine,
-                                  alpha_mod(indexc, albumfade), 12)
+                SDL_SetRenderTarget(renderer, None)
+                SDL_RenderCopy(renderer, ttext, None, abc)
 
-                        if artistoffset != 0:
-                            artistoffset += 7
+                if mouse_down is False:
+                    playlist_hold = False
 
-                        draw_text2((playlist_left + indexoffset + artistoffset,
-                                    playlist_text_offset + playlist_top + playlist_row_height * w),
-                                   line,
-                                   alpha_mod(titlec, albumfade),
-                                   12,
-                                   playlist_width - 71 - artistoffset - ratio,
-                                   2,
-                                   default_playlist[i + playlist_position])
+                # ------------------------------------------------
+                # Scroll Bar
 
-                        line = time.strftime('%M:%S',
-                                             time.gmtime(
-                                                     master_library[default_playlist[i + playlist_position]]['length']))
-                        draw_text((playlist_width + playlist_left - playlist_line_x_offset,
-                                   playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
-                                  alpha_mod(timec, albumfade), 12)
 
-                    w += 1
-                    if w > playlist_view_length:
-                        break
 
-                if (right_click and playlist_top + 40 + playlist_row_height * w < mouse_position[1] < window_size[
-                    1] - 55 and
-                            mouse_position[0] > playlist_left + 15):
-                    playlist_menu.activate()
+                if scroll_enable:
 
-                if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top:
+                    sy = 31
+                    ey = window_size[1] - 30 - 22
 
-                    if album_mode and mouse_position[0] > playlist_width + 40:
-                        pass
+
+
+                    if len(default_playlist) < 50:
+                        sbl = 85
+                        if len(default_playlist) == 0:
+                            sbp = panelY
                     else:
+                        sbl = 70
 
-                        playlist_position -= mouse_wheel * 3
-                        # if playlist_view_length > 15:
-                        #     playlist_position -= mouse_wheel
-                        if playlist_view_length > 40:
-                            playlist_position -= mouse_wheel
+                    fields.add((2, sbp, 20, sbl))
+                    if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and (mouse_down or right_click):
 
-                        if playlist_position > len(default_playlist):
-                            playlist_position = len(default_playlist)
-                        if playlist_position < 1:
-                            playlist_position = 0
+                        renplay += 1
+                        if right_click:
+                            sbp = mouse_position[1] - int(sbl/2)
+                            if sbp + sbl > ey:
+                                sbp = ey - sbl
+                            elif sbp < panelY:
+                                sbp = panelY
+                            per = (sbp - panelY) / (ey - panelY - sbl)
+                            playlist_position = int(len(default_playlist) * per)
 
-            SDL_SetRenderTarget(renderer, None)
-            SDL_RenderCopy(renderer, ttext, None, abc)
-
-            if mouse_down is False:
-                playlist_hold = False
-
-            # ------------------------------------------------
-            # Scroll Bar
-
-
-
-            if scroll_enable:
-
-                sy = 31
-                ey = window_size[1] - 30 - 22
+                            if playlist_position < 0:
+                                playlist_position = 0
+                        elif mouse_position[1] < sbp:
+                            playlist_position -= 2
+                        elif mouse_position[1] > sbp + sbl:
+                            playlist_position += 2
+                        elif mouse_click:
 
 
+                            p_y = pointer(c_int(0))
+                            p_x = pointer(c_int(0))
+                            SDL_GetGlobalMouseState(p_x,p_y)
 
-                if len(default_playlist) < 50:
-                    sbl = 85
-                    if len(default_playlist) == 0:
-                        sbp = panelY
-                else:
-                    sbl = 70
+                            scroll_hold = True
+                            scroll_point = p_y.contents.value #mouse_position[1]
+                            scroll_bpoint = sbp
 
-                fields.add((2, sbp, 20, sbl))
-                if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and (mouse_down or right_click):
+                    if not mouse_down:
+                        scroll_hold = False
 
-                    renplay += 1
-                    if right_click:
-                        sbp = mouse_position[1] - int(sbl/2)
+                    if scroll_hold and not mouse_click:
+                        renplay += 1
+                        p_y = pointer(c_int(0))
+                        p_x = pointer(c_int(0))
+                        SDL_GetGlobalMouseState(p_x,p_y)
+                        sbp = p_y.contents.value - (scroll_point - scroll_bpoint) #mouse_position[1] - (scroll_point - scroll_bpoint)
                         if sbp + sbl > ey:
                             sbp = ey - sbl
                         elif sbp < panelY:
@@ -8343,227 +8391,239 @@ while running:
                         per = (sbp - panelY) / (ey - panelY - sbl)
                         playlist_position = int(len(default_playlist) * per)
 
-                        if playlist_position < 0:
-                            playlist_position = 0
-                    elif mouse_position[1] < sbp:
-                        playlist_position -= 2
-                    elif mouse_position[1] > sbp + sbl:
-                        playlist_position += 2
-                    elif mouse_click:
 
+                    else:
+                        if len(default_playlist) > 0:
+                            per = playlist_position / len(default_playlist)
+                            sbp = int((ey - panelY - sbl) * per) + panelY + 1
 
-                        p_y = pointer(c_int(0))
-                        p_x = pointer(c_int(0))
-                        SDL_GetGlobalMouseState(p_x,p_y)
+                    draw_rect((1, sbp), (14, sbl), scroll_colour, True)
 
-                        scroll_hold = True
-                        scroll_point = p_y.contents.value #mouse_position[1]
-                        scroll_bpoint = sbp
+                    if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
+                        draw_rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
 
-                if not mouse_down:
-                    scroll_hold = False
+                # Switch Vis:
 
-                if scroll_hold and not mouse_click:
-                    renplay += 1
-                    p_y = pointer(c_int(0))
-                    p_x = pointer(c_int(0))
-                    SDL_GetGlobalMouseState(p_x,p_y)
-                    sbp = p_y.contents.value - (scroll_point - scroll_bpoint) #mouse_position[1] - (scroll_point - scroll_bpoint)
-                    if sbp + sbl > ey:
-                        sbp = ey - sbl
-                    elif sbp < panelY:
-                        sbp = panelY
-                    per = (sbp - panelY) / (ey - panelY - sbl)
-                    playlist_position = int(len(default_playlist) * per)
+                if mouse_click and coll_point(mouse_position, (window_size[0] - 130 - offset_extra, 0, 130, panelY)):
+                    if vis == 0:
+                        vis = 1
+                        turbo = True
+                    elif vis == 1:
+                        vis = 2
+                    elif vis == 2:
+                        vis = 0
+                        turbo = False
+                # --------------------------------------------
+                # ALBUM ART
 
+                if side_panel_enable:
+                    if album_mode:
+                        pass
+                        # if b_info_bar:
+                        #     # draw_rect((0,window_size[1] - b_panel_size - panelBY), (playlist_width + 31, b_panel_size), background, True)
+                        #     showc = display_album_art(pctl.track_queue[pctl.queue_step], (20, window_size[1] - panelBY - b_panel_size + 20), ( b_panel_size - 30, b_panel_size - 30))
+                    else:
 
-                else:
-                    if len(default_playlist) > 0:
-                        per = playlist_position / len(default_playlist)
-                        sbp = int((ey - panelY - sbl) * per) + panelY + 1
+                        rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 30,
+                                window_size[1] - panelY - panelBY - 1]
+                        draw_rect_r(rect, side_panel_bg, True)
 
-                draw_rect((1, sbp), (14, sbl), scroll_colour, True)
+                        showc = []
 
-                if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                    draw_rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
+                        boxx = window_size[0] - playlist_width - 32 - 18
+                        boxy = window_size[1] - 160
+                        box = boxx
 
-            # Switch Vis:
+                        # CURRENT
 
-            if mouse_click and coll_point(mouse_position, (window_size[0] - 130 - offset_extra, 0, 130, panelY)):
-                if vis == 0:
-                    vis = 1
-                    turbo = True
-                elif vis == 1:
-                    vis = 2
-                elif vis == 2:
-                    vis = 0
-                    turbo = False
-            # --------------------------------------------
-            # ALBUM ART
+                        if mouse_click and (coll_point(mouse_position, (
+                            playlist_width + 40, panelY + boxx + 5, boxx, window_size[1] - boxx - 90))):
 
-            if side_panel_enable:
-                if album_mode:
-                    pass
-                    # if b_info_bar:
-                    #     # draw_rect((0,window_size[1] - b_panel_size - panelBY), (playlist_width + 31, b_panel_size), background, True)
-                    #     showc = display_album_art(pctl.track_queue[pctl.queue_step], (20, window_size[1] - panelBY - b_panel_size + 20), ( b_panel_size - 30, b_panel_size - 30))
-                else:
+                            pctl.show_current()
 
-                    rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 30,
-                            window_size[1] - panelY - panelBY - 1]
-                    draw_rect_r(rect, side_panel_bg, True)
+                            if album_mode:
+                                goto_album(pctl.playlist_playing)
+                            UPDATE_RENDER += 1
 
-                    showc = []
-
-                    boxx = window_size[0] - playlist_width - 32 - 18
-                    boxy = window_size[1] - 160
-                    box = boxx
-
-                    # CURRENT
-
-                    if mouse_click and (coll_point(mouse_position, (
-                        playlist_width + 40, panelY + boxx + 5, boxx, window_size[1] - boxx - 90))):
-
-                        pctl.show_current()
-
-                        if album_mode:
-                            goto_album(pctl.playlist_playing)
-                        UPDATE_RENDER += 1
-
-                    if len(pctl.track_queue) > 0:
-
-                        # Bluring of sidebar background, not fully implemented, uncomment these 3 lines to enable.
-
-                        # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]]['filepath'], (0,0), (0,0), mode="RETURN", offset=1)
-                        # blur_bg( (playlist_width + 32, 32), (316,316),nt,0 )
-                        # draw_rect( (playlist_width + 32, 32), (316,316), [0,0,0,210], True )
-
-                        if coll_point(mouse_position, (playlist_width + 40, 38, box, box)) and mouse_click is True:
-                            display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0),
-                                              mode="OFFSET", offset=1)
-
-                        if coll_point(mouse_position, (
-                            playlist_width + 40, 38, box, box)) and right_click is True and pctl.playing_state > 0:
-                            display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0), mode="OPEN")
-                    if 3 > pctl.playing_state > 0:
-
-                        if side_drag:
-
-                            showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                                      (playlist_width + 40, 38), (box, box), mode="fast")
-
-                        else:
-                            showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                                      (playlist_width + 40, 38), (box, box))
-                    draw_rect((playlist_width + 40, 38), (box + 1, box + 1), art_box)
-
-                    rect = (playlist_width + 40, 38, box, box)
-                    fields.add(rect)
-
-                    if len(showc) > 1 and showc[0] > 0 and coll_point(mouse_position, rect) \
-                            and renamebox is False \
-                            and radiobox is False \
-                            and encoding_box is False \
-                            and pref_box.enabled is False \
-                            and rename_playlist_box is False \
-                            and new_playlist_box is False \
-                            and message_box is False \
-                            and track_box is False \
-                            and genre_box is False:
-
-                        if showc[2] is False:
-                            showc[1] -= 1
-
-                        line = ""
-                        if showc[2] is True and showc[1] == 1:
-                            line += 'A '
-                        else:
-                            line += 'E '
-                        line += str(showc[1]) + "/" + str(showc[0])
-
-                        xoff = 0
-                        # if len(line) > 5:
-                        #     xoff = (len(line) - 5) * 6
-                        xoff = text_calc(line, 12)[0] + 12
-
-
-                        draw_rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
-                                  [0, 0, 0, 190], True)
-
-                        draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
-
-                    if pctl.playing_state > 0:
                         if len(pctl.track_queue) > 0:
 
-                            block3 = False
-                            block4 = False
-                            block5 = False
-                            block6 = False
+                            # Bluring of sidebar background, not fully implemented, uncomment these 3 lines to enable.
 
-                            title = ""
-                            album = ""
-                            artist = ""
-                            ext = ""
-                            date = ""
-                            sample = ""
+                            # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]]['filepath'], (0,0), (0,0), mode="RETURN", offset=1)
+                            # blur_bg( (playlist_width + 32, 32), (316,316),nt,0 )
+                            # draw_rect( (playlist_width + 32, 32), (316,316), [0,0,0,210], True )
 
-                            if pctl.playing_state < 3:
+                            if coll_point(mouse_position, (playlist_width + 40, 38, box, box)) and mouse_click is True:
+                                display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0),
+                                                  mode="OFFSET", offset=1)
 
-                                title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                                album = master_library[pctl.track_queue[pctl.queue_step]]['album']
-                                artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
-                                ext = master_library[pctl.track_queue[pctl.queue_step]]['ext']
-                                date = master_library[pctl.track_queue[pctl.queue_step]]['date']
-                                genre = master_library[pctl.track_queue[pctl.queue_step]]['genre']
-                                sample = str(master_library[pctl.track_queue[pctl.queue_step]]['sample'])
+                            if coll_point(mouse_position, (
+                                playlist_width + 40, 38, box, box)) and right_click is True and pctl.playing_state > 0:
+                                display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0), mode="OPEN")
+                        if 3 > pctl.playing_state > 0:
+
+                            if side_drag:
+
+                                showc = display_album_art(pctl.track_queue[pctl.queue_step],
+                                                          (playlist_width + 40, 38), (box, box), mode="fast")
+
                             else:
+                                showc = display_album_art(pctl.track_queue[pctl.queue_step],
+                                                          (playlist_width + 40, 38), (box, box))
+                        draw_rect((playlist_width + 40, 38), (box + 1, box + 1), art_box)
 
-                                title = tag_meta
+                        rect = (playlist_width + 40, 38, box, box)
+                        fields.add(rect)
 
-                            if side_panel_text_align == 1:
+                        if len(showc) > 1 and showc[0] > 0 and coll_point(mouse_position, rect) \
+                                and renamebox is False \
+                                and radiobox is False \
+                                and encoding_box is False \
+                                and pref_box.enabled is False \
+                                and rename_playlist_box is False \
+                                and new_playlist_box is False \
+                                and message_box is False \
+                                and track_box is False \
+                                and genre_box is False:
 
-                                # --------------------------------
-                                if 38 + box + 126 > window_size[1] + 52:
-                                    block6 = True
-                                if block6 != True:
-                                    if 38 + box + 126 > window_size[1] + 37:
-                                        block5 = True
+                            if showc[2] is False:
+                                showc[1] -= 1
 
-                                    if 38 + box + 126 > window_size[1] + 10:
-                                        block4 = True
-                                    if 38 + box + 126 > window_size[1] - 31:
-                                        block3 = True
+                            line = ""
+                            if showc[2] is True and showc[1] == 1:
+                                line += 'A '
+                            else:
+                                line += 'E '
+                            line += str(showc[1]) + "/" + str(showc[0])
 
-                                    if 38 + box + 126 > window_size[1] - 70:
+                            xoff = 0
+                            # if len(line) > 5:
+                            #     xoff = (len(line) - 5) * 6
+                            xoff = text_calc(line, 12)[0] + 12
 
-                                        block1 = 38 + box + 20
-                                        block2 = window_size[1] - 70 - 36
 
-                                    else:
-                                        block1 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box - 50
-                                        block2 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box + 5
+                            draw_rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
+                                      [0, 0, 0, 190], True)
 
-                                    if block4 is False:
+                            draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
 
-                                        if block3 is True:
+                        if pctl.playing_state > 0:
+                            if len(pctl.track_queue) > 0:
+
+                                block3 = False
+                                block4 = False
+                                block5 = False
+                                block6 = False
+
+                                title = ""
+                                album = ""
+                                artist = ""
+                                ext = ""
+                                date = ""
+                                sample = ""
+
+                                if pctl.playing_state < 3:
+
+                                    title = master_library[pctl.track_queue[pctl.queue_step]]['title']
+                                    album = master_library[pctl.track_queue[pctl.queue_step]]['album']
+                                    artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+                                    ext = master_library[pctl.track_queue[pctl.queue_step]]['ext']
+                                    date = master_library[pctl.track_queue[pctl.queue_step]]['date']
+                                    genre = master_library[pctl.track_queue[pctl.queue_step]]['genre']
+                                    sample = str(master_library[pctl.track_queue[pctl.queue_step]]['sample'])
+                                else:
+
+                                    title = tag_meta
+
+                                if side_panel_text_align == 1:
+
+                                    # --------------------------------
+                                    if 38 + box + 126 > window_size[1] + 52:
+                                        block6 = True
+                                    if block6 != True:
+                                        if 38 + box + 126 > window_size[1] + 37:
+                                            block5 = True
+
+                                        if 38 + box + 126 > window_size[1] + 10:
+                                            block4 = True
+                                        if 38 + box + 126 > window_size[1] - 31:
+                                            block3 = True
+
+                                        if 38 + box + 126 > window_size[1] - 70:
+
+                                            block1 = 38 + box + 20
+                                            block2 = window_size[1] - 70 - 36
+
+                                        else:
+                                            block1 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box - 50
+                                            block2 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box + 5
+
+                                        if block4 is False:
+
+                                            if block3 is True:
+                                                block1 -= 14
+
+                                            if title != "":
+                                                playing_info = title
+                                                playing_info = trunc_line(playing_info, 12,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2),
+                                                          playing_info, side_bar_line1, 12)
+
+                                            if artist != "":
+                                                playing_info = artist
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 54)
+                                                draw_text((playlist_width + 30 + int(side_panel_size / 2), block1 + 17, 2),
+                                                          playing_info, side_bar_line2, 11)
+                                        else:
                                             block1 -= 14
 
-                                        if title != "":
-                                            playing_info = title
-                                            playing_info = trunc_line(playing_info, 12,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2),
-                                                      playing_info, side_bar_line1, 12)
+                                            line = ""
+                                            if artist != "":
+                                                line += artist
+                                            if title != "":
+                                                if line != "":
+                                                    line += " - "
+                                                line += title
+                                            line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2), line,
+                                                      side_bar_line1, 11)
 
-                                        if artist != "":
-                                            playing_info = artist
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 54)
-                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block1 + 17, 2),
-                                                      playing_info, side_bar_line2, 11)
-                                    else:
-                                        block1 -= 14
+                                        if block3 == False:
 
+                                            if album != "":
+                                                playing_info = album
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 30 + int(side_panel_size / 2), block2, 2),
+                                                          playing_info, side_bar_line2, 11)
+
+                                            if date != "":
+                                                playing_info = date
+                                                if genre != "":
+                                                    playing_info += " | " + genre
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 18, 2),
+                                                          playing_info, side_bar_line2, 11)
+
+
+                                        else:
+                                            if block5 != True:
+                                                line = ""
+                                                if album != "":
+                                                    line += album
+                                                if line != "":
+                                                    line += " | "
+                                                if date != "":
+                                                    line += date + " | "
+                                                line += ext
+                                                line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 35, 2),
+                                                          line, side_bar_line2, 11)
+                                    # Topline
+                                    elif broadcast != True:
                                         line = ""
                                         if artist != "":
                                             line += artist
@@ -8571,110 +8631,113 @@ while running:
                                             if line != "":
                                                 line += " - "
                                             line += title
-                                        line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                        draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2), line,
-                                                  side_bar_line1, 11)
+                                        # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                        offset_extra = 0
+                                        if draw_border:
+                                            offset_extra = 61
 
-                                    if block3 == False:
+                                        if turbo:
+                                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
+                                                      11)
 
-                                        if album != "":
-                                            playing_info = album
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block2, 2),
-                                                      playing_info, side_bar_line2, 11)
-
-                                        if date != "":
-                                            playing_info = date
-                                            if genre != "":
-                                                playing_info += " | " + genre
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 18, 2),
-                                                      playing_info, side_bar_line2, 11)
-
-
-                                    else:
-                                        if block5 != True:
-                                            line = ""
-                                            if album != "":
-                                                line += album
-                                            if line != "":
-                                                line += " | "
-                                            if date != "":
-                                                line += date + " | "
-                                            line += ext
-                                            line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 35, 2),
-                                                      line, side_bar_line2, 11)
-                                # Topline
-                                elif broadcast != True:
-                                    line = ""
-                                    if artist != "":
-                                        line += artist
-                                    if title != "":
-                                        if line != "":
-                                            line += " - "
-                                        line += title
-                                    # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    offset_extra = 0
-                                    if draw_border:
-                                        offset_extra = 61
-
-                                    if turbo:
-                                        draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
-                                                  11)
-
-                                    else:
-                                        draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
-                                                  11)
+                                        else:
+                                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
+                                                      11)
 
 
 
-                            else:
-                                # -------------------------------
+                                else:
+                                    # -------------------------------
 
-                                if 38 + box + 126 > window_size[1] + 52:
-                                    block6 = True
-                                if block6 != True:
-                                    if 38 + box + 126 > window_size[1] + 37:
-                                        block5 = True
+                                    if 38 + box + 126 > window_size[1] + 52:
+                                        block6 = True
+                                    if block6 != True:
+                                        if 38 + box + 126 > window_size[1] + 37:
+                                            block5 = True
 
-                                    if 38 + box + 126 > window_size[1] + 10:
-                                        block4 = True
-                                    if 38 + box + 126 > window_size[1] - 39:
-                                        block3 = True
+                                        if 38 + box + 126 > window_size[1] + 10:
+                                            block4 = True
+                                        if 38 + box + 126 > window_size[1] - 39:
+                                            block3 = True
 
-                                    if 38 + box + 126 > window_size[1] - 70:
+                                        if 38 + box + 126 > window_size[1] - 70:
 
-                                        block1 = 38 + box + 20
-                                        block2 = window_size[1] - 70 - 36
+                                            block1 = 38 + box + 20
+                                            block2 = window_size[1] - 70 - 36
 
-                                    else:
-                                        block1 = 38 + box + 20
-                                        block2 = 38 + box + 90
+                                        else:
+                                            block1 = 38 + box + 20
+                                            block2 = 38 + box + 90
 
-                                    if block4 is False:
+                                        if block4 is False:
 
-                                        if block3 is True:
+                                            if block3 is True:
+                                                block1 -= 14
+
+                                            if title != "":
+                                                playing_info = title
+                                                playing_info = trunc_line(playing_info, 12,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 39, block1 + 2), playing_info, side_bar_line1,
+                                                          13, max=side_panel_size - 20)
+
+                                            if artist != "":
+                                                playing_info = artist
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 54)
+                                                draw_text((playlist_width + 39, block1 + 17 + 4), playing_info, side_bar_line2,
+                                                          12)
+                                        else:
                                             block1 -= 14
 
-                                        if title != "":
-                                            playing_info = title
-                                            playing_info = trunc_line(playing_info, 12,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block1 + 2), playing_info, side_bar_line1,
-                                                      13, max=side_panel_size - 20)
+                                            line = ""
+                                            if artist != "":
+                                                line += artist
+                                            if title != "":
+                                                if line != "":
+                                                    line += " - "
+                                                line += title
+                                            line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                            draw_text((playlist_width + 39, block1), line, side_bar_line1, 11)
 
-                                        if artist != "":
-                                            playing_info = artist
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 54)
-                                            draw_text((playlist_width + 39, block1 + 17 + 4), playing_info, side_bar_line2,
-                                                      12)
-                                    else:
-                                        block1 -= 14
+                                        if block3 == False:
 
+                                            if album != "":
+                                                playing_info = album
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 39, block2), playing_info, side_bar_line2,
+                                                          11)
+
+                                            if date != "":
+                                                playing_info = date
+                                                if genre != "":
+                                                    playing_info += " | " + genre
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 39, block2 + 18), playing_info, side_bar_line2,
+                                                          11)
+
+                                            if ext != "":
+                                                playing_info = ext  # + " | " + sample
+                                                playing_info = trunc_line(playing_info, 11,
+                                                                          window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 39, block2 + 36), playing_info, side_bar_line2,
+                                                          11)
+                                        else:
+                                            if block5 != True:
+                                                line = ""
+                                                if album != "":
+                                                    line += album
+                                                if line != "":
+                                                    line += " | "
+                                                if date != "":
+                                                    line += date + " | "
+                                                line += ext
+                                                line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                                draw_text((playlist_width + 39, block2 + 35), line, side_bar_line2, 11)
+                                    # Topline
+                                    elif broadcast != True:
                                         line = ""
                                         if artist != "":
                                             line += artist
@@ -8682,538 +8745,477 @@ while running:
                                             if line != "":
                                                 line += " - "
                                             line += title
-                                        line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                        draw_text((playlist_width + 39, block1), line, side_bar_line1, 11)
+                                        # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                                        offset_extra = 0
+                                        if draw_border:
+                                            offset_extra = 61
 
-                                    if block3 == False:
-
-                                        if album != "":
-                                            playing_info = album
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block2), playing_info, side_bar_line2,
-                                                      11)
-
-                                        if date != "":
-                                            playing_info = date
-                                            if genre != "":
-                                                playing_info += " | " + genre
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block2 + 18), playing_info, side_bar_line2,
-                                                      11)
-
-                                        if ext != "":
-                                            playing_info = ext  # + " | " + sample
-                                            playing_info = trunc_line(playing_info, 11,
-                                                                      window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block2 + 36), playing_info, side_bar_line2,
-                                                      11)
-                                    else:
-                                        if block5 != True:
-                                            line = ""
-                                            if album != "":
-                                                line += album
-                                            if line != "":
-                                                line += " | "
-                                            if date != "":
-                                                line += date + " | "
-                                            line += ext
-                                            line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block2 + 35), line, side_bar_line2, 11)
-                                # Topline
-                                elif broadcast != True:
-                                    line = ""
-                                    if artist != "":
-                                        line += artist
-                                    if title != "":
-                                        if line != "":
-                                            line += " - "
-                                        line += title
-                                    # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    offset_extra = 0
-                                    if draw_border:
-                                        offset_extra = 61
-
-                                    l_max = window_size[0] - m_l - 10
+                                        l_max = window_size[0] - m_l - 10
 
 
-                                    if turbo:
-                                        draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
-                                                  11, max=l_max - 75)
+                                        if turbo:
+                                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
+                                                      11, max=l_max - 75)
 
-                                    else:
-                                        draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
-                                                  11, max=l_max)
-
-            else:
-                if broadcast != True and pctl.playing_state > 0:
-                    if pctl.playing_state < 3:
-                        title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                        artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
-                    else:
-                        title = tag_meta
-                    line = ""
-                    if artist != "":
-                        line += artist
-                    if title != "":
-                        if line != "":
-                            line += " - "
-                        line += title
-                    offset_extra = 0
-                    if draw_border:
-                        offset_extra = 61
-
-                    # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                    l_max = window_size[0] - m_l - 10
-                    if turbo:
-                        draw_text((window_size[0] - 100 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max - 75)
-                    else:
-                        draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max)
-
-            if tb_line != BPanel:
-                draw_line(0, panelY, window_size[0], panelY, tb_line)
-            # BUTTONS
-
-            # PLAY---
-
-            play_colour = ButtonsBG
-            pause_colour = ButtonsBG
-            stop_colour = ButtonsBG
-            forward_colour = ButtonsBG
-            back_colour = ButtonsBG
-
-            if pctl.playing_state == 1:
-                play_colour = ButtonsActive
-
-            if auto_stop:
-                stop_colour = ButtonsActive
-
-            if pctl.playing_state == 2:
-                pause_colour = ButtonsActive
-                play_colour = ButtonsActive
-            elif pctl.playing_state == 3:
-                play_colour = ButtonsActive
-
-            rect = (25 - 15, window_size[1] - control_line_bottom - 13, 50, 40)
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                play_colour = ButtonsOver
-                if mouse_click:
-                    pctl.play()
-                if right_click:
-                    pctl.show_current()
-                    if album_mode:
-                        goto_album(pctl.playlist_playing)
-            draw_rect((25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
-            # draw_rect_r(rect,[255,0,0,255], True)
-            SDL_RenderCopy(renderer, c1, None, dst1)
-
-            # PAUSE---
-            x = 75
-            y = window_size[1] - control_line_bottom
-
-            rect = (x - 15, y - 13, 50, 40)
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                pause_colour = ButtonsOver
-                if mouse_click:
-                    pctl.pause()
-
-            # draw_rect_r(rect,[255,0,0,255], True)
-            draw_rect((x, y + 0), (4, 13), pause_colour, True)
-            draw_rect((x + 10, y + 0), (4, 13), pause_colour, True)
-
-            # STOP---
-            x = 125
-            rect = (x - 14, y - 13, 50, 40)
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                stop_colour = ButtonsOver
-                if mouse_click:
-                    pctl.stop()
-                if right_click:
-                    auto_stop ^= True
-
-            draw_rect((x, y + 0), (13, 13), stop_colour, True)
-            # draw_rect_r(rect,[255,0,0,255], True)
-
-            # FORWARD---
-            rect = (230, window_size[1] - control_line_bottom - 10, 50, 35)
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                forward_colour = ButtonsOver
-                if mouse_click:
-                    pctl.advance()
-                if right_click:
-                    pctl.random_mode ^= True
-                if middle_click:
-                    pctl.advance(rr=True)
-            draw_rect((240, window_size[1] - control_line_bottom), (28, 14), forward_colour, True)
-            # draw_rect_r(rect,[255,0,0,255], True)
-            SDL_RenderCopy(renderer, c2, None, dst2)
-
-            # BACK---
-            rect = (170, window_size[1] - control_line_bottom - 10, 50, 35)
-            fields.add(rect)
-            if coll_point(mouse_position, rect):
-                back_colour = ButtonsOver
-                if mouse_click:
-                    pctl.back()
-                if right_click:
-                    pctl.repeat_mode ^= True
-
-            draw_rect((180, window_size[1] - control_line_bottom), (28, 14), back_colour, True)
-            # draw_rect_r(rect,[255,0,0,255], True)
-            SDL_RenderCopy(renderer, c3, None, dst3)
-
-            if window_size[0] > 630:
-
-                x = window_size[0] - 295
-                y = window_size[1] - 27
-
-                rect = (x - 9, y - 5, 65, 25)
-                fields.add(rect)
-
-                rpbc = stepctloff
-                if (mouse_click or right_click) and coll_point(mouse_position, rect):
-                    pctl.random_mode ^= True
-
-                    if pctl.random_mode == False:
-                        random_click_off = True
-
-                if pctl.random_mode:
-                    rpbc = stepctlon
-
-                elif coll_point(mouse_position, rect):
-                    if random_click_off == True:
-                        rpbc = stepctloff
-                    elif pctl.random_mode is True:
-                        rpbc = stepctlon
-                    else:
-                        rpbc = stepctlover
-                else:
-                    random_click_off = False
-
-                y += 2
-
-                draw_rect((x, y), (25, 4), rpbc, True)
-
-                y += 8
-                draw_rect((x, y), (50, 4), rpbc, True)
-
-                #draw_text((x,y), "RANDOM", rpbc, 13)
-
-                # REPEAT
-                x = window_size[0] - 350
-                y = window_size[1] - 27
-
-                rpbc = stepctloff
-
-                rect = (x - 15, y - 5, 59, 25)
-                fields.add(rect)
-                if (mouse_click or right_click) and coll_point(mouse_position, rect):
-                    pctl.repeat_mode ^= True
-
-                    if pctl.repeat_mode == False:
-                        repeat_click_off = True
-
-                if pctl.repeat_mode:
-                    rpbc = stepctlon
-
-                elif coll_point(mouse_position, rect):
-                    if repeat_click_off == True:
-                        rpbc = stepctloff
-                    elif pctl.repeat_mode is True:
-                        rpbc = stepctlon
-                    else:
-                        rpbc = stepctlover
-                else:
-                    repeat_click_off = False
-
-                #draw_text((x,y), "REPEAT", rpbc, 13)
-                y += 10
-                w = 4
-
-                draw_rect((x, y), (35, w), rpbc, True)
-                draw_rect((x + 35 - w, y - 8), (w, 8), rpbc, True)
-                draw_rect((x + 15, y - 8), (20, w), rpbc, True)
-
-            # MULTI PLAYLIST-----------------------
-
-            l = 0
-
-            starting_l = 8
-
-            spacing = 17
-
-            if tab_hold:
-                dragmode = False
-
-            # Need to test length
-            k = 0
-            for w in range(len(pctl.multi_playlist)):
-                k += text_calc(pctl.multi_playlist[w][0], 12)[0]
-            k = starting_l + (spacing * (len(pctl.multi_playlist))) + k
-            k += 40
-            k += text_calc(get_playing_line(), 12)[0]
-
-            draw_alt = False
-            if k > window_size[0] - 120:
-                # rect = (starting_l, 0, 10, 29)
-                # draw_rect()
-
-                starting_l += 20
-                spacing = 0
-                draw_alt = True
-
-            # Process each tab on top panel
-            for w in range(len(pctl.multi_playlist)):
-
-                if draw_alt and w != pctl.playlist_active:
-                    continue
-
-                text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
-
-                rect = (starting_l + (spacing * w) + l, 1, text_space + 16, 29)
-                fields.add(rect)
-
-                draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg, True)
-
-                if not pl_follow and w == pctl.active_playlist_playing:
-                    draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), [255, 255, 255, 7], True)
-
-                if (tab_menu.active is True and tab_menu.reference == w) or tab_menu.active is False and coll_point(
-                        mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 29)):
-                    draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_over, True)
-
-                if w == pctl.playlist_active:
-                    draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg_active, True)
-                    text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
-                                           pctl.multi_playlist[w][0],
-                                           playlist_line_active, 12)
-
-
+                                        else:
+                                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
+                                                      11, max=l_max)
 
                 else:
-                    text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
-                                           pctl.multi_playlist[w][0],
-                                           playlist_line, 12)
+                    if broadcast != True and pctl.playing_state > 0:
+                        if pctl.playing_state < 3:
+                            title = master_library[pctl.track_queue[pctl.queue_step]]['title']
+                            artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+                        else:
+                            title = tag_meta
+                        line = ""
+                        if artist != "":
+                            line += artist
+                        if title != "":
+                            if line != "":
+                                line += " - "
+                            line += title
+                        offset_extra = 0
+                        if draw_border:
+                            offset_extra = 61
 
-                pl_coll = False
+                        # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
+                        l_max = window_size[0] - m_l - 10
+                        if turbo:
+                            draw_text((window_size[0] - 100 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max - 75)
+                        else:
+                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max)
 
-                if coll_point(mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 30)):
-                    pl_coll = True
-                    if mouse_up and tab_hold and tab_hold_index != w:
-                        pctl.multi_playlist[w], pctl.multi_playlist[tab_hold_index] = pctl.multi_playlist[
-                                                                                          tab_hold_index], \
-                                                                                      pctl.multi_playlist[w]
+                if tb_line != BPanel:
+                    draw_line(0, panelY, window_size[0], panelY, tb_line)
+                # BUTTONS
 
-                        pctl.playlist_active = w
+                # PLAY---
 
-                    if right_click:
-                        tab_menu.activate(copy.deepcopy(w))
+                play_colour = ButtonsBG
+                pause_colour = ButtonsBG
+                stop_colour = ButtonsBG
+                forward_colour = ButtonsBG
+                back_colour = ButtonsBG
 
-                    if quick_drag is True:
-                        draw_text((starting_l + text_space + (spacing * w) + 7 + l, r[1] - 8, r[2], r[3]), '+',
-                                  [200, 20, 40, 255], 12)
+                if pctl.playing_state == 1:
+                    play_colour = ButtonsActive
 
-                        if mouse_up:
-                            quick_drag = False
-                            if len(shift_selection) > 1:
-                                for item in shift_selection:
-                                    pctl.multi_playlist[w][2].append(default_playlist[item])
-                            else:
-                                pctl.multi_playlist[w][2].append(default_playlist[shift_selection[0]])
+                if auto_stop:
+                    stop_colour = ButtonsActive
 
-                if mouse_click and pl_coll and not key_shift_down:
-                    # print('Switching Playlist')
-                    renplay += 1
-                    tab_hold = True
-                    tab_hold_index = w
+                if pctl.playing_state == 2:
+                    pause_colour = ButtonsActive
+                    play_colour = ButtonsActive
+                elif pctl.playing_state == 3:
+                    play_colour = ButtonsActive
 
-                    switch_playlist(w)
-
-                elif tab_menu.active is False and loading_in_progress is False and (
-                    middle_click or (key_shift_down and mouse_click)) and coll_point(
-                        mouse_position, (starting_l + (spacing * w) + l, r[1], r[2] + text_space, r[3])) and len(
-                        pctl.multi_playlist) > 1:
-                    delete_playlist(w)
-
-                    break
-
-                l += text_space
-
-            c_l = starting_l + (spacing * (len(pctl.multi_playlist))) + l
-
-            if mouse_up:
-                quick_drag = False
-
-            if not mouse_down:
-                tab_hold = False
-
-            # if mouse_wheel != 0 and coll_point(mouse_position, ( starting_l, 0, l + (spacing * w) + 40, 30 )) and len(
-            if mouse_wheel != 0 and coll_point(mouse_position, (0, 0, window_size[0], 30)) and len(
-                    pctl.multi_playlist) > 1:
-                switch_playlist(mouse_wheel * -1, True)
-                renplay += 1
-
-            # ------------
-            # Copy of above code for arrow keys
-            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
-
-                renplay += 1
-                UPDATE_RENDER += 1
-
-                if key_left_press:
-                    switch_playlist(-1, True)
-
-                if key_right_press:
-                    switch_playlist(1, True)
-
-                    # ----------------
-
-            l += 10
-
-            if draw_alt:
-                l += 20
-            #
-            # x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
-            # y = 8
-            # rect = [x - 6, y - 4, 31, 23]
-            # fields.add(rect)
-            # if coll_point(mouse_position, rect):
-            #     draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NPL", GREY5, 12)
-            #     if mouse_click:
-            #         new_playlist_box = True
-            #         mouse_click = False
-            #         NPN = ""
-            # else:
-            #     draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "NEW PLAYLIST", GREY4, 12)
-
-            # l += 38
-
-            x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
-            y = 8
-            rect = [x - 8, y - 4, 50, 23]
-
-            fields.add(rect)
-
-            if x_menu.active:
-
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
-                if coll_point(mouse_position, rect) and (mouse_click or right_click):
-                    x_menu.active = False
-
-            else:
+                rect = (25 - 15, window_size[1] - control_line_bottom - 13, 50, 40)
+                fields.add(rect)
                 if coll_point(mouse_position, rect):
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
-                    if mouse_click or right_click:
-                        x_menu.activate(position=(x+25,panelY))
-                else:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY4, 12)
-
-
-
-            l += 50
-
-            x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
-            y = 8
-            rect = [x - 6, y - 4, 60, 23]
-
-            fields.add(rect)
-
-            if album_mode:
-
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
-                if coll_point(mouse_position, rect) and mouse_click:
-                    toggle_album_mode()
-
-            else:
-                if coll_point(mouse_position, rect):
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
+                    play_colour = ButtonsOver
                     if mouse_click:
-                        toggle_album_mode()
-                else:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY4, 12)
+                        pctl.play()
+                    if right_click:
+                        pctl.show_current()
+                        if album_mode:
+                            goto_album(pctl.playlist_playing)
+                draw_rect((25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
+                # draw_rect_r(rect,[255,0,0,255], True)
+                SDL_RenderCopy(renderer, c1, None, dst1)
+
+                # PAUSE---
+                x = 75
+                y = window_size[1] - control_line_bottom
+
+                rect = (x - 15, y - 13, 50, 40)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    pause_colour = ButtonsOver
+                    if mouse_click:
+                        pctl.pause()
+
+                # draw_rect_r(rect,[255,0,0,255], True)
+                draw_rect((x, y + 0), (4, 13), pause_colour, True)
+                draw_rect((x + 10, y + 0), (4, 13), pause_colour, True)
+
+                # STOP---
+                x = 125
+                rect = (x - 14, y - 13, 50, 40)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    stop_colour = ButtonsOver
+                    if mouse_click:
+                        pctl.stop()
+                    if right_click:
+                        auto_stop ^= True
+
+                draw_rect((x, y + 0), (13, 13), stop_colour, True)
+                # draw_rect_r(rect,[255,0,0,255], True)
+
+                # FORWARD---
+                rect = (230, window_size[1] - control_line_bottom - 10, 50, 35)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    forward_colour = ButtonsOver
+                    if mouse_click:
+                        pctl.advance()
+                    if right_click:
+                        pctl.random_mode ^= True
+                    if middle_click:
+                        pctl.advance(rr=True)
+                draw_rect((240, window_size[1] - control_line_bottom), (28, 14), forward_colour, True)
+                # draw_rect_r(rect,[255,0,0,255], True)
+                SDL_RenderCopy(renderer, c2, None, dst2)
+
+                # BACK---
+                rect = (170, window_size[1] - control_line_bottom - 10, 50, 35)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    back_colour = ButtonsOver
+                    if mouse_click:
+                        pctl.back()
+                    if right_click:
+                        pctl.repeat_mode ^= True
+
+                draw_rect((180, window_size[1] - control_line_bottom), (28, 14), back_colour, True)
+                # draw_rect_r(rect,[255,0,0,255], True)
+                SDL_RenderCopy(renderer, c3, None, dst3)
+
+                if window_size[0] > 630:
+
+                    x = window_size[0] - 295
+                    y = window_size[1] - 27
+
+                    rect = (x - 9, y - 5, 65, 25)
+                    fields.add(rect)
+
+                    rpbc = stepctloff
+                    if (mouse_click or right_click) and coll_point(mouse_position, rect):
+                        pctl.random_mode ^= True
+
+                        if pctl.random_mode == False:
+                            random_click_off = True
+
+                    if pctl.random_mode:
+                        rpbc = stepctlon
+
+                    elif coll_point(mouse_position, rect):
+                        if random_click_off == True:
+                            rpbc = stepctloff
+                        elif pctl.random_mode is True:
+                            rpbc = stepctlon
+                        else:
+                            rpbc = stepctlover
+                    else:
+                        random_click_off = False
+
+                    y += 2
+
+                    draw_rect((x, y), (25, 4), rpbc, True)
+
+                    y += 8
+                    draw_rect((x, y), (50, 4), rpbc, True)
+
+                    #draw_text((x,y), "RANDOM", rpbc, 13)
+
+                    # REPEAT
+                    x = window_size[0] - 350
+                    y = window_size[1] - 27
+
+                    rpbc = stepctloff
+
+                    rect = (x - 15, y - 5, 59, 25)
+                    fields.add(rect)
+                    if (mouse_click or right_click) and coll_point(mouse_position, rect):
+                        pctl.repeat_mode ^= True
+
+                        if pctl.repeat_mode == False:
+                            repeat_click_off = True
+
+                    if pctl.repeat_mode:
+                        rpbc = stepctlon
+
+                    elif coll_point(mouse_position, rect):
+                        if repeat_click_off == True:
+                            rpbc = stepctloff
+                        elif pctl.repeat_mode is True:
+                            rpbc = stepctlon
+                        else:
+                            rpbc = stepctlover
+                    else:
+                        repeat_click_off = False
+
+                    #draw_text((x,y), "REPEAT", rpbc, 13)
+                    y += 10
+                    w = 4
+
+                    draw_rect((x, y), (35, w), rpbc, True)
+                    draw_rect((x + 35 - w, y - 8), (w, 8), rpbc, True)
+                    draw_rect((x + 15, y - 8), (20, w), rpbc, True)
+
+                # MULTI PLAYLIST-----------------------
+
+                l = 0
+
+                starting_l = 8
+
+                spacing = 17
+
+                if tab_hold:
+                    dragmode = False
+
+                # Need to test length
+                k = 0
+                for w in range(len(pctl.multi_playlist)):
+                    k += text_calc(pctl.multi_playlist[w][0], 12)[0]
+                k = starting_l + (spacing * (len(pctl.multi_playlist))) + k
+                k += 40
+                k += text_calc(get_playing_line(), 12)[0]
+
+                draw_alt = False
+                if k > window_size[0] - 120:
+                    # rect = (starting_l, 0, 10, 29)
+                    # draw_rect()
+
+                    starting_l += 20
+                    spacing = 0
+                    draw_alt = True
+
+                # Process each tab on top panel
+                for w in range(len(pctl.multi_playlist)):
+
+                    if draw_alt and w != pctl.playlist_active:
+                        continue
+
+                    text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
+
+                    rect = (starting_l + (spacing * w) + l, 1, text_space + 16, 29)
+                    fields.add(rect)
+
+                    draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg, True)
+
+                    if not pl_follow and w == pctl.active_playlist_playing:
+                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), [255, 255, 255, 7], True)
+
+                    if (tab_menu.active is True and tab_menu.reference == w) or tab_menu.active is False and coll_point(
+                            mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 29)):
+                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_over, True)
+
+                    if w == pctl.playlist_active:
+                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg_active, True)
+                        text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
+                                               pctl.multi_playlist[w][0],
+                                               playlist_line_active, 12)
 
 
 
-            if lastfm.connected:
-                l += 62
+                    else:
+                        text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
+                                               pctl.multi_playlist[w][0],
+                                               playlist_line, 12)
+
+                    pl_coll = False
+
+                    if coll_point(mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 30)):
+                        pl_coll = True
+                        if mouse_up and tab_hold and tab_hold_index != w:
+                            pctl.multi_playlist[w], pctl.multi_playlist[tab_hold_index] = pctl.multi_playlist[
+                                                                                              tab_hold_index], \
+                                                                                          pctl.multi_playlist[w]
+
+                            pctl.playlist_active = w
+
+                        if right_click:
+                            tab_menu.activate(copy.deepcopy(w))
+
+                        if quick_drag is True:
+                            draw_text((starting_l + text_space + (spacing * w) + 7 + l, r[1] - 8, r[2], r[3]), '+',
+                                      [200, 20, 40, 255], 12)
+
+                            if mouse_up:
+                                quick_drag = False
+                                if len(shift_selection) > 1:
+                                    for item in shift_selection:
+                                        pctl.multi_playlist[w][2].append(default_playlist[item])
+                                else:
+                                    pctl.multi_playlist[w][2].append(default_playlist[shift_selection[0]])
+
+                    if mouse_click and pl_coll and not key_shift_down:
+                        # print('Switching Playlist')
+                        renplay += 1
+                        tab_hold = True
+                        tab_hold_index = w
+
+                        switch_playlist(w)
+
+                    elif tab_menu.active is False and loading_in_progress is False and (
+                        middle_click or (key_shift_down and mouse_click)) and coll_point(
+                            mouse_position, (starting_l + (spacing * w) + l, r[1], r[2] + text_space, r[3])) and len(
+                            pctl.multi_playlist) > 1:
+                        delete_playlist(w)
+
+                        break
+
+                    l += text_space
+
+                c_l = starting_l + (spacing * (len(pctl.multi_playlist))) + l
+
+                if mouse_up:
+                    quick_drag = False
+
+                if not mouse_down:
+                    tab_hold = False
+
+
+                if mouse_wheel != 0 and coll_point(mouse_position, (0, 0, window_size[0], 30)) and len(
+                        pctl.multi_playlist) > 1:
+                    switch_playlist(mouse_wheel * -1, True)
+                    renplay += 1
+
+                # ------------
+                # Copy of above code for arrow keys
+                if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+
+                    renplay += 1
+                    UPDATE_RENDER += 1
+
+                    if key_left_press:
+                        switch_playlist(-1, True)
+
+                    if key_right_press:
+                        switch_playlist(1, True)
+
+                        # ----------------
+
+                l += 10
+
+                if draw_alt:
+                    l += 20
 
                 x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
                 y = 8
-                rect = [x - 6, y - 4, 58, 23]
+                rect = [x - 8, y - 4, 50, 23]
 
                 fields.add(rect)
 
-                if not lastfm.hold:
-                    #draw_rect_r(rect, [70,70,70,70], True)
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
-                    if coll_point(mouse_position, rect) and mouse_click:
-                        lastfm.toggle()
+                if x_menu.active:
+
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
+                    if coll_point(mouse_position, rect) and (mouse_click or right_click):
+                        x_menu.active = False
 
                 else:
                     if coll_point(mouse_position, rect):
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
-                        if mouse_click:
-                            lastfm.toggle()
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
+                        if mouse_click or right_click:
+                            x_menu.activate(position=(x+25,panelY))
                     else:
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY4, 12)
-                l += 20
-
-            m_l = x + 60
-
-            l += 75
-
-            if broadcast is False:
-                if loading_in_progress:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
-                              "Importing...  " + str(to_got) + "/" + str(to_get), [245, 205, 0, 255], 11)
-                elif len(transcode_list) > 0:
-                    line = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
-
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
-                              line, [245, 205, 0, 255], 11)
-            elif join_broadcast:
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
-                          "Streaming", [60, 75, 220, 255], 11)
-                l += 97
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY4, 12)
 
 
-            else:
 
-                if encpause == 1:
-                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
-                              "Streaming Paused:", [220, 75, 60, 255], 11)
-                    l += 97
+                l += 50
+
+                x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
+                y = 8
+                rect = [x - 6, y - 4, 60, 23]
+
+                fields.add(rect)
+
+                if album_mode:
+
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
+                    if coll_point(mouse_position, rect) and mouse_click:
+                        toggle_album_mode()
+
                 else:
+                    if coll_point(mouse_position, rect):
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
+                        if mouse_click:
+                            toggle_album_mode()
+                    else:
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY4, 12)
+
+
+
+                if lastfm.connected:
+                    l += 62
+
+                    x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
+                    y = 8
+                    rect = [x - 6, y - 4, 58, 23]
+
+                    fields.add(rect)
+
+                    if not lastfm.hold:
+                        #draw_rect_r(rect, [70,70,70,70], True)
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
+                        if coll_point(mouse_position, rect) and mouse_click:
+                            lastfm.toggle()
+
+                    else:
+                        if coll_point(mouse_position, rect):
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
+                            if mouse_click:
+                                lastfm.toggle()
+                        else:
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY4, 12)
+                    l += 20
+
+                m_l = x + 60
+
+                l += 75
+
+                if broadcast is False:
+                    if loading_in_progress:
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
+                                  "Importing...  " + str(to_got) + "/" + str(to_get), [245, 205, 0, 255], 11)
+                    elif len(transcode_list) > 0:
+                        line = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
+
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
+                                  line, [245, 205, 0, 255], 11)
+                elif join_broadcast:
                     draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
-                              "Now Streaming:", [60, 75, 220, 255], 11)
-                    l += 85
-                line = master_library[broadcast_index]['artist'] + " - " + master_library[broadcast_index]['title']
-                line = trunc_line(line, 11, window_size[0] - l - 195)
+                              "Streaming", [60, 75, 220, 255], 11)
+                    l += 97
 
-                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
-                          GREY(130), 11)
 
-                x = window_size[0] - 100
-                y = 10
-                w = 90
-                h = 9
+                else:
 
-                if turbo:
-                    x -= 90
+                    if encpause == 1:
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
+                                  "Streaming Paused:", [220, 75, 60, 255], 11)
+                        l += 97
+                    else:
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
+                                  "Now Streaming:", [60, 75, 220, 255], 11)
+                        l += 85
+                    line = master_library[broadcast_index]['artist'] + " - " + master_library[broadcast_index]['title']
+                    line = trunc_line(line, 11, window_size[0] - l - 195)
 
-                w2 = int(broadcast_time / int(master_library[broadcast_index]['length']) * 90)
+                    draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
+                              GREY(130), 11)
 
-                draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
-                draw_rect((x, y), (w, h), GREY(30))
+                    x = window_size[0] - 100
+                    y = 10
+                    w = 90
+                    h = 9
 
-                l -= 15
-                l -= 85
+                    if turbo:
+                        x -= 90
 
+                    w2 = int(broadcast_time / int(master_library[broadcast_index]['length']) * 90)
+
+                    draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
+                    draw_rect((x, y), (w, h), GREY(30))
+
+                    l -= 15
+                    l -= 85
+
+
+            # Overlay GUI ----------------------
 
             if new_playlist_box is True:
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
