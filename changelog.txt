@@ -1,6 +1,16 @@
 
 Changelog-------------------------------------
 
+v1.3.1
+
+ - Minor interface tweaks
+ - Fixed console windows appearing when transcoding
+ - Fixed settings taking long to open with large music libraries
+ - Fixed incorrectly displaying song lengths greater than an hour long
+ - Fixed slow re-importing
+ - Improved stability when importing
+ - Changed create playlist behavior
+
 v1.3.0
 
  - Added hints for empty playlist
