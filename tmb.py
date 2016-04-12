@@ -4437,10 +4437,10 @@ def toggle_album_mode():
         side_panel_enable = True
         old_side_pos = side_panel_size
 
-    if window_size[0] < 900:
-        SDL_SetWindowSize(t_window, 1110, 590)
-        window_size = [1110, 590]
-        update_layout = True
+    # if window_size[0] < 900:
+    #     SDL_SetWindowSize(t_window, 1110, 590)
+    #     window_size = [1110, 590]
+    #     update_layout = True
 
     reload_albums()
 
