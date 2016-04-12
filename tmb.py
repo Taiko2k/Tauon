@@ -47,6 +47,7 @@ import math
 import locale
 import webbrowser
 import pyperclip
+import base64
 
 
 from ctypes import *
@@ -719,11 +720,11 @@ except:
     print("warning: error loading settings")
 
 
-if os.path.isdir("web"):
-    pass
-else:
-    print('Creating web cache folder')
-    os.makedirs("web")
+# if os.path.isdir("web"):
+#     pass
+# else:
+#     print('Creating web cache folder')
+#     os.makedirs("web")
 
 
 if prefer_side is False:
@@ -3222,7 +3223,11 @@ def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""
                 im = im.convert("RGB")
             im.thumbnail(size, Image.ANTIALIAS)
             if save_path == "":
-                im.save('web/' + str(index) + '.jpg', 'JPEG')
+                #im.save('web/' + str(index) + '.jpg', 'JPEG')
+                buff = io.BytesIO()
+                im.save(buff, format="JPEG")
+                sss = base64.b64encode(buff.getvalue())
+                return sss
             else:
                 im.save(save_path + '.jpg', 'JPEG')
             return 0
@@ -3271,11 +3276,12 @@ def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""
     except:
 
         art_cache.append([index, None])
-
         # cached_offsets.append( folder_image_offsets[os.path.dirname(filepath)] )
         print(sys.exc_info()[0])
-        # raise
+
         # print(source_cache)
+
+
         return [0, 1, False]
 
     if source_cache[source_index][1] == "TAG":
@@ -5562,24 +5568,33 @@ def webserv():
     <title>TMB Remote</title>
 
     <style>
-    body {background-color:# 1A1A1A;
+    body {background-color:#1A1A1A;
     font-family:sans-serif;
     }
     p {
-    color:# D1D1D1;
+    color:#D1D1D1;
     font-family:sans-serif;
      }
     a {
-    color:# D1D1D1;
+    color:#D1D1D1;
     font-family:sans-serif;
      }
-
+    l {
+    color:#737373;
+    font-family:sans-serif;
+    font-size: 85%;
+     }
     </style>
 
     </head>
 
     <body>
+
+    <div style="width:100%;">
+    <div style="float:left; width:50%;">
+
     <p>
+
 
     <a href="/remote/downplaylist">Previous Playlist </a> &nbsp
     $pline  &nbsp
@@ -5605,24 +5620,27 @@ def webserv():
     <a href="/remote/vup">Vol +</a>
     <a href="/remote/vdown">Vol -</a>
     &nbsp; &nbsp;
-    [ <a href="/remote/seek0" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek10" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek20" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek30" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek40" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek50" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek60" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek70" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek80" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek90" STYLE="text-decoration: none">-</a>
-    <a href="/remote/seek100" STYLE="text-decoration: none">-</a> ]
+    <br><br> Seek [ $seekbar ]
     <br>
 
     <br>
     <a href="/remote">Reload</a>
 
 
+    </div>
+    <div style="float:left; ">
+
+    <br><br>
+    <a href="/remote/pl-up" STYLE="text-decoration: none">Up</a>
+    <br><br>
+    $list
+    <br>
+    <a href="/remote/pl-down" STYLE="text-decoration: none">Down</a>
+
     </p>
+    </div>
+    </div>
+
     </body>
 
     </html>
@@ -5635,11 +5653,11 @@ def webserv():
     <title>Radio Album Art</title>
 
     <style>
-    body {background-color:# 1A1A1A;
+    body {background-color:#1A1A1A;
     font-family:sans-serif;
     }
     p {
-    color:# D1D1D1;
+    color:#D1D1D1;
     font-family:sans-serif;
      }
     </style>
@@ -5648,7 +5666,7 @@ def webserv():
     <body>
     <br>
     <p><br> <br> <br>
-    <img src="/get_image.jpg" alt="No Album Art" style="float:left;" >
+    $image
     <br> <br>  &nbsp; &nbsp; &nbsp; $play
     </p>
     </body>
@@ -5720,8 +5738,16 @@ def webserv():
 
         image_line = " "
         if pctl.playing_state > 0:
-            image_line = '<img src="/album_art/' + str(
-                    pctl.track_queue[pctl.queue_step]) + '.jpg" alt="No Album Art" style="float:left;" >'
+
+            image_line = '<img src="data:image/jpeg;base64,'
+            bimage = display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
+            if type(bimage) is list:
+                image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
+            else:
+                image_line += bimage.decode("utf-8")
+                image_line += '" alt="No Album Art" style="float:left;" />'
+            # image_line = '<img src="/album_art/' + str(
+            #         pctl.track_queue[pctl.queue_step]) + '.jpg" alt="No Album Art" style="float:left;" >'
 
         randomline = "Is Off"
         if pctl.random_mode:
@@ -5732,6 +5758,7 @@ def webserv():
             repeatline = "is On"
 
         playlist_line = ""
+
         for i in range(len(pctl.multi_playlist)):
 
             if i == pctl.playlist_active:
@@ -5739,24 +5766,103 @@ def webserv():
             else:
                 playlist_line += pctl.multi_playlist[i][0] + " "
 
+
+        p_list = "<l>"
+        i = playlist_position
+        while i < playlist_position + 25:
+            if i > len(default_playlist) - 1:
+                break
+
+
+
+            line = "\n"
+            line += '<a href="/remote/jump'
+            line += str(default_playlist[i]) + '"'
+            line += ' STYLE="text-decoration: none; color:#8c8c8c ">'
+            if default_playlist[i] == pctl.track_queue[pctl.queue_step]:
+                line += "▶  "
+            else:
+                line += str(i + 1) + ".  "
+
+            line += master_library[default_playlist[i]]['artist'] + " - " + master_library[default_playlist[i]]['title']
+            line += """"</a>"""
+            line += "<br>"
+            p_list += line
+            i += 1
+        p_list += "</l>"
+
+        seek_line = ""
+        i = 0
+        while i < 100:
+            seek_line += '<a href="/remote/seek'
+            seek_line += str(i)
+            seek_line += '" STYLE="text-decoration: none">-</a>'
+            i += 3
+
         return remote_template.substitute(play=get_playing_line(),
                                           image=image_line,
                                           isran=randomline,
                                           isrep=repeatline,
-                                          pline=playlist_line
+                                          pline=playlist_line,
+                                          list=p_list,
+                                          seekbar=seek_line
                                           )
 
     @app.route('/radio')
     def radio():
-        return radio_template.substitute(play=get_broadcast_line())
+        global broadcast_index
+        image_line = '<img src="data:image/jpeg;base64,'
+        bimage = display_album_art(broadcast_index, (0, 0), (300, 300), mode='save')
+        if type(bimage) is list:
+            image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
+        else:
+            image_line += bimage.decode("utf-8")
+            image_line += '" alt="No Album Art" style="float:left;" />'
+
+        return radio_template.substitute(play=get_broadcast_line(), image=image_line)
+
+    @app.route('/remote/pl-up')
+    def pl_up():
+        if not allow_remote:
+            abort(403)
+            return 0
+        global playlist_position
+        global default_playlist
+        playlist_position -= 24
+        if playlist_position < 0:
+            playlist_position = 0
+        return redirect('/remote', code=302)
+
+    @app.route('/remote/pl-down')
+    def pl_down():
+        if not allow_remote:
+            abort(403)
+            return 0
+        global playlist_position
+        global default_playlist
+        playlist_position += 24
+        if playlist_position > len(default_playlist) - 26:
+            playlist_position = len(default_playlist) - 25
+        return redirect('/remote', code=302)
+
 
     @app.route('/remote/back')
     def back():
         if not allow_remote:
             abort(403)
-            return (0)
+            return 0
         global pctl
         pctl.back()
+        return redirect('/remote', code=302)
+
+
+    @app.route('/remote/jump<int:indexno>')
+    def jump(indexno):
+        if not allow_remote:
+            abort(403)
+            return (0)
+        global pctl
+        pctl.jump(indexno)
         return redirect('/remote', code=302)
 
     @app.route('/remote/forward')
@@ -5875,36 +5981,36 @@ def webserv():
         pctl.repeat_mode ^= True
         return redirect('/remote', code=302)
 
-    @app.route('/album_art/<int:indexno>.jpg')
-    def get_play_image(indexno):
-        if not allow_remote:
-            abort(403)
-            return (0)
-        filename = "web/" + str(pctl.track_queue[pctl.queue_step]) + ".jpg"
-        if not os.path.isfile(filename):
-            display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
+    # @app.route('/album_art/<int:indexno>.jpg')
+    # def get_play_image(indexno):
+    #     if not allow_remote:
+    #         abort(403)
+    #         return (0)
+    #     filename = "web/" + str(pctl.track_queue[pctl.queue_step]) + ".jpg"
+    #     if not os.path.isfile(filename):
+    #         display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
+    #
+    #     return send_file(filename, mimetype='image/jpg')
 
-        return send_file(filename, mimetype='image/jpg')
+    # @app.route('/album_index/<int:indexno>.jpg')
+    # def get_album_image(indexno):
+    #     if not allow_remote:
+    #         abort(403)
+    #         return (0)
+    #     filename = "web/" + str(indexno) + ".jpg"
+    #     if not os.path.isfile(filename):
+    #         print((display_album_art(indexno, (0, 0), (150, 150), mode='save')))
+    #
+    #     return send_file(filename, mimetype='image/jpg')
 
-    @app.route('/album_index/<int:indexno>.jpg')
-    def get_album_image(indexno):
-        if not allow_remote:
-            abort(403)
-            return (0)
-        filename = "web/" + str(indexno) + ".jpg"
-        if not os.path.isfile(filename):
-            display_album_art(indexno, (0, 0), (150, 150), mode='save')
-
-        return send_file(filename, mimetype='image/jpg')
-
-    @app.route('/get_image.jpg')
-    def get_image():
-        global boradcast_index
-        filename = "web/" + str(broadcast_index) + ".jpg"
-        if not os.path.isfile(filename):
-            display_album_art(broadcast_index, (0, 0), (300, 300), mode='save')
-
-        return send_file(filename, mimetype='image/jpg')
+    # @app.route('/get_image.jpg')
+    # def get_image():
+    #     global boradcast_index
+    #     filename = "web/" + str(broadcast_index) + ".jpg"
+    #     if not os.path.isfile(filename):
+    #         display_album_art(broadcast_index, (0, 0), (300, 300), mode='save')
+    #
+    #     return send_file(filename, mimetype='image/jpg')
 
     if expose_web is True:
         app.run(host='0.0.0.0 ')
@@ -7013,12 +7119,23 @@ while running:
     if key_F7:
         # spec_smoothing ^= True
         # key_F7 = False
-        if draw_border:
-            SDL_SetWindowBordered(t_window, True)
-            draw_border = False
-        else:
-            SDL_SetWindowBordered(t_window, False)
-            draw_border = True
+        #print((display_album_art(1, (0, 0), (150, 150), mode='save')))
+        # if draw_border:
+        #     SDL_SetWindowBordered(t_window, True)
+        #     draw_border = False
+        # else:
+        #     SDL_SetWindowBordered(t_window, False)
+        #     draw_border = True
+
+        # image_line = '<img src="data:image/jpeg;base64,'
+        # bimage = display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
+        # print(bimage)
+        # if bimage is not str:
+        #     image_line = "No Album Art"
+        # else:
+        #     image_line += bimage.decode("utf-8")
+        #     image_line += '" alt="No Album Art" style="float:left;" />'
+
         key_F7 = False
 
     if mediaKey_pressed:

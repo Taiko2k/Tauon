@@ -1,15 +1,18 @@
 
 Changelog-------------------------------------
 
-v1.3.1
+v1.3.2
 
+ - Added playlist to web interface
  - Minor interface tweaks
+ - Fixed web interface colours
  - Fixed console windows appearing when transcoding
  - Fixed settings taking long to open with large music libraries
  - Fixed incorrectly displaying song lengths greater than an hour long
  - Fixed slow re-importing
  - Improved stability when importing
  - Changed create playlist behavior
+ - Removed disk caching for web interface
 
 v1.3.0
 
