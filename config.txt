@@ -58,7 +58,9 @@ icecase-bitrate:128
 
 ## Playlist-----------------
 
-custom-format:"r3;t;r55;o;l;r3;n;p0.33;a;p0.63;b"
+custom-format:"r12;t;r55;o;l;r6;n;p0.33;a;p0.63;b"
+custom-highlight-left:4
+custom-highlight-right:13
 
 ## Note: Experimental function. May not work as expected. May change in future versions.
 
