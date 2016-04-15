@@ -5,7 +5,7 @@ Designed to have an easy to use, comfortable and compact user interface. Inspire
 Uses BASS audio library as backend.
 
 
-### Screenshot
+### Screenshots
 
 ![Screenshot - Gallery View](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-gallery1.jpg)
 
