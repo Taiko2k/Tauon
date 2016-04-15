@@ -52,7 +52,7 @@ import base64
 
 from ctypes import *
 
-t_version = "v1.3.1"
+t_version = "v1.3.2"
 version_line = "Tauon Music Box " + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
@@ -3553,6 +3553,7 @@ class Menu():
                     for w in range(len(self.subs[self.sub_active])):
 
                         # Item background
+                        fx = self.subs[self.sub_active][w][3]()
                         draw_rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
 
                         # Detect if mouse is over this item
@@ -3621,7 +3622,15 @@ def append_here():
     default_playlist += cargo
 
 
-playlist_menu.add('Paste', append_here)
+def paste_deco():
+    line_colour = GREY(50)
+
+    if len(cargo) > 0:
+        line_colour = [150, 150, 150, 255]
+
+    return [line_colour, bottom_panel_colour, None]
+
+playlist_menu.add('Paste', append_here, paste_deco)
 
 # Create playlist tab menu
 tab_menu = Menu(120)
@@ -3862,15 +3871,6 @@ def drop_deco():
         line_colour = [150, 150, 150, 255]
 
     return [line_colour, [0, 0, 0, 255], None]
-
-
-def paste_deco():
-    line_colour = GREY(50)
-
-    if len(cargo) > 0:
-        line_colour = [150, 150, 150, 255]
-
-    return [line_colour, bottom_panel_colour, None]
 
 
 tab_menu.add('Paste', append_playlist, paste_deco, pass_ref=True)
@@ -4239,9 +4239,9 @@ track_menu.add_to_sub('Remove Selected', 1, del_selected)
 track_menu.add_to_sub('Copy Selected', 1, sel_to_car)
 track_menu.add_to_sub("Copy Folder", 1, transfer, pass_ref=True, args=[1, 2])
 track_menu.add_to_sub("Copy & Remove Folder", 1, transfer, pass_ref=True, args=[0, 2])
-track_menu.add_to_sub("Insert Before", 1, transfer, pass_ref=True, args=[2, 1])
-track_menu.add_to_sub("Insert After", 1, transfer, pass_ref=True, args=[2, 2])
-track_menu.add_to_sub("Insert End", 1, transfer, pass_ref=True, args=[2, 3])
+track_menu.add_to_sub("Insert Before", 1, transfer, paste_deco, pass_ref=True, args=[2, 1])
+track_menu.add_to_sub("Insert After", 1, transfer, paste_deco, pass_ref=True, args=[2, 2])
+track_menu.add_to_sub("Insert End", 1, transfer, paste_deco, pass_ref=True, args=[2, 3])
 
 
 def ser_rym(index):
@@ -5027,7 +5027,7 @@ def loader():
                                                     'sample': SAMPLERATE
                                                     }
                     cued.append(master_count)
-
+                    loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
                     # added.append(master_count)
 
                     master_count += 1
@@ -5039,6 +5039,7 @@ def loader():
 
             added += reversed(cued)
             cue_list.append(filepath)
+
         except:
             print("Error in processing CUE file")
 
@@ -5066,7 +5067,7 @@ def loader():
         if path in loaded_pathes_cache:
             de = loaded_pathes_cache[path]
             if master_library[de]['filepath'] in cue_list:
-                #bm.get("dupe cue")
+                #bm.get("File has an associated .cue file... Skipping")
                 return
             added.append(de)
             #bm.get("dupe track")
@@ -5233,8 +5234,9 @@ def loader():
             UPDATE_RENDER += 1
 
             print(shlex.split(command))
-
-            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=True)
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
 
             print('done ffmpeg')
 
@@ -5247,7 +5249,7 @@ def loader():
                 command = 'opusenc --bitrate ' + str(transcode_bitrate) + ' output.wav output.opus'
 
             print(shlex.split(command))
-            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=True)
+            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
             print('done')
 
             os.remove('output.wav')
@@ -9285,7 +9287,7 @@ while running:
                         if coll_point(mouse_position, rect):
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
                             if mouse_click or right_click:
-                                x_menu.activate(position=(x+25,panelY))
+                                x_menu.activate(position=(x+20,panelY))
                         else:
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY4, 12)
 

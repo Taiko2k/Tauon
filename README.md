@@ -1,23 +1,26 @@
 # Tauon Music Box
 
-Tauon Music Box is a streamlined standalone desktop music player with a focus on minimal configuration and user library management.
-Designed to have an easy to use, comfortable and compact user interface.
+Tauon Music Box is a streamlined standalone desktop music player for playback of local files. Focused on minimal configuration and user library management.
+Designed to have an easy to use, comfortable and compact user interface. Inspired by various audio players including AIMP3, foobar2000 and Ncmpcpp.
 Uses BASS audio library as backend.
 
 
 ### Screenshot
 
 ![Screenshot - Gallery View](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-gallery1.jpg)
+![Screenshot - Standard View](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-standard1.jpg)
 
 ### Features
 
-  - Playback support for MP3, OGG, FLAC + others
+  - Playback support for MP3, OGG, FLAC and others
   - CUE sheet support
-  - Large album art display
+  - Large album art view & gallery view
   - Last.fm scrobbling
-  - Playtime representation
+  - Web remote control interface
   - Quick search
-  - Asynchronous outbound streaming
+  - Outbound streaming (via icecast)
+  - Folder transcoding to Opus+Cue
+  - User themes
   - Multi-platform (Windows and Linux)
 
 ### Getting Started
