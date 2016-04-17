@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v1.3.2
 
- - Added playlist to web interface
- - Minor interface tweaks
+ - Added playlist navigation to web interface
+ - Added function for reloading artwork
  - Tweaked some menu elements
+ - Tweaked create playlist behavior
  - Fixed web interface colours
  - Fixed console windows appearing when transcoding
  - Fixed settings taking long to open with large music libraries
@@ -13,8 +14,8 @@ v1.3.2
  - Fixed slow re-importing (again)
  - Fixed cue importing (again)
  - Improved stability when importing
- - Changed create playlist behavior
- - Removed disk caching for web interface
+ - Can now import to playlists by dropping on tab
+ - Removed disk caching of images for web interface
 
 v1.3.0
 

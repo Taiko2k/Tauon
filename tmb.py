@@ -2965,6 +2965,28 @@ class GallClass:
 
 gall_ren = GallClass()
 
+def clear_img_cache():
+
+    for index, item in enumerate(art_cache, start=0):
+
+        if art_cache[index][1] != 1 and art_cache[index][1] != 2:
+            SDL_DestroyTexture(art_cache[index][1])
+
+
+    print(art_cache)
+    print(source_cache)
+    global source_cache
+    global art_cache
+    source_cache = []
+    art_cache = []
+
+    for key, value in gall_ren.gall.items():
+        SDL_DestroyTexture(value[2])
+    gall_ren.gall = {}
+
+    global UPDATE_RENDER
+    UPDATE_RENDER += 1
+
 
 def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""):
     # Warning: This function is a nightmare, don't even attempt to understand
@@ -4564,7 +4586,7 @@ def export_database():
 
 x_menu.add_to_sub("Export as CSV", 0, export_database)
 x_menu.add_to_sub("Get Playlist Readout", 0, export_stats)
-
+x_menu.add_to_sub("Reset image cache", 0, clear_img_cache)
 
 def test():
     global message_box
@@ -6722,12 +6744,33 @@ while running:
     focused = False
     mouse_moved = False
 
+
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
 
         if event.type == SDL_DROPFILE:
             power += 5
-            load_to.append(copy.deepcopy(pctl.playlist_active))
+            k = 0
+            i_y = pointer(c_int(0))
+            i_x = pointer(c_int(0))
+            SDL_GetMouseState(i_x, i_y)
+            i_y = i_y.contents.value
+            i_x = i_x.contents.value
+
+            if i_y < panelY:
+                for w in range(len(pctl.multi_playlist)):
+                    text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
+                    x = starting_l + (spacing * w) + k
+                    if x < i_x < x + text_space:
+                        load_to.append(copy.deepcopy(w))
+                        print("hit 1")
+                        print(w)
+                        break
+                    k += text_space
+                else:
+                    load_to.append(copy.deepcopy(pctl.playlist_active))
+            else:
+                load_to.append(copy.deepcopy(pctl.playlist_active))
 
             droped_file_sdl = event.drop.file
             # print(droped_file_sdl)
@@ -7129,14 +7172,6 @@ while running:
         #     SDL_SetWindowBordered(t_window, False)
         #     draw_border = True
 
-        # image_line = '<img src="data:image/jpeg;base64,'
-        # bimage = display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
-        # print(bimage)
-        # if bimage is not str:
-        #     image_line = "No Album Art"
-        # else:
-        #     image_line += bimage.decode("utf-8")
-        #     image_line += '" alt="No Album Art" style="float:left;" />'
 
         key_F7 = False
 
