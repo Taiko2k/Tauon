@@ -22,7 +22,7 @@ Advanced Use
 
 ##### Track Navigation:
 
-- 'Forward' and 'Back' play the next and previous tracks as they appear in the playlist. However with random mode on, back functions as an absolute back, playing the
+- 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist. However with random mode on, back functions as an absolute back, playing the
 previous track played. (So if you intended to play the track that appears after the last track that was played, you could enter the sequence RANDOM ON > BACK > RANDOM OFF > FORWARD)
 
 ##### Panel Buttons:
