@@ -7,9 +7,9 @@ Uses BASS audio library as backend.
 
 ### Screenshots
 
-![Screenshot - Gallery View](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-gallery1.jpg)
+![Screenshot - Gallery View](https://cloud.githubusercontent.com/assets/17271572/14585603/be1b7442-04ce-11e6-8ccc-df66db4499b6.jpg)
 
-<img src="https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/tmb-standard1.jpg" alt="Standard View" width=550px />
+<img src="https://cloud.githubusercontent.com/assets/17271572/14585601/bcf654ce-04ce-11e6-8716-cafa51e66876.jpg" alt="Standard View" width=550px />
 
 ### Features
 
