@@ -1,10 +1,13 @@
 
 Changelog-------------------------------------
 
-v1.3.2
+v1.3.4
 
  - Added playlist navigation to web interface
  - Added function for reloading artwork
+ - Added importing to playlists by dropping on tab
+ - Added specifying encoding output directory from config
+ - Added 'open with' support and opening file via cli
  - Tweaked some menu elements
  - Tweaked create playlist behavior
  - Fixed web interface colours
@@ -13,8 +16,8 @@ v1.3.2
  - Fixed incorrectly displaying song lengths greater than an hour long
  - Fixed slow re-importing (again)
  - Fixed cue importing (again)
+ - Fixed dependence on running from working directory
  - Improved stability when importing
- - Can now import to playlists by dropping on tab
  - Removed disk caching of images for web interface
 
 v1.3.0
