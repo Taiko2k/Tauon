@@ -52,7 +52,7 @@ import base64
 
 from ctypes import *
 
-t_version = "v1.3.2"
+t_version = "v1.3.4"
 version_line = "Tauon Music Box " + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
@@ -67,12 +67,24 @@ else:
     system = 'not-windows'
     print("Detected platform: Linux")
 
-active_directory = os.getcwd()
-print("Running from directory: " + active_directory)
-# print('Argument List: ' + str(sys.argv))
+working_directory = os.getcwd()
+print("Working directory: " + working_directory)
+print('Argument List: ' + str(sys.argv))
+install_directory = sys.path[0]
+install_directory = install_directory.replace('\\', '/')
+if 'base_library' in install_directory:
+    install_directory = os.path.dirname(install_directory)
+print('Install directory: ' + install_directory)
+user_directory = install_directory
+print('User directory: ' + user_directory)
+encoder_output = user_directory + '/encoder/'
+
+
+b_active_directroy = install_directory.encode('utf-8')
+
 
 if system == 'windows':
-    os.environ["PYSDL2_DLL_PATH"] = active_directory + "\\lib"
+    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, atexit
 # else:
@@ -174,6 +186,8 @@ main_font = 'DroidSansFallback.ttf'
 album_mode = False
 spec = None
 spec_smoothing = True
+
+auto_play_import = False
 
 update_spec = 0
 vis = 2
@@ -606,12 +620,12 @@ def num_from_line(line):
 # STATE LOADING
 
 try:
-    star_library = pickle.load(open("star.p", "rb"))
+    star_library = pickle.load(open(user_directory + "/star.p", "rb"))
 except:
     print('No existing star.p file')
 
 try:
-    save = pickle.load(open("state.p", "rb"))
+    save = pickle.load(open(user_directory + "/state.p", "rb"))
     master_library = save[0]
     master_count = save[1]
     playlist_playing = save[2]
@@ -650,8 +664,8 @@ if window_size is None:
 player_config = "BASS"
 
 
-path = active_directory + "/config.txt"
-if os.path.isfile("config.txt"):
+path = install_directory + "/config.txt"
+if os.path.isfile(os.path.join(install_directory, "config.txt")):
     with open(path, encoding="utf_8") as f:
         content = f.readlines()
         for p in content:
@@ -684,6 +698,13 @@ if os.path.isfile("config.txt"):
                 highlight_right_custom = int(p.split(":")[1])
             if 'opus-bitrate:' in p:
                 transcode_bitrate = p[13:-1]
+            if 'output-dir:' in p:
+                encoder_output = p[11:-1]
+                encoder_output = encoder_output.replace('\\', '/')
+                if encoder_output[-1] != "/":
+                    encoder_output += "/"
+
+                print('Encode output: ' + encoder_output)
             if 'enable-transcode' in p:
                 enable_transcode = True
             if 'custom-format:' in p:
@@ -1366,9 +1387,9 @@ def player():
             mix_module = ctypes.WinDLL('bassmix')
             function_type = ctypes.WINFUNCTYPE
         else:
-            bass_module = ctypes.CDLL(active_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
-            enc_module = ctypes.CDLL(active_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
-            mix_module = ctypes.CDLL(active_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+            bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
+            enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
+            mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
             function_type = ctypes.CFUNCTYPE
 
         loaded_player = 'BASS'
@@ -1470,7 +1491,7 @@ def player():
             bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
             bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
         else:
-            b = active_directory.encode('utf-8')
+            b = install_directory.encode('utf-8')
             bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
             bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
             bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
@@ -1814,7 +1835,7 @@ def player():
                     codec = ""
                     bitrate = ""
 
-                    path = active_directory + "/config.txt"
+                    path = install_directory + "/config.txt"
                     with open(path, encoding="utf_8") as f:
                         content = f.readlines()
                         for p in content:
@@ -1871,7 +1892,7 @@ def player():
                         encbin = '.exe'
 
                     if codec == "MP3":
-                        line = active_directory + "/encoder/lame" + encbin + " -r -s 44100 -b " + bitrate + " -"
+                        line = install_directory + "/encoder/lame" + encbin + " -r -s 44100 -b " + bitrate + " -"
                         line = line.encode('utf-8')
 
                         encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
@@ -1883,7 +1904,7 @@ def player():
                                              b"genre", b"", b"", int(bitrate), False)
 
                     elif codec == "OGG":
-                        line = active_directory + "/encoder/oggenc2" + encbin + " -r -b " + bitrate + " -"
+                        line = install_directory + "/encoder/oggenc2" + encbin + " -r -b " + bitrate + " -"
                         line = line.encode('utf-8')
                         # print(line)
 
@@ -2429,7 +2450,7 @@ window_title = window_title.encode('utf-8')
 
 
 def load_font(name, size):
-    b = active_directory
+    b = install_directory
     b = b.encode('utf-8')
     c = name.encode('utf-8')
     fontpath = b + b'/gui/' + c
@@ -2455,13 +2476,16 @@ font4b = load_font(alt_font, 11)
 font6 = load_font(main_font, 13)
 font6b = load_font(alt_font, 13)
 
+font7 = load_font(main_font, 14)
+font7b = load_font(alt_font, 14)
+
 font_dict = {}
 font_dict[13] = (font6, font6b)
 font_dict[11] = (font4, font4b)
 font_dict[10] = (font3, font3b)
 font_dict[12] = (font2, font2b)
 font_dict[16] = (font1, font1b)
-
+font_dict[14] = (font7, font7b)
 
 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
 
@@ -2486,7 +2510,7 @@ display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
 SDL_GetDisplayBounds(display_index, display_bounds)
 
-icon = IMG_Load(b"gui/icon.png")
+icon = IMG_Load(b_active_directroy + b"/gui/icon.png")
 
 SDL_SetWindowIcon(t_window, icon)
 
@@ -2967,16 +2991,14 @@ gall_ren = GallClass()
 
 def clear_img_cache():
 
+    global source_cache
+    global art_cache
+
     for index, item in enumerate(art_cache, start=0):
 
         if art_cache[index][1] != 1 and art_cache[index][1] != 2:
             SDL_DestroyTexture(art_cache[index][1])
 
-
-    print(art_cache)
-    print(source_cache)
-    global source_cache
-    global art_cache
     source_cache = []
     art_cache = []
 
@@ -3409,21 +3431,21 @@ def prep_gal():
 # LOADING EXTRA
 control_line_bottom = 35
 
-s_image1 = IMG_Load(b'gui/playw.png')
+s_image1 = IMG_Load(b_active_directroy + b'/gui/playw.png')
 c1 = SDL_CreateTextureFromSurface(renderer, s_image1)
 SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
 dst1 = SDL_Rect(25, window_size[1] - control_line_bottom)
 dst1.w = 14
 dst1.h = 14
 
-s_image2 = IMG_Load(b'gui/ffw.png')
+s_image2 = IMG_Load(b_active_directroy + b'/gui/ffw.png')
 c2 = SDL_CreateTextureFromSurface(renderer, s_image2)
 SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
 dst2 = SDL_Rect(240, window_size[1] - control_line_bottom)
 dst2.w = 28
 dst2.h = 14
 
-s_image3 = IMG_Load(b'gui/bbw.png')
+s_image3 = IMG_Load(b_active_directroy + b'/gui/bbw.png')
 c3 = SDL_CreateTextureFromSurface(renderer, s_image3)
 SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
 dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
@@ -3802,8 +3824,8 @@ def convert_playlist(pl):
     global message_box
     global message_box_text
 
-    if os.path.isfile('encoder/ffmpeg.exe') and os.path.isfile('encoder/opusenc.exe') or \
-                    os.path.isfile('encoder/ffmpeg') and os.path.isfile('encoder/opusenc') or system != 'windows':
+    if os.path.isfile(install_directory + '/encoder/ffmpeg.exe') and os.path.isfile(install_directory + '/encoder/opusenc.exe') or \
+                    os.path.isfile(install_directory + '/encoder/ffmpeg') and os.path.isfile(install_directory + '/encoder/opusenc') or system != 'windows':
         pass
     else:
         message_box = True
@@ -4040,8 +4062,10 @@ def convert_folder(index):
     global message_box
     global message_box_text
 
-    if os.path.isfile('encoder/ffmpeg.exe') and os.path.isfile('encoder/opusenc.exe') or \
-                    os.path.isfile('encoder/ffmpeg') and os.path.isfile('encoder/opusenc') or system != 'windows':
+    if os.path.isfile(install_directory + '/encoder/ffmpeg.exe') and os.path.isfile(
+                    install_directory + '/encoder/opusenc.exe') or \
+                    os.path.isfile(install_directory + '/encoder/ffmpeg') and os.path.isfile(
+                        install_directory + '/encoder/opusenc') or system != 'windows':
         pass
     else:
         message_box = True
@@ -4531,7 +4555,7 @@ def export_stats():
     xport = open('stats.txt', 'wb')
     xport.write(line)
     xport.close()
-    target = os.path.join(active_directory, "stats.txt")
+    target = os.path.join(install_directory, "stats.txt")
     if system == "windows":
         os.startfile(target)
     else:
@@ -4673,7 +4697,7 @@ def broadcast_deco():
     return [line_colour, bottom_panel_colour, None]
 
 
-if default_player == 'BASS' and os.path.isfile("config.txt"):
+if default_player == 'BASS' and os.path.isfile(os.path.join(install_directory, "config.txt")):
     x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco)
 
 
@@ -5071,6 +5095,8 @@ def loader():
         global master_library
         global DA_Formats
         global to_got
+        global pctl
+        global auto_play_import
 
         if os.path.splitext(path)[1][1:] in {"CUE", 'cue'}:
             add_from_cue(path)
@@ -5092,9 +5118,13 @@ def loader():
                 #bm.get("File has an associated .cue file... Skipping")
                 return
             added.append(de)
+            if auto_play_import:
+                pctl.jump(copy.deepcopy(de))
+                print('hit')
+                auto_play_import = False
             #bm.get("dupe track")
             return
-
+        print('hit2')
         time.sleep(0.002)
 
         #bm.get("done dupe check")
@@ -5138,6 +5168,9 @@ def loader():
         added.append(master_count)
         master_count += 1
         #bm.get("fill entry")
+        if auto_play_import:
+            pctl.jump(master_count - 1)
+            auto_play_import = False
 
     def pre_get(direc):
         global DA_Formats
@@ -5178,7 +5211,7 @@ def loader():
     def cache_paths():
         dic = {}
         for i in range(len(master_library)):
-            dic[master_library[i]['filepath']] = i
+            dic[master_library[i]['filepath'].replace('\\', '/')] = i
         return dic
 
     # print(master_library)
@@ -5209,18 +5242,35 @@ def loader():
 
             "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
-            for c in r'[]/\;,><&*:%=+@!#^()|?^':
+            for c in r'[]/\;,><&*:%=+@!#^()|?^.':
                 folder_name = folder_name.replace(c, '')
 
-            if os.path.isdir('encoder/' + folder_name):
+            if os.path.isdir(encoder_output + folder_name):
                 del transcode_list[0]
                 continue
 
-            os.makedirs('encoder/' + folder_name)
+            print(folder_name)
 
-            working_folder = 'encoder/' + folder_name
 
-            command = "encoder/ffmpeg "
+            os.makedirs(encoder_output + folder_name)
+
+            working_folder = encoder_output + folder_name
+
+            full_wav_out = '"' + encoder_output + 'output.wav"'
+            full_opus_out = '"' + encoder_output + 'output.opus"'
+            full_wav_out_p = encoder_output + 'output.wav'
+            full_opus_out_p = encoder_output + 'output.opus'
+
+            if os.path.isfile(full_wav_out_p):
+                os.remove(full_wav_out_p)
+            if os.path.isfile(full_opus_out_p):
+                os.remove(full_opus_out_p)
+
+            print(1)
+            print(full_wav_out)
+            print(full_opus_out)
+
+            command = install_directory + "/encoder/ffmpeg "
 
             if system != 'windows':
                 command = "ffmpeg "
@@ -5234,12 +5284,11 @@ def loader():
             command += '-filter_complex "[0:a:0][1:a:0] concat=n='
             command += str(len(folder_items))
             command += ':v=0:a=1[out]" -map "[out]" '
-            command += 'output'
-            command += '.wav'
+            command += full_wav_out
 
             print(4)
             if master_library[folder_items[0]]['cue'] == 'YES' or len(folder_items) == 1:
-                command = 'encoder/ffmpeg -i "' + master_library[folder_items[0]]['filepath'] + '" output.wav'
+                command = install_directory + '/encoder/ffmpeg -i "' + master_library[folder_items[0]]['filepath'] + '" ' + full_wav_out
 
                 n_folder = []
                 for i in reversed(range(len(folder_items))):
@@ -5265,17 +5314,21 @@ def loader():
             transcode_state = "(Encoding)"
             UPDATE_RENDER += 1
 
-            command = 'encoder/opusenc --bitrate ' + str(transcode_bitrate) + ' output.wav output.opus'
+            command = install_directory + '/encoder/opusenc --bitrate ' + str(transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_opus_out
+            #' output.wav output.opus'
 
             if system != 'windows':
-                command = 'opusenc --bitrate ' + str(transcode_bitrate) + ' output.wav output.opus'
+                command = 'opusenc --bitrate ' + str(transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_opus_out
 
             print(shlex.split(command))
             subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
             print('done')
 
-            os.remove('output.wav')
-            shutil.move("output.opus", working_folder + "/" + folder_name + ".opus")
+            os.remove(full_wav_out_p)
+            output_dir = encoder_output + folder_name + "/"
+            print(output_dir)
+            print(output_dir + folder_name + ".opus")
+            shutil.move(full_opus_out_p, output_dir + folder_name + ".opus")
 
             cu = ""
             cu += 'PERFORMER "' + master_library[folder_items[0]]['artist'] + '"\n'
@@ -5333,12 +5386,12 @@ def loader():
                 run_time += tracklen
                 track += 1
 
-            cue = open(working_folder + "/" + folder_name + ".cue", 'w', encoding="utf_8")
+            cue = open(output_dir + folder_name + ".cue", 'w', encoding="utf_8")
             cue.write(cu)
             cue.close()
 
             display_album_art(folder_items[0], [0, 0], [500, 500], mode='save',
-                              save_path=working_folder + "/" + folder_name)
+                              save_path=output_dir + folder_name)
             print('finish')
 
             del transcode_list[0]
@@ -5451,8 +5504,8 @@ def loader():
                 pre_get(paths_to_load)
                 gets(paths_to_load)
             elif loaderCommand == 'import file':
-                add_file(paths_to_load)
                 loaded_pathes_cache = cache_paths()
+                add_file(paths_to_load)
             # elif loaderCommand == 'bbg':
             #     global b_source_info
             #     global b_texture
@@ -5809,7 +5862,7 @@ def webserv():
                 line += str(i + 1) + ".  "
 
             line += master_library[default_playlist[i]]['artist'] + " - " + master_library[default_playlist[i]]['title']
-            line += """"</a>"""
+            line += '</a>'
             line += "<br>"
             p_list += line
             i += 1
@@ -6234,7 +6287,7 @@ class Over():
         if coll_point(mouse_position, (x, y, 101, 22)):
             draw_rect((x, y), (101, 22), [40, 40, 40, 60], True)
             if self.click:
-                target = os.path.join(active_directory, "license.txt")
+                target = os.path.join(install_directory, "license.txt")
                 if system == "windows":
                     os.startfile(target)
                 else:
@@ -6266,7 +6319,7 @@ class Over():
         y += 20
         y += 20
         draw_text((x + 8 + 10 + 10, y + 40), "Total Playtime:", GREY8, 12)
-        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(total_playtime))), GREY8, 13)
+        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(total_playtime))), GREY8, 14)
 
     def config_v(self):
 
@@ -6689,6 +6742,25 @@ mouse_moved = False
 
 power = 0
 key_F7 = False
+
+i = 1
+while i < len(sys.argv):
+
+    for w in range(len(pctl.multi_playlist)):
+        if pctl.multi_playlist[w][0] == "Default":
+            del pctl.multi_playlist[w][2][:]
+            load_to.append(copy.deepcopy(w))
+            break
+    else:
+        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        load_to.append(len(pctl.multi_playlist) - 1)
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+    if i == 1:
+        auto_play_import = True
+
+    droped_file.append(sys.argv[i])
+    i += 1
 
 while running:
 
@@ -7171,7 +7243,8 @@ while running:
         # else:
         #     SDL_SetWindowBordered(t_window, False)
         #     draw_border = True
-
+        message_box = True
+        message_box_text = str(sys.argv)
 
         key_F7 = False
 
@@ -7437,12 +7510,12 @@ while running:
         if theme > 0:
             theme_number = theme - 1
             try:
-                theme_files = os.listdir('theme')
+                theme_files = os.listdir(install_directory + '/theme')
 
                 for i in range(len(theme_files)):
                     # print(theme_files[i])
                     if i == theme_number and 'ttheme' in theme_files[i]:
-                        with open("theme/" + theme_files[i], encoding="utf_8") as f:
+                        with open(install_directory + "/theme/" + theme_files[i], encoding="utf_8") as f:
                             content = f.readlines()
                             for p in content:
                                 if "#" in p:
@@ -10638,7 +10711,7 @@ while running:
     # auto save
     if total_playtime - time_last_save > 600:
         print("Auto Save")
-        pickle.dump(star_library, open("star.p", "wb"))
+        pickle.dump(star_library, open(user_directory + "/star.p", "wb"))
         time_last_save = total_playtime
 
     if min_render_timer.get() > 60:
@@ -10653,7 +10726,7 @@ pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
 print("writing database to disk")
-pickle.dump(star_library, open("star.p", "wb"))
+pickle.dump(star_library, open(user_directory + "/star.p", "wb"))
 
 view_prefs['star-lines'] = star_lines
 view_prefs['update-title'] = update_title
@@ -10697,7 +10770,7 @@ save = [master_library,
         None
         ]
 
-pickle.dump(save, open("state.p", "wb"))
+pickle.dump(save, open(user_directory + "/state.p", "wb"))
 # r_window.destroy()
 if system == 'windows':
 

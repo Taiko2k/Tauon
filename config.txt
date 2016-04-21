@@ -44,6 +44,9 @@ allow-remote (disable for broadcast album art only)
 
 opus-bitrate:64
 
+# Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
+#output-dir:C:\example
+
 ## Streaming-----------------------------------------------------------
 
 ## Mount Point for Icecast server
