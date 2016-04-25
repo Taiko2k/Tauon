@@ -203,6 +203,8 @@ highlight_x_offset = 0
 old_album_pos = -55
 old_side_pos = 200
 album_dex = []
+album_dex_l = []
+album_artist_dict = {}
 row_len = 5
 last_row = 0
 album_v_gap = 65
@@ -826,6 +828,8 @@ class PlayerCtl():
         self.playlist_active = playlist_active  # view only
         self.active_playlist_playing = playlist_active  # playlist that is playing from
         self.force_queue = []
+        self.left_time = 0
+        self.left_index = 0
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -923,9 +927,40 @@ class PlayerCtl():
         self.playerCommand = 'volume'
         self.playerCommandReady = True
 
+    def revert(self):
+
+        if self.queue_step == 0:
+            return
+
+        prev = 0
+        while len(self.track_queue) > prev + 1 and prev < 5:
+            if self.track_queue[len(self.track_queue) - 1 - prev] == self.left_index:
+                self.queue_step = len(self.track_queue) - 1 - prev
+                self.jump_time = self.left_time
+                self.playing_time = self.left_time
+                break
+            prev += 1
+        else:
+            self.queue_step -= 1
+            self.jump_time = 0
+            self.playing_time = 0
+
+
+        self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
+        self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
+        self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+        self.playerCommand = 'open'
+        self.playerCommandReady = True
+        self.playing_state = 1
+
+        self.show_current()
+        self.render_playlist()
+
     def play_target_rr(self):
 
+
         self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+
         if self.playing_length > 2:
             random_start = random.randrange(1,self.playing_length - 45 if self.playing_length > 50 else self.playing_length)
         else:
@@ -946,6 +981,7 @@ class PlayerCtl():
 
     def play_target(self):
 
+
         self.playing_time = 0
         self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
         self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
@@ -960,6 +996,10 @@ class PlayerCtl():
 
     def jump(self, index, pl_position=None):
 
+        if len(self.track_queue) > 0:
+            self.left_time = self.playing_time
+            self.left_index = self.track_queue[self.queue_step]
+
         global playlist_hold
         global update_spec
         update_spec = 0
@@ -973,6 +1013,10 @@ class PlayerCtl():
             self.playlist_playing = pl_position
 
     def back(self):
+
+        if len(self.track_queue) > 0:
+            self.left_time = self.playing_time
+            self.left_index = self.track_queue[self.queue_step]
 
         global update_spec
         update_spec = 0
@@ -1010,6 +1054,9 @@ class PlayerCtl():
     def stop(self):
         self.playerCommand = 'stop'
         self.playerCommandReady = True
+        if len(self.track_queue) > 0:
+            self.left_time = self.playing_time
+            self.left_index = self.track_queue[self.queue_step]
         self.playing_time = 0
         self.playing_state = 0
         self.render_playlist()
@@ -1057,10 +1104,13 @@ class PlayerCtl():
 
     def advance(self, rr=False):
 
+        if len(self.track_queue) > 0:
+            self.left_time = self.playing_time
+            self.left_index = self.track_queue[self.queue_step]
+
         pctl.playing_length = 100
         pctl.playing_time = 0
         global update_spec
-
 
         update_spec = 0
 
@@ -1286,6 +1336,15 @@ class LastFMapi:
             message_box = True
             message_box_text = "Error: " + str(e)
             print(e)
+
+    def get_bio(self, artist):
+        if self.connected:
+
+            artist_object = pylast.Artist(artist, self.network)
+            bio = artist_object.get_bio_summary(language="en")
+            return bio
+        else:
+            return ""
 
     def update(self, title, artist, album):
         if self.hold:
@@ -2449,11 +2508,14 @@ window_title = "Tauon Music Box"
 window_title = window_title.encode('utf-8')
 
 
-def load_font(name, size):
-    b = install_directory
-    b = b.encode('utf-8')
-    c = name.encode('utf-8')
-    fontpath = b + b'/gui/' + c
+def load_font(name, size, ext=False):
+    if ext:
+        fontpath = name.encode('utf-8')
+    else:
+        b = install_directory
+        b = b.encode('utf-8')
+        c = name.encode('utf-8')
+        fontpath = b + b'/gui/' + c
 
     return TTF_OpenFont(fontpath, size)
 
@@ -2478,6 +2540,9 @@ font6b = load_font(alt_font, 13)
 
 font7 = load_font(main_font, 14)
 font7b = load_font(alt_font, 14)
+#
+# font11a = load_font('c:/Windows/Fonts/meiryob.ttc', 16, True)
+# font13s = load_font('c:/Windows/Fonts/meiryob.ttc', 13, True)
 
 font_dict = {}
 font_dict[13] = (font6, font6b)
@@ -2486,6 +2551,8 @@ font_dict[10] = (font3, font3b)
 font_dict[12] = (font2, font2b)
 font_dict[16] = (font1, font1b)
 font_dict[14] = (font7, font7b)
+# font_dict[116] = (font11a, font1)
+# font_dict[113] = (font13s, font6)
 
 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
 
@@ -3282,7 +3349,7 @@ def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""
         o_size = im.size
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail(size, Image.ANTIALIAS)
+        im.thumbnail((size[0],size[1]), Image.ANTIALIAS)
         # g = open("test.jpg", 'wb')
 
         im.save(g, 'JPEG')
@@ -3477,7 +3544,7 @@ gen_menu = False
 transfer_setting = 0
 
 b_panel_size = 300
-b_info_bar = False
+b_info_bar = True
 
 playlist_left = 20
 playlist_top = panelY + 8
@@ -3815,7 +3882,10 @@ def clear_playlist(index):
     del pctl.multi_playlist[index][2][:]
     if pctl.playlist_active == index:
         default_playlist = pctl.multi_playlist[index][2]
+        reload_albums(quiet=True)
+
     # pctl.playlist_playing = 0
+
     renplay += 2
 
 
@@ -5587,6 +5657,17 @@ def get_album_info(position):
     return playing, album
 
 
+def get_folder_list(index):
+    global pctl
+    playlist = []
+
+    for item in default_playlist:
+        if master_library[item]['parent'] == master_library[index]['parent'] and \
+            master_library[item]['album'] == master_library[index]['album']:
+
+            playlist.append(item)
+    return list(set(playlist))
+
 def reload_albums(quiet=False):
     global album_dex
     global side_panel_size
@@ -5599,16 +5680,15 @@ def reload_albums(quiet=False):
 
     album_pos_px = old_album_pos
 
-    album_dex = []
 
     current_folder = ""
+    p = 0
+
     for i in range(len(default_playlist)):
         if i == 0:
             album_dex.append(i)
             current_folder = master_library[default_playlist[i]]['parent']
-
         else:
-
             if master_library[default_playlist[i]]['parent'] != current_folder:
                 current_folder = master_library[default_playlist[i]]['parent']
                 album_dex.append(i)
@@ -6722,8 +6802,6 @@ pref_box = Over()
 
 
 
-
-
 # MAIN LOOP---------------------------------------------------------------------------
 
 playlist_view_length = int(((window_size[1] - playlist_top) / 16) - 1)
@@ -7214,25 +7292,6 @@ while running:
     if key_F4:
         standard_size()
 
-    if key_comma_press:
-        pctl.repeat_mode ^= True
-
-
-    if key_dash_press:
-        new_time = pctl.playing_time - 15
-        pctl.playing_time -= 15
-        if new_time < 0:
-            new_time = 0
-            pctl.playing_time = 0
-        pctl.playerCommand = 'seek'
-        pctl.playerCommandReady = True
-
-    if key_eq_press:
-        new_time = pctl.playing_time + 15
-        pctl.playing_time += 15
-        pctl.playerCommand = 'seek'
-        pctl.playerCommandReady = True
-
     if key_F7:
         # spec_smoothing ^= True
         # key_F7 = False
@@ -7243,8 +7302,7 @@ while running:
         # else:
         #     SDL_SetWindowBordered(t_window, False)
         #     draw_border = True
-        message_box = True
-        message_box_text = str(sys.argv)
+        print(lastfm.get_bio(master_library[pctl.track_queue[pctl.queue_step]]['artist']))
 
         key_F7 = False
 
@@ -7262,24 +7320,54 @@ while running:
             pctl.back()
         mediaKey_pressed = False
 
-    if key_shiftr_down and key_right_press:
-        key_right_press = False
-        pctl.advance()
-        # print('hit')
-    if key_shiftr_down and key_left_press:
-        key_left_press = False
-        pctl.back()
+    if quick_search_mode is False and renamebox is False:
 
-    if key_slash_press:
-        pctl.advance(rr=True)
-        pctl.random_mode ^= True
-    if key_period_press:
-        pctl.random_mode ^= True
+        if key_shiftr_down and key_right_press:
+            key_right_press = False
+            pctl.advance()
+            # print('hit')
+        if key_shiftr_down and key_left_press:
+            key_left_press = False
+            pctl.back()
 
+        if key_shiftr_down and key_up_press:
+            key_up_press = False
+            volume += 3
+            if volume > 100:
+                volume = 100
+            pctl.set_volume()
 
+        if key_shiftr_down and key_down_press:
+            key_down_press = False
+            if volume > 3:
+                volume -= 3
+            else:
+                volume = 0
+            pctl.set_volume()
 
-    if key_quote_hit:
-        pctl.show_current()
+        if key_slash_press:
+            pctl.advance(rr=True)
+        if key_period_press:
+            pctl.random_mode ^= True
+        if key_quote_hit:
+            pctl.show_current()
+        if key_comma_press:
+            pctl.repeat_mode ^= True
+
+        if key_dash_press:
+            new_time = pctl.playing_time - 15
+            pctl.playing_time -= 15
+            if new_time < 0:
+                new_time = 0
+                pctl.playing_time = 0
+            pctl.playerCommand = 'seek'
+            pctl.playerCommandReady = True
+
+        if key_eq_press:
+            new_time = pctl.playing_time + 15
+            pctl.playing_time += 15
+            pctl.playerCommand = 'seek'
+            pctl.playerCommandReady = True
 
     if len(droped_file) > 0:
         if loading_in_progress == False and len(items_loaded) == 0:
@@ -7782,7 +7870,7 @@ while running:
 
                 while render_pos < album_pos_px + window_size[1]:
 
-                    if b_info_bar and render_pos - album_pos_px > b_info_y:
+                    if b_info_bar and render_pos > album_pos_px + b_info_y:
                         break
 
                     if render_pos < album_pos_px - album_mode_art_size - album_v_gap:
@@ -7823,7 +7911,8 @@ while running:
 
                             if mouse_click and not focused and coll_point(mouse_position, (
                             x, y, album_mode_art_size, album_mode_art_size + 40)) and panelY < mouse_position[1] < \
-                                            window_size[1] - panelBY:
+                                            window_size[1] - panelBY and \
+                                    mouse_position[1] < b_info_y:
 
                                 if info[0] == 1 and pctl.playing_state == 2:
                                     pctl.play()
@@ -7835,7 +7924,24 @@ while running:
 
                                 pctl.show_current()
 
-                            line = master_library[default_playlist[album_dex[album_on]]]['artist']
+                            c_index = default_playlist[album_dex[album_on]]
+                            if c_index in album_artist_dict:
+                                pass
+                            else:
+                                i = album_dex[album_on]
+                                while i < len(default_playlist) - 1:
+                                    if master_library[default_playlist[i]]['parent'] != master_library[default_playlist[album_dex[album_on]]]['parent']:
+                                        album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]]['artist']
+                                        break
+                                    if master_library[default_playlist[i]]['artist'] != master_library[default_playlist[album_dex[album_on]]]['artist']:
+                                        album_artist_dict[c_index] = "Various Artists"
+                                        break
+                                    i += 1
+                                else:
+                                    album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]]['artist']
+
+                            line = album_artist_dict[c_index]
+
                             draw_text2((x, y + album_mode_art_size + 8),
                                        line,
                                        albumtitle,
@@ -7863,25 +7969,60 @@ while running:
 
                 draw_rect((0, 0), (window_size[0], panelY), background, True)
 
-                # if b_info_bar:
-                #     x = playlist_width + 31
-                #     w = window_size[0] - x
-                #     b_info_y = int(window_size[1] * 0.7)
-                #     y = b_info_y
-                #     h = window_size[1] - y - 51
-                #
-                #     if h < 5:
-                #         h = 5
-                #
-                #     draw_rect_r((x, y, w, h), background, True)
-                #     draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                #     draw_line(x, y, x + w, y, GREY(50))
-                #
-                #     box = h - 20
-                #
-                #     showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                #                               (window_size[0] - 15 - box, y + 10), (box, box))
+                if b_info_bar and window_size[1] > 700:
+                    x = playlist_width + 31
+                    w = window_size[0] - x
+                    b_info_y = int(window_size[1] * 0.7)
+                    b_info_y = window_size[1] - 250
+                    y = b_info_y
+                    h = window_size[1] - y - 51
 
+
+                    if h < 5:
+                        h = 5
+
+                    draw_rect_r((x, y, w, h), background, True)
+                    draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
+                    draw_line(x, y, x + w, y, GREY(50))
+
+                    box = h - 4 #- 10
+
+                    showc = display_album_art(pctl.track_queue[pctl.queue_step],
+                                              (window_size[0] - 0 - box, y + 2), (box, box))
+
+                    draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]]['artist'], GREY(200), 16)
+
+                    line =  master_library[pctl.track_queue[pctl.queue_step]]['album']
+                    if master_library[pctl.track_queue[pctl.queue_step]]['date'] != "":
+                        line += " (" + master_library[pctl.track_queue[pctl.queue_step]]['date'] + ")"
+
+                    draw_text((x + 11, y + 29), line, GREY(200), 14)
+
+
+
+                    # if pctl.track_queue[pctl.queue_step] not in album_dex_l:
+                    #     album_dex_l = get_folder_list(pctl.track_queue[pctl.queue_step])
+                    #
+                    # pl_x = x + 50
+                    # pl_y = y + 60
+                    # row = 0
+                    #
+                    # for i in range(len(album_dex_l)):
+                    #     draw_text((pl_x, pl_y), master_library[album_dex_l[i]]['title'], GREY(200), 14)
+                    #     pl_y += 18
+                    #
+                    #     row += 1
+                    #     if row > 5:
+                    #         row = 0
+                    #         pl_x += 400
+                    #         pl_y = y + 60
+
+
+
+
+
+                else:
+                    b_info_y = window_size[1]
 
 
             if True:
@@ -8361,7 +8502,7 @@ while running:
                                        line,
                                        alpha_mod(titlec, albumfade),
                                        12,
-                                       playlist_width - 71 - artistoffset - ratio,
+                                       playlist_width - 71 - artistoffset - ratio - 15,
                                        2,
                                        default_playlist[i + playlist_position])
 
@@ -9154,6 +9295,8 @@ while running:
                             pctl.back()
                         if right_click:
                             pctl.repeat_mode ^= True
+                        if middle_click:
+                            pctl.revert()
 
                     draw_rect((180, window_size[1] - control_line_bottom), (28, 14), back_colour, True)
                     # draw_rect_r(rect,[255,0,0,255], True)
