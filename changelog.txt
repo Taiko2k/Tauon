@@ -5,20 +5,25 @@ v1.3.4
 
  - Added playlist navigation to web interface
  - Added function for reloading artwork
- - Added importing to playlists by dropping on tab
+ - Added ability to import to playlist by dropping on tab
  - Added specifying encoding output directory from config
  - Added 'open with' support and opening file via cli
+ - Added a basic info panel to gallery view
  - Tweaked some menu elements
  - Tweaked create playlist behavior
+ - Tweaked gallery view artist labels to show various if applicable
  - Fixed web interface colours
  - Fixed console windows appearing when transcoding
  - Fixed settings taking long to open with large music libraries
  - Fixed incorrectly displaying song lengths greater than an hour long
  - Fixed slow re-importing (again)
  - Fixed cue importing (again)
- - Fixed dependence on running from working directory
+ - Fixed crash when clearing playlist in gallery view
+ - Fixed some keybinds being active during text input
  - Improved stability when importing
+ - Bound shift+up/down keys to volume control
  - Removed disk caching of images for web interface
+ - Removed dependence on running from working directory
 
 v1.3.0
 
@@ -32,7 +37,7 @@ v1.2.5
  - Minor interface tweaks and string changes
  - Fixed crash when opening a stream
  - Fixed crash when deleting a playlist while in gallery view
- - Binded - and + keys to seek functions
+ - Bound - and + keys to seek functions
  - Added radio random function (M3 click forward or comma key)
 
 v1.2.1

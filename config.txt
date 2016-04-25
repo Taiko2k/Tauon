@@ -42,7 +42,7 @@ allow-remote (disable for broadcast album art only)
 
 ## Encoding----------
 
-opus-bitrate:64
+opus-bitrate:48
 
 # Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
 #output-dir:C:\example
