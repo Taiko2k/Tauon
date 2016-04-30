@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.3.5"
+t_version = "v1.4.0"
 version_line = "Tauon Music Box " + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
@@ -646,6 +646,31 @@ def num_from_line(line):
         number = 5000
     return number
 
+class TrackClass():
+
+    def __init__(self):
+
+        self.index = 0
+        self.fullpath = ""
+        self.filename = ""
+        self.parent_folder_path = ""
+        self.parent_folder_name = ""
+        self.file_ext = ""
+        self.size = 0
+
+        self.artist = ""
+        self.title = ""
+        self.length = 0
+        self.bitrate = 0
+        self.sameplerate = 0
+        self.album = ""
+        self.date = ""
+        self.track_number = ""
+        self.start_time = 0
+        self.is_cue = False
+        self.genre = ""
+        self.found = True
+
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -826,6 +851,16 @@ def get_len_backend(filepath):
         time.sleep(0.05)
     return get_len
 
+def get_filesize_string(file_bytes):
+        if file_bytes < 1000:
+            line = str(file_bytes) + " Bytes"
+        elif file_bytes < 1000000:
+            file_kb = round(file_bytes / 1000, 2)
+            line = str(file_kb).rstrip('0').rstrip('.') + " KB"
+        else:
+            file_mb = round(file_bytes / 1000000, 2)
+            line = str(file_mb).rstrip('0').rstrip('.') + " MB"
+        return line
 
 def get_display_time(seconds):
 
@@ -834,10 +869,12 @@ def get_display_time(seconds):
         result = divmod(result[0], 60)
         return str(result[0]) + 'h ' + str(result[1]).zfill(2)
     return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
-
+        
 
 class PlayerCtl():
+
     def __init__(self):
+
         self.track_queue = QUE
         self.queue_step = playing_in_queue
         self.playing_time = 0
@@ -975,9 +1012,9 @@ class PlayerCtl():
             self.playing_time = 0
 
 
-        self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
-        self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
-        self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+        self.target_open = master_library[self.track_queue[self.queue_step]].fullpath
+        self.start_time = master_library[self.track_queue[self.queue_step]].start_time
+        self.playing_length = master_library[self.track_queue[self.queue_step]].length
         self.playerCommand = 'open'
         self.playerCommandReady = True
         self.playing_state = 1
@@ -988,7 +1025,7 @@ class PlayerCtl():
     def play_target_rr(self):
 
 
-        self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+        self.playing_length = master_library[self.track_queue[self.queue_step]].length
 
         if self.playing_length > 2:
             random_start = random.randrange(1,self.playing_length - 45 if self.playing_length > 50 else self.playing_length)
@@ -996,8 +1033,8 @@ class PlayerCtl():
             random_start = 0
 
         self.playing_time = random_start
-        self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
-        self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
+        self.target_open = master_library[self.track_queue[self.queue_step]].fullpath
+        self.start_time = master_library[self.track_queue[self.queue_step]].start_time
         self.jump_time = random_start
         self.playerCommand = 'open'
         self.playerCommandReady = True
@@ -1012,12 +1049,12 @@ class PlayerCtl():
 
 
         self.playing_time = 0
-        self.target_open = master_library[self.track_queue[self.queue_step]]['filepath']
-        self.start_time = master_library[self.track_queue[self.queue_step]]['starttime']
+        self.target_open = master_library[self.track_queue[self.queue_step]].fullpath
+        self.start_time = master_library[self.track_queue[self.queue_step]].start_time
         self.playerCommand = 'open'
         self.playerCommandReady = True
         self.playing_state = 1
-        self.playing_length = master_library[self.track_queue[self.queue_step]]['length']
+        self.playing_length = master_library[self.track_queue[self.queue_step]].length
         self.last_playing_time = 0
 
         if update_title:
@@ -1264,8 +1301,8 @@ def update_title_do():
     global pctl
     if pctl.playing_state > 0:
         if len(pctl.track_queue) > 0:
-            line = master_library[pctl.track_queue[pctl.queue_step]]['artist'] + " - " + \
-                   master_library[pctl.track_queue[pctl.queue_step]]['title']
+            line = master_library[pctl.track_queue[pctl.queue_step]].artist + " - " + \
+                   master_library[pctl.track_queue[pctl.queue_step]].title
             line = line.encode('utf-8')
             SDL_SetWindowTitle(t_window, line)
     else:
@@ -1761,13 +1798,13 @@ def player():
                         b_time = 0
                         a_pt = False
                         a_sc = False
-                    if a_time > 10 and a_pt is False and master_library[a_index]['length'] > 30:
+                    if a_time > 10 and a_pt is False and master_library[a_index].length > 30:
                         a_pt = True
 
                         if lastfm.connected:
-                            mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index]['title'],
-                                                                                  master_library[a_index]['artist'],
-                                                                                  master_library[a_index]['album']))
+                            mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index].title,
+                                                                                  master_library[a_index].artist,
+                                                                                  master_library[a_index].album))
                             mini_t.daemon = True
                             mini_t.start()
 
@@ -1776,45 +1813,43 @@ def player():
                         if b_time > 20:
                             b_time = 0
                             if lastfm.connected:
-                                mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index]['title'],
-                                                                                      master_library[a_index]['artist'],
-                                                                                      master_library[a_index]['album']))
+                                mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index].title,
+                                                                                      master_library[a_index].artist,
+                                                                                      master_library[a_index].album))
                                 mini_t.daemon = True
                                 mini_t.start()
 
 
-                    if master_library[a_index]['length'] > 30 and a_time > master_library[a_index][
-                        'length'] * 0.50 and a_sc is False:
+                    if master_library[a_index].length > 30 and a_time > master_library[a_index].length \
+                        * 0.50 and a_sc is False:
                         a_sc = True
                         if lastfm.connected:
                             renplay += 1
                             print(
-                                    "Scrobble " + master_library[a_index]['title'] + " - " + master_library[a_index][
-                                        'artist'])
+                                    "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
 
-                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index]['title'],
-                                                                                  master_library[a_index]['artist'],
-                                                                                  master_library[a_index]['album']))
+                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
+                                                                                  master_library[a_index].artist,
+                                                                                  master_library[a_index].album))
                             mini_t.daemon = True
                             mini_t.start()
 
-                    if a_sc is False and master_library[a_index]['length'] > 30 and a_time > 240:
+                    if a_sc is False and master_library[a_index].length > 30 and a_time > 240:
                         if lastfm.connected:
                             renplay += 1
                             print(
-                                    "Scrobble " + master_library[a_index]['title'] + " - " + master_library[a_index][
-                                        'artist'])
+                                    "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
 
-                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index]['title'],
-                                                                                  master_library[a_index]['artist'],
-                                                                                  master_library[a_index]['album']))
+                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
+                                                                                  master_library[a_index].artist,
+                                                                                  master_library[a_index].album))
                             mini_t.daemon = True
                             mini_t.start()
                         a_sc = True
 
                 if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
                     index = pctl.track_queue[pctl.queue_step]
-                    key = master_library[index]['title'] + master_library[index]['filename']
+                    key = master_library[index].title + master_library[index].filename
                     if key in star_library:
                         if 3 > add_time > 0:
                             star_library[key] += add_time
@@ -2016,10 +2051,10 @@ def player():
 
                     pctl.playerCommand = ""
 
-                    if os.path.isfile(master_library[pctl.track_queue[pctl.queue_step]]['filepath']):
-                        master_library[pctl.track_queue[pctl.queue_step]]['found'] = True
+                    if os.path.isfile(master_library[pctl.track_queue[pctl.queue_step]].fullpath):
+                        master_library[pctl.track_queue[pctl.queue_step]].found = True
                     else:
-                        master_library[pctl.track_queue[pctl.queue_step]]['found'] = False
+                        master_library[pctl.track_queue[pctl.queue_step]].found = False
                         renplay += 1
                         UPDATE_RENDER += 1
                         print("Missing File")
@@ -2097,17 +2132,17 @@ def player():
                     else:
                         print('no case')
 
-                    if master_library[pctl.track_queue[pctl.queue_step]]['length'] < 1:
+                    if master_library[pctl.track_queue[pctl.queue_step]].length < 1:
 
                         if player1_status == 'playing':
                             blen = BASS_ChannelGetLength(handle1, 0)
                             tlen = BASS_ChannelBytes2Seconds(handle1, blen)
-                            master_library[pctl.track_queue[pctl.queue_step]]['length'] = tlen
+                            master_library[pctl.track_queue[pctl.queue_step]].length = tlen
                             pctl.playing_length = tlen
                         elif player2_status == 'playing':
                             blen = BASS_ChannelGetLength(handle2, 0)
                             tlen = BASS_ChannelBytes2Seconds(handle2, blen)
-                            master_library[pctl.track_queue[pctl.queue_step]]['length'] = tlen
+                            master_library[pctl.track_queue[pctl.queue_step]].length = tlen
                             pctl.playing_length = tlen
                     if pctl.start_time > 0 or pctl.jump_time > 0:
                         if player1_status == 'playing':
@@ -2398,9 +2433,9 @@ class GStats:
             artists = {}
 
             for index in pctl.multi_playlist[playlist][2]:
-                artist = master_library[index]['artist']
+                artist = master_library[index].artist
                 pt = 0
-                key = master_library[index]['title'] + master_library[index]['filename']
+                key = master_library[index].title + master_library[index].filename
                 if artist == "":
                     artist = "<Artist Unspecified>"
                 if key in star_library:
@@ -2424,11 +2459,11 @@ class GStats:
             genre_dict = {}
 
             for index in pctl.multi_playlist[playlist][2]:
-                genre_r = master_library[index]['genre']
-                gn = [master_library[index]['genre']]
+                genre_r = master_library[index].genre
+                gn = [master_library[index].genre]
                 pt = 0
 
-                key = master_library[index]['title'] + master_library[index]['filename']
+                key = master_library[index].title + master_library[index].filename
                 if key in star_library:
                     pt = int(star_library[key])
 
@@ -2497,9 +2532,9 @@ class GStats:
             albums = {}
 
             for index in pctl.multi_playlist[playlist][2]:
-                album = master_library[index]['album']
+                album = master_library[index].album
                 pt = 0
-                key = master_library[index]['title'] + master_library[index]['filename']
+                key = master_library[index].title + master_library[index].filename
                 if album == "":
                     album = "<Album Unspecified>"
 
@@ -2953,7 +2988,7 @@ class GallClass:
 
     def get_file_source(self, index):
 
-        filepath = master_library[index]['filepath']
+        filepath = master_library[index].fullpath
         parent_folder = os.path.dirname(filepath)
 
         # Add parent folder to offset cache
@@ -3132,7 +3167,7 @@ def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""
     global art_cache
     global albums_to_render
 
-    filepath = master_library[index]['filepath']
+    filepath = master_library[index].fullpath
 
     if len(art_cache) > 25 and albums_to_render < 1:
         if art_cache[0][1] != 1 and art_cache[0][1] != 2:
@@ -3477,33 +3512,33 @@ def fix_encoding(index, mode, enc):
         todo = [index]
     elif mode == 0:
         for b in range(len(default_playlist)):
-            if master_library[default_playlist[b]]['parent'] == master_library[index]['parent']:
+            if master_library[default_playlist[b]].parent_folder_name == master_library[index].parent_folder_name:
                 todo.append(default_playlist[b])
 
     for q in range(len(todo)):
 
-        key = master_library[todo[q]]['title'] + master_library[todo[q]]['filename']
+        key = master_library[todo[q]].title + master_library[todo[q]].filename
 
         if enc_field == 'All' or enc_field == 'Artist':
-            line = master_library[todo[q]]['artist']
+            line = master_library[todo[q]].artist
             line = line.encode("Latin-1", 'ignore')
             line = line.decode(enc, 'ignore')
-            master_library[todo[q]]['artist'] = line
+            master_library[todo[q]].artist = line
 
         if enc_field == 'All' or enc_field == 'Album':
-            line = master_library[todo[q]]['album']
+            line = master_library[todo[q]].album
             line = line.encode("Latin-1", 'ignore')
             line = line.decode(enc, 'ignore')
-            master_library[todo[q]]['album'] = line
+            master_library[todo[q]].album = line
 
         if enc_field == 'All' or enc_field == 'Title':
-            line = master_library[todo[q]]['title']
+            line = master_library[todo[q]].title
             line = line.encode("Latin-1", 'ignore')
             line = line.decode(enc, 'ignore')
-            master_library[todo[q]]['title'] = line
+            master_library[todo[q]].title = line
 
         if key in star_library:
-            newkey = master_library[todo[q]]['title'] + master_library[todo[q]]['filename']
+            newkey = master_library[todo[q]].title + master_library[todo[q]].filename
             if newkey not in star_library:
                 star_library[newkey] = copy.deepcopy(star_library[key])
                 # del star_library[key]
@@ -3516,7 +3551,7 @@ def transfer_tracks(index, mode, to):
         todo = [index]
     elif mode == 1:
         for b in range(len(default_playlist)):
-            if master_library[default_playlist[b]]['parent'] == master_library[index]['parent']:
+            if master_library[default_playlist[b]].parent_folder_name == master_library[index].parent_folder_name:
                 todo.append(default_playlist[b])
     elif mode == 2:
         todo = default_playlist
@@ -3532,9 +3567,9 @@ def prep_gal():
 
     for index in default_playlist:
 
-        if folder != master_library[index]['parent']:
+        if folder != master_library[index].parent_folder_name:
             albums.append([index, 0])
-            folder = master_library[index]['parent']
+            folder = master_library[index].parent_folder_name
 
 
 # -----------------------------
@@ -3814,11 +3849,11 @@ def gen_top_100(index):
     global pctl
 
     def best(index):
-        key = master_library[index]['title'] + master_library[index]['filename']
-        if master_library[index]['length'] < 1:
+        key = master_library[index].title + master_library[index].filename
+        if master_library[index].length < 1:
             return 0
         if key in star_library:
-            return int(star_library[key]) #/ master_library[index]['length'])
+            return int(star_library[key]) #/ master_library[index].length)
         else:
             return 0
 
@@ -3840,10 +3875,10 @@ def gen_sort_len(index):
 
     def length(index):
 
-        if master_library[index]['length'] < 1:
+        if master_library[index].length < 1:
             return 0
         else:
-            return int(master_library[index]['length'])
+            return int(master_library[index].length)
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=length, reverse=True)
@@ -3884,7 +3919,7 @@ def gen_best_random(index):
     playlist = []
 
     for p in pctl.multi_playlist[index][2]:
-        key = master_library[p]['title'] + master_library[p]['filename']
+        key = master_library[p].title + master_library[p].filename
         if key in star_library:
             if star_library[key] > 300:
                 playlist.append(p)
@@ -3953,13 +3988,13 @@ def convert_playlist(pl):
     paths = []
 
     for track in pctl.multi_playlist[pl][2]:
-        if master_library[track]['directory'] not in paths:
-            paths.append(master_library[track]['directory'])
+        if master_library[track].parent_folder_path not in paths:
+            paths.append(master_library[track].parent_folder_path)
 
     for path in paths:
         folder = []
         for track in pctl.multi_playlist[pl][2]:
-            if master_library[track]['directory'] == path:
+            if master_library[track].parent_folder_path == path:
                 folder.append(track)
         transcode_list.append(folder)
         print(1)
@@ -4059,9 +4094,8 @@ def sort_track_pl(pl):
     for t in range(len(pctl.multi_playlist[pl][2])):
         # print(master_library[pctl.multi_playlist[pl][2][t]]['cue'])
         for r in range(len(cue_list)):
-            if cue_list[r] == master_library[pctl.multi_playlist[pl][2][t]]['filepath'] and \
-                            master_library[pctl.multi_playlist[pl][2][t]][
-                                'cue'] == "NO":
+            if cue_list[r] == master_library[pctl.multi_playlist[pl][2][t]].fullpath and \
+                            master_library[pctl.multi_playlist[pl][2][t]].is_cue is False:
                 print("FOUND CUE TO DELETE")
                 deletes.append(pctl.multi_playlist[pl][2][t])
 
@@ -4080,8 +4114,8 @@ def sort_track_pl(pl):
     s = 0
     r = 0
     temp_map = []
-    parent = master_library[pctl.multi_playlist[pl][2][r]]['parent']
-    temp_map.append([pctl.multi_playlist[pl][2][r], master_library[pctl.multi_playlist[pl][2][r]]['tracknumber']])
+    parent = master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name
+    temp_map.append([pctl.multi_playlist[pl][2][r], master_library[pctl.multi_playlist[pl][2][r]].track_number])
     r += 1
 
     def keya(lis):
@@ -4106,9 +4140,9 @@ def sort_track_pl(pl):
 
             break
 
-        if parent == master_library[pctl.multi_playlist[pl][2][r]]['parent']:
+        if parent == master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name:
             temp_map.append(
-                    [pctl.multi_playlist[pl][2][r], master_library[pctl.multi_playlist[pl][2][r]]['tracknumber']])
+                    [pctl.multi_playlist[pl][2][r], master_library[pctl.multi_playlist[pl][2][r]].track_number])
             r += 1
 
         else:
@@ -4116,7 +4150,7 @@ def sort_track_pl(pl):
             for i in range(len(temp_map)):
                 pctl.multi_playlist[pl][2][s] = temp_map[i][0]
                 s += 1
-            parent = master_library[pctl.multi_playlist[pl][2][r]]['parent']
+            parent = master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name
 
             temp_map = []
 
@@ -4128,8 +4162,8 @@ tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
 def get_playing_line():
     if 3 > pctl.playing_state > 0:
-        title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-        artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+        title = master_library[pctl.track_queue[pctl.queue_step]].title
+        artist = master_library[pctl.track_queue[pctl.queue_step]].artist
         return artist + " - " + title
     else:
         return 'Stoped'
@@ -4137,8 +4171,8 @@ def get_playing_line():
 
 def get_broadcast_line():
     if broadcast:
-        title = master_library[broadcast_index]['title']
-        artist = master_library[broadcast_index]['artist']
+        title = master_library[broadcast_index].title
+        artist = master_library[broadcast_index].artist
         return artist + " - " + title
     else:
         return 'No Title'
@@ -4151,10 +4185,10 @@ track_menu = Menu(140)
 def open_folder(index):
     if system == 'windows':
         line = r'explorer /select,"%s"' % (
-            master_library[index]['filepath'].replace("/", "\\"))
+            master_library[index].fullpath.replace("/", "\\"))
         subprocess.Popen(line)
     else:
-        line = master_library[index]['directory']
+        line = master_library[index].parent_folder_path
         line += "/"
         subprocess.Popen(['xdg-open', line])
 
@@ -4166,8 +4200,8 @@ def remove_folder(index):
     global default_playlist
 
     for b in range(len(default_playlist) - 1, -1, -1):
-        r_folder = master_library[index]['parent']
-        if master_library[default_playlist[b]]['parent'] == r_folder:
+        r_folder = master_library[index].parent_folder_name
+        if master_library[default_playlist[b]].parent_folder_name == r_folder:
             del default_playlist[b]
 
     if album_mode:
@@ -4191,9 +4225,9 @@ def convert_folder(index):
         return
 
     folder = []
-    r_folder = master_library[index]['parent']
+    r_folder = master_library[index].parent_folder_name
     for item in default_playlist:
-        if r_folder == master_library[item]['parent']:
+        if r_folder == master_library[item].parent_folder_name:
             folder.append(item)
 
     print(folder)
@@ -4212,11 +4246,11 @@ def transfer(index, args):
 
         elif args[1] == 2:  # folder
             for b in range(len(default_playlist)):
-                if master_library[default_playlist[b]]['parent'] == master_library[index]['parent']:
+                if master_library[default_playlist[b]].parent_folder_name == master_library[index].parent_folder_name:
                     cargo.append(default_playlist[b])
             if args[0] == 0:  # cut
                 for b in reversed(range(len(default_playlist))):
-                    if master_library[default_playlist[b]]['parent'] == master_library[index]['parent']:
+                    if master_library[default_playlist[b]].parent_folder_name == master_library[index].parent_folder_name:
                         del default_playlist[b]
 
         elif args[1] == 3:  # playlist
@@ -4228,7 +4262,7 @@ def transfer(index, args):
         if args[1] == 1:  # Before
 
             insert = playlist_selected
-            while insert > 0 and master_library[default_playlist[insert]]['parent'] == master_library[index]['parent']:
+            while insert > 0 and master_library[default_playlist[insert]].parent_folder_name == master_library[index].parent_folder_name:
                 insert -= 1
                 if insert == 0:
                     break
@@ -4241,8 +4275,8 @@ def transfer(index, args):
         elif args[1] == 2:  # After
             insert = playlist_selected
 
-            while insert < len(default_playlist) and master_library[default_playlist[insert]]['parent'] == \
-                    master_library[index]['parent']:
+            while insert < len(default_playlist) and master_library[default_playlist[insert]].parent_folder_name == \
+                    master_library[index].parent_folder_name:
                 insert += 1
 
             while len(cargo) > 0:
@@ -4284,7 +4318,7 @@ track_menu.add_to_sub("Rename Tracks", 0, rename_tracks, pass_ref=True)
 
 def reset_play_count(index):
     global key
-    key = master_library[index]['title'] + master_library[index]['filename']
+    key = master_library[index].title + master_library[index].filename
     if key in star_library:
         del star_library[key]
 
@@ -4299,32 +4333,32 @@ def reload_metadata(index):
 
     todo = []
     for k in default_playlist:
-        if master_library[index]['parent'] == master_library[k]['parent']:
-            if master_library[k]['cue'] == 'NO':
+        if master_library[index].parent_folder_name == master_library[k].parent_folder_name:
+            if master_library[k].is_cue == False:
                 todo.append(k)
 
     for track in todo:
 
-        print('Reloading Metadate for ' + master_library[track]['filename'])
-        key = master_library[track]['title'] + master_library[track]['filename']
+        print('Reloading Metadate for ' + master_library[track].filename)
+        key = master_library[track].title + master_library[track].filename
         star = 0
 
         if key in star_library:
             star = star_library[key]
             del star_library[key]
 
-        audio = auto.File(master_library[track]['filepath'])
-        master_library[track]['length'] = audio.duration
-        master_library[track]['title'] = rm_16(audio.title)
-        master_library[track]['artist'] = rm_16(audio.artist)
-        master_library[track]['album'] = rm_16(audio.album)
-        master_library[track]['tracknumber'] = str(audio.track)
-        master_library[track]['bitrate'] = audio.bitrate
-        master_library[track]['date'] = audio.year
-        master_library[track]['genre'] = rm_16(audio.genre)
-        master_library[track]['sample'] = audio.sample_rate
+        audio = auto.File(master_library[track].fullpath)
+        master_library[track].length = audio.duration
+        master_library[track].title = rm_16(audio.title)
+        master_library[track].artist = rm_16(audio.artist)
+        master_library[track].album = rm_16(audio.album)
+        master_library[track].track_number = str(audio.track)
+        master_library[track].bitrate = audio.bitrate
+        master_library[track].date = audio.year
+        master_library[track].genre = rm_16(audio.genre)
+        master_library[track].samplerate = audio.sample_rate
 
-        key = master_library[track]['title'] + master_library[track]['filename']
+        key = master_library[track].title + master_library[track].filename
         star_library[key] = star
 
 
@@ -4410,14 +4444,14 @@ track_menu.add_to_sub("Insert End", 1, transfer, paste_deco, pass_ref=True, args
 
 def ser_rym(index):
 
-    if len(master_library[index]['artist']) < 2:
+    if len(master_library[index].artist) < 2:
         return
-    line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + master_library[index]['artist']
+    line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + master_library[index].artist
     webbrowser.open(line, new=2, autoraise=True)
 
 def clip_ar_al(index):
-    line = master_library[index]['artist'] + " - " + \
-           master_library[index]['album']
+    line = master_library[index].artist + " - " + \
+           master_library[index].album
     pyperclip.copy(line)
 
 track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
@@ -4425,8 +4459,8 @@ track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
 
 
 def clip_ar_tr(index):
-    line = master_library[index]['artist'] + " - " + \
-           master_library[index]['title']
+    line = master_library[index].artist + " - " + \
+           master_library[index].title
 
     pyperclip.copy(line)
 
@@ -4476,19 +4510,19 @@ def broadcast_select_track(index):
     global broadcast_line
 
     if broadcast:
-        filepath = master_library[broadcast_index]['filepath']
+        filepath = master_library[broadcast_index].fullpath
 
         broadcast_index = index
         broadcast_playlist = copy.deepcopy(pctl.playlist_active)
         broadcast_position = default_playlist.index(broadcast_index)
         broadcast_time = 0
         b_timer()
-        pctl.target_open = master_library[broadcast_index]['filepath']
-        pctl.bstart_time = master_library[broadcast_index]['starttime']
+        pctl.target_open = master_library[broadcast_index].fullpath
+        pctl.bstart_time = master_library[broadcast_index].start_time
         pctl.playerCommand = "encnext"
         pctl.playerCommandReady = True
-        broadcast_line = master_library[broadcast_index]['artist'] + " - " + \
-                         master_library[broadcast_index]['title']
+        broadcast_line = master_library[broadcast_index].artist + " - " + \
+                         master_library[broadcast_index].title
 
 
 if default_player == 'BASS':
@@ -4643,8 +4677,8 @@ def export_stats():
     playlist_time = 0
     play_time = 0
     for index in pctl.multi_playlist[pctl.playlist_active][2]:
-        playlist_time += int(master_library[index]['length'])
-        key = master_library[index]['title'] + master_library[index]['filename']
+        playlist_time += int(master_library[index].length)
+        key = master_library[index].title + master_library[index].filename
         if key in star_library:
             play_time += star_library[key]
 
@@ -4690,24 +4724,24 @@ def export_database():
         # print(str(master_library[num]))
         # continue
         # print(master_library[num])
-        line.append(str(master_library[num]['artist']))
-        line.append(str(master_library[num]['title']))
-        line.append(str(master_library[num]['album']))
-        line.append(str(master_library[num]['tracknumber']))
-        if master_library[num]['cue'] == 'NO':
+        line.append(str(master_library[num].artist))
+        line.append(str(master_library[num].title))
+        line.append(str(master_library[num].album))
+        line.append(str(master_library[num].track_number))
+        if master_library[num].is_cue == False:
             line.append('FILE')
         else:
             line.append('CUE')
-        line.append(str(master_library[num]['length']))
-        line.append(str(master_library[num]['date']))
-        line.append(master_library[num]['genre'])
+        line.append(str(master_library[num].length))
+        line.append(str(master_library[num].date))
+        line.append(master_library[num].genre)
 
-        key = master_library[num]['title'] + master_library[num]['filename']
+        key = master_library[num].title + master_library[num].filename
         if key in star_library:
             line.append(str(int(star_library[key])))
         else:
             line.append('0')
-        line.append(master_library[num]['filepath'])
+        line.append(master_library[num].fullpath)
 
         for g in range(len(line)):
             line[g] = line[g].encode('utf-8')
@@ -4739,7 +4773,7 @@ def test():
     star2 = {}
 
     for key, value in master_library.items():
-        ref = value['title'] + value['filename']
+        ref = value.title + value.filename
         if ref in star_library:
             found += 1
             star2[ref] = star_library[ref]
@@ -4772,7 +4806,7 @@ def test():
 
 def reset_missing_flags():
     for index in default_playlist:
-        master_library[index]['found'] = True
+        master_library[index].found = True
 
 
 # x_menu.add('Reset Missing Flags', reset_missing_flags)
@@ -4794,9 +4828,9 @@ def toggle_broadcast():
         broadcast_position = 0
 
         broadcast_index = pctl.multi_playlist[broadcast_playlist][2][broadcast_position]
-        pctl.target_open = master_library[broadcast_index]['filepath']
-        broadcast_line = master_library[broadcast_index]['artist'] + " - " + \
-                         master_library[broadcast_index]['title']
+        pctl.target_open = master_library[broadcast_index].fullpath
+        broadcast_line = master_library[broadcast_index].artist + " - " + \
+                         master_library[broadcast_index].title
 
         pctl.playerCommand = "encstart"
         pctl.playerCommandReady = True
@@ -5169,27 +5203,29 @@ def loader():
                     if PERFORMER == "":
                         PERFORMER = MAIN_PERFORMER
 
-                    master_library[master_count] = {'Number': master_count,
-                                                    'filepath': filepath.replace('\\', '/'),
-                                                    'filename': filename,
-                                                    'directory': os.path.dirname(filepath.replace('\\', '/')),
-                                                    'parent': os.path.splitext(os.path.basename(filepath))[0],
-                                                    # 'parent': get_end_folder(os.path.dirname(filepath)),
-                                                    'ext': os.path.splitext(os.path.basename(filepath))[1][1:].upper(),
-                                                    'artist': PERFORMER,
-                                                    'title': TITLE,
-                                                    'length': LENGTH,
-                                                    'bitrate': bitrate,
-                                                    'album': ALBUM,
-                                                    'date': DATE,
-                                                    'tracknumber': TN,
-                                                    'starttime': START,
-                                                    'cue': "YES",
-                                                    'date': "",
-                                                    'genre': "",
-                                                    'found': True,
-                                                    'sample': SAMPLERATE
-                                                    }
+                    nt = TrackClass()
+                    nt.index = master_count
+                    nt.fullpath = filepath.replace('\\', '/')
+                    nt.filename = filename
+                    nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
+                    nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
+                    nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
+                    
+                    nt.artist = PERFORMER
+                    nt.title = TITLE
+                    nt.length = LENGTH
+                    nt.bitrate = bitrate
+                    nt.album = ALBUM
+                    nt.date = DATE
+                    nt.track_number = TN
+                    nt.start_time = START
+                    nt.is_cue = True
+                    nt.sameplerate = SAMPLERATE
+                    if TN == 1:
+                        nt.size = os.path.getsize(nt.fullpath)
+
+                    master_library[master_count] = nt
+                    
                     cued.append(master_count)
                     loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
                     # added.append(master_count)
@@ -5232,7 +5268,7 @@ def loader():
 
         if path in loaded_pathes_cache:
             de = loaded_pathes_cache[path]
-            if master_library[de]['filepath'] in cue_list:
+            if master_library[de].fullpath in cue_list:
                 #bm.get("File has an associated .cue file... Skipping")
                 return
             added.append(de)
@@ -5245,44 +5281,28 @@ def loader():
 
         time.sleep(0.002)
 
-        #bm.get("done dupe check")
+        audio = auto.File(path)
 
-        # print('NORMAL FILE PATH: ' +  path.replace('\\', '/') )
-        master_library[master_count] = {'Number': master_count,
-                                        'filepath': path.replace('\\', '/'),
-                                        'filename': os.path.basename(path),
-                                        'directory': os.path.dirname(path.replace('\\', '/')),
-                                        'parent': get_end_folder(os.path.dirname(path)),
-                                        'ext': os.path.splitext(os.path.basename(path))[1][1:].upper(),
-                                        'artist': "",
-                                        'title': "",
-                                        'length': 0,
-                                        'bitrate': 0,
-                                        'album': "",
-                                        'date': "",
-                                        'tracknumber': "",
-                                        'starttime': 0,
-                                        'cue': "NO",
-                                        'date': "",
-                                        'genre': "",
-                                        'found': True,
-                                        'sample': 0
-                                        }
-        #bm.get("create entry")
+        nt = TrackClass()
+        
+        nt.index = master_count
+        nt.fullpath = path.replace('\\', '/')
+        nt.filename = os.path.basename(path)
+        nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
+        nt.parent_folder_name = get_end_folder(os.path.dirname(path))
+        nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
+        nt.length = audio.duration
+        nt.title = rm_16(audio.title)
+        nt.artist = rm_16(audio.artist)
+        nt.album = rm_16(audio.album)
+        nt.track_number = str(audio.track)
+        nt.bitrate = audio.bitrate
+        nt.date = audio.year
+        nt.genre = rm_16(audio.genre)
+        nt.samplerate = audio.sample_rate
+        nt.size = audio.size
 
-        if master_library[master_count]['ext'] == 'MP3' or True:
-            audio = auto.File(path)
-
-            master_library[master_count]['length'] = audio.duration
-            master_library[master_count]['title'] = rm_16(audio.title)
-            master_library[master_count]['artist'] = rm_16(audio.artist)
-            master_library[master_count]['album'] = rm_16(audio.album)
-            master_library[master_count]['tracknumber'] = str(audio.track)
-            master_library[master_count]['bitrate'] = audio.bitrate
-            master_library[master_count]['date'] = audio.year
-            master_library[master_count]['genre'] = rm_16(audio.genre)
-            master_library[master_count]['sample'] = audio.sample_rate
-
+        master_library[master_count] = nt
         added.append(master_count)
         master_count += 1
         #bm.get("fill entry")
@@ -5329,7 +5349,7 @@ def loader():
     def cache_paths():
         dic = {}
         for i in range(len(master_library)):
-            dic[master_library[i]['filepath'].replace('\\', '/')] = i
+            dic[master_library[i].fullpath.replace('\\', '/')] = i
         return dic
 
     # print(master_library)
@@ -5353,10 +5373,10 @@ def loader():
 
             folder_items = transcode_list[0]
 
-            folder_name = master_library[folder_items[0]]['artist'] + " - " + master_library[folder_items[0]]['album']
+            folder_name = master_library[folder_items[0]].artist + " - " + master_library[folder_items[0]].album
 
             if folder_name == " - ":
-                folder_name = master_library[folder_items[0]]['filename']
+                folder_name = master_library[folder_items[0]].filename
 
             "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
@@ -5394,9 +5414,9 @@ def loader():
                 command = "ffmpeg "
 
             for item in folder_items:
-                print(master_library[item]['filepath'])
+                print(master_library[item].fullpath)
                 command += '-i "'
-                command += master_library[item]['filepath']
+                command += master_library[item].fullpath
                 command += '" '
 
             command += '-filter_complex "[0:a:0][1:a:0] concat=n='
@@ -5405,12 +5425,12 @@ def loader():
             command += full_wav_out
 
             print(4)
-            if master_library[folder_items[0]]['cue'] == 'YES' or len(folder_items) == 1:
-                command = install_directory + '/encoder/ffmpeg -i "' + master_library[folder_items[0]]['filepath'] + '" ' + full_wav_out
+            if master_library[folder_items[0]].is_cue == True or len(folder_items) == 1:
+                command = install_directory + '/encoder/ffmpeg -i "' + master_library[folder_items[0]].fullpath + '" ' + full_wav_out
 
                 n_folder = []
                 for i in reversed(range(len(folder_items))):
-                    if master_library[folder_items[i]]['filepath'] != master_library[folder_items[0]]['filepath']:
+                    if master_library[folder_items[i]].fullpath != master_library[folder_items[0]].fullpath:
                         n_folder.append(folder_items[i])
                         del folder_items[i]
                 print(2)
@@ -5449,9 +5469,9 @@ def loader():
             shutil.move(full_opus_out_p, output_dir + folder_name + ".opus")
 
             cu = ""
-            cu += 'PERFORMER "' + master_library[folder_items[0]]['artist'] + '"\n'
-            cu += 'TITLE "' + master_library[folder_items[0]]['album'] + '"\n'
-            cu += 'REM DATE "' + master_library[folder_items[0]]['date'] + '"\n'
+            cu += 'PERFORMER "' + master_library[folder_items[0]].artist + '"\n'
+            cu += 'TITLE "' + master_library[folder_items[0]].album + '"\n'
+            cu += 'REM DATE "' + master_library[folder_items[0]].date + '"\n'
             cu += 'FILE "' + folder_name + ".opus" + '" WAVE\n'
 
             run_time = 0
@@ -5466,11 +5486,11 @@ def loader():
                 cu += ' AUDIO\n'
 
                 cu += ' TITLE "'
-                cu += master_library[item]['title']
+                cu += master_library[item].title
                 cu += '"\n'
 
                 cu += ' PERFORMER "'
-                cu += master_library[item]['artist']
+                cu += master_library[item].artist
                 cu += '"\n'
 
                 cu += ' INDEX 01 '
@@ -5496,10 +5516,10 @@ def loader():
 
                 cu += m + ":" + s + ":" + ms + "\n"
 
-                if default_player == 'BASS' and master_library[item]['cue'] != 'YES':
-                    tracklen = get_backend_time(master_library[item]['filepath'])
+                if default_player == 'BASS' and master_library[item].is_cue is False:
+                    tracklen = get_backend_time(master_library[item].fullpath)
                 else:
-                    tracklen = int(master_library[item]['length'])
+                    tracklen = int(master_library[item].length)
 
                 run_time += tracklen
                 track += 1
@@ -5576,7 +5596,7 @@ def loader():
             #         if art_cache[i][1] == 1:
             #             # rendercore
             # 
-            #             filepath = master_library[art_cache[i][0]]['filepath']
+            #             filepath = master_library[art_cache[i][0]].fullpath
             # 
             #             if art_cache[i][7] == "TAG":
             #                 tag = stagger.read_tag(filepath)
@@ -5684,8 +5704,7 @@ def get_album_info(position):
     current = position
 
     while position > 0:
-        if master_library[default_playlist[position]]['parent'] == master_library[default_playlist[current - 1]][
-            'parent']:
+        if master_library[default_playlist[position]].parent_folder_name == master_library[default_playlist[current - 1]].parent_folder_name:
             current -= 1
             continue
         else:
@@ -5697,8 +5716,7 @@ def get_album_info(position):
         album.append(current)
         if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
-        if master_library[default_playlist[current]]['parent'] != master_library[default_playlist[current + 1]][
-            'parent']:
+        if master_library[default_playlist[current]].parent_folder_name != master_library[default_playlist[current + 1]].parent_folder_name:
             break
         else:
             current += 1
@@ -5710,8 +5728,8 @@ def get_folder_list(index):
     playlist = []
 
     for item in default_playlist:
-        if master_library[item]['parent'] == master_library[index]['parent'] and \
-            master_library[item]['album'] == master_library[index]['album']:
+        if master_library[item].parent_folder_name == master_library[index].parent_folder_name and \
+            master_library[item].album == master_library[index].album:
 
             playlist.append(item)
     return list(set(playlist))
@@ -5736,10 +5754,10 @@ def reload_albums(quiet=False):
     for i in range(len(default_playlist)):
         if i == 0:
             album_dex.append(i)
-            current_folder = master_library[default_playlist[i]]['parent']
+            current_folder = master_library[default_playlist[i]].parent_folder_name
         else:
-            if master_library[default_playlist[i]]['parent'] != current_folder:
-                current_folder = master_library[default_playlist[i]]['parent']
+            if master_library[default_playlist[i]].parent_folder_name != current_folder:
+                current_folder = master_library[default_playlist[i]].parent_folder_name
                 album_dex.append(i)
 
     if quiet is False:
@@ -5920,7 +5938,7 @@ def webserv():
         # for item in alb:
         # 
         #     for index in pctl.multi_playlist[pctl.playlist_active][2]:
-        #         if item[0] == master_library[index]['album']:
+        #         if item[0] == master_library[index].album:
         #             page += '<img src="/album_index/' + str(index) + '.jpg" alt="No Album Art" style="width:150px;height:150px">'
         #             break
         #     if on > 5:
@@ -5990,7 +6008,7 @@ def webserv():
             else:
                 line += str(i + 1) + ".  "
 
-            line += master_library[default_playlist[i]]['artist'] + " - " + master_library[default_playlist[i]]['title']
+            line += master_library[default_playlist[i]].artist + " - " + master_library[default_playlist[i]].title
             line += '</a>'
             line += "<br>"
             p_list += line
@@ -6449,7 +6467,7 @@ class Over():
 
         playlist_time = 0
         for item in default_playlist:
-            playlist_time += master_library[item]['length']
+            playlist_time += master_library[item].length
 
         line = str(datetime.timedelta(seconds=int(playlist_time)))
 
@@ -7213,7 +7231,7 @@ while running:
 
             for w in range(len(pctl.multi_playlist)):
                 if pctl.multi_playlist[w][0] == "Default":
-                    del pctl.multi_playlist[w][2][:]
+                    #del pctl.multi_playlist[w][2][:]
                     load_to.append(copy.deepcopy(w))
                     break
             else:
@@ -7232,7 +7250,7 @@ while running:
 
 
     # if key_F1:
-    #     print(get_backend_time(master_library[pctl.track_queue[pctl.queue_step]]['filepath']))
+    #     print(get_backend_time(master_library[pctl.track_queue[pctl.queue_step]].fullpath))
 
     if key_F11:
         if fullscreen == 0:
@@ -7389,7 +7407,7 @@ while running:
         # else:
         #     SDL_SetWindowBordered(t_window, False)
         #     draw_border = True
-        print(lastfm.get_bio(master_library[pctl.track_queue[pctl.queue_step]]['artist']))
+        print(lastfm.get_bio(master_library[pctl.track_queue[pctl.queue_step]].artist))
 
         key_F7 = False
 
@@ -8019,15 +8037,15 @@ while running:
                             else:
                                 i = album_dex[album_on]
                                 while i < len(default_playlist) - 1:
-                                    if master_library[default_playlist[i]]['parent'] != master_library[default_playlist[album_dex[album_on]]]['parent']:
-                                        album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]]['artist']
+                                    if master_library[default_playlist[i]].parent_folder_name != master_library[default_playlist[album_dex[album_on]]].parent_folder_name:
+                                        album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]].artist
                                         break
-                                    if master_library[default_playlist[i]]['artist'] != master_library[default_playlist[album_dex[album_on]]]['artist']:
+                                    if master_library[default_playlist[i]].artist != master_library[default_playlist[album_dex[album_on]]].artist:
                                         album_artist_dict[c_index] = "Various Artists"
                                         break
                                     i += 1
                                 else:
-                                    album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]]['artist']
+                                    album_artist_dict[c_index] = master_library[default_playlist[album_dex[album_on]]].artist
 
                             line = album_artist_dict[c_index]
 
@@ -8040,7 +8058,7 @@ while running:
                                        default_playlist[album_dex[album_on]]
                                        )
 
-                            line = master_library[default_playlist[album_dex[album_on]]]['album']
+                            line = master_library[default_playlist[album_dex[album_on]]].album
                             draw_text2((x, y + album_mode_art_size + 10 + 13),
                                        line,
                                        albumtitle,
@@ -8079,11 +8097,11 @@ while running:
                     showc = display_album_art(pctl.track_queue[pctl.queue_step],
                                               (window_size[0] - 0 - box, y + 2), (box, box))
 
-                    draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]]['artist'], GREY(200), 16)
+                    draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]].artist, GREY(200), 16)
 
-                    line =  master_library[pctl.track_queue[pctl.queue_step]]['album']
-                    if master_library[pctl.track_queue[pctl.queue_step]]['date'] != "":
-                        line += " (" + master_library[pctl.track_queue[pctl.queue_step]]['date'] + ")"
+                    line =  master_library[pctl.track_queue[pctl.queue_step]].album
+                    if master_library[pctl.track_queue[pctl.queue_step]].date != "":
+                        line += " (" + master_library[pctl.track_queue[pctl.queue_step]].date + ")"
 
                     draw_text((x + 11, y + 29), line, GREY(200), 14)
 
@@ -8097,7 +8115,7 @@ while running:
                     # row = 0
                     #
                     # for i in range(len(album_dex_l)):
-                    #     draw_text((pl_x, pl_y), master_library[album_dex_l[i]]['title'], GREY(200), 14)
+                    #     draw_text((pl_x, pl_y), master_library[album_dex_l[i]].title, GREY(200), 14)
                     #     pl_y += 18
                     #
                     #     row += 1
@@ -8170,19 +8188,19 @@ while running:
                         # fade other tracks in ablbum mode
                         albumfade = 255
                         if album_mode and pctl.playing_state != 0 and dim_art and \
-                                        master_library[default_playlist[i + playlist_position]][
-                                            'parent'] != master_library[pctl.track_queue[pctl.queue_step]]['parent']:
+                                        master_library[default_playlist[i + playlist_position]].parent_folder_name \
+                                             != master_library[pctl.track_queue[pctl.queue_step]].parent_folder_name:
                             albumfade = 150
 
                         if row_alt and w % 2 == 0:
                             draw_rect((playlist_left, playlist_top + playlist_row_height * w),
                                       (playlist_width, playlist_row_height - 1), [0, 0, 0, 30], True)
                         # Folder Break
-                        if (i + playlist_position == 0 or master_library[default_playlist[i + playlist_position]][
-                            'parent'] != master_library[default_playlist[i + playlist_position - 1]]['parent']) and \
+                        if (i + playlist_position == 0 or master_library[default_playlist[i + playlist_position]].parent_folder_name \
+                            != master_library[default_playlist[i + playlist_position - 1]].parent_folder_name) and \
                                         pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
 
-                            line = master_library[default_playlist[i + playlist_position]]['parent']
+                            line = master_library[default_playlist[i + playlist_position]].parent_folder_name
                             if thick_lines:
                                 draw_text((playlist_width + playlist_left,
                                            playlist_row_height - 20 + playlist_top + playlist_row_height * w, 1), line,
@@ -8360,7 +8378,7 @@ while running:
                                 artistc = artist_playing_cl
                                 albumc = album_playing
 
-                            if master_library[default_playlist[i + playlist_position]]['found'] is False:
+                            if master_library[default_playlist[i + playlist_position]].found is False:
                                 timec = lineOFF
                                 titlec = lineOFF
                                 indexc = lineOFF
@@ -8374,12 +8392,12 @@ while running:
                                 if item[0] == 't':
                                     lineTime = timeColour
                                     lineColour = lineON
-                                    line = get_display_time(master_library[default_playlist[i + playlist_position]]['length'])
+                                    line = get_display_time(master_library[default_playlist[i + playlist_position]].length)
                                     draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
                                                item[2]), line, alpha_mod(timec, albumfade), 12)
 
                                 elif item[0] == 'i':
-                                    line = str(master_library[default_playlist[i + playlist_position]]['tracknumber'])
+                                    line = str(master_library[default_playlist[i + playlist_position]].track_number)
                                     line = line.split("/", 1)[0]
                                     if dd_index and len(line) == 1:
                                         line = "0" + line
@@ -8389,15 +8407,15 @@ while running:
                                                item[2]), line, alpha_mod(indexc, albumfade), 12)
 
                                 elif item[0] == 'o':
-                                    key = master_library[default_playlist[i + playlist_position]]['title'] + \
-                                          master_library[default_playlist[i + playlist_position]]['filename']
+                                    key = master_library[default_playlist[i + playlist_position]].title + \
+                                          master_library[default_playlist[i + playlist_position]].filename
                                     total = 0
                                     ratio = 0
                                     if (key in star_library) and star_library[key] != 0 and \
-                                                    master_library[default_playlist[i + playlist_position]][
-                                                        'length'] != 0:
+                                                    master_library[default_playlist[i + playlist_position]].length \
+                                                        != 0:
                                         total = star_library[key]
-                                        ratio = total / master_library[default_playlist[i + playlist_position]]['length']
+                                        ratio = total / master_library[default_playlist[i + playlist_position]].length
 
                                     line = str(int(ratio))
                                     # if True:
@@ -8413,7 +8431,7 @@ while running:
                                                item[2]), line, alpha_mod(titlec, albumfade), 12)
 
                                 elif item[0] == 'a':
-                                    line = master_library[default_playlist[i + playlist_position]]['artist']
+                                    line = master_library[default_playlist[i + playlist_position]].artist
 
                                     offs += draw_text2((item[1],
                                                         playlist_text_offset + playlist_top + playlist_row_height * w,
@@ -8426,7 +8444,7 @@ while running:
                                                        default_playlist[i + playlist_position])
 
                                 elif item[0] == 'n':
-                                    line = master_library[default_playlist[i + playlist_position]]['title']
+                                    line = master_library[default_playlist[i + playlist_position]].title
 
                                     offs += draw_text2((item[1],
                                                         playlist_text_offset + playlist_top + playlist_row_height * w,
@@ -8439,7 +8457,7 @@ while running:
                                                        default_playlist[i + playlist_position])
 
                                 elif item[0] == 'b':
-                                    line = master_library[default_playlist[i + playlist_position]]['album']
+                                    line = master_library[default_playlist[i + playlist_position]].album
 
                                     offs = draw_text2((item[1],
                                                        playlist_text_offset + playlist_top + playlist_row_height * w,
@@ -8452,7 +8470,7 @@ while running:
                                                       default_playlist[i + playlist_position])
 
                                 elif item[0] == 'd':
-                                    line = str(master_library[default_playlist[i + playlist_position]]['date'])
+                                    line = str(master_library[default_playlist[i + playlist_position]].date)
 
                                     offs = draw_text2((item[1],
                                                        playlist_text_offset + playlist_top + playlist_row_height * w,
@@ -8469,12 +8487,11 @@ while running:
                                     ratio = 0
 
                                     index = default_playlist[i + playlist_position]
-                                    key = master_library[index]['title'] + master_library[index]['filename']
+                                    key = master_library[index].title + master_library[index].filename
                                     if star_lines and (key in star_library) and star_library[key] != 0 and \
-                                                    master_library[index][
-                                                        'length'] != 0:
+                                                    master_library[index].length != 0:
                                         total = star_library[key]
-                                        ratio = total / master_library[index]['length']
+                                        ratio = total / master_library[index].length
                                         if ratio > 15:
                                             ratio = 15
                                         if ratio > 0.55:
@@ -8503,7 +8520,7 @@ while running:
                                 artistc = artist_playing_cl
                                 albumc = album_playing
 
-                            if master_library[default_playlist[i + playlist_position]]['found'] is False:
+                            if master_library[default_playlist[i + playlist_position]].found is False:
                                 timec = lineOFF
                                 titlec = lineOFF
                                 indexc = lineOFF
@@ -8513,9 +8530,9 @@ while running:
                             indexoffset = 0
                             artistoffset = 0
                             indexLine = ""
-                            if master_library[default_playlist[i + playlist_position]]['artist'] != "" or \
-                                            master_library[default_playlist[i + playlist_position]]['title'] != "":
-                                line = str(master_library[default_playlist[i + playlist_position]]['tracknumber'])
+                            if master_library[default_playlist[i + playlist_position]].artist != "" or \
+                                            master_library[default_playlist[i + playlist_position]].title != "":
+                                line = str(master_library[default_playlist[i + playlist_position]].track_number)
                                 line = line.split("/", 1)[0]
                                 if len(line) > 0:
                                     line += ". "
@@ -8535,9 +8552,9 @@ while running:
 
                                 indexoffset += playlist_line_x_offset
 
-                                if master_library[default_playlist[i + playlist_position]]['artist'] != "":
+                                if master_library[default_playlist[i + playlist_position]].artist != "":
                                     if split_line and artist_colour != lineON:
-                                        line0 = master_library[default_playlist[i + playlist_position]]['artist']
+                                        line0 = master_library[default_playlist[i + playlist_position]].artist
 
                                         artistoffset = draw_text2((playlist_left + indexoffset,
                                                                    playlist_text_offset + playlist_top + playlist_row_height * w),
@@ -8548,26 +8565,25 @@ while running:
                                                                   1,
                                                                   default_playlist[i + playlist_position])
 
-                                        line = master_library[default_playlist[i + playlist_position]]['title']
+                                        line = master_library[default_playlist[i + playlist_position]].title
                                     else:
-                                        line += master_library[default_playlist[i + playlist_position]]['artist'] + " - " + \
-                                                master_library[default_playlist[i + playlist_position]]['title']
+                                        line += master_library[default_playlist[i + playlist_position]].artist + " - " + \
+                                                master_library[default_playlist[i + playlist_position]].title
                                 else:
-                                    line += master_library[default_playlist[i + playlist_position]]['title']
+                                    line += master_library[default_playlist[i + playlist_position]].title
 
                             else:
                                 line = \
-                                os.path.splitext((master_library[default_playlist[i + playlist_position]]['filename']))[
+                                os.path.splitext((master_library[default_playlist[i + playlist_position]].filename))[
                                     0]
                             trunk = False
 
                             ratio = 0
                             index = default_playlist[i + playlist_position]
-                            key = master_library[index]['title'] + master_library[index]['filename']
-                            if star_lines and (key in star_library) and star_library[key] != 0 and master_library[index][
-                                'length'] != 0:
+                            key = master_library[index].title + master_library[index].filename
+                            if star_lines and (key in star_library) and star_library[key] != 0 and master_library[index].length != 0:
                                 total = star_library[key]
-                                ratio = total / master_library[index]['length']
+                                ratio = total / master_library[index].length
                                 if ratio > 15:
                                     ratio = 15
                                 if ratio > 0.55:
@@ -8595,7 +8611,7 @@ while running:
                                        2,
                                        default_playlist[i + playlist_position])
 
-                            line = get_display_time(master_library[default_playlist[i + playlist_position]]['length'])
+                            line = get_display_time(master_library[default_playlist[i + playlist_position]].length)
 
                             draw_text((playlist_width + playlist_left - playlist_line_x_offset,
                                        playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
@@ -8756,7 +8772,7 @@ while running:
 
                             # Bluring of sidebar background, not fully implemented, uncomment these 3 lines to enable.
 
-                            # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]]['filepath'], (0,0), (0,0), mode="RETURN", offset=1)
+                            # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]].fullpath, (0,0), (0,0), mode="RETURN", offset=1)
                             # blur_bg( (playlist_width + 32, 32), (316,316),nt,0 )
                             # draw_rect( (playlist_width + 32, 32), (316,316), [0,0,0,210], True )
 
@@ -8831,13 +8847,14 @@ while running:
 
                                 if pctl.playing_state < 3:
 
-                                    title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                                    album = master_library[pctl.track_queue[pctl.queue_step]]['album']
-                                    artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
-                                    ext = master_library[pctl.track_queue[pctl.queue_step]]['ext']
-                                    date = master_library[pctl.track_queue[pctl.queue_step]]['date']
-                                    genre = master_library[pctl.track_queue[pctl.queue_step]]['genre']
-                                    sample = str(master_library[pctl.track_queue[pctl.queue_step]]['sample'])
+                                    title = master_library[pctl.track_queue[pctl.queue_step]].title
+                                    album = master_library[pctl.track_queue[pctl.queue_step]].album
+                                    artist = master_library[pctl.track_queue[pctl.queue_step]].artist
+                                    ext = master_library[pctl.track_queue[pctl.queue_step]].file_ext
+                                    date = master_library[pctl.track_queue[pctl.queue_step]].date
+                                    genre = master_library[pctl.track_queue[pctl.queue_step]].genre
+                                    sample = str(master_library[pctl.track_queue[pctl.queue_step]].samplerate)
+
                                 else:
 
                                     title = tag_meta
@@ -9071,8 +9088,8 @@ while running:
                 # else:
                 #     if broadcast != True and pctl.playing_state > 0:
                 #         if pctl.playing_state < 3:
-                #             title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                #             artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+                #             title = master_library[pctl.track_queue[pctl.queue_step]].title
+                #             artist = master_library[pctl.track_queue[pctl.queue_step]].artist
                 #         else:
                 #             title = tag_meta
                 #         line = ""
@@ -9133,13 +9150,13 @@ while running:
 
                     if scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
                         l_target = 0
-                        if master_library[pctl.track_queue[pctl.queue_step]]['length'] > 240 * 2:
+                        if master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                             l_target = 240
                         else:
-                            l_target = int(master_library[pctl.track_queue[pctl.queue_step]]['length'] * 0.50)
+                            l_target = int(master_library[pctl.track_queue[pctl.queue_step]].length * 0.50)
                         l_lead = l_target - a_time
 
-                        if l_lead > 0 and master_library[pctl.track_queue[pctl.queue_step]]['length'] > 30:
+                        if l_lead > 0 and master_library[pctl.track_queue[pctl.queue_step]].length > 30:
                             l_x = seek_bar_position[0] + int(
                                 pctl.playing_time * seek_bar_size[0] / int(pctl.playing_length))
                             l_x += int(seek_bar_size[0] / int(pctl.playing_length) * l_lead)
@@ -9153,10 +9170,10 @@ while running:
                                   (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
                                   seek_bar_fill_colour, True)
 
-                    if mouse_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
+                    if mouse_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 5] ):
                         volume_hit = True
                         seek_down = True
-                    if right_click and coll_point(mouse_position, seek_bar_position + seek_bar_size):
+                    if right_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 5]):
                         pctl.pause()
                         if pctl.playing_state == 0:
                             pctl.play()
@@ -9261,8 +9278,8 @@ while running:
 
                     if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
 
-                        title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                        artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+                        title = master_library[pctl.track_queue[pctl.queue_step]].title
+                        artist = master_library[pctl.track_queue[pctl.queue_step]].artist
 
                         line = ""
                         if title != "":
@@ -9712,7 +9729,7 @@ while running:
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
                                       "Now Streaming:", [60, 75, 220, 255], 11)
                             l += 85
-                        line = master_library[broadcast_index]['artist'] + " - " + master_library[broadcast_index]['title']
+                        line = master_library[broadcast_index].artist + " - " + master_library[broadcast_index].title
                         line = trunc_line(line, 11, window_size[0] - l - 195)
 
                         l += 55 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
@@ -9726,7 +9743,7 @@ while running:
                         # if turbo:
                         #     x -= 90
 
-                        w2 = int(broadcast_time / int(master_library[broadcast_index]['length']) * 90)
+                        w2 = int(broadcast_time / int(master_library[broadcast_index].length) * 90)
 
                         draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
                         draw_rect((x, y), (w, h), GREY(30))
@@ -9738,8 +9755,8 @@ while running:
                         line = ""
 
                         if pctl.playing_state < 3:
-                            title = master_library[pctl.track_queue[pctl.queue_step]]['title']
-                            artist = master_library[pctl.track_queue[pctl.queue_step]]['artist']
+                            title = master_library[pctl.track_queue[pctl.queue_step]].title
+                            artist = master_library[pctl.track_queue[pctl.queue_step]].artist
                         else:
                             title = tag_meta
 
@@ -9989,7 +10006,7 @@ while running:
                         playlist += stats_gen.genre_dict[genre]
 
                         for index in pctl.multi_playlist[genre_box_pl][2]:
-                            if genre.lower() in master_library[index]['directory'].lower().replace('-',
+                            if genre.lower() in master_library[index].parent_folder_path.lower().replace('-',
                                                                                                    '') and index not in playlist:
                                 playlist.append(index)
                     line = pctl.multi_playlist[genre_box_pl][0] + ": " + ' + '.join(genre_items)
@@ -10021,9 +10038,9 @@ while running:
                     x += 15
                     files_to_purge = []
 
-                    for item in os.listdir(master_library[r_menu_index]['directory']):
+                    for item in os.listdir(master_library[r_menu_index].parent_folder_path):
                         if 'AlbumArt' in item or 'desktop.ini' in item or 'Folder.jpg' in item:
-                            files_to_purge.append(os.path.join(master_library[r_menu_index]['directory'], item))
+                            files_to_purge.append(os.path.join(master_library[r_menu_index].parent_folder_path, item))
 
                     line = "1. Purge potentially hidden image/ini files from folder (" + str(
                         len(files_to_purge)) + " Found)"
@@ -10047,59 +10064,69 @@ while running:
                     y -= 24
 
                     draw_text((x + 8 + 10, y + 40), "Title:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index]['title'], GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].title, GREY8, 12)
+
+                    draw_text((x + w - 50, y + 40, 2), master_library[r_menu_index].file_ext, GREY8, 12)
+
+
 
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Artist:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index]['artist'], GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].artist, GREY8, 12)
 
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Album:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index]['album'], GREY8,
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].album, GREY8,
                               12)
 
                     y += 23
 
                     draw_text((x + 8 + 10, y + 40), "Path:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(master_library[r_menu_index]['filepath'], 12, 420),
+                    draw_text((x + 8 + 90, y + 40), trunc_line(master_library[r_menu_index].fullpath, 12, 420),
                               GREY8, 12)
 
-                    y += 23
+                    y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Samplerate:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index]['sample']), GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].samplerate), GREY8, 12)
 
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Bitrate:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index]['bitrate']), GREY8, 12)
+                    line =  str(master_library[r_menu_index].bitrate)
+                    draw_text((x + 8 + 90, y + 40), line, GREY8, 12)
 
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Length:", GREY8, 12)
-                    line = time.strftime('%M:%S', time.gmtime(master_library[r_menu_index]['length']))
+                    line = time.strftime('%M:%S', time.gmtime(master_library[r_menu_index].length))
                     draw_text((x + 8 + 90, y + 40), line, GREY8, 12)
+
+                    y += 15
+
+                    draw_text((x + 8 + 10, y + 40), "Filesize:", GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), get_filesize_string(master_library[r_menu_index].size), GREY8, 12)
+
 
                     y += 23
 
                     draw_text((x + 8 + 10, y + 40), "Genre:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index]['genre'], GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].genre, GREY8, 12)
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Release Date:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index]['date']), GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].date), GREY8, 12)
 
                     y += 23
 
-                    key = master_library[r_menu_index]['title'] + master_library[r_menu_index]['filename']
+                    key = master_library[r_menu_index].title + master_library[r_menu_index].filename
                     total = 0
                     ratio = 0
-                    if (key in star_library) and star_library[key] != 0 and master_library[r_menu_index][
-                            'length'] != 0:
+                    if (key in star_library) and star_library[key] != 0 and master_library[r_menu_index].length != 0:
                         total = star_library[key]
-                        ratio = total / master_library[r_menu_index]['length']
+                        ratio = total / master_library[r_menu_index].length
 
                     draw_text((x + 8 + 10, y + 40), "Play Count:", GREY8, 12)
                     draw_text((x + 8 + 90, y + 40), str(int(ratio)), GREY8, 12)
@@ -10142,8 +10169,8 @@ while running:
                 warncue = False
 
                 for item in default_playlist:
-                    if master_library[item]['parent'] == master_library[rename_index]['parent']:
-                        if master_library[item]['cue'] == "YES":
+                    if master_library[item].parent_folder_name == master_library[rename_index].parent_folder_name:
+                        if master_library[item].is_cue == True:
                             warncue = True
                         else:
                             r_todo.append(item)
@@ -10177,8 +10204,8 @@ while running:
                 for item in r_todo:
                     afterline = ""
 
-                    if master_library[item]['tracknumber'] == "" or master_library[item]['artist'] == "" or \
-                                    master_library[item]['title'] == "" or master_library[item]['album'] == "":
+                    if master_library[item].track_number == "" or master_library[item].artist == "" or \
+                                    master_library[item].title == "" or master_library[item].album == "":
                         warn = True
 
                     set = 0
@@ -10186,17 +10213,17 @@ while running:
                         if NRN[set] == "%" and set < len(NRN) - 1:
                             set += 1
                             if NRN[set] == 'n':
-                                if len(str(master_library[item]['tracknumber'])) < 2:
+                                if len(str(master_library[item].track_number)) < 2:
                                     afterline += "0"
-                                afterline += str(master_library[item]['tracknumber'])
+                                afterline += str(master_library[item].track_number)
                             elif NRN[set] == 'a':
-                                afterline += master_library[item]['artist']
+                                afterline += master_library[item].artist
                             elif NRN[set] == 't':
-                                afterline += master_library[item]['title']
+                                afterline += master_library[item].title
                             elif NRN[set] == 'b':
-                                afterline += master_library[item]['album']
+                                afterline += master_library[item].album
                             elif NRN[set] == 'x':
-                                afterline += "." + master_library[item]['ext'].lower()
+                                afterline += "." + master_library[item].file_ext.lower()
                             elif NRN[set] == 'u':
                                 underscore = True
                         else:
@@ -10209,11 +10236,11 @@ while running:
                         break
 
                 draw_text((x + 10, y + 120,),
-                          trunc_line("BEFORE:  " + master_library[rename_index]['filename'], 12, 390), GREY6, 12)
+                          trunc_line("BEFORE:  " + master_library[rename_index].filename, 12, 390), GREY6, 12)
                 draw_text((x + 10, y + 135,), trunc_line("AFTER:     " + afterline, 12, 390), GREY6, 12)
 
-                if (len(NRN) > 3 and len(master_library[rename_index]['filename']) > 3 and afterline[-3:].lower() !=
-                    master_library[rename_index]['filename'][-3:].lower()) or len(NRN) < 4:
+                if (len(NRN) > 3 and len(master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
+                    master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
                     draw_text((x + 10, y + 160,), "Warning: This will change the file extention", [200, 60, 60, 255],
                               12)
 
@@ -10245,17 +10272,17 @@ while running:
                             if NRN[set] == "%" and set < len(NRN) - 1:
                                 set += 1
                                 if NRN[set] == 'n':
-                                    if len(str(master_library[item]['tracknumber'])) < 2:
+                                    if len(str(master_library[item].track_number)) < 2:
                                         afterline += "0"
-                                    afterline += str(master_library[item]['tracknumber'])
+                                    afterline += str(master_library[item].track_number)
                                 elif NRN[set] == 'a':
-                                    afterline += master_library[item]['artist']
+                                    afterline += master_library[item].artist
                                 elif NRN[set] == 't':
-                                    afterline += master_library[item]['title']
+                                    afterline += master_library[item].title
                                 elif NRN[set] == 'b':
-                                    afterline += master_library[item]['album']
+                                    afterline += master_library[item].album
                                 elif NRN[set] == 'x':
-                                    afterline += "." + master_library[item]['ext'].lower()
+                                    afterline += "." + master_library[item].file_ext.lower()
                             else:
                                 afterline += NRN[set]
                             set += 1
@@ -10266,24 +10293,24 @@ while running:
                             if char in '\\/:*?"<>|':
                                 afterline = afterline.replace(char, '')
 
-                        oldname = master_library[item]['filename']
-                        oldpath = master_library[item]['filepath']
+                        oldname = master_library[item].filename
+                        oldpath = master_library[item].fullpath
 
                         try:
                             print('Renaming...')
 
                             playt = 0
-                            oldkey = master_library[item]['title'] + master_library[item]['filename']
-                            oldpath = master_library[item]['filepath']
+                            oldkey = master_library[item].title + master_library[item].filename
+                            oldpath = master_library[item].fullpath
 
                             oldsplit = os.path.split(oldpath)
 
-                            os.rename(master_library[item]['filepath'], os.path.join(oldsplit[0], afterline))
+                            os.rename(master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
 
-                            master_library[item]['filepath'] = os.path.join(oldsplit[0], afterline)
-                            master_library[item]['filename'] = afterline
+                            master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
+                            master_library[item].filename = afterline
 
-                            newkey = master_library[item]['title'] + master_library[item]['filename']
+                            newkey = master_library[item].title + master_library[item].filename
 
                             if oldkey in star_library:
                                 playt = star_library[oldkey]
@@ -10401,10 +10428,10 @@ while running:
                             search_index = 0
 
                         search_terms = NSN.lower().split()
-                        line = master_library[default_playlist[search_index]]['title'].lower() + \
-                               master_library[default_playlist[search_index]]['artist'].lower() \
-                               + master_library[default_playlist[search_index]]['album'].lower() + \
-                               master_library[default_playlist[search_index]]['filename'].lower()
+                        line = master_library[default_playlist[search_index]].title.lower() + \
+                               master_library[default_playlist[search_index]].artist.lower() \
+                               + master_library[default_playlist[search_index]].album.lower() + \
+                               master_library[default_playlist[search_index]].filename.lower()
 
                         if all(word in line for word in search_terms):
 
@@ -10428,10 +10455,10 @@ while running:
                         if search_index > len(default_playlist) - 1:
                             search_index = len(default_playlist) - 1
                         search_terms = NSN.lower().split()
-                        line = master_library[default_playlist[search_index]]['title'].lower() + \
-                               master_library[default_playlist[search_index]]['artist'].lower() \
-                               + master_library[default_playlist[search_index]]['album'].lower() + \
-                               master_library[default_playlist[search_index]]['filename'].lower()
+                        line = master_library[default_playlist[search_index]].title.lower() + \
+                               master_library[default_playlist[search_index]].artist.lower() \
+                               + master_library[default_playlist[search_index]].album.lower() + \
+                               master_library[default_playlist[search_index]].filename.lower()
 
                         if all(word in line for word in search_terms):
 
@@ -10447,6 +10474,8 @@ while running:
                 if key_return_press is True and search_index > -1:
                     renplay += 1
                     pctl.jump(default_playlist[search_index], search_index)
+                    if album_mode:
+                        goto_album(pctl.playlist_playing)
 
             else:
 
@@ -10589,9 +10618,9 @@ while running:
 
             for enco in encodings:
 
-                artist = master_library[encoding_target]['artist']
-                title = master_library[encoding_target]['title']
-                album = master_library[encoding_target]['album']
+                artist = master_library[encoding_target].artist
+                title = master_library[encoding_target].title
+                album = master_library[encoding_target].album
 
                 draw_rect((x, y), (w, h), background, True)
 
@@ -10823,7 +10852,7 @@ while running:
     # Broadcast control
 
 
-    if broadcast and broadcast_time > master_library[broadcast_index]['length'] and not join_broadcast:
+    if broadcast and broadcast_time > master_library[broadcast_index].length and not join_broadcast:
         broadcast_position += 1
         print('next')
         if broadcast_position > len(pctl.multi_playlist[broadcast_playlist][2]) - 1:
@@ -10833,11 +10862,11 @@ while running:
         broadcast_index = pctl.multi_playlist[broadcast_playlist][2][broadcast_position]
         broadcast_time = 0
         b_timer()
-        pctl.target_open = master_library[broadcast_index]['filepath']
-        pctl.bstart_time = master_library[broadcast_index]['starttime']
+        pctl.target_open = master_library[broadcast_index].fullpath
+        pctl.bstart_time = master_library[broadcast_index].start_time
         pctl.playerCommand = "encnext"
         pctl.playerCommandReady = True
-        broadcast_line = master_library[broadcast_index]['artist'] + " - " + master_library[broadcast_index]['title']
+        broadcast_line = master_library[broadcast_index].artist + " - " + master_library[broadcast_index].title
 
     if broadcast and broadcast_time != broadcast_last_time:
         broadcast_last_time = broadcast_time
@@ -10863,12 +10892,11 @@ while running:
             pctl.playerCommandReady = True
 
         elif pctl.random_mode is False and len(default_playlist) - 2 > pctl.playlist_playing and \
-                        master_library[default_playlist[pctl.playlist_playing]][
-                            'cue'] == "YES" and master_library[default_playlist[pctl.playlist_playing + 1]][
-            'filename'] == \
-                master_library[default_playlist[pctl.playlist_playing]]['filename'] and int(
-                master_library[default_playlist[pctl.playlist_playing]]['tracknumber']) == int(
-                master_library[default_playlist[pctl.playlist_playing + 1]]['tracknumber']) - 1:
+                        master_library[default_playlist[pctl.playlist_playing]].is_cue is True \
+                and master_library[default_playlist[pctl.playlist_playing + 1]].filename == \
+                master_library[default_playlist[pctl.playlist_playing]].filename and int(
+                master_library[default_playlist[pctl.playlist_playing]].track_number) == int(
+                master_library[default_playlist[pctl.playlist_playing + 1]].track_number) - 1:
             print("CUE Gapless")
             pctl.playlist_playing += 1
             pctl.queue_step += 1
@@ -10876,7 +10904,7 @@ while running:
 
             pctl.playing_state = 1
             pctl.playing_time = 0
-            pctl.playing_length = master_library[pctl.track_queue[pctl.queue_step]]['length']
+            pctl.playing_length = master_library[pctl.track_queue[pctl.queue_step]].length
 
             UPDATE_RENDER += 1
             renplay += 1
