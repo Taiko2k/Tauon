@@ -27,15 +27,76 @@
 
 # --------------------------------------------------------------------
 
-import os
-import time
 import sys
+import os
+import pickle
+
+t_version = "v1.3.5"
+version_line = "Tauon Music Box " + t_version
+print(version_line)
+print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
+
+server_port = 7590
+
+
+
+if sys.platform == 'win32':
+    system = 'windows'
+    print("Detected platform: Windows")
+else:
+    system = 'not-windows'
+    print("Detected platform: Linux")
+
+working_directory = os.getcwd()
+install_directory = sys.path[0]
+install_directory = install_directory.replace('\\', '/')
+if 'base_library' in install_directory:
+    install_directory = os.path.dirname(install_directory)
+user_directory = install_directory
+# print("Working directory: " + working_directory)
+# print('Argument List: ' + str(sys.argv))
+# print('User directory: ' + user_directory)
+print('Install directory: ' + install_directory)
+
+encoder_output = user_directory + '/encoder/'
+b_active_directroy = install_directory.encode('utf-8')
+
+
+try:
+    open(user_directory + '/lock', 'x')
+except:
+    pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+    #sys.exit()
+    import socket
+    print('There might already be an instance...')
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = s.connect_ex(('127.0.0.1', server_port))
+    #s.close()
+
+
+    if result == 0:
+        print('Socket is already open')
+        # import http.client
+        #
+        # pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+        # print('sending notice')
+        #
+        # c = http.client.HTTPConnection('localhost', server_port)
+        # c.request('POST', '/load', '{test}')
+        # doc = c.getresponse().read()
+        # print(doc)
+
+        sys.exit()
+
+    else:
+        print('Socket is closed')
+
+import time
 import ctypes
 import random
 import fractions
 import threading
 import io
-import pickle
 import copy
 import subprocess
 import urllib.parse
@@ -48,40 +109,9 @@ import locale
 import webbrowser
 import pyperclip
 import base64
-
-
 from ctypes import *
 
-t_version = "v1.3.4"
-version_line = "Tauon Music Box " + t_version
-print(version_line)
-print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
-
-
 locale.setlocale(locale.LC_ALL, "")
-
-if sys.platform == 'win32':
-    system = 'windows'
-    print("Detected platform: Windows")
-else:
-    system = 'not-windows'
-    print("Detected platform: Linux")
-
-working_directory = os.getcwd()
-print("Working directory: " + working_directory)
-print('Argument List: ' + str(sys.argv))
-install_directory = sys.path[0]
-install_directory = install_directory.replace('\\', '/')
-if 'base_library' in install_directory:
-    install_directory = os.path.dirname(install_directory)
-print('Install directory: ' + install_directory)
-user_directory = install_directory
-print('User directory: ' + user_directory)
-encoder_output = user_directory + '/encoder/'
-
-
-b_active_directroy = install_directory.encode('utf-8')
-
 
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
@@ -89,7 +119,6 @@ if system == 'windows':
     import win32con, win32api, win32gui, atexit
 # else:
 #     from Xlib import display
-
 
 import sdl2
 from sdl2 import *
@@ -1246,11 +1275,10 @@ def update_title_do():
 
 
 class LastFMapi:
-    API_SECRET = "18c471e5475e7e877b126843d447e"
+    API_SECRET = "18c471e5475e7e877b126843d447e855"
     connected = False
     hold = False
     API_KEY = "0eea8ea966ab2ca395731e2c3c22e81e"
-    API_SECRET += "855"
 
     network = None
 
@@ -2756,7 +2784,20 @@ ttl = []
 
 
 # Draw text function with enhanced performance via given search reference values
+def clear_text_cache():
 
+    global ttc
+    global ttl
+
+    for i in range(len(ttl)):
+        key = ttl[i]
+        so = ttc[key]
+        SDL_DestroyTexture(so[1])
+
+    del ttc
+    del ttl
+    ttc = {}
+    ttl = []
 
 def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
@@ -2835,11 +2876,11 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         SDL_FreeSurface(font_surface)
 
         ttc[key] = [dst, c]
-        if not text[0].isdigit():
+        if not text[0].isdigit() or True:
             ttl.append(key)
 
         # Delete oldest cached text if cache too big to avoid performance slowdowns
-        if len(ttl) > 200:
+        if len(ttl) > 250:
             key = ttl[0]
             so = ttc[key]
             SDL_DestroyTexture(so[1])
@@ -2979,16 +3020,18 @@ class GallClass:
         if pics == [None]:
             return [None]
 
-        # print(pics)
-        # print(offset)
 
-        while offset > len(pics) - 1:
+        while offset > len(pics):
             offset -= 1
 
         if pics[0] == None:
             offset -= 1
             if offset == 0:
                 offset = len(pics) - 1
+
+
+        if offset > len(pics) - 1:
+            offset -= 1
 
         return [pics[offset]]
 
@@ -3519,7 +3562,11 @@ dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
 dst3.w = 28
 dst3.h = 14
 
-
+# s_image5 = IMG_Load(b_active_directroy + b'/gui/rep.png')
+# c5 = SDL_CreateTextureFromSurface(renderer, s_image5)
+# dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
+# dst3.w = 28
+# dst3.h = 14
 
 panelY = 30
 panelBY = 51 #51
@@ -3704,10 +3751,11 @@ class Menu():
             draw_rect(self.pos, (self.w, self.h * len(self.items)), GREY(40))
 
     def activate(self, in_reference=0, position=None):
+
         if position != None:
-            self.pos = position
+            self.pos = [position[0],position[1]]
         else:
-            self.pos = copy.deepcopy(mouse_position)
+            self.pos = [copy.deepcopy(mouse_position[0]),copy.deepcopy(mouse_position[1])]
 
         self.reference = in_reference
         Menu.switch = self.id
@@ -5190,11 +5238,11 @@ def loader():
             added.append(de)
             if auto_play_import:
                 pctl.jump(copy.deepcopy(de))
-                print('hit')
+
                 auto_play_import = False
             #bm.get("dupe track")
             return
-        print('hit2')
+
         time.sleep(0.002)
 
         #bm.get("done dupe check")
@@ -5511,7 +5559,7 @@ def loader():
                 gall_ren.gall[index] = order
 
                 UPDATE_RENDER += 1
-
+                del source
                 time.sleep(0.01)
 
             except:
@@ -5683,6 +5731,7 @@ def reload_albums(quiet=False):
 
     current_folder = ""
     p = 0
+    album_dex = []
 
     for i in range(len(default_playlist)):
         if i == 0:
@@ -5713,7 +5762,7 @@ def webserv():
     if enable_web is False:
         return 0
 
-    from flask import Flask, redirect, send_file, abort
+    from flask import Flask, redirect, send_file, abort, request
     from string import Template
 
     app = Flask(__name__)
@@ -6002,6 +6051,16 @@ def webserv():
             playlist_position = len(default_playlist) - 25
         return redirect('/remote', code=302)
 
+    @app.route('/load', methods=['POST', 'GET', 'DELETE'])
+    def ex_load():
+        global arg_queue
+        print(request.method)
+        print(request.get_data())
+        print("Load ext")
+
+
+
+        return "done"
 
     @app.route('/remote/back')
     def back():
@@ -6170,9 +6229,9 @@ def webserv():
     #     return send_file(filename, mimetype='image/jpg')
 
     if expose_web is True:
-        app.run(host='0.0.0.0 ')
+        app.run(host='0.0.0.0 ', port=server_port)
     else:
-        app.run()
+        app.run(port=server_port)
 
 
 if enable_web is True:
@@ -6284,6 +6343,8 @@ def toggle_follow(mode=0):
 def toggle_thick(mode=0):
     global thick_lines
     global update_layout
+
+    clear_text_cache()
 
     if mode == 1:
         return thick_lines
@@ -6821,24 +6882,16 @@ mouse_moved = False
 power = 0
 key_F7 = False
 
-i = 1
-while i < len(sys.argv):
 
-    for w in range(len(pctl.multi_playlist)):
-        if pctl.multi_playlist[w][0] == "Default":
-            del pctl.multi_playlist[w][2][:]
-            load_to.append(copy.deepcopy(w))
-            break
-    else:
-        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-        load_to.append(len(pctl.multi_playlist) - 1)
-        switch_playlist(len(pctl.multi_playlist) - 1)
 
-    if i == 1:
-        auto_play_import = True
 
-    droped_file.append(sys.argv[i])
-    i += 1
+r_arg_queue = copy.deepcopy(sys.argv)
+arg_queue = []
+for item in r_arg_queue:
+    if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+        arg_queue.append(item)
+
+
 
 while running:
 
@@ -7143,6 +7196,40 @@ while running:
 
     if fields.test():
         UPDATE_RENDER += 1
+
+    if os.path.isfile(user_directory + "/transfer.p"):
+        r_arg_queue = pickle.load(open(user_directory + "/transfer.p", "rb"))
+        os.remove(user_directory + "/transfer.p")
+        arg_queue = []
+        for item in r_arg_queue:
+            if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+                arg_queue.append(item)
+        # SDL_RaiseWindow(t_window)
+        # SDL_RestoreWindow(t_window)
+
+    if len(arg_queue) > 0:
+        i = 0
+        while i < len(arg_queue):
+
+            for w in range(len(pctl.multi_playlist)):
+                if pctl.multi_playlist[w][0] == "Default":
+                    del pctl.multi_playlist[w][2][:]
+                    load_to.append(copy.deepcopy(w))
+                    break
+            else:
+                pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+                load_to.append(len(pctl.multi_playlist) - 1)
+                switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+
+
+            droped_file.append(arg_queue[i])
+            i += 1
+        arg_queue = []
+        auto_play_import = True
+
+
 
     # if key_F1:
     #     print(get_backend_time(master_library[pctl.track_queue[pctl.queue_step]]['filepath']))
@@ -7830,10 +7917,12 @@ while running:
 
 
             # ALBUM GALLERY RENDERING:
+            # Gallery view
+
             if album_mode:
 
                 rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
-                        window_size[1] - panelY - panelBY - 1]
+                        window_size[1] - panelY - panelBY - 0]
                 draw_rect_r(rect, side_panel_bg, True)
 
                 # if b_info_bar:
@@ -8096,9 +8185,9 @@ while running:
                             line = master_library[default_playlist[i + playlist_position]]['parent']
                             if thick_lines:
                                 draw_text((playlist_width + playlist_left,
-                                           playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
+                                           playlist_row_height - 20 + playlist_top + playlist_row_height * w, 1), line,
                                           alpha_mod(folderTitleColour, albumfade),
-                                          11)
+                                          13)
                             else:
                                 draw_text((playlist_width + playlist_left,
                                            playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
@@ -9304,6 +9393,8 @@ while running:
 
                     if window_size[0] > 630:
 
+                        # shuffle button
+
                         x = window_size[0] - 295
                         y = window_size[1] - 27
 
@@ -9624,16 +9715,16 @@ while running:
                         line = master_library[broadcast_index]['artist'] + " - " + master_library[broadcast_index]['title']
                         line = trunc_line(line, 11, window_size[0] - l - 195)
 
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
+                        l += 55 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
                                   GREY(130), 11)
 
-                        x = window_size[0] - 100
+                        x = l #window_size[0] - 100
                         y = 10
                         w = 90
                         h = 9
 
-                        if turbo:
-                            x -= 90
+                        # if turbo:
+                        #     x -= 90
 
                         w2 = int(broadcast_time / int(master_library[broadcast_index]['length']) * 90)
 
@@ -9643,7 +9734,7 @@ while running:
                         l -= 15
                         l -= 85
                     # Topline
-                    if block6 or (side_panel_enable is False and broadcast is not True and pctl.playing_state > 0):
+                    if not album_mode and (block6 or (side_panel_enable is False and broadcast is not True and pctl.playing_state > 0)):
                         line = ""
 
                         if pctl.playing_state < 3:
@@ -9813,7 +9904,7 @@ while running:
                 line = "Last FM Account Username: " + lfm_username
 
                 draw_text((x + 10, y + 7 + 20), line, GREY6, 12)
-                draw_text((x + 10, y + 7), "Please enter the following and try again.  Press F8 at any time to reset.",
+                draw_text((x + 10, y + 7), "Please enter the following then try again.  Press F8 at any time to reset.",
                           GREY6, 12)
 
             if genre_box:
@@ -10397,6 +10488,8 @@ while running:
                         playlist_selected = 0
                         shift_selection = []
                     pctl.jump(default_playlist[playlist_selected], playlist_selected)
+                    if album_mode:
+                        goto_album(pctl.playlist_playing)
 
         # Unicode edit display---------------------
         if len(editline) > 0:
@@ -10914,6 +11007,10 @@ save = [master_library,
         ]
 
 pickle.dump(save, open(user_directory + "/state.p", "wb"))
+
+if os.path.isfile(user_directory + '/lock'):
+    os.remove(user_directory + '/lock')
+
 # r_window.destroy()
 if system == 'windows':
 
