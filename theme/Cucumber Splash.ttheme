@@ -1,12 +1,12 @@
-﻿#Tau Player theme file
+﻿#Tauon Music Box theme file
 
 
 #-Backgrounds-----
 
-20,20,20		player background
+22,22,22		player background (top panel)
 30,30,30	  	playlist panel
-26,26,26		side panel
-20,20,20		bottom panel
+15,15,15		side panel
+22,22,22		bottom panel
 
 #-Frame--------
 
