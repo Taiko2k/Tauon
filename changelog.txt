@@ -1,14 +1,16 @@
 
 Changelog-------------------------------------
 
-v1.3.4
+v1.4.0
 
  - Added playlist navigation to web interface
  - Added function for reloading artwork
  - Added ability to import to playlist by dropping on tab
- - Added specifying encoding output directory from config
- - Added 'open with' support and opening file via cli
+ - Added specifying of encoding output directory from config
+ - Added 'open with' support and opening file from cli
+ - Added single instance functionality
  - Added a basic info panel to gallery view
+ - Added file size information to track info
  - Tweaked some menu elements
  - Tweaked create playlist behavior
  - Tweaked gallery view artist labels to show various if applicable
@@ -21,9 +23,11 @@ v1.3.4
  - Fixed crash when clearing playlist in gallery view
  - Fixed some keybinds being active during text input
  - Improved stability when importing
+ - Updated icon design
  - Bound shift+up/down keys to volume control
  - Removed disk caching of images for web interface
  - Removed dependence on running from working directory
+ - Note: Changed database format, reset required if upgrading (delete state.p file)
 
 v1.3.0
 
