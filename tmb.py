@@ -662,7 +662,7 @@ class TrackClass():
         self.title = ""
         self.length = 0
         self.bitrate = 0
-        self.sameplerate = 0
+        self.samplerate = 0
         self.album = ""
         self.date = ""
         self.track_number = ""
@@ -2931,23 +2931,7 @@ def draw_text(location, text, colour, font, max=1000):
     return draw_text2(location, text, colour, font, max)
 
 
-
-art_cache = []
-
-source_cache = []
-
 temp_dest = SDL_Rect(0, 0)
-
-blur_cache = [(0, 0), (0, 0), "", 0, None]
-tag_bc = ""
-is_tag = 0
-b_location = ""
-b_ready = False
-b_source_info = []
-b_texture = ""
-
-preloaded = []
-
 
 # Experimental image blur function, not used
 
@@ -2988,87 +2972,14 @@ class GallClass:
 
     def get_file_source(self, index):
 
-        filepath = master_library[index].fullpath
-        parent_folder = os.path.dirname(filepath)
+        global album_art_gen
 
-        # Add parent folder to offset cache
-        if parent_folder in folder_image_offsets:
-            pass
-        else:
-            folder_image_offsets[parent_folder] = 1
+        sources = album_art_gen.get_sources(index)
+        if len(sources) == 0:
+            return False
+        offset = album_art_gen.get_offset(master_library[index].fullpath,sources)
+        return sources[offset]
 
-        offset = folder_image_offsets[parent_folder]
-
-        pics = []
-
-        try:
-            if '.mp3' in filepath or '.MP3' in filepath:
-                tag = stagger.read_tag(filepath)
-                try:
-                    tt = tag[APIC][0].data
-                except:
-                    tt = tag[PIC][0].data
-                if len(tt) > 30:
-                    pics.append("TAG")
-
-                    if offset == 1:
-                        return ["TAG", tt]
-                else:
-                    pics.append(None)
-            else:
-                pics.append(None)
-
-        except:
-            pics.append(None)
-        try:
-            direc = os.path.dirname(filepath)
-            items_in_dir = os.listdir(direc)
-        except:
-            print("Directory error")
-            return [None]
-
-        for i in range(len(items_in_dir)):
-
-            if os.path.splitext(items_in_dir[i])[1][1:] in {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp'}:
-                dir_path = os.path.join(direc, items_in_dir[i])
-                dir_path = dir_path.replace('\\', "/")
-                # print(dir_path)
-                pics.append(dir_path)
-
-            elif os.path.isdir(os.path.join(direc, items_in_dir[i])) and \
-                            items_in_dir[i].lower() in {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
-                                                        'covers',
-                                                        'coverart', 'albumart', 'gallery', 'jacket', 'artwork', 'bonus',
-                                                        'bk'}:
-
-                subdirec = os.path.join(direc, items_in_dir[i])
-                items_in_dir2 = os.listdir(subdirec)
-
-                for y in range(len(items_in_dir2)):
-                    if os.path.splitext(items_in_dir2[y])[1][1:] in {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP',
-                                                                     'bmp'}:
-                        dir_path = os.path.join(subdirec, items_in_dir2[y])
-                        dir_path = dir_path.replace('\\', "/")
-                        # print(dir_path)
-                        pics.append(dir_path)
-
-        if pics == [None]:
-            return [None]
-
-
-        while offset > len(pics):
-            offset -= 1
-
-        if pics[0] == None:
-            offset -= 1
-            if offset == 0:
-                offset = len(pics) - 1
-
-
-        if offset > len(pics) - 1:
-            offset -= 1
-
-        return [pics[offset]]
 
     def render(self, index, location):
 
@@ -3136,16 +3047,8 @@ gall_ren = GallClass()
 
 def clear_img_cache():
 
-    global source_cache
-    global art_cache
-
-    for index, item in enumerate(art_cache, start=0):
-
-        if art_cache[index][1] != 1 and art_cache[index][1] != 2:
-            SDL_DestroyTexture(art_cache[index][1])
-
-    source_cache = []
-    art_cache = []
+    global album_art_gen
+    album_art_gen.clear_cache()
 
     for key, value in gall_ren.gall.items():
         SDL_DestroyTexture(value[2])
@@ -3154,48 +3057,60 @@ def clear_img_cache():
     global UPDATE_RENDER
     UPDATE_RENDER += 1
 
+class ImageObject():
 
-def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""):
-    # Warning: This function is a nightmare, don't even attempt to understand
+    def __init__(self):
 
-    if mode == 'cacheonly':
-        return 0
+        self.index = 0
+        self.texture = None
+        self.rect = None
+        self.request_size = (0,0)
+        self.original_size = (0,0)
+        self.actual_size = (0,0)
+        self.source = ""
+        self.offset = 0
+        self.stats = True
 
-    global folder_image_offsets
-    global source_cache
-    global preloaded
-    global art_cache
-    global albums_to_render
 
-    filepath = master_library[index].fullpath
+class AlbumArt():
 
-    if len(art_cache) > 25 and albums_to_render < 1:
-        if art_cache[0][1] != 1 and art_cache[0][1] != 2:
-            SDL_DestroyTexture(art_cache[0][1])
-        del art_cache[0]
-        del source_cache[0]
+    def __init__(self):
+        self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif'}
+        self.art_folder_names = {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
+                                'covers', 'coverart', 'albumart', 'gallery', 'jacket', 'artwork',
+                                'bonus', 'bk'}
+        self.source_cache = {}
+        self.image_cache = []
+        self.current_wu = None
 
-    # Add parent folder to offset cache
-    parent_folder = os.path.dirname(filepath)
-    if parent_folder in folder_image_offsets:
-        pass
-    else:
-        folder_image_offsets[parent_folder] = 1
+    def get_info(self, index):
 
-    if mode == "OFFSET":
-        folder_image_offsets[parent_folder] += 1
-        return 0
+        sources = self.get_sources(index)
+        if len(sources) == 0:
+            return False
+        offset = self.get_offset(master_library[index].fullpath, sources)
 
-    # Find album art locations for music file if not already added
-    new = 1
-    for a in range(len(source_cache)):
-        if source_cache[a][0] == filepath:
-            source_index = a
-            new = 0
-            break
+        return [sources[offset][0], len(sources), offset]
 
-    if new == 1:
-        pics = [filepath]
+
+    def get_sources(self, index):
+
+        filepath = master_library[index].fullpath
+
+        # Check if source list already exists, if not, make it
+        if index in self.source_cache:
+            return self.source_cache[index]
+        else:
+             pass
+
+        source_list = [] #istag,
+
+        try:
+            direc = os.path.dirname(filepath)
+            items_in_dir = os.listdir(direc)
+        except:
+            print("Error loading directroy")
+            return []
 
         try:
             if '.mp3' in filepath or '.MP3' in filepath:
@@ -3207,276 +3122,294 @@ def display_album_art(index, location, size, mode='NONE', offset=0, save_path=""
                     tt = tag[PIC][0]
 
                 if len(tt.data) > 30:
-                    pics.append("TAG")
-                else:
-                    pics.append(None)
-            else:
-                pics.append(None)
-
+                    source_list.append([True, filepath])
         except:
-            pics.append(None)
-
-        try:
-
-            direc = os.path.dirname(filepath)
-            items_in_dir = os.listdir(direc)
-        except:
-            print("Directory error")
-            return [0, 1, False]
+            pass
 
         for i in range(len(items_in_dir)):
 
-            if os.path.splitext(items_in_dir[i])[1][1:] in {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp'}:
-                dir_path = os.path.join(direc, items_in_dir[i])
-                dir_path = dir_path.replace('\\', "/")
-                # print(dir_path)
-                pics.append(dir_path)
+            if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
+                dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
+                source_list.append([False, dir_path])
 
             elif os.path.isdir(os.path.join(direc, items_in_dir[i])) and \
-                            items_in_dir[i].lower() in {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
-                                                        'covers',
-                                                        'coverart', 'albumart', 'gallery', 'jacket', 'artwork', 'bonus',
-                                                        'bk'}:
+                            items_in_dir[i].lower() in self.art_folder_names:
 
                 subdirec = os.path.join(direc, items_in_dir[i])
                 items_in_dir2 = os.listdir(subdirec)
 
                 for y in range(len(items_in_dir2)):
-                    if os.path.splitext(items_in_dir2[y])[1][1:] in {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP',
-                                                                     'bmp'}:
-                        dir_path = os.path.join(subdirec, items_in_dir2[y])
-                        dir_path = dir_path.replace('\\', "/")
-                        # print(dir_path)
-                        pics.append(dir_path)
+                    if os.path.splitext(items_in_dir2[y])[1][1:] in self.image_types:
+                        dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
+                        source_list.append([False, dir_path])
 
-        source_cache.append(pics)
-        source_index = len(source_cache) - 1
+        self.source_cache[index] = source_list
 
-    if folder_image_offsets[parent_folder] > len(source_cache[source_index]) - 1:
-        folder_image_offsets[parent_folder] = 1
+        return source_list
 
-    if source_cache[source_index][folder_image_offsets[parent_folder]] is None and len(source_cache[source_index]) == 2:
-        return [0, 1, False]
-    elif source_cache[source_index][folder_image_offsets[parent_folder]] is None:
-        folder_image_offsets[parent_folder] += 1
+    def fast_display(self,index,location,box,source,offset):
 
-    # Open mode
-    if mode == "OPEN":
-        if source_cache[source_index][folder_image_offsets[parent_folder]] == "TAG":
-            return 0
-        else:
-            if system == "windows":
-                os.startfile(source_cache[source_index][folder_image_offsets[parent_folder]])
-            else:
-                subprocess.call(["xdg-open", source_cache[source_index][folder_image_offsets[parent_folder]]])
-            return 0
+        # Renders cached image only by given size for faster performance
 
-    elif mode == "RETURN":
-        if source_cache[source_index][folder_image_offsets[parent_folder]] == "TAG":
-            return 1, filepath
-        else:
-            if system == "windows":
-                return 0, filepath, source_cache[source_index][folder_image_offsets[parent_folder]]
+        found_unit = None
+        max_h = 0
 
-    # Render cached
-    fast_found = []
-    for q in range(len(art_cache)):
+        for unit in self.image_cache:
+            if unit.source == source[offset][1]:
+                if unit.actual_size[1] > max_h:
+                    max_h = unit.actual_size[1]
+                    found_unit = unit
 
-        if mode == 'save':
-            break
+        if found_unit == None:
+            print("none found")
+            return 1
 
-        if art_cache[q][0] == index and art_cache[q][1] is None:
-            return 0, 1, False
-        elif art_cache[q][0] == index and art_cache[q][1] is 1:
-
-            return 0, 1, False
-        elif art_cache[q][0] == index and art_cache[q][1] is 2:
-
-            wop = sdl2.rw_from_object(art_cache[q][6])
-            s_image = IMG_Load_RW(wop, 0)
-            # print(IMG_GetError())
-            c = SDL_CreateTextureFromSurface(renderer, s_image)
-
-            tex_w = pointer(c_int(size[0]))
-            tex_h = pointer(c_int(size[1]))
-
-            SDL_QueryTexture(c, None, None, tex_w, tex_h)
-
-            dst = SDL_Rect(location[0], location[1])
-
-            dst.w = int(tex_w.contents.value)
-            dst.h = int(tex_h.contents.value)
-
-            art_cache[q][6].close()
-
-            art_cache[q] = [index, c, dst, size, location, folder_image_offsets[os.path.dirname(filepath)], None, None,
-                            None, size]
-            # cached_offsets.append( folder_image_offsets[os.path.dirname(filepath)] )
-
-            SDL_FreeSurface(s_image)
-
-            return [0, 1, False]
-
-
-        # elif art_cache[q][0] == filepath and art_cache[q][3] == size and art_cache[q][4] == location and art_cache[q][5] == folder_image_offsets[os.path.dirname(filepath)]:
-        elif art_cache[q][0] == index and art_cache[q][9] == size and art_cache[q][5] == folder_image_offsets[
-            os.path.dirname(filepath)]:
-
-            temp_dest.x = location[0]
-            temp_dest.y = location[1]
-            temp_dest.w = art_cache[q][2].w
-            temp_dest.h = art_cache[q][2].h
-
-            temp_dest.x = int((size[0] - temp_dest.w) / 2) + temp_dest.x
-            temp_dest.y = int((size[1] - temp_dest.h) / 2) + temp_dest.y
-
-            SDL_RenderCopy(renderer, art_cache[q][1], None, temp_dest)
-
-            # print(source_cache[source_index])
-            if len(source_cache[source_index]) > 1 and source_cache[source_index][1] is None:
-                return [len(source_cache[source_index]) - 2, art_cache[q][5], False]
-            else:
-                return [len(source_cache[source_index]) - 1, art_cache[q][5], True]
-        # fast mode
-
-        elif art_cache[q][0] == index and mode == 'fast' and art_cache[q][5] == folder_image_offsets[
-            os.path.dirname(filepath)]:
-            fast_found.append(q)
-
-    if len(fast_found) > 0:
-
-        bx = 0
-        q = 0
-        for i in fast_found:
-            if art_cache[i][2].w > bx:
-                bx = art_cache[i][2].w
-                q = i
+        unit = found_unit
 
         temp_dest.x = location[0]
         temp_dest.y = location[1]
 
-        temp_dest.w = size[0]
-        temp_dest.h = size[1]
+        temp_dest.w = box[0]
+        temp_dest.h = box[1]
 
         # correct aspect ratio if needed
-        if art_cache[q][3][0] > art_cache[q][3][1]:
-            temp_dest.w = size[0]
-            temp_dest.h = int(temp_dest.h * (art_cache[q][3][1] / art_cache[q][3][0]))
-        elif art_cache[q][3][0] < art_cache[q][3][1]:
-            temp_dest.h = size[1]
-            temp_dest.w = int(temp_dest.h * (art_cache[q][3][0] / art_cache[q][3][1]))
+        if unit.original_size[0] > unit.original_size[1]:
+            temp_dest.w = box[0]
+            temp_dest.h = int(temp_dest.h * (unit.original_size[1] / unit.original_size[0]))
+        elif unit.original_size[0] < unit.original_size[1]:
+            temp_dest.h = box[1]
+            temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
         # prevent scaling larger than original image size
-        if temp_dest.w > art_cache[q][3][0] or temp_dest.h > art_cache[q][3][1]:
-            temp_dest.w = art_cache[q][3][0]
-            temp_dest.h = art_cache[q][3][1]
+        if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
+            temp_dest.w = unit.original_size[0]
+            temp_dest.h = unit.original_size[1]
 
         # center the image
-        temp_dest.x = int((size[0] - temp_dest.w) / 2) + temp_dest.x
-        temp_dest.y = int((size[1] - temp_dest.h) / 2) + temp_dest.y
+        temp_dest.x = int((box[0] - temp_dest.w) / 2) + temp_dest.x
+        temp_dest.y = int((box[1] - temp_dest.h) / 2) + temp_dest.y
 
         # render the image
-        SDL_RenderCopy(renderer, art_cache[q][1], None, temp_dest)
+        SDL_RenderCopy(renderer, unit.texture, None, temp_dest)
 
-        # print(source_cache[source_index])
-        if len(source_cache[source_index]) > 1 and source_cache[source_index][1] is None:
-            return [len(source_cache[source_index]) - 2, art_cache[q][5], False]
-        else:
-            return [len(source_cache[source_index]) - 1, art_cache[q][5], True]
+    def open_external(self,index):
 
-    # Render new
-    try:
-
-        if mode == 'cacheonly':
-            art_cache.append([index, 1, None, size, location, folder_image_offsets[os.path.dirname(filepath)], None,
-                              source_cache[source_index][folder_image_offsets[parent_folder]], [], size])
-            albums_to_render += 1
-            return 0
-        if source_cache[source_index][folder_image_offsets[parent_folder]] == "TAG":
-
-            tag = stagger.read_tag(filepath)
-            # tt = tag[APIC][0]
-            try:
-                artwork = tag[APIC][0].data
-            except:
-                artwork = tag[PIC][0].data
-
-            source_image = io.BytesIO(artwork)
-        else:
-            source_image = open(source_cache[source_index][folder_image_offsets[parent_folder]], 'rb')
-
-        if mode == 'save':
-
-            im = Image.open(source_image)
-            if im.mode != "RGB":
-                im = im.convert("RGB")
-            im.thumbnail(size, Image.ANTIALIAS)
-            if save_path == "":
-                #im.save('web/' + str(index) + '.jpg', 'JPEG')
-                buff = io.BytesIO()
-                im.save(buff, format="JPEG")
-                sss = base64.b64encode(buff.getvalue())
-                return sss
-            else:
-                im.save(save_path + '.jpg', 'JPEG')
+        source = self.get_sources(index)
+        if len(source) == 0:
             return 0
 
-        g = io.BytesIO()
-        g.seek(0)
+        offset = self.get_offset(master_library[index].fullpath, source)
+
+        if source[offset][0] is True:
+            return 0
+
+        if system == "windows":
+            os.startfile(source[offset][1])
+        else:
+            subprocess.call(["xdg-open", source[offset][1]])
+
+        return 0
+
+    def cycle_offset(self,index):
+
+        filepath = master_library[index].fullpath
+        sources = self.get_sources(index)
+        parent_folder = os.path.dirname(filepath)
+        # Find cached offset
+        if parent_folder in folder_image_offsets:
+            # Advance the offset by one
+            folder_image_offsets[parent_folder] += 1
+            # Reset the offset if greater then number of images avaliable
+            if folder_image_offsets[parent_folder] > len(sources) - 1:
+                folder_image_offsets[parent_folder] = 0
+        return 0
+
+
+    def get_offset(self,filepath, source):
+
+        # Check if folder offset already exsts, if not, make it
+        parent_folder = os.path.dirname(filepath)
+
+        if parent_folder in folder_image_offsets:
+
+            # Reset the offset if greater then number of images avaliable
+            if folder_image_offsets[parent_folder] > len(source) - 1:
+                folder_image_offsets[parent_folder] = 0
+        else:
+            folder_image_offsets[parent_folder] = 0
+
+        return folder_image_offsets[parent_folder]
+
+    def get_embed(self,filepath):
+
+        tag = stagger.read_tag(filepath)
+        try:
+            return tag[APIC][0].data
+        except:
+            return tag[PIC][0].data
+
+
+    def get_base64(self, index, size):
+
+        filepath = master_library[index].fullpath
+        sources = self.get_sources(index)
+
+        if len(sources) == 0:
+            return False
+
+        offset = self.get_offset(filepath, sources)
+
+        if sources[offset][0] == True:
+            # Target is a embedded image
+            source_image = io.BytesIO(self.get_embed(filepath))
+        else:
+            source_image = open(sources[offset][1], 'rb')
+
         im = Image.open(source_image)
-        o_size = im.size
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail((size[0],size[1]), Image.ANTIALIAS)
-        # g = open("test.jpg", 'wb')
+        im.thumbnail(size, Image.ANTIALIAS)
+        buff = io.BytesIO()
+        im.save(buff, format="JPEG")
+        sss = base64.b64encode(buff.getvalue())
+        return sss
 
-        im.save(g, 'JPEG')
-        g.seek(0)
+    def save_thumb(self, index, size, save_path):
 
-        wop = sdl2.rw_from_object(g)
-        s_image = IMG_Load_RW(wop, 0)
-        # print(IMG_GetError())
-        c = SDL_CreateTextureFromSurface(renderer, s_image)
+        filepath = master_library[index].fullpath
+        sources = self.get_sources(index)
 
-        tex_w = pointer(c_int(size[0]))
-        tex_h = pointer(c_int(size[1]))
+        if len(sources) == 0:
+            return False
 
-        SDL_QueryTexture(c, None, None, tex_w, tex_h)
+        offset = self.get_offset(filepath, sources)
 
-        dst = SDL_Rect(location[0], location[1])
+        if sources[offset][0] == True:
+            # Target is a embedded image
+            source_image = io.BytesIO(self.get_embed(filepath))
+        else:
+            source_image = open(sources[offset][1], 'rb')
 
-        dst.w = int(tex_w.contents.value)
-        dst.h = int(tex_h.contents.value)
+        im = Image.open(source_image)
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+        im.thumbnail(size, Image.ANTIALIAS)
+        im.save(save_path + '.jpg', 'JPEG')
 
-        art_cache.append(
-                [index, c, dst, o_size, location, folder_image_offsets[os.path.dirname(filepath)], None, None, None,
-                 size])
-        # cached_offsets.append( folder_image_offsets[os.path.dirname(filepath)] )
-
-        SDL_FreeSurface(s_image)
-        g.close()
-        source_image.close()
-
-        dst.x = int((size[0] - dst.w) / 2) + dst.x
-        dst.y = int((size[1] - dst.h) / 2) + dst.y
-
-        SDL_RenderCopy(renderer, c, None, dst)
-
-    except:
-
-        art_cache.append([index, None])
-        # cached_offsets.append( folder_image_offsets[os.path.dirname(filepath)] )
-        print(sys.exc_info()[0])
-
-        # print(source_cache)
+    def display(self,index,location,box,fast=False):
 
 
-        return [0, 1, False]
 
-    if source_cache[source_index][1] == "TAG":
-        return [len(source_cache[source_index]) - 1, folder_image_offsets[parent_folder], True]
-    else:
-        return [len(source_cache[source_index]) - 2, folder_image_offsets[parent_folder], False]
+        filepath = master_library[index].fullpath
+
+        source = self.get_sources(index)
+        if len(source) == 0:
+            return False
+
+        offset = self.get_offset(filepath, source)
+
+
+
+        # Check if request matches previous
+        if self.current_wu != None and self.current_wu.source == source[offset][1] and \
+                self.current_wu.request_size == box:
+            self.render(self.current_wu,location)
+            return 0
+
+        if fast:
+            return self.fast_display(index, location, box, source, offset)
+
+        # Check if cached
+        for unit in self.image_cache:
+            if unit.index == index and unit.request_size == box and unit.offset == offset:
+                self.render(unit, location)
+                return 0
+
+        # Render new...
+        try:
+
+            # Get source IO
+            if source[offset][0] == True:
+                # Target is a embedded image
+                source_image = io.BytesIO(self.get_embed(filepath))
+            else:
+                source_image = open(source[offset][1], 'rb')
+
+            # Generate
+            g = io.BytesIO()
+            g.seek(0)
+            im = Image.open(source_image)
+            o_size = im.size
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+            im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
+            im.save(g, 'JPEG')
+            g.seek(0)
+
+            wop = sdl2.rw_from_object(g)
+            s_image = IMG_Load_RW(wop, 0)
+            # print(IMG_GetError())
+            c = SDL_CreateTextureFromSurface(renderer, s_image)
+
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+
+            SDL_QueryTexture(c, None, None, tex_w, tex_h)
+
+            dst = SDL_Rect(location[0], location[1])
+            dst.w = int(tex_w.contents.value)
+            dst.h = int(tex_h.contents.value)
+
+            # Clean uo
+            SDL_FreeSurface(s_image)
+            g.close()
+            source_image.close()
+
+            unit = ImageObject()
+            unit.index = index
+            unit.texture = c
+            unit.rect = dst
+            unit.request_size = box
+            unit.original_size = o_size
+            unit.actual_size = (dst.w,dst.h)
+            unit.source = source[offset][1]
+            unit.offset = offset
+
+            self.current_wu = unit
+            self.image_cache.append(unit)
+
+            self.render(unit, location)
+
+            if len(self.image_cache) > 25:
+                SDL_DestroyTexture(self.image_cache[0].texture)
+                del self.image_cache[0]
+        except:
+            print("Image processing error")
+            self.current_wu = None
+            del self.source_cache[index][offset]
+            return 1
+
+        return 0
+
+    def render(self,unit,location):
+
+        rect = unit.rect
+
+        rect.x = int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0]
+        rect.y = int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1]
+
+        SDL_RenderCopy(renderer, unit.texture, None, rect)
+
+    def clear_cache(self):
+
+        for unit in self.image_cache:
+            SDL_DestroyTexture(unit.texture)
+
+        self.image_cache = []
+        self.source_cache = {}
+        self.current_wu = None
+
+album_art_gen = AlbumArt()
 
 
 def trunc_line(line, font, px):
@@ -5220,7 +5153,7 @@ def loader():
                     nt.track_number = TN
                     nt.start_time = START
                     nt.is_cue = True
-                    nt.sameplerate = SAMPLERATE
+                    nt.samplerate = SAMPLERATE
                     if TN == 1:
                         nt.size = os.path.getsize(nt.fullpath)
 
@@ -5354,13 +5287,11 @@ def loader():
 
     # print(master_library)
     global albums_to_render
-    global display_album_art
     global UPDATE_RENDER
-    global art_cache
     global transcode_list
     global transcode_state
     global default_player
-
+    global album_art_gen
 
     while True:
         time.sleep(0.05)
@@ -5528,8 +5459,7 @@ def loader():
             cue.write(cu)
             cue.close()
 
-            display_album_art(folder_items[0], [0, 0], [500, 500], mode='save',
-                              save_path=output_dir + folder_name)
+            album_art_gen.save_thumb(folder_items[0], (500,500), output_dir + folder_name)
             print('finish')
 
             del transcode_list[0]
@@ -5547,20 +5477,20 @@ def loader():
 
             # print(source)
 
-            if source[0] == None:
+            if source is False:
                 order[0] = 0
                 gall_ren.gall[index] = order
                 del gall_ren.queue[0]
                 continue
 
             try:
-                if source[0] == "TAG":
+                if source[0] is True:
                     # print('tag')
-                    source_image = io.BytesIO(source[1])
+                    source_image = io.BytesIO(album_art_gen.get_embed(source[1]))
 
 
                 else:
-                    source_image = open(source[0], 'rb')
+                    source_image = open(source[1], 'rb')
 
                 g = io.BytesIO()
                 g.seek(0)
@@ -5589,50 +5519,6 @@ def loader():
 
             del gall_ren.queue[0]
 
-            try:
-                pass
-            # try:
-            #     for i in range(len(art_cache)):
-            #         if art_cache[i][1] == 1:
-            #             # rendercore
-            # 
-            #             filepath = master_library[art_cache[i][0]].fullpath
-            # 
-            #             if art_cache[i][7] == "TAG":
-            #                 tag = stagger.read_tag(filepath)
-            #                 # tt = tag[APIC][0]
-            #                 try:
-            #                     artwork = tag[APIC][0].data
-            #                 except:
-            #                     artwork = tag[PIC][0].data
-            #                 source_image = io.BytesIO(artwork)
-            #             else:
-            #                 source_image = open(art_cache[i][7], 'rb')
-            # 
-            #             g = io.BytesIO()
-            #             g.seek(0)
-            #             print('hit')
-            #             time.sleep(0.6)
-            #             im = Image.open(source_image)
-            #             if im.mode != "RGB":
-            #                 im = im.convert("RGB")
-            #             im.thumbnail(art_cache[i][3], Image.ANTIALIAS)
-            # 
-            # 
-            #             im.save(g, 'JPEG')
-            #             g.seek(0)
-            # 
-            #             art_cache[i][6] = g
-            #             source_image.close()
-            #             art_cache[i][1] = 2
-            # 
-            #             albums_to_render -= 1
-            #             UPDATE_RENDER += 2
-            #             time.sleep(0.02)
-            except:
-
-                # art_cache[i] = [art_cache[i][0],None]
-                pass
 
         if loaderCommandReady is True:
             if loaderCommand == 'import folder':
@@ -5964,14 +5850,12 @@ def webserv():
         if pctl.playing_state > 0:
 
             image_line = '<img src="data:image/jpeg;base64,'
-            bimage = display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
+            bimage = album_art_gen.get_base64(pctl.track_queue[pctl.queue_step], (300, 300))
             if type(bimage) is list:
                 image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
             else:
                 image_line += bimage.decode("utf-8")
                 image_line += '" alt="No Album Art" style="float:left;" />'
-            # image_line = '<img src="/album_art/' + str(
-            #         pctl.track_queue[pctl.queue_step]) + '.jpg" alt="No Album Art" style="float:left;" >'
 
         randomline = "Is Off"
         if pctl.random_mode:
@@ -6036,7 +5920,7 @@ def webserv():
     def radio():
         global broadcast_index
         image_line = '<img src="data:image/jpeg;base64,'
-        bimage = display_album_art(broadcast_index, (0, 0), (300, 300), mode='save')
+        bimage = album_art_gen.get_base64(broadcast_index, (300, 300))
         if type(bimage) is list:
             image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
         else:
@@ -6214,37 +6098,6 @@ def webserv():
         global pctl
         pctl.repeat_mode ^= True
         return redirect('/remote', code=302)
-
-    # @app.route('/album_art/<int:indexno>.jpg')
-    # def get_play_image(indexno):
-    #     if not allow_remote:
-    #         abort(403)
-    #         return (0)
-    #     filename = "web/" + str(pctl.track_queue[pctl.queue_step]) + ".jpg"
-    #     if not os.path.isfile(filename):
-    #         display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (300, 300), mode='save')
-    #
-    #     return send_file(filename, mimetype='image/jpg')
-
-    # @app.route('/album_index/<int:indexno>.jpg')
-    # def get_album_image(indexno):
-    #     if not allow_remote:
-    #         abort(403)
-    #         return (0)
-    #     filename = "web/" + str(indexno) + ".jpg"
-    #     if not os.path.isfile(filename):
-    #         print((display_album_art(indexno, (0, 0), (150, 150), mode='save')))
-    #
-    #     return send_file(filename, mimetype='image/jpg')
-
-    # @app.route('/get_image.jpg')
-    # def get_image():
-    #     global boradcast_index
-    #     filename = "web/" + str(broadcast_index) + ".jpg"
-    #     if not os.path.isfile(filename):
-    #         display_album_art(broadcast_index, (0, 0), (300, 300), mode='save')
-    #
-    #     return send_file(filename, mimetype='image/jpg')
 
     if expose_web is True:
         app.run(host='0.0.0.0 ', port=server_port)
@@ -7400,14 +7253,15 @@ while running:
     if key_F7:
         # spec_smoothing ^= True
         # key_F7 = False
-        #print((display_album_art(1, (0, 0), (150, 150), mode='save')))
         # if draw_border:
         #     SDL_SetWindowBordered(t_window, True)
         #     draw_border = False
         # else:
         #     SDL_SetWindowBordered(t_window, False)
         #     draw_border = True
-        print(lastfm.get_bio(master_library[pctl.track_queue[pctl.queue_step]].artist))
+
+        #print(lastfm.get_bio(master_library[pctl.track_queue[pctl.queue_step]].artist))
+
 
         key_F7 = False
 
@@ -8094,8 +7948,8 @@ while running:
 
                     box = h - 4 #- 10
 
-                    showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                              (window_size[0] - 0 - box, y + 2), (box, box))
+                    album_art_gen.display(pctl.track_queue[pctl.queue_step],
+                                          (window_size[0] - 0 - box, y + 2), (box, box))
 
                     draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]].artist, GREY(200), 16)
 
@@ -8227,7 +8081,7 @@ while running:
 
                         # test if line hit
                         if (mouse_click or right_click or middle_click) and coll_point(mouse_position, (
-                            playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width,
+                            playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
                             playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
                             line_hit = True
                         else:
@@ -8742,16 +8596,13 @@ while running:
                 if side_panel_enable:
                     if album_mode:
                         pass
-                        # if b_info_bar:
-                        #     # draw_rect((0,window_size[1] - b_panel_size - panelBY), (playlist_width + 31, b_panel_size), background, True)
-                        #     showc = display_album_art(pctl.track_queue[pctl.queue_step], (20, window_size[1] - panelBY - b_panel_size + 20), ( b_panel_size - 30, b_panel_size - 30))
                     else:
 
                         rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 30,
                                 window_size[1] - panelY - panelBY]
                         draw_rect_r(rect, side_panel_bg, True)
 
-                        showc = []
+                        showc = False
 
                         boxx = window_size[0] - playlist_width - 32 - 18
                         boxy = window_size[1] - 160
@@ -8770,35 +8621,36 @@ while running:
 
                         if len(pctl.track_queue) > 0:
 
-                            # Bluring of sidebar background, not fully implemented, uncomment these 3 lines to enable.
+                            # Bluring of sidebar background, not fully implemented, broken now
 
                             # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]].fullpath, (0,0), (0,0), mode="RETURN", offset=1)
                             # blur_bg( (playlist_width + 32, 32), (316,316),nt,0 )
                             # draw_rect( (playlist_width + 32, 32), (316,316), [0,0,0,210], True )
 
                             if coll_point(mouse_position, (playlist_width + 40, 38, box, box)) and mouse_click is True:
-                                display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0),
-                                                  mode="OFFSET", offset=1)
+                                album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
                             if coll_point(mouse_position, (
                                 playlist_width + 40, 38, box, box)) and right_click is True and pctl.playing_state > 0:
-                                display_album_art(pctl.track_queue[pctl.queue_step], (0, 0), (0, 0), mode="OPEN")
+                                album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
                         if 3 > pctl.playing_state > 0:
 
                             if side_drag:
 
-                                showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                                          (playlist_width + 40, 38), (box, box), mode="fast")
-
+                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (playlist_width + 40, 38),
+                                                      (box, box), True)
                             else:
-                                showc = display_album_art(pctl.track_queue[pctl.queue_step],
-                                                          (playlist_width + 40, 38), (box, box))
+                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (playlist_width + 40, 38), (box, box))
+
+
+                            showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+
                         draw_rect((playlist_width + 40, 38), (box + 1, box + 1), art_box)
 
                         rect = (playlist_width + 40, 38, box, box)
                         fields.add(rect)
 
-                        if len(showc) > 1 and showc[0] > 0 and coll_point(mouse_position, rect) \
+                        if showc is not False and coll_point(mouse_position, rect) \
                                 and renamebox is False \
                                 and radiobox is False \
                                 and encoding_box is False \
@@ -8809,21 +8661,15 @@ while running:
                                 and track_box is False \
                                 and genre_box is False:
 
-                            if showc[2] is False:
-                                showc[1] -= 1
-
                             line = ""
-                            if showc[2] is True and showc[1] == 1:
+                            if showc[0] is True:
                                 line += 'A '
                             else:
                                 line += 'E '
-                            line += str(showc[1]) + "/" + str(showc[0])
+                            line += str(showc[2]+1) + "/" + str(showc[1])
 
                             xoff = 0
-                            # if len(line) > 5:
-                            #     xoff = (len(line) - 5) * 6
                             xoff = text_calc(line, 12)[0] + 12
-
 
                             draw_rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
                                       [0, 0, 0, 190], True)
@@ -10060,15 +9906,13 @@ while running:
 
                 else:
                     draw_rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), GREY(30))
-                    display_album_art(r_menu_index, (x + w - 135, y + h - 125), (100, 100))
+                    album_art_gen.display(r_menu_index, (x + w - 135, y + h - 125), (100, 100))
                     y -= 24
 
                     draw_text((x + 8 + 10, y + 40), "Title:", GREY8, 12)
                     draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].title, GREY8, 12)
 
                     draw_text((x + w - 50, y + 40, 2), master_library[r_menu_index].file_ext, GREY8, 12)
-
-
 
                     y += 15
 
@@ -10100,7 +9944,7 @@ while running:
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Length:", GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Duration:", GREY8, 12)
                     line = time.strftime('%M:%S', time.gmtime(master_library[r_menu_index].length))
                     draw_text((x + 8 + 90, y + 40), line, GREY8, 12)
 
