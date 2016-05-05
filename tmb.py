@@ -20,9 +20,9 @@
 # Preamble
 
 # Welcome to the Tauon Music Box source code. I started this project when I was first
-# learning programming and python, as a result this code can be quite messy, no doubt I have
+# learning programming and python, as a result this code can be quite messy. No doubt I have
 # written some things terribly wrong or inefficiently in places.
-# I would highly recommend not using this project as an example on how to code cleanly
+# I would highly recommend not using this project as an example on how to code cleanly.
 
 
 # --------------------------------------------------------------------
@@ -43,8 +43,11 @@ server_port = 7590
 if sys.platform == 'win32':
     system = 'windows'
     print("Detected platform: Windows")
+elif sys.platform == 'darwin':
+    system = 'mac'
+    print("Detected platform: Max OS X")
 else:
-    system = 'not-windows'
+    system = 'linux'
     print("Detected platform: Linux")
 
 working_directory = os.getcwd()
@@ -88,8 +91,6 @@ except:
 
         sys.exit()
 
-    else:
-        print('Socket is closed')
 
 import time
 import ctypes
@@ -117,8 +118,7 @@ if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, atexit
-# else:
-#     from Xlib import display
+
 
 import sdl2
 from sdl2 import *
@@ -131,11 +131,6 @@ from PIL import ImageFilter
 from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
-
-# if system != 'windows':
-#     def mousepos():
-#         mouse_data = display.Display().screen().root.query_pointer()._data
-#         return mouse_data["root_x"], mouse_data["root_y"]
 
 
 class Timer3(object):
@@ -1510,6 +1505,11 @@ def player():
             enc_module = ctypes.WinDLL('bassenc')
             mix_module = ctypes.WinDLL('bassmix')
             function_type = ctypes.WINFUNCTYPE
+        elif system == 'mac':
+            bass_module = ctypes.CDLL(install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
+            enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
+            mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
+            function_type = ctypes.CFUNCTYPE
         else:
             bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
             enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
@@ -1614,6 +1614,13 @@ def player():
             bass_plugin4 = BASS_PluginLoad(b'bassenc.dll', 0)
             bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
             bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
+        elif system == 'mac':
+            b = install_directory.encode('utf-8')
+            bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
+            bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
+            bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
+            bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
+            bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
         else:
             b = install_directory.encode('utf-8')
             bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
@@ -1670,8 +1677,7 @@ def player():
                         # print(x)
                         ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
 
-                        BASS_ChannelGetData(sp_handle, x, 0x80000002)  # 0x80000000)
-                        # BASS_ChannelGetData(sp_handle,x,0x80000002) # 0x80000000)
+                        BASS_ChannelGetData(sp_handle, x, 0x80000002)
 
                         # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
                         # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
@@ -2332,7 +2338,7 @@ if system == 'windows':
         keyboardHookThread = threading.Thread(target=keyboard_hook)
         keyboardHookThread.daemon = True
         keyboardHookThread.start()
-else:
+elif system != 'mac':
     if mediakeymode == 1:
         def gnome():
 
@@ -2933,36 +2939,6 @@ def draw_text(location, text, colour, font, max=1000):
 
 temp_dest = SDL_Rect(0, 0)
 
-# Experimental image blur function, not used
-
-
-# def blur_bg(location, size, source, dex):
-#     global b_texture
-#     global b_ready
-#     global loaderCommandReady
-#     global loaderCommand
-#     global b_source_info
-#     global b_location
-#     global is_tag
-# 
-#     if source[0] != is_tag or b_location != source[1]:
-#         b_ready = False
-#         b_source_info = source
-# 
-#         loaderCommand = 'bbg'
-#         loaderCommandReady = True
-# 
-#         is_tag = source[0]
-#         b_location = source[1]
-# 
-#         return 0
-# 
-#     if b_ready:
-#         dst = SDL_Rect(location[0], location[1])
-#         dst.w = size[0]
-#         dst.h = size[1]
-#         SDL_RenderCopy(renderer, b_texture, None, dst)
-
 
 class GallClass:
     def __init__(self):
@@ -3205,6 +3181,8 @@ class AlbumArt():
 
         if system == "windows":
             os.startfile(source[offset][1])
+        elif system == 'mac':
+            subprocess.call(["open", source[offset][1]])
         else:
             subprocess.call(["xdg-open", source[offset][1]])
 
@@ -4123,7 +4101,10 @@ def open_folder(index):
     else:
         line = master_library[index].parent_folder_path
         line += "/"
-        subprocess.Popen(['xdg-open', line])
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
 
 
 track_menu.add('Open Folder', open_folder, pass_ref=True)
@@ -4401,17 +4382,6 @@ def clip_ar_tr(index):
 track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
 
 
-# def activate_encoding_box(index):
-#     global encoding_box
-#     global encoding_target
-# 
-#     encoding_box = True
-#     encoding_target = index
-
-
-# track_menu.add("Fix Mojibake...", activate_encoding_box, pass_ref=True)
-
-
 def queue_deco():
     line_colour = GREY(50)
 
@@ -4574,19 +4544,9 @@ def toggle_album_mode():
         side_panel_enable = True
         old_side_pos = side_panel_size
 
-    # if window_size[0] < 900:
-    #     SDL_SetWindowSize(t_window, 1110, 590)
-    #     window_size = [1110, 590]
-    #     update_layout = True
-
     reload_albums()
 
     goto_album(pctl.playlist_playing)
-
-
-#x_menu.add('Toggle Gallery View', toggle_album_mode)
-
-# x_menu.add('Reset Layout', standard_size)
 
 
 def activate_info_box():
@@ -4643,6 +4603,8 @@ def export_stats():
     target = os.path.join(install_directory, "stats.txt")
     if system == "windows":
         os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
 
@@ -5530,48 +5492,6 @@ def loader():
             elif loaderCommand == 'import file':
                 loaded_pathes_cache = cache_paths()
                 add_file(paths_to_load)
-            # elif loaderCommand == 'bbg':
-            #     global b_source_info
-            #     global b_texture
-            #     global b_ready
-            #
-            #     print("loader here")
-            #
-            #     if b_source_info[0] == 1:
-            #         tag = stagger.read_tag(b_source_info[1])
-            #         try:
-            #             tt = tag[APIC][0]
-            #         except:
-            #             tt = tag[PIC][0]
-            #         artwork = tt.data
-            #         source_image = io.BytesIO(artwork)
-            #     else:
-            #         source_image = open(b_source_info[2], 'rb')
-            #
-            #     im = Image.open(source_image)
-            #     im.thumbnail([300, 300], Image.ANTIALIAS)
-            #
-            #     ix = im.filter(ImageFilter.GaussianBlur(40))
-            #     print("got this far")
-            #
-            #     g = io.BytesIO()
-            #     g.seek(0)
-            #
-            #     ix.save(g, 'JPEG')
-            #     g.seek(0)
-            #     wop = sdl2.rw_from_object(g)
-            #     s_image = IMG_Load_RW(wop, 0)
-            #     # print(IMG_GetError())
-            #     if b_texture != "":
-            #         SDL_DestroyTexture(b_texture)
-            #     b_texture = SDL_CreateTextureFromSurface(renderer, s_image)
-            #     SDL_FreeSurface(s_image)
-            #     g.close()
-            #
-            #     loaderCommand = ""
-            #     loaderCommandReady = False
-            #     b_ready = True
-            #     continue
 
             loaderCommand = 'done file'
             # print('ADDED: ' + str(added))
@@ -5783,61 +5703,6 @@ def webserv():
 
     </html>
     """)
-
-    # /album_art/<int:indexno>.jpg')
-    @app.route('/profile')
-    def profile():
-        abort(403)
-        return (0)
-        # page = """<!DOCTYPE html>
-        # <html>
-        # <head>
-        # <meta charset="UTF-8">
-        # <title>Profile</title>
-        # 
-        # <style>
-        # body {background-color:# 1A1A1A;
-        # font-family:sans-serif;
-        # }
-        # p {
-        # color:# D1D1D1;
-        # font-family:sans-serif;
-        #  }
-        # </style>
-        # </head>
-        # 
-        # <body>
-        # <p>
-        # test
-        # <br> <br>
-        # </p>
-        # """
-        # 
-        # stats_gen.update(pctl.playlist_active)
-        # alb = stats_gen.album_list
-        # for item in alb:
-        #     if alb[0] == 'Unknown Album':
-        #         del alb[item]
-        #         break
-        # alb = alb[:25]
-        # on = 0
-        # for item in alb:
-        # 
-        #     for index in pctl.multi_playlist[pctl.playlist_active][2]:
-        #         if item[0] == master_library[index].album:
-        #             page += '<img src="/album_index/' + str(index) + '.jpg" alt="No Album Art" style="width:150px;height:150px">'
-        #             break
-        #     if on > 5:
-        #         on = 0
-        #         page += "<p><br></p>"
-        #     on += 1
-        # 
-        # page += """
-        # </body>
-        # 
-        # </html>
-        # """
-        # return page
 
     @app.route('/remote')
     def remote():
@@ -6302,6 +6167,8 @@ class Over():
                 target = os.path.join(install_directory, "license.txt")
                 if system == "windows":
                     os.startfile(target)
+                elif system == 'mac':
+                    subprocess.call(['open', target])
                 else:
                     subprocess.call(["xdg-open", target])
 
@@ -7092,18 +6959,11 @@ while running:
                 load_to.append(len(pctl.multi_playlist) - 1)
                 switch_playlist(len(pctl.multi_playlist) - 1)
 
-
-
-
             droped_file.append(arg_queue[i])
             i += 1
         arg_queue = []
         auto_play_import = True
 
-
-
-    # if key_F1:
-    #     print(get_backend_time(master_library[pctl.track_queue[pctl.queue_step]].fullpath))
 
     if key_F11:
         if fullscreen == 0:
@@ -7359,22 +7219,13 @@ while running:
         dst1.y = window_size[1] - control_line_bottom
         dst2.y = window_size[1] - control_line_bottom
         dst3.y = window_size[1] - control_line_bottom
-        # time_display_position = [window_size[0] - 10, 8]
 
         time_display_position[0] = window_size[0] - time_display_position_right
-
-        # if album_mode and b_info_bar:
-        #     playlist_view_length = int(((window_size[1] - 38 - playlist_top - b_panel_size) / 16) - 4)
-        # else:
-
 
         highlight_x_offset = 0
         if scroll_enable and custom_line_mode:
             highlight_x_offset = 16
 
-
-
-        # playlist_view_length = int(((window_size[1] - playlist_top) / 16) - 4)
 
         random_button_position = window_size[0] - 90, 83
 
@@ -7738,12 +7589,6 @@ while running:
 
         fields.clear()
 
-
-
-        # rect = [1, 1, window_size[0] - 2, panelY + 20]
-        # fields.add(rect)
-
-
         if GUI_Mode == 1 or GUI_Mode == 2:
 
             # Side Bar Draging----------
@@ -7796,9 +7641,6 @@ while running:
                 rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
                         window_size[1] - panelY - panelBY - 0]
                 draw_rect_r(rect, side_panel_bg, True)
-
-                # if b_info_bar:
-                #     BPanel = background
 
                 area_x = window_size[0] - playlist_width + 20
 
@@ -7996,6 +7838,7 @@ while running:
 
                 w = 0
 
+
                 # playlist hit test
                 if coll_point(mouse_position, (playlist_left, playlist_top, playlist_width, window_size[1] - panelY - panelBY)) and not dragmode and (
                                             mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
@@ -8039,6 +7882,7 @@ while running:
                         if len(default_playlist) <= i + playlist_position:
                             break
 
+
                         # fade other tracks in ablbum mode
                         albumfade = 255
                         if album_mode and pctl.playing_state != 0 and dim_art and \
@@ -8056,15 +7900,15 @@ while running:
 
                             line = master_library[default_playlist[i + playlist_position]].parent_folder_name
                             if thick_lines:
-                                draw_text((playlist_width + playlist_left,
-                                           playlist_row_height - 20 + playlist_top + playlist_row_height * w, 1), line,
+                                draw_text2((playlist_width + playlist_left,
+                                           playlist_row_height - 18 + playlist_top + playlist_row_height * w, 1), line,
                                           alpha_mod(folderTitleColour, albumfade),
-                                          13)
+                                          13, playlist_width)
                             else:
-                                draw_text((playlist_width + playlist_left,
+                                draw_text2((playlist_width + playlist_left,
                                            playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
                                           alpha_mod(folderTitleColour, albumfade),
-                                          11)
+                                          11, playlist_width)
                             draw_line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
                                       playlist_width + playlist_left,
                                       playlist_top + playlist_row_height - 1 + playlist_row_height * w, folderLineColour)
@@ -8078,6 +7922,10 @@ while running:
                                     move_on_title = True
 
                             w += 1
+
+                        # if (w) % 2 != 0:
+                        #     draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                        #               (playlist_width, playlist_row_height - 1), [255, 255, 255, 5], True)
 
                         # test if line hit
                         if (mouse_click or right_click or middle_click) and coll_point(mouse_position, (
@@ -8105,8 +7953,6 @@ while running:
                                       (highlight_right, playlist_row_height - 1), lineBGplaying, True)
                             this_line_playing = True
 
-                        # if (i + playlist_position) % 2 == 0:
-                        #     draw_rect((playlist_left, playlist_top + playlist_row_height * w), (playlist_width, playlist_row_height - 1), [0,0,0,20], True)
 
                         if default_playlist[i + playlist_position] == broadcast_index and broadcast and not join_broadcast:
                             draw_rect((playlist_left, playlist_top + playlist_row_height * w),
@@ -8506,8 +8352,6 @@ while running:
                 # ------------------------------------------------
                 # Scroll Bar
 
-
-
                 if scroll_enable:
 
                     sy = 31
@@ -8620,12 +8464,6 @@ while running:
                             UPDATE_RENDER += 1
 
                         if len(pctl.track_queue) > 0:
-
-                            # Bluring of sidebar background, not fully implemented, broken now
-
-                            # nt = display_album_art(master_library[pctl.track_queue[pctl.queue_step]].fullpath, (0,0), (0,0), mode="RETURN", offset=1)
-                            # blur_bg( (playlist_width + 32, 32), (316,316),nt,0 )
-                            # draw_rect( (playlist_width + 32, 32), (316,316), [0,0,0,210], True )
 
                             if coll_point(mouse_position, (playlist_width + 40, 38, box, box)) and mouse_click is True:
                                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
@@ -8906,55 +8744,7 @@ while running:
                                                 line += ext
                                                 line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 39, block2 + 35), line, side_bar_line2, 11)
-                                    # Topline
-                                    # elif broadcast != True:
-                                    #     line = ""
-                                    #     if artist != "":
-                                    #         line += artist
-                                    #     if title != "":
-                                    #         if line != "":
-                                    #             line += " - "
-                                    #         line += title
-                                    #     # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    #     offset_extra = 0
-                                    #     if draw_border:
-                                    #         offset_extra = 61
-                                    #
-                                    #     l_max = window_size[0] - m_l - 10
-                                    #
-                                    #
-                                    #     if turbo:
-                                    #         draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
-                                    #                   11, max=l_max - 75)
-                                    #
-                                    #     else:
-                                    #         draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
-                                    #                   11, max=l_max)
 
-                # else:
-                #     if broadcast != True and pctl.playing_state > 0:
-                #         if pctl.playing_state < 3:
-                #             title = master_library[pctl.track_queue[pctl.queue_step]].title
-                #             artist = master_library[pctl.track_queue[pctl.queue_step]].artist
-                #         else:
-                #             title = tag_meta
-                #         line = ""
-                #         if artist != "":
-                #             line += artist
-                #         if title != "":
-                #             if line != "":
-                #                 line += " - "
-                #             line += title
-                #         offset_extra = 0
-                #         if draw_border:
-                #             offset_extra = 61
-                #
-                #         # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                #         l_max = window_size[0] - m_l - 10
-                #         if turbo:
-                #             draw_text((window_size[0] - 100 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max - 75)
-                #         else:
-                #             draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1, 11, max=l_max)
 
                 if tb_line != BPanel and GUI_Mode == 1:
                     draw_line(0, panelY, window_size[0], panelY, tb_line)
@@ -9063,9 +8853,6 @@ while running:
                             pctl.playing_time = new_time
                             if system == 'windows'and taskbar_progress:
                                 windows_progress.update(True)
-                                # elif pctl.playing_state == 2:
-                                #     new_time = pctl.playing_length / 100 * seek
-                                #     reset_playing = True
 
                     # Activate top menu if right clicked in top bar past tabs
                     # if right_click and mouse_position[1] < panelY and mouse_position[0] > l + 50:

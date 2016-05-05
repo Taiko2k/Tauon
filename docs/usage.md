@@ -39,8 +39,10 @@ previous track played. (So if you intended to play the track that appears after 
 ***Change Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
 ***Seek***: + and -   
-***Play next/previous track***: Shift + Left and Right arrow keys  
+***Play next/previous track***: Shift + Left and Right arrow keys   
+***Volume Up/Down***: Shift + Up and Down arrow keys   
 ***Toggle Gallery View***: Mouse button 4
+
 
 ##### Outbound Streaming:
 
@@ -78,6 +80,6 @@ Web components
 
 (enable in config)   
 
-***localhost:5000/remote*** - Remote player control with album art and track info  
-***localhost:5000/radio*** - Album art and track info for broadcasting
+***localhost:7590/remote*** - Remote player control with album art and track info  
+***localhost:7590/radio*** - Album art and track info for broadcasting
 
