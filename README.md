@@ -1,7 +1,7 @@
 # Tauon Music Box
 
-Tauon Music Box is a streamlined standalone desktop music player for playback of local files. Focused on minimal configuration and user library management.
-Designed to have an easy to use, comfortable and compact user interface. Inspired by various audio players including AIMP3, foobar2000 and Ncmpcpp.
+Tauon Music Box is a streamlined desktop music player for playback of local files. Playlist based and focused on user library management.
+Designed to have an easy to use, comfortable and compact user interface with minimal configuration. Inspired by various audio players including AIMP3, foobar2000 and Ncmpcpp.
 Uses BASS audio library as backend.
 
 ### Features
@@ -15,7 +15,7 @@ Uses BASS audio library as backend.
   - Outbound streaming (via icecast)
   - Folder transcoding to Opus+Cue
   - Customisable colours
-  - Multi-platform (Windows and Linux)
+  - Multi-platform (Windows, Linux and Mac OS X)
 
 ### Screenshots
 

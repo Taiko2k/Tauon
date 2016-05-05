@@ -1,4 +1,4 @@
-# Binary setup on Windows
+# Binary release setup on Windows
 
 Release bundle should 'just work' by running tmb.exe. Otherwise make sure Visual C++ Runtime and DirectX are installed.
 
@@ -23,3 +23,17 @@ Ubuntu (not recently tested):
 Finally run using python 3 (Alternatively create a desktop or launcher shortcut. Make sure to set the working directory to the directory you extracted the program files to).
 
     $ python3.5 tmb.py
+
+# Source setup on OS X
+
+OS X support is experimental. As a rough guide to get started: 
+
+Install Python 3, SDL, SDL_ttf and SDL_image frameworks
+Install Bass libraries to /lib folder, required are libbass.dylib, libbassenc.dylib and libbassmix.dylib
+Install Python libraries (Install pip if required $ sudo easy_install pip):
+
+        $ sudo python3 -m pip install hsaudiotag3k pylast pyperclip pysdl2 flask
+
+Finally run from install directroy using:
+
+	$ python3 tmb.py

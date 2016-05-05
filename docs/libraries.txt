@@ -1,3 +1,5 @@
+Files for /lib
+
 Windows:
 
 bass.dll
@@ -24,3 +26,13 @@ libbassenc.so
 libbassflac.so
 libbassmix.so
 libbassopus.so
+
+OSX:
+
+libbass.dylib
+libbass_aac.dylib
+libbass_ape.dylib
+libbassenc.dylib
+libbassflac.dylib
+libbassmix.dylib
+libbassopus.dylib

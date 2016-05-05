@@ -34,7 +34,7 @@ taskbar-progress
 ## enable-web will load the web interface for the local computer, in addition, expose-web will expose the web interface to other computers
 ## (Warning: Feature has not been tested for security. Expose to internet at your own risk)
 ## (Note: Feature is experimental and may be modified or removed in future versions)
-## current urls are :5000/remote for player control and :5000/radio for broadcasting tracks album art and title
+## current urls are :7590/remote for player control and :7590/radio for broadcasting tracks album art and title
 
 enable-web
 allow-remote (disable for broadcast album art only)
