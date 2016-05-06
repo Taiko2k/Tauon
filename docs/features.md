@@ -15,7 +15,7 @@
 - User defined themes
 - Web interface (basic playback control only)
 - Inbound streaming (HTTP)
-- Outbound streaming with icecast (Windows:Working, Linux:Broken?, OSX:Not tested)
+- Outbound streaming with icecast
 - Folder transcode to CUE+OPUS (Windows:Working, Linux:Working?, OSX:Not tested)
 - Text Encoding fix (Japanese only)
 

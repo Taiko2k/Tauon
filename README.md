@@ -15,7 +15,7 @@ Uses BASS audio library as backend.
   - Outbound streaming (via icecast)
   - Folder transcoding to Opus+Cue
   - Customisable colours
-  - Multi-platform (Windows, Linux and Mac OS X)
+  - Multi-platform (Windows and Linux)
 
 ### Screenshots
 

@@ -12,11 +12,13 @@ v1.4.0
  - Added a basic info panel to gallery view
  - Added file size information to track info
  - Added GIF image support
+ - Added OPUS encoding support for broadcasting
  - Added rudimentary Mac OS X support
  - Tweaked some menu/GUI elements
  - Tweaked create playlist behavior to not request input
  - Tweaked gallery view artist labels to show 'various' label if applicable
  - Fixed web interface colours
+ - Fixed broadcasting on linux
  - Fixed console windows appearing when transcoding
  - Fixed settings taking long to open with large music libraries
  - Fixed incorrectly displaying song lengths greater than an hour long
