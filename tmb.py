@@ -6691,10 +6691,9 @@ while running:
                 for w in range(len(pctl.multi_playlist)):
                     text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
                     x = starting_l + (spacing * w) + k
-                    if x < i_x < x + text_space:
+                    if x < i_x < x + text_space + 16:
                         load_to.append(copy.deepcopy(w))
-                        print("hit 1")
-                        print(w)
+                        print("Direct drop")
                         break
                     k += text_space
                 else:
@@ -9090,6 +9089,7 @@ while running:
                         starting_l += 20
                         spacing = 0
                         draw_alt = True
+
 
                     # Process each tab on top panel
                     for w in range(len(pctl.multi_playlist)):
