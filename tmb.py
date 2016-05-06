@@ -326,11 +326,11 @@ class ColoursClass:
         self.title_text = [0, 125, 0, 255]
         self.index_text = self.title_text
         self.time_text = self.index_text
-        self.artist_text = self.title_text
+        self.artist_text = [50, 170, 5, 255]
         self.album_text = self.grey(50)
         
         self.index_playing = self.title_text
-        self.artist_playing = self.artist_text
+        self.artist_playing = [50, 170, 5, 255]
         self.album_playing = self.artist_text
         self.title_playing = self.title_text
         self.time_playing = self.grey(200)
@@ -435,6 +435,10 @@ clicked = False
 volume = 100
 DA_Formats = {'MP3', 'mp3', 'WAV', 'wav', 'OPUS', 'opus', 'FLAC', 'flac', 'APE', 'ape',
               'm4a', 'M4A', 'MP4', 'mp4', 'ogg', 'OGG', 'AAC', 'aac', 'tta', 'TTA'}
+
+if system == 'windows':
+    DA_Formats.add('wma')
+    DA_Formats.add('WMA')
 
 
 auto_stop = False
@@ -1586,6 +1590,7 @@ def player():
         bass_plugin4 = BASS_PluginLoad(b'bassenc.dll', 0)
         bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
         bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
+        bass_plugin7 = BASS_PluginLoad(b'basswma.dll', 0)
     elif system == 'mac':
         b = install_directory.encode('utf-8')
         bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
