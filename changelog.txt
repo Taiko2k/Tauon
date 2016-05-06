@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v1.4.0
 
  - Added playlist navigation to web interface
+ - Added WMA playback support under Windows
  - Added reloading artwork function to database menu
  - Added ability to import to playlist directly by dropping on tab
  - Added specifying of encoding output directory from config
