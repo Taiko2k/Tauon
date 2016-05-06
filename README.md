@@ -25,10 +25,10 @@ Uses BASS audio library as backend.
 
 ### Getting Started
 
-Download latest binary release from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
+On Windows download latest binary release from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 Extract archive to a user directory of your choosing.
 
-On Windows start program by running 'tmb.exe'. Requires [Visual C++ 2015](https://www.microsoft.com/en-nz/download/details.aspx?id=48145)
+Start program by running 'tmb.exe'. Requires [Visual C++ 2015](https://www.microsoft.com/en-nz/download/details.aspx?id=48145)
 
 For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature list see [features](docs/features.md).
 
