@@ -47,7 +47,7 @@ opus-bitrate:48
 # Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
 #output-dir:C:\example
 
-## Streaming-----------------------------------------------------------
+## Broadcasting / Streaming-----------------------------------------------------------
 
 ## Mount Point for Icecast server
 icecast-mount:localhost:8000/test
@@ -55,8 +55,10 @@ icecast-mount:localhost:8000/test
 ## Password for Icecast server source
 icecast-pass:hackme
 
-## MP3 or OGG, requires lame.exe or oggenc2.exe in Encoder subdirectory respectively
-icecast-codec:OGG
+## Codec can be MP3, OGG or OPUS
+## On Windows requires lame.exe, oggenc2.exe or opusenc.exe in /encoder subdirectory respectively. 
+## On linux install lame, oggenc(part of vorbis-tools) or opusenc
+icecast-codec:OPUS
 icecase-bitrate:128
 
 ## Playlist-----------------

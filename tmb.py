@@ -235,7 +235,6 @@ album_mode_art_size = 130
 albums_to_render = 0
 pre_cache = []
 
-reset_playing = False
 transcode_bitrate = 64
 album_pos_px = 1
 time_last_save = 0
@@ -281,23 +280,12 @@ savetime = 0
 
 a_time = 0
 b_time = 0
-a_index = -1
-a_pt = False
-a_sc = False
 
 l = 0
 c_l = 0
 m_l = 700
 level_peak = [0, 0]
 seek_bar_position = [window_size[0] - seek_bar_size[0] - volume_bar_right, 20]
-
-broadcast = False
-join_broadcast = False
-broadcast_playlist = 0
-broadcast_position = 0
-broadcast_index = 0
-broadcast_time = 0
-broadcast_last_time = 0
 
 compact_bar = False
 
@@ -448,9 +436,7 @@ volume = 100
 DA_Formats = {'MP3', 'mp3', 'WAV', 'wav', 'OPUS', 'opus', 'FLAC', 'flac', 'APE', 'ape',
               'm4a', 'M4A', 'MP4', 'mp4', 'ogg', 'OGG', 'AAC', 'aac', 'tta', 'TTA'}
 
-url_record = True
-record_split = True
-record_path = "Radio/"
+
 auto_stop = False
 encpause = 0
 
@@ -466,7 +452,6 @@ r = (130, 85, 10, 15)
 droped_file = []
 cargo = []
 default_player = 'BASS'
-loaded_player = ""
 # ---------------------------------------------------------------------
 # Player variables
 
@@ -529,8 +514,6 @@ random_mode = False
 repeat_mode = False
 random_button_position = window_size[0] - 90, 83
 direct_jump = False
-
-broadcast_line = ""
 
 # [Name, playing, playlist, position, hide folder title, selected]
 multi_playlist = [['Default', 0, [], 0, 0, 0]]
@@ -880,6 +863,18 @@ class PlayerCtl:
         self.force_queue = []
         self.left_time = 0
         self.left_index = 0
+
+        self.broadcast_active = False
+        self.join_broadcast = False
+        self.broadcast_playlist = 0
+        self.broadcast_position = 0
+        self.broadcast_index = 0
+        self.broadcast_time = 0
+        self.broadcast_last_time = 0
+        self.broadcast_line = ""
+
+
+
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -1447,7 +1442,6 @@ level_time = Timer2()
 
 def player():
     global default_player
-    global loaded_player
     global pctl
     global volume
     global pause_fade_time
@@ -1457,24 +1451,12 @@ def player():
     global level
     global turbo
     global UPDATE_RENDER
-    global broadcast
-    global broadcast_time
     global URL
     global tag_meta
-    global broadcast_line
-    global url_record
-    global record_split
-    global record_path
     global b_time
-    global broadcast_position
     global renplay
-    global reset_playing
     global a_time
-    global a_index
-    global a_sc
-    global a_pt
     global encpause
-    global join_broadcast
     global total_playtime
     global time_to_get
     global level_peak
@@ -1486,316 +1468,328 @@ def player():
     thisfile = ""
     fileline = "output"
 
+    a_index = -1
+    a_sc = False
+    a_pt = False
+
     current_volume = volume / 100
 
-    if default_player == 'BASS':
-        if system == 'windows':
-            bass_module = ctypes.WinDLL('bass')
-            enc_module = ctypes.WinDLL('bassenc')
-            mix_module = ctypes.WinDLL('bassmix')
-            function_type = ctypes.WINFUNCTYPE
-        elif system == 'mac':
-            bass_module = ctypes.CDLL(install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
-            enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
-            mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
-            function_type = ctypes.CFUNCTYPE
-        else:
-            bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
-            enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
-            mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
-            function_type = ctypes.CFUNCTYPE
+    if system == 'windows':
+        bass_module = ctypes.WinDLL('bass')
+        enc_module = ctypes.WinDLL('bassenc')
+        mix_module = ctypes.WinDLL('bassmix')
+        function_type = ctypes.WINFUNCTYPE
+    elif system == 'mac':
+        bass_module = ctypes.CDLL(install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
+        enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
+        mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
+        function_type = ctypes.CFUNCTYPE
+    else:
+        bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
+        enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
+        mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+        function_type = ctypes.CFUNCTYPE
 
-        loaded_player = 'BASS'
+    BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
+                              ctypes.c_void_p)(('BASS_Init', bass_module))
+    BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
+                                          ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
+    BASS_ChannelPlay = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
+            ('BASS_ChannelPlay', bass_module))
+    BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
+            ('BASS_ChannelGetData', bass_module))
+    BASS_Pause = function_type(ctypes.c_bool)(('BASS_Pause', bass_module))
+    BASS_Stop = function_type(ctypes.c_bool)(('BASS_Stop', bass_module))
+    BASS_Start = function_type(ctypes.c_bool)(('BASS_Start', bass_module))
+    BASS_Free = function_type(ctypes.c_int)(('BASS_Free', bass_module))
+    BASS_ChannelPause = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelPause', bass_module))
+    BASS_ChannelStop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelStop', bass_module))
+    BASS_ChannelPlay = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
+            ('BASS_ChannelPlay', bass_module))
+    BASS_ErrorGetCode = function_type(ctypes.c_int)(('BASS_ErrorGetCode', bass_module))
+    BASS_SetConfig = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(('BASS_SetConfig', bass_module))
+    BASS_GetConfig = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_GetConfig', bass_module))
+    BASS_ChannelSlideAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float,
+                                               ctypes.c_ulong)(('BASS_ChannelSlideAttribute', bass_module))
+    BASS_ChannelSetAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float)(
+            ('BASS_ChannelSetAttribute', bass_module))
+    BASS_PluginLoad = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong)(
+            ('BASS_PluginLoad', bass_module))
+    BASS_PluginFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_PluginFree', bass_module))
+    BASS_ChannelIsSliding = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_ChannelIsSliding', bass_module))
+    BASS_ChannelSeconds2Bytes = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_double)(
+            ('BASS_ChannelSeconds2Bytes', bass_module))
+    BASS_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
+            ('BASS_ChannelSetPosition', bass_module))
+    BASS_StreamFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_StreamFree', bass_module))
+    BASS_ChannelGetLength = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_ChannelGetLength', bass_module))
+    BASS_ChannelBytes2Seconds = function_type(ctypes.c_double, ctypes.c_ulong, ctypes.c_int64)(
+            ('BASS_ChannelBytes2Seconds', bass_module))
+    BASS_ChannelGetLevel = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_ChannelGetLevel', bass_module))
+    BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
+            ('BASS_ChannelGetData', bass_module))
 
-        BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
-                                  ctypes.c_void_p)(('BASS_Init', bass_module))
-        BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
-                                              ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
-        BASS_ChannelPlay = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
-                ('BASS_ChannelPlay', bass_module))
-        BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
-                ('BASS_ChannelGetData', bass_module))
-        BASS_Pause = function_type(ctypes.c_bool)(('BASS_Pause', bass_module))
-        BASS_Stop = function_type(ctypes.c_bool)(('BASS_Stop', bass_module))
-        BASS_Start = function_type(ctypes.c_bool)(('BASS_Start', bass_module))
-        BASS_Free = function_type(ctypes.c_int)(('BASS_Free', bass_module))
-        BASS_ChannelPause = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelPause', bass_module))
-        BASS_ChannelStop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelStop', bass_module))
-        BASS_ChannelPlay = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
-                ('BASS_ChannelPlay', bass_module))
-        BASS_ErrorGetCode = function_type(ctypes.c_int)(('BASS_ErrorGetCode', bass_module))
-        BASS_SetConfig = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(('BASS_SetConfig', bass_module))
-        BASS_GetConfig = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_GetConfig', bass_module))
-        BASS_ChannelSlideAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float,
-                                                   ctypes.c_ulong)(('BASS_ChannelSlideAttribute', bass_module))
-        BASS_ChannelSetAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float)(
-                ('BASS_ChannelSetAttribute', bass_module))
-        BASS_PluginLoad = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong)(
-                ('BASS_PluginLoad', bass_module))
-        BASS_PluginFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_PluginFree', bass_module))
-        BASS_ChannelIsSliding = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_ChannelIsSliding', bass_module))
-        BASS_ChannelSeconds2Bytes = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_double)(
-                ('BASS_ChannelSeconds2Bytes', bass_module))
-        BASS_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
-                ('BASS_ChannelSetPosition', bass_module))
-        BASS_StreamFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_StreamFree', bass_module))
-        BASS_ChannelGetLength = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_ChannelGetLength', bass_module))
-        BASS_ChannelBytes2Seconds = function_type(ctypes.c_double, ctypes.c_ulong, ctypes.c_int64)(
-                ('BASS_ChannelBytes2Seconds', bass_module))
-        BASS_ChannelGetLevel = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_ChannelGetLevel', bass_module))
-        BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
-                ('BASS_ChannelGetData', bass_module))
+    BASS_Mixer_StreamCreate = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_Mixer_StreamCreate', mix_module))
+    BASS_Mixer_StreamAddChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_Mixer_StreamAddChannel', mix_module))
+    BASS_Mixer_ChannelRemove = function_type(ctypes.c_bool, ctypes.c_ulong)(
+            ('BASS_Mixer_ChannelRemove', mix_module))
+    BASS_Mixer_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
+            ('BASS_Mixer_ChannelSetPosition', mix_module))
 
-        BASS_Mixer_StreamCreate = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_Mixer_StreamCreate', mix_module))
-        BASS_Mixer_StreamAddChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_Mixer_StreamAddChannel', mix_module))
-        BASS_Mixer_ChannelRemove = function_type(ctypes.c_bool, ctypes.c_ulong)(
-                ('BASS_Mixer_ChannelRemove', mix_module))
-        BASS_Mixer_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
-                ('BASS_Mixer_ChannelSetPosition', mix_module))
+    DownloadProc = function_type(c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
 
-        DownloadProc = function_type(c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
+    # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong, DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+    BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
+                                         DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+    BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_ChannelGetTags', bass_module))
 
-        # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong, DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
-        BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
-                                             DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
-        BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_ChannelGetTags', bass_module))
-
-        def py_down(buffer, length, user):
-            # if url_record:
-            #
-            #     p = create_string_buffer(length)
-            #     ctypes.memmove(p, buffer, length)
-            #
-            #     f = open(record_path + fileline, 'ab')
-            #     f.write(p)
-            #     f.close
-            return 0
-
-        down_func = DownloadProc(py_down)
-
+    def py_down(buffer, length, user):
+        # if url_record:
         #
-        # def py_cmp_func(handle, channel, buffer, length):
-        #     return 0
+        #     p = create_string_buffer(length)
+        #     ctypes.memmove(p, buffer, length)
         #
-        # cmp_func = EncodeProc(py_cmp_func)
+        #     f = open(record_path + fileline, 'ab')
+        #     f.write(p)
+        #     f.close
+        return 0
 
-        BASS_Encode_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
-                                          ctypes.c_bool, ctypes.c_void_p)(('BASS_Encode_Start', enc_module))
-        BASS_Encode_CastInit = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_char_p,
-                                             ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p,
-                                             ctypes.c_char_p, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_bool)(
-                ('BASS_Encode_CastInit', enc_module))
-        BASS_Encode_Stop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_Encode_Stop', enc_module))
-        BASS_Encode_SetChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
-                ('BASS_Encode_SetChannel', enc_module))
-        BASS_Encode_CastSetTitle = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_bool)(
-                ('BASS_Encode_CastSetTitle', enc_module))
+    down_func = DownloadProc(py_down)
 
-        if system == 'windows':
-            bass_plugin1 = BASS_PluginLoad(b'bassopus.dll', 0)
-            bass_plugin2 = BASS_PluginLoad(b'bassflac.dll', 0)
-            bass_plugin3 = BASS_PluginLoad(b'bass_ape.dll', 0)
-            bass_plugin4 = BASS_PluginLoad(b'bassenc.dll', 0)
-            bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
-            bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
-        elif system == 'mac':
-            b = install_directory.encode('utf-8')
-            bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
-            bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
-            bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
-            bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
-            bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
+    #
+    # def py_cmp_func(handle, channel, buffer, length):
+    #     return 0
+    #
+    # cmp_func = EncodeProc(py_cmp_func)
+
+    BASS_Encode_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+                                      ctypes.c_bool, ctypes.c_void_p)(('BASS_Encode_Start', enc_module))
+    BASS_Encode_CastInit = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_char_p,
+                                         ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p,
+                                         ctypes.c_char_p, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_bool)(
+            ('BASS_Encode_CastInit', enc_module))
+    BASS_Encode_Stop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_Encode_Stop', enc_module))
+    BASS_Encode_SetChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
+            ('BASS_Encode_SetChannel', enc_module))
+    BASS_Encode_CastSetTitle = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_bool)(
+            ('BASS_Encode_CastSetTitle', enc_module))
+
+    if system == 'windows':
+        bass_plugin1 = BASS_PluginLoad(b'bassopus.dll', 0)
+        bass_plugin2 = BASS_PluginLoad(b'bassflac.dll', 0)
+        bass_plugin3 = BASS_PluginLoad(b'bass_ape.dll', 0)
+        bass_plugin4 = BASS_PluginLoad(b'bassenc.dll', 0)
+        bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
+        bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
+    elif system == 'mac':
+        b = install_directory.encode('utf-8')
+        bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
+        bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
+        bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
+        bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
+        bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
+    else:
+        b = install_directory.encode('utf-8')
+        bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
+        bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
+        bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
+        bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
+        bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
+
+    BassInitSuccess = BASS_Init(-1, 44100, 0, 0, 0)
+    if BassInitSuccess == True:
+        print("Bass library initialised")
+
+    current_channel = 0
+    player1_status = 'stopped'
+    player2_status = 'stopped'
+
+    last_level = [0, 0]
+    time_passed = 0
+    phase = 0
+
+    global vis
+    global spec
+    global update_spec
+    global sspec
+
+    while True:
+        if turbo is False:
+            time.sleep(0.04)
         else:
-            b = install_directory.encode('utf-8')
-            bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
-            bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
-            bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
-            bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
-            bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
+            turbonext += 1
 
-        BassInitSuccess = BASS_Init(-1, 44100, 0, 0, 0)
-        if BassInitSuccess == True:
-            print("Bass library initialised")
-
-        current_channel = 0
-        player1_status = 'stopped'
-        player2_status = 'stopped'
-
-        last_level = [0, 0]
-        time_passed = 0
-        phase = 0
-
-        global vis
-        global spec
-        global update_spec
-        global sspec
-
-        while True:
-            if turbo is False:
-                time.sleep(0.04)
+            if vis == 2:
+                time.sleep(0.018)
             else:
-                turbonext += 1
+                time.sleep(0.02)
 
+            if turbonext < 6 and pctl.playerCommandReady is not True:
+
+                if player1_status != 'playing' and player2_status != 'playing':
+                    level = 0
+                    continue
+
+                # -----------
                 if vis == 2:
-                    time.sleep(0.018)
-                else:
-                    time.sleep(0.02)
-
-                if turbonext < 6 and pctl.playerCommandReady is not True:
-
-                    if player1_status != 'playing' and player2_status != 'playing':
-                        level = 0
+                    if lowered:
                         continue
 
-                    # -----------
-                    if vis == 2:
-                        if lowered:
-                            continue
+                    sp_handle = 0
+                    if player1_status == 'playing':
+                        sp_handle = handle1
+                    elif player2_status == 'playing':
+                        sp_handle = handle2
+                    x = (ctypes.c_float * 512)()
+                    # print(x)
+                    ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
 
-                        sp_handle = 0
-                        if player1_status == 'playing':
-                            sp_handle = handle1
-                        elif player2_status == 'playing':
-                            sp_handle = handle2
-                        x = (ctypes.c_float * 512)()
-                        # print(x)
-                        ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
+                    BASS_ChannelGetData(sp_handle, x, 0x80000002)
 
-                        BASS_ChannelGetData(sp_handle, x, 0x80000002)
+                    # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
+                    # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
+                    # BASS_DATA_FFT1024 = 0x80000002# -2147483646# 1024 FFT
+                    # BASS_DATA_FFT2048 = 0x80000003# -2147483645# 2048 FFT
+                    # BASS_DATA_FFT4096 = 0x80000004# -2147483644# 4096 FFT
+                    # BASS_DATA_FFT8192 = 0x80000005# -2147483643# 8192 FFT
+                    # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
 
-                        # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
-                        # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
-                        # BASS_DATA_FFT1024 = 0x80000002# -2147483646# 1024 FFT
-                        # BASS_DATA_FFT2048 = 0x80000003# -2147483645# 2048 FFT
-                        # BASS_DATA_FFT4096 = 0x80000004# -2147483644# 4096 FFT
-                        # BASS_DATA_FFT8192 = 0x80000005# -2147483643# 8192 FFT
-                        # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
+                    pspec = []
+                    BANDS = 24
+                    b0 = 0
+                    i = 0
+                    while i < BANDS:
+                        peak = 0
+                        b1 = pow(2, i * 10.0 / (BANDS - 1))
+                        if b1 > 511:
+                            b1 = 511
+                        if b1 <= b0:
+                            b1 = b0 + 1
+                        while b0 < b1 and b0 < 511:
+                            if peak < x[1 + b0]:
+                                peak = x[1 + b0]
+                            b0 += 1
 
-                        pspec = []
-                        BANDS = 24
-                        b0 = 0
-                        i = 0
-                        while i < BANDS:
-                            peak = 0
-                            b1 = pow(2, i * 10.0 / (BANDS - 1))
-                            if b1 > 511:
-                                b1 = 511
-                            if b1 <= b0:
-                                b1 = b0 + 1
-                            while b0 < b1 and b0 < 511:
-                                if peak < x[1 + b0]:
-                                    peak = x[1 + b0]
-                                b0 += 1
+                        outp = math.sqrt(peak)
+                        # print(int(outp*20))
+                        pspec.append(int(outp * 45))
+                        i += 1
 
-                            outp = math.sqrt(peak)
-                            # print(int(outp*20))
-                            pspec.append(int(outp * 45))
-                            i += 1
+                    spec = pspec
+                    # print(spec)
+                    if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                        update_spec = 1
+                    # if pctl.playerCommand in ['open', 'stop']:
+                    #     update_spec = 0
+                    UPDATE_LEVEL = True
+                    continue
 
-                        spec = pspec
-                        # print(spec)
-                        if pctl.playing_time > 0.5 and pctl.playing_state == 1:
-                            update_spec = 1
-                        # if pctl.playerCommand in ['open', 'stop']:
-                        #     update_spec = 0
+                # -----------------------------------
+
+                if vis == 1:
+
+                    if player1_status == 'playing':
+                        level = BASS_ChannelGetLevel(handle1)
+                    elif player2_status == 'playing':
+                        level = BASS_ChannelGetLevel(handle2)
+
+                    ppp = (bin(level)[2:].zfill(32))
+                    ppp1 = ppp[:16]
+                    ppp2 = ppp[16:]
+                    ppp1 = int(ppp1, 2)
+                    ppp2 = int(ppp2, 2)
+                    ppp1 = (ppp1 / 32768) * 11.1
+                    ppp2 = (ppp2 / 32768) * 11.1
+
+                    time_passed += level_time.get()
+                    if time_passed > 1000:
+                        time_passed = 0
+                    while time_passed > 19:
+                        level_peak[1] -= 0.4
+                        if level_peak[1] < 0:
+                            level_peak[1] = 0
+                        level_peak[0] -= 0.4
+                        if level_peak[0] < 0:
+                            level_peak[0] = 0
+                        time_passed -= 20
+
+                    if ppp1 > level_peak[0]:
+                        level_peak[0] = ppp1
+                    if ppp2 > level_peak[1]:
+                        level_peak[1] = ppp2
+
+                    if int(level_peak[0]) != int(last_level[0]) or int(level_peak[1]) != int(last_level[1]):
                         UPDATE_LEVEL = True
-                        continue
+                    UPDATE_LEVEL = True
+                    last_level = copy.deepcopy(level_peak)
 
-                    # -----------------------------------
+                    continue
 
-                    if vis == 1:
+            else:
+                turbonext = 0
+                if pctl.playerCommand == 'open':
+                    # UPDATE_RENDER += 1
+                    level_peak = [0, 0]
 
-                        if player1_status == 'playing':
-                            level = BASS_ChannelGetLevel(handle1)
-                        elif player2_status == 'playing':
-                            level = BASS_ChannelGetLevel(handle2)
+        if pctl.playing_state == 3 and player1_status == 'playing':
 
-                        ppp = (bin(level)[2:].zfill(32))
-                        ppp1 = ppp[:16]
-                        ppp2 = ppp[16:]
-                        ppp1 = int(ppp1, 2)
-                        ppp2 = int(ppp2, 2)
-                        ppp1 = (ppp1 / 32768) * 11.1
-                        ppp2 = (ppp2 / 32768) * 11.1
-
-                        time_passed += level_time.get()
-                        if time_passed > 1000:
-                            time_passed = 0
-                        while time_passed > 19:
-                            level_peak[1] -= 0.4
-                            if level_peak[1] < 0:
-                                level_peak[1] = 0
-                            level_peak[0] -= 0.4
-                            if level_peak[0] < 0:
-                                level_peak[0] = 0
-                            time_passed -= 20
-
-                        if ppp1 > level_peak[0]:
-                            level_peak[0] = ppp1
-                        if ppp2 > level_peak[1]:
-                            level_peak[1] = ppp2
-
-                        if int(level_peak[0]) != int(last_level[0]) or int(level_peak[1]) != int(last_level[1]):
-                            UPDATE_LEVEL = True
-                        UPDATE_LEVEL = True
-                        last_level = copy.deepcopy(level_peak)
-
-                        continue
-
-                else:
-                    turbonext = 0
-                    if pctl.playerCommand == 'open':
-                        # UPDATE_RENDER += 1
-                        level_peak = [0, 0]
-
-            if pctl.playing_state == 3 and player1_status == 'playing':
-
-                # print(BASS_ChannelGetTags(handle1,4 ))
-                tag_meta = BASS_ChannelGetTags(handle1, 5)
+            # print(BASS_ChannelGetTags(handle1,4 ))
+            tag_meta = BASS_ChannelGetTags(handle1, 5)
+            if tag_meta != None:
+                tag_meta = tag_meta.decode('utf-8')[13:-2]
+            else:
+                tag_meta = BASS_ChannelGetTags(handle1, 2)
                 if tag_meta != None:
-                    tag_meta = tag_meta.decode('utf-8')[13:-2]
+                    tag_meta = tag_meta.decode('utf-8')[6:]
                 else:
-                    tag_meta = BASS_ChannelGetTags(handle1, 2)
-                    if tag_meta != None:
-                        tag_meta = tag_meta.decode('utf-8')[6:]
-                    else:
-                        tag_meta = ""
+                    tag_meta = ""
 
-                        # time.sleep(0.5)
+                    # time.sleep(0.5)
 
-            if broadcast and encpause == 0:
-                broadcast_time += b_timer()
+        if pctl.broadcast_active and encpause == 0:
+            pctl.broadcast_time += b_timer()
 
-            if player1_status == 'playing' or player2_status == 'playing':
+        if player1_status == 'playing' or player2_status == 'playing':
 
-                add_time = p_timer()
-                pctl.playing_time += add_time
+            add_time = p_timer()
+            pctl.playing_time += add_time
 
-                if pctl.playing_state == 1:
+            if pctl.playing_state == 1:
 
-                    a_time += add_time
-                    total_playtime += add_time
+                a_time += add_time
+                total_playtime += add_time
 
-                    if a_index != pctl.track_queue[pctl.queue_step]:
-                        a_time = 0
+                if a_index != pctl.track_queue[pctl.queue_step]:
+                    a_time = 0
+                    b_time = 0
+                    a_index = pctl.track_queue[pctl.queue_step]
+                    a_pt = False
+                    a_sc = False
+                if pctl.playing_time == 0 and a_sc is True:
+                    print("Reset scrobble timer")
+                    a_time = 0
+                    b_time = 0
+                    a_pt = False
+                    a_sc = False
+                if a_time > 10 and a_pt is False and master_library[a_index].length > 30:
+                    a_pt = True
+
+                    if lastfm.connected:
+                        mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index].title,
+                                                                              master_library[a_index].artist,
+                                                                              master_library[a_index].album))
+                        mini_t.daemon = True
+                        mini_t.start()
+
+                if a_time > 10 and a_pt:
+                    b_time += add_time
+                    if b_time > 20:
                         b_time = 0
-                        a_index = pctl.track_queue[pctl.queue_step]
-                        a_pt = False
-                        a_sc = False
-                    if pctl.playing_time == 0 and a_sc is True:
-                        print("Reset scrobble timer")
-                        a_time = 0
-                        b_time = 0
-                        a_pt = False
-                        a_sc = False
-                    if a_time > 10 and a_pt is False and master_library[a_index].length > 30:
-                        a_pt = True
-
                         if lastfm.connected:
                             mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index].title,
                                                                                   master_library[a_index].artist,
@@ -1803,108 +1797,283 @@ def player():
                             mini_t.daemon = True
                             mini_t.start()
 
-                    if a_time > 10 and a_pt:
-                        b_time += add_time
-                        if b_time > 20:
-                            b_time = 0
-                            if lastfm.connected:
-                                mini_t = threading.Thread(target=lastfm.update, args=(master_library[a_index].title,
-                                                                                      master_library[a_index].artist,
-                                                                                      master_library[a_index].album))
-                                mini_t.daemon = True
-                                mini_t.start()
+
+                if master_library[a_index].length > 30 and a_time > master_library[a_index].length \
+                    * 0.50 and a_sc is False:
+                    a_sc = True
+                    if lastfm.connected:
+                        renplay += 1
+                        print(
+                                "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
+
+                        mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
+                                                                              master_library[a_index].artist,
+                                                                              master_library[a_index].album))
+                        mini_t.daemon = True
+                        mini_t.start()
+
+                if a_sc is False and master_library[a_index].length > 30 and a_time > 240:
+                    if lastfm.connected:
+                        renplay += 1
+                        print(
+                                "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
+
+                        mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
+                                                                              master_library[a_index].artist,
+                                                                              master_library[a_index].album))
+                        mini_t.daemon = True
+                        mini_t.start()
+                    a_sc = True
+
+            if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
+                index = pctl.track_queue[pctl.queue_step]
+                key = master_library[index].title + master_library[index].filename
+                if key in star_library:
+                    if 3 > add_time > 0:
+                        star_library[key] += add_time
+                else:
+                    star_library[key] = 0
+
+        if pctl.playerCommandReady:
+            pctl.playerCommandReady = False
+
+            if pctl.playerCommand == 'time':
+
+                pctl.target_open = time_to_get
+                if system != 'windows':
+                    pctl.target_open = pctl.target_open.encode('utf-8')
+                    flag = 0
+                else:
+                    flag = 0x80000000
+
+                print(pctl.target_open)
+                handle9 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                blen = BASS_ChannelGetLength(handle9, 0)
+                tlen = BASS_ChannelBytes2Seconds(handle9, blen)
+                time_to_get = tlen
+                BASS_StreamFree(handle9)
+                pctl.playerCommand = 'done'
+
+            if pctl.playerCommand == "url":
+                if player1_status != 'stopped':
+                    BASS_ChannelStop(handle1)
+                    player1_status = 'stopped'
+                    BASS_StreamFree(handle1)
+                if player2_status != 'stopped':
+                    BASS_ChannelStop(handle2)
+                    player2_status = 'stopped'
+                    BASS_StreamFree(handle2)
+
+                fileline = str(datetime.datetime.now()) + ".ogg"
+
+                handle1 = BASS_StreamCreateURL(URL, 0, 0, down_func, 0)
+                # print(BASS_ErrorGetCode())
+                BASS_ChannelSetAttribute(handle1, 2, current_volume)
+                channel1 = BASS_ChannelPlay(handle1, True)
+                player1_status = 'playing'
+                pctl.playing_time = 0
+
+            if pctl.playerCommand == 'encnext':
+                print("Next Enc Rec")
+
+                if system != 'windows':
+                    pctl.target_open = pctl.target_open.encode('utf-8')
+                    flag = 0
+                else:
+                    flag = 0x80000000
+
+                # oldhandle = handle3
+                flag = flag | 0x200000
+
+                BASS_Mixer_ChannelRemove(handle3)
+                BASS_StreamFree(handle3)
+
+                handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+
+                if pctl.bstart_time > 0:
+                    bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time)
+                    BASS_ChannelSetPosition(handle3, bytes_position, 0)
+
+                BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
+
+                # channel1 = BASS_ChannelPlay(handle3, True)
+                channel1 = BASS_ChannelPlay(mhandle, True)
 
 
-                    if master_library[a_index].length > 30 and a_time > master_library[a_index].length \
-                        * 0.50 and a_sc is False:
-                        a_sc = True
-                        if lastfm.connected:
-                            renplay += 1
-                            print(
-                                    "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
+                encerror = BASS_ErrorGetCode()
+                print(encerror)
+                print(pctl.broadcast_line)
+                line = pctl.broadcast_line.encode('utf-8')
+                BASS_Encode_CastSetTitle(encoder, line, 0)
+                print(BASS_ErrorGetCode())
+                if encerror != 0:
+                    pctl.broadcast_active = False
+                    encstop = BASS_Encode_Stop(encoder)
+                    channel3 = BASS_ChannelStop(handle3)
+                    BASS_StreamFree(handle3)
+                    # BASS_StreamFree(oldhandle)
 
-                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
-                                                                                  master_library[a_index].artist,
-                                                                                  master_library[a_index].album))
-                            mini_t.daemon = True
-                            mini_t.start()
+            if pctl.playerCommand == 'encpause' and pctl.broadcast_active:
 
-                    if a_sc is False and master_library[a_index].length > 30 and a_time > 240:
-                        if lastfm.connected:
-                            renplay += 1
-                            print(
-                                    "Scrobble " + master_library[a_index].title + " - " + master_library[a_index].artist)
+                if encpause == 0:
+                    BASS_ChannelPause(mhandle)
+                    encpause = 1
+                else:
+                    BASS_ChannelPlay(mhandle, True)
+                    encpause = 0
 
-                            mini_t = threading.Thread(target=lastfm.scrobble, args=(master_library[a_index].title,
-                                                                                  master_library[a_index].artist,
-                                                                                  master_library[a_index].album))
-                            mini_t.daemon = True
-                            mini_t.start()
-                        a_sc = True
+            if pctl.playerCommand == "encstop":
+                encstop = BASS_Encode_Stop(encoder)
+                channel3 = BASS_ChannelStop(handle3)
+                BASS_StreamFree(handle3)
+                pctl.broadcast_active = False
 
-                if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
-                    index = pctl.track_queue[pctl.queue_step]
-                    key = master_library[index].title + master_library[index].filename
-                    if key in star_library:
-                        if 3 > add_time > 0:
-                            star_library[key] += add_time
+            if pctl.playerCommand == "encstart":
+
+                mount = ""
+                ice_pass = ""
+                codec = ""
+                bitrate = ""
+
+                path = install_directory + "/config.txt"
+                with open(path, encoding="utf_8") as f:
+                    content = f.readlines()
+                    for p in content:
+                        if p[0] == " " or p[0] == "#":
+                            continue
+                        if 'icecast-mount:' in p:
+                            mount = p[14:-1]
+
+                        elif 'icecast-pass:' in p:
+                            ice_pass = p[13:-1]
+                        elif 'icecast-codec:' in p:
+                            codec = p[14:-1]
+                        elif 'icecase-bitrate:' in p:
+                            bitrate = p[16:-1]
+
+                    print(mount)
+                    print(ice_pass)
+                    print(codec)
+                    print(bitrate)
+
+                pctl.broadcast_active = True
+                print("starting encoder")
+
+                if system != 'windows':
+                    pctl.target_open = pctl.target_open.encode('utf-8')
+                    flag = 0
+                else:
+                    flag = 0x80000000
+
+                pctl.broadcast_time = 0
+
+                b_timer()
+                flag = flag | 0x200000
+                # print(flag)
+
+                print(pctl.target_open)
+
+                handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+
+                mhandle = BASS_Mixer_StreamCreate(44100, 2, 0)
+
+                BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
+
+                channel1 = BASS_ChannelPlay(mhandle, True)
+
+                BASS_ChannelSetAttribute(mhandle, 2, 0)
+
+                print(BASS_ErrorGetCode())
+
+                # encoder = BASS_Encode_Start(handle3, <lame.exe> --alt-preset standard - c:\output.mp3', 0, cmp_func, 0)
+                # encoder = BASS_Encode_Start(handle3, <directory of encoder> -r -s 44100 -b 128 -", 1, 0, 0)
+
+                if codec == "MP3":
+                    if system == 'windows':
+                        line = install_directory + "/encoder/lame.exe" + " -r -s 44100 -b " + bitrate + " -"
                     else:
-                        star_library[key] = 0
+                        line = "lame" + " -r -s 44100 -b " + bitrate + " -"
 
-            if pctl.playerCommandReady:
-                pctl.playerCommandReady = False
+                    line = line.encode('utf-8')
 
-                if pctl.playerCommand == 'time':
+                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
 
-                    pctl.target_open = time_to_get
+                    line = "source:" + ice_pass
+                    line = line.encode('utf-8')
+
+                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
+                                         b"genre", b"", b"", int(bitrate), False)
+
+                elif codec == "OGG":
+                    if system == 'windows':
+                        line = install_directory + "/encoder/oggenc2.exe" + " -r -b " + bitrate + " -"
+                    else:
+                        line = "oggenc" + " -r -b " + bitrate + " -"
+
+                    line = line.encode('utf-8')
+                    # print(line)
+
+                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+
+                    line = "source:" + ice_pass
+                    line = line.encode('utf-8')
+
+                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
+                                         b"genre", b"", b"", int(bitrate), False)
+
+                elif codec == "OPUS":
+                    if system == 'windows':
+                        line = install_directory + "/encoder/opusenc.exe --raw --bitrate " + bitrate + " - - "
+                    else:
+                        line = "opusenc" + " --raw --bitrate " + bitrate + " - - "
+
+                    line = line.encode('utf-8')
+                    # print(line)
+
+                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+
+                    line = "source:" + ice_pass
+                    line = line.encode('utf-8')
+
+                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
+                                         b"genre", b"", b"", int(bitrate), False)
+
+                channel1 = BASS_ChannelPlay(mhandle, True)
+
+                # Trying to send the stream title here causes the stream to fail for some reason
+                # line2 = pctl.broadcast_line.encode('utf-8')
+                # BASS_Encode_CastSetTitle(encoder, line2,0)
+
+                print(BASS_ErrorGetCode())
+
+            # OPEN COMMAND
+            if pctl.playerCommand == 'open' and pctl.target_open != '':
+
+                pctl.playerCommand = ""
+
+                if os.path.isfile(master_library[pctl.track_queue[pctl.queue_step]].fullpath):
+                    master_library[pctl.track_queue[pctl.queue_step]].found = True
+                else:
+                    master_library[pctl.track_queue[pctl.queue_step]].found = False
+                    renplay += 1
+                    UPDATE_RENDER += 1
+                    print("Missing File")
+                    pctl.playerCommandReady = False
+                    pctl.playing_state = 0
+                    pctl.advance()
+                    continue
+
+                if pctl.join_broadcast and pctl.broadcast_active:
+
                     if system != 'windows':
                         pctl.target_open = pctl.target_open.encode('utf-8')
                         flag = 0
                     else:
                         flag = 0x80000000
-
-                    print(pctl.target_open)
-                    handle9 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                    blen = BASS_ChannelGetLength(handle9, 0)
-                    tlen = BASS_ChannelBytes2Seconds(handle9, blen)
-                    time_to_get = tlen
-                    BASS_StreamFree(handle9)
-                    pctl.playerCommand = 'done'
-
-                if pctl.playerCommand == "url":
-                    if player1_status != 'stopped':
-                        BASS_ChannelStop(handle1)
-                        player1_status = 'stopped'
-                        BASS_StreamFree(handle1)
-                    if player2_status != 'stopped':
-                        BASS_ChannelStop(handle2)
-                        player2_status = 'stopped'
-                        BASS_StreamFree(handle2)
-
-                    fileline = str(datetime.datetime.now()) + ".ogg"
-
-                    handle1 = BASS_StreamCreateURL(URL, 0, 0, down_func, 0)
-                    # print(BASS_ErrorGetCode())
-                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                    channel1 = BASS_ChannelPlay(handle1, True)
-                    player1_status = 'playing'
-                    pctl.playing_time = 0
-
-                if pctl.playerCommand == 'encnext':
-                    print("Next Enc Rec")
-
-                    if system != 'windows':
-                        pctl.target_open = pctl.target_open.encode('utf-8')
-                        flag = 0
-                    else:
-                        flag = 0x80000000
-
-                    # oldhandle = handle3
                     flag = flag | 0x200000
 
                     BASS_Mixer_ChannelRemove(handle3)
                     BASS_StreamFree(handle3)
-
                     handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
 
                     if pctl.bstart_time > 0:
@@ -1912,337 +2081,173 @@ def player():
                         BASS_ChannelSetPosition(handle3, bytes_position, 0)
 
                     BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-
-                    # channel1 = BASS_ChannelPlay(handle3, True)
                     channel1 = BASS_ChannelPlay(mhandle, True)
 
+                p_timer()
+                # print(pctl.target_open)
+                if system != 'windows':
+                    pctl.target_open = pctl.target_open.encode('utf-8')
+                    flag = 0
+                else:
+                    flag = 0x80000000
 
-                    encerror = BASS_ErrorGetCode()
-                    print(encerror)
-                    print(broadcast_line)
-                    line = broadcast_line.encode('utf-8')
-                    BASS_Encode_CastSetTitle(encoder, line, 0)
-                    print(BASS_ErrorGetCode())
-                    if encerror != 0:
-                        broadcast = False
-                        encstop = BASS_Encode_Stop(encoder)
-                        channel3 = BASS_ChannelStop(handle3)
-                        BASS_StreamFree(handle3)
-                        # BASS_StreamFree(oldhandle)
+                # BASS_ASYNCFILE = 0x40000000
+                flag = flag | 0x40000000
 
-                if pctl.playerCommand == 'encpause' and broadcast:
+                if player1_status == 'stopped' and player2_status == 'stopped':
+                    # print(BASS_ErrorGetCode())
 
-                    if encpause == 0:
-                        BASS_ChannelPause(mhandle)
-                        encpause = 1
-                    else:
-                        BASS_ChannelPlay(mhandle, True)
-                        encpause = 0
+                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    # print(BASS_ErrorGetCode())
+                    channel1 = BASS_ChannelPlay(handle1, True)
 
-                if pctl.playerCommand == "encstop":
-                    encstop = BASS_Encode_Stop(encoder)
-                    channel3 = BASS_ChannelStop(handle3)
-                    BASS_StreamFree(handle3)
-                    broadcast = False
-
-                if pctl.playerCommand == "encstart":
-
-                    mount = ""
-                    ice_pass = ""
-                    codec = ""
-                    bitrate = ""
-
-                    path = install_directory + "/config.txt"
-                    with open(path, encoding="utf_8") as f:
-                        content = f.readlines()
-                        for p in content:
-                            if p[0] == " " or p[0] == "#":
-                                continue
-                            if 'icecast-mount:' in p:
-                                mount = p[14:-1]
-
-                            elif 'icecast-pass:' in p:
-                                ice_pass = p[13:-1]
-                            elif 'icecast-codec:' in p:
-                                codec = p[14:-1]
-                            elif 'icecase-bitrate:' in p:
-                                bitrate = p[16:-1]
-
-                        print(mount)
-                        print(ice_pass)
-                        print(codec)
-                        print(bitrate)
-
-                    broadcast = True
-                    print("starting encoder")
-
-                    if system != 'windows':
-                        pctl.target_open = pctl.target_open.encode('utf-8')
-                        flag = 0
-                    else:
-                        flag = 0x80000000
-
-                    broadcast_time = 0
-
-                    b_timer()
-                    flag = flag | 0x200000
-                    # print(flag)
-
-                    handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-
-                    mhandle = BASS_Mixer_StreamCreate(44100, 2, 0)
-
-                    BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-
-                    channel1 = BASS_ChannelPlay(mhandle, True)
-
-                    BASS_ChannelSetAttribute(mhandle, 2, 0)
-
-                    print(BASS_ErrorGetCode())
-
-                    # encoder = BASS_Encode_Start(handle3, <lame.exe> --alt-preset standard - c:\output.mp3', 0, cmp_func, 0)
-                    # encoder = BASS_Encode_Start(handle3, <directory of encoder> -r -s 44100 -b 128 -", 1, 0, 0)
-
-                    if system != 'windows':
-                        encbin = ""
-                    else:
-                        encbin = '.exe'
-
-                    if codec == "MP3":
-                        line = install_directory + "/encoder/lame" + encbin + " -r -s 44100 -b " + bitrate + " -"
-                        line = line.encode('utf-8')
-
-                        encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
-
-                        line = "source:" + ice_pass
-                        line = line.encode('utf-8')
-
-                        BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
-                                             b"genre", b"", b"", int(bitrate), False)
-
-                    elif codec == "OGG":
-                        line = install_directory + "/encoder/oggenc2" + encbin + " -r -b " + bitrate + " -"
-                        line = line.encode('utf-8')
-                        # print(line)
-
-                        encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
-
-                        line = "source:" + ice_pass
-                        line = line.encode('utf-8')
-
-                        BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
-                                             b"genre", b"", b"", int(bitrate), False)
-
-                    channel1 = BASS_ChannelPlay(mhandle, True)
-
-                    # Trying to send the stream title here causes the stream to fail for some reason
-                    # line2 = broadcast_line.encode('utf-8')
-                    # BASS_Encode_CastSetTitle(encoder, line2,0)
-
-                    print(BASS_ErrorGetCode())
-
-                # OPEN COMMAND
-                if pctl.playerCommand == 'open' and pctl.target_open != '':
-
-                    pctl.playerCommand = ""
-
-                    if os.path.isfile(master_library[pctl.track_queue[pctl.queue_step]].fullpath):
-                        master_library[pctl.track_queue[pctl.queue_step]].found = True
-                    else:
-                        master_library[pctl.track_queue[pctl.queue_step]].found = False
-                        renplay += 1
-                        UPDATE_RENDER += 1
-                        print("Missing File")
-                        pctl.playerCommandReady = False
-                        pctl.playing_state = 0
-                        pctl.advance()
-                        continue
-
-                    if join_broadcast and broadcast:
-
-                        if system != 'windows':
-                            pctl.target_open = pctl.target_open.encode('utf-8')
-                            flag = 0
-                        else:
-                            flag = 0x80000000
-                        flag = flag | 0x200000
-
-                        BASS_Mixer_ChannelRemove(handle3)
-                        BASS_StreamFree(handle3)
-                        handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-
-                        if pctl.bstart_time > 0:
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time)
-                            BASS_ChannelSetPosition(handle3, bytes_position, 0)
-
-                        BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-                        channel1 = BASS_ChannelPlay(mhandle, True)
-
-                    p_timer()
-                    # print(pctl.target_open)
-                    if system != 'windows':
-                        pctl.target_open = pctl.target_open.encode('utf-8')
-                        flag = 0
-                    else:
-                        flag = 0x80000000
-
-                    # BASS_ASYNCFILE = 0x40000000
-                    flag = flag | 0x40000000
-
-                    if player1_status == 'stopped' and player2_status == 'stopped':
-                        # print(BASS_ErrorGetCode())
-
-                        handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                        # print(BASS_ErrorGetCode())
-                        channel1 = BASS_ChannelPlay(handle1, True)
-
-                        # if broadcast:
-                        #     BASS_Encode_SetChannel(encoder, handle1)
-
-                        # print(BASS_ErrorGetCode())
-                        BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                        # print(BASS_ErrorGetCode())
-                        player1_status = 'playing'
-                    elif player1_status != 'stopped' and player2_status == 'stopped':
-                        player1_status = 'stopping'
-                        BASS_ChannelSlideAttribute(handle1, 2, 0, cross_fade_time)
-
-                        handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                        channel2 = BASS_ChannelPlay(handle2, True)
-
-                        BASS_ChannelSetAttribute(handle2, 2, 0)
-                        BASS_ChannelSlideAttribute(handle2, 2, current_volume, cross_fade_time)
-                        player2_status = 'playing'
-                    elif player2_status != 'stopped' and player1_status == 'stopped':
-                        player2_status = 'stopping'
-                        BASS_ChannelSlideAttribute(handle2, 2, 0, cross_fade_time)
-
-                        handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-                        BASS_ChannelSetAttribute(handle1, 2, 0)
-                        channel1 = BASS_ChannelPlay(handle1, True)
-
-                        BASS_ChannelSlideAttribute(handle1, 2, current_volume, cross_fade_time)
-                        player1_status = 'playing'
-
-                    else:
-                        print('no case')
-
-                    if master_library[pctl.track_queue[pctl.queue_step]].length < 1:
-
-                        if player1_status == 'playing':
-                            blen = BASS_ChannelGetLength(handle1, 0)
-                            tlen = BASS_ChannelBytes2Seconds(handle1, blen)
-                            master_library[pctl.track_queue[pctl.queue_step]].length = tlen
-                            pctl.playing_length = tlen
-                        elif player2_status == 'playing':
-                            blen = BASS_ChannelGetLength(handle2, 0)
-                            tlen = BASS_ChannelBytes2Seconds(handle2, blen)
-                            master_library[pctl.track_queue[pctl.queue_step]].length = tlen
-                            pctl.playing_length = tlen
-                    if pctl.start_time > 0 or pctl.jump_time > 0:
-                        if player1_status == 'playing':
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
-                            BASS_ChannelSetPosition(handle1, bytes_position, 0)
-                        elif player2_status == 'playing':
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time + pctl.jump_time)
-                            BASS_ChannelSetPosition(handle2, bytes_position, 0)
+                    # if pctl.broadcast_active:
+                    #     BASS_Encode_SetChannel(encoder, handle1)
 
                     # print(BASS_ErrorGetCode())
-                    #pctl.playing_time = 0
-                    pctl.last_playing_time = 0
-                    pctl.jump_time = 0
-                    p_timer()
+                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
+                    # print(BASS_ErrorGetCode())
+                    player1_status = 'playing'
+                elif player1_status != 'stopped' and player2_status == 'stopped':
+                    player1_status = 'stopping'
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, cross_fade_time)
 
-                # PAUSE COMMAND
-                elif pctl.playerCommand == 'pause':
-                    p_timer()
+                    handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    channel2 = BASS_ChannelPlay(handle2, True)
 
-                    if join_broadcast and broadcast:
-                        if player1_status == 'playing' or player2_status == 'playing':
-                            BASS_ChannelPause(mhandle)
-                        else:
-                            BASS_ChannelPlay(mhandle, True)
+                    BASS_ChannelSetAttribute(handle2, 2, 0)
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, cross_fade_time)
+                    player2_status = 'playing'
+                elif player2_status != 'stopped' and player1_status == 'stopped':
+                    player2_status = 'stopping'
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, cross_fade_time)
+
+                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    BASS_ChannelSetAttribute(handle1, 2, 0)
+                    channel1 = BASS_ChannelPlay(handle1, True)
+
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, cross_fade_time)
+                    player1_status = 'playing'
+
+                else:
+                    print('no case')
+
+                if master_library[pctl.track_queue[pctl.queue_step]].length < 1:
 
                     if player1_status == 'playing':
-                        player1_status = 'paused'
-                        BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
-                        time.sleep(pause_fade_time / 1000 / 0.7)
-                        channel1 = BASS_ChannelPause(handle1)
-                    elif player1_status == 'paused':
-                        player1_status = 'playing'
-                        channel1 = BASS_ChannelPlay(handle1, False)
-                        BASS_ChannelSlideAttribute(handle1, 2, current_volume, pause_fade_time)
-                    if player2_status == 'playing':
-                        player2_status = 'paused'
-                        BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
-                        time.sleep(pause_fade_time / 1000 / 0.7)
-                        channel2 = BASS_ChannelPause(handle2)
-                    elif player2_status == 'paused':
-                        player2_status = 'playing'
-                        channel2 = BASS_ChannelPlay(handle2, False)
-                        BASS_ChannelSlideAttribute(handle2, 2, current_volume, pause_fade_time)
-
-                # UNLOAD PLAYER COMMAND
-                elif pctl.playerCommand == 'unload':
-                    BASS_Free()
-                    print('BASS Unloaded')
-                    break
-
-                # CHANGE VOLUME COMMAND
-                elif pctl.playerCommand == 'volume':
-                    current_volume = volume / 100
+                        blen = BASS_ChannelGetLength(handle1, 0)
+                        tlen = BASS_ChannelBytes2Seconds(handle1, blen)
+                        master_library[pctl.track_queue[pctl.queue_step]].length = tlen
+                        pctl.playing_length = tlen
+                    elif player2_status == 'playing':
+                        blen = BASS_ChannelGetLength(handle2, 0)
+                        tlen = BASS_ChannelBytes2Seconds(handle2, blen)
+                        master_library[pctl.track_queue[pctl.queue_step]].length = tlen
+                        pctl.playing_length = tlen
+                if pctl.start_time > 0 or pctl.jump_time > 0:
                     if player1_status == 'playing':
-                        BASS_ChannelSlideAttribute(handle1, 2, current_volume, change_volume_fade_time)
-                    if player2_status == 'playing':
-                        BASS_ChannelSlideAttribute(handle2, 2, current_volume, change_volume_fade_time)
-                # STOP COMMAND
-                elif pctl.playerCommand == 'stop':
-                    if player1_status != 'stopped':
-                        player1_status = 'stopped'
-                        BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
-                        time.sleep(pause_fade_time / 1000)
-                        channel1 = BASS_ChannelStop(handle1)
-                        BASS_StreamFree(handle1)
-                    if player2_status != 'stopped':
-                        player2_status = 'stopped'
-                        BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
-                        time.sleep(pause_fade_time / 1000)
-                        channel2 = BASS_ChannelStop(handle2)
-                        BASS_StreamFree(handle2)
-                # SEEK COMMAND
-                elif pctl.playerCommand == 'seek':
-
-                    if player1_status == 'playing' or player1_status == 'paused':
-
-                        bytes_position = BASS_ChannelSeconds2Bytes(handle1, new_time + pctl.start_time)
+                        bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
                         BASS_ChannelSetPosition(handle1, bytes_position, 0)
-                        BASS_ChannelPlay(handle1, False)
-                    elif player2_status == 'playing' or player2_status == 'paused':
-
-                        bytes_position = BASS_ChannelSeconds2Bytes(handle2, new_time + pctl.start_time)
+                    elif player2_status == 'playing':
+                        bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time + pctl.jump_time)
                         BASS_ChannelSetPosition(handle2, bytes_position, 0)
-                        BASS_ChannelPlay(handle2, False)
 
-                    pctl.playerCommand = ''
+                # print(BASS_ErrorGetCode())
+                #pctl.playing_time = 0
+                pctl.last_playing_time = 0
+                pctl.jump_time = 0
+                p_timer()
 
-                    if join_broadcast and broadcast:
-                        print('b seek')
-                        BASS_Mixer_ChannelSetPosition(handle3, bytes_position, 0)
-                        BASS_ChannelPlay(mhandle, False)
+            # PAUSE COMMAND
+            elif pctl.playerCommand == 'pause':
+                p_timer()
 
-                new_time = 0
-                bytes_position = 0
-                if player1_status == 'stopping':
-                    time.sleep(cross_fade_time / 1000)
-                    BASS_StreamFree(handle1)
+                if pctl.join_broadcast and pctl.broadcast_active:
+                    if player1_status == 'playing' or player2_status == 'playing':
+                        BASS_ChannelPause(mhandle)
+                    else:
+                        BASS_ChannelPlay(mhandle, True)
+
+                if player1_status == 'playing':
+                    player1_status = 'paused'
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
+                    time.sleep(pause_fade_time / 1000 / 0.7)
+                    channel1 = BASS_ChannelPause(handle1)
+                elif player1_status == 'paused':
+                    player1_status = 'playing'
+                    channel1 = BASS_ChannelPlay(handle1, False)
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, pause_fade_time)
+                if player2_status == 'playing':
+                    player2_status = 'paused'
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
+                    time.sleep(pause_fade_time / 1000 / 0.7)
+                    channel2 = BASS_ChannelPause(handle2)
+                elif player2_status == 'paused':
+                    player2_status = 'playing'
+                    channel2 = BASS_ChannelPlay(handle2, False)
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, pause_fade_time)
+
+            # UNLOAD PLAYER COMMAND
+            elif pctl.playerCommand == 'unload':
+                BASS_Free()
+                print('BASS Unloaded')
+                break
+
+            # CHANGE VOLUME COMMAND
+            elif pctl.playerCommand == 'volume':
+                current_volume = volume / 100
+                if player1_status == 'playing':
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, change_volume_fade_time)
+                if player2_status == 'playing':
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, change_volume_fade_time)
+            # STOP COMMAND
+            elif pctl.playerCommand == 'stop':
+                if player1_status != 'stopped':
                     player1_status = 'stopped'
-                    # print('player1 stopped')
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
+                    time.sleep(pause_fade_time / 1000)
                     channel1 = BASS_ChannelStop(handle1)
-                if player2_status == 'stopping':
-                    time.sleep(cross_fade_time / 1000)
-                    BASS_StreamFree(handle2)
+                    BASS_StreamFree(handle1)
+                if player2_status != 'stopped':
                     player2_status = 'stopped'
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
+                    time.sleep(pause_fade_time / 1000)
                     channel2 = BASS_ChannelStop(handle2)
+                    BASS_StreamFree(handle2)
+            # SEEK COMMAND
+            elif pctl.playerCommand == 'seek':
+
+                if player1_status == 'playing' or player1_status == 'paused':
+
+                    bytes_position = BASS_ChannelSeconds2Bytes(handle1, new_time + pctl.start_time)
+                    BASS_ChannelSetPosition(handle1, bytes_position, 0)
+                    BASS_ChannelPlay(handle1, False)
+                elif player2_status == 'playing' or player2_status == 'paused':
+
+                    bytes_position = BASS_ChannelSeconds2Bytes(handle2, new_time + pctl.start_time)
+                    BASS_ChannelSetPosition(handle2, bytes_position, 0)
+                    BASS_ChannelPlay(handle2, False)
+
+                pctl.playerCommand = ''
+
+                if pctl.join_broadcast and pctl.broadcast_active:
+                    print('b seek')
+                    BASS_Mixer_ChannelSetPosition(handle3, bytes_position, 0)
+                    BASS_ChannelPlay(mhandle, False)
+
+            new_time = 0
+            bytes_position = 0
+            if player1_status == 'stopping':
+                time.sleep(cross_fade_time / 1000)
+                BASS_StreamFree(handle1)
+                player1_status = 'stopped'
+                # print('player1 stopped')
+                channel1 = BASS_ChannelStop(handle1)
+            if player2_status == 'stopping':
+                time.sleep(cross_fade_time / 1000)
+                BASS_StreamFree(handle2)
+                player2_status = 'stopped'
+                channel2 = BASS_ChannelStop(handle2)
 
     pctl.playerCommand = 'done'
     # -------------------------------------------------------------------
@@ -4070,9 +4075,9 @@ def get_playing_line():
 
 
 def get_broadcast_line():
-    if broadcast:
-        title = master_library[broadcast_index].title
-        artist = master_library[broadcast_index].artist
+    if pctl.broadcast_active:
+        title = master_library[pctl.broadcast_index].title
+        artist = master_library[pctl.broadcast_index].artist
         return artist + " - " + title
     else:
         return 'No Title'
@@ -4383,7 +4388,7 @@ def queue_deco():
 def broadcast_feature_deco():
     line_colour = colours.grey(50)
 
-    if broadcast:
+    if pctl.broadcast_active:
         line_colour = [150, 150, 150, 255]
 
     return [line_colour, colours.bottom_panel_colour, None]
@@ -4391,30 +4396,22 @@ def broadcast_feature_deco():
 
 def broadcast_select_track(index):
     global filepath
-    global broadcast_index
-    global broadcast_playlist
-    global broadcast_position
-    global broadcast_time
     global pctl
-    global pctl
-    global pctl
-    global pctl
-    global broadcast_line
 
-    if broadcast:
-        filepath = master_library[broadcast_index].fullpath
+    if pctl.broadcast_active:
+        filepath = master_library[pctl.broadcast_index].fullpath
 
-        broadcast_index = index
-        broadcast_playlist = copy.deepcopy(pctl.playlist_active)
-        broadcast_position = default_playlist.index(broadcast_index)
-        broadcast_time = 0
+        pctl.broadcast_index = index
+        pctl.broadcast_playlist = copy.deepcopy(pctl.playlist_active)
+        pctl.broadcast_position = default_playlist.index(pctl.broadcast_index)
+        pctl.broadcast_time = 0
         b_timer()
-        pctl.target_open = master_library[broadcast_index].fullpath
-        pctl.bstart_time = master_library[broadcast_index].start_time
+        pctl.target_open = master_library[pctl.broadcast_index].fullpath
+        pctl.bstart_time = master_library[pctl.broadcast_index].start_time
         pctl.playerCommand = "encnext"
         pctl.playerCommandReady = True
-        broadcast_line = master_library[broadcast_index].artist + " - " + \
-                         master_library[broadcast_index].title
+        pctl.broadcast_line = master_library[pctl.broadcast_index].artist + " - " + \
+                         master_library[pctl.broadcast_index].title
 
 
 if default_player == 'BASS':
@@ -4699,22 +4696,25 @@ x_menu.add_to_sub("Reset missing flags", 0, reset_missing_flags)
 
 def toggle_broadcast():
     global pctl
-    global pctl
-    global pctl
-    global broadcast_playlist
-    global broadcast_index
-    global broadcast_line
+    global message_box
+    global message_box_text
 
-    if broadcast is not True:
+    if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
+            os.path.isfile(install_directory + "/encoder/lame.exe") and not os.path.isfile(install_directory + "/encoder/opusenc.exe"):
+        message_box = True
+        message_box_text = "Missing Encoder. See readme file."
+        return
+
+    if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
             return 0
-        broadcast_playlist = pctl.playlist_active
-        broadcast_position = 0
+        pctl.broadcast_playlist = pctl.playlist_active
+        pctl.broadcast_position = 0
 
-        broadcast_index = pctl.multi_playlist[broadcast_playlist][2][broadcast_position]
-        pctl.target_open = master_library[broadcast_index].fullpath
-        broadcast_line = master_library[broadcast_index].artist + " - " + \
-                         master_library[broadcast_index].title
+        pctl.broadcast_index = pctl.multi_playlist[pctl.broadcast_playlist][2][pctl.broadcast_position]
+        pctl.target_open = master_library[pctl.broadcast_index].fullpath
+        pctl.broadcast_line = master_library[pctl.broadcast_index].artist + " - " + \
+                         master_library[pctl.broadcast_index].title
 
         pctl.playerCommand = "encstart"
         pctl.playerCommandReady = True
@@ -4728,7 +4728,7 @@ def broadcast_deco():
     if default_player != 'BASS':
         line_colour = colours.grey(20)
         return [line_colour, colours.bottom_panel_colour, None]
-    if broadcast:
+    if pctl.broadcast_active:
         return [[150, 150, 150, 255], [24, 25, 60, 255], "Stop Broadcast"]
     return [line_colour, colours.bottom_panel_colour, None]
 
@@ -5772,9 +5772,9 @@ def webserv():
 
     @app.route('/radio')
     def radio():
-        global broadcast_index
+        global pctl
         image_line = '<img src="data:image/jpeg;base64,'
-        bimage = album_art_gen.get_base64(broadcast_index, (300, 300))
+        bimage = album_art_gen.get_base64(pctl.broadcast_index, (300, 300))
         if type(bimage) is list:
             image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
         else:
@@ -7093,8 +7093,8 @@ while running:
         pctl.playerCommandReady = True
 
     if key_F6:
-        join_broadcast ^= True
-        print("Join brodcast commands:" + str(join_broadcast))
+        pctl.join_broadcast ^= True
+        print("Join brodcast commands:" + str(pctl.join_broadcast))
 
     if key_F4:
         standard_size()
@@ -7895,7 +7895,7 @@ while running:
                             this_line_playing = True
 
 
-                        if default_playlist[i + playlist_position] == broadcast_index and broadcast and not join_broadcast:
+                        if default_playlist[i + playlist_position] == pctl.broadcast_index and pctl.broadcast_active and not pctl.join_broadcast:
                             draw_rect((playlist_left, playlist_top + playlist_row_height * w),
                                       (playlist_width, playlist_row_height - 1), [10, 20, 180, 70], True)
 
@@ -8570,7 +8570,7 @@ while running:
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 35, 2),
                                                           line, colours.side_bar_line2, 11)
                                     # Topline
-                                    elif broadcast != True:
+                                    elif pctl.broadcast_active != True:
                                         line = ""
                                         if artist != "":
                                             line += artist
@@ -9276,7 +9276,7 @@ while running:
 
                     l += 75
 
-                    if broadcast is False:
+                    if pctl.broadcast_active is False:
                         if loading_in_progress:
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
                                       "Importing...  " + str(to_got) + "/" + str(to_get), [245, 205, 0, 255], 11)
@@ -9285,7 +9285,7 @@ while running:
 
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
                                       line, [245, 205, 0, 255], 11)
-                    elif join_broadcast:
+                    elif pctl.join_broadcast:
                         draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
                                   "Streaming", [60, 75, 220, 255], 11)
                         l += 97
@@ -9301,7 +9301,7 @@ while running:
                             draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]),
                                       "Now Streaming:", [60, 75, 220, 255], 11)
                             l += 85
-                        line = master_library[broadcast_index].artist + " - " + master_library[broadcast_index].title
+                        line = master_library[pctl.broadcast_index].artist + " - " + master_library[pctl.broadcast_index].title
                         line = trunc_line(line, 11, window_size[0] - l - 195)
 
                         l += 55 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
@@ -9315,7 +9315,7 @@ while running:
                         # if turbo:
                         #     x -= 90
 
-                        w2 = int(broadcast_time / int(master_library[broadcast_index].length) * 90)
+                        w2 = int(pctl.broadcast_time / int(master_library[pctl.broadcast_index].length) * 90)
 
                         draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
                         draw_rect((x, y), (w, h), colours.grey(30))
@@ -9323,7 +9323,7 @@ while running:
                         l -= 15
                         l -= 85
                     # Topline
-                    if not album_mode and (block6 or (side_panel_enable is False and broadcast is not True and pctl.playing_state > 0)):
+                    if not album_mode and (block6 or (side_panel_enable is False and pctl.broadcast_active is not True and pctl.playing_state > 0)):
                         line = ""
 
                         if pctl.playing_state < 3:
@@ -10422,26 +10422,26 @@ while running:
     # Broadcast control
 
 
-    if broadcast and broadcast_time > master_library[broadcast_index].length and not join_broadcast:
-        broadcast_position += 1
+    if pctl.broadcast_active and pctl.broadcast_time > master_library[pctl.broadcast_index].length and not pctl.join_broadcast:
+        pctl.broadcast_position += 1
         print('next')
-        if broadcast_position > len(pctl.multi_playlist[broadcast_playlist][2]) - 1:
+        if pctl.broadcast_position > len(pctl.multi_playlist[pctl.broadcast_playlist][2]) - 1:
             print('reset')
-            broadcast_position = 0
+            pctl.broadcast_position = 0
 
-        broadcast_index = pctl.multi_playlist[broadcast_playlist][2][broadcast_position]
-        broadcast_time = 0
+        pctl.broadcast_index = pctl.multi_playlist[pctl.broadcast_playlist][2][pctl.broadcast_position]
+        pctl.broadcast_time = 0
         b_timer()
-        pctl.target_open = master_library[broadcast_index].fullpath
-        pctl.bstart_time = master_library[broadcast_index].start_time
+        pctl.target_open = master_library[pctl.broadcast_index].fullpath
+        pctl.bstart_time = master_library[pctl.broadcast_index].start_time
         pctl.playerCommand = "encnext"
         pctl.playerCommandReady = True
-        broadcast_line = master_library[broadcast_index].artist + " - " + master_library[broadcast_index].title
+        pctl.broadcast_line = master_library[pctl.broadcast_index].artist + " - " + master_library[pctl.broadcast_index].title
 
-    if broadcast and broadcast_time != broadcast_last_time:
-        broadcast_last_time = broadcast_time
+    if pctl.broadcast_active and pctl.broadcast_time != pctl.broadcast_last_time:
+        pctl.broadcast_last_time = pctl.broadcast_time
         UPDATE_RENDER += 1
-    if broadcast and broadcast_time == 0:
+    if pctl.broadcast_active and pctl.broadcast_time == 0:
         renplay += 1
 
     # Playlist and pctl.track_queue

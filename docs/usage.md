@@ -46,8 +46,8 @@ previous track played. (So if you intended to play the track that appears after 
 
 ##### Outbound Streaming:
 
-- Find 'oggenc2.exe' or 'lame.exe' on the internet and place in 'encoder' subdirectory. Install, configure (optional) and run icecast. From player right click top bar and
-select 'Start Broadcast' from menu. You should now see an entry in the icecast web interface (usually http://localhost:8000). From track context menu select 'Broadcast This'
+- See config file to set up encoder. Install, configure (optional) and run icecast. From player right click top bar and
+select 'Start Broadcast' from menu. You should now see an entry in the icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This'
 to play a track immediately.
 
 - The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).
