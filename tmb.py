@@ -38,8 +38,6 @@ print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
 
 server_port = 7590
 
-
-
 if sys.platform == 'win32':
     system = 'windows'
     print("Detected platform: Windows")
@@ -258,7 +256,7 @@ playlist_row_height = 16
 playlist_text_offset = 0
 row_alt = False
 thick_lines = True
-playlist_line_x_offset = 7
+playlist_x_offset = 7
 
 to_get = 0
 to_got = 0
@@ -301,96 +299,87 @@ broadcast_index = 0
 broadcast_time = 0
 broadcast_last_time = 0
 
-WHITE = [255, 255, 255, 255]
-BLACK = [0, 0, 0, 255]
-GREY1 = [25, 25, 25, 255]
-GREY2 = [50, 50, 50, 255]
-GREY3 = [75, 75, 75, 255]
-GREY4 = [100, 100, 100, 255]
-GREY5 = [125, 125, 125, 255]
-GREY6 = [150, 150, 150, 255]
-GREY7 = [175, 175, 175, 255]
-GREY8 = [200, 200, 200, 255]
-GREEN4 = [0, 100, 0, 255]
-GREEN5 = [0, 125, 0, 255]
-GREEN6 = [0, 150, 0, 255]
-GREEN7 = [0, 175, 0, 255]
-RED5 = [175, 0, 0, 255]
-YELLOW5 = [90, 90, 20, 255]
-
-
-def GREY(value):
-    return [value, value, value, 255]
-
-
 compact_bar = False
-seek_bg = [28, 28, 28, 255]
-sep_line = [16, 16, 16, 255]
-bb_line = [50, 50, 50, 255]
-tb_line = [50, 50, 50, 255]
+
 theme = 5
 themeChange = True
 panelY = 78
-bh = [20, 4, 45, 255]
+
+
 tag_meta = ""
 side_panel_size = 178
-background = BLACK
-side_panel_bg = background
-BPanel = [4, 4, 4, 255]
-lineON = GREEN5
-lineOFF = GREY2
-linePlaying = lineON
-lineBGplaying = [15, 15, 15, 255]
-lineBGSelect = [15, 15, 15, 255]
-artist_colour = lineON
 
-bottom_panel_colour = [8, 8, 8, 255]
 
-side_bar_line1 = GREY(175)
-side_bar_line2 = GREY(155)
+class ColoursClass:
+    
+    def grey(self, value):
+        return [value, value, value, 255]
 
-stepctloff = GREY(20)
-stepctlover = GREY(40)
-stepctlon = GREY(120)
+    def __init__(self):
+        
+        self.sep_line = self.grey(50)
+        self.bb_line = self.grey(50)
+        self.tb_line = self.grey(50)
+        self.art_box = self.grey(20)
+        
+        self.volume_bar_background = self.grey(19)
+        self.volume_bar_outline = self.grey(100)
+        self.volume_bar_fill = self.grey(95)
+        self.seek_bar_background = self.grey(28)
+        self.seek_bar_outline = self.grey(100)
+        self.seek_bar_fill = self.grey(110)
 
-art_box = GREY(20)
+        self.tab_text_active = self.grey(170)
+        self.tab_text = self.grey(140)
+        self.tab_background = self.grey(14)
+        self.tab_highlight = self.grey(18)
+        self.tab_background_active = self.grey(27)
 
-timeColour = lineON
-indexColour = timeColour
-starLineColour = [140, 140, 0, 255]
-lineColour = [50, 50, 50, 255]
-folderTitleColour = [200, 200, 0, 255]
-folderLineColour = [140, 140, 0, 255]
+        self.title_text = [0, 125, 0, 255]
+        self.index_text = self.title_text
+        self.time_text = self.index_text
+        self.artist_text = self.title_text
+        self.album_text = self.grey(50)
+        
+        self.index_playing = self.title_text
+        self.artist_playing = self.artist_text
+        self.album_playing = self.artist_text
+        self.title_playing = self.title_text
+        self.time_playing = self.grey(200)
 
-ButtonsOver = GREY(200)
-ButtonsActive = GREY(150)
+        self.playlist_text_missing = self.grey(50)
+        self.bar_time = self.title_text
 
-playlist_line_active = GREY(170)
-playlist_line = GREY(140)
-playlist_bg = [14, 14, 14, 255]
-playlist_over = [18, 18, 18, 255]
-playlist_bg_active = [27, 27, 27, 255]
+        self.top_panel_background = self.grey(0)
+        self.side_panel_background = self.top_panel_background
+        self.playlist_panel_background = self.grey(4)
+        self.bottom_panel_colour = self.grey(8)
 
-ButtonsBG = [30, 30, 30, 255]
+        self.row_playing_highlight = self.grey(15)
+        self.row_select_highlight = self.grey(15)
 
-ModeButtonHit = [24, 0, 70, 255]
+        self.side_bar_line1 = self.grey(175)
+        self.side_bar_line2 = self.grey(155)
+    
+        self.mode_button_off = self.grey(20)
+        self.mode_button_over = self.grey(40)
+        self.mode_button_active = self.grey(120)
 
-PlayingTimeColour = GREY8
-MCountColour = GREY8
+        self.media_buttons_over = self.grey(200)
+        self.media_buttons_active = self.grey(150)
+        self.media_buttons_off = self.grey(30)
 
-volume_bar_bg = [19, 19, 19, 255]
-volume_bar_outline_colour = GREY4
-volume_bar_fill_colour = [95, 95, 95, 255]
-seek_bar_outline_colour = GREY4
-seek_bar_fill_colour = GREY(110)
+        self.star_line = [140, 140, 0, 255]
+        self.folder_title = [200, 200, 0, 255]
+        self.folder_line = [140, 140, 0, 255]
 
-ExtInfoColour = GREY4
+        self.scroll_colour = [30, 30, 30, 255]
 
-index_playing_cl = indexColour
-time_playing_cl = indexColour
-artist_playing_cl = artist_colour
-album_cl = lineColour
-album_playing = artist_colour
+        self.level_green = [0, 100, 0, 255]
+        self.level_red = [175, 0, 0, 255]
+        self.level_yellow = [90, 90, 20, 255]
+
+colours = ColoursClass()
 
 enable_transcode = False
 
@@ -420,7 +409,6 @@ scroll_enable = True
 break_enable = True
 dd_index = False
 
-scroll_colour = [30, 30, 30, 255]
 album_playlist_left = 600
 album_playlist_width = 430
 album_colour_cache = {}
@@ -857,6 +845,7 @@ def get_filesize_string(file_bytes):
             line = str(file_mb).rstrip('0').rstrip('.') + " MB"
         return line
 
+
 def get_display_time(seconds):
 
     result = divmod(int(seconds), 60)
@@ -866,7 +855,7 @@ def get_display_time(seconds):
     return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
         
 
-class PlayerCtl():
+class PlayerCtl:
 
     def __init__(self):
 
@@ -2662,7 +2651,7 @@ abc = SDL_Rect(0, 0, window_size[0], window_size[1])
 SDL_RenderCopy(renderer, ttext, None, abc)
 renplay = 2
 
-SDL_SetRenderDrawColor(renderer, background[0], background[1], background[2], background[3])
+SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
 SDL_RenderClear(renderer)
 SDL_RenderPresent(renderer)
 
@@ -3489,21 +3478,21 @@ control_line_bottom = 35
 
 s_image1 = IMG_Load(b_active_directroy + b'/gui/playw.png')
 c1 = SDL_CreateTextureFromSurface(renderer, s_image1)
-SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+SDL_SetTextureColorMod(c1, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
 dst1 = SDL_Rect(25, window_size[1] - control_line_bottom)
 dst1.w = 14
 dst1.h = 14
 
 s_image2 = IMG_Load(b_active_directroy + b'/gui/ffw.png')
 c2 = SDL_CreateTextureFromSurface(renderer, s_image2)
-SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+SDL_SetTextureColorMod(c2, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
 dst2 = SDL_Rect(240, window_size[1] - control_line_bottom)
 dst2.w = 28
 dst2.h = 14
 
 s_image3 = IMG_Load(b_active_directroy + b'/gui/bbw.png')
 c3 = SDL_CreateTextureFromSurface(renderer, s_image3)
-SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
+SDL_SetTextureColorMod(c3, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
 dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
 dst3.w = 28
 dst3.h = 14
@@ -3570,7 +3559,7 @@ class Menu():
 
     @staticmethod
     def deco():
-        return [[170, 170, 170, 255], bottom_panel_colour, None]
+        return [[170, 170, 170, 255], colours.bottom_panel_colour, None]
 
     def click(self):
         self.clicked = True
@@ -3626,7 +3615,7 @@ class Menu():
                 if coll_point(mouse_position,
                               (self.pos[0], self.pos[1] + i * self.h, self.w, self.h - 1)):
                     draw_rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
-                              [artist_colour[0], artist_colour[1], artist_colour[2], 100], True)  # [15, 15, 15, 255]
+                              [colours.artist_text[0], colours.artist_text[1], colours.artist_text[2], 100], True)  # [15, 15, 15, 255]
 
                     # Call menu items callback if clicked
                     if self.clicked:
@@ -3641,7 +3630,7 @@ class Menu():
 
                 # Draw tab
                 draw_rect((self.pos[0], self.pos[1] + i * self.h), (5, self.h),
-                             GREY(40), True)
+                             colours.grey(40), True)
 
                 # Render the items label
                 draw_text((self.pos[0] + 7 + 5, self.pos[1] + ytoff + i * self.h), label, fx[0], 11)
@@ -3666,7 +3655,7 @@ class Menu():
                         if coll_point(mouse_position,
                                       (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
                             draw_rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
-                                      [artist_colour[0], artist_colour[1], artist_colour[2], 100], True)
+                                      [colours.artist_text[0], colours.artist_text[1], colours.artist_text[2], 100], True)
 
                             # Call Callback
                             if self.clicked:
@@ -3687,14 +3676,14 @@ class Menu():
                                   11)
 
                     # Render the menu outline
-                    draw_rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), GREY(40))
+                    draw_rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
             if self.clicked:
                 self.active = False
                 self.clicked = False
 
             # Render the menu outline
-            draw_rect(self.pos, (self.w, self.h * len(self.items)), GREY(40))
+            draw_rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
 
@@ -3728,12 +3717,12 @@ def append_here():
 
 
 def paste_deco():
-    line_colour = GREY(50)
+    line_colour = colours.grey(50)
 
     if len(cargo) > 0:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, bottom_panel_colour, None]
+    return [line_colour, colours.bottom_panel_colour, None]
 
 playlist_menu.add('Paste', append_here, paste_deco)
 
@@ -3973,7 +3962,7 @@ def append_playlist(index):
 
 
 def drop_deco():
-    line_colour = GREY(50)
+    line_colour = colours.grey(50)
 
     if len(cargo) > 0:
         line_colour = [150, 150, 150, 255]
@@ -4383,21 +4372,21 @@ track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
 
 
 def queue_deco():
-    line_colour = GREY(50)
+    line_colour = colours.grey(50)
 
     if len(pctl.force_queue) > 0:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, bottom_panel_colour, None]
+    return [line_colour, colours.bottom_panel_colour, None]
 
 
 def broadcast_feature_deco():
-    line_colour = GREY(50)
+    line_colour = colours.grey(50)
 
     if broadcast:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, bottom_panel_colour, None]
+    return [line_colour, colours.bottom_panel_colour, None]
 
 
 def broadcast_select_track(index):
@@ -4436,10 +4425,10 @@ x_menu = Menu(160)
 
 
 def bass_features_deco():
-    line_colour = GREY6
+    line_colour = colours.grey(150)
     if default_player != 'BASS':
-        line_colour = GREY(20)
-    return [line_colour, bottom_panel_colour, None]
+        line_colour = colours.grey(20)
+    return [line_colour, colours.bottom_panel_colour, None]
 
 
 def toggle_dim_albums(mode=0):
@@ -4735,13 +4724,13 @@ def toggle_broadcast():
 
 
 def broadcast_deco():
-    line_colour = GREY6
+    line_colour = colours.grey(150)
     if default_player != 'BASS':
-        line_colour = GREY(20)
-        return [line_colour, bottom_panel_colour, None]
+        line_colour = colours.grey(20)
+        return [line_colour, colours.bottom_panel_colour, None]
     if broadcast:
         return [[150, 150, 150, 255], [24, 25, 60, 255], "Stop Broadcast"]
-    return [line_colour, bottom_panel_colour, None]
+    return [line_colour, colours.bottom_panel_colour, None]
 
 
 if default_player == 'BASS' and os.path.isfile(os.path.join(install_directory, "config.txt")):
@@ -4806,7 +4795,7 @@ def last_fm_menu_deco():
         bg = [20, 60 , 20, 255]
     else:
         line = 'Engage Lastfm Scrobbling'
-        bg = bottom_panel_colour
+        bg = colours.bottom_panel_colour
     if lastfm.hold:
         line = "Scrobbling Has Stopped"
         bg = [60, 30 , 30, 255]
@@ -5730,14 +5719,14 @@ def webserv():
         if pctl.repeat_mode:
             repeatline = "is On"
 
-        playlist_line = ""
+        colours.tab_text = ""
 
         for i in range(len(pctl.multi_playlist)):
 
             if i == pctl.playlist_active:
-                playlist_line += "<strong>" + pctl.multi_playlist[i][0] + "</strong> "
+                colours.tab_text += "<strong>" + pctl.multi_playlist[i][0] + "</strong> "
             else:
-                playlist_line += pctl.multi_playlist[i][0] + " "
+                colours.tab_text += pctl.multi_playlist[i][0] + " "
 
 
         p_list = "<l>"
@@ -5776,7 +5765,7 @@ def webserv():
                                           image=image_line,
                                           isran=randomline,
                                           isrep=repeatline,
-                                          pline=playlist_line,
+                                          pline=colours.tab_text,
                                           list=p_list,
                                           seekbar=seek_line
                                           )
@@ -6150,16 +6139,16 @@ class Over():
         x = self.box_x + 110 + int((self.w - 110) / 2)
         y = self.box_y + 70
 
-        draw_text((x, y, 2), "Tauon Music Box", GREY8, 16)
+        draw_text((x, y, 2), "Tauon Music Box", colours.grey(200), 16)
         y += 32
-        draw_text((x, y, 2), t_version, GREY8, 12)
+        draw_text((x, y, 2), t_version, colours.grey(200), 12)
         y += 20
-        draw_text((x, y, 2), "Copyright (c) 2015 Taiko2k captain.gxj@gmail.com", GREY8, 12)
+        draw_text((x, y, 2), "Copyright (c) 2015 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
 
-        draw_rect((x, y), (101, 22), GREY2)
+        draw_rect((x, y), (101, 22), colours.grey(50))
         fields.add((x, y, 101, 22))
         if coll_point(mouse_position, (x, y, 101, 22)):
             draw_rect((x, y), (101, 22), [40, 40, 40, 60], True)
@@ -6179,11 +6168,11 @@ class Over():
         x = self.box_x + self.item_x_offset - 10
         y = self.box_y - 10
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Playlist:", GREY8, 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(default_playlist)), GREY8, 12)
+        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Playlist:", colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(default_playlist)), colours.grey(200), 12)
         y += 20
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Playlist Length:", GREY8, 12)
+        draw_text((x + 8 + 10 + 10, y + 40), "Playlist Length:", colours.grey(200), 12)
 
         playlist_time = 0
         for item in default_playlist:
@@ -6191,14 +6180,14 @@ class Over():
 
         line = str(datetime.timedelta(seconds=int(playlist_time)))
 
-        draw_text((x + 8 + 10 + 130, y + 40), line, GREY8, 12)
+        draw_text((x + 8 + 10 + 130, y + 40), line, colours.grey(200), 12)
         y += 20
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Database:", GREY8, 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(master_count), GREY8, 12)
+        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Database:", colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(master_count), colours.grey(200), 12)
         y += 20
         y += 20
-        draw_text((x + 8 + 10 + 10, y + 40), "Total Playtime:", GREY8, 12)
-        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(total_playtime))), GREY8, 14)
+        draw_text((x + 8 + 10 + 10, y + 40), "Total Playtime:", colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(total_playtime))), colours.grey(200), 14)
 
     def config_v(self):
 
@@ -6231,7 +6220,7 @@ class Over():
         x -= 130
         y2 += 190
 
-        draw_rect((x + 240, y2), (80, 22), GREY2)
+        draw_rect((x + 240, y2), (80, 22), colours.grey(50))
 
         rect = (x + 240, y2, 80, 22)
         fields.add(rect)
@@ -6248,7 +6237,7 @@ class Over():
         rect = (x + 240, y2, 80, 22)
         fields.add(rect)
 
-        draw_rect((x + 240, y2), (80, 22), GREY2)
+        draw_rect((x + 240, y2), (80, 22), colours.grey(50))
 
         if coll_point(mouse_position, (x + 240, y2, 80, 22)):
             draw_rect((x + 240, y2), (80, 22), [40, 40, 40, 60], True)
@@ -6286,9 +6275,9 @@ class Over():
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
-        draw_rect((self.box_x, self.box_y), (self.w, self.h), background, True)
-        draw_rect((self.box_x, self.box_y), (self.w, self.h), GREY2)
-        draw_rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), GREY2)
+        draw_rect((self.box_x, self.box_y), (self.w, self.h), colours.top_panel_background, True)
+        draw_rect((self.box_x, self.box_y), (self.w, self.h), colours.grey(50))
+        draw_rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
         # temp
         if len(self.drives) < 1 and system == 'windows':
@@ -6299,14 +6288,14 @@ class Over():
         for item in self.tabs:
 
             box = [self.box_x + 1, self.box_y + 1 + (current_tab * 31), 110, 30]
-            draw_rect_r(box, playlist_bg, True)
+            draw_rect_r(box, colours.tab_background, True)
 
             if current_tab == self.tab_active:
-                colour = copy.deepcopy(playlist_bg_active)
+                colour = copy.deepcopy(colours.tab_background_active)
                 colour[3] = 190
                 draw_rect_r(box, colour, True)
             else:
-                draw_rect_r(box, playlist_bg, True)
+                draw_rect_r(box, colours.tab_background, True)
 
             draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
 
@@ -6315,7 +6304,7 @@ class Over():
 
             current_tab += 1
 
-        draw_line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, GREY2)
+        draw_line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
 
         self.tabs[self.tab_active][1]()
 
@@ -6443,7 +6432,7 @@ class Over():
             draw_rect((x, y - 20), (50, 20), [40, 40, 40, 60], True)
             if self.click:
                 self.current_path = os.path.dirname(self.current_path)
-        draw_rect((x, y - 20), (50, 20), GREY2)
+        draw_rect((x, y - 20), (50, 20), colours.grey(50))
 
         # Path display
         draw_text((x + 60, y - 18), self.current_path, [200, 200, 200, 200], 12)
@@ -6502,7 +6491,7 @@ class Over():
                             shutil.rmtree(folder_path)
                             os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
 
-        draw_rect_r(box, GREY2)
+        draw_rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 90, box[1] + 2, 2), "Move single folder in folders up", [200, 200, 200, 200], 12)
 
@@ -6517,7 +6506,7 @@ class Over():
                 load_to.append(copy.deepcopy(pctl.playlist_active))
                 droped_file.append(copy.deepcopy(self.current_path))
 
-        draw_rect_r(box, GREY2)
+        draw_rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 90, box[1] + 2, 2), "Folder to current playlist", [200, 200, 200, 200], 12)
 
@@ -6531,7 +6520,7 @@ class Over():
                 load_to.append(len(pctl.multi_playlist) - 1)
                 droped_file.append(copy.deepcopy(self.current_path))
 
-        draw_rect_r(box, GREY2)
+        draw_rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 90, box[1] + 2, 2), "Folder to new playlist", [200, 200, 200, 200], 12)
 
@@ -6551,7 +6540,7 @@ class Over():
                         load_to.append(len(pctl.multi_playlist) - 1)
                         droped_file.append(full_path)
 
-        draw_rect_r(box, GREY2)
+        draw_rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 90, box[1] + 2, 2), "Each folder as new playlist", [200, 200, 200, 200], 12)
 
@@ -7232,11 +7221,11 @@ while running:
         if thick_lines:
             playlist_row_height = 31
             playlist_text_offset = 6
-            playlist_line_x_offset = 7
+            playlist_x_offset = 7
         else:
             playlist_row_height = 16
             playlist_text_offset = 0
-            playlist_line_x_offset = 0
+            playlist_x_offset = 0
 
         playlist_view_length = int(((window_size[1] - panelBY - playlist_top) / playlist_row_height) - 1)
 
@@ -7419,98 +7408,98 @@ while running:
                                 if "#" in p:
                                     continue
                                 if 'index playing' in p:
-                                    index_playing_cl = get_colour_from_line(p)
+                                    colours.index_playing = get_colour_from_line(p)
                                 if 'time playing' in p:
-                                    time_playing_cl = get_colour_from_line(p)
+                                    colours.time_text = get_colour_from_line(p)
                                 if 'artist playing' in p:
-                                    artist_playing_cl = get_colour_from_line(p)
+                                    colours.artist_playing = get_colour_from_line(p)
                                 if 'album line' in p:
-                                    album_cl = get_colour_from_line(p)
+                                    colours.album_text = get_colour_from_line(p)
                                 if 'album playing' in p:
-                                    album_playing = get_colour_from_line(p)
+                                    colours.album_playing = get_colour_from_line(p)
                                 if 'player background' in p:
-                                    background = get_colour_from_line(p)
+                                    colours.top_panel_background = get_colour_from_line(p)
                                 if 'side panel' in p:
-                                    side_panel_bg = get_colour_from_line(p)
+                                    colours.side_panel_background = get_colour_from_line(p)
                                 if 'playlist panel' in p:
-                                    BPanel = get_colour_from_line(p)
+                                    colours.playlist_panel_background = get_colour_from_line(p)
                                 if 'track line' in p:
-                                    lineON = get_colour_from_line(p)
+                                    colours.title_text = get_colour_from_line(p)
                                 if 'track missing' in p:
-                                    lineOFF = get_colour_from_line(p)
+                                    colours.playlist_text_missing = get_colour_from_line(p)
                                 if 'playing highlight' in p:
-                                    lineBGplaying = get_colour_from_line(p)
+                                    colours.row_playing_highlight = get_colour_from_line(p)
                                 if 'track time' in p:
-                                    timeColour = get_colour_from_line(p)
+                                    colours.bar_time = get_colour_from_line(p)
                                 if 'fav line' in p:
-                                    starLineColour = get_colour_from_line(p)
+                                    colours.star_line = get_colour_from_line(p)
                                 if 'folder title' in p:
-                                    folderTitleColour = get_colour_from_line(p)
+                                    colours.folder_title = get_colour_from_line(p)
                                 if 'folder line' in p:
-                                    folderLineColour = get_colour_from_line(p)
+                                    colours.folder_line = get_colour_from_line(p)
                                 if 'buttons off' in p:
-                                    ButtonsBG = get_colour_from_line(p)
+                                    colours.media_buttons_off = get_colour_from_line(p)
                                 if 'buttons over' in p:
-                                    ButtonsOverG = get_colour_from_line(p)
+                                    colours.media_buttons_overG = get_colour_from_line(p)
                                 if 'buttons active' in p:
-                                    ButtonsActive = get_colour_from_line(p)
+                                    colours.media_buttons_active = get_colour_from_line(p)
                                 if 'playing time' in p:
-                                    PlayingTimeColour = get_colour_from_line(p)
+                                    colours.time_playing = get_colour_from_line(p)
                                 if 'track index' in p:
-                                    indexColour = get_colour_from_line(p)
+                                    colours.index_text = get_colour_from_line(p)
                                 if 'track playing' in p:
-                                    linePlaying = get_colour_from_line(p)
+                                    colours.title_playing = get_colour_from_line(p)
                                 if 'select highlight' in p:
-                                    lineBGSelect = get_colour_from_line(p)
+                                    colours.row_select_highlight = get_colour_from_line(p)
                                 if 'track artist' in p:
-                                    artist_colour = get_colour_from_line(p)
+                                    colours.artist_text = get_colour_from_line(p)
                                 if 'tab active line' in p:
-                                    playlist_line_active = get_colour_from_line(p)
+                                    colours.tab_text_active = get_colour_from_line(p)
                                 if 'tab line' in p:
-                                    playlist_line = get_colour_from_line(p)
+                                    colours.tab_text = get_colour_from_line(p)
                                 if 'tab background' in p:
-                                    playlist_bg = get_colour_from_line(p)
+                                    colours.tab_background = get_colour_from_line(p)
                                 if 'tab over' in p:
-                                    playlist_over = get_colour_from_line(p)
+                                    colours.tab_highlight = get_colour_from_line(p)
                                 if 'tab active background' in p:
-                                    playlist_bg_active = get_colour_from_line(p)
+                                    colours.tab_background_active = get_colour_from_line(p)
                                 if 'title info' in p:
-                                    side_bar_line1 = get_colour_from_line(p)
+                                    colours.side_bar_line1 = get_colour_from_line(p)
                                 if 'extra info' in p:
-                                    side_bar_line2 = get_colour_from_line(p)
+                                    colours.side_bar_line2 = get_colour_from_line(p)
                                 if 'scroll bar' in p:
-                                    scroll_colour = get_colour_from_line(p)
+                                    colours.scroll_colour = get_colour_from_line(p)
                                 if 'seek bar' in p:
-                                    seek_bar_fill_colour = get_colour_from_line(p)
+                                    colours.seek_bar_fill = get_colour_from_line(p)
                                 if 'seek bg' in p:
-                                    seek_bg = get_colour_from_line(p)
+                                    colours.seek_bar_background = get_colour_from_line(p)
                                 if 'volume bar' in p:
-                                    volume_bar_fill_colour = get_colour_from_line(p)
+                                    colours.volume_bar_fill = get_colour_from_line(p)
                                 if 'volume bg' in p:
-                                    volume_bar_bg = get_colour_from_line(p)
+                                    colours.volume_bar_background = get_colour_from_line(p)
                                 if 'mode off' in p:
-                                    stepctloff = get_colour_from_line(p)
+                                    colours.mode_button_off = get_colour_from_line(p)
                                 if 'mode over' in p:
-                                    stepctlover = get_colour_from_line(p)
+                                    colours.mode_button_over = get_colour_from_line(p)
                                 if 'mode on' in p:
-                                    stepctlon = get_colour_from_line(p)
+                                    colours.mode_button_active = get_colour_from_line(p)
                                 if 'art border' in p:
-                                    art_box = get_colour_from_line(p)
+                                    colours.art_box = get_colour_from_line(p)
                                 if 'sep line' in p:
-                                    sep_line = get_colour_from_line(p)
+                                    colours.sep_line = get_colour_from_line(p)
                                 if 'bb line' in p:
-                                    bb_line = get_colour_from_line(p)
+                                    colours.bb_line = get_colour_from_line(p)
                                 if 'tb line' in p:
-                                    tb_line = get_colour_from_line(p)
+                                    colours.tb_line = get_colour_from_line(p)
                                 if 'bottom panel' in p:
-                                    bottom_panel_colour = get_colour_from_line(p)
+                                    colours.bottom_panel_colour = get_colour_from_line(p)
 
-                                    SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                           bottom_panel_colour[2])
-                                    SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                           bottom_panel_colour[2])
-                                    SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1],
-                                                           bottom_panel_colour[2])
+                                    SDL_SetTextureColorMod(c1, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1],
+                                                           colours.bottom_panel_colour[2])
+                                    SDL_SetTextureColorMod(c2, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1],
+                                                           colours.bottom_panel_colour[2])
+                                    SDL_SetTextureColorMod(c3, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1],
+                                                           colours.bottom_panel_colour[2])
                         break
                 else:
                     theme = 0
@@ -7519,60 +7508,12 @@ while running:
                 message_box_text = "Error loading theme file"
 
         if theme == 0:
-            background = BLACK
-            side_panel_bg = background
-            BPanel = GREY(5)
-            lineON = GREEN5
-            lineOFF = GREY2
-            lineBGplaying = [15, 15, 15, 255]
-            timeColour = lineON
-            starLineColour = [140, 140, 0, 255]
-            folderTitleColour = [200, 200, 0, 255]
-            folderLineColour = [140, 140, 0, 255]
-            ButtonsBG = GREY(30)
-            PlayingTimeColour = GREY8
-            indexColour = timeColour
-            linePlaying = lineON
-            lineBGSelect = [15, 15, 15, 255]
-            bottom_panel_colour = [8, 8, 8, 255]
-            artist_colour = [50, 170, 5, 255]
-            art_box = GREY(20)
+            colours.__init__()
 
-            playlist_line_active = GREY(170)
-            playlist_line = GREY(140)
-            playlist_bg = [14, 14, 14, 255]
-            playlist_over = [18, 18, 18, 255]
-            playlist_bg_active = [27, 27, 27, 255]
+            SDL_SetTextureColorMod(c1, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
+            SDL_SetTextureColorMod(c2, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
+            SDL_SetTextureColorMod(c3, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1], colours.bottom_panel_colour[2])
 
-            SDL_SetTextureColorMod(c1, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
-            SDL_SetTextureColorMod(c2, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
-            SDL_SetTextureColorMod(c3, bottom_panel_colour[0], bottom_panel_colour[1], bottom_panel_colour[2])
-
-            side_bar_line1 = GREY(175)
-            side_bar_line2 = GREY(155)
-            ButtonsOver = GREY(200)
-            ButtonsActive = GREY(150)
-
-            seek_bar_fill_colour = GREY(110)  # 4
-            seek_bar_outline_colour = [45, 45, 45, 255]
-            volume_bar_outline_colour = [45, 45, 45, 255]
-            volume_bar_fill_colour = GREY(95)
-            scroll_colour = [30, 30, 30, 255]
-            volume_bar_bg = [19, 19, 19, 255]
-            seek_bg = [28, 28, 28, 255]
-            sep_line = [16, 16, 16, 255]
-            bb_line = [50, 50, 50, 255]
-            tb_line = [50, 50, 50, 255]
-
-            stepctloff = GREY(20)
-            stepctlover = GREY(40)
-            stepctlon = GREY(120)
-
-            index_playing_cl = indexColour
-            time_playing_cl = indexColour
-            artist_playing_cl = artist_colour
-            album_cl = lineON
-            album_playing = artist_colour
 
         themeChange = False
 
@@ -7584,7 +7525,7 @@ while running:
         if UPDATE_RENDER > 2:
             UPDATE_RENDER = 2
 
-        SDL_SetRenderDrawColor(renderer, background[0], background[1], background[2], background[3])
+        SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
 
         fields.clear()
@@ -7640,7 +7581,7 @@ while running:
 
                 rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
                         window_size[1] - panelY - panelBY - 0]
-                draw_rect_r(rect, side_panel_bg, True)
+                draw_rect_r(rect, colours.side_panel_background, True)
 
                 area_x = window_size[0] - playlist_width + 20
 
@@ -7698,7 +7639,7 @@ while running:
                                 break
                             info = get_album_info(album_dex[album_on])
 
-                            albumtitle = GREY(220)
+                            albumtitle = colours.grey(220)
 
                             if info[0] == 1 and pctl.playing_state != 0:
                                 draw_rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
@@ -7710,7 +7651,7 @@ while running:
 
                             if info[0] != 1 and pctl.playing_state != 0 and dim_art:
                                 draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                albumtitle = GREY(150)
+                                albumtitle = colours.grey(150)
 
                             if mouse_click and not focused and coll_point(mouse_position, (
                             x, y, album_mode_art_size, album_mode_art_size + 40)) and panelY < mouse_position[1] < \
@@ -7770,7 +7711,7 @@ while running:
                             break
                         render_pos += album_mode_art_size + album_v_gap
 
-                draw_rect((0, 0), (window_size[0], panelY), background, True)
+                draw_rect((0, 0), (window_size[0], panelY), colours.top_panel_background, True)
 
                 if b_info_bar and window_size[1] > 700:
                     x = playlist_width + 31
@@ -7784,22 +7725,22 @@ while running:
                     if h < 5:
                         h = 5
 
-                    draw_rect_r((x, y, w, h), background, True)
+                    draw_rect_r((x, y, w, h), colours.top_panel_background, True)
                     draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                    draw_line(x, y, x + w, y, GREY(50))
+                    draw_line(x, y, x + w, y, colours.grey(50))
 
                     box = h - 4 #- 10
 
                     album_art_gen.display(pctl.track_queue[pctl.queue_step],
                                           (window_size[0] - 0 - box, y + 2), (box, box))
 
-                    draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]].artist, GREY(200), 16)
+                    draw_text((x + 11, y + 6), master_library[pctl.track_queue[pctl.queue_step]].artist, colours.grey(200), 16)
 
                     line =  master_library[pctl.track_queue[pctl.queue_step]].album
                     if master_library[pctl.track_queue[pctl.queue_step]].date != "":
                         line += " (" + master_library[pctl.track_queue[pctl.queue_step]].date + ")"
 
-                    draw_text((x + 11, y + 29), line, GREY(200), 14)
+                    draw_text((x + 11, y + 29), line, colours.grey(200), 14)
 
 
 
@@ -7811,7 +7752,7 @@ while running:
                     # row = 0
                     #
                     # for i in range(len(album_dex_l)):
-                    #     draw_text((pl_x, pl_y), master_library[album_dex_l[i]].title, GREY(200), 14)
+                    #     draw_text((pl_x, pl_y), master_library[album_dex_l[i]].title, colours.grey(200), 14)
                     #     pl_y += 18
                     #
                     #     row += 1
@@ -7853,7 +7794,7 @@ while running:
                     rect = (0, panelY, playlist_width + 31, window_size[1])
                     if side_panel_enable is False:
                         rect = (0, panelY, window_size[0], window_size[1])
-                    draw_rect_r(rect, BPanel, True)
+                    draw_rect_r(rect, colours.playlist_panel_background, True)
 
                     if not custom_line_mode:
                         highlight_left = playlist_left
@@ -7865,12 +7806,12 @@ while running:
 
                     if len(default_playlist) == 0:
 
-                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65), 2), "Playlist is empty", lineOFF, 13 )
-                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65 + 30), 2), "Drag and drop files to import", lineOFF, 13 )
+                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65), 2), "Playlist is empty", colours.playlist_text_missing, 13 )
+                        draw_text((int(playlist_width / 2) + 10, int((window_size[1] - panelY - panelBY) * 0.65 + 30), 2), "Drag and drop files to import", colours.playlist_text_missing, 13 )
 
                     elif playlist_position > len(default_playlist) - 1:
 
-                        draw_text((int(playlist_width / 2) + 10, int(window_size[1] * 0.15), 2), "End of Playlist", lineOFF, 13 )
+                        draw_text((int(playlist_width / 2) + 10, int(window_size[1] * 0.15), 2), "End of Playlist", colours.playlist_text_missing, 13 )
 
 
                     for i in range(playlist_view_length + 1):
@@ -7902,16 +7843,16 @@ while running:
                             if thick_lines:
                                 draw_text2((playlist_width + playlist_left,
                                            playlist_row_height - 18 + playlist_top + playlist_row_height * w, 1), line,
-                                          alpha_mod(folderTitleColour, albumfade),
+                                          alpha_mod(colours.folder_title, albumfade),
                                           13, playlist_width)
                             else:
                                 draw_text2((playlist_width + playlist_left,
                                            playlist_row_height - 16 + playlist_top + playlist_row_height * w, 1), line,
-                                          alpha_mod(folderTitleColour, albumfade),
+                                          alpha_mod(colours.folder_title, albumfade),
                                           11, playlist_width)
                             draw_line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
                                       playlist_width + playlist_left,
-                                      playlist_top + playlist_row_height - 1 + playlist_row_height * w, folderLineColour)
+                                      playlist_top + playlist_row_height - 1 + playlist_row_height * w, colours.folder_line)
 
                             if playlist_hold is True and coll_point(mouse_position, (
                             playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
@@ -7950,7 +7891,7 @@ while running:
                         if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
                                 default_playlist[i + playlist_position]: # and i + playlist_position == pctl.playlist_playing:
                             draw_rect((highlight_left, playlist_top + playlist_row_height * w),
-                                      (highlight_right, playlist_row_height - 1), lineBGplaying, True)
+                                      (highlight_right, playlist_row_height - 1), colours.row_playing_highlight, True)
                             this_line_playing = True
 
 
@@ -7981,7 +7922,7 @@ while running:
                         if (mouse_click and key_shift_down is False and line_hit or
                                     playlist_selected == i + playlist_position):
                             draw_rect((highlight_left, playlist_top + playlist_row_height * w),
-                                      (highlight_right, playlist_row_height - 1), lineBGSelect, True)
+                                      (highlight_right, playlist_row_height - 1), colours.row_select_highlight, True)
                             playlist_selected = i + playlist_position
 
                         # Shift Move Selection
@@ -8055,7 +7996,7 @@ while running:
                         # Multi Select Highlight
                         if i + playlist_position in shift_selection and i + playlist_position != playlist_selected:
                             draw_rect((highlight_left, playlist_top + playlist_row_height * w),
-                                      (highlight_right, playlist_row_height), lineBGSelect, True)
+                                      (highlight_right, playlist_row_height), colours.row_select_highlight, True)
 
                         if right_click and line_hit and mouse_position[0] > playlist_left + 10:
                             track_menu.activate(default_playlist[i + playlist_position])
@@ -8065,33 +8006,32 @@ while running:
                         # time.sleep(0.1)
                         if custom_line_mode:
 
-                            timec = timeColour
-                            titlec = lineON
-                            indexc = indexColour
-                            artistc = artist_colour
-                            albumc = album_cl
+                            timec = colours.bar_time
+                            titlec = colours.title_text
+                            indexc = colours.index_text
+                            artistc = colours.artist_text
+                            albumc = colours.album_text
 
                             if this_line_playing is True:
-                                timec = time_playing_cl
-                                titlec = linePlaying
-                                indexc = index_playing_cl
-                                artistc = artist_playing_cl
-                                albumc = album_playing
+                                timec = colours.time_text
+                                titlec = colours.title_playing
+                                indexc = colours.index_playing
+                                artistc = colours.artist_playing
+                                albumc = colours.album_playing
 
                             if master_library[default_playlist[i + playlist_position]].found is False:
-                                timec = lineOFF
-                                titlec = lineOFF
-                                indexc = lineOFF
-                                artistc = lineOFF
-                                albumc = lineOFF
+                                timec = colours.playlist_text_missing
+                                titlec = colours.playlist_text_missing
+                                indexc = colours.playlist_text_missing
+                                artistc = colours.playlist_text_missing
+                                albumc = colours.playlist_text_missing
 
                             offs = 0
 
                             for item in cust:
 
                                 if item[0] == 't':
-                                    lineTime = timeColour
-                                    lineColour = lineON
+
                                     line = get_display_time(master_library[default_playlist[i + playlist_position]].length)
                                     draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
                                                item[2]), line, alpha_mod(timec, albumfade), 12)
@@ -8201,31 +8141,30 @@ while running:
                                                       playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
                                                       item[1],
                                                       playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                                      alpha_mod(starLineColour, albumfade))
+                                                      alpha_mod(colours.star_line, albumfade))
 
                         if not custom_line_mode:
-                            lineTime = timeColour
-                            lineColour = lineON
 
-                            timec = timeColour
-                            titlec = lineON
-                            indexc = indexColour
-                            artistc = artist_colour
-                            albumc = album_cl
+
+                            timec = colours.bar_time
+                            titlec = colours.title_text
+                            indexc = colours.index_text
+                            artistc = colours.artist_text
+                            albumc = colours.album_text
 
                             if this_line_playing is True:
-                                timec = time_playing_cl
-                                titlec = linePlaying
-                                indexc = index_playing_cl
-                                artistc = artist_playing_cl
-                                albumc = album_playing
+                                timec = colours.time_text
+                                titlec = colours.title_playing
+                                indexc = colours.index_playing
+                                artistc = colours.artist_playing
+                                albumc = colours.album_playing
 
                             if master_library[default_playlist[i + playlist_position]].found is False:
-                                timec = lineOFF
-                                titlec = lineOFF
-                                indexc = lineOFF
-                                artistc = lineOFF
-                                albumc = lineOFF
+                                timec = colours.playlist_text_missing
+                                titlec = colours.playlist_text_missing
+                                indexc = colours.playlist_text_missing
+                                artistc = colours.playlist_text_missing
+                                albumc = colours.playlist_text_missing
 
                             indexoffset = 0
                             artistoffset = 0
@@ -8250,10 +8189,10 @@ while running:
                                 if dd_index:
                                     indexoffset += 2
 
-                                indexoffset += playlist_line_x_offset
+                                indexoffset += playlist_x_offset
 
                                 if master_library[default_playlist[i + playlist_position]].artist != "":
-                                    if split_line and artist_colour != lineON:
+                                    if split_line and colours.artist_text != colours.title_text:
                                         line0 = master_library[default_playlist[i + playlist_position]].artist
 
                                         artistoffset = draw_text2((playlist_left + indexoffset,
@@ -8289,13 +8228,13 @@ while running:
                                 if ratio > 0.55:
                                     ratio = int(ratio * 4)
 
-                                    draw_line(playlist_width - playlist_line_x_offset + playlist_left - ratio - 40,
+                                    draw_line(playlist_width - playlist_x_offset + playlist_left - ratio - 40,
                                               playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                              playlist_width - playlist_line_x_offset + playlist_left - 37,
+                                              playlist_width - playlist_x_offset + playlist_left - 37,
                                               playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                                              alpha_mod(starLineColour, albumfade))
+                                              alpha_mod(colours.star_line, albumfade))
 
-                            draw_text((playlist_left + playlist_line_x_offset,
+                            draw_text((playlist_left + playlist_x_offset,
                                        playlist_text_offset + playlist_top + playlist_row_height * w), indexLine,
                                       alpha_mod(indexc, albumfade), 12)
 
@@ -8313,7 +8252,7 @@ while running:
 
                             line = get_display_time(master_library[default_playlist[i + playlist_position]].length)
 
-                            draw_text((playlist_width + playlist_left - playlist_line_x_offset,
+                            draw_text((playlist_width + playlist_left - playlist_x_offset,
                                        playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
                                       alpha_mod(timec, albumfade), 12)
 
@@ -8418,7 +8357,7 @@ while running:
                             per = playlist_position / len(default_playlist)
                             sbp = int((ey - panelY - sbl) * per) + panelY + 1
 
-                    draw_rect((1, sbp), (14, sbl), scroll_colour, True)
+                    draw_rect((1, sbp), (14, sbl), colours.scroll_colour, True)
 
                     if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
                         draw_rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
@@ -8444,7 +8383,7 @@ while running:
 
                         rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 30,
                                 window_size[1] - panelY - panelBY]
-                        draw_rect_r(rect, side_panel_bg, True)
+                        draw_rect_r(rect, colours.side_panel_background, True)
 
                         showc = False
 
@@ -8483,7 +8422,7 @@ while running:
 
                             showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
-                        draw_rect((playlist_width + 40, 38), (box + 1, box + 1), art_box)
+                        draw_rect((playlist_width + 40, 38), (box + 1, box + 1), colours.art_box)
 
                         rect = (playlist_width + 40, 38, box, box)
                         fields.add(rect)
@@ -8576,14 +8515,14 @@ while running:
                                                 playing_info = trunc_line(playing_info, 12,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2),
-                                                          playing_info, side_bar_line1, 12)
+                                                          playing_info, colours.side_bar_line1, 12)
 
                                             if artist != "":
                                                 playing_info = artist
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 54)
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block1 + 17, 2),
-                                                          playing_info, side_bar_line2, 11)
+                                                          playing_info, colours.side_bar_line2, 11)
                                         else:
                                             block1 -= 14
 
@@ -8596,7 +8535,7 @@ while running:
                                                 line += title
                                             line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
                                             draw_text((playlist_width + 30 + int(side_panel_size / 2), block1, 2), line,
-                                                      side_bar_line1, 11)
+                                                      colours.side_bar_line1, 11)
 
                                         if block3 == False:
 
@@ -8605,7 +8544,7 @@ while running:
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block2, 2),
-                                                          playing_info, side_bar_line2, 11)
+                                                          playing_info, colours.side_bar_line2, 11)
 
                                             if date != "":
                                                 playing_info = date
@@ -8614,7 +8553,7 @@ while running:
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 18, 2),
-                                                          playing_info, side_bar_line2, 11)
+                                                          playing_info, colours.side_bar_line2, 11)
 
 
                                         else:
@@ -8629,7 +8568,7 @@ while running:
                                                 line += ext
                                                 line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 30 + int(side_panel_size / 2), block2 + 35, 2),
-                                                          line, side_bar_line2, 11)
+                                                          line, colours.side_bar_line2, 11)
                                     # Topline
                                     elif broadcast != True:
                                         line = ""
@@ -8645,11 +8584,11 @@ while running:
                                             offset_extra = 61
 
                                         if turbo:
-                                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
+                                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, colours.side_bar_line1,
                                                       11)
 
                                         else:
-                                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
+                                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, colours.side_bar_line1,
                                                       11)
 
 
@@ -8686,14 +8625,14 @@ while running:
                                                 playing_info = title
                                                 playing_info = trunc_line(playing_info, 12,
                                                                           window_size[0] - playlist_width - 53)
-                                                draw_text((playlist_width + 39, block1 + 2), playing_info, side_bar_line1,
+                                                draw_text((playlist_width + 39, block1 + 2), playing_info, colours.side_bar_line1,
                                                           13, max=side_panel_size - 20)
 
                                             if artist != "":
                                                 playing_info = artist
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 54)
-                                                draw_text((playlist_width + 39, block1 + 17 + 4), playing_info, side_bar_line2,
+                                                draw_text((playlist_width + 39, block1 + 17 + 4), playing_info, colours.side_bar_line2,
                                                           12)
                                         else:
                                             block1 -= 14
@@ -8706,7 +8645,7 @@ while running:
                                                     line += " - "
                                                 line += title
                                             line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                            draw_text((playlist_width + 39, block1), line, side_bar_line1, 11)
+                                            draw_text((playlist_width + 39, block1), line, colours.side_bar_line1, 11)
 
                                         if block3 == False:
 
@@ -8714,7 +8653,7 @@ while running:
                                                 playing_info = album
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 53)
-                                                draw_text((playlist_width + 39, block2), playing_info, side_bar_line2,
+                                                draw_text((playlist_width + 39, block2), playing_info, colours.side_bar_line2,
                                                           11)
 
                                             if date != "":
@@ -8723,14 +8662,14 @@ while running:
                                                     playing_info += " | " + genre
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 53)
-                                                draw_text((playlist_width + 39, block2 + 18), playing_info, side_bar_line2,
+                                                draw_text((playlist_width + 39, block2 + 18), playing_info, colours.side_bar_line2,
                                                           11)
 
                                             if ext != "":
                                                 playing_info = ext  # + " | " + sample
                                                 playing_info = trunc_line(playing_info, 11,
                                                                           window_size[0] - playlist_width - 53)
-                                                draw_text((playlist_width + 39, block2 + 36), playing_info, side_bar_line2,
+                                                draw_text((playlist_width + 39, block2 + 36), playing_info, colours.side_bar_line2,
                                                           11)
                                         else:
                                             if block5 != True:
@@ -8743,11 +8682,11 @@ while running:
                                                     line += date + " | "
                                                 line += ext
                                                 line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                                draw_text((playlist_width + 39, block2 + 35), line, side_bar_line2, 11)
+                                                draw_text((playlist_width + 39, block2 + 35), line, colours.side_bar_line2, 11)
 
 
-                if tb_line != BPanel and GUI_Mode == 1:
-                    draw_line(0, panelY, window_size[0], panelY, tb_line)
+                if colours.tb_line != colours.playlist_panel_background and GUI_Mode == 1:
+                    draw_line(0, panelY, window_size[0], panelY, colours.tb_line)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
@@ -8755,7 +8694,7 @@ while running:
                     # Draw Highlight when draging
                     if side_drag is True:
                         draw_line(window_size[0] - side_panel_size + 1, panelY + 1, window_size[0] - side_panel_size + 1,
-                                  window_size[1] - 50, GREY(50))
+                                  window_size[1] - 50, colours.grey(50))
 
                     # Draw Highlight when mouse over
                     if draw_sep_hl:
@@ -8766,7 +8705,7 @@ while running:
 
                 # Normal Drawing
                 if side_panel_enable:
-                    draw_line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, sep_line)
+                    draw_line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
 
 
                 # New Bottom Bar
@@ -8775,12 +8714,12 @@ while running:
 
                 if GUI_Mode == 1:  # not compact_bar:
 
-                    draw_rect((0, window_size[1] - panelBY), (window_size[0], panelBY), bottom_panel_colour, True)
-                    draw_rect(seek_bar_position, seek_bar_size, seek_bg, True)
+                    draw_rect((0, window_size[1] - panelBY), (window_size[0], panelBY), colours.bottom_panel_colour, True)
+                    draw_rect(seek_bar_position, seek_bar_size, colours.seek_bar_background, True)
 
-                    draw_line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, bb_line)
-                    draw_line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], bb_line)
-                    draw_line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], bb_line)
+                    draw_line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
+                    draw_line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
+                    draw_line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
 
                     # Scrobble marker
 
@@ -8804,7 +8743,7 @@ while running:
                     if pctl.playing_length > 0:
                         draw_rect((seek_bar_position[0], seek_bar_position[1]),
                                   (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
-                                  seek_bar_fill_colour, True)
+                                  colours.seek_bar_fill, True)
 
                     if mouse_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 5] ):
                         volume_hit = True
@@ -8905,9 +8844,9 @@ while running:
 
                         pctl.set_volume()
 
-                    draw_rect(volume_bar_position, volume_bar_size, volume_bar_bg, True)  # 22
+                    draw_rect(volume_bar_position, volume_bar_size, colours.volume_bar_background, True)  # 22
                     draw_rect(volume_bar_position, (int(volume * volume_bar_size[0] / 100), volume_bar_size[1]),
-                              volume_bar_fill_colour, True)
+                              colours.volume_bar_fill, True)
 
                     if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
 
@@ -8922,7 +8861,7 @@ while running:
                                 line += "  -  "
                             line += artist
                         line = trunc_line(line, 13, window_size[0] - 710)
-                        draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, side_bar_line1, 13)  # fontb1
+                        draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, colours.side_bar_line1, 13)  # fontb1
                         if mouse_click and coll_point(mouse_position, (
                             seek_bar_position[0] - 10, seek_bar_position[1] + 20, window_size[0] - 710, 30)):
                             pctl.show_current()
@@ -8934,7 +8873,7 @@ while running:
                 # TIME----------------------
                 text_time = get_display_time(pctl.playing_time)
 
-                draw_text((time_display_position[0] + 140 + 2, window_size[1] - 29 + 1), text_time, PlayingTimeColour,
+                draw_text((time_display_position[0] + 140 + 2, window_size[1] - 29 + 1), text_time, colours.time_playing,
                           12)
 
                 bx = 35
@@ -8949,28 +8888,28 @@ while running:
                     # PLAY---
 
 
-                    play_colour = ButtonsBG
-                    pause_colour = ButtonsBG
-                    stop_colour = ButtonsBG
-                    forward_colour = ButtonsBG
-                    back_colour = ButtonsBG
+                    play_colour = colours.media_buttons_off
+                    pause_colour = colours.media_buttons_off
+                    stop_colour = colours.media_buttons_off
+                    forward_colour = colours.media_buttons_off
+                    back_colour = colours.media_buttons_off
 
                     if pctl.playing_state == 1:
-                        play_colour = ButtonsActive
+                        play_colour = colours.media_buttons_active
 
                     if auto_stop:
-                        stop_colour = ButtonsActive
+                        stop_colour = colours.media_buttons_active
 
                     if pctl.playing_state == 2:
-                        pause_colour = ButtonsActive
-                        play_colour = ButtonsActive
+                        pause_colour = colours.media_buttons_active
+                        play_colour = colours.media_buttons_active
                     elif pctl.playing_state == 3:
-                        play_colour = ButtonsActive
+                        play_colour = colours.media_buttons_active
 
                     rect = (25 - 15, window_size[1] - control_line_bottom - 13, 50, 40)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        play_colour = ButtonsOver
+                        play_colour = colours.media_buttons_over
                         if mouse_click:
                             pctl.play()
                         if right_click:
@@ -8988,7 +8927,7 @@ while running:
                     rect = (x - 15, y - 13, 50, 40)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        pause_colour = ButtonsOver
+                        pause_colour = colours.media_buttons_over
                         if mouse_click:
                             pctl.pause()
 
@@ -9001,7 +8940,7 @@ while running:
                     rect = (x - 14, y - 13, 50, 40)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        stop_colour = ButtonsOver
+                        stop_colour = colours.media_buttons_over
                         if mouse_click:
                             pctl.stop()
                         if right_click:
@@ -9014,7 +8953,7 @@ while running:
                     rect = (230, window_size[1] - control_line_bottom - 10, 50, 35)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        forward_colour = ButtonsOver
+                        forward_colour = colours.media_buttons_over
                         if mouse_click:
                             pctl.advance()
                         if right_click:
@@ -9029,7 +8968,7 @@ while running:
                     rect = (170, window_size[1] - control_line_bottom - 10, 50, 35)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        back_colour = ButtonsOver
+                        back_colour = colours.media_buttons_over
                         if mouse_click:
                             pctl.back()
                         if right_click:
@@ -9051,7 +8990,7 @@ while running:
                         rect = (x - 9, y - 5, 65, 25)
                         fields.add(rect)
 
-                        rpbc = stepctloff
+                        rpbc = colours.mode_button_off
                         if (mouse_click or right_click) and coll_point(mouse_position, rect):
                             pctl.random_mode ^= True
 
@@ -9059,15 +8998,15 @@ while running:
                                 random_click_off = True
 
                         if pctl.random_mode:
-                            rpbc = stepctlon
+                            rpbc = colours.mode_button_active
 
                         elif coll_point(mouse_position, rect):
                             if random_click_off == True:
-                                rpbc = stepctloff
+                                rpbc = colours.mode_button_off
                             elif pctl.random_mode is True:
-                                rpbc = stepctlon
+                                rpbc = colours.mode_button_active
                             else:
-                                rpbc = stepctlover
+                                rpbc = colours.mode_button_over
                         else:
                             random_click_off = False
 
@@ -9084,7 +9023,7 @@ while running:
                         x = window_size[0] - 350
                         y = window_size[1] - 27
 
-                        rpbc = stepctloff
+                        rpbc = colours.mode_button_off
 
                         rect = (x - 15, y - 5, 59, 25)
                         fields.add(rect)
@@ -9095,15 +9034,15 @@ while running:
                                 repeat_click_off = True
 
                         if pctl.repeat_mode:
-                            rpbc = stepctlon
+                            rpbc = colours.mode_button_active
 
                         elif coll_point(mouse_position, rect):
                             if repeat_click_off == True:
-                                rpbc = stepctloff
+                                rpbc = colours.mode_button_off
                             elif pctl.repeat_mode is True:
-                                rpbc = stepctlon
+                                rpbc = colours.mode_button_active
                             else:
-                                rpbc = stepctlover
+                                rpbc = colours.mode_button_over
                         else:
                             repeat_click_off = False
 
@@ -9122,7 +9061,7 @@ while running:
                 if GUI_Mode == 1:
 
                     rect = (0,0,window_size[0], panelY)
-                    draw_rect_r(rect, background, True)
+                    draw_rect_r(rect, colours.top_panel_background, True)
 
                     # MULTI PLAYLIST-----------------------
 
@@ -9163,27 +9102,27 @@ while running:
                         rect = (starting_l + (spacing * w) + l, 1, text_space + 16, 29)
                         fields.add(rect)
 
-                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg, True)
+                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background, True)
 
                         if not pl_follow and w == pctl.active_playlist_playing:
                             draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), [255, 255, 255, 7], True)
 
                         if (tab_menu.active is True and tab_menu.reference == w) or tab_menu.active is False and coll_point(
                                 mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 29)):
-                            draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_over, True)
+                            draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_highlight, True)
 
                         if w == pctl.playlist_active:
-                            draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), playlist_bg_active, True)
+                            draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background_active, True)
                             text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
                                                    pctl.multi_playlist[w][0],
-                                                   playlist_line_active, 12)
+                                                   colours.tab_text_active, 12)
 
 
 
                         else:
                             text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
                                                    pctl.multi_playlist[w][0],
-                                                   playlist_line, 12)
+                                                   colours.tab_text, 12)
 
                         pl_coll = False
 
@@ -9271,17 +9210,17 @@ while running:
 
                     if x_menu.active:
 
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", colours.grey(125), 12)
                         if coll_point(mouse_position, rect) and (mouse_click or right_click):
                             x_menu.active = False
 
                     else:
                         if coll_point(mouse_position, rect):
-                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY5, 12)
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", colours.grey(125), 12)
                             if mouse_click or right_click:
                                 x_menu.activate(position=(x+20,panelY))
                         else:
-                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", GREY4, 12)
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "MENU", colours.grey(100), 12)
 
 
 
@@ -9295,17 +9234,17 @@ while running:
 
                     if album_mode:
 
-                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
+                        draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", colours.grey(125), 12)
                         if coll_point(mouse_position, rect) and mouse_click:
                             toggle_album_mode()
 
                     else:
                         if coll_point(mouse_position, rect):
-                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY5, 12)
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", colours.grey(125), 12)
                             if mouse_click:
                                 toggle_album_mode()
                         else:
-                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", GREY4, 12)
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", colours.grey(100), 12)
 
 
 
@@ -9320,17 +9259,17 @@ while running:
 
                         if not lastfm.hold:
                             #draw_rect_r(rect, [70,70,70,70], True)
-                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
+                            draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", colours.grey(125), 12)
                             if coll_point(mouse_position, rect) and mouse_click:
                                 lastfm.toggle()
 
                         else:
                             if coll_point(mouse_position, rect):
-                                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY5, 12)
+                                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", colours.grey(125), 12)
                                 if mouse_click:
                                     lastfm.toggle()
                             else:
-                                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", GREY4, 12)
+                                draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", colours.grey(100), 12)
                         l += 20
 
                     m_l = x + 60
@@ -9366,7 +9305,7 @@ while running:
                         line = trunc_line(line, 11, window_size[0] - l - 195)
 
                         l += 55 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
-                                  GREY(130), 11)
+                                  colours.grey(130), 11)
 
                         x = l #window_size[0] - 100
                         y = 10
@@ -9379,7 +9318,7 @@ while running:
                         w2 = int(broadcast_time / int(master_library[broadcast_index].length) * 90)
 
                         draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
-                        draw_rect((x, y), (w, h), GREY(30))
+                        draw_rect((x, y), (w, h), colours.grey(30))
 
                         l -= 15
                         l -= 85
@@ -9408,11 +9347,11 @@ while running:
 
 
                         if turbo:
-                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, side_bar_line1,
+                            draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, colours.side_bar_line1,
                                       11, max=l_max - 75)
 
                         else:
-                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, side_bar_line1,
+                            draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, colours.side_bar_line1,
                                       11, max=l_max)
 
 
@@ -9421,26 +9360,26 @@ while running:
             if new_playlist_box is True:
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), background, True)
+                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), GREY3)
+                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
 
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), GREY2)
+                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
                 NPN += input_text
                 if key_backspace_press and len(NPN) > 0:
                     NPN = NPN[:-1]
                 draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 9,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 5,
                            playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), "New Playlist:",
-                          side_bar_line2,
+                          colours.side_bar_line2,
                           12)
                 c_blink = 200
                 draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 20,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30,
                            playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), NPN + cursor,
-                          side_bar_line2, 12)
+                          colours.side_bar_line2, 12)
                 if (key_esc_press and len(editline) == 0) or mouse_click or right_click:
 
                     new_playlist_box = False
@@ -9455,26 +9394,26 @@ while running:
             if rename_playlist_box is True:
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), background, True)
+                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), GREY3)
+                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
 
                 draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), GREY2)
+                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
                 NPN += input_text
                 if key_backspace_press and len(NPN) > 0:
                     NPN = NPN[:-1]
                 draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 9,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 5,
                            playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), "Rename Playlist:",
-                          side_bar_line2,
+                          colours.side_bar_line2,
                           12)
                 c_blink = 200
                 draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 20,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30,
                            playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), NPN + cursor,
-                          side_bar_line2, 12)
+                          colours.side_bar_line2, 12)
                 if (key_esc_press and len(editline) == 0) or mouse_click or right_click:
 
                     rename_playlist_box = False
@@ -9496,10 +9435,10 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY3)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(75))
 
-                draw_text((x + int(w / 2), y + 2, 2), message_box_text, GREY6, 12)
+                draw_text((x + int(w / 2), y + 2, 2), message_box_text, colours.grey(150), 12)
 
             if lfm_pass_box:
                 if key_esc_press:
@@ -9514,8 +9453,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY3)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(75))
 
                 lfm_password += input_text
 
@@ -9527,8 +9466,8 @@ while running:
                 for c in lfm_password:
                     line += "●"
 
-                draw_text((x + 10, y + 7 + 20), line, GREY6, 12)
-                draw_text((x + 10, y + 7), "Please enter the following.", GREY6, 12)
+                draw_text((x + 10, y + 7 + 20), line, colours.grey(150), 12)
+                draw_text((x + 10, y + 7), "Please enter the following.", colours.grey(150), 12)
 
             if lfm_user_box:
                 if key_return_press:
@@ -9543,8 +9482,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY3)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(75))
 
                 lfm_username += input_text
 
@@ -9553,9 +9492,9 @@ while running:
 
                 line = "Last FM Account Username: " + lfm_username
 
-                draw_text((x + 10, y + 7 + 20), line, GREY6, 12)
+                draw_text((x + 10, y + 7 + 20), line, colours.grey(150), 12)
                 draw_text((x + 10, y + 7), "Please enter the following then try again.  Press F8 at any time to reset.",
-                          GREY6, 12)
+                          colours.grey(150), 12)
 
             if genre_box:
 
@@ -9569,8 +9508,8 @@ while running:
                 if genre_box_click and not coll_point(mouse_position, box_rect):
                     genre_box = False
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY3)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(75))
 
                 stats_gen.update(genre_box_pl)
 
@@ -9609,9 +9548,9 @@ while running:
                     if coll_point(mouse_position, item_rect):
                         draw_rect_r(item_rect, [255, 255, 255, 10], True)
 
-                    draw_rect((x, y), (110, 20), GREY1)
+                    draw_rect((x, y), (110, 20), colours.grey(25))
                     line = item[0][:20]
-                    draw_text((x + 3, y + 2), line, GREY7, 10)
+                    draw_text((x + 3, y + 2), line, colours.grey(175), 10)
 
                     y += 25
                     if y > oy + h - 50:
@@ -9629,8 +9568,8 @@ while running:
                 fields.add(ok_rect)
                 if coll_point(mouse_position, ok_rect):
                     draw_rect_r(ok_rect, [255, 255, 255, 8], True)
-                draw_rect_r(ok_rect, GREY2)
-                draw_text((x + 14, y + 2), 'Generate', GREY6, 10)
+                draw_rect_r(ok_rect, colours.grey(50))
+                draw_text((x + 14, y + 2), 'Generate', colours.grey(150), 10)
 
                 if genre_box_click and coll_point(mouse_position, ok_rect):
                     print('ok')
@@ -9658,14 +9597,14 @@ while running:
 
                 # draw_rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY3)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(75))
 
                 if key_shift_down:
 
                     # y += 24
 
-                    draw_text((x + 8 + 10, y + 40), "Secret Operations Menu:", GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Secret Operations Menu:", colours.grey(200), 12)
 
                     y += 24
                     x += 15
@@ -9677,7 +9616,7 @@ while running:
 
                     line = "1. Purge potentially hidden image/ini files from folder (" + str(
                         len(files_to_purge)) + " Found)"
-                    draw_text((x + 8 + 10, y + 40), line, GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), line, colours.grey(200), 12)
 
                     if key_1_press:
                         for item in files_to_purge:
@@ -9692,63 +9631,63 @@ while running:
                     time.sleep(0.2)
 
                 else:
-                    draw_rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), GREY(30))
+                    draw_rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
                     album_art_gen.display(r_menu_index, (x + w - 135, y + h - 125), (100, 100))
                     y -= 24
 
-                    draw_text((x + 8 + 10, y + 40), "Title:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].title, GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Title:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].title, colours.grey(200), 12)
 
-                    draw_text((x + w - 50, y + 40, 2), master_library[r_menu_index].file_ext, GREY8, 12)
-
-                    y += 15
-
-                    draw_text((x + 8 + 10, y + 40), "Artist:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].artist, GREY8, 12)
+                    draw_text((x + w - 50, y + 40, 2), master_library[r_menu_index].file_ext, colours.grey(200), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Album:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].album, GREY8,
+                    draw_text((x + 8 + 10, y + 40), "Artist:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].artist, colours.grey(200), 12)
+
+                    y += 15
+
+                    draw_text((x + 8 + 10, y + 40), "Album:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].album, colours.grey(200),
                               12)
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Path:", GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Path:", colours.grey(200), 12)
                     draw_text((x + 8 + 90, y + 40), trunc_line(master_library[r_menu_index].fullpath, 12, 420),
-                              GREY8, 12)
+                              colours.grey(200), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Samplerate:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].samplerate), GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Samplerate:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].samplerate), colours.grey(200), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Bitrate:", GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Bitrate:", colours.grey(200), 12)
                     line =  str(master_library[r_menu_index].bitrate)
-                    draw_text((x + 8 + 90, y + 40), line, GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), line, colours.grey(200), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Duration:", GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Duration:", colours.grey(200), 12)
                     line = time.strftime('%M:%S', time.gmtime(master_library[r_menu_index].length))
-                    draw_text((x + 8 + 90, y + 40), line, GREY8, 12)
+                    draw_text((x + 8 + 90, y + 40), line, colours.grey(200), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Filesize:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), get_filesize_string(master_library[r_menu_index].size), GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Filesize:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), get_filesize_string(master_library[r_menu_index].size), colours.grey(200), 12)
 
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Genre:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].genre, GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Genre:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].genre, colours.grey(200), 12)
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Release Date:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].date), GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Release Date:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].date), colours.grey(200), 12)
 
                     y += 23
 
@@ -9759,16 +9698,16 @@ while running:
                         total = star_library[key]
                         ratio = total / master_library[r_menu_index].length
 
-                    draw_text((x + 8 + 10, y + 40), "Play Count:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Play Count:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey(200), 12)
 
                     y += 15
 
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Playtime:", GREY8, 12)
-                    draw_text((x + 8 + 90, y + 40), str(line), GREY8, 12)
+                    draw_text((x + 8 + 10, y + 40), "Playtime:", colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), str(line), colours.grey(200), 12)
 
             if pref_box.enabled:
                 pref_box.render()
@@ -9780,8 +9719,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY2)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(50))
 
                 # NRN = rename_in.update()
                 NRN += input_text
@@ -9806,27 +9745,27 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder to format:", GREY6, 12)
-                draw_text((x + 14, y + 40,), NRN + cursor, GREY6, 12)
+                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder to format:", colours.grey(150), 12)
+                draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 # c_blink = 200
 
-                draw_rect((x + 8, y + 38), (300, 22), GREY2)
+                draw_rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                draw_rect((x + 8 + 300 + 10, y + 38), (80, 22), GREY2)
+                draw_rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(50))
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     draw_rect((x + 8 + 300 + 10, y + 38), (80, 22), [50, 50, 50, 70], True)
 
-                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", GREY6, 12)
+                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(150), 12)
 
-                draw_text((x + 10, y + 70,), "%n - Track Number", GREY6, 12)
-                draw_text((x + 10, y + 82,), "%a - Artist Name", GREY6, 12)
-                draw_text((x + 10, y + 94,), "%t - Track Title", GREY6, 12)
-                draw_text((x + 150, y + 70,), "%b - Album Title", GREY6, 12)
-                draw_text((x + 150, y + 82,), "%x - File Extension", GREY6, 12)
-                draw_text((x + 150, y + 94,), "%u - Use Underscores", GREY6, 12)
+                draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(150), 12)
+                draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(150), 12)
+                draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(150), 12)
+                draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(150), 12)
+                draw_text((x + 150, y + 82,), "%x - File Extension", colours.grey(150), 12)
+                draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(150), 12)
 
                 afterline = ""
                 warn = False
@@ -9867,8 +9806,8 @@ while running:
                         break
 
                 draw_text((x + 10, y + 120,),
-                          trunc_line("BEFORE:  " + master_library[rename_index].filename, 12, 390), GREY6, 12)
-                draw_text((x + 10, y + 135,), trunc_line("AFTER:     " + afterline, 12, 390), GREY6, 12)
+                          trunc_line("BEFORE:  " + master_library[rename_index].filename, 12, 390), colours.grey(150), 12)
+                draw_text((x + 10, y + 135,), trunc_line("AFTER:     " + afterline, 12, 390), colours.grey(150), 12)
 
                 if (len(NRN) > 3 and len(master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
@@ -9968,8 +9907,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), background, True)
-                draw_rect((x, y), (w, h), GREY2)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw_rect((x, y), (w, h), colours.grey(50))
 
                 NXN += input_text
 
@@ -9983,11 +9922,11 @@ while running:
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
-                draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", GREY6, 12)
-                draw_text((x + 14, y + 40,), NXN + cursor, GREY6, 12)
+                draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
+                draw_text((x + 14, y + 40,), NXN + cursor, colours.grey(150), 12)
                 c_blink = 200
 
-                draw_rect((x + 8, y + 38), (350, 22), GREY2)
+                draw_rect((x + 8, y + 38), (350, 22), colours.grey(50))
 
                 rect = (x + 8 + 350 + 10, y + 38, 40, 22)
                 fields.add(rect)
@@ -9995,8 +9934,8 @@ while running:
                 if coll_point(mouse_position, rect):
                     draw_rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
 
-                draw_rect((x + 8 + 350 + 10, y + 38), (40, 22), GREY2)
-                draw_text((x + 8 + 10 + 350 + 10, y + 40), "GO", GREY6, 12)
+                draw_rect((x + 8 + 350 + 10, y + 38), (40, 22), colours.grey(50))
+                draw_text((x + 8 + 10 + 350 + 10, y + 40), "GO", colours.grey(150), 12)
 
                 if (key_return_press_w or (
                             mouse_click and coll_point(mouse_position,
@@ -10031,9 +9970,9 @@ while running:
                 search_box_location_x = int(window_size[0] / 2) - int(quick_search_box_size[0] / 2)
 
                 draw_rect((search_box_location_x, window_size[1] - 90),
-                          (quick_search_box_size[0], quick_search_box_size[1]), bottom_panel_colour, True)
+                          (quick_search_box_size[0], quick_search_box_size[1]), colours.bottom_panel_colour, True)
                 draw_rect((search_box_location_x, window_size[1] - 90),
-                          (quick_search_box_size[0], quick_search_box_size[1]), GREY(60))
+                          (quick_search_box_size[0], quick_search_box_size[1]), colours.grey(60))
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -10043,7 +9982,7 @@ while running:
                 if key_backspace_press and len(NSN) > 0:
                     NSN = NSN[:-1]
                 c_blink = 200
-                draw_text((search_box_location_x + 8, window_size[1] - 85), "SEARCH: " + NSN + cursor, GREY5, 12)
+                draw_text((search_box_location_x + 8, window_size[1] - 85), "SEARCH: " + NSN + cursor, colours.grey(125), 12)
                 if key_esc_press:
                     new_playlist_box = False
 
@@ -10154,8 +10093,8 @@ while running:
         # Unicode edit display---------------------
         if len(editline) > 0:
             ll = text_calc(editline, 12)[0]
-            draw_rect((window_size[0] - ll - 10, 0), (ll + 15, 18), BLACK, True)
-            draw_text((window_size[0] - ll - 5, 3), editline, GREY(210), 12)
+            draw_rect((window_size[0] - ll - 10, 0), (ll + 15, 18), [0, 0, 0, 255], True)
+            draw_text((window_size[0] - ll - 5, 3), editline, colours.grey(210), 12)
 
         # Render Menus-------------------------------
         x_menu.render()
@@ -10175,14 +10114,14 @@ while running:
             if encoding_box_click and not coll_point(mouse_position, (x, y, w, h)):
                 encoding_box = False
 
-            draw_rect((x, y), (w, h), background, True)
-            draw_rect((x, y), (w, h), GREY3)
+            draw_rect((x, y), (w, h), colours.top_panel_background, True)
+            draw_rect((x, y), (w, h), colours.grey(75))
 
-            draw_text((x + 105, y + 21), "Japanese text encoding correction.", GREY(190), 12)
+            draw_text((x + 105, y + 21), "Japanese text encoding correction.", colours.grey(190), 12)
 
             y += 20
 
-            draw_text((x + 105, y + 21), "Select from list if correct shown:", GREY(190), 11)
+            draw_text((x + 105, y + 21), "Select from list if correct shown:", colours.grey(190), 11)
 
             y -= 20
             x += 20
@@ -10190,8 +10129,8 @@ while running:
 
             if enc_field == "Artist":
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "Artist", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "Artist", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Artist"
 
@@ -10199,8 +10138,8 @@ while running:
 
             if enc_field == "Title":
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "Title", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "Title", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Title"
 
@@ -10208,8 +10147,8 @@ while running:
 
             if enc_field == "Album":
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "Album", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "Album", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Album"
 
@@ -10217,8 +10156,8 @@ while running:
 
             if enc_field == "All":
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "All", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "All", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "All"
 
@@ -10226,8 +10165,8 @@ while running:
 
             if enc_setting == 1:
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "Track", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "Track", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_setting = 1
 
@@ -10235,8 +10174,8 @@ while running:
 
             if enc_setting == 0:
                 draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), GREY3)
-            draw_text((x + 6, y + 2), "Folder", GREY8, 12)
+            draw_rect((x, y), (60, 20), colours.grey(75))
+            draw_text((x + 6, y + 2), "Folder", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_setting = 0
 
@@ -10253,12 +10192,12 @@ while running:
                 title = master_library[encoding_target].title
                 album = master_library[encoding_target].album
 
-                draw_rect((x, y), (w, h), background, True)
+                draw_rect((x, y), (w, h), colours.top_panel_background, True)
 
                 rect = (x, y, w, h - 1)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
-                    draw_rect((x, y), (w, h), GREY2, True)
+                    draw_rect((x, y), (w, h), colours.grey(50), True)
                     if encoding_box_click:
                         fix_encoding(encoding_target, enc_setting, enco)
                         encoding_box = False
@@ -10275,10 +10214,10 @@ while running:
                 line = artist + " - " + title + " - " + album
                 line = trunc_line(line, 11, w - 5)
 
-                draw_text((x + 5, y), line, GREY6, 11)
+                draw_text((x + 5, y), line, colours.grey(150), 11)
 
                 y += h
-            draw_rect((x, y - (h * len(encodings))), (w, h * len(encodings)), GREY2)
+            draw_rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
 
         if draw_border:
 
@@ -10296,7 +10235,7 @@ while running:
                     mouse_down = False
                     mouse_click = False
                     dragmode = False
-            draw_rect((window_size[0] - 65, 5), (35, 20), GREY(40))
+            draw_rect((window_size[0] - 65, 5), (35, 20), colours.grey(40))
 
             rect = (window_size[0] - 25, 5, 20, 20)
             fields.add(rect)
@@ -10304,9 +10243,9 @@ while running:
                 draw_rect((window_size[0] - 25, 5), (20, 20), [80, 80, 80, 120], True)
                 if mouse_click or ab_click:
                     running = False
-            draw_rect((window_size[0] - 25, 5), (20, 20), GREY(40))
+            draw_rect((window_size[0] - 25, 5), (20, 20), colours.grey(40))
 
-            draw_rect((0, 0), (window_size), GREY(90))
+            draw_rect((0, 0), (window_size), colours.grey(90))
 
         UPDATE_RENDER -= 1
 
@@ -10376,7 +10315,7 @@ while running:
             w = 72 + 24 - 6 - 10
             h = 20
             rect = (x, y, w, h)
-            draw_rect_r(rect, background, True)
+            draw_rect_r(rect, colours.top_panel_background, True)
             draw_rect_r(rect, [255, 255, 255, 13], True)
 
             xx = 0
@@ -10408,7 +10347,7 @@ while running:
                 #     if i < 19:
                 #         sspec[i+1] = (20 - (mouse_position[1] - y))
 
-                draw_rect_r(rect, PlayingTimeColour, True)
+                draw_rect_r(rect, colours.time_playing, True)
                 xx += 4
 
         if vis == 1:
@@ -10421,7 +10360,7 @@ while running:
             y = 16
             w = 5
             s = 1
-            # draw_rect((x - 70, y - 10), (80, 18), GREY(15), True)
+            # draw_rect((x - 70, y - 10), (80, 18), colours.grey(15), True)
 
             for t in range(12):
 
@@ -10433,15 +10372,15 @@ while running:
                     met = False
 
                 if t < 7:
-                    cc = GREEN4
+                    cc = colours.level_green
                     if met is False:
                         cc = [0, 30, 0, 255]
                 elif t < 10:
-                    cc = YELLOW5
+                    cc = colours.level_yellow
                     if met is False:
                         cc = [30, 30, 0, 255]
                 else:
-                    cc = RED5
+                    cc = colours.level_red
                     if met is False:
                         cc = [30, 0, 0, 255]
 
@@ -10460,15 +10399,15 @@ while running:
                     met = False
 
                 if t < 7:
-                    cc = GREEN4
+                    cc = colours.level_green
                     if met is False:
                         cc = [0, 30, 0, 255]
                 elif t < 10:
-                    cc = YELLOW5
+                    cc = colours.level_yellow
                     if met is False:
                         cc = [30, 40, 0, 255]
                 else:
-                    cc = RED5
+                    cc = colours.level_red
                     if met is False:
                         cc = [30, 0, 0, 255]
 
