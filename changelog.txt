@@ -1,6 +1,15 @@
 
 Changelog-------------------------------------
 
+v1.4.1
+
+ - Changed icon
+ - Changed main font
+ - Tweaked font sizes for playlist
+ - Slightly improved CPU usage with visualiser (when compiled)
+ - Fixed a cause of slower scrolling
+ - Disabled gallery info bar
+
 v1.4.0
 
  - Added playlist navigation to web interface
