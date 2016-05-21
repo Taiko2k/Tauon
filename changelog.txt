@@ -3,11 +3,14 @@ Changelog-------------------------------------
 
 v1.4.1
 
+ - Added playlist sorting by year
+ - Added option for changing gallery art size
  - Changed icon
  - Changed main font
  - Tweaked font sizes for playlist
  - Slightly improved CPU usage with visualiser (when compiled)
  - Fixed a cause of slower scrolling
+ - Fixed gallery view not jumping to first few rows
  - Disabled gallery info bar
 
 v1.4.0

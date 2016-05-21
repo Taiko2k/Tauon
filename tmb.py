@@ -32,7 +32,8 @@ import os
 import pickle
 
 t_version = "v1.4.1"
-version_line = "Tauon Music Box " + t_version
+title = 'Tauon Music Box'
+version_line = title + t_version
 print(version_line)
 print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
 
@@ -109,6 +110,7 @@ import locale
 import webbrowser
 import pyperclip
 import base64
+import re
 from ctypes import *
 
 fb_avaliable = True
@@ -617,7 +619,7 @@ albums = []
 album_position = 0
 
 prefer_side = True
-dim_art = True
+dim_art = False
 
 view_prefs = {
 
@@ -705,10 +707,12 @@ try:
     savetime = save[21]
     vis = save[22]
     playlist_selected = save[23]
+    if save[24] != None:
+        album_mode_art_size = save[24]
 
 
 except:
-    print('No existing save file')
+    print('Error loading save file')
 
 # temporary
 if window_size is None:
@@ -1321,7 +1325,7 @@ def update_title_do():
             line = line.encode('utf-8')
             SDL_SetWindowTitle(t_window, line)
     else:
-        line = "Tauon Music Box"
+        line = title
         line = line.encode('utf-8')
         SDL_SetWindowTitle(t_window, line)
 
@@ -2608,7 +2612,7 @@ stats_gen = GStats()
 
 SDL_Init(SDL_INIT_VIDEO)
 TTF_Init()
-window_title = "Tauon Music Box"
+window_title = title
 window_title = window_title.encode('utf-8')
 
 
@@ -3128,6 +3132,9 @@ def clear_img_cache():
     global album_art_gen
     album_art_gen.clear_cache()
 
+    while len(gall_ren.queue) > 0:
+        time.sleep(0.01)
+
     for key, value in gall_ren.gall.items():
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
@@ -3239,7 +3246,7 @@ class AlbumArt():
                     found_unit = unit
 
         if found_unit == None:
-            print("none found")
+
             return 1
 
         unit = found_unit
@@ -3914,6 +3921,61 @@ def gen_sort_len(index):
 tab_menu.add_to_sub("Duration Sorted", 0, gen_sort_len, pass_ref=True)
 
 
+def gen_sort_date(index, rev=False):
+    global pctl
+
+    def g_date(index):
+
+        if master_library[index].date != "":
+            return str(master_library[index].date)
+        else:
+            return "z"
+
+    #playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = []
+    lowest = 0
+    highest = 0
+    first = True
+
+    for item in pctl.multi_playlist[index][2]:
+        date = master_library[item].date
+        if date != "":
+            playlist.append(item)
+            if len(date) > 4 and date[:4].isdigit():
+                date = date[:4]
+            if len(date) == 4 and date.isdigit():
+                year = int(date)
+                if first:
+                    lowest = year
+                    highest = year
+                    first = False
+                if year < lowest:
+                    lowest = year
+                if year > highest:
+                    highest = year
+
+
+    playlist = sorted(playlist, key=g_date, reverse=rev)
+
+
+
+    line = " <Year Sorted>"
+    if lowest != highest and lowest != 0 and highest != 0:
+        if rev:
+            line = " <" + str(highest) + "-" + str(lowest) + ">"
+        else:
+            line = " <" + str(lowest) + "-" + str(highest) + ">"
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
+
+tab_menu.add_to_sub("Year Old->New", 0, gen_sort_date, pass_ref=True)
+
+
+def gen_sort_date_new(index):
+    gen_sort_date(index, True)
+
+tab_menu.add_to_sub("Year New->Old", 0, gen_sort_date_new, pass_ref=True)
 
 def gen_500_random(index):
     global pctl
@@ -4384,6 +4446,7 @@ def reload_metadata(index):
         master_library[track].genre = rm_16(audio.genre)
         master_library[track].samplerate = audio.sample_rate
 
+
         key = master_library[track].title + master_library[track].filename
         star_library[key] = star
 
@@ -4618,8 +4681,8 @@ def goto_album(playlist_no):
     album_pos_px = px - 60 - album_mode_art_size - album_v_gap
     album_pos_px += 10
 
-    if album_pos_px < 500:
-        album_pos_px = -55
+    if album_pos_px < window_size[1]:
+        album_pos_px = 0 - 55
 
     if abs(old - album_pos_px) < window_size[1] / 2:
         album_pos_px = old
@@ -5218,7 +5281,7 @@ def loader():
                     nt.length = LENGTH
                     nt.bitrate = bitrate
                     nt.album = ALBUM
-                    nt.date = DATE
+                    nt.date = DATE.replace('"', '')
                     nt.track_number = TN
                     nt.start_time = START
                     nt.is_cue = True
@@ -5355,7 +5418,7 @@ def loader():
         return dic
 
     # print(master_library)
-    global albums_to_render
+
     global UPDATE_RENDER
     global transcode_list
     global transcode_state
@@ -6245,13 +6308,60 @@ class Over():
 
         self.drives = []
 
-        self.tab_active = 2
+        self.tab_active = 3
         self.tabs = [
             ["Folder Import", self.files],
             ["Configure", self.config_v],
+            ["Configure 2", self.config_b],
             ["Stats", self.stats],
             ["About", self.about]
         ]
+
+    def config_b(self):
+
+        global album_mode_art_size
+
+        x = self.box_x + self.item_x_offset - 10
+        y = self.box_y - 10
+
+
+        x += 10
+        y += 25
+
+        draw_text((x, y), "Gallery art size:", colours.grey(200), 12)
+
+        x += 100
+
+        rect = (x,y,15,20)
+        fields.add(rect)
+        draw_rect_r(rect, [255,255,255,20], True)
+        if coll_point(mouse_position, rect):
+            draw_rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if album_mode_art_size > 101:
+                    album_mode_art_size -= 10
+                    clear_img_cache()
+
+        draw_text((x+4, y), "<", colours.grey(200), 12)
+
+        x += 25
+
+        draw_rect_r((x,y,40,20), [255,255,255,10], True)
+        draw_text((x + 4, y), str(album_mode_art_size) + "px", colours.grey(200), 12)
+
+        x +=  40 + 10
+
+        rect = (x, y, 15, 20)
+        fields.add(rect)
+        draw_rect_r(rect, [255,255,255,20], True)
+        if coll_point(mouse_position, rect):
+            draw_rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if album_mode_art_size < 350:
+                    album_mode_art_size += 10
+                    clear_img_cache()
+        draw_text((x + 4, y), ">", colours.grey(200), 12)
+        gall_ren.size = [album_mode_art_size, album_mode_art_size]
 
     def about(self):
 
@@ -10816,7 +10926,7 @@ save = [master_library,
         savetime,
         vis,
         playlist_selected,
-        None,
+        album_mode_art_size,
         None,
         None
         ]
