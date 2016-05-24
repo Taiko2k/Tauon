@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.4.1"
+t_version = "v1.4.2"
 title = 'Tauon Music Box'
 version_line = title + t_version
 print(version_line)
@@ -110,7 +110,7 @@ import locale
 import webbrowser
 import pyperclip
 import base64
-import re
+
 from ctypes import *
 
 fb_avaliable = True
@@ -139,6 +139,7 @@ from PIL import ImageFilter
 from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
+from tflac import Flac
 
 
 class Timer3(object):
@@ -395,6 +396,8 @@ class ColoursClass:
         self.level_red = [175, 0, 0, 255]
         self.level_yellow = [90, 90, 20, 255]
 
+        self.vis_colour = self.title_text
+
 colours = ColoursClass()
 
 enable_transcode = False
@@ -620,6 +623,29 @@ album_position = 0
 
 prefer_side = True
 dim_art = False
+
+
+class Prefs:
+
+    def __init__(self):
+
+        self.pause_fade_time = 400
+        self.change_volume_fade_time = 400
+        self.cross_fade_time = 700
+
+prefs = Prefs()
+
+class GuiVar:
+
+    def __init__(self):
+
+        self.update = 2
+        self.turbo = False
+        self.pl_update = 1
+        self.lowered = False
+        self.level_update = False
+
+gui = GuiVar()
 
 view_prefs = {
 
@@ -1005,6 +1031,9 @@ class PlayerCtl:
 
 
         self.render_playlist()
+
+        if album_mode:
+            goto_album(playlist_selected)
         return 0
 
     def set_volume(self):
@@ -1483,9 +1512,6 @@ level_time = Timer2()
 def player():
 
     global pctl
-
-    global pause_fade_time
-    global change_volume_fade_time
     global new_time
     global turbonext
     global level
@@ -1504,9 +1530,6 @@ def player():
     global level_time
     global lowered
 
-    fileout = ""
-    thisfile = ""
-    fileline = "output"
 
     a_index = -1
     a_sc = False
@@ -2377,6 +2400,7 @@ if system == 'windows':
         keyboardHookThread = threading.Thread(target=keyboard_hook)
         keyboardHookThread.daemon = True
         keyboardHookThread.start()
+
 elif system != 'mac':
     if mediakeymode == 1:
         def gnome():
@@ -2971,71 +2995,6 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         return dst.w
 
 
-class MonoText():
-
-    def __init__(self):
-
-        self.cache = {}
-        self.x_spacing = 7
-
-        self.white = SDL_Color(255, 255, 255, 255)
-
-    def draw(self, location, text, colour, font):
-
-        if len(text) == 0:
-            return 0
-
-        x = -7
-        x_mod = self.x_spacing
-        pul = 3
-
-        if len(location) > 2 and location[2] == 1:
-            x_mod *= -1
-            pul *= -1
-            text = reversed(text)
-
-        for ch in text:
-
-            if ch in self.cache:
-
-                if ch == ":":
-                    x -= pul
-
-                sd = self.cache[ch]
-                sd[0].x = location[0] + x
-                sd[0].y = location[1]
-                SDL_RenderCopy(renderer, sd[1], None, sd[0])
-                x += x_mod
-
-
-            else:
-
-                if ch == ":":
-                    x -= pul
-
-                tex_w = pointer(c_int(0))
-                tex_h = pointer(c_int(0))
-
-                text_utf = ch.encode('utf-8')
-
-                font_surface = TTF_RenderUTF8_Blended(font_dict[font][0], text_utf, self.white)
-
-                c = SDL_CreateTextureFromSurface(renderer, font_surface)
-                SDL_SetTextureColorMod(c, colour[0], colour[1],colour[2])
-
-                dst = SDL_Rect(location[0] + x, location[1])
-                SDL_QueryTexture(c, None, None, tex_w, tex_h)
-                dst.w = tex_w.contents.value
-                dst.h = tex_h.contents.value
-
-                SDL_RenderCopy(renderer, c, None, dst)
-                SDL_FreeSurface(font_surface)
-
-                self.cache[ch] = [dst, c]
-                x += x_mod
-
-        return x
-text_mono = MonoText()
 
 
 def draw_text(location, text, colour, font, max=1000):
@@ -3208,7 +3167,16 @@ class AlbumArt():
 
                 if len(tt.data) > 30:
                     source_list.append([True, filepath])
+
+            elif '.flac' in filepath or '.FLAC' in filepath:
+
+                tt = Flac(filepath)
+                tt.read()
+                if tt.has_pic is True and len(tt.picture) > 30:
+                    source_list.append([True, filepath])
+
         except:
+
             pass
 
         for i in range(len(items_in_dir)):
@@ -3327,13 +3295,22 @@ class AlbumArt():
 
         return folder_image_offsets[parent_folder]
 
-    def get_embed(self,filepath):
+    def get_embed(self, index):
 
-        tag = stagger.read_tag(filepath)
-        try:
-            return tag[APIC][0].data
-        except:
-            return tag[PIC][0].data
+        filepath = master_library[index].fullpath
+
+        if master_library[index].file_ext == 'MP3':
+
+            tag = stagger.read_tag(filepath)
+            try:
+                return tag[APIC][0].data
+            except:
+                return tag[PIC][0].data
+
+        elif master_library[index].file_ext == 'FLAC':
+            tag = Flac(filepath)
+            tag.read()
+            return tag.picture
 
 
     def get_base64(self, index, size):
@@ -3348,7 +3325,7 @@ class AlbumArt():
 
         if sources[offset][0] == True:
             # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(filepath))
+            source_image = io.BytesIO(self.get_embed(index))
         else:
             source_image = open(sources[offset][1], 'rb')
 
@@ -3373,7 +3350,7 @@ class AlbumArt():
 
         if sources[offset][0] == True:
             # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(filepath))
+            source_image = io.BytesIO(self.get_embed(index))
         else:
             source_image = open(sources[offset][1], 'rb')
 
@@ -3418,7 +3395,7 @@ class AlbumArt():
             # Get source IO
             if source[offset][0] == True:
                 # Target is a embedded image
-                source_image = io.BytesIO(self.get_embed(filepath))
+                source_image = io.BytesIO(self.get_embed(index))
             else:
                 source_image = open(source[offset][1], 'rb')
 
@@ -3480,7 +3457,6 @@ class AlbumArt():
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
         except:
-            raise
             print("Image processing error")
             self.current_wu = None
             del self.source_cache[index][offset]
@@ -4651,6 +4627,7 @@ def standard_size():
     global update_layout
     global side_panel_enable
     global side_panel_size
+    global album_mode_art_size
 
     album_mode = False
     side_panel_enable = True
@@ -4658,6 +4635,8 @@ def standard_size():
     window_size = [670, 400]
     side_panel_size = 178
     update_layout = True
+    album_mode_art_size = 130
+    clear_img_cache()
 
 
 def goto_album(playlist_no):
@@ -5618,7 +5597,7 @@ def loader():
             try:
                 if source[0] is True:
                     # print('tag')
-                    source_image = io.BytesIO(album_art_gen.get_embed(source[1]))
+                    source_image = io.BytesIO(album_art_gen.get_embed(index))
 
 
                 else:
@@ -6260,7 +6239,7 @@ def toggle_thick(mode=0):
         update_layout = True
 
 
-config_items.append(['Player Follows Playlist', toggle_follow])
+config_items.append(['Advance to Open Playlist', toggle_follow])
 
 config_items.append(['Enable Scrollbar', toggle_scroll])
 
@@ -6363,6 +6342,35 @@ class Over():
         draw_text((x + 4, y), ">", colours.grey(200), 12)
         gall_ren.size = [album_mode_art_size, album_mode_art_size]
 
+        x -= 110
+        y += 200
+
+        draw_rect((x + 240, y), (86, 22), colours.grey(50))
+
+        rect = (x + 240, y, 86, 22)
+        fields.add(rect)
+
+        if coll_point(mouse_position, rect):
+            draw_rect((x + 240, y), (85, 22), [40, 40, 40, 60], True)
+            if self.click:
+                standard_size()
+
+        draw_text((x + 240 + 6, y + 2), "Reset Layout", [255, 255, 255, 140], 12)
+
+        x += 110
+
+        rect = (x + 240, y, 80, 22)
+        fields.add(rect)
+
+        draw_rect((x + 240, y), (80, 22), colours.grey(50))
+
+        if coll_point(mouse_position, (x + 240, y, 80, 22)):
+            draw_rect((x + 240, y), (80, 22), [40, 40, 40, 60], True)
+            if self.click:
+                advance_theme()
+
+        draw_text((x + 240 + 6, y + 2), "Next Theme", [255, 255, 255, 140], 12)
+
     def about(self):
 
         x = self.box_x + 110 + int((self.w - 110) / 2)
@@ -6445,35 +6453,7 @@ class Over():
                 y = y2
                 x += 260
 
-        x = x2
-        x -= 130
-        y2 += 190
 
-        draw_rect((x + 240, y2), (86, 22), colours.grey(50))
-
-        rect = (x + 240, y2, 86, 22)
-        fields.add(rect)
-
-        if coll_point(mouse_position, rect):
-            draw_rect((x + 240, y2), (85, 22), [40, 40, 40, 60], True)
-            if self.click:
-                standard_size()
-
-        draw_text((x + 240 + 6, y2 + 2), "Reset Layout", [255, 255, 255, 140], 12)
-
-        x += 140
-
-        rect = (x + 240, y2, 80, 22)
-        fields.add(rect)
-
-        draw_rect((x + 240, y2), (80, 22), colours.grey(50))
-
-        if coll_point(mouse_position, (x + 240, y2, 80, 22)):
-            draw_rect((x + 240, y2), (80, 22), [40, 40, 40, 60], True)
-            if self.click:
-                advance_theme()
-
-        draw_text((x + 240 + 6, y2 + 2), "Next Theme", [255, 255, 255, 140], 12)
 
     def inside(self):
 
@@ -7305,9 +7285,7 @@ class StandardPlaylist:
                 draw_text((playlist_width + playlist_left - playlist_x_offset,
                            playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
                           alpha_mod(timec, albumfade), row_font_size)
-                # text_mono.draw((playlist_width + playlist_left - playlist_x_offset,
-                #                 playlist_text_offset + playlist_top + playlist_row_height * w, 1), line,
-                #                alpha_mod(timec, albumfade), row_font_size)
+
 
             w += 1
             if w > playlist_view_length:
@@ -8228,7 +8206,7 @@ while running:
                                 if 'buttons off' in p:
                                     colours.media_buttons_off = get_colour_from_line(p)
                                 if 'buttons over' in p:
-                                    colours.media_buttons_overG = get_colour_from_line(p)
+                                    colours.media_buttons_over = get_colour_from_line(p)
                                 if 'buttons active' in p:
                                     colours.media_buttons_active = get_colour_from_line(p)
                                 if 'playing time' in p:
@@ -8279,8 +8257,11 @@ while running:
                                     colours.bb_line = get_colour_from_line(p)
                                 if 'tb line' in p:
                                     colours.tb_line = get_colour_from_line(p)
+                                if 'music vis' in p:
+                                    colours.vis_colour = get_colour_from_line(p)
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
+
 
                                     SDL_SetTextureColorMod(c1, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1],
                                                            colours.bottom_panel_colour[2])
@@ -8700,8 +8681,8 @@ while running:
 
                             pctl.show_current()
 
-                            if album_mode:
-                                goto_album(pctl.playlist_playing)
+                            # if album_mode:
+                            #     goto_album(pctl.playlist_playing)
                             UPDATE_RENDER += 1
 
                         if len(pctl.track_queue) > 0:
@@ -9178,10 +9159,10 @@ while running:
                     if mouse_click and coll_point(mouse_position, (
                         seek_bar_position[0] - 10, seek_bar_position[1] + 20, window_size[0] - 710, 30)):
                         pctl.show_current()
-                        if pctl.playing_state > 0:
-                            goto_album(pctl.playlist_playing)
-                        else:
-                            goto_album(playlist_selected)
+                        # if pctl.playing_state > 0:
+                        #     goto_album(pctl.playlist_playing)
+                        # else:
+                        #     goto_album(playlist_selected)
 
             # TIME----------------------
             text_time = get_display_time(pctl.playing_time)
@@ -9235,8 +9216,7 @@ while running:
                         pctl.play()
                     if right_click:
                         pctl.show_current()
-                        if album_mode:
-                            goto_album(pctl.playlist_playing)
+
                 draw_rect((buttons_x_offset + 25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
                 # draw_rect_r(rect,[255,0,0,255], True)
                 SDL_RenderCopy(renderer, c1, None, dst1)
@@ -10649,9 +10629,9 @@ while running:
             on = 0
 
             # for i in range(len(sspec)):
-            SDL_SetRenderDrawColor(renderer, colours.time_playing[0], \
-                                   colours.time_playing[1], colours.time_playing[2], \
-                                   colours.time_playing[3])
+            SDL_SetRenderDrawColor(renderer, colours.vis_colour[0], \
+                                   colours.vis_colour[1], colours.vis_colour[2], \
+                                   colours.vis_colour[3])
 
             for item in sspec:
                 # item = sspec[i]

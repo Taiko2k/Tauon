@@ -1,0 +1,70 @@
+﻿#Tauon Music Box theme file
+
+
+#-Backgrounds-----
+
+230,230,230		player background (top panel)
+248,248,248	  	playlist panel
+249,249,249		side panel
+230,230,230		bottom panel
+
+#-Frame--------
+
+60,60,60		sep line
+60,60,60		bb line
+60,60,60		tb line
+
+#-Playlist-------
+
+0,0,0			track line
+0,0,0			track time
+0,0,0			track index
+0,0,0			track artist
+0,0,0			album line
+
+0,0,0			track playing
+0,0,0			index playing
+0,0,0			artist playing
+0,0,0			album playing
+0,0,0			time playing
+
+85,85,85		track missing
+
+80,80,80		fav line
+50,50,50		folder line
+10,10,10			folder title
+
+0,0,0,5		playing highlight
+38,38,38,20		select highlight
+
+#-Bottom panel------
+
+60,60,60		buttons off
+60,60,60		buttons over
+60,60,60		buttons active
+
+240,240,240		playing time
+
+65,65,65		seek bar
+60,60,60		volume bar
+122,122,122		seek bg
+122,122,122		volume bg
+40,40,40		scroll bar
+
+100,100,100		mode off
+100,100,100		mode over
+100,100,100		mode on
+
+#-Top panel---------
+
+10,10,10		tab active line
+235,235,235		tab line
+60,60,60		tab background
+70,70,70		tab over
+152,152,152		tab active background
+
+#-Side panel--------
+
+0,0,0		title info
+0,0,0		extra info
+26,26,26		art border
