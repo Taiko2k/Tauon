@@ -1,10 +1,10 @@
 # Binary release setup on Windows
 
-Release bundle should 'just work' by running tmb.exe. Otherwise make sure Visual C++ Runtime and DirectX are installed.
+Release bundle should 'just work' by running tmb.exe. Otherwise ensure Visual C++ Runtime and DirectX are installed.
 
 # Source setup on Linux
 
-BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions). Stagger and pyxhook also included in release due to failing to install with pip.
+BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions).
 
 Use the following commands to install other dependencies:
 
@@ -23,6 +23,7 @@ Ubuntu (not recently tested):
 Finally run using python 3 (Alternatively create a desktop or launcher shortcut. Make sure to set the working directory to the directory you extracted the program files to).
 
     $ python3.5 tmb.py
+
 
 # Source setup on OS X
 
