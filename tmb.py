@@ -65,17 +65,16 @@ b_active_directroy = install_directory.encode('utf-8')
 
 
 try:
-    #open(user_directory + '/lock', 'x')
+    # open(user_directory + '/lock', 'x')
     pass
 except:
     pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-    #sys.exit()
+    # sys.exit()
     import socket
     print('There might already be an instance...')
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = s.connect_ex(('127.0.0.1', server_port))
-    #s.close()
-
+    # s.close()
 
     if result == 0:
         print('Socket is already open')
@@ -90,7 +89,6 @@ except:
         # print(doc)
 
         sys.exit()
-
 
 import time
 import ctypes
@@ -458,7 +456,7 @@ seek_down = False
 mouse_position = [0, 0]
 
 key_shift_down = False
-dragmode = False
+drag_mode = False
 side_drag = False
 clicked = False
 # Player Variables----------------------------------------------------------------------------
@@ -1156,7 +1154,6 @@ class PlayerCtl:
         else:
             print("BACK: NO CASE!")
 
-
         if self.playlist_active == self.active_playlist_playing:
             self.show_current(False, True)
 
@@ -1643,27 +1640,27 @@ def player():
             ('BASS_Encode_CastSetTitle', enc_module))
 
     if system == 'windows':
-        bass_plugin1 = BASS_PluginLoad(b'bassopus.dll', 0)
-        bass_plugin2 = BASS_PluginLoad(b'bassflac.dll', 0)
-        bass_plugin3 = BASS_PluginLoad(b'bass_ape.dll', 0)
-        bass_plugin4 = BASS_PluginLoad(b'bassenc.dll', 0)
-        bass_plugin5 = BASS_PluginLoad(b'bass_tta.dll', 0)
-        bass_plugin6 = BASS_PluginLoad(b'bassmix.dll', 0)
-        bass_plugin7 = BASS_PluginLoad(b'basswma.dll', 0)
+        BASS_PluginLoad(b'bassopus.dll', 0)
+        BASS_PluginLoad(b'bassflac.dll', 0)
+        BASS_PluginLoad(b'bass_ape.dll', 0)
+        BASS_PluginLoad(b'bassenc.dll', 0)
+        BASS_PluginLoad(b'bass_tta.dll', 0)
+        BASS_PluginLoad(b'bassmix.dll', 0)
+        BASS_PluginLoad(b'basswma.dll', 0)
     elif system == 'mac':
         b = install_directory.encode('utf-8')
-        bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
-        bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
-        bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
-        bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
-        bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
     else:
         b = install_directory.encode('utf-8')
-        bass_plugin1 = BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
-        bass_plugin2 = BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
-        bass_plugin3 = BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
-        bass_plugin4 = BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
-        bass_plugin5 = BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
 
     BassInitSuccess = BASS_Init(-1, 44100, 0, 0, 0)
     if BassInitSuccess == True:
@@ -4644,27 +4641,26 @@ def goto_album(playlist_no):
     global album_pos_px
     global album_dex
 
-    old = album_pos_px
-
     px = 0
     row = 0
 
     for i in range(len(album_dex)):
-        if album_dex[i] > playlist_no:
+        if album_dex[i] > playlist_no - 1:
             break
         row += 1
         if row > row_len - 1:
+
             row = 0
             px += album_mode_art_size + album_v_gap
 
-    album_pos_px = px - 60 - album_mode_art_size - album_v_gap
-    album_pos_px += 10
+    if album_pos_px - 20 < px < album_pos_px + window_size[1]:
+        pass
+    else:
+        album_pos_px = px - 60 - album_mode_art_size - album_v_gap
+        album_pos_px += 10
 
-    if album_pos_px < window_size[1]:
-        album_pos_px = 0 - 55
-
-    if abs(old - album_pos_px) < window_size[1] / 2:
-        album_pos_px = old
+        if album_pos_px < 0 - 55:
+            album_pos_px = 0 - 55
 
 
 def toggle_album_mode():
@@ -7461,7 +7457,7 @@ while running:
             UPDATE_RENDER += 1
 
             mouse_down = False
-            dragmode = False
+            drag_mode = False
         elif event.type == 8192:
             renplay += 2
             UPDATE_RENDER += 2
@@ -7652,7 +7648,7 @@ while running:
                 UPDATE_RENDER += 1
 
     power += 1
-    if dragmode or resize_mode or scroll_hold:
+    if drag_mode or resize_mode or scroll_hold:
         power += 3
     if side_drag:
         power += 2
@@ -8552,7 +8548,7 @@ while running:
 
 
                 # playlist hit test
-                if coll_point(mouse_position, (playlist_left, playlist_top, playlist_width, window_size[1] - panelY - panelBY)) and not dragmode and (
+                if coll_point(mouse_position, (playlist_left, playlist_top, playlist_width, window_size[1] - panelY - panelBY)) and not drag_mode and (
                                             mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
                     renplay += 2
 
@@ -9373,7 +9369,7 @@ while running:
                 spacing = 17
 
                 if tab_hold:
-                    dragmode = False
+                    drag_mode = False
 
                 # Need to test length
                 k = 0
@@ -10328,9 +10324,9 @@ while running:
                             search_index = len(default_playlist) - 1
                         search_terms = NSN.lower().split()
                         line = master_library[default_playlist[search_index]].title.lower() + \
-                               master_library[default_playlist[search_index]].artist.lower() \
-                               + master_library[default_playlist[search_index]].album.lower() + \
-                               master_library[default_playlist[search_index]].filename.lower()
+                                master_library[default_playlist[search_index]].artist.lower() \
+                                + master_library[default_playlist[search_index]].album.lower() + \
+                                master_library[default_playlist[search_index]].filename.lower()
 
                         if all(word in line for word in search_terms):
 
@@ -10365,8 +10361,6 @@ while running:
                     if playlist_selected > len(default_playlist):
                         playlist_selected = len(default_playlist)
 
-
-
                 if key_down_press and playlist_selected < len(default_playlist):
                     shift_selection = []
                     pctl.show_selected()
@@ -10374,7 +10368,6 @@ while running:
 
                     if playlist_selected < len(default_playlist) - 1:
                         playlist_selected += 1
-
 
                     if playlist_position < len(
                             default_playlist) and playlist_selected > playlist_position + playlist_view_length - 3:
@@ -10536,7 +10529,7 @@ while running:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     mouse_click = False
-                    dragmode = False
+                    drag_mode = False
             draw_rect((window_size[0] - 65, 5), (35, 20), colours.grey(40))
 
             rect = (window_size[0] - 25, 5, 20, 20)
@@ -10547,7 +10540,7 @@ while running:
                     running = False
             draw_rect((window_size[0] - 25, 5), (20, 20), colours.grey(40))
 
-            draw_rect((0, 0), (window_size), colours.grey(90))
+            draw_rect((0, 0), window_size, colours.grey(90))
 
         UPDATE_RENDER -= 1
 
@@ -10576,8 +10569,7 @@ while running:
 
         # testing
 
-        if vis == 2 and spec != None:
-
+        if vis == 2 and spec is not None:
 
             if update_spec == 0 and pctl.playing_state != 2:
                 time.sleep(0.01)
@@ -10629,8 +10621,8 @@ while running:
             on = 0
 
             # for i in range(len(sspec)):
-            SDL_SetRenderDrawColor(renderer, colours.vis_colour[0], \
-                                   colours.vis_colour[1], colours.vis_colour[2], \
+            SDL_SetRenderDrawColor(renderer, colours.vis_colour[0],
+                                   colours.vis_colour[1], colours.vis_colour[2],
                                    colours.vis_colour[3])
 
             for item in sspec:
@@ -10728,7 +10720,6 @@ while running:
     # -------------------------------------------------------------------------------------------
     # Broadcast control
 
-
     if pctl.broadcast_active and pctl.broadcast_time > master_library[pctl.broadcast_index].length and not pctl.join_broadcast:
         pctl.broadcast_position += 1
         print('next')
@@ -10754,7 +10745,7 @@ while running:
     # Playlist and pctl.track_queue
 
     if pctl.playing_state == 1 and pctl.playing_time + (
-        cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 2:
+            cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 2:
 
         if auto_stop:
             pctl.stop()
@@ -10774,7 +10765,7 @@ while running:
                 master_library[default_playlist[pctl.playlist_playing]].filename and int(
                 master_library[default_playlist[pctl.playlist_playing]].track_number) == int(
                 master_library[default_playlist[pctl.playlist_playing + 1]].track_number) - 1:
-            print("CUE Gapless")
+            print("CUE Gap-less")
             pctl.playlist_playing += 1
             pctl.queue_step += 1
             pctl.track_queue.append(default_playlist[pctl.playlist_playing])
@@ -10786,11 +10777,9 @@ while running:
             UPDATE_RENDER += 1
             renplay += 1
 
-
         else:
             pctl.advance()
             pctl.playing_time = 0
-
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
         windows_progress.update()
@@ -10825,21 +10814,20 @@ while running:
     if system == 'windows':
 
         if mouse_down is False:
-            dragmode = False
-
+            drag_mode = False
 
         if mouse_click and mouse_down and 1 < mouse_position[1] < 30 and m_l < mouse_position[0] < window_size[
-            0] - 80 and dragmode is False and clicked is False:
+            0] - 80 and drag_mode is False and clicked is False:
 
-            dragmode = True
+            drag_mode = True
 
             lm = copy.deepcopy(mouse_position)
 
         if mouse_up:
-            dragmode = False
+            drag_mode = False
 
-        if dragmode:
-            #mp = win32api.GetCursorPos()
+        if drag_mode:
+            # mp = win32api.GetCursorPos()
 
             p_x = pointer(c_int(0))
             p_y = pointer(c_int(0))
