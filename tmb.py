@@ -621,6 +621,7 @@ album_position = 0
 
 prefer_side = True
 dim_art = False
+append_date = False
 
 
 class Prefs:
@@ -820,6 +821,7 @@ try:
     dd_index = view_prefs['dd-index']
     custom_line_mode = view_prefs['custom-line']
     thick_lines = view_prefs['thick-lines']
+    append_date = view_prefs['append-date']
 except:
     print("warning: error loading settings")
 
@@ -4582,6 +4584,7 @@ def bass_features_deco():
     return [line_colour, colours.bottom_panel_colour, None]
 
 
+
 def toggle_dim_albums(mode=0):
     global dim_art
     global UPDATE_RENDER
@@ -4613,6 +4616,7 @@ def toggle_side_panel(mode=0):
         side_panel_enable = True
     else:
         side_panel_enable = False
+
 
 
 # x_menu.add('Toggle Side panel', toggle_side_panel)
@@ -6159,7 +6163,7 @@ def toggle_titlebar_line(mode=0):
 
 config_items = [
     ['Show Side Panel', toggle_side_panel],
-    ['Show Playtime Line', star_toggle],
+    ['Show Playtime Lines', star_toggle],
     ['Highlight Artist Name', split_toggle],
     ['Show Playing in Titlebar', toggle_titlebar_line],
     ['Dim Gallery When Playing', toggle_dim_albums]
@@ -6234,18 +6238,34 @@ def toggle_thick(mode=0):
         thick_lines ^= True
         update_layout = True
 
+def toggle_append_date(mode=0):
+    global append_date
+    global UPDATE_RENDER
+    global renplay
 
-config_items.append(['Advance to Open Playlist', toggle_follow])
+    if mode == 1:
+        return append_date
+    append_date ^= True
+    renplay += 1
+    UPDATE_RENDER += 1
 
-config_items.append(['Enable Scrollbar', toggle_scroll])
 
-config_items.append(['Enable Folder Break', toggle_break])
+config_items.append(['Show Scrollbar', toggle_scroll])
 
-config_items.append(['Show Double Digits', toggle_dd])
+config_items.append(['Force Track Advancing to Open Playlist', toggle_follow])
+
+
+
+config_items.append(['Break Playlist by Folders', toggle_break])
+
+config_items.append(['Use Double Digit Track Indices', toggle_dd])
 
 config_items.append(['Use Thick Rows', toggle_thick])
 
 config_items.append(['Use Custom Line Format', toggle_custom_line])
+
+config_items.append(['Add Release Year to Folder Title', toggle_append_date])
+
 
 cursor = "|"
 c_time = 0
@@ -6430,26 +6450,23 @@ class Over():
         y = self.box_y
 
         x += 8
-        y += 20
+        y += 15
         y2 = y
         x2 = x
         for k in config_items:
-            draw_text((x, y), k[0], [255, 255, 255, 150], 12)
-            draw_rect((x + 150, y - 2), (70, 20), [255, 255, 255, 13], True)
-            if self.click and coll_point(mouse_position, (x + 140 - 5, y - 4 - 2, 70 + 10, 20 + 8)):
+            draw_text((x + 20, y - 3), k[0], [255, 255, 255, 150], 11)
+            draw_rect((x, y), (12, 12), [255, 255, 255, 13], True)
+            draw_rect((x, y), (12, 12), [255, 255, 255, 16])
+            if self.click and coll_point(mouse_position, (x - 20, y - 10, 180 , 25)):
                 k[1]()
-            if k[1](1) == True:
-                draw_rect((x + 150 + 40, y - 2), (30, 20), [255, 255, 255, 46], True)
-            else:
-                draw_rect((x + 150, y - 2), (30, 20), [255, 255, 255, 22], True)
+            if k[1](1) is True:
+                draw_rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
 
             y += 30
 
-            if y - y2 > 150:
+            if y - y2 > 190:
                 y = y2
-                x += 260
-
-
+                x += 205
 
     def inside(self):
 
@@ -6869,7 +6886,14 @@ class StandardPlaylist:
                     != master_library[default_playlist[i + playlist_position - 1]].parent_folder_name) and \
                             pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
 
-                line = master_library[default_playlist[i + playlist_position]].parent_folder_name
+                n_track = master_library[default_playlist[i + playlist_position]]
+                line = n_track.parent_folder_name
+                if len(line) < 6 and "CD" in line:
+                    line = n_track.album
+
+                if append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
+                    line += " (" + n_track.date + ")"
+
                 if thick_lines:
                     draw_text2((playlist_width + playlist_left,
                                 playlist_row_height - 18 + playlist_top + playlist_row_height * w, 1), line,
@@ -10869,6 +10893,7 @@ view_prefs['break-enable'] = break_enable
 view_prefs['dd-index'] = dd_index
 view_prefs['custom-line'] = custom_line_mode
 view_prefs['thick-lines'] = thick_lines
+view_prefs['append-date'] = append_date
 
 save = [master_library,
         master_count,
