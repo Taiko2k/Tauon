@@ -6,11 +6,13 @@ v1.4.2
  - Added playlist sorting by year
  - Added option for changing gallery art size
  - Added embedded image loading from FLAC files
+ - Added a basic playlist selection box
+ - Added an option for showing year in folder title
  - Changed icon
  - Changed main font
  - Tweaked font sizes for playlist
- - Slightly improved CPU usage with visualiser (when compiled)
- - Fixed a cause of slower scrolling
+ - Slightly improved CPU usage with visualiser
+ - Fixed a bug causing slower scrolling
  - Fixed gallery view not jumping to first few rows
  - Fixed Go to Playing function not working on gallery in some situations
  - Fixed buttons using incorrect theme colour
