@@ -5847,14 +5847,14 @@ def webserv():
         if pctl.repeat_mode:
             repeatline = "is On"
 
-        colours.tab_text = ""
+        ppline = ""
 
         for i in range(len(pctl.multi_playlist)):
 
             if i == pctl.playlist_active:
-                colours.tab_text += "<strong>" + pctl.multi_playlist[i][0] + "</strong> "
+                ppline += "<strong>" + pctl.multi_playlist[i][0] + "</strong> "
             else:
-                colours.tab_text += pctl.multi_playlist[i][0] + " "
+                ppline += pctl.multi_playlist[i][0] + " "
 
 
         p_list = "<l>"
@@ -5891,7 +5891,7 @@ def webserv():
                                           image=image_line,
                                           isran=randomline,
                                           isrep=repeatline,
-                                          pline=colours.tab_text,
+                                          pline=ppline,
                                           list=p_list,
                                           seekbar=seek_line
                                           )
@@ -9406,6 +9406,7 @@ while running:
 
 
                     else:
+                        print(colours.tab_text)
                         text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
                                                pctl.multi_playlist[w][0],
                                                colours.tab_text, 12)
