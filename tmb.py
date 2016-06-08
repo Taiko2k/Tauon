@@ -617,7 +617,7 @@ album_position = 0
 
 prefer_side = True
 dim_art = False
-append_date = False
+append_date = True
 
 
 class Prefs:
@@ -730,6 +730,8 @@ try:
     playlist_selected = save[23]
     if save[24] != None:
         album_mode_art_size = save[24]
+    if save[25] != None:
+        draw_border = save[25]
 
 
 except:
@@ -768,8 +770,6 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 pause_fade_time = num_from_line(p)
             if 'cross-fade-time' in p:
                 cross_fade_time = num_from_line(p)
-            if 'draw-border' in p:
-                draw_border = True
             if 'scrobble-mark' in p:
                 scrobble_mark = True
             if 'custom-highlight-left' in p:
@@ -6123,15 +6123,22 @@ def toggle_titlebar_line(mode=0):
     update_title ^= True
 
 
+def toggle_borderless(mode=0):
+    global draw_border
+    if mode == 1:
+        return draw_border
+
+    draw_border ^= True
+    if draw_border:
+        SDL_SetWindowBordered(t_window, False)
+    else:
+        SDL_SetWindowBordered(t_window, True)
+
 config_items = [
-    ['Show Side Panel', toggle_side_panel],
     ['Show Playtime Lines', star_toggle],
     ['Highlight Artist Name', split_toggle],
-    ['Show Playing in Titlebar', toggle_titlebar_line],
-    ['Dim Gallery When Playing', toggle_dim_albums]
 ]
-if default_player == 'BASS':
-    config_items.append(['Show Visualisation', toggle_level_meter])
+
 
 
 def toggle_break(mode=0):
@@ -6215,8 +6222,6 @@ def toggle_append_date(mode=0):
 
 config_items.append(['Show Scrollbar', toggle_scroll])
 
-config_items.append(['Force Track Advancing to Open Playlist', toggle_follow])
-
 config_items.append(['Break Playlist by Folders', toggle_break])
 
 config_items.append(['Use Double Digit Track Indices', toggle_dd])
@@ -6227,6 +6232,7 @@ config_items.append(['Use Custom Line Format', toggle_custom_line])
 
 config_items.append(['Add Release Year to Folder Title', toggle_append_date])
 
+config_items.append(['Force Track Advancing to Open Playlist', toggle_follow])
 
 cursor = "|"
 c_time = 0
@@ -6264,14 +6270,24 @@ class Over:
 
         self.drives = []
 
-        self.tab_active = 3
+        self.tab_active = 4
         self.tabs = [
             ["Folder Import", self.files],
-            ["Configure", self.config_v],
-            ["Configure 2", self.config_b],
+            ["Playlist", self.config_v],
+            ["Layout", self.config_b],
             ["Stats", self.stats],
             ["About", self.about]
         ]
+
+    def toggle_square(self, x, y, function, text):
+
+        draw_text((x + 20, y - 3), text, [255, 255, 255, 150], 11)
+        draw_rect((x, y), (12, 12), [255, 255, 255, 13], True)
+        draw_rect((x, y), (12, 12), [255, 255, 255, 16])
+        if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
+            function()
+        if function(1):
+            draw_rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
 
     def config_b(self):
 
@@ -6280,15 +6296,14 @@ class Over:
         x = self.box_x + self.item_x_offset - 10
         y = self.box_y - 10
 
-
         x += 10
-        y += 25
+        y += 30
 
-        draw_text((x, y), "Gallery art size:", colours.grey(200), 12)
+        draw_text((x, y), "Gallery art size:", colours.grey(200), 11)
 
-        x += 100
+        x += 90
 
-        rect = (x,y,15,20)
+        rect = (x,y,15,15)
         fields.add(rect)
         draw_rect_r(rect, [255,255,255,20], True)
         if coll_point(mouse_position, rect):
@@ -6298,16 +6313,16 @@ class Over:
                     album_mode_art_size -= 10
                     clear_img_cache()
 
-        draw_text((x+4, y), "<", colours.grey(200), 12)
+        draw_text((x+4, y), "<", colours.grey(200), 11)
 
         x += 25
 
-        draw_rect_r((x,y,40,20), [255,255,255,10], True)
-        draw_text((x + 4, y), str(album_mode_art_size) + "px", colours.grey(200), 12)
+        draw_rect_r((x,y,40,15), [255,255,255,10], True)
+        draw_text((x + 4, y), str(album_mode_art_size) + "px", colours.grey(200), 11)
 
         x +=  40 + 10
 
-        rect = (x, y, 15, 20)
+        rect = (x, y, 15, 15)
         fields.add(rect)
         draw_rect_r(rect, [255,255,255,20], True)
         if coll_point(mouse_position, rect):
@@ -6316,11 +6331,27 @@ class Over:
                 if album_mode_art_size < 350:
                     album_mode_art_size += 10
                     clear_img_cache()
-        draw_text((x + 4, y), ">", colours.grey(200), 12)
+        draw_text((x + 4, y), ">", colours.grey(200), 11)
         gall_ren.size = [album_mode_art_size, album_mode_art_size]
 
-        x -= 110
-        y += 200
+        y = self.box_y + 55
+        x = self.box_x + self.item_x_offset
+
+        self.toggle_square(x, y, toggle_borderless, "Borderless Window")
+        y += 30
+        self.toggle_square(x, y, toggle_titlebar_line, "Show Playing in Titlebar")
+        y += 30
+        self.toggle_square(x, y, toggle_side_panel, "Show Side Panel")
+        y += 30
+        self.toggle_square(x, y, toggle_dim_albums, "Dim Gallery When Playing")
+        y += 30
+        if default_player == 'BASS':
+            self.toggle_square(x, y, toggle_level_meter, "Show Visualisation")
+
+        # ----------
+
+        x += 50
+        y += 40
 
         draw_rect((x + 240, y), (86, 22), colours.grey(50))
 
@@ -6411,7 +6442,7 @@ class Over:
         y = self.box_y
 
         x += 8
-        y += 15
+        y += 25
         y2 = y
         x2 = x
         for k in config_items:
@@ -9023,10 +9054,10 @@ while running:
                               (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
                               colours.seek_bar_fill, True)
 
-                if mouse_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 5] ):
+                if mouse_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1] + 2] ):
                     volume_hit = True
                     seek_down = True
-                if right_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 5]):
+                if right_click and coll_point(mouse_position, seek_bar_position + [seek_bar_size[0]] + [seek_bar_size[1]+ 2]):
                     pctl.pause()
                     if pctl.playing_state == 0:
                         pctl.play()
@@ -9403,10 +9434,7 @@ while running:
                                                pctl.multi_playlist[w][0],
                                                colours.tab_text_active, 12)
 
-
-
                     else:
-                        print(colours.tab_text)
                         text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
                                                pctl.multi_playlist[w][0],
                                                colours.tab_text, 12)
@@ -10034,7 +10062,7 @@ while running:
                     draw_text((x + 8 + 90, y + 40), master_library[r_menu_index].genre, colours.grey(200), 12)
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Release Date:", colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Date:", colours.grey(200), 12)
                     draw_text((x + 8 + 90, y + 40), str(master_library[r_menu_index].date), colours.grey(200), 12)
 
                     y += 23
@@ -10945,6 +10973,11 @@ save = [master_library,
         vis,
         playlist_selected,
         album_mode_art_size,
+        draw_border,
+        None,
+        None,
+        None,
+        None,
         None,
         None
         ]

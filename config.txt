@@ -3,16 +3,10 @@
 
 ## View-------------------------------------
 
-##Disables system window frame/title bar and draws own
-#draw-border
-
 #Shows option for transcoding in context menu (currently only opus+cue supported)
 enable-transcode
 
 ## Playback--------------------------------------------------------------
-
-## Prevent seeking while paused
-#seek-pause-lock
 
 #Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
 pause-fade-time: 400
@@ -42,7 +36,7 @@ allow-remote (disable for broadcast album art only)
 
 ## Encoding----------
 
-opus-bitrate:48
+opus-bitrate:64
 
 # Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
 #output-dir:C:\example

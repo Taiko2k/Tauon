@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v1.4.3
 
  - Fixed critical bug causing crash from web interface
+ - Moved borderless window setting from config file to UI
+ - Minor UI tweaks
 
 v1.4.2
 
