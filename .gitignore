@@ -6,3 +6,8 @@ stagger/
 pylast/
 pyperclip/
 lib/*.dll
+*.pyd
+*.pyx
+encoder/
+*.flac
+build/
