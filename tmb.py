@@ -399,8 +399,6 @@ class ColoursClass:
 
 colours = ColoursClass()
 
-enable_transcode = False
-
 playlist_width = int(window_size[0] * 0.65) + 25
 
 UPDATE_RENDER = 5
@@ -495,10 +493,6 @@ level = 0
 dlevel = 0
 
 olevel = 0
-
-change_volume_fade_time = 400
-pause_fade_time = 400
-cross_fade_time = 700
 
 encoding_box = False
 encoding_box_click = False
@@ -606,9 +600,6 @@ db_version = 0
 meidakey = 1
 mediakeymode = 1
 
-enable_web = False
-allow_remote = False
-expose_web = False
 
 # A mode ------------
 
@@ -628,19 +619,25 @@ class Prefs:
         self.change_volume_fade_time = 400
         self.cross_fade_time = 700
 
+        self.enable_web = True
+        self.allow_remote = True
+        self.expose_web = False
+        
+        self.enable_transcode = False
+
 prefs = Prefs()
 
-class GuiVar:
-
-    def __init__(self):
-
-        self.update = 2
-        self.turbo = False
-        self.pl_update = 1
-        self.lowered = False
-        self.level_update = False
-
-gui = GuiVar()
+# class GuiVar:
+# 
+#     def __init__(self):
+# 
+#         self.update = 2
+#         self.turbo = False
+#         self.pl_update = 1
+#         self.lowered = False
+#         self.level_update = False
+# 
+# gui = GuiVar()
 
 view_prefs = {
 
@@ -732,6 +729,14 @@ try:
         album_mode_art_size = save[24]
     if save[25] != None:
         draw_border = save[25]
+    if save[26] != None:
+        prefs.enable_web = save[26]
+    if save[27] != None:
+        prefs.allow_remote = save[27]
+    if save[28] != None:
+        prefs.expose_web = save[28]
+    if save[29] != None:
+        prefs.enable_transcode = save[29]
 
 
 except:
@@ -758,18 +763,12 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 mediakeymode = int(p[9:-1])
             if 'seek-pause-lock' in p:
                 pause_lock = True
-            if 'enable-web' in p:
-                enable_web = True
-            if 'expose-web' in p:
-                expose_web = True
             if 'taskbar-progress' in p:
                 taskbar_progress = True
-            if 'allow-remote' in p:
-                allow_remote = True
             if 'pause-fade-time' in p:
-                pause_fade_time = num_from_line(p)
+                prefs.pause_fade_time = num_from_line(p)
             if 'cross-fade-time' in p:
-                cross_fade_time = num_from_line(p)
+                prefs.cross_fade_time = num_from_line(p)
             if 'scrobble-mark' in p:
                 scrobble_mark = True
             if 'custom-highlight-left' in p:
@@ -785,8 +784,6 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                     encoder_output += "/"
 
                 print('Encode output: ' + encoder_output)
-            if 'enable-transcode' in p:
-                enable_transcode = True
             if 'custom-format:' in p:
                 custom_line = p[15:-1]
                 custom_pro = custom_line.split(";")
@@ -800,7 +797,6 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 except:
                     transcode_bitrate = 48
 else:
-    enable_transcode = True
     scrobble_mark = True
     print("Warning: Missing config file")
 
@@ -2165,23 +2161,23 @@ def player():
                     player1_status = 'playing'
                 elif player1_status != 'stopped' and player2_status == 'stopped':
                     player1_status = 'stopping'
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, cross_fade_time)
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
 
                     handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
                     channel2 = BASS_ChannelPlay(handle2, True)
 
                     BASS_ChannelSetAttribute(handle2, 2, 0)
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, cross_fade_time)
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.cross_fade_time)
                     player2_status = 'playing'
                 elif player2_status != 'stopped' and player1_status == 'stopped':
                     player2_status = 'stopping'
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, cross_fade_time)
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
 
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
                     BASS_ChannelSetAttribute(handle1, 2, 0)
                     channel1 = BASS_ChannelPlay(handle1, True)
 
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, cross_fade_time)
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.cross_fade_time)
                     player1_status = 'playing'
 
                 else:
@@ -2225,22 +2221,22 @@ def player():
 
                 if player1_status == 'playing':
                     player1_status = 'paused'
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
-                    time.sleep(pause_fade_time / 1000 / 0.7)
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.pause_fade_time)
+                    time.sleep(prefs.pause_fade_time / 1000 / 0.7)
                     channel1 = BASS_ChannelPause(handle1)
                 elif player1_status == 'paused':
                     player1_status = 'playing'
                     channel1 = BASS_ChannelPlay(handle1, False)
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, pause_fade_time)
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.pause_fade_time)
                 if player2_status == 'playing':
                     player2_status = 'paused'
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
-                    time.sleep(pause_fade_time / 1000 / 0.7)
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.pause_fade_time)
+                    time.sleep(prefs.pause_fade_time / 1000 / 0.7)
                     channel2 = BASS_ChannelPause(handle2)
                 elif player2_status == 'paused':
                     player2_status = 'playing'
                     channel2 = BASS_ChannelPlay(handle2, False)
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, pause_fade_time)
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.pause_fade_time)
 
             # UNLOAD PLAYER COMMAND
             elif pctl.playerCommand == 'unload':
@@ -2252,21 +2248,21 @@ def player():
             elif pctl.playerCommand == 'volume':
                 current_volume = pctl.player_volume / 100
                 if player1_status == 'playing':
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, change_volume_fade_time)
+                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.change_volume_fade_time)
                 if player2_status == 'playing':
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, change_volume_fade_time)
+                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.change_volume_fade_time)
             # STOP COMMAND
             elif pctl.playerCommand == 'stop':
                 if player1_status != 'stopped':
                     player1_status = 'stopped'
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, pause_fade_time)
-                    time.sleep(pause_fade_time / 1000)
+                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.pause_fade_time)
+                    time.sleep(prefs.pause_fade_time / 1000)
                     channel1 = BASS_ChannelStop(handle1)
                     BASS_StreamFree(handle1)
                 if player2_status != 'stopped':
                     player2_status = 'stopped'
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, pause_fade_time)
-                    time.sleep(pause_fade_time / 1000)
+                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.pause_fade_time)
+                    time.sleep(prefs.pause_fade_time / 1000)
                     channel2 = BASS_ChannelStop(handle2)
                     BASS_StreamFree(handle2)
             # SEEK COMMAND
@@ -2293,13 +2289,13 @@ def player():
             new_time = 0
             bytes_position = 0
             if player1_status == 'stopping':
-                time.sleep(cross_fade_time / 1000)
+                time.sleep(prefs.cross_fade_time / 1000)
                 BASS_StreamFree(handle1)
                 player1_status = 'stopped'
                 # print('player1 stopped')
                 channel1 = BASS_ChannelStop(handle1)
             if player2_status == 'stopping':
-                time.sleep(cross_fade_time / 1000)
+                time.sleep(prefs.cross_fade_time / 1000)
                 BASS_StreamFree(handle2)
                 player2_status = 'stopped'
                 channel2 = BASS_ChannelStop(handle2)
@@ -4453,7 +4449,7 @@ def del_selected():
 # track_menu.add('Remove Folder', remove_folder, pass_ref=True)
 # track_menu.add('Remove Selected', del_selected)
 
-if enable_transcode:
+if prefs.enable_transcode:
     track_menu.add('Transcode Folder', convert_folder, pass_ref=True)
 
 # track_menu.add_sub("Move/Cut...", 90)
@@ -5701,7 +5697,7 @@ def reload_albums(quiet=False):
 # WEBSERVER
 
 def webserv():
-    if enable_web is False:
+    if prefs.enable_web is False:
         return 0
 
     from flask import Flask, redirect, send_file, abort, request
@@ -5824,7 +5820,7 @@ def webserv():
     @app.route('/remote')
     def remote():
 
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
 
@@ -5911,7 +5907,7 @@ def webserv():
 
     @app.route('/remote/pl-up')
     def pl_up():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return 0
         global playlist_position
@@ -5923,7 +5919,7 @@ def webserv():
 
     @app.route('/remote/pl-down')
     def pl_down():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return 0
         global playlist_position
@@ -5943,7 +5939,7 @@ def webserv():
 
     @app.route('/remote/back')
     def back():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return 0
         global pctl
@@ -5952,7 +5948,7 @@ def webserv():
 
     @app.route('/remote/jump<int:indexno>')
     def jump(indexno):
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -5961,7 +5957,7 @@ def webserv():
 
     @app.route('/remote/forward')
     def fw():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -5970,7 +5966,7 @@ def webserv():
 
     @app.route('/remote/pause')
     def pu():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -5979,7 +5975,7 @@ def webserv():
 
     @app.route('/remote/play')
     def pl():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -5989,7 +5985,7 @@ def webserv():
 
     @app.route('/remote/stop')
     def st():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -5998,7 +5994,7 @@ def webserv():
 
     @app.route('/remote/upplaylist')
     def next_playlist():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         switch_playlist(1, True)
@@ -6006,7 +6002,7 @@ def webserv():
 
     @app.route('/remote/downplaylist')
     def back_playlist():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         switch_playlist(-1, True)
@@ -6014,7 +6010,7 @@ def webserv():
 
     @app.route('/remote/vdown')
     def vdown():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
 
@@ -6029,7 +6025,7 @@ def webserv():
 
     @app.route('/remote/vup')
     def vup():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -6042,7 +6038,7 @@ def webserv():
 
     @app.route('/remote/seek<int:per>')
     def seek(per):
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global new_time
@@ -6060,7 +6056,7 @@ def webserv():
 
     @app.route('/remote/random')
     def ran():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
@@ -6069,20 +6065,20 @@ def webserv():
 
     @app.route('/remote/repeat')
     def rep():
-        if not allow_remote:
+        if not prefs.allow_remote:
             abort(403)
             return (0)
         global pctl
         pctl.repeat_mode ^= True
         return redirect('/remote', code=302)
 
-    if expose_web is True:
+    if prefs.expose_web is True:
         app.run(host='0.0.0.0 ', port=server_port)
     else:
         app.run(port=server_port)
 
 
-if enable_web is True:
+if prefs.enable_web is True:
     webThread = threading.Thread(target=webserv)
     webThread.daemon = True
     webThread.start()
@@ -6135,8 +6131,8 @@ def toggle_borderless(mode=0):
         SDL_SetWindowBordered(t_window, True)
 
 config_items = [
-    ['Show Playtime Lines', star_toggle],
-    ['Highlight Artist Name', split_toggle],
+    ['Show playtime lines', star_toggle],
+    ['Highlight artist name', split_toggle],
 ]
 
 
@@ -6219,20 +6215,43 @@ def toggle_append_date(mode=0):
     renplay += 1
     UPDATE_RENDER += 1
 
+def toggle_enable_web(mode=0):
+    global prefs
+    if mode == 1:
+        return prefs.enable_web
+    prefs.enable_web ^= True
 
-config_items.append(['Show Scrollbar', toggle_scroll])
+def toggle_allow_remote(mode=0):
+    global prefs
+    if mode == 1:
+        return prefs.allow_remote ^ True
+    prefs.allow_remote ^= True
+    
+def toggle_expose_web(mode=0):
+    global prefs
+    if mode == 1:
+        return prefs.expose_web
+    prefs.expose_web ^= True
+    
+def toggle_transcode(mode=0):
+    global prefs
+    if mode == 1:
+        return prefs.enable_transcode
+    prefs.enable_transcode ^= True
 
-config_items.append(['Break Playlist by Folders', toggle_break])
+config_items.append(['Show scrollbar', toggle_scroll])
 
-config_items.append(['Use Double Digit Track Indices', toggle_dd])
+config_items.append(['Break playlist by folders', toggle_break])
 
-config_items.append(['Use Thick Rows', toggle_thick])
+config_items.append(['Use double digit track indices', toggle_dd])
 
-config_items.append(['Use Custom Line Format', toggle_custom_line])
+config_items.append(['Use thick rows', toggle_thick])
 
-config_items.append(['Add Release Year to Folder Title', toggle_append_date])
+config_items.append(['Use custom line format', toggle_custom_line])
 
-config_items.append(['Force Track Advancing to Open Playlist', toggle_follow])
+config_items.append(['Add release year to folder title', toggle_append_date])
+
+config_items.append(['Force track advancing to open playlist', toggle_follow])
 
 cursor = "|"
 c_time = 0
@@ -6273,11 +6292,30 @@ class Over:
         self.tab_active = 4
         self.tabs = [
             ["Folder Import", self.files],
-            ["Playlist", self.config_v],
-            ["Layout", self.config_b],
+            ["Modules", self.funcs],
+            ["Playlist Settings", self.config_v],
+            ["View", self.config_b],
             ["Stats", self.stats],
             ["About", self.about]
         ]
+
+    def funcs(self):
+
+        x = self.box_x + self.item_x_offset
+        y = self.box_y - 10
+
+        y += 35
+        self.toggle_square(x, y, toggle_enable_web, "Web interface*")
+        y += 25
+        self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
+        y += 25
+        self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control" + "  [localhost:" + str(server_port) + "/remote]")
+        y += 35
+        self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)")
+        # y += 30
+
+        y = self.box_y + 220
+        draw_text((x, y), "*Requires restart", colours.grey(150), 11)
 
     def toggle_square(self, x, y, function, text):
 
@@ -6337,16 +6375,16 @@ class Over:
         y = self.box_y + 55
         x = self.box_x + self.item_x_offset
 
-        self.toggle_square(x, y, toggle_borderless, "Borderless Window")
+        self.toggle_square(x, y, toggle_borderless, "Borderless window")
         y += 30
-        self.toggle_square(x, y, toggle_titlebar_line, "Show Playing in Titlebar")
+        self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
         y += 30
-        self.toggle_square(x, y, toggle_side_panel, "Show Side Panel")
+        self.toggle_square(x, y, toggle_side_panel, "Show side panel")
         y += 30
-        self.toggle_square(x, y, toggle_dim_albums, "Dim Gallery When Playing")
+        self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 30
         if default_player == 'BASS':
-            self.toggle_square(x, y, toggle_level_meter, "Show Visualisation")
+            self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
 
         # ----------
 
@@ -10213,7 +10251,7 @@ while running:
                             pctl.playerCommand = 'stop'
                             pctl.playerCommandReady = True
                             pctl.playing_state = 0
-                            time.sleep(1 + (pause_fade_time / 1000))
+                            time.sleep(1 + (prefs.pause_fade_time / 1000))
 
                         afterline = ""
 
@@ -10826,7 +10864,7 @@ while running:
     # Playlist and pctl.track_queue
 
     if pctl.playing_state == 1 and pctl.playing_time + (
-            cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 2:
+            prefs.cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 2:
 
         if auto_stop:
             pctl.stop()
@@ -10978,10 +11016,10 @@ save = [master_library,
         playlist_selected,
         album_mode_art_size,
         draw_border,
-        None,
-        None,
-        None,
-        None,
+        prefs.enable_web,
+        prefs.allow_remote,
+        prefs.expose_web,
+        prefs.enable_transcode,
         None,
         None
         ]
