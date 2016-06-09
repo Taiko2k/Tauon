@@ -31,11 +31,11 @@ import sys
 import os
 import pickle
 
-t_version = "v1.4.2"
+t_version = "v1.4.3"
 title = 'Tauon Music Box'
 version_line = title + t_version
 print(version_line)
-print('Copyright (c) 2015 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright (c) 2015-2016 Taiko2k captain.gxj@gmail.com\n')
 
 server_port = 7590
 
@@ -4334,7 +4334,7 @@ def activate_track_box(index):
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
 track_menu.add_sub("Modify...", 120)
-track_menu.add_sub("Insert/Remove...", 125)
+track_menu.add_sub("Insert/Remove...", 135)
 
 
 def rename_tracks(index):
@@ -6388,7 +6388,7 @@ class Over:
         y += 32
         draw_text((x, y, 2), t_version, colours.grey(200), 12)
         y += 20
-        draw_text((x, y, 2), "Copyright (c) 2015 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
+        draw_text((x, y, 2), "Copyright (c) 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
@@ -6557,7 +6557,7 @@ class Over:
 
         y += 5
 
-        self.view_offset -= self.scroll
+        self.view_offset -= self.scroll * 2
         if self.view_offset < 0:
             self.view_offset = 0
         if self.view_offset > items_len - max_view_len:
@@ -6613,7 +6613,7 @@ class Over:
             # TYPE NAME + SIZE
             if type == 0:
                 draw_rect_r(box, [200, 168, 100, 255], True)
-                draw_text((x + 14, y + (ix * 14)), "FLD", [200, 200, 200, 200], 12)
+                draw_text((x + 14, y + (ix * 14)), "/", [200, 200, 200, 200], 12)
             else:
                 draw_text((x + 14, y + (ix * 14)), extension[:7].upper(), [200, 200, 200, 200], 12)
                 draw_rect_r(box, box_colour, True)
@@ -6669,48 +6669,52 @@ class Over:
 
         # Buttons
         y += 14
+        y2 = y
 
-        draw_text((x + 300, y - 10), "Modify (use with caution) (hold shift)", [200, 200, 200, 200], 12)
 
-        box = (x + 300, y + 7, 180, 20)
-        if key_shift_down and coll_point(mouse_position, box):
-            draw_rect_r(box, [40, 40, 40, 60], True)
-            if self.click:
+        if key_shift_down:
+            y += 100
+            draw_text((x + 300, y - 10), "Modify (use with caution)", [200, 200, 200, 200], 12)
 
-                # get folders
-                folders = []
-                for item in os.listdir(self.current_path):
-                    folder_path = os.path.join(self.current_path, item)
-                    if os.path.isdir(folder_path):
-                        folders.append(item)
+            box = (x + 300, y + 7, 200, 20)
+            if coll_point(mouse_position, box):
+                draw_rect_r(box, [40, 40, 40, 60], True)
+                if self.click:
 
-                for item in folders:
-                    folder_path = os.path.join(self.current_path, item)
-                    items_in_folder = os.listdir(folder_path)
-                    if len(items_in_folder) == 1 and os.path.isdir(os.path.join(folder_path, items_in_folder[0])):
-                        target_path = os.path.join(folder_path, items_in_folder[0])
+                    # get folders
+                    folders = []
+                    for item in os.listdir(self.current_path):
+                        folder_path = os.path.join(self.current_path, item)
+                        if os.path.isdir(folder_path):
+                            folders.append(item)
 
-                        if item == items_in_folder[0]:
-                            print('same')
-                            os.rename(target_path, target_path + "RMTEMP")
-                            shutil.move(target_path + "RMTEMP", self.current_path)
-                            shutil.rmtree(folder_path)
-                            os.rename(folder_path + "RMTEMP", folder_path)
-                        else:
-                            print('diferent')
-                            shutil.move(target_path, self.current_path)
-                            shutil.rmtree(folder_path)
-                            os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
+                    for item in folders:
+                        folder_path = os.path.join(self.current_path, item)
+                        items_in_folder = os.listdir(folder_path)
+                        if len(items_in_folder) == 1 and os.path.isdir(os.path.join(folder_path, items_in_folder[0])):
+                            target_path = os.path.join(folder_path, items_in_folder[0])
 
-        draw_rect_r(box, colours.grey(50))
-        fields.add(box)
-        draw_text((box[0] + 90, box[1] + 2, 2), "Move single folder in folders up", [200, 200, 200, 200], 12)
+                            if item == items_in_folder[0]:
+                                print('same')
+                                os.rename(target_path, target_path + "RMTEMP")
+                                shutil.move(target_path + "RMTEMP", self.current_path)
+                                shutil.rmtree(folder_path)
+                                os.rename(folder_path + "RMTEMP", folder_path)
+                            else:
+                                print('diferent')
+                                shutil.move(target_path, self.current_path)
+                                shutil.rmtree(folder_path)
+                                os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
 
-        y += 50
+            draw_rect_r(box, colours.grey(50))
+            fields.add(box)
+            draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", [200, 200, 200, 200], 12)
+        y = y2
+        y += 0
 
         draw_text((x + 300, y - 10), "Import", [200, 200, 200, 200], 12)
 
-        box = (x + 300, y + 7, 180, 20)
+        box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
             draw_rect_r(box, [40, 40, 40, 60], True)
             if self.click:
@@ -6719,11 +6723,11 @@ class Over:
 
         draw_rect_r(box, colours.grey(50))
         fields.add(box)
-        draw_text((box[0] + 90, box[1] + 2, 2), "Folder to current playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to current playlist", [200, 200, 200, 200], 12)
 
         y += 25
 
-        box = (x + 300, y + 7, 180, 20)
+        box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
             draw_rect_r(box, [40, 40, 40, 60], True)
             if self.click:
@@ -6733,11 +6737,11 @@ class Over:
 
         draw_rect_r(box, colours.grey(50))
         fields.add(box)
-        draw_text((box[0] + 90, box[1] + 2, 2), "Folder to new playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to new playlist", [200, 200, 200, 200], 12)
 
         y += 25
 
-        box = (x + 300, y + 7, 180, 20)
+        box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
             draw_rect_r(box, [40, 40, 40, 60], True)
             if self.click:
@@ -6753,7 +6757,7 @@ class Over:
 
         draw_rect_r(box, colours.grey(50))
         fields.add(box)
-        draw_text((box[0] + 90, box[1] + 2, 2), "Each folder as new playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "Each subfolder as new playlist", [200, 200, 200, 200], 12)
 
 
 class Fields:
@@ -9403,7 +9407,7 @@ while running:
                     # rect = (starting_l, 0, 10, 29)
                     # draw_rect()
 
-                    starting_l += 15
+                    starting_l += 12
                     spacing = 0
                     draw_alt = True
 
@@ -9535,7 +9539,7 @@ while running:
                             draw_text(
                                 (starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]),
                                 "PLAYLIST", colours.grey(100), 12)
-                    l += 68
+                    l += 67
 
                 x = starting_l + (spacing * len(pctl.multi_playlist)) + 9 + l
 
