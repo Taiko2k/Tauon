@@ -624,6 +624,8 @@ class Prefs:
         self.expose_web = False
         
         self.enable_transcode = False
+        self.show_rym = True
+
 
 prefs = Prefs()
 
@@ -737,7 +739,8 @@ try:
         prefs.expose_web = save[28]
     if save[29] != None:
         prefs.enable_transcode = save[29]
-
+    if save[30] != None:
+        prefs.show_rym = save[30]
 
 except:
     print('Error loading save file')
@@ -4487,7 +4490,8 @@ def clip_ar_al(index):
            master_library[index].album
     pyperclip.copy(line)
 
-track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
+if prefs.show_rym:
+    track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
 track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
 
 
@@ -6239,6 +6243,12 @@ def toggle_transcode(mode=0):
         return prefs.enable_transcode
     prefs.enable_transcode ^= True
 
+def toggle_rym(mode=0):
+    global prefs
+    if mode == 1:
+        return prefs.show_rym
+    prefs.show_rym ^= True
+
 config_items.append(['Show scrollbar', toggle_scroll])
 
 config_items.append(['Break playlist by folders', toggle_break])
@@ -6311,8 +6321,9 @@ class Over:
         y += 25
         self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control" + "  [localhost:" + str(server_port) + "/remote]")
         y += 35
-        self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)")
-        # y += 30
+        self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
+        y += 25
+        self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
 
         y = self.box_y + 220
         draw_text((x, y), "*Requires restart", colours.grey(150), 11)
@@ -11020,6 +11031,12 @@ save = [master_library,
         prefs.allow_remote,
         prefs.expose_web,
         prefs.enable_transcode,
+        prefs.show_rym,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None
         ]
