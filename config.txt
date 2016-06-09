@@ -1,11 +1,6 @@
 ﻿## Tauon Music Box config file
 
 
-## View-------------------------------------
-
-#Shows option for transcoding in context menu (currently only opus+cue supported)
-enable-transcode
-
 ## Playback--------------------------------------------------------------
 
 #Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
@@ -23,16 +18,6 @@ mediakey:2
 #Show progress in windows taskbar (Win7+) (No effect under linux)
 taskbar-progress
 
-## Webserver------------------------------------------------------
-
-## enable-web will load the web interface for the local computer, in addition, expose-web will expose the web interface to other computers
-## (Warning: Feature has not been tested for security. Expose to internet at your own risk)
-## (Note: Feature is experimental and may be modified or removed in future versions)
-## current urls are :7590/remote for player control and :7590/radio for broadcasting tracks album art and title
-
-enable-web
-allow-remote (disable for broadcast album art only)
-#expose-web (careful!) (needed for accessing from other computers)
 
 ## Encoding----------
 
