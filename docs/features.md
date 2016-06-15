@@ -8,7 +8,7 @@
 - Multiple playlists
 - CUE sheet integration (Single source only)
 - Batch file renaming
-- Keyboard shortcuts (parial)
+- Keyboard shortcuts (partial, fixed)
 - Quick search
 - Cross fade (only)
 - Spectrum visualization
@@ -20,6 +20,7 @@
 - Media Keys (OSX: Not implemented)
 - Folder transcode to CUE+OPUS (Windows:Working, Linux:Not Tested, OSX:Not tested)
 - Text Encoding fix (Japanese only)
+- Sorting (Partial)
 
 
 ##### Other common player features not implemented:
@@ -40,12 +41,12 @@
  - Tag editing
  - Playlist import/export
  - External streaming integration
- - Sorting/Filtering
  - Library view
  - Raitings
  - Artist metadata scraping
  - Output configuration
  - A-B repreat
+ - Filtering
  - Bookmarks
  - Audio CD
 
