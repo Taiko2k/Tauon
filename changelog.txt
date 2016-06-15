@@ -6,6 +6,9 @@ v1.4.3
  - Fixed critical bug causing crash from web interface
  - Moved various settings to UI
  - Various UI tweaks
+ - Various bugfixes
+ - Various bugs created
+
 
 v1.4.2
 
