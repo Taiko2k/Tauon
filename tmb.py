@@ -2855,7 +2855,6 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         SDL_FreeSurface(font_surface)
 
         ttc[key] = [dst, c]
-        #if not text[0].isdigit() or True:
         ttl.append(key)
 
         # Delete oldest cached text if cache too big to avoid performance slowdowns
@@ -2866,10 +2865,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
             del ttc[key]
             del ttl[0]
 
-
         return dst.w
-
-
 
 
 def draw_text(location, text, colour, font, max=1000):
@@ -4588,9 +4584,7 @@ x_menu.add("Create Empty Playlist", new_playlist)
 
 x_menu.add("Settings...", activate_info_box)
 
-
-
-x_menu.add_sub("Database....", 120)
+x_menu.add_sub("Database...", 120)
 
 
 def export_stats():
@@ -6237,7 +6231,7 @@ class Over:
         self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
 
         y = self.box_y + 220
-        draw_text((x, y), "*Requires restart", colours.grey(150), 11)
+        draw_text((x, y), "*Changes apply on restart", colours.grey(150), 11)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -7384,6 +7378,8 @@ while running:
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
+        # print(event.type)
+
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
@@ -7586,7 +7582,15 @@ while running:
                     SDL_RestoreWindow(t_window)
                     SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
 
-            if event.window.event == SDL_WINDOWEVENT_RESIZED:
+            elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
+                x_menu.active = False
+                tab_menu.active = False
+                track_menu.active = False
+                playlist_menu.active = False
+                playlist_panel = False
+                gui.update += 1
+
+            elif event.window.event == SDL_WINDOWEVENT_RESIZED:
                 gui.update += 1
                 window_size[0] = event.window.data1
                 window_size[1] = event.window.data2
@@ -7657,7 +7661,6 @@ while running:
             i += 1
         arg_queue = []
         auto_play_import = True
-
 
     if key_F11:
         if fullscreen == 0:
@@ -8297,7 +8300,6 @@ while running:
                     side_panel_size = window_size[0] - 300
                 playlist_width = window_size[0] - side_panel_size - 30
 
-
             # ALBUM GALLERY RENDERING:
             # Gallery view
 
@@ -8499,12 +8501,7 @@ while running:
                 items_loaded = []
                 gui.update += 1
 
-
-
             if show_playlist:
-
-
-
 
                 # playlist hit test
                 if coll_point(mouse_position, (playlist_left, playlist_top, playlist_width, window_size[1] - panelY - panelBY)) and not drag_mode and (
@@ -8517,14 +8514,11 @@ while running:
 
                     gui.pl_update -= 1
 
-
                     playlist_render.full_render()
-
 
                 else:
 
                     playlist_render.cache_render()
-
 
                 # ------------------------------------------------
                 # Scroll Bar
@@ -8533,8 +8527,6 @@ while running:
 
                     sy = 31
                     ey = window_size[1] - 30 - 22
-
-
 
                     if len(default_playlist) < 50:
                         sbl = 85
@@ -8564,7 +8556,6 @@ while running:
                             playlist_position += 2
                         elif mouse_click:
 
-
                             p_y = pointer(c_int(0))
                             p_x = pointer(c_int(0))
                             SDL_GetGlobalMouseState(p_x,p_y)
@@ -8580,8 +8571,8 @@ while running:
                         gui.pl_update += 1
                         p_y = pointer(c_int(0))
                         p_x = pointer(c_int(0))
-                        SDL_GetGlobalMouseState(p_x,p_y)
-                        sbp = p_y.contents.value - (scroll_point - scroll_bpoint) #mouse_position[1] - (scroll_point - scroll_bpoint)
+                        SDL_GetGlobalMouseState(p_x, p_y)
+                        sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
                         if sbp + sbl > ey:
                             sbp = ey - sbl
                         elif sbp < panelY:
@@ -9431,7 +9422,6 @@ while running:
                 if not mouse_down:
                     tab_hold = False
 
-
                 if mouse_wheel != 0 and coll_point(mouse_position, (0, 0, window_size[0], 30)) and len(
                         pctl.multi_playlist) > 1:
                     switch_playlist(mouse_wheel * -1, True)
@@ -9521,8 +9511,6 @@ while running:
                     else:
                         draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "GALLERY", colours.grey(100), 12)
 
-
-
                 if lastfm.connected:
                     l += 62
 
@@ -9533,7 +9521,7 @@ while running:
                     fields.add(rect)
 
                     if not lastfm.hold:
-                        #draw_rect_r(rect, [70,70,70,70], True)
+
                         draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5 + 10, r[1] - 1, r[2], r[3]), "LAST.FM", colours.grey(125), 12)
                         if coll_point(mouse_position, rect) and mouse_click:
                             lastfm.toggle()
@@ -9565,7 +9553,6 @@ while running:
                               "Streaming", [60, 75, 220, 255], 11)
                     l += 97
 
-
                 else:
 
                     if pctl.encoder_pause == 1:
@@ -9579,10 +9566,10 @@ while running:
                     line = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[pctl.broadcast_index].title
                     line = trunc_line(line, 11, window_size[0] - l - 195)
 
-                    l += 55 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
-                              colours.grey(130), 11)
+                    l += 35 + draw_text((starting_l + (spacing * len(pctl.multi_playlist)) + 4 + l - 5, r[1] - 1, r[2], r[3]), line,
+                                colours.grey(130), 11)
 
-                    x = l #window_size[0] - 100
+                    x = l
                     y = 10
                     w = 90
                     h = 9
@@ -9597,7 +9584,7 @@ while running:
 
                     l -= 15
                     l -= 85
-                # Topline
+                # Top line
                 if not album_mode and (block6 or (side_panel_enable is False and pctl.broadcast_active is not True and pctl.playing_state > 0)):
                     line = ""
 
