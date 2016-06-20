@@ -265,6 +265,10 @@ seek_bar_position = [window_size[0] - seek_bar_size[0] - volume_bar_right, 20]
 
 compact_bar = False
 
+# Playlist Panel
+pl_view_offset = 0
+pl_rect = (2,12,10,10)
+
 theme = 5
 themeChange = True
 panelY = 78
@@ -5446,7 +5450,7 @@ def loader():
             cue.write(cu)
             cue.close()
 
-            album_art_gen.save_thumb(folder_items[0], (500,500), output_dir + folder_name)
+            album_art_gen.save_thumb(folder_items[0], (720, 720), output_dir + folder_name)
             print('finish')
 
             del transcode_list[0]
@@ -6906,7 +6910,7 @@ class StandardPlaylist:
                               True)
 
             # Make track the selection if right clicked
-            if right_click and line_hit:
+            if right_click and line_hit and not playlist_panel:
                 if p_track not in shift_selection:
                     shift_selection = [p_track]
 
@@ -6995,7 +6999,9 @@ class StandardPlaylist:
                 draw_rect((highlight_left, playlist_top + playlist_row_height * w),
                           (highlight_right, playlist_row_height), colours.row_select_highlight, True)
 
-            if right_click and line_hit and mouse_position[0] > playlist_left + 10:
+            if right_click and line_hit and mouse_position[0] > playlist_left + 10 \
+                    and not playlist_panel:
+
                 track_menu.activate(default_playlist[p_track])
 
                 playlist_selected = p_track
@@ -7259,7 +7265,8 @@ class StandardPlaylist:
                     mouse_position[0] > playlist_left + 15):
             playlist_menu.activate()
 
-        if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top:
+        if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top\
+                and not (playlist_panel and coll_point(mouse_position, pl_rect)):
 
             if album_mode and mouse_position[0] > playlist_width + 40:
                 pass
@@ -7614,7 +7621,7 @@ while running:
                 gui.update += 1
 
     power += 1
-    if drag_mode or resize_mode or scroll_hold:
+    if resize_mode or scroll_hold:
         power += 3
     if side_drag:
         power += 2
@@ -9621,41 +9628,70 @@ while running:
 
             if playlist_panel:
 
+                pl_items_len = len(pctl.multi_playlist)
+                pl_max_view_len = int((window_size[1] - panelY) / 16)
+                if pl_max_view_len < 1:
+                    pl_max_view_len = 1
+                if pl_max_view_len > pl_items_len:
+                    pl_max_view_len = pl_items_len
+
+                if coll_point(mouse_position, pl_rect):
+                    pl_view_offset -= mouse_wheel * 2
+                if pl_view_offset < 0:
+                    pl_view_offset = 0
+                if pl_view_offset > pl_items_len - pl_max_view_len:
+                    pl_view_offset = pl_items_len - pl_max_view_len
+
                 x = 2
                 y = panelY + 1
                 w = 400
-                h = len(pctl.multi_playlist) * 14 + 4
+                h = pl_max_view_len * 14 + 4
 
-                rect = (x, y, w, h)
-                draw_rect_r(rect, colours.bottom_panel_colour, True)
-                draw_rect_r(rect, [60,60,60,255], False)
+                pl_rect = (x, y, w, h)
+                draw_rect_r(pl_rect, colours.bottom_panel_colour, True)
+                draw_rect_r(pl_rect, [60,60,60,255], False)
 
-                if genre_box_click and not coll_point(mouse_position, rect):
+                if genre_box_click and not coll_point(mouse_position, pl_rect):
                     playlist_panel = False
 
+                p = 0
                 for i, item in enumerate(pctl.multi_playlist):
 
-                    rect = (x, y + 1 + i * 14, 13, 13)
+                    if i < pl_view_offset:
+                        continue
+                    if p >= pl_max_view_len:
+                        break
+
+                    rect = (x, y + 1 + p * 14, 13, 13)
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
-                        rect2 = (x, y + 1 +  i*14, w - 2, 13)
+                        rect2 = (x, y + 1 +  p*14, w - 2, 13)
                         draw_rect_r(rect2, [40, 40, 40, 255], True)
-                        draw_text2((x + 1, y - 1 + i * 14), "X", [220, 60, 60, 255], 12, 300)
+                        draw_text2((x + 1, y - 1 + p * 14), "X", [220, 60, 60, 255], 12, 300)
                         if genre_box_click:
                             delete_playlist(i)
                     else:
-                        draw_text2((x + 1, y - 1 + i * 14), "X", [70, 70, 70, 255], 12, 300)
+                        draw_text2((x + 1, y - 1 + p * 14), "X", [70, 70, 70, 255], 12, 300)
 
-                    rect = (x + 13, y + 1 +  i*14, w - 12, 13)
+                    rect = (x + 13, y + 1 +  p*14, w - 12, 13)
                     fields.add(rect)
                     if coll_point(mouse_position, rect) and not tab_menu.active:
+
                         draw_rect_r(rect, [40,40,40,255], True)
                         if genre_box_click:
                             switch_playlist(i)
                             playlist_panel = False
 
-                    draw_text2((x+15,y - 1 + i*14), item[0], [110,110,110,255], 12, 300)
-                    draw_text2((x + w - 5, y - 1 + i * 14, 1), str(len(item[2])), [80, 80, 80, 255], 12, 300)
+                    if tab_menu.active and tab_menu.reference == i:
+                        draw_rect_r(rect, [40, 40, 40, 255], True)
+                    if right_click and coll_point(mouse_position, rect):
+                        tab_menu.activate(copy.deepcopy(i))
+
+
+                    draw_text2((x+15,y - 1 + p*14), item[0], [110,110,110,255], 12, 300)
+                    draw_text2((x + w - 5, y - 1 + p * 14, 1), str(len(item[2])), [80, 80, 80, 255], 12, 300)
+
+                    p += 1
 
 
 
