@@ -55,6 +55,7 @@ install_directory = install_directory.replace('\\', '/')
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 user_directory = install_directory
+transfer_target = user_directory + "/transfer.p"
 # print("Working directory: " + working_directory)
 # print('Argument List: ' + str(sys.argv))
 # print('User directory: ' + user_directory)
@@ -163,6 +164,8 @@ class Timer:  # seconds
 cursor_blink_timer = Timer()
 spec_decay_timer = Timer()
 min_render_timer = Timer()
+check_file_timer = Timer()
+check_file_timer.set()
 
 
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -399,6 +402,8 @@ seek_down = False
 
 mouse_position = [0, 0]
 
+k_input = True
+
 key_shift_down = False
 drag_mode = False
 side_drag = False
@@ -516,11 +521,19 @@ master_library = {}
 star_library = {}
 cue_list = []
 
-loaderCommand = ""
+LC_None = 0
+LC_Done = 1
+LC_Folder = 2
+LC_File = 3
+
+loaderCommand = LC_None
 loaderCommandReady = False
 paths_to_load = []
 master_count = 0
 items_loaded = []
+
+
+
 
 volume = 100
 
@@ -2730,38 +2743,52 @@ def coll_point(l, r):
     return True
 
 
-def draw_line(x1, y1, x2, y2, colour):
-    global renderer
-    SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-    SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
+class Drawing:
 
+    def __init__(self):
+        self.sdl_rect = SDL_Rect(10, 10, 10, 10)
+        self.text_width_p = pointer(c_int(0))
 
-def draw_rect(location, wh, colour, fill=False):
+    def fast_fill_rect(self, x, y, w, h):
+        self.sdl_rect.x = x
+        self.sdl_rect.y = y
+        self.sdl_rect.w = w
+        self.sdl_rect.h = h
+        SDL_RenderFillRect(renderer, self.sdl_rect)
 
-    a = SDL_Rect(location[0], location[1], wh[0], wh[1])
+    def rect(self, location, wh, colour, fill=False):
 
-    if fill == True:
+        self.sdl_rect.x = location[0]
+        self.sdl_rect.y = location[1]
+        self.sdl_rect.w = wh[0]
+        self.sdl_rect.h = wh[1]
+
+        if fill is True:
+            SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
+            SDL_RenderFillRect(renderer, self.sdl_rect)
+        else:
+            SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
+            SDL_RenderDrawRect(renderer, self.sdl_rect)
+
+    def rect_r(self, rect, colour, fill=False):
+        self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill)
+        
+    def line(self, x1, y1, x2, y2, colour):
+
         SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-        SDL_RenderFillRect(renderer, a)
-    else:
-        SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-        SDL_RenderDrawRect(renderer, a)
+        SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
+
+    def text_calc(self, text, font):
+
+        TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
+        return self.text_width_p.contents.value
+
+
+draw = Drawing()
 
 
 text_cache = []  # location, text, dst(sdl rect), c(texture)
 calc_cache = []
-
-
-def text_calc(text, font):
-    text_utf = text.encode('utf-8')
-    tex_w = pointer(c_int(0))
-
-    TTF_SizeUTF8(font_dict[font][0], text_utf, tex_w, None)
-    xlen = tex_w.contents.value
-
-    return [xlen, 2]
-
-
 ttc = {}
 ttl = []
 
@@ -3358,7 +3385,7 @@ album_art_gen = AlbumArt()
 def trunc_line(line, font, px):
     trunk = False
 
-    while text_calc(line, font)[0] > px:
+    while draw.text_calc(line, font) > px:
         trunk = True
         line = line[:-2]
         if len(line) < 10:
@@ -3580,7 +3607,7 @@ class Menu:
                     label = self.items[i][0]
 
                 # Draw item background, black by default
-                draw_rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
+                draw.rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
                           fx[1], True)
 
                 # Detect if mouse is over this item
@@ -3589,7 +3616,7 @@ class Menu:
 
                 if coll_point(mouse_position,
                               (self.pos[0], self.pos[1] + i * self.h, self.w, self.h - 1)):
-                    draw_rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
+                    draw.rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
                               [colours.artist_text[0], colours.artist_text[1], colours.artist_text[2], 100], True)  # [15, 15, 15, 255]
 
                     # Call menu items callback if clicked
@@ -3604,7 +3631,7 @@ class Menu:
                             self.sub_active = self.items[i][2]
 
                 # Draw tab
-                draw_rect((self.pos[0], self.pos[1] + i * self.h), (5, self.h),
+                draw.rect((self.pos[0], self.pos[1] + i * self.h), (5, self.h),
                              colours.grey(40), True)
 
                 # Render the items label
@@ -3622,14 +3649,14 @@ class Menu:
 
                         # Item background
                         fx = self.subs[self.sub_active][w][3]()
-                        draw_rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
+                        draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
 
                         # Detect if mouse is over this item
                         rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
                         fields.add(rect)
                         if coll_point(mouse_position,
                                       (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
-                            draw_rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
+                            draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
                                       [colours.artist_text[0], colours.artist_text[1], colours.artist_text[2], 100], True)
 
                             # Call Callback
@@ -3651,14 +3678,14 @@ class Menu:
                                   11)
 
                     # Render the menu outline
-                    draw_rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+                    draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
             if self.clicked:
                 self.active = False
                 self.clicked = False
 
             # Render the menu outline
-            draw_rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+            draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
 
@@ -5510,17 +5537,17 @@ def loader():
             del gall_ren.queue[0]
 
         if loaderCommandReady is True:
-            if loaderCommand == 'import folder':
+            if loaderCommand == LC_Folder:
                 to_get = 0
                 to_got = 0
                 loaded_pathes_cache = cache_paths()
                 pre_get(paths_to_load)
                 gets(paths_to_load)
-            elif loaderCommand == 'import file':
+            elif loaderCommand == LC_File:
                 loaded_pathes_cache = cache_paths()
                 add_file(paths_to_load)
 
-            loaderCommand = 'done file'
+            loaderCommand = LC_Done
             # print('ADDED: ' + str(added))
             items_loaded = added
             added = []
@@ -6178,10 +6205,6 @@ key_shiftr_down = False
 key_ctrl_down = False
 
 
-def draw_rect_r(rect, colour, fill=False):
-    draw_rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill)
-
-
 class Over:
     def __init__(self):
 
@@ -6241,12 +6264,12 @@ class Over:
 
         w = width
         if w == 0:
-            w = text_calc(text, 11)[0] + 10
+            w = draw.text_calc(text, 11) + 10
         rect = (x, y, w, 20)
-        draw_rect_r(rect, colours.grey(50))
+        draw.rect_r(rect, colours.grey(50))
         fields.add(rect)
         if coll_point(mouse_position, rect):
-            draw_rect_r(rect, [40, 40, 40, 60], True)
+            draw.rect_r(rect, [40, 40, 40, 60], True)
             if self.click:
                 plug()
         draw_text((x + int(w/2), rect[1] + 2, 2), text, [255, 255, 255, 140], 11)
@@ -6255,12 +6278,12 @@ class Over:
     def toggle_square(self, x, y, function, text):
 
         draw_text((x + 20, y - 3), text, [255, 255, 255, 150], 11)
-        draw_rect((x, y), (12, 12), [255, 255, 255, 13], True)
-        draw_rect((x, y), (12, 12), [255, 255, 255, 16])
+        draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
+        draw.rect((x, y), (12, 12), [255, 255, 255, 16])
         if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
             function()
         if function(1):
-            draw_rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
+            draw.rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
 
     def config_b(self):
 
@@ -6278,9 +6301,9 @@ class Over:
 
         rect = (x,y,15,15)
         fields.add(rect)
-        draw_rect_r(rect, [255,255,255,20], True)
+        draw.rect_r(rect, [255,255,255,20], True)
         if coll_point(mouse_position, rect):
-            draw_rect_r(rect, [255, 255, 255, 25], True)
+            draw.rect_r(rect, [255, 255, 255, 25], True)
             if self.click:
                 if album_mode_art_size > 101:
                     album_mode_art_size -= 10
@@ -6290,16 +6313,16 @@ class Over:
 
         x += 25
 
-        draw_rect_r((x,y,40,15), [255,255,255,10], True)
+        draw.rect_r((x,y,40,15), [255,255,255,10], True)
         draw_text((x + 4, y), str(album_mode_art_size) + "px", colours.grey(200), 11)
 
         x +=  40 + 10
 
         rect = (x, y, 15, 15)
         fields.add(rect)
-        draw_rect_r(rect, [255,255,255,20], True)
+        draw.rect_r(rect, [255,255,255,20], True)
         if coll_point(mouse_position, rect):
-            draw_rect_r(rect, [255, 255, 255, 25], True)
+            draw.rect_r(rect, [255, 255, 255, 25], True)
             if self.click:
                 if album_mode_art_size < 350:
                     album_mode_art_size += 10
@@ -6385,12 +6408,12 @@ class Over:
         x2 = x
         for k in config_items:
             draw_text((x + 20, y - 3), k[0], [255, 255, 255, 150], 11)
-            draw_rect((x, y), (12, 12), [255, 255, 255, 13], True)
-            draw_rect((x, y), (12, 12), [255, 255, 255, 16])
+            draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
+            draw.rect((x, y), (12, 12), [255, 255, 255, 16])
             if self.click and coll_point(mouse_position, (x - 20, y - 10, 180 , 25)):
                 k[1]()
             if k[1](1) is True:
-                draw_rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
+                draw.rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
 
             y += 30
 
@@ -6427,9 +6450,9 @@ class Over:
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
-        draw_rect((self.box_x, self.box_y), (self.w, self.h), colours.top_panel_background, True)
-        draw_rect((self.box_x, self.box_y), (self.w, self.h), colours.grey(50))
-        draw_rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
+        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.top_panel_background, True)
+        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.grey(50))
+        draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
         # temp
         if len(self.drives) < 1 and system == 'windows':
@@ -6440,14 +6463,14 @@ class Over:
         for item in self.tabs:
 
             box = [self.box_x + 1, self.box_y + 1 + (current_tab * 31), 110, 30]
-            draw_rect_r(box, colours.tab_background, True)
+            draw.rect_r(box, colours.tab_background, True)
 
             if current_tab == self.tab_active:
                 colour = copy.deepcopy(colours.tab_background_active)
                 colour[3] = 190
-                draw_rect_r(box, colour, True)
+                draw.rect_r(box, colour, True)
             else:
-                draw_rect_r(box, colours.tab_background, True)
+                draw.rect_r(box, colours.tab_background, True)
 
             draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
 
@@ -6456,7 +6479,7 @@ class Over:
 
             current_tab += 1
 
-        draw_line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
+        draw.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
 
         self.tabs[self.tab_active][1]()
 
@@ -6535,7 +6558,7 @@ class Over:
             # HLT
             fields.add(row)
             if coll_point(mouse_position, row):
-                draw_rect_r(row, [60, 60, 60, 60], True)
+                draw.rect_r(row, [60, 60, 60, 60], True)
                 if self.click and type == 0:
                     newdir = full_path
                     try:
@@ -6550,11 +6573,11 @@ class Over:
 
             # TYPE NAME + SIZE
             if type == 0:
-                draw_rect_r(box, [200, 168, 100, 255], True)
+                draw.rect_r(box, [200, 168, 100, 255], True)
                 draw_text((x + 14, y + (ix * 14)), "/", [200, 200, 200, 200], 12)
             else:
                 draw_text((x + 14, y + (ix * 14)), extension[:7].upper(), [200, 200, 200, 200], 12)
-                draw_rect_r(box, box_colour, True)
+                draw.rect_r(box, box_colour, True)
 
                 file_bytes = os.path.getsize(full_path)
                 if file_bytes < 1000:
@@ -6580,10 +6603,10 @@ class Over:
         rect = (x, y - 20, 50, 20)
         fields.add(rect)
         if coll_point(mouse_position, rect):
-            draw_rect((x, y - 20), (50, 20), [40, 40, 40, 60], True)
+            draw.rect((x, y - 20), (50, 20), [40, 40, 40, 60], True)
             if self.click:
                 self.current_path = os.path.dirname(self.current_path)
-        draw_rect((x, y - 20), (50, 20), colours.grey(50))
+        draw.rect((x, y - 20), (50, 20), colours.grey(50))
 
         # Path display
         draw_text((x + 60, y - 18), self.current_path, [200, 200, 200, 200], 12)
@@ -6595,7 +6618,7 @@ class Over:
                 box = (x + 100 + (20 * drive_index), y + 195, 19, 20)
                 fields.add(box)
                 if coll_point(mouse_position, box):
-                    draw_rect_r(box, [60, 60, 60, 60], True)
+                    draw.rect_r(box, [60, 60, 60, 60], True)
                     if self.click:
                         try:
                             os.listdir(drive)
@@ -6616,7 +6639,7 @@ class Over:
 
             box = (x + 300, y + 7, 200, 20)
             if coll_point(mouse_position, box):
-                draw_rect_r(box, [40, 40, 40, 60], True)
+                draw.rect_r(box, [40, 40, 40, 60], True)
                 if self.click:
 
                     # get folders
@@ -6644,7 +6667,7 @@ class Over:
                                 shutil.rmtree(folder_path)
                                 os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
 
-            draw_rect_r(box, colours.grey(50))
+            draw.rect_r(box, colours.grey(50))
             fields.add(box)
             draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", [200, 200, 200, 200], 12)
         y = y2
@@ -6654,12 +6677,12 @@ class Over:
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw_rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, [40, 40, 40, 60], True)
             if self.click:
                 load_to.append(copy.deepcopy(pctl.playlist_active))
                 dropped_file.append(copy.deepcopy(self.current_path))
 
-        draw_rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 100, box[1] + 2, 2), "This folder to current playlist", [200, 200, 200, 200], 12)
 
@@ -6667,13 +6690,13 @@ class Over:
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw_rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, [40, 40, 40, 60], True)
             if self.click:
                 pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
                 load_to.append(len(pctl.multi_playlist) - 1)
                 dropped_file.append(copy.deepcopy(self.current_path))
 
-        draw_rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 100, box[1] + 2, 2), "This folder to new playlist", [200, 200, 200, 200], 12)
 
@@ -6681,7 +6704,7 @@ class Over:
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw_rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, [40, 40, 40, 60], True)
             if self.click:
 
                 in_current = os.listdir(self.current_path)
@@ -6693,7 +6716,7 @@ class Over:
                         load_to.append(len(pctl.multi_playlist) - 1)
                         dropped_file.append(full_path)
 
-        draw_rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.grey(50))
         fields.add(box)
         draw_text((box[0] + 100, box[1] + 2, 2), "Each subfolder as new playlist", [200, 200, 200, 200], 12)
 
@@ -6772,7 +6795,7 @@ class StandardPlaylist:
         rect = (0, panelY, playlist_width + 31, window_size[1])
         if side_panel_enable is False:
             rect = (0, panelY, window_size[0], window_size[1])
-        draw_rect_r(rect, colours.playlist_panel_background, True)
+        draw.rect_r(rect, colours.playlist_panel_background, True)
 
         # Determine highlight size
         if not custom_line_mode:
@@ -6842,7 +6865,7 @@ class StandardPlaylist:
                                alpha_mod(colours.folder_title, album_fade),
                                11, playlist_width)
 
-                draw_line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
+                draw.line(playlist_left, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
                           playlist_width + playlist_left,
                           playlist_top + playlist_row_height - 1 + playlist_row_height * w, colours.folder_line)
 
@@ -6855,13 +6878,13 @@ class StandardPlaylist:
 
                 # Shade ever other line for folder row
                 # if row_alt and w % 2 == 0:
-                #     draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                #     draw.rect((playlist_left, playlist_top + playlist_row_height * w),
                 #               (playlist_width, playlist_row_height - 1), [0, 0, 0, 20], True)
                 w += 1
 
             # Shade ever other line if option set
             # if row_alt and w % 2 == 0:
-            #     draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+            #     draw.rect((playlist_left, playlist_top + playlist_row_height * w),
             #               (playlist_width, playlist_row_height - 1), [0, 0, 0, 20], True)
 
             # Test if line hit
@@ -6887,14 +6910,14 @@ class StandardPlaylist:
             this_line_playing = False
             if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
                     default_playlist[p_track]:
-                draw_rect((highlight_left, playlist_top + playlist_row_height * w),
+                draw.rect((highlight_left, playlist_top + playlist_row_height * w),
                           (highlight_right, playlist_row_height - 1), colours.row_playing_highlight, True)
                 this_line_playing = True
 
             # Highlight blue if track is being broadcast
             if default_playlist[
                         p_track] == pctl.broadcast_index and pctl.broadcast_active and not pctl.join_broadcast:
-                draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                draw.rect((playlist_left, playlist_top + playlist_row_height * w),
                           (playlist_width, playlist_row_height - 1), [10, 20, 180, 70], True)
 
             # Add to queue on middle click
@@ -6905,7 +6928,7 @@ class StandardPlaylist:
             # Highlight green if track in queue
             for item in pctl.force_queue:
                 if default_playlist[p_track] == item[0] and item[1] == p_track:
-                    draw_rect((playlist_left, playlist_top + playlist_row_height * w),
+                    draw.rect((playlist_left, playlist_top + playlist_row_height * w),
                               (playlist_width, playlist_row_height - 1), [30, 170, 30, 35],
                               True)
 
@@ -6922,7 +6945,7 @@ class StandardPlaylist:
 
             if (mouse_click and key_shift_down is False and line_hit or
                             playlist_selected == p_track):
-                draw_rect((highlight_left, playlist_top + playlist_row_height * w),
+                draw.rect((highlight_left, playlist_top + playlist_row_height * w),
                           (highlight_right, playlist_row_height - 1), colours.row_select_highlight, True)
                 playlist_selected = p_track
 
@@ -6972,7 +6995,7 @@ class StandardPlaylist:
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width,
                     playlist_row_height)) and playlist_hold_position != p_track:
-                draw_line(playlist_left, playlist_top + playlist_row_height + playlist_row_height * w,
+                draw.line(playlist_left, playlist_top + playlist_row_height + playlist_row_height * w,
                           playlist_width + playlist_left,
                           playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
 
@@ -6996,7 +7019,7 @@ class StandardPlaylist:
 
             # Multi Select Highlight
             if p_track in shift_selection and p_track != playlist_selected:
-                draw_rect((highlight_left, playlist_top + playlist_row_height * w),
+                draw.rect((highlight_left, playlist_top + playlist_row_height * w),
                           (highlight_right, playlist_row_height), colours.row_select_highlight, True)
 
             if right_click and line_hit and mouse_position[0] > playlist_left + 10 \
@@ -7138,7 +7161,7 @@ class StandardPlaylist:
                             if ratio > 0.55:
                                 ratio = int(ratio * 4)
 
-                                draw_line(item[1] - ratio,
+                                draw.line(item[1] - ratio,
                                           playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
                                           item[1],
                                           playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
@@ -7228,7 +7251,7 @@ class StandardPlaylist:
                     if ratio > 0.55:
                         ratio = int(ratio * 4)
 
-                        draw_line(playlist_width - playlist_x_offset + playlist_left - ratio - 40,
+                        draw.line(playlist_width - playlist_x_offset + playlist_left - ratio - 40,
                                   playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
                                   playlist_width - playlist_x_offset + playlist_left - 37,
                                   playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
@@ -7333,52 +7356,56 @@ while running:
 
     # bm.get('main')
 
-    d_mouse_click = False
-    mouse4 = False
-    mouse5 = False
-    right_click = False
-    mouse_click = False
-    middle_click = False
-    mouse_up = False
-    key_return_press = False
-    key_ralt = False
-    key_space_press = False
-    key_down_press = False
-    key_up_press = False
-    key_right_press = False
-    key_left_press = False
-    key_backslash_press = False
-    key_esc_press = False
-    key_F11 = False
-    key_F8 = False
-    key_F10 = False
-    key_F2 = False
-    key_F3 = False
-    key_F4 = False
-    key_F5 = False
-    key_F6 = False
-    # key_F7 = False
-    key_F1 = False
-    key_PGU = False
-    key_PGD = False
-    key_del = False
-    key_backspace_press = False
-    key_1_press = False
-    # key_2_press = False
-    # key_3_press = False
-    # key_4_press = False
-    # key_5_press = False
-    key_v_press = False
-    key_f_press = False
-    key_dash_press = False
-    key_eq_press = False
-    key_slash_press = False
-    key_period_press = False
-    key_comma_press = False
-    key_quote_hit = False
-    key_return_press_w = False
-    mouse_wheel = 0
-    input_text = ''
+    if k_input:
+
+        d_mouse_click = False
+        mouse4 = False
+        mouse5 = False
+        right_click = False
+        mouse_click = False
+        middle_click = False
+        mouse_up = False
+        key_return_press = False
+        key_ralt = False
+        key_space_press = False
+        key_down_press = False
+        key_up_press = False
+        key_right_press = False
+        key_left_press = False
+        key_backslash_press = False
+        key_esc_press = False
+        key_F11 = False
+        key_F8 = False
+        key_F10 = False
+        key_F2 = False
+        key_F3 = False
+        key_F4 = False
+        key_F5 = False
+        key_F6 = False
+        # key_F7 = False
+        key_F1 = False
+        key_PGU = False
+        key_PGD = False
+        key_del = False
+        key_backspace_press = False
+        key_1_press = False
+        # key_2_press = False
+        # key_3_press = False
+        # key_4_press = False
+        # key_5_press = False
+        key_v_press = False
+        key_f_press = False
+        key_dash_press = False
+        key_eq_press = False
+        key_slash_press = False
+        key_period_press = False
+        key_comma_press = False
+        key_quote_hit = False
+        key_return_press_w = False
+        mouse_wheel = 0
+        input_text = ''
+
+    k_input = False
     clicked = False
     focused = False
     mouse_moved = False
@@ -7398,7 +7425,7 @@ while running:
 
             if i_y < panelY:
                 for w in range(len(pctl.multi_playlist)):
-                    text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
+                    text_space = draw.text_calc(pctl.multi_playlist[w][0], 12)
                     x = starting_l + (spacing * w) + k
                     if x < i_x < x + text_space + 16:
                         load_to.append(copy.deepcopy(w))
@@ -7435,6 +7462,7 @@ while running:
             power += 5
             editline = event.edit.text
             editline = editline.decode("utf-8", 'ignore')
+            k_input = True
 
         elif event.type == SDL_MOUSEMOTION:
 
@@ -7442,6 +7470,7 @@ while running:
             mouse_position[1] = event.motion.y
             mouse_moved = True
         elif event.type == SDL_MOUSEBUTTONDOWN:
+            k_input = True
             power += 5
             gui.update += 1
             if event.button.button == SDL_BUTTON_RIGHT:
@@ -7461,6 +7490,7 @@ while running:
             elif event.button.button == SDL_BUTTON_X2:
                 mouse5 = True
         elif event.type == SDL_MOUSEBUTTONUP:
+            k_input = True
             power += 5
             gui.update += 1
             if event.button.button == SDL_BUTTON_RIGHT:
@@ -7470,6 +7500,7 @@ while running:
                 mouse_down = False
                 mouse_up = True
         elif event.type == SDL_KEYDOWN:
+            k_input = True
             power += 5
             gui.update += 2
             if event.key.keysym.sym == SDLK_RETURN and len(editline) == 0:
@@ -7552,6 +7583,7 @@ while running:
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
         elif event.type == SDL_KEYUP:
+            k_input = True
             power += 5
             gui.update += 2
             if event.key.keysym.sym == SDLK_LSHIFT:
@@ -7561,11 +7593,13 @@ while running:
             elif event.key.keysym.sym == SDLK_RSHIFT:
                 key_shiftr_down = False
         elif event.type == SDL_TEXTINPUT:
+            k_input = True
             power += 5
             input_text = event.text.text
             input_text = input_text.decode('utf-8')
             # print(input_text)
         elif event.type == SDL_MOUSEWHEEL:
+            k_input = True
             power += 5
             mouse_wheel += event.wheel.y
             gui.update += 1
@@ -7637,149 +7671,244 @@ while running:
     if gui.pl_update > 2:
         gui.pl_update = 2
 
-    if fields.test():
-        gui.update += 1
+    if mouse_moved:
+        if fields.test():
+            gui.update += 1
 
-    if os.path.isfile(user_directory + "/transfer.p"):
-        r_arg_queue = pickle.load(open(user_directory + "/transfer.p", "rb"))
-        os.remove(user_directory + "/transfer.p")
-        arg_queue = []
-        for item in r_arg_queue:
-            if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-                arg_queue.append(item)
-        # SDL_RaiseWindow(t_window)
-        # SDL_RestoreWindow(t_window)
+    if check_file_timer.get() > 0.5:
+        check_file_timer.set()
+        if os.path.isfile(transfer_target):
+            r_arg_queue = pickle.load(open(transfer_target, "rb"))
+            os.remove(user_directory + "/transfer.p")
+            arg_queue = []
+            for item in r_arg_queue:
+                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+                    arg_queue.append(item)
+            # SDL_RaiseWindow(t_window)
+            # SDL_RestoreWindow(t_window)
 
-    if len(arg_queue) > 0:
-        i = 0
-        while i < len(arg_queue):
+        if len(arg_queue) > 0:
+            i = 0
+            while i < len(arg_queue):
 
-            for w in range(len(pctl.multi_playlist)):
-                if pctl.multi_playlist[w][0] == "Default":
-                    #del pctl.multi_playlist[w][2][:]
-                    load_to.append(copy.deepcopy(w))
-                    break
-            else:
-                pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-                load_to.append(len(pctl.multi_playlist) - 1)
-                switch_playlist(len(pctl.multi_playlist) - 1)
+                for w in range(len(pctl.multi_playlist)):
+                    if pctl.multi_playlist[w][0] == "Default":
+                        #del pctl.multi_playlist[w][2][:]
+                        load_to.append(copy.deepcopy(w))
+                        break
+                else:
+                    pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+                    load_to.append(len(pctl.multi_playlist) - 1)
+                    switch_playlist(len(pctl.multi_playlist) - 1)
 
-            dropped_file.append(arg_queue[i])
-            i += 1
-        arg_queue = []
-        auto_play_import = True
-
-    if key_F11:
-        if fullscreen == 0:
-            fullscreen = 1
-            SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-        elif fullscreen == 1:
+                dropped_file.append(arg_queue[i])
+                i += 1
+            arg_queue = []
+            auto_play_import = True
+    if k_input:
+        if key_F11:
+            if fullscreen == 0:
+                fullscreen = 1
+                SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
+            elif fullscreen == 1:
+                fullscreen = 0
+                SDL_SetWindowFullscreen(t_window, 0)
+        if fullscreen == 1 and key_esc_press:
             fullscreen = 0
             SDL_SetWindowFullscreen(t_window, 0)
-    if fullscreen == 1 and key_esc_press:
-        fullscreen = 0
-        SDL_SetWindowFullscreen(t_window, 0)
 
-    if key_F10:
-        if boarder == 0:
-            boarder = 1
-            SDL_SetWindowBordered(t_window, SDL_TRUE)
+        if key_F10:
+            if boarder == 0:
+                boarder = 1
+                SDL_SetWindowBordered(t_window, SDL_TRUE)
 
-        elif boarder == 1:
-            boarder = 0
-            SDL_SetWindowBordered(t_window, SDL_FALSE)
-    if key_F3:
-        split_line ^= True
-        gui.pl_update += 1
-        gui.update += 1
+            elif boarder == 1:
+                boarder = 0
+                SDL_SetWindowBordered(t_window, SDL_FALSE)
 
-    if mouse4:
-        toggle_album_mode()
-    if mouse5:
-        toggle_side_panel()
+        if key_F8:
+            lfm_hash = ""
+            lfm_password = ""
+            lfm_username = ""
+            message_box = True
+            message_box_text = "Account Info Reset"
 
-    ab_click = False
+        if key_del:
+            del_selected()
 
-    if pref_box.enabled:
+        if key_F1:
+            toggle_album_mode()
 
-        if pref_box.inside():
-            if mouse_click:
-                pref_box.click = True
-                mouse_click = False
-            if right_click:
-                right_click = False
-                pref_box.right_click = True
+        if key_F5:
+            pctl.playerCommand = 'encpause'
+            pctl.playerCommandReady = True
 
-            pref_box.scroll = mouse_wheel
-            mouse_wheel = 0
+        if key_F6:
+            pctl.join_broadcast ^= True
+            print("Join brodcast commands:" + str(pctl.join_broadcast))
+
+        if key_F4:
+            standard_size()
+
+        if key_F7:
+            # spec_smoothing ^= True
+            # if draw_border:
+            #     SDL_SetWindowBordered(t_window, True)
+            #     draw_border = False
+            # else:
+            #     SDL_SetWindowBordered(t_window, False)
+            #     draw_border = True
+
+            # print(lastfm.get_bio(pctl.master_library[pctl.track_queue[pctl.queue_step]].artist))
+            # show_playlist ^= True
+
+            # b_info_bar ^= True
+            # playlist_panel ^= True
+
+            # key_F7 = False
+            pass
+
+        if key_F3:
+            split_line ^= True
+            gui.pl_update += 1
+            gui.update += 1
+
+        if mouse4:
+            toggle_album_mode()
+        if mouse5:
+            toggle_side_panel()
+
+        ab_click = False
+
+        if pref_box.enabled:
+
+            if pref_box.inside():
+                if mouse_click:
+                    pref_box.click = True
+                    mouse_click = False
+                if right_click:
+                    right_click = False
+                    pref_box.right_click = True
+
+                pref_box.scroll = mouse_wheel
+                mouse_wheel = 0
+            else:
+                if mouse_click:
+                    pref_box.enabled = False
+                if right_click:
+                    pref_box.enabled = False
+                if pref_box.lock is False:
+                        pass
+
+        # Transfer click register to menus
+        if x_menu.active is True and mouse_click:
+            x_menu.click()
+            mouse_click = False
+            ab_click = True
+
+        if playlist_menu.active and mouse_click:
+            playlist_menu.click()
+            mouse_click = False
+            ab_click = True
+
+        if track_menu.active is True and mouse_click:
+            track_menu.click()
+            mouse_click = False
+            ab_click = True
+
+        if tab_menu.active is True and mouse_click:
+            tab_menu.click()
+            mouse_click = False
+            ab_click = True
+
+        if encoding_box is True and mouse_click:
+            encoding_box_click = True
+            mouse_click = False
+            ab_click = True
         else:
-            if mouse_click:
-                pref_box.enabled = False
-            if right_click:
-                pref_box.enabled = False
-            if pref_box.lock is False:
-                pass
+            encoding_box_click = False
 
-    # Transfer click register to menus
-    if x_menu.active is True and mouse_click:
-        x_menu.click()
-        mouse_click = False
-        ab_click = True
+        genre_box_click = False
+        if (genre_box or playlist_panel) and mouse_click:
+            mouse_click = False
+            genre_box_click = True
 
-    if playlist_menu.active and mouse_click:
-        playlist_menu.click()
-        mouse_click = False
-        ab_click = True
+        if radiobox and key_return_press:
+            key_return_press = False
+            key_return_press_w = True
 
-    if track_menu.active is True and mouse_click:
-        track_menu.click()
-        mouse_click = False
-        ab_click = True
+        if mouse_wheel != 0:
+            gui.update += 1
+        if mouse_down is True:
+            gui.update += 1
 
-    if tab_menu.active is True and mouse_click:
-        tab_menu.click()
-        mouse_click = False
-        ab_click = True
+        if key_PGD:
+            if len(default_playlist) > 10:
+                playlist_position += playlist_view_length - 4
+                if playlist_position > len(default_playlist):
+                    playlist_position = len(default_playlist) - 2
+                gui.pl_update += 1
+        if key_PGU:
+            if len(default_playlist) > 0:
+                playlist_position -= playlist_view_length - 4
+                if playlist_position < 0:
+                    playlist_position = 0
+                gui.pl_update += 1
 
-    if encoding_box is True and mouse_click:
-        encoding_box_click = True
-        mouse_click = False
-        ab_click = True
-    else:
-        encoding_box_click = False
+        if mouse_click:
+            n_click_time = time.time()
+            if n_click_time - click_time < 0.7:
+                d_mouse_click = True
+            click_time = n_click_time
 
-    genre_box_click = False
-    if (genre_box or playlist_panel) and mouse_click:
-        mouse_click = False
-        genre_box_click = True
+        if quick_search_mode is False and renamebox is False:
 
-    if radiobox and key_return_press:
-        key_return_press = False
-        key_return_press_w = True
+            if key_shiftr_down and key_right_press:
+                key_right_press = False
+                pctl.advance()
+                # print('hit')
+            if key_shiftr_down and key_left_press:
+                key_left_press = False
+                pctl.back()
 
-    if mouse_wheel != 0:
-        gui.update += 1
-    if mouse_down is True:
-        gui.update += 1
+            if key_shiftr_down and key_up_press:
+                key_up_press = False
+                pctl.player_volume += 3
+                if pctl.player_volume > 100:
+                    pctl.player_volume = 100
+                pctl.set_volume()
 
-    if key_PGD:
-        if len(default_playlist) > 10:
-            playlist_position += playlist_view_length - 4
-            if playlist_position > len(default_playlist):
-                playlist_position = len(default_playlist) - 2
-            gui.pl_update += 1
-    if key_PGU:
-        if len(default_playlist) > 0:
-            playlist_position -= playlist_view_length - 4
-            if playlist_position < 0:
-                playlist_position = 0
-            gui.pl_update += 1
+            if key_shiftr_down and key_down_press:
+                key_down_press = False
+                if pctl.player_volume > 3:
+                    pctl.player_volume -= 3
+                else:
+                    pctl.player_volume = 0
+                pctl.set_volume()
 
-    if mouse_click:
-        n_click_time = time.time()
-        if n_click_time - click_time < 0.7:
-            d_mouse_click = True
-        click_time = n_click_time
+            if key_slash_press:
+                pctl.advance(rr=True)
+            if key_period_press:
+                pctl.random_mode ^= True
+            if key_quote_hit:
+                pctl.show_current()
+            if key_comma_press:
+                pctl.repeat_mode ^= True
+
+            if key_dash_press:
+                pctl.new_time = pctl.playing_time - 15
+                pctl.playing_time -= 15
+                if pctl.new_time < 0:
+                    pctl.new_time = 0
+                    pctl.playing_time = 0
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
+
+            if key_eq_press:
+                pctl.new_time = pctl.playing_time + 15
+                pctl.playing_time += 15
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
 
     # if mouse_position[1] < 1:
     #     mouse_down = False
@@ -7790,47 +7919,7 @@ while running:
     if focused is True:
         mouse_down = False
 
-    if key_F8:
-        lfm_hash = ""
-        lfm_password = ""
-        lfm_username = ""
-        message_box = True
-        message_box_text = "Account Info Reset"
 
-    if key_del:
-        del_selected()
-
-    if key_F1:
-        toggle_album_mode()
-
-    if key_F5:
-        pctl.playerCommand = 'encpause'
-        pctl.playerCommandReady = True
-
-    if key_F6:
-        pctl.join_broadcast ^= True
-        print("Join brodcast commands:" + str(pctl.join_broadcast))
-
-    if key_F4:
-        standard_size()
-
-    if key_F7:
-        # spec_smoothing ^= True
-        # if draw_border:
-        #     SDL_SetWindowBordered(t_window, True)
-        #     draw_border = False
-        # else:
-        #     SDL_SetWindowBordered(t_window, False)
-        #     draw_border = True
-
-        # print(lastfm.get_bio(pctl.master_library[pctl.track_queue[pctl.queue_step]].artist))
-        # show_playlist ^= True
-
-        # b_info_bar ^= True
-        #playlist_panel ^= True
-
-        #key_F7 = False
-        pass
 
     if mediaKey_pressed:
         if mediaKey == 'play':
@@ -7846,54 +7935,6 @@ while running:
             pctl.back()
         mediaKey_pressed = False
 
-    if quick_search_mode is False and renamebox is False:
-
-        if key_shiftr_down and key_right_press:
-            key_right_press = False
-            pctl.advance()
-            # print('hit')
-        if key_shiftr_down and key_left_press:
-            key_left_press = False
-            pctl.back()
-
-        if key_shiftr_down and key_up_press:
-            key_up_press = False
-            pctl.player_volume += 3
-            if pctl.player_volume > 100:
-                pctl.player_volume = 100
-            pctl.set_volume()
-
-        if key_shiftr_down and key_down_press:
-            key_down_press = False
-            if pctl.player_volume > 3:
-                pctl.player_volume -= 3
-            else:
-                pctl.player_volume = 0
-            pctl.set_volume()
-
-        if key_slash_press:
-            pctl.advance(rr=True)
-        if key_period_press:
-            pctl.random_mode ^= True
-        if key_quote_hit:
-            pctl.show_current()
-        if key_comma_press:
-            pctl.repeat_mode ^= True
-
-        if key_dash_press:
-            pctl.new_time = pctl.playing_time - 15
-            pctl.playing_time -= 15
-            if pctl.new_time < 0:
-                pctl.new_time = 0
-                pctl.playing_time = 0
-            pctl.playerCommand = 'seek'
-            pctl.playerCommandReady = True
-
-        if key_eq_press:
-            pctl.new_time = pctl.playing_time + 15
-            pctl.playing_time += 15
-            pctl.playerCommand = 'seek'
-            pctl.playerCommandReady = True
 
     if len(dropped_file) > 0:
         if loading_in_progress == False and len(items_loaded) == 0:
@@ -7901,14 +7942,15 @@ while running:
 
             paths_to_load = dropped_file[0].replace('\\', '/')
             if os.path.isdir(paths_to_load):
-                loaderCommand = 'import folder'
+                loaderCommand = LC_Folder
             else:
-                loaderCommand = 'import file'
+                loaderCommand = LC_File
             loaderCommandReady = True
             # print(dropped_file)
             del dropped_file[0]
-    if loaderCommand == 'done file':
-        loaderCommand = ""
+
+    if loaderCommand == LC_Done:
+        loaderCommand = LC_None
         gui.update += 1
         gui.pl_update += 2
         loading_in_progress = False
@@ -8314,7 +8356,7 @@ while running:
 
                 rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
                         window_size[1] - panelY - panelBY - 0]
-                draw_rect_r(rect, colours.side_panel_background, True)
+                draw.rect_r(rect, colours.side_panel_background, True)
 
                 area_x = window_size[0] - playlist_width + 20
 
@@ -8375,15 +8417,15 @@ while running:
                             albumtitle = colours.side_bar_line1 #grey(220)
 
                             if info[0] == 1 and pctl.playing_state != 0:
-                                draw_rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
+                                draw.rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
                                           [200, 200, 200, 15], True)
 
-                            draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
+                            draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
 
                             gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
 
                             if info[0] != 1 and pctl.playing_state != 0 and dim_art:
-                                draw_rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                 albumtitle = colours.grey(150)
 
                             if mouse_click and not focused and coll_point(mouse_position, (
@@ -8444,7 +8486,7 @@ while running:
                             break
                         render_pos += album_mode_art_size + album_v_gap
 
-                draw_rect((0, 0), (window_size[0], panelY), colours.top_panel_background, True)
+                draw.rect((0, 0), (window_size[0], panelY), colours.top_panel_background, True)
 
                 if b_info_bar and window_size[1] > 700:
                     x = playlist_width + 31
@@ -8458,9 +8500,9 @@ while running:
                     if h < 5:
                         h = 5
 
-                    draw_rect_r((x, y, w, h), colours.top_panel_background, True)
-                    draw_rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                    draw_line(x, y, x + w, y, colours.grey(50))
+                    draw.rect_r((x, y, w, h), colours.top_panel_background, True)
+                    draw.rect_r((x, y, w, h), [255, 255, 255, 3], True)
+                    draw.line(x, y, x + w, y, colours.grey(50))
 
                     box = h - 4 #- 10
 
@@ -8593,10 +8635,10 @@ while running:
                             per = playlist_position / len(default_playlist)
                             sbp = int((ey - panelY - sbl) * per) + panelY + 1
 
-                    draw_rect((1, sbp), (14, sbl), colours.scroll_colour, True)
+                    draw.rect((1, sbp), (14, sbl), colours.scroll_colour, True)
 
                     if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                        draw_rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
+                        draw.rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
 
                 # Switch Vis:
 
@@ -8619,7 +8661,7 @@ while running:
 
                         rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 30,
                                 window_size[1] - panelY - panelBY]
-                        draw_rect_r(rect, colours.side_panel_background, True)
+                        draw.rect_r(rect, colours.side_panel_background, True)
 
                         showc = False
 
@@ -8658,7 +8700,7 @@ while running:
 
                             showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
-                        draw_rect((playlist_width + 40, 38), (box + 1, box + 1), colours.art_box)
+                        draw.rect((playlist_width + 40, 38), (box + 1, box + 1), colours.art_box)
 
                         rect = (playlist_width + 40, 38, box, box)
                         fields.add(rect)
@@ -8682,9 +8724,9 @@ while running:
                             line += str(showc[2]+1) + "/" + str(showc[1])
 
                             xoff = 0
-                            xoff = text_calc(line, 12)[0] + 12
+                            xoff = draw.text_calc(line, 12) + 12
 
-                            draw_rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
+                            draw.rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
                                       [0, 0, 0, 190], True)
 
                             draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
@@ -8694,7 +8736,7 @@ while running:
                             #     if pctl.master_library[pctl.track_queue[pctl.queue_step]].date != "":
                             #         line += " (" + pctl.master_library[pctl.track_queue[pctl.queue_step]].date + ")"
                             #     xoff = text_calc(line, 13)[0] + 14
-                            #     draw_rect((playlist_width + 41, 50), (xoff, 18),
+                            #     draw.rect((playlist_width + 41, 50), (xoff, 18),
                             #               [0, 0, 0, 200], True)
                             #     draw_text((playlist_width + 40 + 8, 50), line, [230, 230, 230, 230], 13)
 
@@ -8931,26 +8973,26 @@ while running:
 
 
                 if colours.tb_line != colours.playlist_panel_background and GUI_Mode == 1:
-                    draw_line(0, panelY, window_size[0], panelY, colours.tb_line)
+                    draw.line(0, panelY, window_size[0], panelY, colours.tb_line)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
 
                     # Draw Highlight when draging
                     if side_drag is True:
-                        draw_line(window_size[0] - side_panel_size + 1, panelY + 1, window_size[0] - side_panel_size + 1,
+                        draw.line(window_size[0] - side_panel_size + 1, panelY + 1, window_size[0] - side_panel_size + 1,
                                   window_size[1] - 50, colours.grey(50))
 
                     # Draw Highlight when mouse over
                     if draw_sep_hl:
 
-                        draw_line(window_size[0] - side_panel_size + 1, panelY + 1, window_size[0] - side_panel_size + 1,
+                        draw.line(window_size[0] - side_panel_size + 1, panelY + 1, window_size[0] - side_panel_size + 1,
                                   window_size[1] - 50, [100, 100, 100, 70])
                         draw_sep_hl = False
 
                 # Normal Drawing
                 if side_panel_enable:
-                    draw_line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
+                    draw.line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
 
 
                 # New Bottom Bar
@@ -8959,14 +9001,14 @@ while running:
 
             if GUI_Mode == 1:  # not compact_bar:
 
-                draw_rect((0, window_size[1] - panelBY), (window_size[0], panelBY), colours.bottom_panel_colour, True)
-                draw_rect(seek_bar_position, seek_bar_size, colours.seek_bar_background, True)
+                draw.rect((0, window_size[1] - panelBY), (window_size[0], panelBY), colours.bottom_panel_colour, True)
+                draw.rect(seek_bar_position, seek_bar_size, colours.seek_bar_background, True)
 
                 if bb_type == 0:
 
-                    draw_line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
-                    draw_line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
-                    draw_line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
+                    draw.line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
+                    draw.line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
+                    draw.line(300, window_size[1] - panelBY + seek_bar_size[1], window_size[0], window_size[1] - panelBY + seek_bar_size[1], colours.bb_line)
 
                 # Scrobble marker
 
@@ -8982,13 +9024,13 @@ while running:
                         l_x = seek_bar_position[0] + int(
                             pctl.playing_time * seek_bar_size[0] / int(pctl.playing_length))
                         l_x += int(seek_bar_size[0] / int(pctl.playing_length) * l_lead)
-                        draw_rect_r((l_x, seek_bar_position[1] + 13, 2, 2), [255, 0, 0, 100], True)
+                        draw.rect_r((l_x, seek_bar_position[1] + 13, 2, 2), [255, 0, 0, 100], True)
                         # seek_bar_size[1]
 
                 # SEEK BAR------------------
 
                 if pctl.playing_length > 0:
-                    draw_rect((seek_bar_position[0], seek_bar_position[1]),
+                    draw.rect((seek_bar_position[0], seek_bar_position[1]),
                               (int(pctl.playing_time * seek_bar_size[0] / pctl.playing_length), seek_bar_size[1]),
                               colours.seek_bar_fill, True)
 
@@ -9091,8 +9133,8 @@ while running:
 
                     pctl.set_volume()
 
-                draw_rect(volume_bar_position, volume_bar_size, colours.volume_bar_background, True)  # 22
-                draw_rect(volume_bar_position, (int(pctl.player_volume * volume_bar_size[0] / 100), volume_bar_size[1]),
+                draw.rect(volume_bar_position, volume_bar_size, colours.volume_bar_background, True)  # 22
+                draw.rect(volume_bar_position, (int(pctl.player_volume * volume_bar_size[0] / 100), volume_bar_size[1]),
                           colours.volume_bar_fill, True)
 
                 if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
@@ -9170,8 +9212,8 @@ while running:
                     if right_click:
                         pctl.show_current()
 
-                draw_rect((buttons_x_offset + 25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
-                # draw_rect_r(rect,[255,0,0,255], True)
+                draw.rect((buttons_x_offset + 25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
+                # draw.rect_r(rect,[255,0,0,255], True)
                 SDL_RenderCopy(renderer, c1, None, dst1)
 
                 # PAUSE---
@@ -9185,9 +9227,9 @@ while running:
                     if mouse_click:
                         pctl.pause()
 
-                # draw_rect_r(rect,[255,0,0,255], True)
-                draw_rect((x, y + 0), (4, 13), pause_colour, True)
-                draw_rect((x + 10, y + 0), (4, 13), pause_colour, True)
+                # draw.rect_r(rect,[255,0,0,255], True)
+                draw.rect((x, y + 0), (4, 13), pause_colour, True)
+                draw.rect((x + 10, y + 0), (4, 13), pause_colour, True)
 
                 # STOP---
                 x = 125 + buttons_x_offset
@@ -9200,8 +9242,8 @@ while running:
                     if right_click:
                         auto_stop ^= True
 
-                draw_rect((x, y + 0), (13, 13), stop_colour, True)
-                # draw_rect_r(rect,[255,0,0,255], True)
+                draw.rect((x, y + 0), (13, 13), stop_colour, True)
+                # draw.rect_r(rect,[255,0,0,255], True)
 
                 # FORWARD---
                 rect = (buttons_x_offset + 230, window_size[1] - control_line_bottom - 10, 50, 35)
@@ -9214,8 +9256,8 @@ while running:
                         pctl.random_mode ^= True
                     if middle_click:
                         pctl.advance(rr=True)
-                draw_rect((buttons_x_offset + 240, window_size[1] - control_line_bottom), (28, 14), forward_colour, True)
-                # draw_rect_r(rect,[255,0,0,255], True)
+                draw.rect((buttons_x_offset + 240, window_size[1] - control_line_bottom), (28, 14), forward_colour, True)
+                # draw.rect_r(rect,[255,0,0,255], True)
                 SDL_RenderCopy(renderer, c2, None, dst2)
 
                 # BACK---
@@ -9230,8 +9272,8 @@ while running:
                     if middle_click:
                         pctl.revert()
 
-                draw_rect((buttons_x_offset + 180, window_size[1] - control_line_bottom), (28, 14), back_colour, True)
-                # draw_rect_r(rect,[255,0,0,255], True)
+                draw.rect((buttons_x_offset + 180, window_size[1] - control_line_bottom), (28, 14), back_colour, True)
+                # draw.rect_r(rect,[255,0,0,255], True)
                 SDL_RenderCopy(renderer, c3, None, dst3)
 
                 if window_size[0] > 630:
@@ -9266,10 +9308,10 @@ while running:
 
                     y += 2
 
-                    draw_rect((x, y), (25, 4), rpbc, True)
+                    draw.rect((x, y), (25, 4), rpbc, True)
 
                     y += 8
-                    draw_rect((x, y), (50, 4), rpbc, True)
+                    draw.rect((x, y), (50, 4), rpbc, True)
 
                     #draw_text((x,y), "RANDOM", rpbc, 13)
 
@@ -9304,9 +9346,9 @@ while running:
                     y += 10
                     w = 4
 
-                    draw_rect((x, y), (35, w), rpbc, True)
-                    draw_rect((x + 35 - w, y - 8), (w, 8), rpbc, True)
-                    draw_rect((x + 15, y - 8), (20, w), rpbc, True)
+                    draw.rect((x, y), (35, w), rpbc, True)
+                    draw.rect((x + 35 - w, y - 8), (w, 8), rpbc, True)
+                    draw.rect((x + 15, y - 8), (20, w), rpbc, True)
 
 
 
@@ -9315,7 +9357,7 @@ while running:
             if GUI_Mode == 1:
 
                 rect = (0,0,window_size[0], panelY)
-                draw_rect_r(rect, colours.top_panel_background, True)
+                draw.rect_r(rect, colours.top_panel_background, True)
 
                 # MULTI PLAYLIST-----------------------
 
@@ -9331,15 +9373,15 @@ while running:
                 # Need to test length
                 k = 0
                 for w in range(len(pctl.multi_playlist)):
-                    k += text_calc(pctl.multi_playlist[w][0], 12)[0]
+                    k += draw.text_calc(pctl.multi_playlist[w][0], 12)
                 k = starting_l + (spacing * (len(pctl.multi_playlist))) + k
                 k += 40
-                k += text_calc(get_playing_line(), 12)[0]
+                k += draw.text_calc(get_playing_line(), 12)
 
                 draw_alt = False
                 if k > window_size[0] - 180:
                     # rect = (starting_l, 0, 10, 29)
-                    # draw_rect()
+                    # draw.rect()
 
                     starting_l += 12
                     spacing = 0
@@ -9352,22 +9394,22 @@ while running:
                     if draw_alt and w != pctl.playlist_active:
                         continue
 
-                    text_space = text_calc(pctl.multi_playlist[w][0], 12)[0]
+                    text_space = draw.text_calc(pctl.multi_playlist[w][0], 12)
 
                     rect = (starting_l + (spacing * w) + l, 1, text_space + 16, 29)
                     fields.add(rect)
 
-                    draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background, True)
+                    draw.rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background, True)
 
                     if not pl_follow and w == pctl.active_playlist_playing:
-                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), [255, 255, 255, 7], True)
+                        draw.rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), [255, 255, 255, 7], True)
 
                     if (tab_menu.active is True and tab_menu.reference == w) or tab_menu.active is False and coll_point(
                             mouse_position, (starting_l + (spacing * w) + l, 1, text_space + 16, 29)):
-                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_highlight, True)
+                        draw.rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_highlight, True)
 
                     if w == pctl.playlist_active:
-                        draw_rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background_active, True)
+                        draw.rect((starting_l + (spacing * w) + l, 0), (text_space + 16, 30), colours.tab_background_active, True)
                         text_space = draw_text((starting_l + (spacing * w) + 7 + l, r[1], r[2], r[3]),
                                                pctl.multi_playlist[w][0],
                                                colours.tab_text_active, 12)
@@ -9586,8 +9628,8 @@ while running:
 
                     w2 = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 90)
 
-                    draw_rect((x, y), (w2, h), [30, 25, 170, 255], True)
-                    draw_rect((x, y), (w, h), colours.grey(30))
+                    draw.rect((x, y), (w2, h), [30, 25, 170, 255], True)
+                    draw.rect((x, y), (w, h), colours.grey(30))
 
                     l -= 15
                     l -= 85
@@ -9626,6 +9668,7 @@ while running:
 
             # Overlay GUI ----------------------
 
+
             if playlist_panel:
 
                 pl_items_len = len(pctl.multi_playlist)
@@ -9648,8 +9691,8 @@ while running:
                 h = pl_max_view_len * 14 + 4
 
                 pl_rect = (x, y, w, h)
-                draw_rect_r(pl_rect, colours.bottom_panel_colour, True)
-                draw_rect_r(pl_rect, [60,60,60,255], False)
+                draw.rect_r(pl_rect, colours.bottom_panel_colour, True)
+                draw.rect_r(pl_rect, [60,60,60,255], False)
 
                 if genre_box_click and not coll_point(mouse_position, pl_rect):
                     playlist_panel = False
@@ -9666,7 +9709,7 @@ while running:
                     fields.add(rect)
                     if coll_point(mouse_position, rect):
                         rect2 = (x, y + 1 +  p*14, w - 2, 13)
-                        draw_rect_r(rect2, [40, 40, 40, 255], True)
+                        draw.rect_r(rect2, [40, 40, 40, 255], True)
                         draw_text2((x + 1, y - 1 + p * 14), "X", [220, 60, 60, 255], 12, 300)
                         if genre_box_click:
                             delete_playlist(i)
@@ -9677,13 +9720,13 @@ while running:
                     fields.add(rect)
                     if coll_point(mouse_position, rect) and not tab_menu.active:
 
-                        draw_rect_r(rect, [40,40,40,255], True)
+                        draw.rect_r(rect, [40,40,40,255], True)
                         if genre_box_click:
                             switch_playlist(i)
                             playlist_panel = False
 
                     if tab_menu.active and tab_menu.reference == i:
-                        draw_rect_r(rect, [40, 40, 40, 255], True)
+                        draw.rect_r(rect, [40, 40, 40, 255], True)
                     if right_click and coll_point(mouse_position, rect):
                         tab_menu.activate(copy.deepcopy(i))
 
@@ -9697,14 +9740,14 @@ while running:
 
 
             if new_playlist_box is True:
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
                           (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
                           (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
 
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
                 NPN += input_text
                 if key_backspace_press and len(NPN) > 0:
@@ -9731,14 +9774,14 @@ while running:
                     #     pctl.multi_playlist.append(["Playlist", 0, [], 0, 0, 0])
 
             if rename_playlist_box is True:
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
                           (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
                           (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
 
-                draw_rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
+                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
                            (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
                 NPN += input_text
                 if key_backspace_press and len(NPN) > 0:
@@ -9767,15 +9810,15 @@ while running:
                     message_box = False
                     key_return_press = False
 
-                w = text_calc(message_box_text, 12)[0] + 20
+                w = draw.text_calc(message_box_text, 12) + 20
                 if w < 210:
                     w = 210
                 h = 20
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(75))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(75))
 
                 draw_text((x + int(w / 2), y + 2, 2), message_box_text, colours.grey(150), 12)
 
@@ -9792,8 +9835,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(75))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(75))
 
                 lfm_password += input_text
 
@@ -9821,8 +9864,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(75))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(75))
 
                 lfm_username += input_text
 
@@ -9847,8 +9890,8 @@ while running:
                 if genre_box_click and not coll_point(mouse_position, box_rect):
                     genre_box = False
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(75))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(75))
 
                 stats_gen.update(genre_box_pl)
 
@@ -9881,13 +9924,13 @@ while running:
                             genre_items.append(item[0])
 
                     if item[0] in genre_items:
-                        draw_rect((x, y), (110, 20), [255, 255, 255, 35], True)
+                        draw.rect((x, y), (110, 20), [255, 255, 255, 35], True)
 
                     fields.add(copy.deepcopy(item_rect))
                     if coll_point(mouse_position, item_rect):
-                        draw_rect_r(item_rect, [255, 255, 255, 10], True)
+                        draw.rect_r(item_rect, [255, 255, 255, 10], True)
 
-                    draw_rect((x, y), (110, 20), colours.grey(25))
+                    draw.rect((x, y), (110, 20), colours.grey(25))
                     line = item[0][:20]
                     draw_text((x + 3, y + 2), line, colours.grey(175), 10)
 
@@ -9906,8 +9949,8 @@ while running:
                 ok_rect = (x, y, w, h)
                 fields.add(ok_rect)
                 if coll_point(mouse_position, ok_rect):
-                    draw_rect_r(ok_rect, [255, 255, 255, 8], True)
-                draw_rect_r(ok_rect, colours.grey(50))
+                    draw.rect_r(ok_rect, [255, 255, 255, 8], True)
+                draw.rect_r(ok_rect, colours.grey(50))
                 draw_text((x + 14, y + 2), 'Generate', colours.grey(150), 10)
 
                 if genre_box_click and coll_point(mouse_position, ok_rect):
@@ -9934,10 +9977,10 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                # draw_rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
+                # draw.rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(75))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(75))
 
                 if key_shift_down:
 
@@ -9970,7 +10013,7 @@ while running:
                     time.sleep(0.2)
 
                 else:
-                    draw_rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
+                    draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
                     album_art_gen.display(r_menu_index, (x + w - 135, y + h - 125), (100, 100))
                     y -= 24
 
@@ -10058,8 +10101,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(50))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(50))
 
                 # NRN = rename_in.update()
                 NRN += input_text
@@ -10088,14 +10131,14 @@ while running:
                 draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 # c_blink = 200
 
-                draw_rect((x + 8, y + 38), (300, 22), colours.grey(50))
+                draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                draw_rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(50))
+                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(50))
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
-                    draw_rect((x + 8 + 300 + 10, y + 38), (80, 22), [50, 50, 50, 70], True)
+                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), [50, 50, 50, 70], True)
 
                 draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(150), 12)
 
@@ -10246,8 +10289,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
-                draw_rect((x, y), (w, h), colours.grey(50))
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.grey(50))
 
                 NXN += input_text
 
@@ -10265,15 +10308,15 @@ while running:
                 draw_text((x + 14, y + 40,), NXN + cursor, colours.grey(150), 12)
                 c_blink = 200
 
-                draw_rect((x + 8, y + 38), (350, 22), colours.grey(50))
+                draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
 
                 rect = (x + 8 + 350 + 10, y + 38, 40, 22)
                 fields.add(rect)
 
                 if coll_point(mouse_position, rect):
-                    draw_rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
+                    draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
 
-                draw_rect((x + 8 + 350 + 10, y + 38), (40, 22), colours.grey(50))
+                draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), colours.grey(50))
                 draw_text((x + 8 + 10 + 350 + 10, y + 40), "GO", colours.grey(150), 12)
 
                 if (key_return_press_w or (
@@ -10308,9 +10351,9 @@ while running:
 
                 search_box_location_x = int(window_size[0] / 2) - int(quick_search_box_size[0] / 2)
 
-                draw_rect((search_box_location_x, window_size[1] - 90),
+                draw.rect((search_box_location_x, window_size[1] - 90),
                           (quick_search_box_size[0], quick_search_box_size[1]), colours.bottom_panel_colour, True)
-                draw_rect((search_box_location_x, window_size[1] - 90),
+                draw.rect((search_box_location_x, window_size[1] - 90),
                           (quick_search_box_size[0], quick_search_box_size[1]), colours.grey(60))
 
                 if len(input_text) > 0:
@@ -10428,8 +10471,8 @@ while running:
 
         # Unicode edit display---------------------
         if len(editline) > 0:
-            ll = text_calc(editline, 12)[0]
-            draw_rect((window_size[0] - ll - 10, 0), (ll + 15, 18), [0, 0, 0, 255], True)
+            ll = draw.text_calc(editline, 12)
+            draw.rect((window_size[0] - ll - 10, 0), (ll + 15, 18), [0, 0, 0, 255], True)
             draw_text((window_size[0] - ll - 5, 3), editline, colours.grey(210), 12)
 
         # Render Menus-------------------------------
@@ -10450,8 +10493,8 @@ while running:
             if encoding_box_click and not coll_point(mouse_position, (x, y, w, h)):
                 encoding_box = False
 
-            draw_rect((x, y), (w, h), colours.top_panel_background, True)
-            draw_rect((x, y), (w, h), colours.grey(75))
+            draw.rect((x, y), (w, h), colours.top_panel_background, True)
+            draw.rect((x, y), (w, h), colours.grey(75))
 
             draw_text((x + 105, y + 21), "Japanese text encoding correction.", colours.grey(190), 12)
 
@@ -10464,8 +10507,8 @@ while running:
             y += 20
 
             if enc_field == "Artist":
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "Artist", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Artist"
@@ -10473,8 +10516,8 @@ while running:
             y += 25
 
             if enc_field == "Title":
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "Title", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Title"
@@ -10482,8 +10525,8 @@ while running:
             y += 25
 
             if enc_field == "Album":
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "Album", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "Album"
@@ -10491,8 +10534,8 @@ while running:
             y += 25
 
             if enc_field == "All":
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "All", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_field = "All"
@@ -10500,8 +10543,8 @@ while running:
             y += 40
 
             if enc_setting == 1:
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "Track", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_setting = 1
@@ -10509,8 +10552,8 @@ while running:
             y += 25
 
             if enc_setting == 0:
-                draw_rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw_rect((x, y), (60, 20), colours.grey(75))
+                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+            draw.rect((x, y), (60, 20), colours.grey(75))
             draw_text((x + 6, y + 2), "Folder", colours.grey(200), 12)
             if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
                 enc_setting = 0
@@ -10528,12 +10571,12 @@ while running:
                 title = pctl.master_library[encoding_target].title
                 album = pctl.master_library[encoding_target].album
 
-                draw_rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.top_panel_background, True)
 
                 rect = (x, y, w, h - 1)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
-                    draw_rect((x, y), (w, h), colours.grey(50), True)
+                    draw.rect((x, y), (w, h), colours.grey(50), True)
                     if encoding_box_click:
                         fix_encoding(encoding_target, enc_setting, enco)
                         encoding_box = False
@@ -10553,7 +10596,7 @@ while running:
                 draw_text((x + 5, y), line, colours.grey(150), 11)
 
                 y += h
-            draw_rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
+            draw.rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
 
         if draw_border:
 
@@ -10565,23 +10608,23 @@ while running:
             rect = (window_size[0] - 65, 5, 35, 20)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw_rect((window_size[0] - 65, 5), (35, 20), [70, 70, 70, 100], True)
+                draw.rect((window_size[0] - 65, 5), (35, 20), [70, 70, 70, 100], True)
                 if mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     mouse_click = False
                     drag_mode = False
-            draw_rect((window_size[0] - 65, 5), (35, 20), colours.grey(40))
+            draw.rect((window_size[0] - 65, 5), (35, 20), colours.grey(40))
 
             rect = (window_size[0] - 25, 5, 20, 20)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw_rect((window_size[0] - 25, 5), (20, 20), [80, 80, 80, 120], True)
+                draw.rect((window_size[0] - 25, 5), (20, 20), [80, 80, 80, 120], True)
                 if mouse_click or ab_click:
                     running = False
-            draw_rect((window_size[0] - 25, 5), (20, 20), colours.grey(40))
+            draw.rect((window_size[0] - 25, 5), (20, 20), colours.grey(40))
 
-            draw_rect((0, 0), window_size, colours.grey(90))
+            draw.rect((0, 0), window_size, colours.grey(90))
 
         gui.update -= 1
 
@@ -10655,8 +10698,8 @@ while running:
             w = 72 + 24 - 6 - 10
             h = 20
             rect = (x, y, w, h)
-            draw_rect_r(rect, colours.top_panel_background, True)
-            draw_rect_r(rect, [255, 255, 255, 13], True)
+            draw.rect_r(rect, colours.top_panel_background, True)
+            draw.rect_r(rect, [255, 255, 255, 13], True)
 
             xx = 0
             on = 0
@@ -10682,10 +10725,7 @@ while running:
                     item = 20
 
                 yy = y + h - item
-                # rect = (xx + x, yy, 3, item)
-                # draw_rect_r(rect, colours.time_playing, True)
-                a = SDL_Rect(xx + x, yy, 3, item)
-                SDL_RenderFillRect(renderer, a)
+                draw.fast_fill_rect(xx+x, yy, 3, item)
 
                 xx += 4
 
@@ -10699,7 +10739,7 @@ while running:
             y = 16
             w = 5
             s = 1
-            # draw_rect((x - 70, y - 10), (80, 18), colours.grey(15), True)
+            # draw.rect((x - 70, y - 10), (80, 18), colours.grey(15), True)
 
             for t in range(12):
 
@@ -10725,7 +10765,7 @@ while running:
 
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
-                draw_rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
+                draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
             y -= 7
             for t in range(12):
@@ -10752,7 +10792,7 @@ while running:
 
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
-                draw_rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
+                draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
         SDL_RenderPresent(renderer)
 
