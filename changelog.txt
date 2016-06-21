@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v1.4.3
 
- - Moved various settings to UI
+ - Moved some settings from config file to UI
+ - Fixed bug causing crash when accessing web interface
+ - Minor performance optimizations
  - Various UI tweaks
- - Fixed bug causing crash from web interface
  - Various other bug fixes
 
 
