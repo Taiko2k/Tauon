@@ -34,10 +34,10 @@ icecast-mount:localhost:8000/test
 ## Password for Icecast server source
 icecast-pass:hackme
 
-## Codec can be MP3, OGG or OPUS
-## On Windows requires lame.exe, oggenc2.exe or opusenc.exe in /encoder subdirectory respectively. 
-## On linux install lame, oggenc(part of vorbis-tools) or opusenc
-icecast-codec:OPUS
+## Codec can be MP3, OGG
+## On Windows requires lame.exe, oggenc2.exe in /encoder subdirectory respectively. 
+## On linux install lame, oggenc(part of vorbis-tools)
+icecast-codec:OGG
 icecase-bitrate:128
 
 ## Playlist-----------------

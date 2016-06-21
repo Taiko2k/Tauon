@@ -7223,7 +7223,7 @@ class StandardPlaylist:
                                                       line0,
                                                       alpha_mod(artistc, album_fade),
                                                       row_font_size,
-                                                      300,
+                                                      int(playlist_width / 2),
                                                       1,
                                                       default_playlist[p_track])
 
@@ -7242,16 +7242,16 @@ class StandardPlaylist:
                 ratio = 0
                 index = default_playlist[p_track]
                 key = pctl.master_library[index].title + pctl.master_library[index].filename
+
                 if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
-                    index].length != 0:
+                        index].length != 0:
                     total = pctl.star_library[key]
                     ratio = total / pctl.master_library[index].length
-                    if ratio > 15:
-                        ratio = 15
                     if ratio > 0.55:
-                        ratio = int(ratio * 4)
-
-                        draw.line(playlist_width - playlist_x_offset + playlist_left - ratio - 40,
+                        star_x = int(ratio * 4)
+                        if star_x > 60:
+                            star_x = 60
+                        draw.line(playlist_width - playlist_x_offset + playlist_left - star_x - 40,
                                   playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
                                   playlist_width - playlist_x_offset + playlist_left - 37,
                                   playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
@@ -7405,7 +7405,8 @@ while running:
         mouse_wheel = 0
         input_text = ''
 
-    k_input = False
+    if not mouse_down:
+        k_input = False
     clicked = False
     focused = False
     mouse_moved = False
@@ -9654,7 +9655,7 @@ while running:
                     if draw_border:
                         offset_extra = 61
 
-                    l_max = window_size[0] - m_l - 10
+                    l_max = window_size[0] - m_l - 40
 
 
                     if gui.turbo:
