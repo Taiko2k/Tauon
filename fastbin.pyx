@@ -2,21 +2,26 @@
 import math
 import time
 
+
+cdef int b0 = 0
+cdef int i = 0
+cdef int b1 = 0
+cdef float peak
+cdef float outp
+cdef int bands = 24
+
+
 def fast_bin(fft):
 
-    cdef int b0 = 0
-    cdef int i = 0
-    cdef int b1 = 0
-    cdef float peak
-    cdef float outp
-    cdef int BANDS = 24
+    b0 = 0
+    i = 0
 
     pspec = []
 
 
-    while i < BANDS:
+    while i < bands:
         peak = 0
-        b1 = pow(2, i * 10.0 / (BANDS - 1))
+        b1 = pow(2, i * 10.0 / (bands - 1))
         if b1 > 511:
             b1 = 511
         if b1 <= b0:
@@ -27,7 +32,6 @@ def fast_bin(fft):
             b0 += 1
 
         outp = math.sqrt(peak)
-        # print(int(outp*20))
         pspec.append(int(outp * 45))
         i += 1
 
@@ -36,11 +40,12 @@ def fast_bin(fft):
 def checkEqual(lst):
     return not lst or lst.count(lst[0]) == len(lst)
 
+
 def fast_display(spec, sspec):
 
-    cdef int i = 0
+    i = 0
 
-    while i < 24:
+    while i < bands:
         if spec[i] > sspec[i]:
             sspec[i] += 1
             if abs(spec[i] - sspec[i]) > 4:
