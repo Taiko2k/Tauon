@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v1.4.4
+
+ - Minor bug fixes
+
 v1.4.3
 
  - Moved some settings from config file to UI
