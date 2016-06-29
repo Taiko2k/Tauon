@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.4.3"
+t_version = "v1.4.4"
 title = 'Tauon Music Box'
 version_line = title + t_version
 print(version_line)
@@ -75,7 +75,7 @@ except:
     print('There might already be an instance...')
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = s.connect_ex(('127.0.0.1', server_port))
-    # s.close()
+    s.close()
 
     if result == 0:
         print('Socket is already open')
@@ -88,8 +88,8 @@ except:
         # c.request('POST', '/load', '{test}')
         # doc = c.getresponse().read()
         # print(doc)
-        pass
-        # sys.exit()
+        #pass
+        sys.exit()
 
 import time
 import ctypes
@@ -395,6 +395,7 @@ shift_selection = []
 
 mouse_down = False
 right_down = False
+click_location = [200, 200]
 
 volume_hit = False
 seek_hit = False
@@ -4713,41 +4714,41 @@ x_menu.add_to_sub("Export as CSV", 0, export_database)
 x_menu.add_to_sub("Get Playlist Readout", 0, export_stats)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
 
-def test():
-    global message_box
-    global message_box_text
-    global pctl
-
-    found = 0
-    star2 = {}
-
-    for key, value in pctl.master_library.items():
-        ref = value.title + value.filename
-        if ref in pctl.star_library:
-            found += 1
-            star2[ref] = pctl.star_library[ref]
-
-    have = sum(star2.values())
-    total_pl = sum(pctl.star_library.values())
-
-    rem = len(pctl.star_library) - len(star2)
-
-    prec = ""
-    if total_pl != 0:
-        perc = str(int(have / total_pl * 100)) + "% listening time accounted for. "
-
-    if not key_shift_down:
-        message_box_text = "Warning: Will lose individual play count for tracks not imported. "
-        message_box_text += perc
-        message_box_text += str(rem) + " references will be forgotten. Hold shift and try again to apply."
-        message_box = True
-
-        return
-
-    else:
-        pass
-        # pctl.star_library = star2
-        # pctl.star_library total_pl - have
+# def test():
+#     global message_box
+#     global message_box_text
+#     global pctl
+#
+#     found = 0
+#     star2 = {}
+#
+#     for key, value in pctl.master_library.items():
+#         ref = value.title + value.filename
+#         if ref in pctl.star_library:
+#             found += 1
+#             star2[ref] = pctl.star_library[ref]
+#
+#     have = sum(star2.values())
+#     total_pl = sum(pctl.star_library.values())
+#
+#     rem = len(pctl.star_library) - len(star2)
+#
+#     prec = ""
+#     if total_pl != 0:
+#         perc = str(int(have / total_pl * 100)) + "% listening time accounted for. "
+#
+#     if not key_shift_down:
+#         message_box_text = "Warning: Will lose individual play count for tracks not imported. "
+#         message_box_text += perc
+#         message_box_text += str(rem) + " references will be forgotten. Hold shift and try again to apply."
+#         message_box = True
+#
+#         return
+#
+#     else:
+#         pass
+#         # pctl.star_library = star2
+#         # pctl.star_library total_pl - have
 
 
 # x_menu.add_to_sub("Test", 0, test)
@@ -5728,6 +5729,7 @@ def webserv():
     </html>
     """)
 
+
     radio_template = Template("""<!DOCTYPE html>
     <html>
     <head>
@@ -5755,6 +5757,7 @@ def webserv():
 
     </html>
     """)
+
 
     @app.route('/remote')
     def remote():
@@ -5854,7 +5857,7 @@ def webserv():
         playlist_position -= 24
         if playlist_position < 0:
             playlist_position = 0
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/pl-down')
     def pl_down():
@@ -5866,7 +5869,7 @@ def webserv():
         playlist_position += 24
         if playlist_position > len(default_playlist) - 26:
             playlist_position = len(default_playlist) - 25
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/load', methods=['POST', 'GET', 'DELETE'])
     def ex_load():
@@ -5883,7 +5886,7 @@ def webserv():
             return 0
         global pctl
         pctl.back()
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/jump<int:indexno>')
     def jump(indexno):
@@ -5892,7 +5895,7 @@ def webserv():
             return (0)
         global pctl
         pctl.jump(indexno)
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/forward')
     def fw():
@@ -5901,7 +5904,7 @@ def webserv():
             return (0)
         global pctl
         pctl.advance()
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/pause')
     def pu():
@@ -5910,7 +5913,7 @@ def webserv():
             return (0)
         global pctl
         pctl.pause()
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/play')
     def pl():
@@ -5920,7 +5923,7 @@ def webserv():
         global pctl
         pctl.play()
 
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/stop')
     def st():
@@ -5929,7 +5932,7 @@ def webserv():
             return (0)
         global pctl
         pctl.stop()
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/upplaylist')
     def next_playlist():
@@ -5937,7 +5940,7 @@ def webserv():
             abort(403)
             return (0)
         switch_playlist(1, True)
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/downplaylist')
     def back_playlist():
@@ -5945,7 +5948,7 @@ def webserv():
             abort(403)
             return (0)
         switch_playlist(-1, True)
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/vdown')
     def vdown():
@@ -5960,7 +5963,7 @@ def webserv():
             pctl.player_volume = 0
         pctl.set_volume()
 
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/vup')
     def vup():
@@ -5973,7 +5976,7 @@ def webserv():
             pctl.player_volume = 100
         pctl.set_volume()
 
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/seek<int:per>')
     def seek(per):
@@ -5991,7 +5994,7 @@ def webserv():
         pctl.playerCommandReady = True
         pctl.playing_time = pctl.new_time
 
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/random')
     def ran():
@@ -6000,7 +6003,7 @@ def webserv():
             return (0)
         global pctl
         pctl.random_mode ^= True
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     @app.route('/remote/repeat')
     def rep():
@@ -6009,7 +6012,7 @@ def webserv():
             return (0)
         global pctl
         pctl.repeat_mode ^= True
-        return redirect('/remote', code=302)
+        return redirect(request.referrer)
 
     if prefs.expose_web is True:
         app.run(host='0.0.0.0 ', port=server_port)
@@ -6519,6 +6522,7 @@ class Over:
         y += 5
 
         self.view_offset -= self.scroll * 2
+        self.scroll = 0
         if self.view_offset < 0:
             self.view_offset = 0
         if self.view_offset > items_len - max_view_len:
@@ -7482,6 +7486,7 @@ while running:
                 if mouse_position[1] > 1 and mouse_position[0] > 1:
                     mouse_down = True
                 mouse_click = True
+
                 mouse_down = True
             elif event.button.button == SDL_BUTTON_MIDDLE:
                 middle_click = True
@@ -7707,6 +7712,11 @@ while running:
             arg_queue = []
             auto_play_import = True
     if k_input:
+
+        if mouse_click:
+            click_location = copy.deepcopy(mouse_position)
+
+
         if key_F11:
             if fullscreen == 0:
                 fullscreen = 1
@@ -8586,7 +8596,8 @@ while running:
                         sbl = 70
 
                     fields.add((2, sbp, 20, sbl))
-                    if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and not playlist_panel and (mouse_down or right_click):
+                    if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and not playlist_panel and (mouse_down or right_click)\
+                            and coll_point(click_location, (0, panelY, 28, ey - panelY)):
 
                         gui.pl_update += 1
                         if right_click:
@@ -9060,8 +9071,8 @@ while running:
                         seek_down = False
                         seek_hit = True
 
-                if (mouse_up and coll_point(mouse_position,
-                                            seek_bar_position + seek_bar_size)) or mouse_up and volume_hit or seek_hit:
+                if (mouse_up and coll_point(mouse_position, seek_bar_position + seek_bar_size)
+                        and coll_point(click_location, seek_bar_position + seek_bar_size)) or mouse_up and volume_hit or seek_hit:
                     volume_hit = False
                     seek_down = False
                     seek_hit = False
