@@ -3674,8 +3674,15 @@ class Menu:
                                 else:
                                     self.subs[self.sub_active][w][2]()
 
+                        # Get properties for menu item
+                        fx = self.subs[self.sub_active][w][3]()
+                        if fx[2] is not None:
+                            label = fx[2]
+                        else:
+                            label = self.subs[self.sub_active][w][0]
+
                         # Render the items label
-                        draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), self.subs[self.sub_active][w][0], fx[0],
+                        draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), label, fx[0],
                                   11)
 
                     # Render the menu outline
@@ -4813,6 +4820,79 @@ def clear_queue():
 
 x_menu.add('Clear Queue', clear_queue, queue_deco)
 
+
+x_menu.add_sub("Playback...", 120)
+
+
+def play_pause_deco():
+    line_colour = colours.grey(150)
+    if pctl.playing_state == 1:
+        return [line_colour, colours.bottom_panel_colour, "Pause"]
+    if pctl.playing_state == 2:
+        return [line_colour, colours.bottom_panel_colour, "Resume"]
+    return [line_colour, colours.bottom_panel_colour, None]
+
+
+def play_pause():
+    if pctl.playing_state == 0:
+        pctl.play()
+    else:
+        pctl.pause()
+
+x_menu.add_to_sub('Play', 1, play_pause, play_pause_deco)
+
+
+def stop():
+    pctl.stop()
+
+x_menu.add_to_sub('Stop/Eject', 1, stop)
+
+x_menu.add_to_sub('Advance', 1, pctl.advance)
+x_menu.add_to_sub('Back', 1, pctl.back)
+
+def random_track():
+
+    old = pctl.random_mode
+    pctl.random_mode = True
+    pctl.advance()
+    pctl.random_mode = old
+
+x_menu.add_to_sub('Random Track', 1, random_track)
+
+
+def radio_random():
+
+    pctl.advance(rr=True)
+
+x_menu.add_to_sub('Radio Random', 1, radio_random)
+
+x_menu.add_to_sub('Revert', 1, pctl.revert)
+
+
+
+def repeat_deco():
+    line_colour = colours.grey(150)
+    if pctl.repeat_mode:
+        return [line_colour, colours.bottom_panel_colour, "Disable Repeat"]
+    return [line_colour, colours.bottom_panel_colour, None]
+
+
+def toggle_repeat():
+    pctl.repeat_mode ^= True
+
+x_menu.add_to_sub('Enable Repeat', 1, toggle_repeat, repeat_deco)
+
+def random_deco():
+    line_colour = colours.grey(150)
+    if pctl.random_mode:
+        return [line_colour, colours.bottom_panel_colour, "Disable Random"]
+    return [line_colour, colours.bottom_panel_colour, None]
+
+
+def toggle_random():
+    pctl.random_mode ^= True
+
+x_menu.add_to_sub('Enable Random', 1, toggle_random, random_deco)
 
 def toggle_level_meter(mode=0):
     global gui
@@ -6001,7 +6081,6 @@ def webserv():
         if not prefs.allow_remote:
             abort(403)
             return (0)
-        global pctl
         pctl.random_mode ^= True
         return redirect(request.referrer)
 
@@ -6010,7 +6089,6 @@ def webserv():
         if not prefs.allow_remote:
             abort(403)
             return (0)
-        global pctl
         pctl.repeat_mode ^= True
         return redirect(request.referrer)
 
@@ -6728,8 +6806,8 @@ class Over:
 class Fields:
     def __init__(self):
 
-        self.id = ""
-        self.last_id = ""
+        self.id = []
+        self.last_id = []
 
         self.field_array = []
         self.force = False
@@ -6746,16 +6824,17 @@ class Fields:
 
         self.last_id = self.id
         # print(len(self.id))
-        self.id = ""
+        self.id = []
 
         for f in self.field_array:
             if coll_point(mouse_position, f):
-                self.id += "1"
+                self.id.append(1) # += "1"
             else:
-                self.id += "0"
+                self.id.append(0) # += "0"
 
         if self.last_id == self.id:
             return False
+
         else:
             return True
 
@@ -7660,6 +7739,10 @@ while running:
                 gui.pl_update += 1
                 gui.update += 1
 
+    if mouse_moved:
+        if fields.test():
+            gui.update += 1
+
     power += 1
     if resize_mode or scroll_hold:
         power += 3
@@ -7677,9 +7760,8 @@ while running:
     if gui.pl_update > 2:
         gui.pl_update = 2
 
-    if mouse_moved:
-        if fields.test():
-            gui.update += 1
+
+
 
     if check_file_timer.get() > 0.5:
         check_file_timer.set()
@@ -10864,6 +10946,7 @@ while running:
             pctl.playing_state = 1
             pctl.playing_time = 0
             pctl.playing_length = pctl.master_library[pctl.track_queue[pctl.queue_step]].length
+            pctl.start_time = pctl.master_library[pctl.track_queue[pctl.queue_step]].start_time
 
             gui.update += 1
             gui.pl_update += 1

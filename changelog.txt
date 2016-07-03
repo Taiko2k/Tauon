@@ -3,7 +3,11 @@ Changelog-------------------------------------
 
 v1.4.4
 
- - Minor bug fixes
+ - Added playback menu
+ - Fixed seeking after cue based track transition
+ - Fixed seek bar click registering
+ - Fixed cursor movement response delay
+ - Other minor bug fixes
 
 v1.4.3
 
