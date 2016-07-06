@@ -4,9 +4,12 @@ Changelog-------------------------------------
 v1.4.4
 
  - Added playback menu
+ - Added new dark gray theme
  - Fixed seeking after cue based track transition
  - Fixed seek bar click registering
  - Fixed cursor movement response delay
+ - Fixed unicode end characters becoming corrupted
+ - Fixed visualiser clock speed
  - Other minor bug fixes
 
 v1.4.3

@@ -166,7 +166,10 @@ spec_decay_timer = Timer()
 min_render_timer = Timer()
 check_file_timer = Timer()
 check_file_timer.set()
-
+vis_rate_timer = Timer()
+vis_rate_timer.set()
+vis_decay_timer = Timer()
+vis_decay_timer.set()
 
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
@@ -272,7 +275,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 5
+theme = 6
 themeChange = True
 panelY = 78
 
@@ -1110,8 +1113,10 @@ class PlayerCtl:
         self.render_playlist()
         global gui
         gui.update_spec = 0
+        gui.update_level = True  # Allows visualiser to enter decay sequence
+        gui.update = True
         if update_title:
-            update_title_do()
+            update_title_do()  #  Update title bar text
 
     def pause(self):
 
@@ -1223,7 +1228,7 @@ class PlayerCtl:
                 self.play_target()
 
         else:
-            print("ADVANCE: NO CASE!")
+            print("ADVANCE ERROR: NO CASE!")
 
         if self.playlist_active == self.active_playlist_playing:
             self.show_current(playing=True)
@@ -2840,22 +2845,24 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         tex_w = pointer(c_int(0))
         tex_h = pointer(c_int(0))
         colour_sdl = SDL_Color(colour[0], colour[1], colour[2], colour[3])
-        text_utf = text.encode('utf-8')
+        # text_utf = text.encode('utf-8')
 
         trunc = False
 
         while True: #and (len(location) < 3 or location[2] == 0):
-            if len(text_utf) < 3:
+            if len(text) < 3:
                 break
-            TTF_SizeUTF8(font_dict[font][0], text_utf, tex_w, None)
+            TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), tex_w, None)
             xlen = tex_w.contents.value
             if xlen <= maxx:
                 break
-            text_utf = text_utf[:-2]
+            text = text[:-2]
             trunc = True
 
         if trunc:
-            text_utf += "…".encode('utf-8')
+            text += "…"
+
+        text_utf = text.encode('utf-8')
 
         back = False
         for ch in range(len(text)):
@@ -7136,14 +7143,19 @@ class StandardPlaylist:
                     albumc = colours.playlist_text_missing
 
                 offs = 0
+                xoff = 0
 
                 for item in cust:
 
                     if item[0] == 't':
 
                         line = get_display_time(n_track.length)
-                        draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                        offs = draw_text((item[1] + xoff, playlist_text_offset + playlist_top + playlist_row_height * w,
                                    item[2]), line, alpha_mod(timec, album_fade), row_font_size)
+
+                    elif item[0] == 'f':
+                        xoff += offs + item[1]
+
 
                     elif item[0] == 'i':
                         line = str(n_track.track_number)
@@ -7152,7 +7164,7 @@ class StandardPlaylist:
                             line = "0" + line
                         line += item[3]
 
-                        draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                        offs = draw_text((item[1] + xoff, playlist_text_offset + playlist_top + playlist_row_height * w,
                                    item[2]), line, alpha_mod(indexc, album_fade), row_font_size)
 
                     elif item[0] == 'o':
@@ -7176,13 +7188,13 @@ class StandardPlaylist:
 
                     elif item[0] == 'c':
                         line = item[3]
-                        draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
+                        offs = draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
                                    item[2]), line, alpha_mod(titlec, album_fade), row_font_size)
 
                     elif item[0] == 'a':
                         line = n_track.artist
 
-                        offs += draw_text2((item[1],
+                        offs = draw_text2((item[1] + xoff,
                                             playlist_text_offset + playlist_top + playlist_row_height * w,
                                             item[2]),
                                            line,
@@ -7195,7 +7207,7 @@ class StandardPlaylist:
                     elif item[0] == 'n':
                         line = n_track.title
 
-                        offs += draw_text2((item[1],
+                        offs = draw_text2((item[1] + xoff,
                                             playlist_text_offset + playlist_top + playlist_row_height * w,
                                             item[2]),
                                            line,
@@ -7208,7 +7220,7 @@ class StandardPlaylist:
                     elif item[0] == 'b':
                         line = n_track.album
 
-                        offs = draw_text2((item[1],
+                        offs = draw_text2((item[1] + xoff,
                                            playlist_text_offset + playlist_top + playlist_row_height * w,
                                            item[2]),
                                           line,
@@ -7249,7 +7261,7 @@ class StandardPlaylist:
                                           item[1],
                                           playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
                                           alpha_mod(colours.star_line, album_fade))
-
+                                offs = ratio
             if not custom_line_mode:
 
                 timec = colours.bar_time
@@ -8141,6 +8153,11 @@ while running:
                     # print(add)
                     x += add
 
+                elif custom_pro[a][0] == 'f':
+                    # test1
+                    add = int(custom_pro[a][1:])
+                    cust.append(['f', add])
+
                 elif custom_pro[a][0] == 'l':
                     al = 0
                     r_res = x
@@ -8169,7 +8186,8 @@ while running:
                             res -= x + 20
                         else:
                             res = r_res - x - 25
-
+                    if al == 1:
+                        res = 500
                     cust.append(['a', copy.deepcopy(x), copy.deepcopy(al), res])
 
                 elif custom_pro[a][0] == 'n':
@@ -10745,48 +10763,59 @@ while running:
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
 
-        # testing
 
         if gui.vis == 2 and gui.spec is not None:
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
-                time.sleep(0.01)
-                for i in range(len(gui.spec)):
-                    if gui.spec[i] > 0:
-                        gui.spec[i] -= 1
-                        gui.level_update = True
-            if spec_smoothing:
-                if not fast_bin_av:
 
+                if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
+                    vis_decay_timer.set()
                     for i in range(len(gui.spec)):
-                        if gui.spec[i] > gui.s_spec[i]:
-                            gui.s_spec[i] += 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-                                gui.s_spec[i] += 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-                                gui.s_spec[i] += 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-                                gui.s_spec[i] += 1
-
-                        elif gui.spec[i] == gui.s_spec[i]:
-                            pass
-                        elif gui.spec[i] < gui.s_spec[i] > 0:
-                            gui.s_spec[i] -= 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-                                gui.s_spec[i] -= 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-                                gui.s_spec[i] -= 1
-                            if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-                                gui.s_spec[i] -= 1
+                        if gui.s_spec[i] > 0:
+                            if gui.spec[i] > 0:
+                                gui.spec[i] -= 1
+                            gui.level_update = True
                 else:
-                    gui.s_spec = fast_display(gui.spec,gui.s_spec)
-
-                if pctl.playing_state == 0 and checkEqual(gui.s_spec):
                     gui.level_update = True
-                    time.sleep(0.008)
 
+            if vis_rate_timer.get() > 0.016:  # Limit the change rate to 60 fps
+                vis_rate_timer.set()
+
+                if spec_smoothing:
+                    if not fast_bin_av:
+
+                        for i in range(len(gui.spec)):
+                            if gui.spec[i] > gui.s_spec[i]:
+                                gui.s_spec[i] += 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 4:
+                                    gui.s_spec[i] += 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+                                    gui.s_spec[i] += 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+                                    gui.s_spec[i] += 1
+
+                            elif gui.spec[i] == gui.s_spec[i]:
+                                pass
+                            elif gui.spec[i] < gui.s_spec[i] > 0:
+                                gui.s_spec[i] -= 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 4:
+                                    gui.s_spec[i] -= 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+                                    gui.s_spec[i] -= 1
+                                if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+                                    gui.s_spec[i] -= 1
+                    else:
+                        gui.s_spec = fast_display(gui.spec,gui.s_spec)
+
+                    if pctl.playing_state == 0 and checkEqual(gui.s_spec):
+                        gui.level_update = True
+                        time.sleep(0.008)
+
+                else:
+                    gui.s_spec = gui.spec
             else:
-                gui.s_spec = gui.spec
+                pass
+
             x = window_size[0] - 20 - offset_extra - 70 - 0
             y = 5
             w = 72 + 24 - 6 - 10

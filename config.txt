@@ -43,21 +43,28 @@ icecase-bitrate:128
 ## Playlist-----------------
 
 custom-format:"r12;t;r55;o;l;r6;n;p0.33;a;p0.63;b"
+#custom-format:"r20;a;l;r12;i;r20;f5;n;f5;b;f10;t"
+
 custom-highlight-left:4
 custom-highlight-right:13
 
 ## Note: Experimental function. May not work as expected. May change in future versions.
 
-##(starts at right align)
+##(starts at right align, then use 'l' to switch to left side)
+
 ##t track length
-##r space - px(int)
 ##o playcount
 ##s playline
-##l switch to left align
 ##n title
-##p proportion - decimal
 ##a artist
 ##b album
 ##d date
-##i tracknumber - custom text(optional)
-##c custom - custom text
+##i tracknumber [optional custom text]
+
+##c custom [custom text]
+
+##f follow from last [extra px]
+##r set space from side [px]
+##l switch to left align
+##p set proportional space from side [decimal]
+
