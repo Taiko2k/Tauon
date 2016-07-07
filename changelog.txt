@@ -4,13 +4,16 @@ Changelog-------------------------------------
 v1.4.4
 
  - Added playback menu
- - Added new dark gray theme
+ - Added new dark grey theme
+ - Added new sorting options: Artist, Album, Reverse and Filepath
+ - Removed genre sorting option
  - Fixed seeking after cue based track transition
  - Fixed seek bar click registering
  - Fixed cursor movement response delay
  - Fixed unicode end characters becoming corrupted
  - Fixed visualiser clock speed
- - Other minor bug fixes
+ - Minor UI tweaks
+ - Minor bug fixes
 
 v1.4.3
 
