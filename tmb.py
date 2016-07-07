@@ -3725,7 +3725,7 @@ class Menu:
 
 
 # Create empty area menu
-playlist_menu = Menu(95)
+playlist_menu = Menu(130)
 
 
 def append_here():
@@ -4026,6 +4026,19 @@ def convert_playlist(pl):
 
 # tab_menu.add('Transcode Folders', convert_playlist, pass_ref=True)
 
+
+def get_folder_tracks_local(pl_in):
+
+    selection = []
+    parent = pctl.master_library[default_playlist[pl_in]].parent_folder_name
+    while pl_in < len(default_playlist) and parent == pctl.master_library[default_playlist[pl_in]].parent_folder_name:
+        selection.append(pl_in)
+        pl_in += 1
+    return selection
+
+
+
+
 tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
 
 
@@ -4202,7 +4215,7 @@ def get_broadcast_line():
 
 
 # Create track context menu
-track_menu = Menu(140)
+track_menu = Menu(150)
 
 
 def open_license():
@@ -4346,8 +4359,8 @@ def activate_track_box(index):
 
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
-track_menu.add_sub("Modify...", 120)
-track_menu.add_sub("Insert/Remove...", 135)
+track_menu.add_sub("Meta...", 120)
+track_menu.add_sub("Remove/Copy/Insert...", 135)
 
 
 def rename_tracks(index):
@@ -4480,17 +4493,28 @@ if prefs.enable_transcode:
 
 
 # track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
-
+def cut_selection():
+    sel_to_car()
+    del_selected()
 
 track_menu.add_to_sub('Remove Folder', 1, remove_folder, pass_ref=True)
-track_menu.add_to_sub('Remove Selected', 1, del_selected)
-track_menu.add_to_sub('Copy Selected', 1, sel_to_car)
+track_menu.add_to_sub('Remove Track', 1, del_selected)
+track_menu.add_to_sub('Copy Track', 1, sel_to_car)
 track_menu.add_to_sub("Copy Folder", 1, transfer, pass_ref=True, args=[1, 2])
-track_menu.add_to_sub("Copy & Remove Folder", 1, transfer, pass_ref=True, args=[0, 2])
-track_menu.add_to_sub("Insert Before", 1, transfer, paste_deco, pass_ref=True, args=[2, 1])
-track_menu.add_to_sub("Insert After", 1, transfer, paste_deco, pass_ref=True, args=[2, 2])
-track_menu.add_to_sub("Insert End", 1, transfer, paste_deco, pass_ref=True, args=[2, 3])
+track_menu.add_to_sub("Cut Folder", 1, transfer, pass_ref=True, args=[0, 2])
+track_menu.add_to_sub("Cut Track", 1, cut_selection)
+track_menu.add_to_sub("Insert Before Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 1])
+track_menu.add_to_sub("Insert After Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 2])
+track_menu.add_to_sub("Append to End", 1, transfer, paste_deco, pass_ref=True, args=[2, 3])
 
+selection_menu = Menu(200)
+
+
+
+
+selection_menu.add('Copy Selection', sel_to_car)
+selection_menu.add('Cut Selection', cut_selection)
+selection_menu.add('Remove Selection', del_selected)
 
 def ser_rym(index):
 
@@ -7032,11 +7056,42 @@ class StandardPlaylist:
                           playlist_top + playlist_row_height - 1 + playlist_row_height * w, colours.folder_line)
 
                 if playlist_hold is True and coll_point(mouse_position, (
-                        playlist_left, playlist_top + 31 + playlist_row_height * w, playlist_width,
+                        playlist_left, playlist_top + playlist_row_height * w, playlist_width,
                         playlist_row_height)):
 
                     if mouse_up and key_shift_down:
                         move_on_title = True
+
+
+                # Detect folder title click
+                if (mouse_click) and coll_point(mouse_position, (
+                            playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
+                            playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
+
+                    # Add folder to selection if clicked
+                    temp = get_folder_tracks_local(p_track)
+                    print(temp)
+                    print(shift_selection)
+                    if not key_shift_down:
+                        shift_selection = []
+                    playlist_selected = p_track
+
+                    if len(shift_selection) > 0:
+                        if p_track < shift_selection[0]:
+                            for item in reversed(temp):
+                                if item not in shift_selection:
+                                    shift_selection.insert(0, item)
+                        else:
+                            for item in temp:
+                                if item not in shift_selection:
+                                    shift_selection.append(item)
+
+                    else:
+                        shift_selection = copy.deepcopy(temp)
+
+                    # for item in temp:
+                    #     if item not in shift_selection
+
 
                 # Shade ever other line for folder row
                 # if row_alt and w % 2 == 0:
@@ -7108,51 +7163,56 @@ class StandardPlaylist:
             if (mouse_click and key_shift_down is False and line_hit or
                             playlist_selected == p_track):
                 draw.rect((highlight_left, playlist_top + playlist_row_height * w),
-                          (highlight_right, playlist_row_height - 1), colours.row_select_highlight, True)
+                          (highlight_right, playlist_row_height - 0), colours.row_select_highlight, True)
                 playlist_selected = p_track
 
             # Shift Move Selection
-            if move_on_title or mouse_up and playlist_hold is True and coll_point(mouse_position, (
+            if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width, playlist_row_height)):
 
                 if p_track != playlist_hold_position and p_track not in shift_selection:
+
                     if len(shift_selection) == 0:
-                        temp_index = default_playlist[playlist_hold_position]
 
-                        del default_playlist[playlist_hold_position]
-
+                        ref = default_playlist[playlist_hold_position]
+                        default_playlist[playlist_hold_position] = "old"
                         if move_on_title:
-                            if p_track < playlist_hold_position:
-                                default_playlist.insert(p_track, temp_index)
-                            else:
-                                default_playlist.insert(p_track - 1, temp_index)
-
+                            default_playlist.insert(p_track, "new")
                         else:
-                            if p_track < playlist_hold_position:
-                                default_playlist.insert(p_track + 1, temp_index)
-                            else:
-                                default_playlist.insert(p_track, temp_index)
+                            default_playlist.insert(p_track + 1, "new")
+                        default_playlist.remove("old")
+                        playlist_selected = default_playlist.index("new")
+                        default_playlist[default_playlist.index("new")] = ref
 
                         gui.pl_update += 1
-                        playlist_selected = p_track
+
 
                     else:
-                        count = 0
-                        temp_ref = []
-                        if move_on_title:
-                            count -= 1
-                        for a in range(0, p_track):
-                            print(a)
-                            if a not in shift_selection:
-                                count += 1
-                        for b in reversed(range(len(default_playlist))):
-                            if b in shift_selection:
-                                temp_ref.append(default_playlist[b])
-                                del default_playlist[b]
+                        ref = []
+                        for item in shift_selection:
+                            ref.append(default_playlist[item])
 
-                        for item in temp_ref:
-                            default_playlist.insert(count + 1, item)
+                        for item in shift_selection:
+                            default_playlist[item] = 'old'
+
+                        for item in shift_selection:
+                            if move_on_title:
+                                default_playlist.insert(p_track, "new")
+                            else:
+                                default_playlist.insert(p_track + 1, "new")
+
+                        for b in reversed(range(len(default_playlist))):
+                            if default_playlist[b] == 'old':
+                                del default_playlist[b]
                         shift_selection = []
+                        for b in range(len(default_playlist)):
+                            if default_playlist[b] == 'new':
+                                shift_selection.append(b)
+                                default_playlist[b] = ref.pop(0)
+
+                        playlist_selected = shift_selection[0]
+                        gui.pl_update += 1
+
 
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width,
@@ -7187,7 +7247,10 @@ class StandardPlaylist:
             if right_click and line_hit and mouse_position[0] > playlist_left + 10 \
                     and not playlist_panel:
 
-                track_menu.activate(default_playlist[p_track])
+                if len(shift_selection) > 1:
+                    selection_menu.activate(default_playlist[p_track])
+                else:
+                    track_menu.activate(default_playlist[p_track])
 
                 playlist_selected = p_track
 
@@ -7562,6 +7625,7 @@ while running:
         # key_5_press = False
         key_v_press = False
         key_f_press = False
+        key_a_press = False
         key_dash_press = False
         key_eq_press = False
         key_slash_press = False
@@ -7712,6 +7776,8 @@ while running:
                 key_v_press = True
             elif event.key.keysym.sym == SDLK_f:
                 key_f_press = True
+            elif event.key.keysym.sym == SDLK_a:
+                key_a_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
                 key_backslash_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
@@ -7798,6 +7864,7 @@ while running:
                 track_menu.active = False
                 playlist_menu.active = False
                 playlist_panel = False
+                selection_menu.active = False
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
@@ -7957,6 +8024,10 @@ while running:
 
         ab_click = False
 
+        if key_a_press and key_ctrl_down:
+            gui.pl_update += 1
+            shift_selection = range(len(default_playlist))
+
         if pref_box.enabled:
 
             if pref_box.inside():
@@ -7990,6 +8061,11 @@ while running:
 
         if track_menu.active is True and mouse_click:
             track_menu.click()
+            mouse_click = False
+            ab_click = True
+
+        if selection_menu.active is True and mouse_click:
+            selection_menu.click()
             mouse_click = False
             ab_click = True
 
@@ -10670,6 +10746,7 @@ while running:
         track_menu.render()
         tab_menu.render()
         playlist_menu.render()
+        selection_menu.render()
 
         if encoding_box:
             if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
