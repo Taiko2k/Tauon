@@ -192,7 +192,7 @@ highlight_left_custom = 0
 highlight_right_custom = 0
 
 side_panel_text_align = 0
-main_font = 'Koruri-Regular.ttf'  # 'DroidSansFallback.ttf'
+
 
 album_mode = False
 spec_smoothing = True
@@ -355,6 +355,7 @@ class ColoursClass:
         self.level_yellow = [90, 90, 20, 255]
 
         self.vis_colour = self.title_text
+        self.menu_background = self.grey(8)
 
 colours = ColoursClass()
 
@@ -2556,8 +2557,11 @@ def load_font(name, size, ext=False):
 
     return TTF_OpenFont(fontpath, size)
 
+main_font = 'Koruri-Regular.ttf'
+alt_font = 'DroidSansFallback.ttf'
 
-alt_font = 'DroidSansFallback.ttf' #'DroidSans.ttf'
+# gui_font = 'Koruri-Semibold.ttf'
+# fontG = load_font(gui_font, 12)
 
 font1 = load_font(main_font, 16)
 font1b = load_font(alt_font, 16)
@@ -2577,9 +2581,7 @@ font6b = load_font(alt_font, 13)
 
 font7 = load_font(main_font, 14)
 font7b = load_font(alt_font, 14)
-#
-# font11a = load_font('c:/Windows/Fonts/meiryob.ttc', 16, True)
-# font13s = load_font('c:/Windows/Fonts/meiryob.ttc', 13, True)
+
 
 font_dict = {}
 font_dict[13] = (font6, font6b)
@@ -2588,8 +2590,8 @@ font_dict[10] = (font3, font3b)
 font_dict[12] = (font2, font2b)
 font_dict[16] = (font1, font1b)
 font_dict[14] = (font7, font7b)
-# font_dict[116] = (font11a, font1)
-# font_dict[113] = (font13s, font6)
+
+#font_dict[212] = (fontG, font2b)
 
 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
 
@@ -3569,7 +3571,7 @@ class Menu:
 
     @staticmethod
     def deco():
-        return [[170, 170, 170, 255], colours.bottom_panel_colour, None]
+        return [[170, 170, 170, 255], colours.menu_background, None]
 
     def click(self):
         self.clicked = True
@@ -3739,14 +3741,14 @@ def paste_deco():
     if len(cargo) > 0:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, colours.bottom_panel_colour, None]
+    return [line_colour, colours.menu_background, None]
 
 playlist_menu.add('Paste', append_here, paste_deco)
 
 # Create playlist tab menu
-tab_menu = Menu(120)
+tab_menu = Menu(135)
 
-tab_menu.add_sub("New Playlist...", 100)
+tab_menu.add_sub("New Sorted Playlist...", 100)
 
 
 def new_playlist():
@@ -3804,7 +3806,9 @@ def gen_sort_len(index):
             [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Duration Sorted", 0, gen_sort_len, pass_ref=True)
+tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
+
+
 
 
 def gen_sort_date(index, rev=False):
@@ -3851,13 +3855,13 @@ def gen_sort_date(index, rev=False):
     pctl.multi_playlist.append(
             [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
 
-tab_menu.add_to_sub("Year Old->New", 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub("Year Old → New", 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
-tab_menu.add_to_sub("Year New->Old", 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub("Year New → Old", 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -3893,16 +3897,73 @@ def gen_best_random(index):
 tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
 
 
-def activate_genre_box(index):
-    global genre_box
-    global genre_items
-    global genre_box_pl
-    genre_items = []
-    genre_box_pl = index
-    genre_box = True
+def gen_reverse(index):
+    global pctl
+    playlist = list(reversed(pctl.multi_playlist[index][2]))
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + " <Reversed>", 0, copy.deepcopy(playlist), 0, pctl.multi_playlist[index][4], 0])
 
 
-tab_menu.add_to_sub("Genre...", 0, activate_genre_box, pass_ref=True)
+tab_menu.add_to_sub("Reverse", 0, gen_reverse, pass_ref=True)
+
+
+def gen_sort_path(index):
+    global pctl
+
+    def path(index):
+
+        return pctl.master_library[index].fullpath
+
+    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = sorted(playlist, key=path)
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + " <Filepath Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+
+tab_menu.add_to_sub("Filepath", 0, gen_sort_path, pass_ref=True)
+
+
+def gen_sort_artist(index):
+    global pctl
+
+    def artist(index):
+
+        return pctl.master_library[index].artist
+
+    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = sorted(playlist, key=artist)
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + " <Artist Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+tab_menu.add_to_sub("Artist → ABC", 0, gen_sort_artist, pass_ref=True)
+
+
+def gen_sort_album(index):
+
+    def album(index):
+
+        return pctl.master_library[index].album
+
+    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = sorted(playlist, key=album)
+
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
+# def activate_genre_box(index):
+#     global genre_box
+#     global genre_items
+#     global genre_box_pl
+#     genre_items = []
+#     genre_box_pl = index
+#     genre_box = True
+#
+#
+# tab_menu.add_to_sub("Genre...", 0, activate_genre_box, pass_ref=True)
 
 
 def rename_playlist(index):
@@ -4117,7 +4178,7 @@ def sort_track_pl(pl):
             temp_map = []
 
 
-tab_menu.add("Sort Tracks", sort_track_pl, pass_ref=True)
+tab_menu.add("Sort Track Numbers", sort_track_pl, pass_ref=True)
 
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
@@ -4464,7 +4525,7 @@ def queue_deco():
     if len(pctl.force_queue) > 0:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, colours.bottom_panel_colour, None]
+    return [line_colour, colours.menu_background, None]
 
 
 def broadcast_feature_deco():
@@ -4473,7 +4534,7 @@ def broadcast_feature_deco():
     if pctl.broadcast_active:
         line_colour = [150, 150, 150, 255]
 
-    return [line_colour, colours.bottom_panel_colour, None]
+    return [line_colour, colours.menu_background, None]
 
 
 def broadcast_select_track(index):
@@ -4506,7 +4567,7 @@ def bass_features_deco():
     line_colour = colours.grey(150)
     if default_player != 'BASS':
         line_colour = colours.grey(20)
-    return [line_colour, colours.bottom_panel_colour, None]
+    return [line_colour, colours.menu_background, None]
 
 
 
@@ -4810,10 +4871,10 @@ def broadcast_deco():
     line_colour = colours.grey(150)
     if default_player != 'BASS':
         line_colour = colours.grey(20)
-        return [line_colour, colours.bottom_panel_colour, None]
+        return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
         return [[150, 150, 150, 255], [24, 25, 60, 255], "Stop Broadcast"]
-    return [line_colour, colours.bottom_panel_colour, None]
+    return [line_colour, colours.menu_background, None]
 
 
 if default_player == 'BASS' and os.path.isfile(os.path.join(install_directory, "config.txt")):
@@ -4834,10 +4895,10 @@ x_menu.add_sub("Playback...", 120)
 def play_pause_deco():
     line_colour = colours.grey(150)
     if pctl.playing_state == 1:
-        return [line_colour, colours.bottom_panel_colour, "Pause"]
+        return [line_colour, colours.menu_background, "Pause"]
     if pctl.playing_state == 2:
-        return [line_colour, colours.bottom_panel_colour, "Resume"]
-    return [line_colour, colours.bottom_panel_colour, None]
+        return [line_colour, colours.menu_background, "Resume"]
+    return [line_colour, ccolours.menu_background, None]
 
 
 def play_pause():
@@ -4880,8 +4941,8 @@ x_menu.add_to_sub('Revert', 1, pctl.revert)
 def repeat_deco():
     line_colour = colours.grey(150)
     if pctl.repeat_mode:
-        return [line_colour, colours.bottom_panel_colour, "Disable Repeat"]
-    return [line_colour, colours.bottom_panel_colour, None]
+        return [line_colour, colours.menu_background, "Disable Repeat"]
+    return [line_colour, colours.menu_background, None]
 
 
 def toggle_repeat():
@@ -4892,8 +4953,8 @@ x_menu.add_to_sub('Enable Repeat', 1, toggle_repeat, repeat_deco)
 def random_deco():
     line_colour = colours.grey(150)
     if pctl.random_mode:
-        return [line_colour, colours.bottom_panel_colour, "Disable Random"]
-    return [line_colour, colours.bottom_panel_colour, None]
+        return [line_colour, colours.menu_background, "Disable Random"]
+    return [line_colour, colours.menu_background, None]
 
 
 def toggle_random():
@@ -4951,7 +5012,7 @@ def last_fm_menu_deco():
         bg = [20, 60 , 20, 255]
     else:
         line = 'Engage Lastfm Scrobbling'
-        bg = colours.bottom_panel_colour
+        bg = colours.menu_background
     if lastfm.hold:
         line = "Scrobbling Has Stopped"
         bg = [60, 30 , 30, 255]
@@ -6334,11 +6395,11 @@ class Over:
         y = self.box_y - 10
 
         y += 35
-        self.toggle_square(x, y, toggle_enable_web, "Web interface*")
+        self.toggle_square(x, y, toggle_enable_web, "Web interface*  " +  "  [localhost:" + str(server_port) + "/remote]")
         y += 25
         self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
         y += 25
-        self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control" + "  [localhost:" + str(server_port) + "/remote]")
+        self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control")
         y += 35
         self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         self.button(x + 289, y-4, "Open output folder", open_encode_out)
@@ -6346,7 +6407,7 @@ class Over:
         self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
 
         y = self.box_y + 220
-        draw_text((x, y), "*Changes apply on restart", colours.grey(150), 11)
+        draw_text((x, y), "* Changes apply on restart", colours.grey(150), 11)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -6538,7 +6599,7 @@ class Over:
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
-        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.top_panel_background, True)
+        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.menu_background, True)
         draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.grey(50))
         draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
@@ -6550,8 +6611,13 @@ class Over:
         current_tab = 0
         for item in self.tabs:
 
-            box = [self.box_x + 1, self.box_y + 1 + (current_tab * 31), 110, 30]
-            draw.rect_r(box, colours.tab_background, True)
+            box = [self.box_x + 1, self.box_y + 1 + (current_tab * 30), 110, 30]
+            box2 = [self.box_x + 1, self.box_y + 1 + (current_tab * 30), 110, 29]
+            fields.add(box2)
+            # draw.rect_r(box, colours.tab_background, True)
+
+            if self.click and coll_point(mouse_position, box2):
+                self.tab_active = current_tab
 
             if current_tab == self.tab_active:
                 colour = copy.deepcopy(colours.tab_background_active)
@@ -6560,10 +6626,16 @@ class Over:
             else:
                 draw.rect_r(box, colours.tab_background, True)
 
-            draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
+            if coll_point(mouse_position, box2):
+                draw.rect_r(box, [255,255,255,10], True)
 
-            if self.click and coll_point(mouse_position, box):
-                self.tab_active = current_tab
+            #draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
+            if current_tab == self.tab_active:
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], [200, 200, 200, 220], 12)
+            else:
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], [200, 200, 200, 100], 12)
+
+
 
             current_tab += 1
 
@@ -8377,8 +8449,12 @@ while running:
                                     colours.tb_line = get_colour_from_line(p)
                                 if 'music vis' in p:
                                     colours.vis_colour = get_colour_from_line(p)
+                                if 'menu background' in p:
+                                    colours.menu_background = get_colour_from_line(p)
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
+                                    colours.menu_background = colours.bottom_panel_colour
+
 
 
                                     SDL_SetTextureColorMod(c1, colours.bottom_panel_colour[0], colours.bottom_panel_colour[1],
@@ -10200,10 +10276,12 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Playtime:", colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play Time:", colours.grey(200), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.grey(200), 12)
 
             if pref_box.enabled:
+                rect = [0, 0, window_size[0], window_size[1]]
+                draw.rect_r(rect, [0,0,0,90], True)
                 pref_box.render()
 
             if renamebox:
@@ -10852,6 +10930,8 @@ while running:
 
                 xx += 4
 
+            if pref_box.enabled:
+                draw.rect_r(rect, [0, 0, 0, 90], True)
         if gui.vis == 1:
 
             offset_extra = 0
