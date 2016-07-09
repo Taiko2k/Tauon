@@ -275,7 +275,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 6
+theme = 3
 themeChange = True
 panelY = 78
 
@@ -1036,6 +1036,7 @@ class PlayerCtl:
     def play_target(self):
 
         self.playing_time = 0
+        # print(self.track_queue)
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         self.playerCommand = 'open'
@@ -1144,10 +1145,11 @@ class PlayerCtl:
 
             # If the queue is empty
             if self.track_queue == [] and len(self.multi_playlist[self.active_playlist_playing][2]) > 0:
-                self.track_queue.append(self.multi_playlist[self.active_playlist_playing][2])
+                self.track_queue.append(self.multi_playlist[self.active_playlist_playing][2][0])
                 self.queue_step = 0
                 self.playlist_playing = 0
                 self.active_playlist_playing = 0
+
                 self.play_target()
 
             # If the queue is not empty, play?
@@ -3752,13 +3754,20 @@ tab_menu.add_sub("New Sorted Playlist...", 100)
 
 
 def new_playlist():
-    # global NPN
-    # global new_playlist_box
-    # new_playlist_box = True
-    # NPN = ""
 
-    global pctl
-    pctl.multi_playlist.append(["New Playlist", 0, [], 0, 0, 0])
+    ex = 1
+    title = "New Playlist"
+    while ex < 100:
+        for playlist in pctl.multi_playlist:
+            if playlist[0] == title:
+                ex += 1
+                title = "New Playlist (" + str(ex) + ")"
+                break
+        else:
+            break
+
+    pctl.multi_playlist.append([title, 0, [], 0, 0, 0])
+    switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -4043,24 +4052,22 @@ tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
 
 
 def delete_playlist(index):
-    global pctl
-    global pctl
+
     global default_playlist
     global playlist_position
-    global gui
-    global gui
     global message_box
     global message_box_text
     global mouse_click
 
-    if len(pctl.multi_playlist) < 2:
-        message_box = True
-        message_box_text = "Make a new playlist first plz"
-        mouse_click = False
-        return
-
     gui.pl_update += 1
     gui.update += 1
+
+    if len(pctl.multi_playlist) < 2:
+
+        pctl.multi_playlist = []
+        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        default_playlist = pctl.multi_playlist[0][2]
+        return
 
     if index == pctl.playlist_active and len(pctl.multi_playlist) == 1:
         pctl.playlist_active = 0
@@ -4110,16 +4117,13 @@ tab_menu.add('Paste', append_playlist, paste_deco, pass_ref=True)
 
 
 def append_current_playing(index):
-    global gui
-    global pctl
+
     if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
         pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
         gui.pl_update += 1
 
 
 def sort_track_pl(pl):
-    global pctl
-    global pctl
 
     # REMOVEING FILES THAT HAVE CUE
     # print("need to check for cues")
@@ -4192,6 +4196,21 @@ def sort_track_pl(pl):
 
 
 tab_menu.add("Sort Track Numbers", sort_track_pl, pass_ref=True)
+
+
+def sort_path_pl(pl):
+
+    global default_playlist
+
+    def path(index):
+
+        return pctl.master_library[index].fullpath
+
+    playlist = pctl.multi_playlist[pl][2]
+    pctl.multi_playlist[pl][2] = sorted(playlist, key=path)
+    default_playlist = pctl.multi_playlist[pl][2]
+
+tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
@@ -4922,7 +4941,7 @@ def play_pause_deco():
         return [line_colour, colours.menu_background, "Pause"]
     if pctl.playing_state == 2:
         return [line_colour, colours.menu_background, "Resume"]
-    return [line_colour, ccolours.menu_background, None]
+    return [line_colour, colours.menu_background, None]
 
 
 def play_pause():
@@ -6406,7 +6425,7 @@ class Over:
         self.tab_active = 4
         self.tabs = [
             ["Folder Import", self.files],
-            ["Modules", self.funcs],
+            ["System", self.funcs],
             ["Playlist Settings", self.config_v],
             ["View", self.config_b],
             ["Stats", self.stats],
@@ -7068,10 +7087,17 @@ class StandardPlaylist:
                             playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
                             playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
 
+                    # Play if double click:
+                    if d_mouse_click and p_track in shift_selection:
+                        click_time -= 1.5
+                        pctl.jump(default_playlist[p_track], p_track)
+
+                        if album_mode:
+                            goto_album(pctl.playlist_playing)
+
+
                     # Add folder to selection if clicked
                     temp = get_folder_tracks_local(p_track)
-                    print(temp)
-                    print(shift_selection)
                     if not key_shift_down:
                         shift_selection = []
                     playlist_selected = p_track
@@ -7125,7 +7151,7 @@ class StandardPlaylist:
 
             # Check if index playing and highlight if true
             this_line_playing = False
-            if len(pctl.track_queue) > 1 and pctl.track_queue[pctl.queue_step] == \
+            if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
                     default_playlist[p_track]:
                 draw.rect((highlight_left, playlist_top + playlist_row_height * w),
                           (highlight_right, playlist_row_height - 1), colours.row_playing_highlight, True)
@@ -7583,7 +7609,6 @@ for item in r_arg_queue:
         arg_queue.append(item)
 
 while running:
-
     # bm.get('main')
 
     if k_input:
@@ -9651,7 +9676,6 @@ while running:
                     spacing = 0
                     draw_alt = True
 
-
                 # Process each tab on top panel
                 for w in range(len(pctl.multi_playlist)):
 
@@ -9694,6 +9718,13 @@ while running:
 
                             pctl.playlist_active = w
 
+                        # Delete playlist on wheel click
+                        if tab_menu.active is False and loading_in_progress is False and (
+                                middle_click or (key_shift_down and mouse_click)):
+                            delete_playlist(w)
+
+                            break
+
                         if right_click:
                             tab_menu.activate(copy.deepcopy(w))
 
@@ -9717,13 +9748,12 @@ while running:
 
                         switch_playlist(w)
 
-                    elif tab_menu.active is False and loading_in_progress is False and (
-                        middle_click or (key_shift_down and mouse_click)) and coll_point(
-                            mouse_position, (starting_l + (spacing * w) + l, r[1], r[2] + text_space, r[3])) and len(
-                            pctl.multi_playlist) > 1:
-                        delete_playlist(w)
-
-                        break
+                    # elif tab_menu.active is False and loading_in_progress is False and (
+                    #     middle_click or (key_shift_down and mouse_click)) and coll_point(
+                    #         mouse_position, (starting_l + (spacing * w) + l, r[1], r[2] + text_space, r[3])):
+                    #     delete_playlist(w)
+                    #
+                    #     break
 
                     l += text_space
 
