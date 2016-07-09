@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.4.4"
+t_version = "v1.4.5"
 title = 'Tauon Music Box'
 version_line = title + t_version
 print(version_line)
@@ -400,6 +400,7 @@ shift_selection = []
 mouse_down = False
 right_down = False
 click_location = [200, 200]
+last_click_location = [0, 0]
 
 volume_hit = False
 seek_hit = False
@@ -413,6 +414,8 @@ key_shift_down = False
 drag_mode = False
 side_drag = False
 clicked = False
+
+
 # Player Variables----------------------------------------------------------------------------
 
 
@@ -4869,7 +4872,9 @@ x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
 #         # pctl.star_library total_pl - have
 
 
-# x_menu.add_to_sub("Test", 0, test)
+
+
+#x_menu.add_to_sub("Reset Database", 0, purge_track_data)
 
 
 def reset_missing_flags():
@@ -7088,7 +7093,9 @@ class StandardPlaylist:
                             playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
 
                     # Play if double click:
-                    if d_mouse_click and p_track in shift_selection:
+                    if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (
+                            playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
+                            playlist_row_height - 1)):
                         click_time -= 1.5
                         pctl.jump(default_playlist[p_track], p_track)
 
@@ -7141,7 +7148,9 @@ class StandardPlaylist:
                 line_hit = False
 
             # Double click to play
-            if key_shift_down is False and d_mouse_click and line_hit and p_track == playlist_selected:
+            if key_shift_down is False and d_mouse_click and line_hit and p_track == playlist_selected and coll_point(last_click_location, (
+                            playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
+                            playlist_row_height - 1)):
 
                 click_time -= 1.5
                 pctl.jump(default_playlist[p_track], p_track)
@@ -7972,7 +7981,9 @@ while running:
     if k_input:
 
         if mouse_click:
+            last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
+
 
 
         if key_F11:
@@ -8135,7 +8146,7 @@ while running:
 
         if mouse_click:
             n_click_time = time.time()
-            if n_click_time - click_time < 0.7:
+            if n_click_time - click_time < 0.65:
                 d_mouse_click = True
             click_time = n_click_time
 
@@ -8833,6 +8844,7 @@ while running:
 
 
             if len(items_loaded) > 0:
+
                 pctl.multi_playlist[load_to[0]][2] += items_loaded
                 del load_to[0]
                 items_loaded = []
