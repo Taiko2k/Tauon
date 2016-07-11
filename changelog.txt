@@ -1,13 +1,14 @@
 
 Changelog-------------------------------------
 
-v1.4.5
+v1.5.0
 
  - Added playback menu
  - Added new dark grey theme
  - Added new sorting options: artist, album, reverse and file path
  - Added new copy/paste menu for selections
  - Added ctrl-a shortcut to select all tracks in playlist
+ - Added experimental album art and playlist combined view mode
  - Removed genre sorting option
  - Improved new playlist naming
  - Fixed incorrect seeking after cue based track transition
