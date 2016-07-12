@@ -10,6 +10,8 @@ v1.5.0
  - Added ctrl-a shortcut to select all tracks in playlist
  - Added experimental album art and playlist combined view mode
  - Removed genre sorting option
+ - Removed last.fm menu bar entry
+ - Removed shift click to delete playlist
  - Improved new playlist naming
  - Fixed incorrect seeking after cue based track transition
  - Fixed moving tracks onto folder title
