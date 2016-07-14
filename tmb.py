@@ -219,6 +219,7 @@ last_row = 0
 album_v_gap = 65
 album_h_gap = 30
 album_mode_art_size = 130
+combo_mode_art_size = 190
 albums_to_render = 0
 pre_cache = []
 
@@ -708,7 +709,8 @@ try:
         prefs.enable_transcode = save[29]
     if save[30] != None:
         prefs.show_rym = save[30]
-
+    if save[31] != None:
+        combo_mode_art_size = save[31]
 except:
     print('Error loading save file')
 
@@ -4055,10 +4057,26 @@ def get_folder_tracks_local(pl_in):
         pl_in += 1
     return selection
 
-
-
-
 tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
+
+
+def move_playlist(source, dest):
+
+    global default_playlist
+    if dest > source:
+        dest += 1
+
+    active = pctl.multi_playlist[pctl.active_playlist_playing]
+    view = pctl.multi_playlist[pctl.playlist_active]
+
+    temp = pctl.multi_playlist[source]
+    pctl.multi_playlist[source] = "old"
+    pctl.multi_playlist.insert(dest, temp)
+    pctl.multi_playlist.remove("old")
+
+    pctl.active_playlist_playing = pctl.multi_playlist.index(active)
+    pctl.playlist_active = pctl.multi_playlist.index(view)
+    default_playlist = default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
 
 
 def delete_playlist(index):
@@ -4661,27 +4679,41 @@ def combo_deco():
     return [[150, 150, 150, 255], colours.menu_background, line]
 
 
+
 def toggle_combo_view(mode=0):
 
     global update_layout
+    global side_panel_enable
+    global old_side_pos
+    global side_panel_size
+
     if mode == 1:
         return gui.combo_mode
 
     if gui.combo_mode is False:
+        if not album_mode:
+            old_side_pos = side_panel_size
         gui.combo_mode = True
         reload_albums()
+
+        clear_img_cache()
+        gall_ren.size = [combo_mode_art_size, combo_mode_art_size]
+
         combo_pl_render.prep(True)
-        if side_panel_enable:
-            toggle_side_panel()
         if not thick_lines:
             toggle_thick()
         if album_mode:
             toggle_album_mode()
-        update_layout = True
+        if side_panel_enable:
+            side_panel_enable = False
     else:
         gui.combo_mode = False
-
-        update_layout = True
+        clear_img_cache()
+        gall_ren.size = [album_mode_art_size, album_mode_art_size]
+        if prefer_side:
+            side_panel_enable = True
+        side_panel_size = old_side_pos
+    update_layout = True
 
 # x_menu.add('Toggle Side panel', toggle_side_panel)
 
@@ -6524,12 +6556,14 @@ class Over:
     def config_b(self):
 
         global album_mode_art_size
+        global combo_mode_art_size
+        global update_layout
 
         x = self.box_x + self.item_x_offset - 10
         y = self.box_y - 10
 
         x += 10
-        y += 30
+        y += 25
 
         draw_text((x, y), "Gallery art size:", colours.grey(200), 11)
 
@@ -6564,9 +6598,61 @@ class Over:
                     album_mode_art_size += 10
                     clear_img_cache()
         draw_text((x + 4, y), ">", colours.grey(200), 11)
-        gall_ren.size = [album_mode_art_size, album_mode_art_size]
 
-        y = self.box_y + 55
+        #---------------
+
+        x = self.box_x + self.item_x_offset - 10
+        x += 10
+        y += 20
+
+        draw_text((x, y), "Playlist art size:", colours.grey(200), 11)
+
+        x += 90
+
+        rect = (x,y,15,15)
+        fields.add(rect)
+        draw.rect_r(rect, [255,255,255,20], True)
+        if coll_point(mouse_position, rect):
+            draw.rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if combo_mode_art_size > 50:
+                    combo_mode_art_size -= 10
+                    clear_img_cache()
+
+        draw_text((x+4, y), "<", colours.grey(200), 11)
+
+        x += 25
+
+        draw.rect_r((x,y,40,15), [255,255,255,10], True)
+        draw_text((x + 4, y), str(combo_mode_art_size) + "px", colours.grey(200), 11)
+
+        x +=  40 + 10
+
+        rect = (x, y, 15, 15)
+        fields.add(rect)
+        draw.rect_r(rect, [255,255,255,20], True)
+        if coll_point(mouse_position, rect):
+            draw.rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if combo_mode_art_size < 600:
+                    combo_mode_art_size += 10
+                    clear_img_cache()
+        draw_text((x + 4, y), ">", colours.grey(200), 11)
+
+        if self.click:
+            if not gui.combo_mode:
+                gall_ren.size = [album_mode_art_size, album_mode_art_size]
+            else:
+                gall_ren.size = [combo_mode_art_size, combo_mode_art_size]
+                combo_pl_render.prep()
+                update_layout = True
+                gui.pl_update += 2
+
+
+
+        #y = self.box_y + 55
+        y += 35
+
         x = self.box_x + self.item_x_offset
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
@@ -6583,7 +6669,7 @@ class Over:
         # ----------
 
         x += 50
-        y += 40
+        y += 20
         self.button(x + 250, y, "Reset Layout", standard_size)
         x += 110
         self.button(x + 240, y, "Next Theme", advance_theme)
@@ -7044,6 +7130,7 @@ class TopPanel:
         self.tab_hold_index = 0
         self.index_playing = -1
         self.playing_title = ""
+        self.drag_zone_start_x = 300
 
 
     def render(self):
@@ -7169,6 +7256,11 @@ class TopPanel:
                     self.tab_hold_index = i
                     switch_playlist(i)
 
+                # Drag to move playlist
+                if mouse_up and i != self.tab_hold_index:
+                    move_playlist(self.tab_hold_index, i)
+                    self.tab_hold = False
+
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and loading_in_progress is False and middle_click:
                     delete_playlist(i)
@@ -7193,6 +7285,7 @@ class TopPanel:
         # Other input
         if mouse_up:
             quick_drag = False
+            self.tab_hold = False
 
         # Scroll anywhere on panel to change playlist
         if mouse_wheel != 0 and mouse_position[1] < self.height + 1 and len(pctl.multi_playlist) > 1:
@@ -7272,6 +7365,7 @@ class TopPanel:
 
         # Status text
         x += self.menu_space + word_length + 5
+        self.drag_zone_start_x = x
         status = True
 
         if loading_in_progress:
@@ -7447,25 +7541,25 @@ def custom_line_render(track_object, track_position, y, playing, album_fade):
                               3,
                               default_playlist[track_position])
 
-        elif item[0] == 's':
-
-            index = default_playlist[track_position]
-            key = pctl.master_library[index].title + pctl.master_library[index].filename
-            if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and \
-                            pctl.master_library[index].length != 0:
-                total = pctl.star_library[key]
-                ratio = total / pctl.master_library[index].length
-                if ratio > 15:
-                    ratio = 15
-                if ratio > 0.55:
-                    ratio = int(ratio * 4)
-
-                    draw.line(item[1] - ratio,
-                              playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                              item[1],
-                              playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                              alpha_mod(colours.star_line, album_fade))
-                    offs = ratio
+        # elif item[0] == 's':
+        #
+        #     index = default_playlist[track_position]
+        #     key = pctl.master_library[index].title + pctl.master_library[index].filename
+        #     if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and \
+        #                     pctl.master_library[index].length != 0:
+        #         total = pctl.star_library[key]
+        #         ratio = total / pctl.master_library[index].length
+        #         if ratio > 15:
+        #             ratio = 15
+        #         if ratio > 0.55:
+        #             ratio = int(ratio * 4)
+        #
+        #             draw.line(item[1] - ratio,
+        #                       playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+        #                       item[1],
+        #                       playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
+        #                       alpha_mod(colours.star_line, album_fade))
+        #             offs = ratio
     
     
     
@@ -8089,7 +8183,7 @@ class ComboPlaylist:
     def __init__(self):
 
         self.pl_pos_px = 0
-        self.pl_album_art_size = 160
+        self.pl_album_art_size = combo_mode_art_size
         self.v_buffer = 60
         self.h_buffer = 70
 
@@ -8099,6 +8193,8 @@ class ComboPlaylist:
 
         self.hit = True
 
+
+
     def prep(self, goto=False):
 
         self.mirror_cache = []
@@ -8106,7 +8202,7 @@ class ComboPlaylist:
         pl_entry_on = 0
         pl_render_pos = 0
         min = 0
-        self.pl_album_art_size = album_mode_art_size
+        self.pl_album_art_size = combo_mode_art_size
 
         while True:
 
@@ -8174,7 +8270,7 @@ class ComboPlaylist:
         render = False
         album_dex_on = 0
         min = 0
-        self.pl_album_art_size = album_mode_art_size
+
 
         i = 0
         for item in self.mirror_cache:
@@ -8307,6 +8403,9 @@ class ComboPlaylist:
 
     def cache_render(self):
 
+        if mouse_click or right_click or middle_click:
+            self.full_render()
+            return
         # Render the cached playlist texture
         SDL_RenderCopy(renderer, ttext, None, abc)
 
@@ -9034,8 +9133,8 @@ while running:
                 side_panel_size = window_size[0] - playlist_width - 30
         else:
             playlist_width = window_size[0] - 43
-            if custom_line_mode:
-                playlist_width = window_size[0] - 30
+            # if custom_line_mode:
+            #     playlist_width = window_size[0] - 30
 
 
         #tttt
@@ -9057,8 +9156,6 @@ while running:
 
             x = playlist_width + 10 + 18 + squ
 
-
-
             al = 1
             cust = []
             r_res = 100
@@ -9067,7 +9164,7 @@ while running:
 
                 if custom_pro[a][0] == 't':
 
-                    cust.append(['t', copy.deepcopy(x) - 25, copy.deepcopy(0)])
+                    cust.append(['t', copy.deepcopy(x) - draw.text_calc("00:00", 13), copy.deepcopy(0)])
 
                 elif custom_pro[a][0] == 'r':
 
@@ -9336,6 +9433,8 @@ while running:
     # ---------------------------------------------------------------------------------------------------------
     # GUI DRAWING------
     # print(gui.update)
+
+
 
     if gui.update > 0 and gui.lowered != True and not resize_mode:
         if gui.update > 2:
@@ -11730,7 +11829,7 @@ while running:
         if mouse_down is False:
             drag_mode = False
 
-        if mouse_click and mouse_down and 1 < mouse_position[1] < 30 and m_l < mouse_position[0] < window_size[
+        if mouse_click and mouse_down and 1 < mouse_position[1] < 30 and top_panel.drag_zone_start_x < mouse_position[0] < window_size[
                 0] - 80 and drag_mode is False and clicked is False:
 
             drag_mode = True
@@ -11816,7 +11915,7 @@ save = [pctl.master_library,
         prefs.expose_web,
         prefs.enable_transcode,
         prefs.show_rym,
-        None,
+        combo_mode_art_size,
         None,
         None,
         None,
