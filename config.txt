@@ -44,7 +44,7 @@ icecase-bitrate:128
 
 #custom-format:"r12;t;r55;o;l;r6;n;p0.33;a;p0.63;b"
 #custom-format:"r20;a;l;r12;i;r25;n;f5;b;f10;t"
-custom-format:"r20;t;l;r17;i;r30;a;f5;n"
+custom-format:"r15;t;r50;s;l;r17;i;r30;a;f5;n"
 
 custom-highlight-left:4
 custom-highlight-right:13
