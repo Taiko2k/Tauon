@@ -362,6 +362,7 @@ colours = ColoursClass()
 
 playlist_width = int(window_size[0] * 0.65) + 25
 
+
 info_panel_position = (200, 15)
 info_panel_vert_spacing = 20
 info_panel_hor_spacing = 0
@@ -3540,6 +3541,7 @@ r = (130, 8, 10, 15)
 seek_bar_position = [300, window_size[1] - panelBY]
 seek_bar_size = [window_size[0] - 10, 15]
 volume_bar_size = [135, 15]
+scroll_hide_box = (0, panelY, 28, window_size[0] - panelBY)
 
 encoding_menu = False
 enc_index = 0
@@ -4704,8 +4706,7 @@ def toggle_combo_view(mode=0):
         gall_ren.size = [combo_mode_art_size, combo_mode_art_size]
 
         combo_pl_render.prep(True)
-        if not thick_lines:
-            toggle_thick()
+
         if album_mode:
             toggle_album_mode()
         if side_panel_enable:
@@ -6390,7 +6391,11 @@ def toggle_scroll(mode=0):
     global update_layout
 
     if mode == 1:
-        return scroll_enable
+        if scroll_enable:
+            return False
+        else:
+            return True
+
     else:
         scroll_enable ^= True
         gui.pl_update += 1
@@ -6458,7 +6463,7 @@ def toggle_rym(mode=0):
         return prefs.show_rym
     prefs.show_rym ^= True
 
-config_items.append(['Show scrollbar', toggle_scroll])
+config_items.append(['Hide scroll bar', toggle_scroll])
 
 config_items.append(['Break playlist by folders', toggle_break])
 
@@ -8373,7 +8378,7 @@ class ComboPlaylist:
                         draw.rect_r(a_rect, [40, 40, 40, 50], True)
                         gall_ren.render(index_on, (x, y))
 
-                        if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30:
+                        if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30 and mouse_position[1] < window_size[1] - panelBY - 10:
                             combo_menu.activate(index_on, (mouse_position[0] + 5, mouse_position[1] + 3))
 
                     min = self.pl_album_art_size
@@ -9133,6 +9138,7 @@ while running:
         dst2.y = window_size[1] - control_line_bottom
         dst3.y = window_size[1] - control_line_bottom
 
+
         time_display_position[0] = window_size[0] - time_display_position_right
 
         highlight_x_offset = 0
@@ -9141,7 +9147,7 @@ while running:
 
 
         random_button_position = window_size[0] - 90, 83
-
+        scroll_hide_box = (0, panelY, 28, window_size[0] - panelBY)
 
         if bb_type == 1:
             panelBY = 95
@@ -9150,7 +9156,7 @@ while running:
             seek_bar_size[1] = 11
 
 
-        if thick_lines:
+        if thick_lines or gui.combo_mode:
             playlist_row_height = 31
             playlist_text_offset = 6
             playlist_x_offset = 7
@@ -9769,7 +9775,11 @@ while running:
                 # ------------------------------------------------
                 # Scroll Bar
 
-                if scroll_enable:
+
+                if not scroll_enable:
+                    fields.add(scroll_hide_box)
+                if scroll_enable or coll_point(mouse_position, scroll_hide_box) or scroll_hold:
+
                     if not gui.combo_mode:
                         sy = 31
                         ey = window_size[1] - 30 - 22
