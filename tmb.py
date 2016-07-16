@@ -420,12 +420,11 @@ clicked = False
 # Player Variables----------------------------------------------------------------------------
 
 
-DA_Formats = {'MP3', 'mp3', 'WAV', 'wav', 'OPUS', 'opus', 'FLAC', 'flac', 'APE', 'ape',
-              'm4a', 'M4A', 'MP4', 'mp4', 'ogg', 'OGG', 'AAC', 'aac', 'tta', 'TTA'}
+DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
+              'm4a', 'mp4', 'ogg', 'aac', 'tta', }
 
 if system == 'windows':
     DA_Formats.add('wma')
-    DA_Formats.add('WMA')
 
 
 auto_stop = False
@@ -3741,7 +3740,6 @@ class Menu:
 # Create empty area menu
 playlist_menu = Menu(130)
 
-
 def append_here():
     global cargo
     global gui
@@ -4315,7 +4313,13 @@ def remove_folder(index):
 
     if album_mode:
         reload_albums()
+    if gui.combo_mode:
+        combo_pl_render.prep()
 
+# Create combo album menu
+combo_menu = Menu(130)
+combo_menu.add('Open Folder', open_folder, pass_ref=True)
+combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
 
 def convert_folder(index):
     global default_playlist
@@ -4782,9 +4786,11 @@ def toggle_album_mode():
         side_panel_enable = prefer_side
         side_panel_size = old_side_pos
     else:
+        if gui.combo_mode:
+            toggle_combo_view()
         album_mode = True
         side_panel_enable = True
-        gui.combo_mode = False
+
         old_side_pos = side_panel_size
 
     reload_albums()
@@ -4804,7 +4810,7 @@ x_menu.add("Settings...", activate_info_box)
 
 x_menu.add_sub("Database...", 120)
 
-x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
+# x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
 
 def export_stats():
     global pctl
@@ -5476,7 +5482,7 @@ def loader():
             add_from_cue(path)
             return 0
 
-        if os.path.splitext(path)[1][1:] not in DA_Formats:
+        if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
             return 1
 
         global gui
@@ -5541,7 +5547,7 @@ def loader():
                 pre_get(os.path.join(direc, items_in_dir[q]))
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
-                if os.path.splitext(items_in_dir[q])[1][1:] in DA_Formats:
+                if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
                     to_get += 1
                     gui.update += 1
 
@@ -5560,7 +5566,7 @@ def loader():
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
-                if os.path.splitext(items_in_dir[q])[1][1:] in DA_Formats:
+                if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
                     add_file(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
 
                 elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", 'cue'}:
@@ -7362,6 +7368,22 @@ class TopPanel:
             bg = colours.grey(95)
         draw_text((x, y), word, bg, 12)
 
+        # GALLERY -----------------------------
+        x += self.menu_space + word_length
+        word = "ALBUMS"
+        word_length = draw.text_calc(word, 12)
+        rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
+        hit = coll_point(mouse_position, rect)
+        fields.add(rect)
+
+        if hit and mouse_click:
+            toggle_combo_view()
+
+        if gui.combo_mode or hit:
+            bg = colours.grey(130)
+        else:
+            bg = colours.grey(95)
+        draw_text((x, y), word, bg, 12)
 
         # Status text
         x += self.menu_space + word_length + 5
@@ -8257,8 +8279,12 @@ class ComboPlaylist:
         # Get scroll movement
         if mouse_position[0] < playlist_width + 30 and mouse_position[1] < window_size[1] - panelBY:
             self.pl_pos_px -= mouse_wheel * 60
-            if key_shift_down:
-                self.pl_pos_px -= mouse_wheel * 10000
+            if self.pl_pos_px < 0:
+                self.pl_pos_px = 0
+            elif self.pl_pos_px > self.max_y:
+                self.pl_pos_px = self.max_y
+            # if key_shift_down:
+            #     self.pl_pos_px -= mouse_wheel * 10000
 
         # Determine highlight size
         highlight_left = playlist_left - 20 + highlight_x_offset + highlight_left_custom + self.pl_album_art_size
@@ -8287,7 +8313,7 @@ class ComboPlaylist:
             self.hit = False
 
         while pl_render_pos < self.pl_pos_px + window_size[1] and \
-                pl_entry_on < len(default_playlist) - 1:
+                pl_entry_on < len(default_playlist):
 
             if not render and pl_render_pos + self.pl_album_art_size + 200 > self.pl_pos_px:
                 render = True
@@ -8343,8 +8369,12 @@ class ComboPlaylist:
 
 
                         # Draw album art
-                        draw.rect((x,y), (self.pl_album_art_size, self.pl_album_art_size), [40, 40, 40, 50], True)
+                        a_rect = (x, y, self.pl_album_art_size, self.pl_album_art_size)
+                        draw.rect_r(a_rect, [40, 40, 40, 50], True)
                         gall_ren.render(index_on, (x, y))
+
+                        if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30:
+                            combo_menu.activate(index_on, (mouse_position[0] + 5, mouse_position[1] + 3))
 
                     min = self.pl_album_art_size
 
@@ -8361,7 +8391,7 @@ class ComboPlaylist:
                 # Test if line hit
                 line_hit = False
                 if (mouse_click or right_click or middle_click) and coll_point(mouse_position, s_rect) and \
-                                mouse_position[1] < window_size[1] - panelBY:
+                                mouse_position[1] < window_size[1] - panelBY and mouse_position[1] > panelY:
                     line_hit = True
                     self.hit = True
 
@@ -8722,6 +8752,7 @@ while running:
                 tab_menu.active = False
                 track_menu.active = False
                 playlist_menu.active = False
+                combo_menu.active = False
                 playlist_panel = False
                 selection_menu.active = False
                 gui.update += 1
@@ -8805,7 +8836,7 @@ while running:
             auto_play_import = True
     if k_input:
 
-        if mouse_click:
+        if mouse_click or right_click:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
 
@@ -8923,6 +8954,13 @@ while running:
             playlist_menu.click()
             mouse_click = False
             ab_click = True
+
+        if combo_menu.active and mouse_click:
+            combo_menu.click()
+            mouse_click = False
+            ab_click = True
+        if combo_menu.active and right_click:
+            combo_menu.active = False
 
         if track_menu.active is True and mouse_click:
             track_menu.click()
@@ -9070,8 +9108,16 @@ while running:
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
         gui.update += 1
-        gui.pl_update += 2
+        # gui.pl_update += 1
         loading_in_progress = False
+        # if album_mode:
+        #     reload_albums()
+        # if gui.combo_mode:
+        #     print('hiht')
+        #     print(default_playlist)
+        #     reload_albums()
+        #     combo_pl_render.prep()
+
 
     if update_layout:
         # update layout
@@ -9689,6 +9735,12 @@ while running:
                 del load_to[0]
                 items_loaded = []
                 gui.update += 1
+                gui.pl_update += 1
+                if album_mode:
+                    reload_albums()
+                if gui.combo_mode:
+                    reload_albums()
+                    combo_pl_render.prep()
 
             if show_playlist:
 
@@ -9735,6 +9787,7 @@ while running:
 
                             gui.pl_update += 1
                             if right_click:
+
                                 sbp = mouse_position[1] - int(sbl/2)
                                 if sbp + sbl > ey:
                                     sbp = ey - sbl
@@ -9804,16 +9857,17 @@ while running:
 
                             gui.pl_update += 1
                             if right_click:
+
                                 sbp = mouse_position[1] - int(sbl / 2)
                                 if sbp + sbl > ey:
                                     sbp = ey - sbl
                                 elif sbp < panelY:
                                     sbp = panelY
                                 per = (sbp - panelY) / (ey - panelY - sbl)
-                                #playlist_position = int(len(default_playlist) * per)
-
-                                # if playlist_position < 0:
-                                #     playlist_position = 0
+                                combo_pl_render.pl_pos_px = int(combo_pl_render.max_y * per)
+                                #
+                                # # if playlist_position < 0:
+                                # #     playlist_position = 0
                             elif mouse_position[1] < sbp:
                                 combo_pl_render.pl_pos_px -= 30
                             elif mouse_position[1] > sbp + sbl:
@@ -11400,6 +11454,7 @@ while running:
         tab_menu.render()
         playlist_menu.render()
         selection_menu.render()
+        combo_menu.render()
 
         if encoding_box:
             if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
