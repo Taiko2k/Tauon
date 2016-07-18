@@ -4,16 +4,17 @@ Changelog-------------------------------------
 v1.5.0
 
  - Added playback menu
- - Added new dark grey/black theme
  - Added new sorting options: artist, album, reverse and file path
  - Added new copy/paste menu for selections
  - Added ctrl-a shortcut to select all tracks in playlist
+ - Added three new themes
  - Added album art + tracks combined view mode
  - Removed genre sorting option
  - Removed last.fm panel indicator
  - Removed shift click to delete playlist function
+ - Removed two existing themes
  - Replaced option to disable scroll bar with hide option
- - Improved new playlist tab naming
+ - Improved multiple new playlist naming
  - Improved playlist tab repositioning
  - Fixed incorrect seeking after cue based track transition
  - Fixed moving tracks onto folder title

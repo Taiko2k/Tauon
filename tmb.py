@@ -4316,6 +4316,7 @@ def remove_folder(index):
     if album_mode:
         reload_albums()
     if gui.combo_mode:
+        reload_albums()
         combo_pl_render.prep()
 
 # Create combo album menu
@@ -6337,6 +6338,8 @@ def toggle_titlebar_line(mode=0):
 
 def toggle_borderless(mode=0):
     global draw_border
+    global update_layout
+    update_layout = True
     if mode == 1:
         return draw_border
 
@@ -7268,7 +7271,7 @@ class TopPanel:
                     switch_playlist(i)
 
                 # Drag to move playlist
-                if mouse_up and i != self.tab_hold_index:
+                if mouse_up and i != self.tab_hold_index and self.tab_hold is True:
                     move_playlist(self.tab_hold_index, i)
                     self.tab_hold = False
 
@@ -7471,6 +7474,8 @@ def custom_line_render(track_object, track_position, y, playing, album_fade):
     xoff = 0
 
     for item in cust:
+
+
 
         if item[0] == 't':
 
@@ -7706,7 +7711,7 @@ class StandardPlaylist:
 
 
                 # Detect folder title click
-                if (mouse_click) and coll_point(mouse_position, (
+                if (mouse_click or right_click) and coll_point(mouse_position, (
                             playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
                             playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
 
@@ -7720,25 +7725,29 @@ class StandardPlaylist:
                         if album_mode:
                             goto_album(pctl.playlist_playing)
 
+                    # Show selection menu if right clicked after select
+                    if right_click and len(shift_selection) > 1:
+                        selection_menu.activate(default_playlist[p_track])
 
                     # Add folder to selection if clicked
-                    temp = get_folder_tracks_local(p_track)
-                    if not key_shift_down:
-                        shift_selection = []
-                    playlist_selected = p_track
+                    if mouse_click:
+                        temp = get_folder_tracks_local(p_track)
+                        if not key_shift_down:
+                            shift_selection = []
+                        playlist_selected = p_track
 
-                    if len(shift_selection) > 0:
-                        if p_track < shift_selection[0]:
-                            for item in reversed(temp):
-                                if item not in shift_selection:
-                                    shift_selection.insert(0, item)
+                        if len(shift_selection) > 0:
+                            if p_track < shift_selection[0]:
+                                for item in reversed(temp):
+                                    if item not in shift_selection:
+                                        shift_selection.insert(0, item)
+                            else:
+                                for item in temp:
+                                    if item not in shift_selection:
+                                        shift_selection.append(item)
+
                         else:
-                            for item in temp:
-                                if item not in shift_selection:
-                                    shift_selection.append(item)
-
-                    else:
-                        shift_selection = copy.deepcopy(temp)
+                            shift_selection = copy.deepcopy(temp)
 
                     # for item in temp:
                     #     if item not in shift_selection
@@ -9138,11 +9147,14 @@ while running:
         dst2.y = window_size[1] - control_line_bottom
         dst3.y = window_size[1] - control_line_bottom
 
+        offset_extra = 0
+        if draw_border:
+            offset_extra = 61
 
         time_display_position[0] = window_size[0] - time_display_position_right
 
         highlight_x_offset = 0
-        if scroll_enable and custom_line_mode:
+        if scroll_enable and custom_line_mode and not gui.combo_mode:
             highlight_x_offset = 16
 
 
@@ -9235,7 +9247,7 @@ while running:
                     al = 0
                     r_res = x
                     x = 0 + squ
-                    if scroll_enable:
+                    if scroll_enable or gui.combo_mode:
                         x += 16
 
 
@@ -9252,7 +9264,9 @@ while running:
                     x = int(playlist_width * de) + squ
 
                 elif custom_pro[a][0] == 'a':
-                    res = 500
+                    res = playlist_width - x + 50
+                    if not gui.combo_mode:
+                        res -= 180
                     if len(custom_pro) > a + 2:
                         if custom_pro[a + 1][0] == 'p':
                             de = float(custom_pro[a + 1][1:])
@@ -9265,7 +9279,9 @@ while running:
                     cust.append(['a', copy.deepcopy(x), copy.deepcopy(al), res])
 
                 elif custom_pro[a][0] == 'n':
-                    res = 500
+                    res = playlist_width - x + 50
+                    if not gui.combo_mode:
+                        res -= 180
                     if len(custom_pro) > a + 2:
                         if custom_pro[a + 1][0] == 'p':
                             de = float(custom_pro[a + 1][1:])
@@ -9276,7 +9292,9 @@ while running:
                     cust.append(['n', copy.deepcopy(x), copy.deepcopy(al), res])
 
                 elif custom_pro[a][0] == 'b':
-                    res = 500
+                    res = playlist_width - x + 50
+                    if not gui.combo_mode:
+                        res -= 180
                     if len(custom_pro) > a + 2:
                         if custom_pro[a + 1][0] == 'p':
                             de = float(custom_pro[a + 1][1:])
@@ -11051,7 +11069,7 @@ while running:
                         total = pctl.star_library[key]
                         ratio = total / pctl.master_library[r_menu_index].length
 
-                    draw_text((x + 8 + 10, y + 40), "Play Count:", colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play count:", colours.grey(200), 12)
                     draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey(200), 12)
 
                     y += 15
@@ -11059,7 +11077,7 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Play Time:", colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play time:", colours.grey(200), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.grey(200), 12)
 
             if pref_box.enabled:
