@@ -276,7 +276,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 3
+theme = 1
 themeChange = True
 panelY = 78
 
@@ -7181,19 +7181,22 @@ class TopPanel:
             offset += 90
 
         # Generate title text if applicable
-        index = pctl.track_queue[pctl.queue_step]
-        if index != self.index_playing:
-            line = ""
-            title = pctl.master_library[index].title
-            artist = pctl.master_library[index].artist
-            if artist != "":
-                line += artist
-            if title != "":
-                if line != "":
-                    line += " - "
-                line += title
-            line = trunc_line(line, 11, window_size[0] - offset - 290)
-            self.playing_title = line
+        if len(pctl.track_queue) > 0:
+            index = pctl.track_queue[pctl.queue_step]
+            if index != self.index_playing:
+                line = ""
+                title = pctl.master_library[index].title
+                artist = pctl.master_library[index].artist
+                if artist != "":
+                    line += artist
+                if title != "":
+                    if line != "":
+                        line += " - "
+                    line += title
+                line = trunc_line(line, 11, window_size[0] - offset - 290)
+                self.playing_title = line
+        else:
+            self.playing_title = ""
 
         if pctl.playing_state < 3:
             p_text = self.playing_title
@@ -7401,7 +7404,7 @@ class TopPanel:
         status = True
 
         if loading_in_progress:
-            text = "Importing..."
+            text = "Importing...  " + str(to_got) + "/" + str(to_get)
             bg = [245, 205, 0, 255]
         elif len(transcode_list) > 0:
             text = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
@@ -7444,13 +7447,25 @@ class TopPanel:
 
 top_panel = TopPanel()
 
-        # k = starting_l + (spacing * (len(pctl.multi_playlist))) + k
-        # k += 40
-        # k += draw.text_calc(get_playing_line(), 12)
-        # --------------------------
-        #
+def star_line_render(x, y, track_object, render=True):
 
-def custom_line_render(track_object, track_position, y, playing, album_fade):
+    key = track_object.title + track_object.filename
+    star_x = 0
+    if (key in pctl.star_library) and pctl.star_library[key] != 0 and track_object.length != 0:
+        total = pctl.star_library[key]
+        ratio = total / track_object.length
+        if ratio > 0.55:
+            star_x = int(ratio * 4)
+            if star_x > 60:
+                star_x = 60
+            if render:
+                draw.line(x - star_x, y, x, y, alpha_mod(colours.star_line, album_fade))
+                return star_x
+            else:
+                return star_x
+
+
+def custom_line_render(track_object, track_position, y, playing, album_fade, star_bar=0):
 
     timec = colours.bar_time
     titlec = colours.title_text
@@ -7538,14 +7553,18 @@ def custom_line_render(track_object, track_position, y, playing, album_fade):
 
         elif item[0] == 'n':
             line = track_object.title
-
+            # hacky thin -----
+            ma = item[3]
+            if gui.combo_mode and ma > window_size[0] - (item[1] + xoff) - 100:
+                ma = window_size[0] - (item[1] + xoff) - 100
+            # ----------------
             offs = draw_text2((item[1] + xoff,
                                y,
                                item[2]),
                               line,
                               alpha_mod(titlec, album_fade),
                               row_font_size,
-                              item[3],
+                              ma,
                               2,
                               default_playlist[track_position])
 
@@ -7575,8 +7594,9 @@ def custom_line_render(track_object, track_position, y, playing, album_fade):
                               3,
                               default_playlist[track_position])
 
-        # elif item[0] == 's':
-        #
+        # elif item[0] == 's' and star_bar > 0:
+        #     star_line_render(item[1], star_bar, pctl.master_library[default_playlist[track_position]])
+
         #     index = default_playlist[track_position]
         #     key = pctl.master_library[index].title + pctl.master_library[index].filename
         #     if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and \
@@ -8134,6 +8154,7 @@ class StandardPlaylist:
                         os.path.splitext((n_track.filename))[
                             0]
 
+
                 index = default_playlist[p_track]
                 key = pctl.master_library[index].title + pctl.master_library[index].filename
                 star_x = 0
@@ -8163,7 +8184,7 @@ class StandardPlaylist:
                            line,
                            alpha_mod(titlec, album_fade),
                            row_font_size,
-                           playlist_width - 71 - artistoffset - star_x - 5,
+                           playlist_width - 71 - artistoffset - star_x - 10,
                            2,
                            default_playlist[p_track])
 
@@ -8431,7 +8452,7 @@ class ComboPlaylist:
                     draw.rect_r(rect, colours.row_select_highlight, True)
 
                 # Draw track text
-                custom_line_render(track, pl_entry_on, y - 1, playing, 255)
+                custom_line_render(track, pl_entry_on, y - 1, playing, 255, y)
 
                 # Right click menu
                 if right_click and line_hit:
