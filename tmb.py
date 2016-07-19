@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.5.0"
+t_version = "v1.5.1"
 title = 'Tauon Music Box'
 version_line = title + t_version
 print(version_line)
@@ -1114,6 +1114,8 @@ class PlayerCtl:
 
         if album_mode:
             goto_album(self.playlist_playing)
+        if gui.combo_mode and self.playlist_active == self.active_playlist_playing:
+            self.show_current()
 
         self.render_playlist()
 
@@ -7209,7 +7211,7 @@ class TopPanel:
             left_space_es += 300
 
 
-        if window_size[0] - right_space_es - left_space_es < 140:
+        if window_size[0] - right_space_es - left_space_es < 190:
             draw_alt = True
         else:
             draw_alt = False
@@ -8132,10 +8134,9 @@ class StandardPlaylist:
                         os.path.splitext((n_track.filename))[
                             0]
 
-                ratio = 0
                 index = default_playlist[p_track]
                 key = pctl.master_library[index].title + pctl.master_library[index].filename
-
+                star_x = 0
                 if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
                         index].length != 0:
                     total = pctl.star_library[key]
@@ -8162,7 +8163,7 @@ class StandardPlaylist:
                            line,
                            alpha_mod(titlec, album_fade),
                            row_font_size,
-                           playlist_width - 71 - artistoffset - ratio - 15,
+                           playlist_width - 71 - artistoffset - star_x - 5,
                            2,
                            default_playlist[p_track])
 

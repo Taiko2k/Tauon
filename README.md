@@ -8,7 +8,7 @@ Uses BASS audio library as backend.
 
   - Playback support for MP3, OGG, FLAC and others
   - CUE sheet support
-  - Single album art view & gallery view
+  - Switchable visual layouts
   - Last.fm scrobbling
   - Web remote control interface
   - Quick search

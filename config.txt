@@ -1,7 +1,8 @@
 ﻿## Tauon Music Box config file
 
+## Special comment from the developer: "Theres really nothing interesting to change in this config file, the formatting's all hard to read anyway so I wouldn't bother"
 
-## Playback--------------------------------------------------------------
+## Playback---------------------------------------------------------------------------
 
 #Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
 pause-fade-time: 400
@@ -10,8 +11,8 @@ cross-fade-time: 700
 ## Mark where a scrobble will occur
 scrobble-mark
 
-## System----------------------------------------------------------
-
+## System-----------------------------------------------------------------------------
+-
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
 mediakey:2
 
@@ -19,7 +20,7 @@ mediakey:2
 taskbar-progress
 
 
-## Encoding----------
+## Encoding---------------------------------------------------------------------------
 
 opus-bitrate:64
 
@@ -40,18 +41,22 @@ icecast-pass:hackme
 icecast-codec:OGG
 icecase-bitrate:128
 
-## Playlist-----------------
+## Playlist----------------------------------------------------------------------------
+## Note: Experimental function. May not work as expected. May change in future versions.
+## Note: Text truncating currently partially broken
+## Special comment from the developer: "Yeah I know it doesn't make much sense"
 
 #custom-format:"r12;t;r55;o;l;r6;n;p0.33;a;p0.63;b"
 #custom-format:"r20;a;l;r12;i;r25;n;f5;b;f10;t"
 custom-format:"r15;t;r50;s;l;r17;i;r30;a;f5;n"
 
+## Note: These settings have no effect, but better leave them just in case changing them breaks everything
 custom-highlight-left:4
 custom-highlight-right:13
 
-## Note: Experimental function. May not work as expected. May change in future versions.
-
-##(starts at right align, then use 'l' to switch to left side)
+## -------------------
+## Custom format guide:
+## (starts at right align, then use 'l' to switch to left side)
 
 ##t track length
 ##o playcount
