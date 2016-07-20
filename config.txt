@@ -46,9 +46,14 @@ icecase-bitrate:128
 ## Note: Text truncating currently partially broken
 ## Special comment from the developer: "Yeah I know it doesn't make much sense"
 
-#custom-format:"r12;t;r55;o;l;r6;n;p0.33;a;p0.63;b"
-#custom-format:"r20;a;l;r12;i;r25;n;f5;b;f10;t"
+# Title     Artist     Album     Plays Length -----
+#custom-format:"r15;t;r55;o;l;r17;n;p0.34;a;p0.65;b"
+
+## 0 Artist Title                      Length -----
 custom-format:"r15;t;r50;s;l;r17;i;r30;a;f5;n"
+
+# 0 Title Length                       Artist ----- (currenly results in text overrun issue)                       
+#custom-format:"r15;a;l;r16;i;r26;n;f40;t"
 
 ## Note: These settings have no effect, but better leave them just in case changing them breaks everything
 custom-highlight-left:4
