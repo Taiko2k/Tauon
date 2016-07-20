@@ -94,7 +94,6 @@ except:
 import time
 import ctypes
 import random
-import fractions
 import threading
 import io
 import copy
@@ -109,6 +108,7 @@ import locale
 import webbrowser
 import pyperclip
 import base64
+import re
 
 from ctypes import *
 
@@ -788,14 +788,6 @@ try:
     append_date = view_prefs['append-date']
 except:
     print("warning: error loading settings")
-
-
-# if os.path.isdir("web"):
-#     pass
-# else:
-#     print('Creating web cache folder')
-#     os.makedirs("web")
-
 
 if prefer_side is False:
     side_panel_enable = False
@@ -2552,8 +2544,6 @@ class GStats:
 
 stats_gen = GStats()
 
-
-
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 ------------------------------------------------------------------------------
 
@@ -4152,80 +4142,45 @@ def append_current_playing(index):
         pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
         gui.pl_update += 1
 
+def sort_track_2(pl):
+    current_folder = ""
+    albums = []
+    playlist = pctl.multi_playlist[pl][2]
 
-def sort_track_pl(pl):
-
-    # REMOVEING FILES THAT HAVE CUE
-    # print("need to check for cues")
-    global cue_list
-
-    deletes = []
-
-    for t in range(len(pctl.multi_playlist[pl][2])):
-        # print(pctl.master_library[pctl.multi_playlist[pl][2][t]]['cue'])
-        for r in range(len(cue_list)):
-            if cue_list[r] == pctl.master_library[pctl.multi_playlist[pl][2][t]].fullpath and \
-                            pctl.master_library[pctl.multi_playlist[pl][2][t]].is_cue is False:
-                print("FOUND CUE TO DELETE")
-                deletes.append(pctl.multi_playlist[pl][2][t])
-
-    p = len(pctl.multi_playlist[pl][2])
-    p -= 1
-    while p > -1:
-        if pctl.multi_playlist[pl][2][p] in deletes:
-            del pctl.multi_playlist[pl][2][p]
-        p -= 1
-
-    # -----
-
-    if len(pctl.multi_playlist[pl][2]) < 1:
-        return (1)
-
-    s = 0
-    r = 0
-    temp_map = []
-    parent = pctl.master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name
-    temp_map.append([pctl.multi_playlist[pl][2][r], pctl.master_library[pctl.multi_playlist[pl][2][r]].track_number])
-    r += 1
-
-    def keya(lis):
-        try:
-            if '/' in lis[1] or "\\" in lis[1]:
-                return float(fractions.Fraction(lis[1]))
-            if lis[1].isdigit():
-                return float(lis[1])
-            else:
-                return 0
-        except:
-            return 0
-
-    while True:
-        if r > len(pctl.multi_playlist[pl][2]) - 1:
-
-            temp_map = sorted(temp_map, key=keya)
-
-            for p in range(len(temp_map)):
-                pctl.multi_playlist[pl][2][s] = temp_map[p][0]
-                s += 1
-
-            break
-
-        if parent == pctl.master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name:
-            temp_map.append(
-                    [pctl.multi_playlist[pl][2][r], pctl.master_library[pctl.multi_playlist[pl][2][r]].track_number])
-            r += 1
-
+    for i in range(len(playlist)):
+        if i == 0:
+            albums.append(i)
+            current_folder = pctl.master_library[playlist[i]].parent_folder_name
         else:
-            temp_map = sorted(temp_map, key=keya)
-            for i in range(len(temp_map)):
-                pctl.multi_playlist[pl][2][s] = temp_map[i][0]
-                s += 1
-            parent = pctl.master_library[pctl.multi_playlist[pl][2][r]].parent_folder_name
+            if pctl.master_library[playlist[i]].parent_folder_name != current_folder:
+                current_folder = pctl.master_library[playlist[i]].parent_folder_name
+                albums.append(i)
 
-            temp_map = []
+    def tryint(s):
+        try:
+            return int(s)
+        except:
+            return s
+
+    def index_key(index):
+        s = str(pctl.master_library[index].track_number)
+        if s == "":
+            s = pctl.master_library[index].filename
+        try:
+            return [tryint(c) for c in re.split('([0-9]+)', s)]
+        except:
+            return "a"
+
+    i = 0
+    while i < len(albums) - 1:
+        playlist[albums[i]:albums[i+1]] = sorted(playlist[albums[i]:albums[i+1]], key=index_key )
+        i += 1
+    if len(albums) > 0:
+        playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
 
 
-tab_menu.add("Sort Track Numbers", sort_track_pl, pass_ref=True)
+
+tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 
 
 def sort_path_pl(pl):
@@ -5878,8 +5833,6 @@ def get_folder_list(index):
 def reload_albums(quiet=False):
     global album_dex
     global side_panel_size
-    global gui
-    global gui
     global update_layout
     global album_pos_px
     global playlist_width
@@ -5888,7 +5841,6 @@ def reload_albums(quiet=False):
     album_pos_px = old_album_pos
 
     current_folder = ""
-    p = 0
     album_dex = []
 
     for i in range(len(default_playlist)):
@@ -5906,6 +5858,7 @@ def reload_albums(quiet=False):
             playlist_width = album_playlist_width
         else:
             side_panel_size = old_side_pos
+
     gui.update += 2
     gui.pl_update += 2
     update_layout = True
@@ -7381,7 +7334,7 @@ class TopPanel:
             bg = colours.grey(95)
         draw_text((x, y), word, bg, 12)
 
-        # GALLERY -----------------------------
+        # ALBUMS -----------------------------
         x += self.menu_space + word_length
         word = "ALBUMS"
         word_length = draw.text_calc(word, 12)
@@ -7441,7 +7394,7 @@ class TopPanel:
 
         if pctl.playing_state > 0 and (not side_panel_enable or (block6 and not album_mode and not pctl.broadcast_active)):
 
-            draw_text((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 11)
+            draw_text2((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 11, window_size[0] - offset - x)
 
 
 
@@ -7553,10 +7506,10 @@ def custom_line_render(track_object, track_position, y, playing, album_fade, sta
 
         elif item[0] == 'n':
             line = track_object.title
-            # hacky thin -----
+            # hacky thing -----
             ma = item[3]
-            if gui.combo_mode and ma > window_size[0] - (item[1] + xoff) - 100:
-                ma = window_size[0] - (item[1] + xoff) - 100
+            if gui.combo_mode and window_size[0] - (item[1] + xoff) - 80 < ma:
+                ma = window_size[0] - (item[1] + xoff) - 80
             # ----------------
             offs = draw_text2((item[1] + xoff,
                                y,
@@ -8304,6 +8257,7 @@ class ComboPlaylist:
 
         global click_time
         global playlist_selected
+        global shift_selection
 
         # Draw the background
         SDL_SetRenderTarget(renderer, ttext)
@@ -8446,6 +8400,7 @@ class ComboPlaylist:
                 # Make selected if clicked (we do this after the play click test thing)
                 if line_hit:
                     playlist_selected = pl_entry_on
+                    shift_selection = [playlist_selected]
 
                 # Test if line selected
                 if pl_entry_on == playlist_selected and self.hit:
