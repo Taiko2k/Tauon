@@ -8539,14 +8539,15 @@ while running:
             i_x = i_x.contents.value
 
             if i_y < panelY:
+                x = top_panel.start_space_left
                 for w in range(len(pctl.multi_playlist)):
-                    text_space = draw.text_calc(pctl.multi_playlist[w][0], 12)
-                    x = starting_l + (spacing * w) + k
-                    if x < i_x < x + text_space + 16:
+                    wid = top_panel.tab_text_spaces[w] + top_panel.tab_extra_width
+
+                    if x < i_x < x + wid:
                         load_to.append(copy.deepcopy(w))
                         print("Direct drop")
                         break
-                    k += text_space
+                    x += wid
                 else:
                     load_to.append(copy.deepcopy(pctl.playlist_active))
             else:
