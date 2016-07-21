@@ -3993,19 +3993,28 @@ def rename_playlist(index):
 tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True)
 
 
+def reload():
+
+    if album_mode:
+        reload_albums(quiet=True)
+    elif gui.combo_mode:
+        reload_albums(quiet=True)
+        combo_pl_render.prep()
+
 def clear_playlist(index):
-    global gui
-    global pctl
+
     global default_playlist
 
     del pctl.multi_playlist[index][2][:]
     if pctl.playlist_active == index:
         default_playlist = pctl.multi_playlist[index][2]
-        reload_albums(quiet=True)
+        reload()
 
     # pctl.playlist_playing = 0
 
     gui.pl_update += 2
+
+
 
 
 def convert_playlist(pl):
@@ -4108,9 +4117,7 @@ def delete_playlist(index):
 
     pctl.active_playlist_playing = pctl.playlist_active
     del pctl.multi_playlist[index]
-    if album_mode:
-        reload_albums()
-
+    reload()
 
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True)
 
@@ -4122,6 +4129,7 @@ def append_playlist(index):
     pctl.multi_playlist[index][2] += cargo
 
     gui.pl_update += 1
+    reload()
 
 
 def drop_deco():
@@ -4270,16 +4278,13 @@ def remove_folder(index):
         if pctl.master_library[default_playlist[b]].parent_folder_name == r_folder:
             del default_playlist[b]
 
-    if album_mode:
-        reload_albums()
-    if gui.combo_mode:
-        reload_albums()
-        combo_pl_render.prep()
+    reload()
 
 # Create combo album menu
 combo_menu = Menu(130)
 combo_menu.add('Open Folder', open_folder, pass_ref=True)
 combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
+
 
 def convert_folder(index):
     global default_playlist
@@ -4358,7 +4363,7 @@ def transfer(index, args):
             default_playlist += cargo
             # cargo = []
 
-    print(cargo)
+    reload()
 
 
 def activate_track_box(index):
@@ -4460,8 +4465,7 @@ def sel_to_car():
 # track_menu.add('Copy Selected', sel_to_car)
 
 def del_selected():
-    global gui
-    global gui
+
     global shift_selection
     global playlist_selected
 
@@ -4476,8 +4480,7 @@ def del_selected():
             return
         del default_playlist[item]
 
-    if album_mode:
-        reload_albums()
+    reload()
 
     if playlist_selected > len(default_playlist) - 1:
         playlist_selected = len(default_playlist) - 1
@@ -7146,7 +7149,7 @@ class TopPanel:
                     if line != "":
                         line += " - "
                     line += title
-                line = trunc_line(line, 11, window_size[0] - offset - 290)
+                line = trunc_line(line, 12, window_size[0] - offset - 290)
                 self.playing_title = line
         else:
             self.playing_title = ""
@@ -7394,7 +7397,7 @@ class TopPanel:
 
         if pctl.playing_state > 0 and (not side_panel_enable or (block6 and not album_mode and not pctl.broadcast_active)):
 
-            draw_text2((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 11, window_size[0] - offset - x)
+            draw_text2((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12, window_size[0] - offset - x)
 
 
 
@@ -9101,14 +9104,6 @@ while running:
         gui.update += 1
         # gui.pl_update += 1
         loading_in_progress = False
-        # if album_mode:
-        #     reload_albums()
-        # if gui.combo_mode:
-        #     print('hiht')
-        #     print(default_playlist)
-        #     reload_albums()
-        #     combo_pl_render.prep()
-
 
     if update_layout:
         # update layout
@@ -9737,11 +9732,7 @@ while running:
                 items_loaded = []
                 gui.update += 1
                 gui.pl_update += 1
-                if album_mode:
-                    reload_albums()
-                if gui.combo_mode:
-                    reload_albums()
-                    combo_pl_render.prep()
+                reload()
 
             if show_playlist:
 

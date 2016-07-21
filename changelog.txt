@@ -4,7 +4,7 @@ Changelog-------------------------------------
 v1.5.1
 
  - Added playback menu
- - Added new sorting options: artist, album, reverse and file path
+ - Added new sorting options: by artist, album, reversed and file path
  - Added new copy/paste menu for selections
  - Added ctrl-a shortcut to select all tracks in playlist
  - Added three new themes
@@ -13,10 +13,10 @@ v1.5.1
  - Removed last.fm panel indicator
  - Removed shift click to delete playlist function
  - Removed two existing themes
- - Replaced option to disable scroll bar with hide option
+ - Replaced disable scroll bar function with hide scroll bar function
  - Improved multiple new playlist naming
  - Improved playlist tab repositioning
- - Improved track number sorting speed
+ - Fixed slow track number sorting speed
  - Fixed incorrect seeking after cue based track transition
  - Fixed moving tracks onto folder title
  - Fixed seek bar click sometimes wrongly registering
