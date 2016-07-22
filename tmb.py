@@ -27,6 +27,11 @@
 
 # --------------------------------------------------------------------
 
+# INDEX
+# C-AR - ALBUM GALLERY RENDERING
+# C-ML - MAIN LOOP
+# C-BB - BOTTOM PANEL
+
 import sys
 import os
 import pickle
@@ -174,7 +179,6 @@ vis_decay_timer.set()
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
 input_text_mode = False
-
 show_playlist = True
 
 draw_border = False
@@ -591,8 +595,10 @@ class GuiVar:
         self.turbo_next = 0
         self.pl_update = 1
         self.lowered = False
+        self.maximized = False
         self.message_box = False
         self.message_text = ""
+        self.save_size = [450, 310]
         
         self.level_update = False
         self.level_time = Timer()
@@ -711,6 +717,8 @@ try:
         prefs.show_rym = save[30]
     if save[31] != None:
         combo_mode_art_size = save[31]
+    if save[32] != None:
+        gui.maximized = save[32]
 except:
     print('Error loading save file')
 
@@ -2570,8 +2578,9 @@ def load_font(name, size, ext=False):
 main_font = 'Koruri-Regular.ttf'
 alt_font = 'DroidSansFallback.ttf'
 
-# gui_font = 'Koruri-Semibold.ttf'
-# fontG = load_font(gui_font, 12)
+gui_font = 'Koruri-Semibold.ttf'
+fontG = load_font(gui_font, 12)
+fontG13 = load_font(gui_font, 13)
 
 font1 = load_font(main_font, 16)
 font1b = load_font(alt_font, 16)
@@ -2600,9 +2609,13 @@ font_dict[12] = (font2, font2b)
 font_dict[16] = (font1, font1b)
 font_dict[14] = (font7, font7b)
 
-#font_dict[212] = (fontG, font2b)
+font_dict[212] = (fontG, font2b)
+font_dict[213] = (fontG13, font6b)
 
 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+
+if gui.maximized:
+    flags |= SDL_WINDOW_MAXIMIZED
 
 if draw_border:
     flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS
@@ -8296,6 +8309,7 @@ for item in r_arg_queue:
     if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tmb.exe' not in item:
         arg_queue.append(item)
 
+# C-ML
 while running:
     # bm.get('main')
 
@@ -8555,6 +8569,7 @@ while running:
         elif event.type == SDL_WINDOWEVENT:
 
             power += 5
+            # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
 
@@ -8587,9 +8602,12 @@ while running:
                 window_size[0] = event.window.data1
                 window_size[1] = event.window.data2
                 update_layout = True
+                gui.maximized = False
+                # print('resize')
 
             elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
                 gui.lowered = True
+
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
                 gui.lowered = False
 
@@ -8598,12 +8616,17 @@ while running:
 
                 if update_title:
                     update_title_do()
+               #  print("restore")
 
             elif event.window.event == SDL_WINDOWEVENT_SHOWN:
 
                 focused = True
                 gui.pl_update += 1
                 gui.update += 1
+
+            elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
+                gui.maximized = True
+
 
     if mouse_moved:
         if fields.test():
@@ -8939,6 +8962,8 @@ while running:
         # update layout
 
         mouse_click = False
+        if not gui.maximized:
+            gui.save_size = copy.deepcopy(window_size)
 
         volume_bar_position[0] = window_size[0] - 210
         volume_bar_position[1] = window_size[1] - 27
@@ -9361,6 +9386,7 @@ while running:
 
             # ALBUM GALLERY RENDERING:
             # Gallery view
+            # C-AR
 
             if album_mode:
 
@@ -9424,10 +9450,11 @@ while running:
                                 break
                             info = get_album_info(album_dex[album_on])
 
+                            artisttitle = colours.side_bar_line2
                             albumtitle = colours.side_bar_line1 #grey(220)
 
                             if info[0] == 1 and pctl.playing_state != 0:
-                                draw.rect((x - 12, y - 10), (album_mode_art_size + 24, album_mode_art_size + 60),
+                                draw.rect((x - 10, y - 9), (album_mode_art_size + 20, album_mode_art_size + 55),
                                           [200, 200, 200, 15], True)
 
                             draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
@@ -9454,6 +9481,7 @@ while running:
                                 pctl.show_current()
 
                             c_index = default_playlist[album_dex[album_on]]
+
                             if c_index in album_artist_dict:
                                 pass
                             else:
@@ -9470,25 +9498,37 @@ while running:
                                     album_artist_dict[c_index] = pctl.master_library[default_playlist[album_dex[album_on]]].artist
 
                             line = album_artist_dict[c_index]
+                            line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
-                            draw_text2((x, y + album_mode_art_size + 8),
-                                       line,
-                                       albumtitle,
-                                       11,
-                                       album_mode_art_size,
-                                       3,
-                                       default_playlist[album_dex[album_on]]
-                                       )
+                            if line2 == "":
 
-                            line = pctl.master_library[default_playlist[album_dex[album_on]]].album
-                            draw_text2((x, y + album_mode_art_size + 10 + 13),
-                                       line,
-                                       albumtitle,
-                                       12,
-                                       album_mode_art_size - 5,
-                                       3,
-                                       default_playlist[album_dex[album_on]]
-                                       )
+                                draw_text2((x, y + album_mode_art_size + 8),
+                                           line,
+                                           alpha_mod(artisttitle, 120),
+                                           11,
+                                           album_mode_art_size - 5,
+                                           3,
+                                           default_playlist[album_dex[album_on]]
+                                           )
+                            else:
+
+                                draw_text2((x, y + album_mode_art_size + 7),
+                                           line2,
+                                           albumtitle,
+                                           212,
+                                           album_mode_art_size,
+                                           3,
+                                           default_playlist[album_dex[album_on]]
+                                           )
+
+                                draw_text2((x, y + album_mode_art_size + 10 + 13),
+                                           line,
+                                           alpha_mod(artisttitle, 120),
+                                           11,
+                                           album_mode_art_size - 5,
+                                           3,
+                                           default_playlist[album_dex[album_on]]
+                                           )
 
                             album_on += 1
 
@@ -10087,6 +10127,7 @@ while running:
                 # New Bottom Bar
 
             # BOTTOM BAR!
+            # C-BB
 
             if GUI_Mode == 1:  # not compact_bar:
 
@@ -10232,14 +10273,14 @@ while running:
                     artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
 
                     line = ""
-                    if title != "":
-                        line += title
                     if artist != "":
+                        line += artist
+                    if title != "":
                         if line != "":
                             line += "  -  "
-                        line += artist
+                        line += title
                     line = trunc_line(line, 13, window_size[0] - 710)
-                    draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, colours.side_bar_line1, 13)  # fontb1
+                    draw_text((seek_bar_position[0], seek_bar_position[1] + 22), line, colours.side_bar_line1, 213)  # fontb1
                     if mouse_click and coll_point(mouse_position, (
                         seek_bar_position[0] - 10, seek_bar_position[1] + 20, window_size[0] - 710, 30)):
                         pctl.show_current()
@@ -11780,7 +11821,7 @@ save = [pctl.master_library,
         lfm_hash,
         version,
         view_prefs,
-        window_size,
+        gui.save_size,
         side_panel_size,
         savetime,
         gui.vis,
@@ -11793,7 +11834,7 @@ save = [pctl.master_library,
         prefs.enable_transcode,
         prefs.show_rym,
         combo_mode_art_size,
-        None,
+        gui.maximized,
         None,
         None,
         None,
