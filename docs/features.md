@@ -20,14 +20,14 @@
 - Media Keys (OSX: Not implemented)
 - Folder transcode to CUE+OPUS (Windows:Working, Linux:Not Tested, OSX:Not tested)
 - Text Encoding fix (Japanese only)
-- Sorting (Partial)
+- Sorting
 
 
 ##### Other common player features not implemented:
 
  - Replay gain
  - Gapless playback
- - Folder view
+ - Folder tree view
  - Folder monitoring
  - Skins
  - Lyrics
@@ -40,11 +40,11 @@
  - Audiobooks
  - Tag editing
  - Playlist import/export
- - External streaming integration
+ - External services
  - Library view
- - Raitings
+ - Ratings
  - Artist metadata scraping
- - Output configuration
+ - Output device configuration
  - A-B repreat
  - Filtering
  - Bookmarks

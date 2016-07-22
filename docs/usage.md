@@ -5,8 +5,7 @@ Basic Usage
 
 - Drag and drop files and folders from your file manager.
 
-- Tracks will import to currently open playlist. Importing can take a while for large music collections. After importing, right click playlist tab and select 'Sort Tracks'
-to ensure tracks are ordered correctly.
+- Importing can take a while for large music collections. After importing, right click playlist tab and select 'Sort Tracks' to ensure tracks are ordered correctly.
 
 ##### Updating Library:
 
@@ -32,7 +31,7 @@ previous track played. (So if you intended to play the track that appears after 
 ##### Shortcuts:
 
 - ***Search***: Backslash \ or Ctrl + F  
-***Show playing***: Quote '   
+***Show playing***: Quote ' (the button next to the enter/return key on US keyboards)
 ***Random Mode***: Period .   
 ***Repeat Mode***: Comma ,   
 ***Radio Random***: Slash /  
@@ -51,8 +50,6 @@ select 'Start Broadcast' from menu. You should now see an entry in the icecast w
 to play a track immediately.
 
 - The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).
-
-- If the web interface is enabled (in config.txt) listeners can see the album art of the playing track at :5000/radio
 
 
 ##### Transcoding albums (Experimental feature):
@@ -78,7 +75,8 @@ User data files
 Web components 
 =================================
 
-(enable in config)   
+Enable in MENU -> Settings -> System 
+Warning: Enabling the 'allow external connections' option may pose a security risk
 
 ***localhost:7590/remote*** - Remote player control with album art and track info  
 ***localhost:7590/radio*** - Album art and track info for broadcasting
