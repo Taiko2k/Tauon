@@ -31,7 +31,7 @@ previous track played. (So if you intended to play the track that appears after 
 ##### Shortcuts:
 
 - ***Search***: Backslash \ or Ctrl + F  
-***Show playing***: Quote ' (the button next to the enter/return key on US keyboards)
+***Show playing***: Quote ' (the button next to the enter/return key on US keyboards)   
 ***Random Mode***: Period .   
 ***Repeat Mode***: Comma ,   
 ***Radio Random***: Slash /  

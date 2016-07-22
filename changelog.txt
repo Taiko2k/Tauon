@@ -25,6 +25,7 @@ v1.5.1
  - Fixed unicode end characters becoming corrupted
  - Fixed visualiser clock speed
  - Fixed tracks with inconsistent file extension case not importing
+ - Fixed un-maximized on start bug
  - Misc UI tweaks
  - Misc bug fixes
 
