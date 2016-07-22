@@ -1,6 +1,6 @@
 ﻿## Tauon Music Box config file
 
-## Special comment from the developer: "Theres really nothing interesting to change in this config file, the formatting's all hard to read anyway so I wouldn't bother"
+## Special comment from the developer: Theres really nothing interesting to change in this config file, the formatting's all hard to read anyway so I wouldn't bother.
 
 ## Playback---------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ icecase-bitrate:128
 ## Playlist----------------------------------------------------------------------------
 ## Note: Experimental function. May not work as expected. May change in future versions.
 ## Note: Text truncating currently partially broken
-## Special comment from the developer: "Yeah I know it doesn't make much sense"
+## Note: Yeah I know it doesn't make much sense
 
 # Title     Artist     Album     Plays Length -----
 #custom-format:"r15;t;r55;o;l;r17;n;p0.34;a;p0.65;b"
@@ -55,7 +55,7 @@ custom-format:"r15;t;r50;s;l;r17;i;r30;a;f5;n"
 # 0 Title Length                       Artist ----- (currenly results in text overrun issue)                       
 #custom-format:"r15;a;l;r16;i;r26;n;f40;t"
 
-## Note: These settings have no effect, but better leave them just in case changing them breaks everything
+## Note: These two settings have no effect. Or do they? I can't remember, but better leave them just in case changing them breaks everything
 custom-highlight-left:4
 custom-highlight-right:13
 

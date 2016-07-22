@@ -33,7 +33,7 @@ import pickle
 
 t_version = "v1.5.1"
 title = 'Tauon Music Box'
-version_line = title + t_version
+version_line = title + " " + t_version
 print(version_line)
 print('Copyright (c) 2015-2016 Taiko2k captain.gxj@gmail.com\n')
 
@@ -182,7 +182,7 @@ resize_drag = [0, 0]
 resize_mode = False
 resize_size = [0, 0]
 
-version = 0.8
+version = 0.9
 
 block6 = False
 
@@ -515,8 +515,6 @@ search_index = 0
 
 lfm_user_box = False
 lfm_pass_box = False
-message_box = False
-message_box_text = ""
 lfm_password = ""
 lfm_username = ""
 lfm_hash = ""
@@ -593,6 +591,8 @@ class GuiVar:
         self.turbo_next = 0
         self.pl_update = 1
         self.lowered = False
+        self.message_box = False
+        self.message_text = ""
         
         self.level_update = False
         self.level_time = Timer()
@@ -659,7 +659,7 @@ class TrackClass():
         self.is_cue = False
         self.genre = ""
         self.found = True
-
+        self.skips = 0
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -718,6 +718,13 @@ except:
 if window_size is None:
     window_size = [500, 300]
     side_panel_size = 200
+
+
+if db_version == 0.8:
+    print("Updating database from version 0.8 to 0.9")
+    for key, value in master_library.items():
+        setattr(master_library[key], 'skips', 0)
+
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -797,8 +804,12 @@ get_len = 0
 get_len_filepath = ""
 
 
+def show_message(text):
+    gui.message_box = True
+    gui.message_text = text
+
+
 def get_len_backend(filepath):
-    global pctl
     global get_len
     global get_len_filepath
     get_len_filepath = filepath
@@ -1171,9 +1182,13 @@ class PlayerCtl:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
 
+        if self.playing_state == 1 and 5 < self.left_time < 45:
+                pctl.master_library[self.left_index].skips += 1
+                print('skip registered')
+
+
         pctl.playing_length = 100
         pctl.playing_time = 0
-        global gui
 
         gui.update_spec = 0
 
@@ -1323,12 +1338,9 @@ class LastFMapi:
         global lfm_username
         global lfm_hash
         global lfm_pass_box
-        global message_box
-        global message_box_text
 
         if self.connected is True:
-            message_box = True
-            message_box_text = "Already Connected"
+            show_message("Already Connected")
             return 0
 
         if lfm_username == "":
@@ -1349,12 +1361,10 @@ class LastFMapi:
             self.API_SECRET, username=lfm_username, password_hash=lfm_hash)
 
             self.connected = True
-            message_box = True
-            message_box_text = "Connected"
+            show_message("Connected")
             print('Connection appears successful')
         except Exception as e:
-            message_box = True
-            message_box_text = "Error: " + str(e)
+            show_message("Error: " + str(e))
             print(e)
 
     def toggle(self):
@@ -1367,8 +1377,6 @@ class LastFMapi:
         if self.hold:
             return 0
 
-        global message_box
-        global message_box_text
         timestamp = int(time.time())
         # lastfm_user = self.network.get_user(self.username)
 
@@ -1395,8 +1403,7 @@ class LastFMapi:
                 except:
                     pass
 
-            message_box = True
-            message_box_text = "Error: " + str(e)
+            show_message("Error: " + str(e))
             print(e)
 
     def get_bio(self, artist):
@@ -1411,9 +1418,6 @@ class LastFMapi:
     def update(self, title, artist, album):
         if self.hold:
             return 0
-        global message_box
-        global message_box_text
-        global pctl
         # print('Updating Now Playing')
         try:
             if title != "" and artist != "":
@@ -1427,8 +1431,7 @@ class LastFMapi:
             print(e)
             if 'retry' in str(e):
                 return 2
-            message_box = True
-            message_box_text = "Error: " + str(e)
+            show_message("Error: " + str(e))
             pctl.b_time -= 5000
             return 1
 
@@ -3040,7 +3043,7 @@ class AlbumArt():
         self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif'}
         self.art_folder_names = {'art', 'scans', 'scan', 'booklet', 'images', 'image', 'cover',
                                 'covers', 'coverart', 'albumart', 'gallery', 'jacket', 'artwork',
-                                'bonus', 'bk'}
+                                'bonus', 'bk', 'cover artwork', 'cover art'}
         self.source_cache = {}
         self.image_cache = []
         self.current_wu = None
@@ -3799,8 +3802,27 @@ def gen_top_100(index):
             [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Most Listened", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Most Played", 0, gen_top_100, pass_ref=True)
 
+
+def gen_most_skip(pl):
+
+    playlist = []
+    for item in pctl.multi_playlist[pl][2]:
+        if pctl.master_library[item].skips > 1:
+            playlist.append(item)
+    if len(playlist) == 0:
+        show_message("Nothing to show")
+        return
+
+    def worst(index):
+        return pctl.master_library[index].skips
+    playlist = sorted(playlist, key=worst, reverse=True)
+
+    pctl.multi_playlist.append(
+        [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
+
+tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
 
 def gen_sort_len(index):
     global pctl
@@ -3967,15 +3989,17 @@ def gen_sort_album(index):
             [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
-# def activate_genre_box(index):
-#     global genre_box
-#     global genre_items
-#     global genre_box_pl
-#     genre_items = []
-#     genre_box_pl = index
-#     genre_box = True
-#
-#
+
+
+def activate_genre_box(index):
+    global genre_box
+    global genre_items
+    global genre_box_pl
+    genre_items = []
+    genre_box_pl = index
+    genre_box = True
+
+
 # tab_menu.add_to_sub("Genre...", 0, activate_genre_box, pass_ref=True)
 
 
@@ -4019,15 +4043,12 @@ def clear_playlist(index):
 
 def convert_playlist(pl):
     global transcode_list
-    global message_box
-    global message_box_text
 
     if os.path.isfile(install_directory + '/encoder/ffmpeg.exe') and os.path.isfile(install_directory + '/encoder/opusenc.exe') or \
                     os.path.isfile(install_directory + '/encoder/ffmpeg') and os.path.isfile(install_directory + '/encoder/opusenc') or system != 'windows':
         pass
     else:
-        message_box = True
-        message_box_text = "Prerequisites not met, see readme file"
+        show_message("Prerequisites not met, see readme file")
         return
 
     paths = []
@@ -4084,8 +4105,6 @@ def delete_playlist(index):
 
     global default_playlist
     global playlist_position
-    global message_box
-    global message_box_text
     global mouse_click
 
     gui.pl_update += 1
@@ -4289,8 +4308,6 @@ combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
 def convert_folder(index):
     global default_playlist
     global transcode_list
-    global message_box
-    global message_box_text
 
     if os.path.isfile(install_directory + '/encoder/ffmpeg.exe') and os.path.isfile(
                     install_directory + '/encoder/opusenc.exe') or \
@@ -4298,8 +4315,7 @@ def convert_folder(index):
                         install_directory + '/encoder/opusenc') or system != 'windows':
         pass
     else:
-        message_box = True
-        message_box_text = "Prerequisites not met, see readme file"
+        show_message("Prerequisites not met, see readme file")
         return
 
     folder = []
@@ -4820,8 +4836,6 @@ def export_stats():
 
 
 def export_database():
-    global message_box
-    global message_box_text
 
     xport = open('DatabaseExport.csv', 'wb')
     for num in range(master_count):
@@ -4861,54 +4875,13 @@ def export_database():
         xport.write(outline)
 
     xport.close()
-    message_box_text = "Done. Saved as 'DatabaseExport.csv'"
-    message_box = True
+    show_message("Done. Saved as 'DatabaseExport.csv'")
+
 
 
 x_menu.add_to_sub("Export as CSV", 0, export_database)
 x_menu.add_to_sub("Get Playlist Readout", 0, export_stats)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
-
-# def test():
-#     global message_box
-#     global message_box_text
-#     global pctl
-#
-#     found = 0
-#     star2 = {}
-#
-#     for key, value in pctl.master_library.items():
-#         ref = value.title + value.filename
-#         if ref in pctl.star_library:
-#             found += 1
-#             star2[ref] = pctl.star_library[ref]
-#
-#     have = sum(star2.values())
-#     total_pl = sum(pctl.star_library.values())
-#
-#     rem = len(pctl.star_library) - len(star2)
-#
-#     prec = ""
-#     if total_pl != 0:
-#         perc = str(int(have / total_pl * 100)) + "% listening time accounted for. "
-#
-#     if not key_shift_down:
-#         message_box_text = "Warning: Will lose individual play count for tracks not imported. "
-#         message_box_text += perc
-#         message_box_text += str(rem) + " references will be forgotten. Hold shift and try again to apply."
-#         message_box = True
-#
-#         return
-#
-#     else:
-#         pass
-#         # pctl.star_library = star2
-#         # pctl.star_library total_pl - have
-
-
-
-
-#x_menu.add_to_sub("Reset Database", 0, purge_track_data)
 
 
 def reset_missing_flags():
@@ -4921,14 +4894,10 @@ x_menu.add_to_sub("Reset Missing Flags", 0, reset_missing_flags)
 
 
 def toggle_broadcast():
-    global pctl
-    global message_box
-    global message_box_text
 
     if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
             os.path.isfile(install_directory + "/encoder/lame.exe") and not os.path.isfile(install_directory + "/encoder/opusenc.exe"):
-        message_box = True
-        message_box_text = "Missing Encoder. See readme file."
+        show_message("Missing Encoder. See readme file.")
         return
 
     if pctl.broadcast_active is not True:
@@ -7898,146 +7867,7 @@ class StandardPlaylist:
             if custom_line_mode:
 
                 custom_line_render(n_track, p_track, playlist_text_offset + playlist_top + playlist_row_height * w, this_line_playing, album_fade)
-                # timec = colours.bar_time
-                # titlec = colours.title_text
-                # indexc = colours.index_text
-                # artistc = colours.artist_text
-                # albumc = colours.album_text
-                # 
-                # if this_line_playing is True:
-                #     timec = colours.time_text
-                #     titlec = colours.title_playing
-                #     indexc = colours.index_playing
-                #     artistc = colours.artist_playing
-                #     albumc = colours.album_playing
-                # 
-                # if n_track.found is False:
-                #     timec = colours.playlist_text_missing
-                #     titlec = colours.playlist_text_missing
-                #     indexc = colours.playlist_text_missing
-                #     artistc = colours.playlist_text_missing
-                #     albumc = colours.playlist_text_missing
-                # 
-                # offs = 0
-                # xoff = 0
-                # 
-                # for item in cust:
-                # 
-                #     if item[0] == 't':
-                # 
-                #         line = get_display_time(n_track.length)
-                #         offs = draw_text((item[1] + xoff, playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                    item[2]), line, alpha_mod(timec, album_fade), row_font_size)
-                # 
-                #     elif item[0] == 'f':
-                #         xoff += offs + item[1]
-                # 
-                # 
-                #     elif item[0] == 'i':
-                #         line = str(n_track.track_number)
-                #         line = line.split("/", 1)[0]
-                #         if dd_index and len(line) == 1:
-                #             line = "0" + line
-                #         line += item[3]
-                # 
-                #         offs = draw_text((item[1] + xoff, playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                    item[2]), line, alpha_mod(indexc, album_fade), row_font_size)
-                # 
-                #     elif item[0] == 'o':
-                #         key = n_track.title + \
-                #               n_track.filename
-                #         total = 0
-                #         ratio = 0
-                #         if (key in pctl.star_library) and pctl.star_library[key] != 0 and \
-                #                         n_track.length \
-                #                         != 0:
-                #             total = pctl.star_library[key]
-                #             ratio = total / n_track.length
-                # 
-                #         line = str(int(ratio))
-                #         # if True:
-                #         #     if dd_index and len(line) == 1:
-                #         #         line = "0" + line
-                # 
-                #         draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                    item[2]), line, alpha_mod(indexc, album_fade), row_font_size)
-                # 
-                #     elif item[0] == 'c':
-                #         line = item[3]
-                #         offs = draw_text((item[1], playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                    item[2]), line, alpha_mod(titlec, album_fade), row_font_size)
-                # 
-                #     elif item[0] == 'a':
-                #         line = n_track.artist
-                # 
-                #         offs = draw_text2((item[1] + xoff,
-                #                             playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                             item[2]),
-                #                            line,
-                #                            alpha_mod(artistc, album_fade),
-                #                            row_font_size,
-                #                            item[3],
-                #                            1,
-                #                            default_playlist[p_track])
-                # 
-                #     elif item[0] == 'n':
-                #         line = n_track.title
-                # 
-                #         offs = draw_text2((item[1] + xoff,
-                #                             playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                             item[2]),
-                #                            line,
-                #                            alpha_mod(titlec, album_fade),
-                #                            row_font_size,
-                #                            item[3],
-                #                            2,
-                #                            default_playlist[p_track])
-                # 
-                #     elif item[0] == 'b':
-                #         line = n_track.album
-                # 
-                #         offs = draw_text2((item[1] + xoff,
-                #                            playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                            item[2]),
-                #                           line,
-                #                           alpha_mod(albumc, album_fade),
-                #                           row_font_size,
-                #                           item[3],
-                #                           3,
-                #                           default_playlist[p_track])
-                # 
-                #     elif item[0] == 'd':
-                #         line = str(n_track.date)
-                # 
-                #         offs = draw_text2((item[1],
-                #                            playlist_text_offset + playlist_top + playlist_row_height * w,
-                #                            item[2]),
-                #                           line,
-                #                           alpha_mod(albumc, album_fade),
-                #                           row_font_size,
-                #                           item[3],
-                #                           3,
-                #                           default_playlist[p_track])
-                # 
-                #     elif item[0] == 's':
-                # 
-                #         index = default_playlist[p_track]
-                #         key = pctl.master_library[index].title + pctl.master_library[index].filename
-                #         if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and \
-                #                         pctl.master_library[index].length != 0:
-                #             total = pctl.star_library[key]
-                #             ratio = total / pctl.master_library[index].length
-                #             if ratio > 15:
-                #                 ratio = 15
-                #             if ratio > 0.55:
-                #                 ratio = int(ratio * 4)
-                # 
-                #                 draw.line(item[1] - ratio,
-                #                           playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                #                           item[1],
-                #                           playlist_text_offset + playlist_top + 8 + playlist_row_height * w,
-                #                           alpha_mod(colours.star_line, album_fade))
-                #                 offs = ratio
+
             if not custom_line_mode:
 
                 timec = colours.bar_time
@@ -8271,7 +8101,7 @@ class ComboPlaylist:
 
         # Get scroll movement
         if mouse_position[0] < playlist_width + 30 and mouse_position[1] < window_size[1] - panelBY:
-            self.pl_pos_px -= mouse_wheel * 60
+            self.pl_pos_px -= mouse_wheel * 70
             if self.pl_pos_px < 0:
                 self.pl_pos_px = 0
             elif self.pl_pos_px > self.max_y:
@@ -8861,8 +8691,7 @@ while running:
             lfm_hash = ""
             lfm_password = ""
             lfm_username = ""
-            message_box = True
-            message_box_text = "Account Info Reset"
+            show_message("Account Info Reset")
 
         if key_del:
             del_selected()
@@ -9460,8 +9289,7 @@ while running:
                 else:
                     theme = 0
             except:
-                message_box = True
-                message_box_text = "Error loading theme file"
+                show_message("Error loading theme file")
 
         if theme == 0:
             colours.__init__()
@@ -9505,7 +9333,7 @@ while running:
                     and encoding_box is False \
                     and rename_playlist_box is False \
                     and new_playlist_box is False \
-                    and message_box is False \
+                    and gui.message_box is False \
                     and pref_box.enabled is False \
                     and track_box is False \
                     and genre_box is False:
@@ -9982,7 +9810,7 @@ while running:
                                 and pref_box.enabled is False \
                                 and rename_playlist_box is False \
                                 and new_playlist_box is False \
-                                and message_box is False \
+                                and gui.message_box is False \
                                 and track_box is False \
                                 and genre_box is False:
 
@@ -10000,15 +9828,6 @@ while running:
                                       [0, 0, 0, 190], True)
 
                             draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
-
-                            # if pctl.master_library[pctl.track_queue[pctl.queue_step]].artist != "":
-                            #     line = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                            #     if pctl.master_library[pctl.track_queue[pctl.queue_step]].date != "":
-                            #         line += " (" + pctl.master_library[pctl.track_queue[pctl.queue_step]].date + ")"
-                            #     xoff = text_calc(line, 13)[0] + 14
-                            #     draw.rect((playlist_width + 41, 50), (xoff, 18),
-                            #               [0, 0, 0, 200], True)
-                            #     draw_text((playlist_width + 40 + 8, 50), line, [230, 230, 230, 230], 13)
 
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
@@ -10763,12 +10582,12 @@ while running:
                     if len(NPN) > 0:
                         pctl.multi_playlist[rename_index][0] = NPN
 
-            if message_box:
+            if gui.message_box:
                 if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
-                    message_box = False
+                    gui.message_box = False
                     key_return_press = False
 
-                w = draw.text_calc(message_box_text, 12) + 20
+                w = draw.text_calc(gui.message_text, 12) + 20
                 if w < 210:
                     w = 210
                 h = 20
@@ -10778,7 +10597,7 @@ while running:
                 draw.rect((x, y), (w, h), colours.top_panel_background, True)
                 draw.rect((x, y), (w, h), colours.grey(75))
 
-                draw_text((x + int(w / 2), y + 2, 2), message_box_text, colours.grey(150), 12)
+                draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
 
             if lfm_pass_box:
                 if key_esc_press:
@@ -10859,18 +10678,23 @@ while running:
                 y += 20
                 dd = 0
                 selection_list = stats_gen.genre_list  # [:40]
-                for i in reversed(range(len(selection_list))):
-                    if len(stats_gen.genre_dict[selection_list[i][0]]) < 50:
-                        del selection_list[i]
-                        continue
+
+                def key_g(item):
+                    return len(stats_gen.genre_dict[item[0]])
+
+                selection_list = sorted(selection_list, key=key_g, reverse=True)
+
+                # for i in reversed(range(len(selection_list))):
+                #     if len(stats_gen.genre_dict[selection_list[i][0]]) < 40:
+                #         del selection_list[i]
+                #         continue
 
                 for item in selection_list:
                     if item[0] == '<Genre Unspecified>':
                         selection_list.remove(item)
                         break
 
-                selection_list = selection_list[:40
-                                 ]
+                selection_list = selection_list[:40]
                 for item in selection_list:
 
                     item_rect = [x, y, 110, 20]
@@ -10889,7 +10713,7 @@ while running:
                         draw.rect_r(item_rect, [255, 255, 255, 10], True)
 
                     draw.rect((x, y), (110, 20), colours.grey(25))
-                    line = item[0][:20]
+                    line = item[0][:18]
                     draw_text((x + 3, y + 2), line, colours.grey(175), 10)
 
                     y += 25
@@ -11237,11 +11061,12 @@ while running:
 
                     renamebox = False
                     print('Done')
-                    message_box = True
+
                     if total_todo != len(r_todo):
-                        message_box_text = "Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written"
+                        show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
+
                     else:
-                        message_box_text = "Done.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written"
+                        show_message("Done.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
 
             if radiobox:
                 w = 420
@@ -11968,6 +11793,9 @@ save = [pctl.master_library,
         prefs.enable_transcode,
         prefs.show_rym,
         combo_mode_art_size,
+        None,
+        None,
+        None,
         None,
         None,
         None,

@@ -2,7 +2,8 @@
 
 Release bundle should 'just work' by running tmb.exe. Otherwise ensure Visual C++ Runtime and DirectX are installed.
 
-# Source setup on Linux
+
+# Development setup on Linux
 
 BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions).
 
@@ -11,12 +12,12 @@ Use the following commands to install other dependencies:
 Arch Linux:
 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf xclip python-pip python-pillow
-        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask python3-xlib
+        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask python3-xlib stagger
 
 Ubuntu (not recently tested):
 
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip xclip python3-pil python3-setuptools
-        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask python3-xlib
+        $ sudo pip3 install hsaudiotag3k pylast pyperclip pysdl2 flask python3-xlib stagger
 
 
 
@@ -25,15 +26,15 @@ Finally run using python 3 (Alternatively create a desktop or launcher shortcut.
     $ python3.5 tmb.py
 
 
-# Source setup on OS X
+# Development setup on OS X
 
-OS X support is experimental. As a rough guide to get started: 
+OSX is not fully 'supported', but the program may run. As a rough guide to get started: 
 
 Install Python 3, SDL, SDL_ttf and SDL_image frameworks
 Install Bass libraries to /lib folder, required are libbass.dylib, libbassenc.dylib and libbassmix.dylib
 Install Python libraries (Install pip if required $ sudo easy_install pip):
 
-        $ sudo python3 -m pip install hsaudiotag3k pylast pyperclip pysdl2 flask
+        $ sudo python3 -m pip install hsaudiotag3k pylast pyperclip pysdl2 flask stagger
 
 Finally run from install directroy using:
 
