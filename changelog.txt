@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v1.5.1
+v1.5.2
 
  - Added playback menu
  - Added tracking of track skips
@@ -17,6 +17,7 @@ v1.5.1
  - Replaced disable scroll bar function with hide scroll bar function
  - Improved multiple new playlist naming
  - Improved playlist tab repositioning
+ - Improved gallery view fonts
  - Fixed slow track number sorting speed
  - Fixed incorrect seeking after cue based track transition
  - Fixed moving tracks onto folder title
