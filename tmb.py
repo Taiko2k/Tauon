@@ -20,23 +20,35 @@
 # Preamble
 
 # Welcome to the Tauon Music Box source code. I started this project when I was first
-# learning programming and python, as a result this code can be quite messy. No doubt I have
+# learning python, as a result this code can be quite messy. No doubt I have
 # written some things terribly wrong or inefficiently in places.
 # I would highly recommend not using this project as an example on how to code cleanly or correctly.
 
-
 # --------------------------------------------------------------------
 
-# INDEX
+# INDEX -------------------------------
+
+# C-TC - TRACK CLASS + STATE LOADING
+# C-IS - INIT SDL
+# C-ML - MAIN LOOP START + INPUT HANDLING
+
+# C-UL - LAYOUT UPDATING
 # C-AR - ALBUM GALLERY RENDERING
-# C-ML - MAIN LOOP
-# C-BB - BOTTOM PANEL
+# C-BB - BOTTOM PANEL RENDER
+# C-TB - TOP PANEL RENDER CALL
+# C-TD - TOP PANEL RENDER
+# C-CM - ALBUM ART + TRACKS VIEW RENDER
+# C-PR - PLAYLIST RENDER CALL
+
+# C-PC - PLAYBACK CONTROL
+
+# ---------------------------------------
 
 import sys
 import os
 import pickle
 
-t_version = "v1.5.1"
+t_version = "v1.5.2"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -641,8 +653,8 @@ def num_from_line(line):
     return number
 
 
-class TrackClass():
-
+class TrackClass:
+    # C-TC
     def __init__(self):
 
         self.index = 0
@@ -850,7 +862,7 @@ def get_display_time(seconds):
         
 
 class PlayerCtl:
-
+    # C-PC
     def __init__(self):
 
         # Database
@@ -1190,7 +1202,7 @@ class PlayerCtl:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
 
-        if self.playing_state == 1 and 5 < self.left_time < 45:
+        if self.playing_state == 1 and 1.2 < self.left_time < 45:
                 pctl.master_library[self.left_index].skips += 1
                 print('skip registered')
 
@@ -2556,7 +2568,7 @@ class GStats:
 stats_gen = GStats()
 
 # -------------------------------------------------------------------------------------------
-# initiate SDL2 ------------------------------------------------------------------------------
+# initiate SDL2 --------------------------------------------------------------------C-IS-----
 
 SDL_Init(SDL_INIT_VIDEO)
 TTF_Init()
@@ -2577,8 +2589,8 @@ def load_font(name, size, ext=False):
 
 main_font = 'Koruri-Regular.ttf'
 alt_font = 'DroidSansFallback.ttf'
-
 gui_font = 'Koruri-Semibold.ttf'
+
 fontG = load_font(gui_font, 12)
 fontG13 = load_font(gui_font, 13)
 
@@ -2587,6 +2599,7 @@ font1b = load_font(alt_font, 16)
 
 
 font2 = load_font(main_font, 12)
+#font2b = load_font("C:\\Windows\\Fonts\\msyh.ttc", 12, True )
 font2b = load_font(alt_font, 12)
 
 font3 = load_font(main_font, 10)
@@ -2596,6 +2609,7 @@ font4 = load_font(main_font, 11)
 font4b = load_font(alt_font, 11)
 
 font6 = load_font(main_font, 13)
+#font6b = load_font("C:\\Windows\\Fonts\\malgun.ttf", 13, True )
 font6b = load_font(alt_font, 13)
 
 font7 = load_font(main_font, 14)
@@ -3509,6 +3523,12 @@ def prep_gal():
 # -----------------------------
 # LOADING EXTRA
 control_line_bottom = 35
+
+# c_image1 = IMG_Load(b_active_directory + b'/gui/play2.png')
+# c_play = SDL_CreateTextureFromSurface(renderer, c_image1)
+# dst_c1 = SDL_Rect(25, window_size[1] - control_line_bottom)
+# dst_c1.w = 13
+# dst_c1.h = 14
 
 s_image1 = IMG_Load(b_active_directory + b'/gui/playw.png')
 c1 = SDL_CreateTextureFromSurface(renderer, s_image1)
@@ -4661,8 +4681,8 @@ def toggle_side_panel(mode=0):
         side_panel_enable = True
     else:
         side_panel_enable = False
-    if side_panel_enable:
-        gui.combo_mode = False
+    # if side_panel_enable:
+    #     gui.combo_mode = False
 
 
 def combo_deco():
@@ -7089,6 +7109,7 @@ class TopPanel:
 
     def render(self):
 
+        # C-TD
         global quick_drag
         global playlist_panel
 
@@ -8100,7 +8121,7 @@ class ComboPlaylist:
             self.pl_pos_px = self.mirror_cache[-1:][0]
 
     def full_render(self):
-
+        # C-CM
         global click_time
         global playlist_selected
         global shift_selection
@@ -8960,6 +8981,7 @@ while running:
 
     if update_layout:
         # update layout
+        # C-UL
 
         mouse_click = False
         if not gui.maximized:
@@ -9611,6 +9633,7 @@ while running:
                     gui.pl_update += 2
 
                 # MAIN PLAYLIST
+                # C-PR
 
                 if gui.pl_update > 0:
 
@@ -10345,6 +10368,7 @@ while running:
                 draw.rect((buttons_x_offset + 25, window_size[1] - control_line_bottom), (14, 14), play_colour, True)
                 # draw.rect_r(rect,[255,0,0,255], True)
                 SDL_RenderCopy(renderer, c1, None, dst1)
+                # SDL_RenderCopy(renderer, c_play, None, dst_c1)
 
                 # PAUSE---
                 x = 75 + buttons_x_offset
@@ -10480,7 +10504,8 @@ while running:
                     draw.rect((x + 35 - w, y - 8), (w, 8), rpbc, True)
                     draw.rect((x + 15, y - 8), (20, w), rpbc, True)
 
-            # NEW TOP BAR NEW
+            # NEW TOP BAR
+            # C-TBR
             if GUI_Mode == 1:
                 top_panel.render()
 
