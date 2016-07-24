@@ -23,7 +23,7 @@ Ubuntu (not recently tested):
 
 Finally run using python 3 (Alternatively create a desktop or launcher shortcut. Make sure to set the working directory to the directory you extracted the program files to).
 
-    $ python3.5 tmb.py
+    $ python3.5 tauon.py
 
 
 # Development setup on OS X
@@ -38,4 +38,4 @@ Install Python libraries (Install pip if required $ sudo easy_install pip):
 
 Finally run from install directroy using:
 
-	$ python3 tmb.py
+	$ python3 tauon.py

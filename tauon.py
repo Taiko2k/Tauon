@@ -292,7 +292,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 1
+theme = 6
 themeChange = True
 panelY = 78
 
@@ -5886,7 +5886,7 @@ def webserv():
     <html>
     <head>
     <meta charset="UTF-8">
-    <title>TMB Remote</title>
+    <title>Tauon Remote</title>
 
     <style>
     body {background-color:#1A1A1A;
@@ -8026,7 +8026,7 @@ class StandardPlaylist:
         if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top\
                 and not (playlist_panel and coll_point(mouse_position, pl_rect)):
 
-            if album_mode and mouse_position[0] > playlist_width + 40:
+            if album_mode and mouse_position[0] > playlist_width + 34:
                 pass
             else:
                 mx = 4
@@ -8327,7 +8327,7 @@ key_F7 = False
 r_arg_queue = copy.deepcopy(sys.argv)
 arg_queue = []
 for item in r_arg_queue:
-    if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tmb.exe' not in item:
+    if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tauon.exe' not in item:
         arg_queue.append(item)
 
 # C-ML
