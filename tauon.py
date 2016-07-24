@@ -633,7 +633,7 @@ view_prefs = {
     'update-title': False,
     'star-lines': True,
     'side-panel': True,
-    'dim-art': True,
+    'dim-art': False,
     'pl-follow': False,
     'scroll-enable': True
 
@@ -2674,38 +2674,7 @@ SDL_RenderPresent(renderer)
 
 fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
 
-if system != 'windows':
 
-    def hit_callback(win, point, data):
-
-        if point.contents.y < 0 and point.contents.x > window_size[0]:
-            return SDL_HITTEST_RESIZE_TOPRIGHT
-
-        elif point.contents.y < 0 and point.contents.x < 1:
-            return SDL_HITTEST_RESIZE_TOPLEFT
-
-        elif point.contents.y < 0:
-            return SDL_HITTEST_RESIZE_TOP
-
-        elif point.contents.y < 30 and m_l < point.contents.x < window_size[0] - 90:
-            return SDL_HITTEST_DRAGGABLE
-        elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
-            return SDL_HITTEST_RESIZE_BOTTOMRIGHT
-        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
-            return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif point.contents.y > window_size[1] - 5:
-            return SDL_HITTEST_RESIZE_BOTTOM
-
-        elif point.contents.x > window_size[0] - 1:
-            return SDL_HITTEST_RESIZE_RIGHT
-        elif point.contents.x <  5:
-            return SDL_HITTEST_RESIZE_LEFT
-
-        else:
-            return SDL_HITTEST_NORMAL
-
-    c_hit_callback = SDL_HitTest(hit_callback)
-    SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 
 if system == 'windows' and taskbar_progress:
@@ -4652,8 +4621,6 @@ def bass_features_deco():
 
 def toggle_dim_albums(mode=0):
     global dim_art
-    global gui
-    global gui
 
     if mode == 1:
         return dim_art
@@ -8302,6 +8269,39 @@ combo_pl_render = ComboPlaylist()
 playlist_render = StandardPlaylist()
 
 
+# Set SDL window drag areas
+if system != 'windows':
+
+    def hit_callback(win, point, data):
+
+        if point.contents.y < 0 and point.contents.x > window_size[0]:
+            return SDL_HITTEST_RESIZE_TOPRIGHT
+
+        elif point.contents.y < 0 and point.contents.x < 1:
+            return SDL_HITTEST_RESIZE_TOPLEFT
+
+        elif point.contents.y < 0:
+            return SDL_HITTEST_RESIZE_TOP
+
+        elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+            return SDL_HITTEST_DRAGGABLE
+        elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
+            return SDL_HITTEST_RESIZE_BOTTOMRIGHT
+        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
+            return SDL_HITTEST_RESIZE_BOTTOMLEFT
+        elif point.contents.y > window_size[1] - 5:
+            return SDL_HITTEST_RESIZE_BOTTOM
+
+        elif point.contents.x > window_size[0] - 1:
+            return SDL_HITTEST_RESIZE_RIGHT
+        elif point.contents.x <  5:
+            return SDL_HITTEST_RESIZE_LEFT
+
+        else:
+            return SDL_HITTEST_NORMAL
+
+    c_hit_callback = SDL_HitTest(hit_callback)
+    SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------
 
