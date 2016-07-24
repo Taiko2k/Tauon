@@ -8,7 +8,7 @@ v1.5.2
  - Added new sorting options: by artist, album, reversed, skips and file path
  - Added new copy/paste menu for selections
  - Added ctrl-a shortcut to select all tracks in playlist
- - Added 4 new themes
+ - Added 5 new themes
  - Added album art + tracks combined view mode
  - Removed genre sorting option
  - Removed last.fm panel indicator
@@ -27,6 +27,7 @@ v1.5.2
  - Fixed visualiser clock speed
  - Fixed tracks with inconsistent file extension case not importing
  - Fixed un-maximized on start bug
+ - Fixed playlist scroll boundary in gallery view
  - Misc UI tweaks
  - Misc bug fixes
 

@@ -4,16 +4,18 @@
 - Tag metadata (MP3, M4A, OGG, FLAC, WMA*) *Windows only
 - Embedded album art (MP3, FLAC)
 - Multiple album art
-- Last.fm scrobbling
+- Last.fm scrobbling (likely to be dropped in future versions)
 - Multiple playlists
 - CUE sheet integration (Single source only)
 - Batch file renaming
-- Keyboard shortcuts (partial, fixed)
+- Keyboard shortcuts (partial)
 - Quick search
 - Cross fade (only)
 - Spectrum visualization
-- Gallery view
-- User defined themes
+- Art grid view
+- Tracks view
+- Combined art and tracks view
+- User defineable themes
 - Web interface (basic playback control only)
 - Inbound streaming (HTTP)
 - Outbound streaming with icecast
@@ -21,7 +23,7 @@
 - Folder transcode to CUE+OPUS (Windows:Working, Linux:Not Tested, OSX:Not tested)
 - Text Encoding fix (Japanese only)
 - Sorting
-
+- Skip counting
 
 ##### Other common player features not implemented:
 
