@@ -11,3 +11,4 @@ lib/*.dll
 encoder/
 *.flac
 build/
+*.csv
