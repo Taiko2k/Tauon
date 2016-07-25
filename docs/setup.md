@@ -1,6 +1,6 @@
 # Binary release setup on Windows
 
-Release bundle should 'just work' by running tmb.exe. Otherwise ensure Visual C++ Runtime and DirectX are installed.
+Release bundle should 'just work' by running tauon.exe. Otherwise ensure Visual C++ Runtime and DirectX are installed.
 
 
 # Development setup on Linux
