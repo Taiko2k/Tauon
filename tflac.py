@@ -1,10 +1,21 @@
 # Tauon Music Box - Tag Module
 
-# Copyright (c) 2015-2016, Taiko2k captain.gxj@gmail.com
+# Copyright © 2015-2016, Taiko2k captain.gxj@gmail.com
 
-#    Permission to use, copy, modify, and/or distribute this software for any
-#    purpose with or without fee is hereby granted, provided that the above
-#    copyright notice and this permission notice appear in all copies.
+#     This file is part of Tauon Music Box.
+#
+#     Tauon Music Box is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     Tauon Music Box is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU Lesser General Public License for more details.
+#
+#     You should have received a copy of the GNU Lesser General Public License
+#     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 #    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
