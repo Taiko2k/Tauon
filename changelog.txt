@@ -1,6 +1,15 @@
 
 Changelog-------------------------------------
 
+v1.5.3
+
+ - Added time remaining visual indicator option
+ - Added new menu button to bottom panel
+ - Moved playback options to new menu
+ - Tweaked bottom panel visual elements
+ - Fixed layout reset window size being slightly too small
+ - Fixed rate at which seek bar updates
+
 v1.5.2
 
  - Added playback menu
