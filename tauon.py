@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.5.3"
+t_version = "v1.5.5"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -4581,7 +4581,7 @@ if default_player == 'BASS':
 
 # Create top menu
 x_menu = Menu(160)
-
+view_menu = Menu(170)
 
 def bass_features_deco():
     line_colour = colours.grey(150)
@@ -4623,14 +4623,14 @@ def toggle_side_panel(mode=0):
     #     gui.combo_mode = False
 
 
-def combo_deco():
-    if gui.combo_mode:
-        line = 'Exit Combo View'
-    else:
-        line = 'Combo View <testing>'
-        bg = colours.menu_background
-
-    return [[150, 150, 150, 255], colours.menu_background, line]
+# def combo_deco():
+#     if gui.combo_mode:
+#         line = 'Exit Combo View'
+#     else:
+#         line = 'Combo View <testing>'
+#         bg = colours.menu_background
+#
+#     return [[150, 150, 150, 255], colours.menu_background, line]
 
 
 
@@ -4989,7 +4989,7 @@ def toggle_random():
 
 # x_menu.add_to_sub('Random - Enable', 1, toggle_random, random_deco)
 extra_menu.add('Random - Enable', toggle_random, random_deco)
-extra_menu.add("Show Playing", pctl.show_current)
+extra_menu.add("Go To Playing", pctl.show_current)
 
 def toggle_level_meter(mode=0):
     global gui
@@ -5115,6 +5115,58 @@ def switch_playlist(number, cycle=False):
         combo_pl_render.prep(True)
 
 
+def view_tracks():
+    if album_mode:
+        toggle_album_mode()
+    if gui.combo_mode:
+        toggle_combo_view()
+    if side_panel_enable:
+        toggle_side_panel()
+
+def view_standard_full():
+    if album_mode:
+        toggle_album_mode()
+    if gui.combo_mode:
+        toggle_combo_view()
+    if not side_panel_enable:
+        toggle_side_panel()
+    global side_panel_size
+    global update_layout
+    update_layout = True
+    side_panel_size = window_size[0]
+
+def view_standard_meta():
+    if album_mode:
+        toggle_album_mode()
+    if gui.combo_mode:
+        toggle_combo_view()
+    if not side_panel_enable:
+        toggle_side_panel()
+    global side_panel_size
+    global update_layout
+    update_layout = True
+    side_panel_size = 200
+
+def view_standard():
+    if album_mode:
+        toggle_album_mode()
+    if gui.combo_mode:
+        toggle_combo_view()
+    if not side_panel_enable:
+        toggle_side_panel()
+
+def standard_view_deco():
+    line_colour = colours.grey(50)
+    if album_mode or gui.combo_mode or not side_panel_enable:
+        line_colour = colours.grey(150)
+    return [line_colour, colours.menu_background, None]
+
+view_menu.add("Restore", view_standard, standard_view_deco)
+view_menu.add("Tracks", view_tracks)
+view_menu.add("Tracks + Metadata", view_standard_meta)
+view_menu.add("Tracks + Full Art", view_standard_full)
+view_menu.add("Tracks + Gallery", toggle_album_mode)
+view_menu.add("Album Art + Tracks", toggle_combo_view)
 # ---------------------------------------------------------------------------------------
 
 
@@ -7268,39 +7320,59 @@ class TopPanel:
             bg = colours.grey(95)
         draw_text((x, y), word, bg, 12)
 
-        # GALLERY -----------------------------
+        # LAYOUT --------------------------------
         x += self.menu_space + word_length
-        word = "GALLERY"
+        word = "VIEW"
         word_length = draw.text_calc(word, 12)
         rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
 
         if hit and mouse_click:
-            toggle_album_mode()
+            if view_menu.active:
+                view_menu.active = False
+            else:
+                view_menu.activate(position=(x + 15, self.height))
 
-        if album_mode or hit:
+        if view_menu.active or hit:
             bg = colours.grey(130)
         else:
             bg = colours.grey(95)
         draw_text((x, y), word, bg, 12)
+
+        # GALLERY -----------------------------
+        # x += self.menu_space + word_length
+        # word = "GALLERY"
+        # word_length = draw.text_calc(word, 12)
+        # rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
+        # hit = coll_point(mouse_position, rect)
+        # fields.add(rect)
+        #
+        # if hit and mouse_click:
+        #     toggle_album_mode()
+        #
+        # if album_mode or hit:
+        #     bg = colours.grey(130)
+        # else:
+        #     bg = colours.grey(95)
+        # draw_text((x, y), word, bg, 12)
 
         # ALBUMS -----------------------------
-        x += self.menu_space + word_length
-        word = "ALBUMS"
-        word_length = draw.text_calc(word, 12)
-        rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
-        hit = coll_point(mouse_position, rect)
-        fields.add(rect)
-
-        if hit and mouse_click:
-            toggle_combo_view()
-
-        if gui.combo_mode or hit:
-            bg = colours.grey(130)
-        else:
-            bg = colours.grey(95)
-        draw_text((x, y), word, bg, 12)
+        # x += self.menu_space + word_length
+        # word = "ALBUMS"
+        # word_length = draw.text_calc(word, 12)
+        # rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
+        # hit = coll_point(mouse_position, rect)
+        # fields.add(rect)
+        #
+        # if hit and mouse_click:
+        #     toggle_combo_view()
+        #
+        # if gui.combo_mode or hit:
+        #     bg = colours.grey(130)
+        # else:
+        #     bg = colours.grey(95)
+        # draw_text((x, y), word, bg, 12)
 
         # Status text
         x += self.menu_space + word_length + 5
@@ -7431,6 +7503,10 @@ class BottomBarType1:
         draw.rect((0, window_size[1] - panelBY), (window_size[0], panelBY), colours.bottom_panel_colour, True)
         draw.rect(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
 
+        right_offset = 0
+        if gui.display_time_mode == 2:
+            right_offset = 21
+
         if self.mode == 0:
             draw.line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
             draw.line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + self.seek_bar_size[1],
@@ -7520,18 +7596,18 @@ class BottomBarType1:
 
         # Volume Bar--------------------------------------------------------
 
-        if mouse_click and coll_point(mouse_position, self.volume_bar_position + self.volume_bar_size) or \
+        if mouse_click and coll_point(mouse_position, (self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0], self.volume_bar_size[1])) or \
                         self.volume_bar_being_dragged is True:
             clicked = True
             if mouse_click is True or self.volume_bar_being_dragged is True:
                 gui.update += 1
                 self.volume_bar_being_dragged = True
                 volgetX = mouse_position[0]
-                if volgetX > self.volume_bar_position[0] + self.volume_bar_size[0]:
-                    volgetX = self.volume_bar_position[0] + self.volume_bar_size[0]
-                if volgetX < self.volume_bar_position[0]:
-                    volgetX = self.volume_bar_position[0]
-                volgetX -= self.volume_bar_position[0]
+                if volgetX > self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset:
+                    volgetX = self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset
+                if volgetX < self.volume_bar_position[0] - right_offset:
+                    volgetX = self.volume_bar_position[0] - right_offset
+                volgetX -= self.volume_bar_position[0] - right_offset
                 pctl.player_volume = volgetX / self.volume_bar_size[0] * 100
                 if mouse_down is False:
                     self.volume_bar_being_dragged = False
@@ -7562,8 +7638,8 @@ class BottomBarType1:
 
             pctl.set_volume()
 
-        draw.rect(self.volume_bar_position, self.volume_bar_size, colours.volume_bar_background, True)  # 22
-        draw.rect(self.volume_bar_position, (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
+        draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size, colours.volume_bar_background, True)  # 22
+        draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
                   colours.volume_bar_fill, True)
 
         if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
@@ -7587,14 +7663,14 @@ class BottomBarType1:
 
         # TIME----------------------
 
-        x = window_size[0] - 57
+        x = window_size[0] - 60
         y = window_size[1] - 29
 
         rect = (x - 6, y - 4, 50, 27)
         # draw.rect_r(rect, [255,0,0,40], True)
         if mouse_click and rect_in(rect):
             gui.display_time_mode += 1
-            if gui.display_time_mode > 1:
+            if gui.display_time_mode > 2:
                 gui.display_time_mode = 0
 
         if gui.display_time_mode == 0:
@@ -7610,7 +7686,17 @@ class BottomBarType1:
                       12)
             draw_text((x - 5, y), '-', colours.time_playing,
                       12)
-
+        elif gui.display_time_mode == 2:
+            text_time = get_display_time(pctl.playing_time)
+            draw_text((x - 25, y), text_time, colours.time_playing,
+                      12)
+            draw_text((x + 10, y), "/", [255,255,255,80],
+                  12)
+            text_time = get_display_time(pctl.playing_length)
+            if pctl.playing_state == 0:
+                text_time = get_display_time(0)
+            draw_text((x + 17, y), text_time,  [255,255,255,80],
+                      12)
         # BUTTONS
         # bottom buttons
 
@@ -7707,14 +7793,12 @@ class BottomBarType1:
                     pctl.revert()
 
             self.back_button.render(180, 1 + window_size[1] - self.control_line_bottom, back_colour)
-            #draw.rect((buttons_x_offset + 180, window_size[1] - self.control_line_bottom), (28, 14), back_colour, True)
             # draw.rect_r(rect,[255,0,0,255], True)
-            #SDL_RenderCopy(renderer, self.c3, None, self.dst3)
 
 
             # menu button
 
-            x = window_size[0] - 252
+            x = window_size[0] - 252 - right_offset
             y = window_size[1] - 26
             rpbc = colours.mode_button_off
             rect = (x - 9, y - 5, 40, 25)
@@ -7735,7 +7819,7 @@ class BottomBarType1:
             if window_size[0] > 630 and self.mode == 0:
 
                 # shuffle button
-                x = window_size[0] - 318
+                x = window_size[0] - 318 - right_offset
                 y = window_size[1] - 27
 
                 rect = (x - 5, y - 5, 60, 25)
@@ -7769,7 +7853,7 @@ class BottomBarType1:
                 draw.rect((x, y), (48, 3), rpbc, True)
 
                 # REPEAT
-                x = window_size[0] - 380
+                x = window_size[0] - 380 - right_offset
                 y = window_size[1] - 27
 
                 rpbc = colours.mode_button_off
@@ -9042,6 +9126,7 @@ while running:
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 x_menu.active = False
+                view_menu.active = False
                 extra_menu.active = False
                 tab_menu.active = False
                 track_menu.active = False
@@ -9251,7 +9336,10 @@ while running:
             x_menu.click()
             mouse_click = False
             ab_click = True
-
+        if view_menu.active is True and mouse_click:
+            view_menu.click()
+            mouse_click = False
+            ab_click = True
         if extra_menu.active is True and mouse_click:
             extra_menu.click()
             mouse_click = False
@@ -11398,6 +11486,7 @@ while running:
 
         # Render Menus-------------------------------
         x_menu.render()
+        view_menu.render()
         track_menu.render()
         tab_menu.render()
         playlist_menu.render()
