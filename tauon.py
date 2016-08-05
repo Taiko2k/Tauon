@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.5.5"
+t_version = "v1.5.7"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -4741,8 +4741,8 @@ def toggle_album_mode(force_on=False):
 
     if gui.show_playlist is False:
         gui.show_playlist = True
-        playlist_width = album_playlist_width
-        side_panel_size = window_size[0] - album_playlist_width
+        playlist_width = album_playlist_width #int(window_size[0] * 0.25)
+        side_panel_size = window_size[0] - playlist_width
         if force_on:
             return
 
@@ -5136,8 +5136,8 @@ def switch_playlist(number, cycle=False):
 
 
 def view_tracks():
-    if gui.show_playlist is False:
-        gui.show_playlist = True
+    # if gui.show_playlist is False:
+    #     gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5146,8 +5146,8 @@ def view_tracks():
         toggle_side_panel()
 
 def view_standard_full():
-    if gui.show_playlist is False:
-        gui.show_playlist = True
+    # if gui.show_playlist is False:
+    #     gui.show_playlist = True
 
     if album_mode:
         toggle_album_mode()
@@ -5161,8 +5161,8 @@ def view_standard_full():
     side_panel_size = window_size[0]
 
 def view_standard_meta():
-    if gui.show_playlist is False:
-        gui.show_playlist = True
+    # if gui.show_playlist is False:
+    #     gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5175,8 +5175,8 @@ def view_standard_meta():
     side_panel_size = 80 + int(window_size[0] * 0.18)
 
 def view_standard():
-    if gui.show_playlist is False:
-        gui.show_playlist = True
+    # if gui.show_playlist is False:
+    #     gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5202,7 +5202,9 @@ def gallery_only_view():
     global update_layout
     update_layout = True
     side_panel_size = window_size[0]
+    album_playlist_width = playlist_width
     playlist_width = -19
+
 
     # album_playlist_width = 0
 

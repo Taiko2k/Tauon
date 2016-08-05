@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v1.5.5
+v1.5.7
 
  - Added new formats for play time indicator
  - Added new menu button to bottom panel
