@@ -10,6 +10,7 @@ v1.5.5
  - Tweaked bottom panel visual elements
  - Fixed layout reset window size being slightly too small
  - Fixed rate at which seek bar updates
+ - Fixed drag on tab not working in albums plus tracks view
 
 v1.5.2
 

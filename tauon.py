@@ -4272,11 +4272,6 @@ def remove_folder(index):
 
     reload()
 
-# Create combo album menu
-combo_menu = Menu(130)
-combo_menu.add('Open Folder', open_folder, pass_ref=True)
-combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
-
 
 def convert_folder(index):
     global default_playlist
@@ -4304,6 +4299,7 @@ def convert_folder(index):
 def transfer(index, args):
     global cargo
     global default_playlist
+    cargo = []
 
     if args[0] == 1 or args[0] == 0:  # copy
         if args[1] == 1:  # single track
@@ -4354,6 +4350,14 @@ def transfer(index, args):
 
     reload()
 
+def temp_copy_folder(ref):
+    cargo = []
+    transfer(ref, args=[1, 2])
+# Create combo album menu
+combo_menu = Menu(130)
+combo_menu.add('Open Folder', open_folder, pass_ref=True)
+combo_menu.add("Copy Folder", temp_copy_folder, pass_ref=True)
+combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
 
 def activate_track_box(index):
     global track_box
@@ -6629,8 +6633,8 @@ class Over:
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
         y += 30
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
-        y += 30
-        self.toggle_square(x, y, toggle_side_panel, "Show side panel")
+        # y += 30
+        # self.toggle_square(x, y, toggle_side_panel, "Show side panel")
         y += 30
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 30
@@ -7538,6 +7542,7 @@ class BottomBarType1:
         if mouse_click and coll_point(mouse_position,
                                       self.seek_bar_position + [self.seek_bar_size[0]] + [self.seek_bar_size[1] + 2]):
             self.seek_down = True
+            self.volume_hit = True
         if right_click and coll_point(mouse_position,
                                       self.seek_bar_position + [self.seek_bar_size[0]] + [self.seek_bar_size[1] + 2]):
             pctl.pause()
@@ -7675,14 +7680,14 @@ class BottomBarType1:
 
         if gui.display_time_mode == 0:
             text_time = get_display_time(pctl.playing_time)
-            draw_text((x, y), text_time, colours.time_playing,
+            draw_text((x + 1, y), text_time, colours.time_playing,
                       12)
         elif gui.display_time_mode == 1:
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             else:
                 text_time = get_display_time(pctl.playing_length - pctl.playing_time)
-            draw_text((x, y), text_time, colours.time_playing,
+            draw_text((x + 1, y), text_time, colours.time_playing,
                       12)
             draw_text((x - 5, y), '-', colours.time_playing,
                       12)
@@ -8608,6 +8613,7 @@ class ComboPlaylist:
         global click_time
         global playlist_selected
         global shift_selection
+        global quick_drag
 
         # Draw the background
         SDL_SetRenderTarget(renderer, ttext)
@@ -8734,6 +8740,7 @@ class ComboPlaylist:
                                 mouse_position[1] < window_size[1] - panelBY and mouse_position[1] > panelY:
                     line_hit = True
                     self.hit = True
+                    quick_drag = True
 
                 # Double click to play
                 if d_mouse_click and line_hit and pl_entry_on == playlist_selected:
@@ -8753,8 +8760,10 @@ class ComboPlaylist:
                     shift_selection = [playlist_selected]
 
                 # Test if line selected
-                if pl_entry_on == playlist_selected and self.hit:
+                if (pl_entry_on == playlist_selected and self.hit):
                     draw.rect_r(rect, colours.row_select_highlight, True)
+
+
 
                 # Draw track text
                 custom_line_render(track, pl_entry_on, y - 1, playing, 255, y)
@@ -10386,8 +10395,8 @@ while running:
                             xoff = draw.text_calc(line, 12) + 12
 
                             draw.rect((playlist_width + 40 + box - xoff, 36 + box - 19), (xoff, 18),
-                                      [0, 0, 0, 190], True)
-
+                                      [10, 10, 10, 190], True)
+                            # [0, 0, 0, 190]
                             draw_text((playlist_width + 40 + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
 
                         if pctl.playing_state > 0:
