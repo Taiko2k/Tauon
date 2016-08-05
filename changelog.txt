@@ -5,12 +5,16 @@ v1.5.5
 
  - Added new formats for play time indicator
  - Added new menu button to bottom panel
+ - Added gallery only view
  - Moved view modes into new view menu
  - Moved playback options to new menu
  - Tweaked bottom panel visual elements
+ - Tweaked gallery album goto function
  - Fixed layout reset window size being slightly too small
  - Fixed rate at which seek bar updates
  - Fixed drag on tab not working in albums plus tracks view
+ - Fixed images reloading when switching layouts
+ - Fixed image cache for gallery being unlimited
 
 v1.5.2
 

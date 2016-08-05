@@ -192,7 +192,6 @@ vis_decay_timer.set()
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
 input_text_mode = False
-show_playlist = True
 
 draw_border = False
 resize_drag = [0, 0]
@@ -598,6 +597,7 @@ class GuiVar:
         self.message_box = False
         self.message_text = ""
         self.save_size = [450, 310]
+        self.show_playlist = True
         
         self.level_update = False
         self.level_time = Timer()
@@ -2915,8 +2915,9 @@ temp_dest = SDL_Rect(0, 0)
 class GallClass:
     def __init__(self):
         self.gall = {}
-        self.size = [album_mode_art_size, album_mode_art_size]
+        self.size = album_mode_art_size
         self.queue = []
+        self.key_list = []
 
     def get_file_source(self, index):
 
@@ -2933,13 +2934,12 @@ class GallClass:
 
         # time.sleep(0.1)
 
-        if index in self.gall:
+        if (index, self.size) in self.gall:
             # print("old")
 
-            order = self.gall[index]
+            order = self.gall[(index, self.size)]
 
             if order[0] == 0:
-                # print('broken')
                 # broken
                 return
 
@@ -2948,19 +2948,16 @@ class GallClass:
                 return
 
             if order[0] == 2:
-                # print('pro stage 2')
                 # finish processing
+
                 wop = sdl2.rw_from_object(order[1])
                 s_image = IMG_Load_RW(wop, 0)
                 c = SDL_CreateTextureFromSurface(renderer, s_image)
                 SDL_FreeSurface(s_image)
-                tex_w = pointer(c_int(self.size[0]))
-                tex_h = pointer(c_int(self.size[1]))
-
+                tex_w = pointer(c_int(self.size))
+                tex_h = pointer(c_int(self.size))
                 SDL_QueryTexture(c, None, None, tex_w, tex_h)
-
                 dst = SDL_Rect(location[0], location[1])
-
                 dst.w = int(tex_w.contents.value)
                 dst.h = int(tex_h.contents.value)
 
@@ -2968,36 +2965,44 @@ class GallClass:
                 order[1] = None
                 order[2] = c
                 order[3] = dst
-
-                self.gall[index] = order
+                self.gall[(index, self.size)] = order
 
             if order[0] == 3:
                 # ready
+
                 order[3].x = location[0]
                 order[3].y = location[1]
-
-                order[3].x = int((self.size[0] - order[3].w) / 2) + order[3].x
-                order[3].y = int((self.size[1] - order[3].h) / 2) + order[3].y
-
+                order[3].x = int((self.size - order[3].w) / 2) + order[3].x
+                order[3].y = int((self.size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
-
                 return
 
         else:
             # Create new
             # stage, raw, texture, rect
-            self.gall[index] = [1, None, None, None]
-            self.queue.append(index)
-            # print(self.queue)
+            self.gall[(index, self.size)] = [1, None, None, None]
+            self.queue.append((index, self.size))
+            self.key_list.append((index, self.size))
+
+            # Remove old images to conserve RAM usage
+            if len(self.key_list) > 250:
+                key = self.key_list[0]
+                while key in self.queue:
+                    self.queue.remove(key)
+                if self.gall[key][2] is not None:
+                    SDL_DestroyTexture(self.gall[key][2])
+                del self.gall[key]
+                del self.key_list[0]
 
 
 gall_ren = GallClass()
+
 
 def clear_img_cache():
 
     global album_art_gen
     album_art_gen.clear_cache()
-
+    gall_ren.key_list = []
     while len(gall_ren.queue) > 0:
         time.sleep(0.01)
 
@@ -3007,6 +3012,7 @@ def clear_img_cache():
 
     global gui
     gui.update += 1
+
 
 class ImageObject():
 
@@ -4654,8 +4660,8 @@ def toggle_combo_view(mode=0):
         gui.combo_mode = True
         reload_albums()
 
-        clear_img_cache()
-        gall_ren.size = [combo_mode_art_size, combo_mode_art_size]
+        # clear_img_cache()
+        gall_ren.size = combo_mode_art_size
 
         combo_pl_render.prep(True)
 
@@ -4665,8 +4671,8 @@ def toggle_combo_view(mode=0):
             side_panel_enable = False
     else:
         gui.combo_mode = False
-        clear_img_cache()
-        gall_ren.size = [album_mode_art_size, album_mode_art_size]
+        # clear_img_cache()
+        gall_ren.size = album_mode_art_size
         if prefer_side:
             side_panel_enable = True
         side_panel_size = old_side_pos
@@ -4714,14 +4720,14 @@ def goto_album(playlist_no):
     if album_pos_px - 20 < px < album_pos_px + window_size[1]:
         pass
     else:
-        album_pos_px = px - 60 - album_mode_art_size - album_v_gap
+        album_pos_px = px - 60 # - (album_mode_art_size - album_v_gap)
         album_pos_px += 10
 
         if album_pos_px < 0 - 55:
             album_pos_px = 0 - 55
 
 
-def toggle_album_mode():
+def toggle_album_mode(force_on=False):
     global album_mode
     global window_size
     global update_layout
@@ -4733,7 +4739,17 @@ def toggle_album_mode():
     global album_pos_px
     global playlist_width
 
+    if gui.show_playlist is False:
+        gui.show_playlist = True
+        playlist_width = album_playlist_width
+        side_panel_size = window_size[0] - album_playlist_width
+        if force_on:
+            return
+
+
+
     if album_mode is True:
+
         album_mode = False
         album_playlist_width = playlist_width
         old_album_pos = album_pos_px
@@ -5120,6 +5136,8 @@ def switch_playlist(number, cycle=False):
 
 
 def view_tracks():
+    if gui.show_playlist is False:
+        gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5128,6 +5146,9 @@ def view_tracks():
         toggle_side_panel()
 
 def view_standard_full():
+    if gui.show_playlist is False:
+        gui.show_playlist = True
+
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5140,6 +5161,8 @@ def view_standard_full():
     side_panel_size = window_size[0]
 
 def view_standard_meta():
+    if gui.show_playlist is False:
+        gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5149,9 +5172,11 @@ def view_standard_meta():
     global side_panel_size
     global update_layout
     update_layout = True
-    side_panel_size = 200
+    side_panel_size = 80 + int(window_size[0] * 0.18)
 
 def view_standard():
+    if gui.show_playlist is False:
+        gui.show_playlist = True
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
@@ -5165,11 +5190,31 @@ def standard_view_deco():
         line_colour = colours.grey(150)
     return [line_colour, colours.menu_background, None]
 
+def gallery_only_view():
+
+    if not album_mode:
+        toggle_album_mode()
+    gui.show_playlist = False
+    global playlist_width
+    global side_panel_size
+    global album_playlist_width
+    global playlist_width
+    global update_layout
+    update_layout = True
+    side_panel_size = window_size[0]
+    playlist_width = -19
+
+    # album_playlist_width = 0
+
+def force_album_view():
+    toggle_album_mode(True)
+
 view_menu.add("Restore", view_standard, standard_view_deco)
 view_menu.add("Tracks", view_tracks)
 view_menu.add("Tracks + Metadata", view_standard_meta)
 view_menu.add("Tracks + Full Art", view_standard_full)
-view_menu.add("Tracks + Gallery", toggle_album_mode)
+view_menu.add("Tracks + Gallery", force_album_view)
+view_menu.add("Gallery Only", gallery_only_view)
 view_menu.add("Album Art + Tracks", toggle_combo_view)
 # ---------------------------------------------------------------------------------------
 
@@ -5179,7 +5224,7 @@ added = []
 
 
 def loader():
-    global pctl
+
     global cue_list
     global loaderCommand
     global loaderCommandReady
@@ -5437,10 +5482,8 @@ def loader():
     def add_file(path):
         #bm.get("add file start")
         global master_count
-        global pctl
         global DA_Formats
         global to_got
-        global pctl
         global auto_play_import
 
         if os.path.splitext(path)[1][1:] in {"CUE", 'cue'}:
@@ -5504,7 +5547,6 @@ def loader():
     def pre_get(direc):
         global DA_Formats
         global to_get
-        global gui
 
         items_in_dir = os.listdir(direc)
         for q in range(len(items_in_dir)):
@@ -5520,7 +5562,6 @@ def loader():
 
     def gets(direc):
         dupe = False
-        global pctl
         global DA_Formats
         global master_count
 
@@ -5545,7 +5586,6 @@ def loader():
 
     # print(pctl.master_library)
 
-    global gui
     global transcode_list
     global transcode_state
     global default_player
@@ -5727,23 +5767,23 @@ def loader():
 
             # print("ready")
 
-            index = gall_ren.queue[0]
-            order = gall_ren.gall[index]
+            key = gall_ren.queue[0]
+            order = gall_ren.gall[key]
 
-            source = gall_ren.get_file_source(index)
+            source = gall_ren.get_file_source(key[0])
 
             # print(source)
 
             if source is False:
                 order[0] = 0
-                gall_ren.gall[index] = order
+                gall_ren.gall[key] = order
                 del gall_ren.queue[0]
                 continue
 
             try:
                 if source[0] is True:
                     # print('tag')
-                    source_image = io.BytesIO(album_art_gen.get_embed(index))
+                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
 
                 else:
                     source_image = open(source[1], 'rb')
@@ -5754,7 +5794,7 @@ def loader():
                 im = Image.open(source_image)
                 if im.mode != "RGB":
                     im = im.convert("RGB")
-                im.thumbnail(gall_ren.size, Image.ANTIALIAS)
+                im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
 
                 im.save(g, 'JPEG')
                 g.seek(0)
@@ -5762,7 +5802,7 @@ def loader():
                 source_image.close()
 
                 order = [2, g, None, None]
-                gall_ren.gall[index] = order
+                gall_ren.gall[key] = order
 
                 gui.update += 1
                 if gui.combo_mode:
@@ -5771,9 +5811,9 @@ def loader():
                 time.sleep(0.01)
 
             except:
-                print('image error')
+                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
                 order = [0, None, None, None]
-                gall_ren.gall[index] = order
+                gall_ren.gall[key] = order
 
             del gall_ren.queue[0]
 
@@ -6616,9 +6656,9 @@ class Over:
 
         if self.click:
             if not gui.combo_mode:
-                gall_ren.size = [album_mode_art_size, album_mode_art_size]
+                gall_ren.size = album_mode_art_size
             else:
-                gall_ren.size = [combo_mode_art_size, combo_mode_art_size]
+                gall_ren.size = combo_mode_art_size
                 combo_pl_render.prep()
                 update_layout = True
                 gui.pl_update += 2
@@ -7462,12 +7502,11 @@ class BottomBarType1:
         self.control_line_bottom = 35
         self.repeat_click_off = False
         self.random_click_off = False
-        self.volume_bar_right = 20
 
         self.seek_bar_position = [300, window_size[1] - panelBY]
         self.seek_bar_size = [window_size[0] - 300, 15]
         self.volume_bar_size = [135, 14]
-        self.volume_bar_position = [window_size[0] - self.volume_bar_size[0] - self.volume_bar_right, 45]
+        self.volume_bar_position = [0, 45]
 
         self.play_button = WhiteModImageAsset('/gui/play.png')
         self.forward_button = WhiteModImageAsset('/gui/ff.png')
@@ -7509,7 +7548,7 @@ class BottomBarType1:
 
         right_offset = 0
         if gui.display_time_mode == 2:
-            right_offset = 21
+            right_offset = 22
 
         if self.mode == 0:
             draw.line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
@@ -7668,11 +7707,11 @@ class BottomBarType1:
 
         # TIME----------------------
 
-        x = window_size[0] - 60
+        x = window_size[0] - 57
         y = window_size[1] - 29
 
-        rect = (x - 6, y - 4, 50, 27)
-        # draw.rect_r(rect, [255,0,0,40], True)
+        rect = (x - 8 - right_offset, y - 3, 60 + right_offset, 27)
+        # draw.rect_r(rect, [255, 0, 0, 40], True)
         if mouse_click and rect_in(rect):
             gui.display_time_mode += 1
             if gui.display_time_mode > 2:
@@ -7692,6 +7731,7 @@ class BottomBarType1:
             draw_text((x - 5, y), '-', colours.time_playing,
                       12)
         elif gui.display_time_mode == 2:
+            x -= 4
             text_time = get_display_time(pctl.playing_time)
             draw_text((x - 25, y), text_time, colours.time_playing,
                       12)
@@ -9291,11 +9331,14 @@ while running:
             #     draw_border = True
 
             # print(lastfm.get_bio(pctl.master_library[pctl.track_queue[pctl.queue_step]].artist))
-            # show_playlist ^= True
+            # gui.show_playlist ^= True
 
             # b_info_bar ^= True
             # playlist_panel ^= True
-            bottom_bar1.set_mode2()
+
+            #bottom_bar1.set_mode2()
+            #gui.full_gallery ^= True
+            gui.show_playlist ^= True
 
             key_F7 = False
 
@@ -9903,15 +9946,16 @@ while running:
             if side_drag is True:
                 side_panel_size = window_size[0] - mouse_position[0]
 
-            if side_panel_size < 100:
-                side_panel_size = 100
-            if side_panel_size > window_size[1] - 77 and album_mode is not True:
-                side_panel_size = window_size[1] - 77
+            if gui.show_playlist:
+                if side_panel_size < 100:
+                    side_panel_size = 100
+                if side_panel_size > window_size[1] - 77 and album_mode is not True:
+                    side_panel_size = window_size[1] - 77
 
-            if album_mode is True:
-                if side_panel_size > window_size[0] - 300:
-                    side_panel_size = window_size[0] - 300
-                playlist_width = window_size[0] - side_panel_size - 30
+                if album_mode is True:
+                    if side_panel_size > window_size[0] - 300:
+                        side_panel_size = window_size[0] - 300
+                    playlist_width = window_size[0] - side_panel_size - 30
 
             # ALBUM GALLERY RENDERING:
             # Gallery view
@@ -9921,7 +9965,11 @@ while running:
 
                 rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
                         window_size[1] - panelY - panelBY - 0]
+                if not gui.show_playlist:
+                    rect = [0, panelY, window_size[0],
+                            window_size[1] - panelY - panelBY - 0]
                 draw.rect_r(rect, colours.side_panel_background, True)
+
 
                 area_x = window_size[0] - playlist_width + 20
 
@@ -10132,7 +10180,8 @@ while running:
                 gui.pl_update += 1
                 reload()
 
-            if show_playlist:
+
+            if gui.show_playlist:
 
                 # playlist hit test
                 if coll_point(mouse_position, (playlist_left, playlist_top, playlist_width, window_size[1] - panelY - panelBY)) and not drag_mode and (
@@ -10630,10 +10679,6 @@ while running:
                                                 line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
                                                 draw_text((playlist_width + 39, block2 + 35), line, colours.side_bar_line2, 11)
 
-
-                if colours.tb_line != colours.playlist_panel_background and GUI_Mode == 1:
-                    draw.line(0, panelY, window_size[0], panelY, colours.tb_line)
-
                 # Seperation Line Drawing
                 if side_panel_enable:
 
@@ -10654,15 +10699,14 @@ while running:
                     draw.line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
 
 
-                # New Bottom Bar
-
             # BOTTOM BAR!
             # C-BB
             bottom_bar1.render()
 
-
             # NEW TOP BAR
             # C-TBR
+            if colours.tb_line != colours.playlist_panel_background and GUI_Mode == 1:
+                draw.line(0, panelY, window_size[0], panelY, colours.tb_line)
             if GUI_Mode == 1:
                 top_panel.render()
 
