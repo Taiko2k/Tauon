@@ -4709,7 +4709,9 @@ def goto_album(playlist_no):
     row = 0
 
     for i in range(len(album_dex)):
-        if album_dex[i] > playlist_no - 1:
+        if i == len(album_dex) - 1:
+            break
+        if album_dex[i + 1] - 1 > playlist_no - 1:
             break
         row += 1
         if row > row_len - 1:
@@ -4720,7 +4722,7 @@ def goto_album(playlist_no):
     if album_pos_px - 20 < px < album_pos_px + window_size[1]:
         pass
     else:
-        album_pos_px = px - 60 # - (album_mode_art_size - album_v_gap)
+        album_pos_px = px - 60
         album_pos_px += 10
 
         if album_pos_px < 0 - 55:
@@ -5191,7 +5193,8 @@ def standard_view_deco():
     return [line_colour, colours.menu_background, None]
 
 def gallery_only_view():
-
+    if gui.show_playlist is False:
+        return
     if not album_mode:
         toggle_album_mode()
     gui.show_playlist = False
@@ -8550,7 +8553,7 @@ class StandardPlaylist:
 
         if (right_click and playlist_top + 40 + playlist_row_height * w < mouse_position[1] < window_size[
             1] - 55 and
-                    mouse_position[0] > playlist_left + 15):
+                    playlist_width + playlist_left > mouse_position[0] > playlist_left + 15):
             playlist_menu.activate()
 
         if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top\
@@ -9965,12 +9968,15 @@ while running:
 
             if album_mode:
 
-                rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
-                        window_size[1] - panelY - panelBY - 0]
+
                 if not gui.show_playlist:
                     rect = [0, panelY, window_size[0],
                             window_size[1] - panelY - panelBY - 0]
-                draw.rect_r(rect, colours.side_panel_background, True)
+                    draw.rect_r(rect, colours.playlist_panel_background, True)
+                else:
+                    rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
+                            window_size[1] - panelY - panelBY - 0]
+                    draw.rect_r(rect, colours.side_panel_background, True)
 
 
                 area_x = window_size[0] - playlist_width + 20
@@ -10044,20 +10050,27 @@ while running:
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                 albumtitle = colours.grey(150)
 
-                            if mouse_click and not focused and coll_point(mouse_position, (
+                            if (mouse_click or right_click) and not focused and coll_point(mouse_position, (
                             x, y, album_mode_art_size, album_mode_art_size + 40)) and panelY < mouse_position[1] < \
                                             window_size[1] - panelBY and \
                                     mouse_position[1] < b_info_y:
 
-                                if info[0] == 1 and pctl.playing_state == 2:
-                                    pctl.play()
-                                elif info[0] == 1 and pctl.playing_state > 0:
-                                    playlist_position = album_dex[album_on]
-                                else:
-                                    playlist_position = album_dex[album_on]
-                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+                                if mouse_click:
 
-                                pctl.show_current()
+                                    if info[0] == 1 and pctl.playing_state == 2:
+                                        pctl.play()
+                                    elif info[0] == 1 and pctl.playing_state > 0:
+                                        playlist_position = album_dex[album_on]
+                                    else:
+                                        playlist_position = album_dex[album_on]
+                                        pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                    pctl.show_current()
+
+                                else:
+                                    playlist_selected = album_dex[album_on]
+                                    playlist_position = playlist_selected
+                                    pctl.render_playlist()
 
                             c_index = default_playlist[album_dex[album_on]]
 
