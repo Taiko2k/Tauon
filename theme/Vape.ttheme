@@ -41,7 +41,7 @@
 #-Bottom panel------
 
 55,55,55		buttons off
-120,120,120		buttons over
+170,170,170		buttons over
 150,150,150		buttons active
 
 180,194,107		playing time
