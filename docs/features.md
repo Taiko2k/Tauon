@@ -24,6 +24,7 @@
 - Text Encoding fix (Japanese only)
 - Sorting
 - Skip counting
+- Importing and exporting XSPF playlist files (cross-app compatibility not tested)
 
 ##### Other common player features not implemented:
 
@@ -41,7 +42,6 @@
  - DSP
  - Audiobooks
  - Tag editing
- - Playlist import/export
  - External services
  - Library view
  - Ratings

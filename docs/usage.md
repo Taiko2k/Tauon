@@ -12,9 +12,9 @@ Basic Usage
 - Clear playlist and re-import
 
 
-##### Upgrading:
+##### Upgrading / Moving:
 
-- Clean install recommended. Copy 'star.p' file from old install to keep play counts.
+- Copy 'star.p' file from old install to keep play counts.
 
 Advanced Use
 ============
@@ -70,8 +70,17 @@ Enable the menu entry in config.txt
 
 There is currently no support for modifying files except for file names.
 An external tag editor can be used. (I reccomend MusicBrainz Picard). 
-After editing tracks externally, metadata can be updated by: Right Click Track -> Meta... -> Reload Metadata
+After editing tracks externally, metadata can be updated by: Right Click Track -> Meta... -> Reload Metadata (Providing that the file names were not externally changed)
 
+
+##### Importing/Exporting Playlists
+
+Playlists can be backed up and shared using the XSPF playlist file format. 
+
+To import; drag and drop playlist file onto program window. (Any playlist files in subfolders will be ignored)
+To export; right click playlist tab and select Export.
+Note: Its best to import any corresponding audio files before importing playlists
+Note: Importing large playlists can take a very long time, cleaning database beforehand (MENU->Database->Remove Missing Tracks) may help speed this up
 
 User data files
 ================

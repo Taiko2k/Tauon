@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.5.7"
+t_version = "v1.6.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -3541,7 +3541,7 @@ def load_xspf(path):
         # First checking for a full filepath match
         if 'location' in track and 'file:///' in track['location']:
             location = track['location'][8:]
-            for key, value in master_library.items():
+            for key, value in pctl.master_library.items():
                 if value.fullpath == location:
                     if os.path.isfile(value.fullpath):
                         playlist.append(key)
@@ -3552,7 +3552,7 @@ def load_xspf(path):
 
         # Then check for title, artist and album metadata match
         if 'title' in track and 'artist' in track and 'album' in track:
-            for key, value in master_library.items():
+            for key, value in pctl.master_library.items():
                 if value.artist == track['artist'] and value.title == track['title'] and \
                                 value.album == track['album'] and os.path.isfile(value.fullpath):
                     playlist.append(key)
@@ -3563,7 +3563,7 @@ def load_xspf(path):
 
         # Then check for just title and artist match
         if 'title' in track and 'artist' in track:
-            for key, value in master_library.items():
+            for key, value in pctl.master_library.items():
                 if value.artist == track['artist'] and value.title == track['title'] and os.path.isfile(value.fullpath):
                     playlist.append(key)
                     found = True
@@ -3574,7 +3574,7 @@ def load_xspf(path):
         # As a last resort for a live track, match a duration to within 1 second and file name
         if 'duration' in track and 'location' in track:
             base = os.path.basename(track['location'])
-            for key, value in master_library.items():
+            for key, value in pctl.master_library.items():
                 if value.filename == base:
                     if track['duration'].isdigit() and os.path.isfile(value.fullpath):
                         if abs(int(int(track['duration']) / 1000) - value.length) < 2:
@@ -3587,6 +3587,7 @@ def load_xspf(path):
         if 'file:///' in track['location'] or 'title' in track:
             nt = TrackClass()
             nt.index = master_count
+            nt.found = False
 
             if 'file:///' in track['location']:
                 location = track['location'][8:]
@@ -3595,6 +3596,8 @@ def load_xspf(path):
                 nt.parent_folder_path = os.path.dirname(location.replace('\\', '/'))
                 nt.parent_folder_name = os.path.splitext(os.path.basename(location))[0]
                 nt.file_ext = os.path.splitext(os.path.basename(location))[1][1:].upper()
+                if os.path.isfile(location):
+                    nt.found = True
             if 'artist' in track:
                 nt.artist = track['artist']
             if 'title' in track:
@@ -3604,7 +3607,6 @@ def load_xspf(path):
             if 'album' in track:
                 nt.album = track['album']
             nt.is_cue = False
-            nt.found = False
             pctl.master_library[master_count] = nt
             playlist.append(master_count)
             master_count += 1
@@ -4154,7 +4156,7 @@ def export_xspf(pl):
         else:
             subprocess.Popen(['xdg-open', line])
 
-tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
+# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 def reload():
 
@@ -4278,6 +4280,7 @@ def delete_playlist(index):
     reload()
 
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True)
+tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 
 def append_playlist(index):
@@ -4940,7 +4943,7 @@ x_menu.add("Create Empty Playlist", new_playlist)
 
 x_menu.add("Settings...", activate_info_box)
 
-x_menu.add_sub("Database...", 120)
+x_menu.add_sub("Database...", 140)
 
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
 
@@ -4991,29 +4994,30 @@ def export_stats():
 def export_database():
 
     xport = open('DatabaseExport.csv', 'wb')
-    for num in range(master_count):
+    for index, track in pctl.master_library.items():
+
         line = []
         # print(str(pctl.master_library[num]))
         # continue
         # print(pctl.master_library[num])
-        line.append(str(pctl.master_library[num].artist))
-        line.append(str(pctl.master_library[num].title))
-        line.append(str(pctl.master_library[num].album))
-        line.append(str(pctl.master_library[num].track_number))
-        if pctl.master_library[num].is_cue == False:
+        line.append(str(track.artist))
+        line.append(str(track.title))
+        line.append(str(track.album))
+        line.append(str(track.track_number))
+        if track.is_cue == False:
             line.append('FILE')
         else:
             line.append('CUE')
-        line.append(str(pctl.master_library[num].length))
-        line.append(str(pctl.master_library[num].date))
-        line.append(pctl.master_library[num].genre)
+        line.append(str(track.length))
+        line.append(str(track.date))
+        line.append(track.genre)
 
-        key = pctl.master_library[num].title + pctl.master_library[num].filename
+        key = track.title + track.filename
         if key in pctl.star_library:
             line.append(str(int(pctl.star_library[key])))
         else:
             line.append('0')
-        line.append(pctl.master_library[num].fullpath)
+        line.append(track.fullpath)
 
         for g in range(len(line)):
             line[g] = line[g].encode('utf-8')
@@ -5041,6 +5045,17 @@ def reset_missing_flags():
     for index in default_playlist:
         pctl.master_library[index].found = True
 
+
+cm_clean_db = False
+
+
+def clean_db():
+
+    global cm_clean_db
+    cm_clean_db = True
+    show_message("Working on it...")
+
+x_menu.add_to_sub("Remove Missing Tracks", 0, clean_db)
 
 # x_menu.add('Reset Missing Flags', reset_missing_flags)
 x_menu.add_to_sub("Reset Missing Flags", 0, reset_missing_flags)
@@ -5748,8 +5763,8 @@ def loader():
 
     def cache_paths():
         dic = {}
-        for i in range(len(pctl.master_library)):
-            dic[pctl.master_library[i].fullpath.replace('\\', '/')] = i
+        for key, value in pctl.master_library.items():
+            dic[value.fullpath.replace('\\', '/')] = key
         return dic
 
     # print(pctl.master_library)
@@ -5758,9 +5773,35 @@ def loader():
     global transcode_state
     global default_player
     global album_art_gen
+    global cm_clean_db
 
     while True:
         time.sleep(0.05)
+
+        # Clean database
+        if cm_clean_db is True:
+            items_removed = 0
+            old_db = copy.deepcopy(pctl.master_library)
+            for index, track in pctl.master_library.items():
+                time.sleep(0.0005)
+                if not os.path.isfile(track.fullpath):
+                    del old_db[index]
+                    items_removed += 1
+                    for playlist in pctl.multi_playlist:
+                        while index in playlist[2]:
+                            playlist[2].remove(index)
+
+            pctl.master_library = old_db
+            cm_clean_db = False
+            show_message("Cleaning complete. " + str(items_removed) + " items removed from database")
+            if album_mode:
+                reload_albums(True)
+            if gui.combo_mode:
+                reload_albums()
+                combo_pl_render.pl_pos_px = 0
+                combo_pl_render.prep(True)
+            gui.update = 1
+            gui.pl_update = 1
 
         # FOLDER ENC
         if len(transcode_list) > 0:
@@ -6894,7 +6935,7 @@ class Over:
         draw_text((x + 8 + 10 + 130, y + 40), line, colours.grey(200), 12)
         y += 20
         draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Database:", colours.grey(200), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(master_count), colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(pctl.master_library)), colours.grey(200), 12)
         y += 20
         y += 20
         draw_text((x + 8 + 10 + 10, y + 40), "Total Playtime:", colours.grey(200), 12)
