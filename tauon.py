@@ -127,6 +127,8 @@ import webbrowser
 import pyperclip
 import base64
 import re
+import xml.etree.ElementTree as ET
+from xml.sax.saxutils import escape
 
 from ctypes import *
 
@@ -3502,6 +3504,93 @@ def prep_gal():
 # dst3.w = 28
 # dst3.h = 14
 
+def load_xspf(path):
+
+    name = os.path.basename(path)[:-5]
+    e = ET.parse(path).getroot()
+    a = []
+
+    b = {}
+    if 'track' in e[0][0].tag:
+        for track in e[0]:
+            for item in track:
+                if 'title' in item.tag:
+                    b['title'] = item.text
+                if 'location' in item.tag:
+                    b['location'] = item.text
+                if 'creator' in item.tag:
+                    b['artist'] = item.text
+                if 'album' in item.tag:
+                    b['album'] = item.text
+                if 'duration' in item.tag:
+                    b['duration'] = item.text
+
+            a.append(copy.deepcopy(b))
+    #         print(b)
+    # print(a)
+
+
+    playlist = []
+    missing = 0
+
+    for track in a:
+        found = False
+        # First checking for a full filepath match
+        if 'location' in track and 'file:///' in track['location']:
+            location = track['location'][5:]
+            for key, value in master_library.items():
+                if value.fullpath == location:
+                    if os.path.isfile(value.fullpath):
+                        playlist.append(key)
+                        found = True
+                        break
+            if found is True:
+                continue
+
+        # Then check for title, artist and album metadata match
+        if 'title' in track and 'artist' in track and 'album' in track:
+            for key, value in master_library.items():
+                if value.artist == track['artist'] and value.title == track['title'] and \
+                                value.album == track['album'] and os.path.isfile(value.fullpath):
+                    playlist.append(key)
+                    found = True
+                    break
+            if found is True:
+                continue
+
+        # Then check for just title and artist match
+        if 'title' in track and 'artist' in track:
+            for key, value in master_library.items():
+                if value.artist == track['artist'] and value.title == track['title'] and os.path.isfile(value.fullpath):
+                    playlist.append(key)
+                    found = True
+                    break
+            if found is True:
+                continue
+
+        # As a last resort for a live track, match a duration to within 1 second and file name
+        if 'duration' in track and 'location' in track:
+            base = os.path.basename(track['location'])
+            for key, value in master_library.items():
+                if value.filename == base:
+                    if track['duration'].isdigit() and os.path.isfile(value.fullpath):
+                        if abs(int(int(track['duration']) / 1000) - value.length) < 2:
+                            playlist.append(key)
+                            found = True
+                            break
+            if found is True:
+                continue
+
+        missing += 1
+
+    print(playlist)
+    print(missing)
+    if missing > 0:
+        show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
+    pctl.multi_playlist.append([name, 0, playlist, 0, 0, 0])
+    gui.update = 1
+
+
 panelY = 30
 panelBY = 51
 
@@ -3983,7 +4072,6 @@ def activate_genre_box(index):
 
 
 def rename_playlist(index):
-    global pctl
     global rename_playlist_box
     global rename_index
     global NPN
@@ -3995,6 +4083,45 @@ def rename_playlist(index):
 
 tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True)
 
+def export_xspf(pl):
+
+
+    direc = os.path.join(user_directory, 'playlists')
+    if not os.path.exists(direc):
+        os.makedirs(direc)
+    target = os.path.join(direc, pctl.multi_playlist[pl][0] + '.xspf')
+
+    xport = open(target, 'w', encoding='utf-8')
+    xport.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    xport.write('<playlist version="1" xmlns="http://xspf.org/ns/0/">\n')
+    xport.write('  <trackList>\n')
+
+    for number in pctl.multi_playlist[pl][2]:
+        track = pctl.master_library[number]
+        xport.write('    <track>\n')
+        xport.write('      <title>' + escape(track.title) + '</title>\n')
+        xport.write('      <location>file:///' + escape(track.fullpath) + '</location>\n')
+        xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
+        xport.write('      <album>' + escape(track.album) + '</album>\n')
+        xport.write('      <duration>' + str(track.length * 1000) + '</duration>\n')
+        xport.write('    </track>\n')
+    xport.write('  </trackList>\n')
+    xport.write('</playlist>\n\n')
+    xport.close()
+
+    if system == 'windows':
+        line = r'explorer /select,"%s"' % (
+            target.replace("/", "\\"))
+        subprocess.Popen(line)
+    else:
+        line = direc
+        line += "/"
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
+
+tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 def reload():
 
@@ -4785,7 +4912,6 @@ x_menu.add_sub("Database...", 120)
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
 
 def export_stats():
-    global pctl
 
     playlist_time = 0
     play_time = 0
@@ -5495,10 +5621,14 @@ def loader():
             add_from_cue(path)
             return 0
 
+        if len(path) > 4 and os.path.split(path)[1][-5:].lower() == '.xspf':
+            print('found XSPF file at: ' + path)
+            load_xspf(path)
+            return 0
+
         if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
             return 1
 
-        global gui
         to_got += 1
         gui.update = 1
 
@@ -5566,7 +5696,7 @@ def loader():
 
 
     def gets(direc):
-        dupe = False
+
         global DA_Formats
         global master_count
 
@@ -7229,6 +7359,9 @@ class TopPanel:
 
         for i, tab in enumerate(pctl.multi_playlist):
 
+            if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                break
+
             if draw_alt and i != pctl.playlist_active:
                 continue
 
@@ -7430,6 +7563,8 @@ class TopPanel:
 
         if loading_in_progress:
             text = "Importing...  " + str(to_got) + "/" + str(to_get)
+            if to_got == 'xspf':
+                text = "Importing XSPF playlist"
             bg = [245, 205, 0, 255]
         elif len(transcode_list) > 0:
             text = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
@@ -8973,6 +9108,9 @@ while running:
             i_y = i_y.contents.value
             i_x = i_x.contents.value
 
+            if len(load_to) > 0 and not loading_in_progress and len(items_loaded) == 0:
+                load_to = []
+
             if i_y < panelY:
                 x = top_panel.start_space_left
                 for w in range(len(pctl.multi_playlist)):
@@ -9343,7 +9481,91 @@ while running:
 
             #bottom_bar1.set_mode2()
             #gui.full_gallery ^= True
-            gui.show_playlist ^= True
+            #gui.show_playlist ^= True
+
+            # e = ET.parse('a.xspf').getroot()
+            # a = []
+            #
+            #
+            # b = {}
+            # if 'track' in e[0][0].tag:
+            #     for track in e[0]:
+            #         for item in track:
+            #             if 'title' in item.tag:
+            #                 b['title'] = item.text
+            #             if 'location' in item.tag:
+            #                 b['location'] = item.text
+            #             if 'creator' in item.tag:
+            #                 b['artist'] = item.text
+            #             if 'album' in item.tag:
+            #                 b['album'] = item.text
+            #             if 'duration' in item.tag:
+            #                 b['duration'] = item.text
+            #
+            #         a.append(copy.deepcopy(b))
+            # #         print(b)
+            # # print(a)
+            #
+            # playlist = []
+            # missing = 0
+            #
+            # for track in a:
+            #     found = False
+            #     # First checking for a full filepath match
+            #     if 'location' in track and 'file:///' in track['location']:
+            #         for key, value in master_library.items():
+            #             if value.fullpath in track['location'] and os.path.isfile(value.fullpath):
+            #                 playlist.append(key)
+            #                 found = True
+            #                 break
+            #         if found is True:
+            #             continue
+            #     # Then check for title, artist and album metadata match
+            #     if 'title' in track and 'artist' in track and 'album' in track:
+            #         for key, value in master_library.items():
+            #             if value.artist == track['artist'] and value.title == track['title'] and \
+            #                             value.album == track['album'] and os.path.isfile(value.fullpath):
+            #                 playlist.append(key)
+            #                 found = True
+            #                 break
+            #         if found is True:
+            #             continue
+            #     # Then check for just title and artist match
+            #     if 'title' in track and 'artist' in track:
+            #         for key, value in master_library.items():
+            #             if value.artist == track['artist'] and value.title == track['title'] and os.path.isfile(value.fullpath):
+            #                 playlist.append(key)
+            #                 found = True
+            #                 break
+            #         if found is True:
+            #             continue
+            #     # As a last resort for a live track, match a duration to within 1 second and file name
+            #     if 'duration' in track and 'location' in track:
+            #         for key, value in master_library.items():
+            #             if os.path.basename(value.fullpath) in os.path.basename(track['location']):
+            #                 if track['duration'].isdigit() and os.path.isfile(value.fullpath):
+            #                     if abs(int(int(track['duration']) / 1000) - value.length) < 2:
+            #                         playlist.append(key)
+            #                         found = True
+            #                         break
+            #         if found is True:
+            #             continue
+            #     # Finally, check for any matching including dead URI's
+            #     if 'location' in track and 'file:///' in track['location']:
+            #         for key, value in master_library.items():
+            #             if value.fullpath in track['location']:
+            #                 playlist.append(key)
+            #                 found = True
+            #                 break
+            #         if found is True:
+            #             continue
+            #
+            #     missing += 1
+            #
+            # print(playlist)
+            # print(missing)
+            # pctl.multi_playlist.append([title, 0, playlist, 0, 0, 0])
+            # gui.update = 1
 
             key_F7 = False
 
@@ -9553,6 +9775,12 @@ while running:
                 loaderCommand = LC_Folder
             else:
                 loaderCommand = LC_File
+                if '.xspf' in paths_to_load:
+                    to_got = 'xspf'
+                    to_get = 0
+                else:
+                    to_got = 1
+                    to_get = 1
             loaderCommandReady = True
             # print(dropped_file)
             del dropped_file[0]
@@ -10185,6 +10413,8 @@ while running:
             # --------------------------------------------------------------------------
             # Main Playlist:
 
+            # print(load_to)
+            # time.sleep(0.7)
 
             if len(items_loaded) > 0:
 
