@@ -6,6 +6,7 @@ v1.5.7
  - Added new formats for play time indicator
  - Added new menu button to bottom panel
  - Added gallery only view
+ - Added importing and exporting support for XSPF format playlists
  - Moved view modes into new view menu
  - Moved playback options to new menu
  - Tweaked bottom panel visual elements
