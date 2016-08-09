@@ -10288,6 +10288,7 @@ while running:
                                 else:
                                     playlist_selected = album_dex[album_on]
                                     playlist_position = playlist_selected
+                                    shift_selection = [playlist_selected]
                                     pctl.render_playlist()
 
                             c_index = default_playlist[album_dex[album_on]]

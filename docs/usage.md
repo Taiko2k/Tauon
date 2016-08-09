@@ -68,7 +68,7 @@ Enable the menu entry in config.txt
 
 ##### Tag Editing
 
-There is currently no support for modifying files except for file names.
+There is currently no support for modifying audio files except for file names.
 An external tag editor can be used. (I reccomend MusicBrainz Picard). 
 After editing tracks externally, metadata can be updated by: Right Click Track -> Meta... -> Reload Metadata (Providing that the file names were not externally changed)
 
