@@ -3584,20 +3584,23 @@ def load_xspf(path):
             if found is True:
                 continue
 
-        if 'file:///' in track['location'] or 'title' in track:
+        if ('location' in track and 'file:///' in track['location']) or 'title' in track:
             nt = TrackClass()
             nt.index = master_count
             nt.found = False
 
-            if 'file:///' in track['location']:
+            if 'location' in track and 'file:///' in track['location']:
                 location = track['location'][8:]
                 nt.fullpath = location.replace('\\', '/')
                 nt.filename = os.path.basename(location)
                 nt.parent_folder_path = os.path.dirname(location.replace('\\', '/'))
-                nt.parent_folder_name = os.path.splitext(os.path.basename(location))[0]
+                nt.parent_folder_name = os.path.splitext(os.path.basename(nt.parent_folder_path))[0]
                 nt.file_ext = os.path.splitext(os.path.basename(location))[1][1:].upper()
                 if os.path.isfile(location):
                     nt.found = True
+                    missing -= 1
+            elif 'album' in track:
+                nt.parent_folder_name = track['album']
             if 'artist' in track:
                 nt.artist = track['artist']
             if 'title' in track:
@@ -3614,8 +3617,6 @@ def load_xspf(path):
 
         missing += 1
 
-    print(playlist)
-    print(missing)
     if missing > 0:
         show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
     pctl.multi_playlist.append([name, 0, playlist, 0, 0, 0])
