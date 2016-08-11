@@ -8,15 +8,19 @@ v1.6.0
  - Added gallery only view
  - Added importing and exporting support for XSPF format playlists
  - Added clean database function
+ - Added option to show title in bottom panel for some view modes
  - Moved view modes into new view menu
  - Moved playback options to new menu
  - Tweaked bottom panel visual elements
  - Tweaked gallery album goto function
+ - Changed F1 shortcut to toggle folder breaking for current playlist
  - Fixed layout reset window size being slightly too small
  - Fixed rate at which seek bar updates
  - Fixed drag on tab not working in albums plus tracks view
  - Fixed images reloading when switching layouts
  - Fixed image cache for gallery being unlimited
+ - Fixed single track imports sometimes adding to wrong playlist
+ - Other small tweaks and fixes to user interface
 
 v1.5.2
 
