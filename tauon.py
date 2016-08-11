@@ -380,8 +380,6 @@ info_panel_position = (200, 15)
 info_panel_vert_spacing = 20
 info_panel_hor_spacing = 0
 
-load_to = []
-
 scroll_enable = True
 break_enable = True
 dd_index = False
@@ -444,7 +442,6 @@ Mode_Buttons = []
 
 r = (130, 85, 10, 15)
 
-dropped_file = []
 cargo = []
 default_player = 'BASS'
 # ---------------------------------------------------------------------
@@ -539,10 +536,10 @@ LC_File = 3
 
 loaderCommand = LC_None
 loaderCommandReady = False
-paths_to_load = []
+# paths_to_load = []
 master_count = 0
-items_loaded = []
-
+# items_loaded = []
+load_orders = []
 
 
 
@@ -581,6 +578,8 @@ class Prefs:
         
         self.enable_transcode = False
         self.show_rym = True
+        self.prefer_bottom_title = False
+
 
 
 prefs = Prefs()
@@ -600,6 +599,8 @@ class GuiVar:
         self.message_text = ""
         self.save_size = [450, 310]
         self.show_playlist = True
+        self.show_bottom_title = False
+        self.show_top_title = True
         
         self.level_update = False
         self.level_time = Timer()
@@ -669,6 +670,16 @@ class TrackClass:
         self.found = True
         self.skips = 0
 
+class LoadClass:
+
+    def __init__(self):
+
+        self.target = ""
+        self.playlist = 0
+        self.tracks = []
+        self.stage = 0
+
+
 # -----------------------------------------------------
 # STATE LOADING
 
@@ -721,6 +732,8 @@ try:
         combo_mode_art_size = save[31]
     if save[32] != None:
         gui.maximized = save[32]
+    if save[33] != None:
+        prefs.prefer_bottom_title = save[33]
 except:
     print('Error loading save file')
 
@@ -3487,23 +3500,6 @@ def prep_gal():
             folder = pctl.master_library[index].parent_folder_name
 
 
-# -----------------------------
-# LOADING EXTRA
-
-# c_image1 = IMG_Load(b_active_directory + b'/gui/play2.png')
-# c_play = SDL_CreateTextureFromSurface(renderer, c_image1)
-# dst_c1 = SDL_Rect(25, window_size[1] - control_line_bottom)
-# dst_c1.w = 13
-# dst_c1.h = 14
-
-
-
-# s_image5 = IMG_Load(b_active_directory + b'/gui/rep.png')
-# c5 = SDL_CreateTextureFromSurface(renderer, s_image5)
-# dst3 = SDL_Rect(180, window_size[1] - control_line_bottom)
-# dst3.w = 28
-# dst3.h = 14
-
 def load_xspf(path):
 
     global master_count
@@ -3610,6 +3606,24 @@ def load_xspf(path):
             if 'album' in track:
                 nt.album = track['album']
             nt.is_cue = False
+            if nt.found is True:
+                audio = auto.File(location)
+                nt.track_number = str(audio.track)
+                nt.bitrate = audio.bitrate
+                nt.date = audio.year
+                nt.genre = rm_16(audio.genre)
+                nt.samplerate = audio.sample_rate
+                nt.size = audio.size
+                nt.length = audio.duration
+                if nt.title == "":
+                    nt.title = rm_16(audio.title)
+                if nt.artist == "":
+                    nt.artist = rm_16(audio.artist)
+                if nt.album == "":
+                    nt.album = rm_16(audio.album)
+
+
+
             pctl.master_library[master_count] = nt
             playlist.append(master_count)
             master_count += 1
@@ -4117,6 +4131,9 @@ tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True)
 
 def export_xspf(pl):
 
+    if len(pctl.multi_playlist[pl][2]) < 1:
+        show_message("There are no tracks in this playlist. Nothing to export")
+        return
 
     direc = os.path.join(user_directory, 'playlists')
     if not os.path.exists(direc):
@@ -5408,11 +5425,9 @@ def loader():
     global cue_list
     global loaderCommand
     global loaderCommandReady
-    global paths_to_load
     global DA_Formats
     global master_count
     global home
-    global items_loaded
     global loading_in_progress
     global added
     global to_get
@@ -6028,22 +6043,25 @@ def loader():
             del gall_ren.queue[0]
 
         if loaderCommandReady is True:
-            if loaderCommand == LC_Folder:
-                to_get = 0
-                to_got = 0
-                loaded_pathes_cache = cache_paths()
-                pre_get(paths_to_load)
-                gets(paths_to_load)
-            elif loaderCommand == LC_File:
-                loaded_pathes_cache = cache_paths()
-                add_file(paths_to_load)
+            for order in load_orders:
+                if order.stage == 1:
+                    if loaderCommand == LC_Folder:
+                        to_get = 0
+                        to_got = 0
+                        loaded_pathes_cache = cache_paths()
+                        pre_get(order.target)
+                        gets(order.target)
+                    elif loaderCommand == LC_File:
+                        loaded_pathes_cache = cache_paths()
+                        add_file(order.target)
 
-            loaderCommand = LC_Done
-            # print('ADDED: ' + str(added))
-            items_loaded = added
-            added = []
-            loaderCommandReady = False
-            loading_in_progress = False
+                    loaderCommand = LC_Done
+                    # print('ADDED: ' + str(added))
+                    order.tracks = added
+                    added = []
+                    order.stage = 2
+                    loaderCommandReady = False
+                    break
 
 
 loaderThread = threading.Thread(target=loader)
@@ -6677,6 +6695,12 @@ def toggle_rym(mode=0):
         return prefs.show_rym
     prefs.show_rym ^= True
 
+
+def toggle_sbt(mode=0):
+    if mode == 1:
+        return prefs.prefer_bottom_title
+    prefs.prefer_bottom_title ^= True
+
 config_items.append(['Hide scroll bar', toggle_scroll])
 
 config_items.append(['Break playlist by folders', toggle_break])
@@ -6890,7 +6914,8 @@ class Over:
         y += 30
         if default_player == 'BASS':
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
-
+        y += 30
+        self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
         x += 50
@@ -7046,8 +7071,6 @@ class Over:
 
     def files(self):
 
-        global dropped_file
-        global load_to
 
         self.lock = True
 
@@ -7238,8 +7261,11 @@ class Over:
         if coll_point(mouse_position, box):
             draw.rect_r(box, [40, 40, 40, 60], True)
             if self.click:
-                load_to.append(copy.deepcopy(pctl.playlist_active))
-                dropped_file.append(copy.deepcopy(self.current_path))
+                order = LoadClass()
+                order.playlist = copy.deepcopy(pctl.playlist_active)
+                order.target = copy.deepcopy(self.current_path)
+                load_orders.append(copy.deepcopy(order))
+
 
         draw.rect_r(box, colours.grey(50))
         fields.add(box)
@@ -7252,8 +7278,11 @@ class Over:
             draw.rect_r(box, [40, 40, 40, 60], True)
             if self.click:
                 pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
-                load_to.append(len(pctl.multi_playlist) - 1)
-                dropped_file.append(copy.deepcopy(self.current_path))
+                order = LoadClass()
+                order.playlist = len(pctl.multi_playlist) - 1
+                order.target = copy.deepcopy(self.current_path)
+                load_orders.append(copy.deepcopy(order))
+
 
         draw.rect_r(box, colours.grey(50))
         fields.add(box)
@@ -7272,8 +7301,11 @@ class Over:
                     full_path = os.path.join(self.current_path, item)
                     if os.path.isdir(full_path):
                         pctl.multi_playlist.append([item, 0, [], 0, 0, 0])
-                        load_to.append(len(pctl.multi_playlist) - 1)
-                        dropped_file.append(full_path)
+                        order = LoadClass()
+                        order.playlist = len(pctl.multi_playlist) - 1
+                        order.target = copy.deepcopy(full_path)
+                        load_orders.append(copy.deepcopy(order))
+
 
         draw.rect_r(box, colours.grey(50))
         fields.add(box)
@@ -7674,7 +7706,7 @@ class TopPanel:
             x += 100
 
 
-        if pctl.playing_state > 0 and (not side_panel_enable or (block6 and not album_mode and not pctl.broadcast_active)):
+        if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
 
             draw_text2((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12, window_size[0] - offset - x)
 
@@ -7901,7 +7933,7 @@ class BottomBarType1:
         draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
                   colours.volume_bar_fill, True)
 
-        if album_mode and pctl.playing_state > 0 and window_size[0] > 820:
+        if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820:
 
             title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
             artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
@@ -8357,7 +8389,7 @@ class StandardPlaylist:
         # Determine highlight size
         if not custom_line_mode:
             highlight_left = playlist_left
-            highlight_right = playlist_width
+            highlight_right = playlist_width + 1
         else:
             highlight_left = playlist_left - 20 + highlight_x_offset + highlight_left_custom
             highlight_right = playlist_width + 30 - highlight_right_custom - highlight_x_offset
@@ -8672,23 +8704,32 @@ class StandardPlaylist:
                 indexLine = ""
                 if n_track.artist != "" or \
                                 n_track.title != "":
+                    # force sequential indexing
+                    # if pctl.multi_playlist[pctl.playlist_active][4] == 1:
+                    #     line = str(p_track + 1)
+                    # else:
                     line = str(n_track.track_number)
                     line = line.split("/", 1)[0]
                     if len(line) > 0:
                         line += ". "
                     if dd_index and len(line) == 3:
                         line = "0" + line
-                    if len(line) == 3:
-                        line += "  "
+                    # if len(line) == 3:
+                    #     line += "  "
 
                     if len(line) > 1:
                         indexoffset = 21
+                    else:
+                        indexoffset = 5
 
                     indexLine = line
 
                     line = ""
                     if dd_index:
                         indexoffset += 2
+
+                    if len(indexLine) > 4:
+                        indexoffset += len(indexLine) * 5 - 15
 
                     indexoffset += playlist_x_offset
 
@@ -8716,6 +8757,14 @@ class StandardPlaylist:
                     line = \
                         os.path.splitext((n_track.filename))[
                             0]
+                    indexoffset = 6
+                    # if pctl.multi_playlist[pctl.playlist_active][4] == 1:
+                    #     indexLine = str(p_track + 1) + ". "
+                    #     if dd_index and len(indexLine) == 3:
+                    #         indexLine = "0" + indexLine
+                    #     indexoffset += 21 + len(indexLine) * 5 - 15
+
+
 
 
                 index = default_playlist[p_track]
@@ -9091,7 +9140,7 @@ playlist_view_length = int(((window_size[1] - playlist_top) / 16) - 1)
 
 running = True
 
-boarder = 1
+d_border = 1
 
 update_layout = True
 
@@ -9182,9 +9231,7 @@ while running:
             SDL_GetMouseState(i_x, i_y)
             i_y = i_y.contents.value
             i_x = i_x.contents.value
-
-            if len(load_to) > 0 and not loading_in_progress and len(items_loaded) == 0:
-                load_to = []
+            playlist_target = 0
 
             if i_y < panelY:
                 x = top_panel.start_space_left
@@ -9192,22 +9239,23 @@ while running:
                     wid = top_panel.tab_text_spaces[w] + top_panel.tab_extra_width
 
                     if x < i_x < x + wid:
-                        load_to.append(copy.deepcopy(w))
+                        playlist_target = w
+
                         print("Direct drop")
                         break
                     x += wid
                 else:
-                    load_to.append(copy.deepcopy(pctl.playlist_active))
+                    playlist_target = pctl.playlist_active
+
             else:
-                load_to.append(copy.deepcopy(pctl.playlist_active))
+                playlist_target = pctl.playlist_active
+
 
             dropped_file_sdl = event.drop.file
-            # print(dropped_file_sdl)
-            # dropped_file.append(str(dropped_file_sdl.decode("utf-8")))
-            dropped_file.append(str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))))
-            # print(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
-
-            # SDL_free(dropped_file_sdl)
+            load_order = LoadClass()
+            load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
+            load_order.playlist = playlist_target
+            load_orders.append(copy.deepcopy(load_order))
 
             # print('dropped: ' + str(dropped_file))
             gui.update += 1
@@ -9473,18 +9521,20 @@ while running:
         if len(arg_queue) > 0:
             i = 0
             while i < len(arg_queue):
+                load_order = LoadClass()
 
                 for w in range(len(pctl.multi_playlist)):
                     if pctl.multi_playlist[w][0] == "Default":
-                        #del pctl.multi_playlist[w][2][:]
-                        load_to.append(copy.deepcopy(w))
+                        load_order.playlist = copy.deepcopy(w)
                         break
                 else:
                     pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-                    load_to.append(len(pctl.multi_playlist) - 1)
+                    load_order.playlist = len(pctl.multi_playlist) - 1
                     switch_playlist(len(pctl.multi_playlist) - 1)
 
-                dropped_file.append(arg_queue[i])
+                load_order.target = arg_queue[i]
+                load_orders.append(copy.deepcopy(load_order))
+
                 i += 1
             arg_queue = []
             auto_play_import = True
@@ -9493,8 +9543,6 @@ while running:
         if mouse_click or right_click:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
-
-
 
         if key_F11:
             if fullscreen == 0:
@@ -9508,12 +9556,12 @@ while running:
             SDL_SetWindowFullscreen(t_window, 0)
 
         if key_F10:
-            if boarder == 0:
-                boarder = 1
+            if d_border == 0:
+                d_border = 1
                 SDL_SetWindowBordered(t_window, SDL_TRUE)
 
-            elif boarder == 1:
-                boarder = 0
+            elif d_border == 1:
+                d_border = 0
                 SDL_SetWindowBordered(t_window, SDL_FALSE)
 
         if key_F8:
@@ -9526,7 +9574,9 @@ while running:
             del_selected()
 
         if key_F1:
-            toggle_album_mode()
+            # Toggle force off folder break for viewed playlist
+            pctl.multi_playlist[pctl.playlist_active][4] ^= 1
+            gui.pl_update = 1
 
         if key_F5:
             pctl.playerCommand = 'encpause'
@@ -9757,34 +9807,39 @@ while running:
         mediaKey_pressed = False
 
 
-    if len(dropped_file) > 0:
-        if loading_in_progress == False and len(items_loaded) == 0:
-            loading_in_progress = True
+    if len(load_orders) > 0:
+        loading_in_progress = True
+        if loaderCommand == LC_None:
+            for order in load_orders:
+                if order.stage == 0:
+                    order.traget = order.target.replace('\\', '/')
+                    order.stage = 1
+                    if os.path.isdir(order.traget):
+                        loaderCommand = LC_Folder
+                    else:
+                        loaderCommand = LC_File
+                        if '.xspf' in order.traget:
+                            to_got = 'xspf'
+                            to_get = 0
+                        else:
+                            to_got = 1
+                            to_get = 1
+                    loaderCommandReady = True
+                    break
+    else:
+        loading_in_progress = False
 
-            paths_to_load = dropped_file[0].replace('\\', '/')
-            if os.path.isdir(paths_to_load):
-                loaderCommand = LC_Folder
-            else:
-                loaderCommand = LC_File
-                if '.xspf' in paths_to_load:
-                    to_got = 'xspf'
-                    to_get = 0
-                else:
-                    to_got = 1
-                    to_get = 1
-            loaderCommandReady = True
-            # print(dropped_file)
-            del dropped_file[0]
 
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
         gui.update += 1
         # gui.pl_update += 1
-        loading_in_progress = False
+        # loading_in_progress = False
 
     if update_layout:
         # update layout
         # C-UL
+
 
         mouse_click = False
         if not gui.maximized:
@@ -10405,17 +10460,17 @@ while running:
             # --------------------------------------------------------------------------
             # Main Playlist:
 
-            # print(load_to)
             # time.sleep(0.7)
 
-            if len(items_loaded) > 0:
-
-                pctl.multi_playlist[load_to[0]][2] += items_loaded
-                del load_to[0]
-                items_loaded = []
-                gui.update += 1
-                gui.pl_update += 1
-                reload()
+            if len(load_orders) > 0:
+                for i, order in enumerate(load_orders):
+                    if order.stage == 2:
+                        pctl.multi_playlist[order.playlist][2] += order.tracks
+                        gui.update += 1
+                        gui.pl_update += 1
+                        reload()
+                        del load_orders[i]
+                        break
 
 
             if gui.show_playlist:
@@ -10935,6 +10990,35 @@ while running:
                 if side_panel_enable:
                     draw.line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
 
+            # Title position logic
+            if album_mode:
+                gui.show_bottom_title = True
+                gui.show_top_title = False
+            elif gui.combo_mode:
+                if window_size[0] > 860:
+                    gui.show_bottom_title = prefs.prefer_bottom_title
+                    gui.show_top_title = not gui.show_bottom_title
+                else:
+                    gui.show_bottom_title = False
+                    gui.show_top_title = True
+            else:
+                if not side_panel_enable:
+                    if window_size[0] > 840:
+                        gui.show_bottom_title = prefs.prefer_bottom_title
+                        gui.show_top_title = not gui.show_bottom_title
+                    else:
+                        gui.show_bottom_title = False
+                        gui.show_top_title = True
+                else:
+                    if not block6:
+                        gui.show_bottom_title = False
+                        gui.show_top_title = False
+                    elif window_size[0] > 840:
+                        gui.show_bottom_title = prefs.prefer_bottom_title
+                        gui.show_top_title = not gui.show_bottom_title
+                    else:
+                        gui.show_bottom_title = False
+                        gui.show_top_title = True
 
             # BOTTOM BAR!
             # C-BB
@@ -12302,7 +12386,7 @@ save = [pctl.master_library,
         prefs.show_rym,
         combo_mode_art_size,
         gui.maximized,
-        None,
+        prefs.prefer_bottom_title,
         None,
         None,
         None,
