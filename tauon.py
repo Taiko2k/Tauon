@@ -4486,7 +4486,7 @@ def convert_folder(index):
 def transfer(index, args):
     global cargo
     global default_playlist
-    cargo = []
+    old_cargo = copy.deepcopy(cargo)
 
     if args[0] == 1 or args[0] == 0:  # copy
         if args[1] == 1:  # single track
@@ -4535,11 +4535,15 @@ def transfer(index, args):
             default_playlist += cargo
             # cargo = []
 
+        cargo = old_cargo
+
     reload()
 
 def temp_copy_folder(ref):
+    global cargo
     cargo = []
     transfer(ref, args=[1, 2])
+
 # Create combo album menu
 combo_menu = Menu(130)
 combo_menu.add('Open Folder', open_folder, pass_ref=True)

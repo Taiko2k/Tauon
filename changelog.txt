@@ -20,6 +20,7 @@ v1.6.0
  - Fixed images reloading when switching layouts
  - Fixed image cache for gallery being unlimited
  - Fixed single track imports sometimes adding to wrong playlist
+ - Fixed issue with pasting tracks
  - Other small tweaks and fixes to user interface
 
 v1.5.2
