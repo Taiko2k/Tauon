@@ -561,7 +561,6 @@ album_position = 0
 
 prefer_side = True
 dim_art = False
-append_date = True
 
 
 class Prefs:
@@ -579,6 +578,7 @@ class Prefs:
         self.enable_transcode = False
         self.show_rym = True
         self.prefer_bottom_title = False
+        self.append_date = True
 
 
 
@@ -734,6 +734,9 @@ try:
         gui.maximized = save[32]
     if save[33] != None:
         prefs.prefer_bottom_title = save[33]
+    if save[34] != None:
+        gui.display_time_mode = save[34]
+
 except:
     print('Error loading save file')
 
@@ -815,7 +818,7 @@ try:
     dd_index = view_prefs['dd-index']
     custom_line_mode = view_prefs['custom-line']
     thick_lines = view_prefs['thick-lines']
-    append_date = view_prefs['append-date']
+    prefs.append_date = view_prefs['append-date']
 except:
     print("warning: error loading settings")
 
@@ -3546,6 +3549,19 @@ def load_xspf(path):
             if found is True:
                 continue
 
+        # Then check for title, artist, album metadata and filename match
+        if 'duration' in track and 'title' in track and 'artist' in track and 'album' in track:
+            base = os.path.basename(track['location'])
+            for key, value in pctl.master_library.items():
+                if value.artist == track['artist'] and value.title == track['title'] and \
+                                value.album == track['album'] and os.path.isfile(value.fullpath) and \
+                                    value.filename == base:
+                    playlist.append(key)
+                    found = True
+                    break
+            if found is True:
+                continue
+
         # Then check for title, artist and album metadata match
         if 'title' in track and 'artist' in track and 'album' in track:
             for key, value in pctl.master_library.items():
@@ -4538,6 +4554,7 @@ def transfer(index, args):
         cargo = old_cargo
 
     reload()
+
 
 def temp_copy_folder(ref):
     global cargo
@@ -6661,11 +6678,11 @@ def toggle_thick(mode=0):
 
 
 def toggle_append_date(mode=0):
-    global append_date
+
 
     if mode == 1:
-        return append_date
-    append_date ^= True
+        return prefs.append_date
+    prefs.append_date ^= True
     gui.pl_update += 1
     gui.update += 1
 
@@ -6938,7 +6955,7 @@ class Over:
         y += 32
         draw_text((x, y, 2), t_version, colours.grey(200), 12)
         y += 20
-        draw_text((x, y, 2), "Copyright (c) 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
+        draw_text((x, y, 2), "Copyright © 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
@@ -8444,7 +8461,7 @@ class StandardPlaylist:
                 if len(line) < 6 and "CD" in line:
                     line = n_track.album
 
-                if append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
+                if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
                     line += " (" + n_track.date + ")"
 
                 if thick_lines:
@@ -9005,13 +9022,13 @@ class ComboPlaylist:
                                 w = draw.text_calc(album, 12) + 10
 
                                 x3 = x2 - 95 - 5
-                                if len(track.date) < 1 or not append_date:
+                                if len(track.date) < 1 or not prefs.append_date:
                                     x3 += 50
                                 draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
                                 draw_text((x3 + 5 - w, y1 - 8), album, colours.album_text, 12)
 
                                 # Draw date in header
-                                if append_date and len(track.date) > 1 and len(track.date) < 7:
+                                if prefs.append_date and len(track.date) > 1 and len(track.date) < 7:
 
                                     album = trunc_line(track.date, 12, window_size[0] - 120)
                                     w = draw.text_calc(album, 12) + 10
@@ -12324,6 +12341,7 @@ while running:
             SDL_SetWindowPosition(t_window, mp[0] - lm[0], mp[1] - lm[1])
 
     # auto save
+
     if pctl.total_playtime - time_last_save > 600:
         print("Auto Save")
         pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
@@ -12355,7 +12373,7 @@ view_prefs['break-enable'] = break_enable
 view_prefs['dd-index'] = dd_index
 view_prefs['custom-line'] = custom_line_mode
 view_prefs['thick-lines'] = thick_lines
-view_prefs['append-date'] = append_date
+view_prefs['append-date'] = prefs.append_date
 
 save = [pctl.master_library,
         master_count,
@@ -12391,7 +12409,7 @@ save = [pctl.master_library,
         combo_mode_art_size,
         gui.maximized,
         prefs.prefer_bottom_title,
-        None,
+        gui.display_time_mode,
         None,
         None,
         None,
