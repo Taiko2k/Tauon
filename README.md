@@ -1,7 +1,7 @@
 # Tauon Music Box
 
 Tauon Music Box is a desktop music player for playback of local audio files.
-Designed to have an easy to use, comfortable and compact user interface with minimal configuration required.
+Designed for ease of use and comfort with minimal configuration required.
 Uses BASS audio library.
 
 ### Features :sparkles:
@@ -16,9 +16,11 @@ Uses BASS audio library.
 
 ### Screenshots :star2:
 
-![Screenshot - Gallery View](https://cloud.githubusercontent.com/assets/17271572/14585603/be1b7442-04ce-11e6-8ccc-df66db4499b6.jpg)
+<img src="https://cloud.githubusercontent.com/assets/17271572/17890290/271a3cca-6989-11e6-9958-3936128654e1.jpg" alt="Standard View" width=750px />
 
-<img src="https://cloud.githubusercontent.com/assets/17271572/14585601/bcf654ce-04ce-11e6-8716-cafa51e66876.jpg" alt="Standard View" width=550px />
+<img src="https://cloud.githubusercontent.com/assets/17271572/17890552/e0c9985e-698a-11e6-8a3c-1b49570e6619.jpg" alt="Standard View" width=690px />
+
+Note: Screenshots taken under Windows 10 using Metro X theme 
 
 ### Getting Started :dizzy:
 
