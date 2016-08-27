@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v1.6.1
+
+ - Improved playlist importing speed
+
+
 v1.6.0
 
  - Added new formats for play time indicator
