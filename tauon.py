@@ -123,12 +123,13 @@ import shutil
 import shlex
 import math
 import locale
+import colorsys
 import webbrowser
 import pyperclip
 import base64
 import re
 import xml.etree.ElementTree as ET
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, quoteattr
 
 from ctypes import *
 
@@ -1479,6 +1480,168 @@ def get_backend_time(path):
 lastfm = LastFMapi()
 
 # PLAYER---------------------------------------------------------------
+# def player2():
+#
+#     if system == 'windows':
+#         bass_module = ctypes.WinDLL('bass')
+#         enc_module = ctypes.WinDLL('bassenc')
+#         mix_module = ctypes.WinDLL('bassmix')
+#         function_type = ctypes.WINFUNCTYPE
+#     elif system == 'mac':
+#         bass_module = ctypes.CDLL(install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
+#         enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
+#         mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
+#         function_type = ctypes.CFUNCTYPE
+#     else:
+#         bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
+#         enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
+#         mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+#         function_type = ctypes.CFUNCTYPE
+#
+#     BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
+#                               ctypes.c_void_p)(('BASS_Init', bass_module))
+#
+#     BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
+#                                           ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
+#     BASS_Pause = function_type(ctypes.c_bool)(('BASS_Pause', bass_module))
+#     BASS_Stop = function_type(ctypes.c_bool)(('BASS_Stop', bass_module))
+#     BASS_Start = function_type(ctypes.c_bool)(('BASS_Start', bass_module))
+#     BASS_Free = function_type(ctypes.c_int)(('BASS_Free', bass_module))
+#     BASS_ChannelPause = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelPause', bass_module))
+#     BASS_ChannelStop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_ChannelStop', bass_module))
+#     BASS_ChannelPlay = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
+#         ('BASS_ChannelPlay', bass_module))
+#     BASS_ErrorGetCode = function_type(ctypes.c_int)(('BASS_ErrorGetCode', bass_module))
+#     BASS_SetConfig = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(('BASS_SetConfig', bass_module))
+#     BASS_GetConfig = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_GetConfig', bass_module))
+#     BASS_ChannelSlideAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float,
+#                                                ctypes.c_ulong)(('BASS_ChannelSlideAttribute', bass_module))
+#     BASS_ChannelSetAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float)(
+#         ('BASS_ChannelSetAttribute', bass_module))
+#     BASS_PluginLoad = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong)(
+#         ('BASS_PluginLoad', bass_module))
+#     BASS_PluginFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_PluginFree', bass_module))
+#     BASS_ChannelIsSliding = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_ChannelIsSliding', bass_module))
+#     BASS_ChannelSeconds2Bytes = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_double)(
+#         ('BASS_ChannelSeconds2Bytes', bass_module))
+#     BASS_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
+#         ('BASS_ChannelSetPosition', bass_module))
+#     BASS_StreamFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_StreamFree', bass_module))
+#     BASS_ChannelGetLength = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_ChannelGetLength', bass_module))
+#     BASS_ChannelBytes2Seconds = function_type(ctypes.c_double, ctypes.c_ulong, ctypes.c_int64)(
+#         ('BASS_ChannelBytes2Seconds', bass_module))
+#     BASS_ChannelGetLevel = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_ChannelGetLevel', bass_module))
+#     BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
+#         ('BASS_ChannelGetData', bass_module))
+#
+#     BASS_Mixer_StreamCreate = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_Mixer_StreamCreate', mix_module))
+#     BASS_Mixer_StreamAddChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_Mixer_StreamAddChannel', mix_module))
+#     BASS_Mixer_ChannelRemove = function_type(ctypes.c_bool, ctypes.c_ulong)(
+#         ('BASS_Mixer_ChannelRemove', mix_module))
+#     BASS_Mixer_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
+#         ('BASS_Mixer_ChannelSetPosition', mix_module))
+#
+#     DownloadProc = function_type(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
+#
+#     # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+#     #        ctypes.c_ulong, DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+#     BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
+#                                          DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+#     BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_ChannelGetTags', bass_module))
+#
+#     def py_down(buffer, length, user):
+#         # if url_record:
+#         #
+#         #     p = create_string_buffer(length)
+#         #     ctypes.memmove(p, buffer, length)
+#         #
+#         #     f = open(record_path + fileline, 'ab')
+#         #     f.write(p)
+#         #     f.close
+#         return 0
+#
+#     down_func = DownloadProc(py_down)
+#
+#     #
+#     # def py_cmp_func(handle, channel, buffer, length):
+#     #     return 0
+#     #
+#     # cmp_func = EncodeProc(py_cmp_func)
+#
+#     BASS_Encode_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+#                                       ctypes.c_bool, ctypes.c_void_p)(('BASS_Encode_Start', enc_module))
+#     BASS_Encode_CastInit = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_char_p,
+#                                          ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p,
+#                                          ctypes.c_char_p, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_bool)(
+#         ('BASS_Encode_CastInit', enc_module))
+#     BASS_Encode_Stop = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_Encode_Stop', enc_module))
+#     BASS_Encode_SetChannel = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(
+#         ('BASS_Encode_SetChannel', enc_module))
+#     BASS_Encode_CastSetTitle = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_bool)(
+#         ('BASS_Encode_CastSetTitle', enc_module))
+#
+#     BASS_MIXER_END = 0x10000
+#     BASS_SYNC_END = 2
+#     BASS_SYNC_MIXTIME = 0x40000000
+#     BASS_STREAM_DECODE = 0x200000
+#     BASS_SAMPLE_FLOAT = 256
+#     BASS_UNICODE = 0x80000000
+#     BASS_ASYNCFILE = 0x40000000
+#     BASS_STREAM_AUTOFREE = 0x40000
+#     BASS_MIXER_NORAMPIN = 0x800000
+#
+#     sync_proc = function_type(None, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p)
+#
+#     BASS_ChannelSetSync = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int64, sync_proc, ctypes.c_void_p)(
+#         ('BASS_ChannelSetSync', bass_module))
+#
+#     class BassPlayer:
+#
+#         def __init__(self):
+#
+#             self.flag = 0
+#
+#             if system != 'windows':
+#                 self.flag = 0
+#                 self.syst = 0
+#             else:
+#                 self.flag = BASS_UNICODE
+#                 self.syst = 1
+#
+#             self.flag |= BASS_ASYNCFILE | BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT
+#
+#             self.source = 0
+#             self.mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
+#
+#             sync_func = sync_proc(self.end_sync)
+#             BASS_ChannelSetSync(self.mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, sync_func, 0);
+#
+#
+#
+#         def play(self):
+#
+#             self.source = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, self.flag)
+#             BASS_Mixer_StreamAddChannel(self.mixer, self.source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
+#             BASS_ChannelPlay(self.mixer, False)
+#
+#         def advance(self):
+#
+#
+#
+#
+#
+#         def end_sync(self, handle, channel, data, user):
+#
+#             self.play()
+#
+#
+#
+
 
 def player():
 
@@ -1594,11 +1757,16 @@ def player():
         ('BASS_Encode_CastSetTitle', enc_module))
 
     if system == 'windows':
+        print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassopus.dll', 0)
+        print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassflac.dll', 0)
         BASS_PluginLoad(b'bass_ape.dll', 0)
+        print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassenc.dll', 0)
+        print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bass_tta.dll', 0)
+        print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassmix.dll', 0)
         BASS_PluginLoad(b'basswma.dll', 0)
     elif system == 'mac':
@@ -3506,64 +3674,99 @@ def prep_gal():
 def load_xspf(path):
 
     global master_count
+    global to_got
 
     name = os.path.basename(path)[:-5]
-    e = ET.parse(path).getroot()
-    a = []
+    try:
+        parser = ET.XMLParser(encoding="utf-8")
+        e = ET.parse(path, parser).getroot()
 
-    b = {}
-    if 'track' in e[0][0].tag:
-        for track in e[0]:
-            for item in track:
-                if 'title' in item.tag:
-                    b['title'] = item.text
-                if 'location' in item.tag:
-                    b['location'] = item.text
-                if 'creator' in item.tag:
-                    b['artist'] = item.text
-                if 'album' in item.tag:
-                    b['album'] = item.text
-                if 'duration' in item.tag:
-                    b['duration'] = item.text
+        a = []
 
-            a.append(copy.deepcopy(b))
-            b = {}
-    #         print(b)
-    # print(a)
+        b = {}
+        if 'track' in e[0][0].tag:
+            for track in e[0]:
+                for item in track:
+                    if 'title' in item.tag:
+                        b['title'] = item.text
+                    if 'location' in item.tag:
+                        b['location'] = item.text
+                    if 'creator' in item.tag:
+                        b['artist'] = item.text
+                    if 'album' in item.tag:
+                        b['album'] = item.text
+                    if 'duration' in item.tag:
+                        b['duration'] = item.text
 
+                a.append(copy.deepcopy(b))
+                b = {}
+        #         print(b)
+        # print(a)
+
+    except:
+        show_message("Error Importing. Sorry about that.")
+        return
 
     playlist = []
     missing = 0
 
+    if len(a) > 5000:
+        to_got = 'xspfl'
+
+    # Generate location dict
+    location_dict = {}
+    base_names = {}
+    r_base_names = {}
+    titles = {}
+    for key, value in pctl.master_library.items():
+        if value.fullpath != "":
+            location_dict[value.fullpath] = key
+        if value.filename != "":
+            base_names[value.filename] = 0
+            r_base_names[key] = value.filename
+        if value.title != "":
+            titles[value.title] = 0
+
     for track in a:
         found = False
         # First checking for a full filepath match
-        if 'location' in track and 'file:///' in track['location']:
+        # if 'location' in track and 'file:///' in track['location']:
+        #     location = track['location'][8:]
+        #     for key, value in pctl.master_library.items():
+        #         if value.fullpath == location:
+        #             if os.path.isfile(value.fullpath):
+        #                 playlist.append(key)
+        #                 found = True
+        #                 break
+        #     if found is True:
+        #         continue
+        if 'location' in track and 'file:///' == track['location'][:8]:
+
             location = track['location'][8:]
-            for key, value in pctl.master_library.items():
-                if value.fullpath == location:
-                    if os.path.isfile(value.fullpath):
-                        playlist.append(key)
-                        found = True
-                        break
+            if location in location_dict:
+                playlist.append(location_dict[location])
+                found = True
+
             if found is True:
                 continue
 
         # Then check for title, artist, album metadata and filename match
-        if 'duration' in track and 'title' in track and 'artist' in track and 'album' in track:
+        if 'location' in track and 'duration' in track and 'title' in track and 'artist' in track and 'album' in track:
             base = os.path.basename(track['location'])
-            for key, value in pctl.master_library.items():
-                if value.artist == track['artist'] and value.title == track['title'] and \
-                                value.album == track['album'] and os.path.isfile(value.fullpath) and \
-                                    value.filename == base:
-                    playlist.append(key)
-                    found = True
-                    break
-            if found is True:
-                continue
+            if base in base_names:
+                for index, bn in r_base_names.items():
+                    va = pctl.master_library[index]
+                    if va.artist == track['artist'] and va.title == track['title'] and \
+                                    va.album == track['album'] and os.path.isfile(va.fullpath) and \
+                                        va.filename == base:
+                        playlist.append(index)
+                        found = True
+                        break
+                if found is True:
+                    continue
 
         # Then check for title, artist and album metadata match
-        if 'title' in track and 'artist' in track and 'album' in track:
+        if 'title' in track and 'artist' in track and 'album' in track and track['title'] in titles:
             for key, value in pctl.master_library.items():
                 if value.artist == track['artist'] and value.title == track['title'] and \
                                 value.album == track['album'] and os.path.isfile(value.fullpath):
@@ -3574,7 +3777,7 @@ def load_xspf(path):
                 continue
 
         # Then check for just title and artist match
-        if 'title' in track and 'artist' in track:
+        if 'title' in track and 'artist' in track and track['title'] in titles:
             for key, value in pctl.master_library.items():
                 if value.artist == track['artist'] and value.title == track['title'] and os.path.isfile(value.fullpath):
                     playlist.append(key)
@@ -7693,6 +7896,8 @@ class TopPanel:
             text = "Importing...  " + str(to_got) + "/" + str(to_get)
             if to_got == 'xspf':
                 text = "Importing XSPF playlist"
+            if to_got == 'xspfl':
+                text = "Importing XSPF playlist. May take a while."
             bg = [245, 205, 0, 255]
         elif len(transcode_list) > 0:
             text = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
@@ -9628,6 +9833,86 @@ while running:
             #bottom_bar1.set_mode2()
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
+
+            if system == 'windows':
+                import winreg
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\DWM") #ColorizationColor")
+                #print(winreg.QueryValue(key, "ColorizationColor"))
+                i = 0
+                while True:
+                    try:
+                     reg = winreg.EnumValue(key, i)
+                     if reg[0] == "ColorizationColor":
+                         # print(reg)
+                         # print(hex(reg[1]))
+
+
+                         def hex_to_rgb(value):
+                             lv = len(value)
+                             return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+                         rgb = hex_to_rgb(hex(reg[1])[4:])
+                         nc = [rgb[0], rgb[1], rgb[2], 255]
+
+
+
+
+                         nc_dark = colorsys.rgb_to_hls(rgb[0], rgb[1], rgb[2])
+                         nc_dark = list(nc_dark)
+                         print(nc_dark)
+                         # nc_dark[1] -= 25
+
+                         if nc_dark[1] > 90:
+                            nc_dark[1] -= 50
+                         if nc_dark[2] < -0.2:
+                            nc_dark[2] += 0.1
+                         if nc_dark[0] > 0.85 and nc_dark[2] < -0.41:
+                             nc_dark[2] += 0.4
+                         # nc_dark[2] += 0.5
+                         # if nc_dark[2] < 0:
+                         #     nc_dark[2] = 0
+                         nc_dark = colorsys.hls_to_rgb(nc_dark[0], nc_dark[1], nc_dark[2])
+                         nc_dark = [int(nc_dark[0]), int(nc_dark[1]), int(nc_dark[2]), 255]
+                         
+                         nc_light = colorsys.rgb_to_hls(rgb[0], rgb[1], rgb[2])
+                         nc_light = list(nc_light)
+                         if nc_light[1] < 100 - 50:
+                             nc_light[1] += 49
+                         # if nc_light[2] > 20:
+                         #     nc_light[2] -= 15
+                         #     if nc_light[0] > 0.86:
+                         #         nc_light[2] += 0.5
+                         if nc_light[0] > 0.85 and nc_light[2] < -0.41:
+                             nc_light[2] += 0.4
+                             if nc_light[1] < 100 - 20:
+                                nc_light[1] += 20
+
+
+                         nc_light = colorsys.hls_to_rgb(nc_light[0], nc_light[1], nc_light[2])
+                         nc_light = [int(nc_light[0]), int(nc_light[1]), int(nc_light[2]), 255]
+
+                         print(nc)
+                         print(nc_dark)
+
+                         colours.star_line = nc_dark
+                         colours.seek_bar_fill = nc
+                         colours.time_playing = nc
+                         colours.artist_playing = nc_light
+                         colours.title_playing = nc_light
+                         colours.index_playing = nc
+                         colours.time_text = nc_light
+                         colours.vis_colour = nc_light
+                         #colours.bottom_panel_colour = [25,25,25,255]
+
+
+
+                    except:
+
+                        break
+                    i += 1
+                    if i > 20:
+                        break
+
 
             key_F7 = False
 
