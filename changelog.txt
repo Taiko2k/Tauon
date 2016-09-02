@@ -4,6 +4,9 @@ Changelog-------------------------------------
 v1.6.1
 
  - Improved playlist importing speed
+ - Added transcoding support for MP3 (requires lame encoder)
+ - Added transcoding support for single tracks
+ - Moved transcoding setting to UI
 
 
 v1.6.0
