@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.6.0"
+t_version = "v1.6.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -245,7 +245,7 @@ pre_cache = []
 
 album_pos_px = 1
 time_last_save = 0
-window_default_size = [720, 380]
+window_default_size = [1100, 500]
 window_size = window_default_size
 b_info_y = int(window_size[1] * 0.7)
 fullscreen = 0
@@ -294,7 +294,7 @@ theme = 6
 themeChange = True
 panelY = 78
 
-side_panel_size = 178
+side_panel_size = 80 + int(window_size[0] * 0.18)
 
 row_font_size = 13
 
@@ -474,7 +474,7 @@ genre_items = []
 transcode_list = []
 transcode_state = ""
 
-taskbar_progress = False
+taskbar_progress = True
 QUE = []
 
 playing_in_queue = 0
@@ -583,10 +583,10 @@ class Prefs:
         
         self.enable_transcode = False
         self.show_rym = True
-        self.prefer_bottom_title = False
+        self.prefer_bottom_title = True
         self.append_date = True
 
-        self.transcode_codec = 'mp3'
+        self.transcode_codec = 'opus'
         self.transcode_mode = 'single'
         self.transcode_bitrate = 64
         
@@ -785,8 +785,6 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 mediakeymode = int(p[9:-1])
             if 'seek-pause-lock' in p:
                 pause_lock = True
-            if 'taskbar-progress' in p:
-                taskbar_progress = True
             if 'pause-fade-time' in p:
                 prefs.pause_fade_time = num_from_line(p)
             if 'cross-fade-time' in p:
@@ -797,8 +795,7 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 highlight_left_custom = int(p.split(":")[1])
             if 'custom-highlight-right' in p:
                 highlight_right_custom = int(p.split(":")[1])
-            # if 'opus-bitrate:' in p:
-            #     prefs.transcode_bitrate = p[13:-1]
+
             if 'output-dir:' in p:
                 encoder_output = p[11:-1]
                 encoder_output = encoder_output.replace('\\', '/')
@@ -810,14 +807,6 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 custom_line = p[15:-1]
                 custom_pro = custom_line.split(";")
 
-                # try:
-                #     prefs.transcode_bitrate = int(prefs.transcode_bitrate)
-                #     if prefs.transcode_bitrate < 8:
-                #         prefs.transcode_bitrate = 8
-                #     elif prefs.transcode_bitrate > 510:
-                #         trancode_bitrate = 510
-                # except:
-                #     prefs.transcode_bitrate = 48
 else:
     scrobble_mark = True
     print("Warning: Missing config file")
@@ -1773,18 +1762,28 @@ def player():
         ('BASS_Encode_CastSetTitle', enc_module))
 
     if system == 'windows':
-        print(BASS_ErrorGetCode())
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassopus.dll', 0)
-        print(BASS_ErrorGetCode())
+        #print("Load bassopus")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassflac.dll', 0)
+        #print("Load bassflac")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bass_ape.dll', 0)
-        print(BASS_ErrorGetCode())
+        #print("Load bass_ape")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassenc.dll', 0)
-        print(BASS_ErrorGetCode())
+        #print("Load bassenc")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bass_tta.dll', 0)
-        print(BASS_ErrorGetCode())
+        #print("Load bass_tta")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassmix.dll', 0)
+        #print("Load bass_mix")
+        #print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'basswma.dll', 0)
+        #print("Load bass_wma")
+        #print(BASS_ErrorGetCode())
     elif system == 'mac':
         b = install_directory.encode('utf-8')
         BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
@@ -4263,7 +4262,33 @@ def gen_500_random(index):
              1, 0])
 
 
+
 tab_menu.add_to_sub("Shuffled", 0, gen_500_random, pass_ref=True)
+
+
+def gen_folder_shuffle(index):
+
+    folders = []
+    dick = {}
+    for track in pctl.multi_playlist[index][2]:
+        parent = pctl.master_library[track].parent_folder_path
+        if parent not in folders:
+            folders.append(parent)
+        if parent not in dick:
+            dick[parent] = []
+        dick[parent].append(track)
+
+    random.shuffle(folders)
+    playlist = []
+
+    for folder in folders:
+        playlist += dick[folder]
+
+    pctl.multi_playlist.append(
+        [pctl.multi_playlist[index][0] + " <Shuffled Folders>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+
+tab_menu.add_to_sub("Shuffled Folders", 0, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -5123,7 +5148,7 @@ def standard_size():
     window_size = window_default_size
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
-    side_panel_size = 178
+    side_panel_size = 80 + int(window_size[0] * 0.18)
     update_layout = True
     album_mode_art_size = 130
     clear_img_cache()
@@ -6085,9 +6110,13 @@ def loader():
 
                 "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
+                if folder_name[-1:] == ' ':
+                    folder_name = pctl.master_library[folder_items[0]].filename
+
                 for c in r'[]/\;,><&*:%=+@!#^()|?^.':
                     folder_name = folder_name.replace(c, '')
                 print(folder_name)
+
 
                 if os.path.isdir(encoder_output + folder_name):
                     shutil.rmtree(encoder_output + folder_name)
@@ -6357,11 +6386,14 @@ def loader():
                 transcode_state = ""
                 gui.update += 1
             except:
-
                 transcode_state = "Transcode Error"
+                show_message("Unknown error encountered")
                 gui.update += 1
                 time.sleep(2)
                 del transcode_list[0]
+
+            if len(transcode_list) == 0:
+                show_message("Encoding Completed")
 
         while len(gall_ren.queue) > 0:
 
@@ -7117,7 +7149,7 @@ config_items.append(['Use double digit track indices', toggle_dd])
 
 config_items.append(['Use thick rows', toggle_thick])
 
-config_items.append(['Use custom line format', toggle_custom_line])
+config_items.append(['Use custom line format [broken]', toggle_custom_line])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
 
@@ -7258,8 +7290,8 @@ class Over:
 
         draw_text((x + 4, y), ">", colours.grey(200), 11)
 
-        y += 60
-        draw_text((x, y), "Codec: OPUS", colours.grey(90), 11)
+        # y += 60
+        # draw_text((x, y), "Codec: OPUS", colours.grey(90), 11)
         # y += 20
         # draw_text((x, y), "Bitrate: " + str(prefs.transcode_bitrate), colours.grey(90), 11)
 
@@ -7435,7 +7467,8 @@ class Over:
         x = self.box_x + self.item_x_offset
         y = self.box_y
 
-        x += 8
+
+        # x += 8
         y += 25
         y2 = y
         x2 = x
@@ -8261,6 +8294,7 @@ class BottomBarType1:
             right_offset = 22
 
         if self.mode == 0:
+
             draw.line(0, window_size[1] - panelBY, 299, window_size[1] - panelBY, colours.bb_line)
             draw.line(299, window_size[1] - panelBY, 299, window_size[1] - panelBY + self.seek_bar_size[1],
                       colours.bb_line)
@@ -8894,6 +8928,7 @@ class StandardPlaylist:
                 album_fade = 150
 
             # Folder Break Row
+
             if (p_track == 0 or n_track.parent_folder_name
                     != pctl.master_library[default_playlist[p_track - 1]].parent_folder_name) and \
                             pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
@@ -9390,7 +9425,8 @@ class ComboPlaylist:
         draw.rect_r(rect, colours.playlist_panel_background, True)
 
         # Get scroll movement
-        if mouse_position[0] < playlist_width + 30 and mouse_position[1] < window_size[1] - panelBY:
+
+        if panelY < mouse_position[1] < window_size[1] - panelBY:
             self.pl_pos_px -= mouse_wheel * 70
             if self.pl_pos_px < 0:
                 self.pl_pos_px = 0
@@ -9666,6 +9702,7 @@ while running:
         key_v_press = False
         key_f_press = False
         key_a_press = False
+        key_w_press = False
         key_dash_press = False
         key_eq_press = False
         key_slash_press = False
@@ -9821,6 +9858,8 @@ while running:
                 key_f_press = True
             elif event.key.keysym.sym == SDLK_a:
                 key_a_press = True
+            elif event.key.keysym.sym == SDLK_w:
+                key_w_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
                 key_backslash_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
@@ -10071,85 +10110,7 @@ while running:
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
 
-            if system == 'windows':
-                import winreg
-                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\DWM") #ColorizationColor")
-                #print(winreg.QueryValue(key, "ColorizationColor"))
-                i = 0
-                while True:
-                    try:
-                     reg = winreg.EnumValue(key, i)
-                     if reg[0] == "ColorizationColor":
-                         # print(reg)
-                         # print(hex(reg[1]))
-
-
-                         def hex_to_rgb(value):
-                             lv = len(value)
-                             return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-
-                         rgb = hex_to_rgb(hex(reg[1])[4:])
-                         nc = [rgb[0], rgb[1], rgb[2], 255]
-
-
-
-
-                         nc_dark = colorsys.rgb_to_hls(rgb[0], rgb[1], rgb[2])
-                         nc_dark = list(nc_dark)
-                         print(nc_dark)
-                         # nc_dark[1] -= 25
-
-                         if nc_dark[1] > 90:
-                            nc_dark[1] -= 50
-                         if nc_dark[2] < -0.2:
-                            nc_dark[2] += 0.1
-                         if nc_dark[0] > 0.85 and nc_dark[2] < -0.41:
-                             nc_dark[2] += 0.4
-                         # nc_dark[2] += 0.5
-                         # if nc_dark[2] < 0:
-                         #     nc_dark[2] = 0
-                         nc_dark = colorsys.hls_to_rgb(nc_dark[0], nc_dark[1], nc_dark[2])
-                         nc_dark = [int(nc_dark[0]), int(nc_dark[1]), int(nc_dark[2]), 255]
-                         
-                         nc_light = colorsys.rgb_to_hls(rgb[0], rgb[1], rgb[2])
-                         nc_light = list(nc_light)
-                         if nc_light[1] < 100 - 50:
-                             nc_light[1] += 49
-                         # if nc_light[2] > 20:
-                         #     nc_light[2] -= 15
-                         #     if nc_light[0] > 0.86:
-                         #         nc_light[2] += 0.5
-                         if nc_light[0] > 0.85 and nc_light[2] < -0.41:
-                             nc_light[2] += 0.4
-                             if nc_light[1] < 100 - 20:
-                                nc_light[1] += 20
-
-
-                         nc_light = colorsys.hls_to_rgb(nc_light[0], nc_light[1], nc_light[2])
-                         nc_light = [int(nc_light[0]), int(nc_light[1]), int(nc_light[2]), 255]
-
-                         print(nc)
-                         print(nc_dark)
-
-                         colours.star_line = nc_dark
-                         colours.seek_bar_fill = nc
-                         colours.time_playing = nc
-                         colours.artist_playing = nc_light
-                         colours.title_playing = nc_light
-                         colours.index_playing = nc
-                         colours.time_text = nc_light
-                         colours.vis_colour = nc_light
-                         #colours.bottom_panel_colour = [25,25,25,255]
-
-
-
-                    except:
-
-                        break
-                    i += 1
-                    if i > 20:
-                        break
-
+            print(window_size)
 
             key_F7 = False
 
@@ -10173,6 +10134,9 @@ while running:
         if key_a_press and key_ctrl_down:
             gui.pl_update += 1
             shift_selection = range(len(default_playlist))
+
+        if key_w_press and key_ctrl_down:
+            delete_playlist(pctl.playlist_active)
 
         if pref_box.enabled:
 
@@ -10614,6 +10578,7 @@ while running:
                         colours.__init__()
                         with open(install_directory + "/theme/" + theme_files[i], encoding="utf_8") as f:
                             content = f.readlines()
+                            print("Applying theme: " + theme_files[i])
                             for p in content:
                                 if "#" in p:
                                     continue
@@ -10715,6 +10680,7 @@ while running:
                 show_message("Error loading theme file")
 
         if theme == 0:
+            print("Applying theme: Default Terminal Citrus")
             colours.__init__()
 
         themeChange = False
@@ -11023,8 +10989,13 @@ while running:
                                             mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
                     gui.pl_update += 2
 
+
+                if gui.combo_mode and mouse_wheel != 0:
+                    gui.pl_update += 1
+
                 # MAIN PLAYLIST
                 # C-PR
+
 
                 if gui.pl_update > 0:
 
@@ -12281,9 +12252,32 @@ while running:
                     NSN = NSN[:-1]
 
                 c_blink = 200
-                draw_text((search_box_location_x + 8, window_size[1] - 85), "SEARCH: " + NSN + cursor, colours.grey(125), 12)
+                if len(NSN) == 0:
+                    line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
+                    draw_text((search_box_location_x + 17, window_size[1] - 84), line, colours.grey(80), 10)
+                draw_text((search_box_location_x + 8, window_size[1] - 85), "" + NSN + cursor, colours.grey(125), 12)
+
+
                 if key_esc_press:
                     new_playlist_box = False
+
+                if key_shift_down and key_return_press:
+                    key_return_press = False
+                    playlist = []
+                    search_terms = NSN.lower().split()
+                    for item in default_playlist:
+                        line = pctl.master_library[item].title.lower() + \
+                               pctl.master_library[item].artist.lower() \
+                               + pctl.master_library[item].album.lower() + \
+                               pctl.master_library[item].filename.lower()
+                        if all(word in line for word in search_terms):
+                            playlist.append(item)
+                    if len(playlist) > 0:
+                        pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
+                        switch_playlist(len(pctl.multi_playlist) - 1)
+                        NSN = ""
+                        quick_search_mode = False
+
 
                 if len(input_text) > 0 or key_down_press is True:
 

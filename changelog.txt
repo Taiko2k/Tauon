@@ -4,9 +4,14 @@ Changelog-------------------------------------
 v1.6.1
 
  - Improved playlist importing speed
+ - Added ctrl+w shortcut to delete playlist
+ - Added shift+enter to show search results in new playlist
+ - Added shuffle folders function
  - Added transcoding support for MP3 (requires lame encoder)
  - Added transcoding support for single tracks
  - Moved transcoding setting to UI
+ - Fixed scrolling bug in album combo view
+ - Tweaked default configuration
 
 
 v1.6.0
