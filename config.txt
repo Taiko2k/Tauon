@@ -1,7 +1,5 @@
 ﻿## Tauon Music Box config file
 
-## Special comment from the developer: Theres really nothing interesting to change in this config file, the formatting's all hard to read anyway so I wouldn't bother.
-
 ## Playback---------------------------------------------------------------------------
 
 #Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
@@ -12,13 +10,9 @@ cross-fade-time: 700
 scrobble-mark
 
 ## System-----------------------------------------------------------------------------
--
+
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
 mediakey:2
-
-#Show progress in windows taskbar (Win7+) (No effect under linux)
-taskbar-progress
-
 
 ## Encoding---------------------------------------------------------------------------
 
