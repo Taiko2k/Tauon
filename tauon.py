@@ -12264,17 +12264,36 @@ while running:
                 if key_shift_down and key_return_press:
                     key_return_press = False
                     playlist = []
-                    search_terms = NSN.lower().split()
-                    for item in default_playlist:
-                        line = pctl.master_library[item].title.lower() + \
-                               pctl.master_library[item].artist.lower() \
-                               + pctl.master_library[item].album.lower() + \
-                               pctl.master_library[item].filename.lower()
-                        if all(word in line for word in search_terms):
-                            playlist.append(item)
-                    if len(playlist) > 0:
-                        pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
-                        switch_playlist(len(pctl.multi_playlist) - 1)
+                    if len(NSN) > 0:
+                        if NSN[0] == '/':
+                            if NSN[-1] == "/":
+                                title = NSN.replace('/', "")
+                            else:
+                                NSN = NSN.replace('/', "")
+                                title = NSN
+                            NSN = NSN.lower()
+                            for item in default_playlist:
+                                if NSN in pctl.master_library[item].parent_folder_path.lower():
+                                    playlist.append(item)
+                            if len(playlist) > 0:
+
+                                # title = NSN
+                                pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
+                                switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+                        else:
+                            search_terms = NSN.lower().split()
+                            for item in default_playlist:
+                                line = pctl.master_library[item].title.lower() + \
+                                       pctl.master_library[item].artist.lower() \
+                                       + pctl.master_library[item].album.lower() + \
+                                       pctl.master_library[item].filename.lower()
+                                if all(word in line for word in search_terms):
+                                    playlist.append(item)
+                            if len(playlist) > 0:
+                                pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
+                                switch_playlist(len(pctl.multi_playlist) - 1)
                         NSN = ""
                         quick_search_mode = False
 
@@ -12283,36 +12302,37 @@ while running:
 
                     gui.pl_update += 1
 
-                    oi = search_index
+                    if len(NSN) > 0 and NSN[0] != "/":
+                        oi = search_index
 
-                    while search_index < len(default_playlist) - 1:
-                        search_index += 1
-                        if search_index > len(default_playlist) - 1:
-                            search_index = 0
+                        while search_index < len(default_playlist) - 1:
+                            search_index += 1
+                            if search_index > len(default_playlist) - 1:
+                                search_index = 0
 
-                        search_terms = NSN.lower().split()
-                        line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-                               pctl.master_library[default_playlist[search_index]].artist.lower() \
-                               + pctl.master_library[default_playlist[search_index]].album.lower() + \
-                               pctl.master_library[default_playlist[search_index]].filename.lower()
+                            search_terms = NSN.lower().split()
+                            line = pctl.master_library[default_playlist[search_index]].title.lower() + \
+                                   pctl.master_library[default_playlist[search_index]].artist.lower() \
+                                   + pctl.master_library[default_playlist[search_index]].album.lower() + \
+                                   pctl.master_library[default_playlist[search_index]].filename.lower()
 
-                        if all(word in line for word in search_terms):
+                            if all(word in line for word in search_terms):
 
-                            playlist_selected = search_index
-                            if len(default_playlist) > 10 and search_index > 10:
-                                playlist_position = search_index - 7
-                            else:
-                                playlist_position = 0
+                                playlist_selected = search_index
+                                if len(default_playlist) > 10 and search_index > 10:
+                                    playlist_position = search_index - 7
+                                else:
+                                    playlist_position = 0
 
-                            if gui.combo_mode:
-                                pctl.show_selected()
+                                if gui.combo_mode:
+                                    pctl.show_selected()
 
-                            break
+                                break
 
 
 
-                    else:
-                        search_index = oi
+                        else:
+                            search_index = oi
 
                 if key_up_press is True:
 
