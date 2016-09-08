@@ -1,6 +1,10 @@
 Basic Usage. Updated for v1.6.1
 ===========
 
+Player is playlist based (rather than library based) and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists. 
+
+For best experience it is recommended to have an organised and structured music library. I  recommended the following file structure especially for large music libraries: MUSIC_LIBRARY/GENRE/ARTIST/ALBUM/tracks
+
 ##### Importing Music:
 
 - Drag and drop files and folders from your file manager.
