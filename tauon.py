@@ -290,7 +290,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 6
+theme = 1
 themeChange = True
 panelY = 78
 
@@ -511,8 +511,6 @@ playlist_entry_box_size = [250, 60]
 playlist_entry_box_half = [int(playlist_entry_box_size[0] / 2), int(playlist_entry_box_size[1] / 2)]
 NPN = ""
 NSN = ""
-search_box_location_x = 0
-quick_search_box_size = [400, 25]
 new_playlist_box = False
 rename_playlist_box = False
 rename_index = 0
@@ -4732,14 +4730,16 @@ def convert_folder(index):
     global default_playlist
     global transcode_list
 
-    if os.path.isfile(install_directory + '/encoder/ffmpeg.exe') and os.path.isfile(
-                    install_directory + '/encoder/opusenc.exe') or \
-                    os.path.isfile(install_directory + '/encoder/ffmpeg') and os.path.isfile(
-                        install_directory + '/encoder/opusenc') or system != 'windows':
-        pass
-    else:
-        show_message("Prerequisites not met, see readme file")
-        return
+    if system == 'windows':
+        if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
+            show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
+            return
+        if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
+            show_message("Error: Missing opusenc.exe from '/encoder' directory")
+            return
+        if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
+            show_message("Error: Missing lame.exe from '/encoder' directory")
+            return
 
     folder = []
     r_folder = pctl.master_library[index].parent_folder_name
@@ -12236,12 +12236,11 @@ while running:
                     except:
                         print("Clipboard Error")
 
-                search_box_location_x = int(window_size[0] / 2) - int(quick_search_box_size[0] / 2)
+                rect = [0, window_size[1] - 90, 400, 25]
+                rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
 
-                draw.rect((search_box_location_x, window_size[1] - 90),
-                          (quick_search_box_size[0], quick_search_box_size[1]), colours.bottom_panel_colour, True)
-                draw.rect((search_box_location_x, window_size[1] - 90),
-                          (quick_search_box_size[0], quick_search_box_size[1]), colours.grey(60))
+                draw.rect_r(rect, colours.bottom_panel_colour, True)
+                draw.rect_r(rect, colours.grey(60))
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -12254,14 +12253,20 @@ while running:
                 c_blink = 200
                 if len(NSN) == 0:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
-                    draw_text((search_box_location_x + 17, window_size[1] - 84), line, colours.grey(80), 10)
-                draw_text((search_box_location_x + 8, window_size[1] - 85), "" + NSN + cursor, colours.grey(125), 12)
+                    draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
+
+
+                space = draw_text((rect[0] + 8, window_size[1] - 85), NSN, colours.grey(125), 12)
+                if cursor == "":
+                    x = rect[0] + space + 10
+                    y = rect[1] + 7
+                    draw.line(x, y, x, y + 11, colours.grey(115))
 
 
                 if key_esc_press:
                     new_playlist_box = False
 
-                if key_shift_down and key_return_press:
+                if (key_shift_down or (len(NSN) > 0 and NSN[0] == '/')) and key_return_press:
                     key_return_press = False
                     playlist = []
                     if len(NSN) > 0:
