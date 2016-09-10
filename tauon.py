@@ -70,6 +70,7 @@ else:
 working_directory = os.getcwd()
 install_directory = sys.path[0]
 install_directory = install_directory.replace('\\', '/')
+
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 user_directory = install_directory
@@ -624,6 +625,8 @@ class GuiVar:
 
         self.combo_mode = False
         self.display_time_mode = 0
+
+        self.row_extra = 0
 
 gui = GuiVar()
 
@@ -3918,6 +3921,9 @@ class Menu:
         self.reference = 0
         self.items = []
         self.subs = []
+        self.selected = -1
+        self.up = False
+        self.down = False
 
         self.id = Menu.count
         Menu.count += 1
@@ -4056,7 +4062,7 @@ class Menu:
                     # Render the menu outline
                     draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
-            if self.clicked:
+            if self.clicked or key_esc_press:
                 self.active = False
                 self.clicked = False
 
@@ -4158,7 +4164,7 @@ def gen_most_skip(pl):
 
     playlist = []
     for item in pctl.multi_playlist[pl][2]:
-        if pctl.master_library[item].skips > 1:
+        if pctl.master_library[item].skips > 0:
             playlist.append(item)
     if len(playlist) == 0:
         show_message("Nothing to show")
@@ -8170,7 +8176,9 @@ class TopPanel:
                 text = "Importing XSPF playlist. May take a while."
             bg = [245, 205, 0, 255]
         elif len(transcode_list) > 0:
-            text = "Transcoding... " + str(len(transcode_list)) + " Remaining " + transcode_state
+            text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
+            if len(transcode_list) > 1:
+                text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
             bg = [245, 205, 0, 255]
         elif pctl.join_broadcast and pctl.broadcast_active:
             text = "Streaming"
@@ -8875,6 +8883,7 @@ class StandardPlaylist:
         global gui
 
         w = 0
+        gui.row_extra = 0
 
         # Draw the background
         SDL_SetRenderTarget(renderer, ttext)
@@ -9003,15 +9012,14 @@ class StandardPlaylist:
                         else:
                             shift_selection = copy.deepcopy(temp)
 
-                    # for item in temp:
-                    #     if item not in shift_selection
-
-
                 # Shade ever other line for folder row
                 # if row_alt and w % 2 == 0:
                 #     draw.rect((playlist_left, playlist_top + playlist_row_height * w),
                 #               (playlist_width, playlist_row_height - 1), [0, 0, 0, 20], True)
+
                 w += 1
+                if playlist_selected > p_track + 1:
+                    gui.row_extra += 1
 
             # Shade ever other line if option set
             # if row_alt and w % 2 == 0:
@@ -9703,6 +9711,7 @@ while running:
         key_f_press = False
         key_a_press = False
         key_w_press = False
+        key_r_press = False
         key_dash_press = False
         key_eq_press = False
         key_slash_press = False
@@ -9860,6 +9869,8 @@ while running:
                 key_a_press = True
             elif event.key.keysym.sym == SDLK_w:
                 key_w_press = True
+            elif event.key.keysym.sym == SDLK_r:
+                key_r_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
                 key_backslash_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
@@ -9917,7 +9928,7 @@ while running:
             # print(input_text)
         elif event.type == SDL_MOUSEWHEEL:
             k_input = True
-            power += 5
+            power += 6
             mouse_wheel += event.wheel.y
             gui.update += 1
         elif event.type == SDL_WINDOWEVENT:
@@ -9997,7 +10008,7 @@ while running:
         power = 6
 
     if power < 5:
-        time.sleep(0.002)
+        time.sleep(0.003)
         continue
     else:
         power = 0
@@ -10138,6 +10149,9 @@ while running:
         if key_w_press and key_ctrl_down:
             delete_playlist(pctl.playlist_active)
 
+        if key_r_press and key_ctrl_down:
+            rename_playlist(pctl.playlist_active)
+
         if pref_box.enabled:
 
             if pref_box.inside():
@@ -10159,45 +10173,48 @@ while running:
                         pass
 
         # Transfer click register to menus
-        if x_menu.active is True and mouse_click:
-            x_menu.click()
-            mouse_click = False
-            ab_click = True
-        if view_menu.active is True and mouse_click:
-            view_menu.click()
-            mouse_click = False
-            ab_click = True
-        if extra_menu.active is True and mouse_click:
-            extra_menu.click()
-            mouse_click = False
-            ab_click = True
+        if mouse_click:
+            if x_menu.active is True:
+                if mouse_click:
+                    x_menu.click()
+                    mouse_click = False
+                    ab_click = True
 
-        if playlist_menu.active and mouse_click:
-            playlist_menu.click()
-            mouse_click = False
-            ab_click = True
+            if view_menu.active is True and mouse_click:
+                view_menu.click()
+                mouse_click = False
+                ab_click = True
 
-        if combo_menu.active and mouse_click:
-            combo_menu.click()
-            mouse_click = False
-            ab_click = True
-        if combo_menu.active and right_click:
-            combo_menu.active = False
+            if extra_menu.active is True and mouse_click:
+                extra_menu.click()
+                mouse_click = False
+                ab_click = True
 
-        if track_menu.active is True and mouse_click:
-            track_menu.click()
-            mouse_click = False
-            ab_click = True
+            if playlist_menu.active and mouse_click:
+                playlist_menu.click()
+                mouse_click = False
+                ab_click = True
 
-        if selection_menu.active is True and mouse_click:
-            selection_menu.click()
-            mouse_click = False
-            ab_click = True
+            if combo_menu.active and mouse_click:
+                combo_menu.click()
+                mouse_click = False
+                ab_click = True
 
-        if tab_menu.active is True and mouse_click:
-            tab_menu.click()
-            mouse_click = False
-            ab_click = True
+            if selection_menu.active is True and mouse_click:
+                selection_menu.click()
+                mouse_click = False
+                ab_click = True
+
+            if tab_menu.active is True and mouse_click:
+                tab_menu.click()
+                mouse_click = False
+                ab_click = True
+
+            if track_menu.active is True:
+                if mouse_click:
+                    track_menu.click()
+                    mouse_click = False
+                    ab_click = True
 
         if encoding_box is True and mouse_click:
             encoding_box_click = True
@@ -10205,6 +10222,10 @@ while running:
             ab_click = True
         else:
             encoding_box_click = False
+
+        if combo_menu.active and right_click:
+            combo_menu.active = False
+
 
         genre_box_click = False
         if (genre_box or playlist_panel) and mouse_click:
@@ -10755,7 +10776,7 @@ while running:
                 if not gui.show_playlist:
                     rect = [0, panelY, window_size[0],
                             window_size[1] - panelY - panelBY - 0]
-                    draw.rect_r(rect, colours.playlist_panel_background, True)
+                    draw.rect_r(rect, colours.side_panel_background, True)
                 else:
                     rect = [playlist_width + 31, panelY, window_size[0] - playlist_width - 31,
                             window_size[1] - panelY - panelBY - 0]
@@ -10822,9 +10843,13 @@ while running:
                             albumtitle = colours.side_bar_line1 #grey(220)
 
                             if info[0] == 1 and pctl.playing_state != 0:
-                                draw.rect((x - 10, y - 9), (album_mode_art_size + 20, album_mode_art_size + 55),
-                                          [200, 200, 200, 15], True)
+                                # draw.rect((x - 10, y - 9), (album_mode_art_size + 20, album_mode_art_size + 55),
+                                #           [200, 200, 200, 15], True)
 
+                                draw.rect((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                          colours.artist_playing, True)
+                                draw.rect((x, y ), (album_mode_art_size, album_mode_art_size),
+                                          colours.side_panel_background, True)
                             draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
 
                             gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
@@ -12271,20 +12296,28 @@ while running:
                     playlist = []
                     if len(NSN) > 0:
                         if NSN[0] == '/':
-                            if NSN[-1] == "/":
-                                title = NSN.replace('/', "")
+                            if NSN.lower() == "/random" or NSN.lower() == "/shuffle":
+                                gen_500_random(pctl.playlist_active)
+                            elif NSN.lower() == "/top" or NSN.lower() == "/most":
+                                gen_top_100(pctl.playlist_active)
+                            elif NSN.lower() == "/length" or NSN.lower() == "/duration" or NSN.lower() == "/len":
+                                gen_sort_len(pctl.playlist_active)
                             else:
-                                NSN = NSN.replace('/', "")
-                                title = NSN
-                            NSN = NSN.lower()
-                            for item in default_playlist:
-                                if NSN in pctl.master_library[item].parent_folder_path.lower():
-                                    playlist.append(item)
-                            if len(playlist) > 0:
 
-                                # title = NSN
-                                pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
-                                switch_playlist(len(pctl.multi_playlist) - 1)
+                                if NSN[-1] == "/":
+                                    title = NSN.replace('/', "")
+                                else:
+                                    NSN = NSN.replace('/', "")
+                                    title = NSN
+                                NSN = NSN.lower()
+                                for item in default_playlist:
+                                    if NSN in pctl.master_library[item].parent_folder_path.lower():
+                                        playlist.append(item)
+                                if len(playlist) > 0:
+
+                                    # title = NSN
+                                    pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
+                                    switch_playlist(len(pctl.multi_playlist) - 1)
 
 
                         else:
@@ -12399,8 +12432,9 @@ while running:
                         playlist_selected += 1
 
                     if playlist_position < len(
-                            default_playlist) and playlist_selected > playlist_position + playlist_view_length - 3:
+                            default_playlist) and playlist_selected > playlist_position + playlist_view_length - 3 - gui.row_extra:
                         playlist_position += 1
+
 
                     if playlist_selected < 0:
                         playlist_selected = 0
