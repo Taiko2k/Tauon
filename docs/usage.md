@@ -1,4 +1,4 @@
-Basic Usage. Updated for v1.6.1
+Basic Usage. Updated for v1.6.3
 ===========
 
 Player is playlist based (rather than library based) and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists. 
