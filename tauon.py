@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.6.1"
+t_version = "v1.6.3"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
