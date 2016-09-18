@@ -1,6 +1,16 @@
 
 Changelog-------------------------------------
 
+v1.7.0
+
+ - Redesigned icons
+ - Tweaked playlist appearence
+ - Tweaked config file formatting
+ - Removed custom line formatting
+ - Removed hide scroll bar as option
+ - Removed highlight artist as option
+ - Removed pause lock option
+
 v1.6.3
 
  - Improved playlist importing speed
