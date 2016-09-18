@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.6.3"
+t_version = "v1.7.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -3901,14 +3901,14 @@ class Menu:
                                   11)
 
                     # Render the menu outline
-                    draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+                    # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
             if self.clicked or key_esc_press:
                 self.active = False
                 self.clicked = False
 
             # Render the menu outline
-            draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+            # draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
 
@@ -7093,7 +7093,7 @@ class Over:
     def codec_config(self):
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y - 10
+        y = self.box_y - 5
 
         y += 30
         self.toggle_square(x, y, toggle_transcode, "Enable / Show in track menu (Applies on restart)")
@@ -7149,7 +7149,7 @@ class Over:
         global update_layout
 
         x = self.box_x + self.item_x_offset - 10
-        y = self.box_y - 10
+        y = self.box_y - 5
 
         x += 10
         y += 25
@@ -7192,7 +7192,7 @@ class Over:
 
         x = self.box_x + self.item_x_offset - 10
         x += 10
-        y += 20
+        y += 25
 
         draw_text((x, y), "Playlist art size:", colours.grey(200), 11)
 
@@ -7259,7 +7259,7 @@ class Over:
         # ----------
 
         x += 50
-        y += 20
+        y += 15
         self.button(x + 250, y, "Reset Layout", standard_size)
         x += 110
         self.button(x + 240, y, "Next Theme", advance_theme)
@@ -7363,9 +7363,11 @@ class Over:
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
+        draw.rect((self.box_x - 5, self.box_y - 5), (self.w + 10, self.h + 10), colours.grey(50), True)
         draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.menu_background, True)
-        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.grey(50))
-        draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
+        draw.rect((self.box_x, self.box_y), (110, self.h), colours.tab_background, True)
+
+        #draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
         # temp
         if len(self.drives) < 1 and system == 'windows':
@@ -7375,8 +7377,8 @@ class Over:
         current_tab = 0
         for item in self.tabs:
 
-            box = [self.box_x + 1, self.box_y + 1 + (current_tab * 30), 110, 30]
-            box2 = [self.box_x + 1, self.box_y + 1 + (current_tab * 30), 110, 29]
+            box = [self.box_x, self.box_y + 2 + (current_tab * 30), 110, 30]
+            box2 = [self.box_x, self.box_y + 2 + (current_tab * 30), 110, 29]
             fields.add(box2)
             # draw.rect_r(box, colours.tab_background, True)
 
@@ -7399,11 +7401,10 @@ class Over:
             else:
                 draw_text((box[0] + 55, box[1] + 6, 2), item[0], [200, 200, 200, 100], 12)
 
-
-
             current_tab += 1
 
-        draw.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
+
+        #draw.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
 
         self.tabs[self.tab_active][1]()
 
@@ -8642,7 +8643,7 @@ class StandardPlaylist:
 
 
         highlight_left = 0
-        highlight_right = playlist_width + 30
+        highlight_right = playlist_width + 31
 
         # Show notice if playlist empty
         if len(default_playlist) == 0:
@@ -11723,11 +11724,14 @@ while running:
                     except:
                         print("Clipboard Error")
 
-                rect = [0, window_size[1] - 90, 400, 25]
+                rect2 = [0, window_size[1] - 90, 400, 25]
+                rect = [0, window_size[1] - 120, 400, 65]
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
+                rect2[0] = rect[0]
 
                 draw.rect_r(rect, colours.bottom_panel_colour, True)
-                draw.rect_r(rect, colours.grey(60))
+                draw.rect_r(rect2, [255,255,255,10], True)
+                #draw.rect_r(rect, colours.grey(60))
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -11738,12 +11742,14 @@ while running:
                     NSN = NSN[:-1]
 
                 c_blink = 200
-                if len(NSN) == 0:
+                if len(NSN) != 0 and NSN[0] == '/':
+                    line = "Folder filter mode. Enter path segment."
+                else:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
-                    draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
+                draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
 
 
-                space = draw_text((rect[0] + 8, window_size[1] - 85), NSN, colours.grey(125), 12)
+                space = draw_text((rect[0] + 8, rect[1] + 4), NSN, colours.grey(125), 12)
                 if cursor == "":
                     x = rect[0] + space + 10
                     y = rect[1] + 7
