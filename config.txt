@@ -1,73 +1,21 @@
 ﻿## Tauon Music Box config file
 
-## Playback---------------------------------------------------------------------------
-
-#Fade times in ms. Gapless playback not supported (min 50ms). Note that crossfade function blocks player so high values may reduce track change responsiveness (max 5000)
-pause-fade-time: 400
-cross-fade-time: 700
-
-## Mark where a scrobble will occur
-scrobble-mark
-
-## System-----------------------------------------------------------------------------
+##Fade times in ms. Gapless playback not supported (min 50ms, max 5000ms). Note that crossfade function blocks player so high values may reduce track change responsiveness.
+pause-fade-time=400
+cross-fade-time=700
+scrobble-mark=True
 
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
-mediakey:2
+mediakey=2
 
-## Encoding---------------------------------------------------------------------------
+## Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
+#output-dir=C:\example
 
-# Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
-#output-dir:C:\example
-
-## Broadcasting / Streaming-----------------------------------------------------------
-
-## Mount Point for Icecast server
-icecast-mount:localhost:8000/test
-
-## Password for Icecast server source
-icecast-pass:hackme
-
-## Codec can be MP3, OGG
+## Icecast mounting. Codec can be MP3, OGG
 ## On Windows requires lame.exe, oggenc2.exe in /encoder subdirectory respectively. 
 ## On linux install lame, oggenc(part of vorbis-tools)
-icecast-codec:OGG
-icecase-bitrate:128
-
-## Playlist----------------------------------------------------------------------------
-## Note: Experimental function. May not work as expected. May change in future versions.
-## Note: Text truncating currently partially broken
-## Note: Yeah I know it doesn't make much sense
-
-# Title     Artist     Album     Plays Length -----
-#custom-format:"r15;t;r55;o;l;r17;n;p0.34;a;p0.65;b"
-
-## 0 Artist Title                      Length -----
-custom-format:"r15;t;r50;s;l;r17;i;r30;a;f5;n"
-
-# 0 Title Length                       Artist ----- (currenly results in text overrun issue)                       
-#custom-format:"r15;a;l;r16;i;r26;n;f40;t"
-
-## Note: These two settings have no effect. Or do they? I can't remember, but better leave them just in case changing them breaks everything
-custom-highlight-left:4
-custom-highlight-right:13
-
-## -------------------
-## Custom format guide:
-## (starts at right align, then use 'l' to switch to left side)
-
-##t track length
-##o playcount
-##s playline
-##n title
-##a artist
-##b album
-##d date
-##i tracknumber [optional custom text]
-
-##c custom [custom text]
-
-##f follow from last [extra px]
-##r set space from side [px]
-##l switch to left align
-##p set proportional space from side [decimal]
+icecast-codec=OGG
+icecast-bitrate=128
+icecast-mount=localhost:8000/test
+icecast-password=hackme
 
