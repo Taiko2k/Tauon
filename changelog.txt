@@ -4,7 +4,8 @@ Changelog-------------------------------------
 v1.7.0
 
  - Redesigned icons
- - Tweaked playlist appearence
+ - Tweaked playlist appearance
+ - Tweaked search box appearance
  - Tweaked config file formatting
  - Removed custom line formatting
  - Removed hide scroll bar as option
