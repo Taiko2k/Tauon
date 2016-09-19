@@ -305,6 +305,9 @@ class ColoursClass:
 
     def grey(self, value):
         return [value, value, value, 255]
+    
+    def alpha_grey(self, value):
+        return [255, 255, 255, value]
 
     def __init__(self):
         
@@ -7137,10 +7140,6 @@ class Over:
 
         draw_text((x + 4, y), ">", colours.grey(200), 11)
 
-        # y += 60
-        # draw_text((x, y), "Codec: OPUS", colours.grey(90), 11)
-        # y += 20
-        # draw_text((x, y), "Bitrate: " + str(prefs.transcode_bitrate), colours.grey(90), 11)
 
     def config_b(self):
 
@@ -7238,8 +7237,6 @@ class Over:
                 gui.pl_update += 2
 
 
-
-        #y = self.box_y + 55
         y += 35
 
         x = self.box_x + self.item_x_offset
@@ -7377,8 +7374,8 @@ class Over:
         current_tab = 0
         for item in self.tabs:
 
-            box = [self.box_x, self.box_y + 2 + (current_tab * 30), 110, 30]
-            box2 = [self.box_x, self.box_y + 2 + (current_tab * 30), 110, 29]
+            box = [self.box_x, self.box_y + (current_tab * 30), 110, 30]
+            box2 = [self.box_x, self.box_y + (current_tab * 30), 110, 29]
             fields.add(box2)
             # draw.rect_r(box, colours.tab_background, True)
 
@@ -7805,6 +7802,7 @@ class TopPanel:
 
         if draw_alt:
             x = self.start_space_compact_left
+
 
         for i, tab in enumerate(pctl.multi_playlist):
 
@@ -11351,8 +11349,9 @@ while running:
 
                 # draw.rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
 
+                draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
                 draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(75))
+                
 
                 if key_shift_down:
 
@@ -11385,63 +11384,88 @@ while running:
                     time.sleep(0.2)
 
                 else:
-                    draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
-                    album_art_gen.display(r_menu_index, (x + w - 135, y + h - 125), (100, 100))
+                    # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
+                    album_art_gen.display(r_menu_index, (x + w - 140, y + h - 135), (110, 110))
                     y -= 24
 
-                    draw_text((x + 8 + 10, y + 40), "Title:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].title, colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].title, colours.alpha_grey(190), 12)
 
-                    draw_text((x + w - 50, y + 40, 2), pctl.master_library[r_menu_index].file_ext, colours.grey(200), 12)
+                    ext_rect = [x + w - 78, y + 42, 12, 12]
+
+                    line = pctl.master_library[r_menu_index].file_ext
+                    ex_colour = [255, 255, 255, 130]
+                    if line == "MP3":
+                        ex_colour = [255, 130, 80, 255]
+                    elif line == 'FLAC':
+                        ex_colour = [156, 249, 79, 255]
+                    elif line == 'M4A':
+                        ex_colour = [81, 220, 225, 255]
+                    elif line == 'OGG':
+                        ex_colour = [244, 244, 78, 255]
+                    elif line == 'WMA':
+                        ex_colour = [213, 79, 247, 255]
+                    elif line == 'APE':
+                        ex_colour = [247, 79, 79, 255]
+                    elif line == 'TTA':
+                        ex_colour = [94, 78, 244, 255]
+                    elif line == 'OPUS':
+                        ex_colour = [247, 79, 146, 255]
+                    elif line == 'AAC':
+                        ex_colour = [79, 247, 168, 255]
+                    draw.rect_r(ext_rect, ex_colour, True)
+
+                    draw_text((x + w - 60, y + 40), line, colours.alpha_grey(190), 11)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Artist:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].artist, colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Artist", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].artist, 12, 420), colours.alpha_grey(190), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Album:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].album, colours.grey(200),
+                    draw_text((x + 8 + 10, y + 40), "Album", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].album, colours.alpha_grey(190),
                               12)
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Path:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 12, 420),
-                              colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Path", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 420),
+                              colours.alpha_grey(190), 10)
+
+                    y += 15
+                    if pctl.master_library[r_menu_index].samplerate != 0:
+                        draw_text((x + 8 + 10, y + 40), "Samplerate", colours.alpha_grey(140), 12)
+                        draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].samplerate), colours.alpha_grey(190), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Samplerate:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].samplerate), colours.grey(200), 12)
+                    if pctl.master_library[r_menu_index].bitrate != 0:
+                        draw_text((x + 8 + 10, y + 40), "Bitrate", colours.alpha_grey(140), 12)
+                        line =  str(pctl.master_library[r_menu_index].bitrate)
+                        draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Bitrate:", colours.grey(200), 12)
-                    line =  str(pctl.master_library[r_menu_index].bitrate)
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey(200), 12)
-
-                    y += 15
-
-                    draw_text((x + 8 + 10, y + 40), "Duration:", colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Duration", colours.alpha_grey(140), 12)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey(200), 12)
+                    draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 11)
 
                     y += 15
-
-                    draw_text((x + 8 + 10, y + 40), "Filesize:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size), colours.grey(200), 12)
+                    if pctl.master_library[r_menu_index].size != 0:
+                        draw_text((x + 8 + 10, y + 40), "Filesize", colours.alpha_grey(140), 12)
+                        draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size), colours.alpha_grey(190), 12)
 
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Genre:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].genre, colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Genre", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].genre, colours.alpha_grey(190), 12)
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Date:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date), colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Date", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date), colours.alpha_grey(190), 12)
 
                     y += 23
 
@@ -11452,16 +11476,16 @@ while running:
                         total = pctl.star_library[key]
                         ratio = total / pctl.master_library[r_menu_index].length
 
-                    draw_text((x + 8 + 10, y + 40), "Play count:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play count", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.alpha_grey(190), 12)
 
                     y += 15
 
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Play time:", colours.grey(200), 12)
-                    draw_text((x + 8 + 90, y + 40), str(line), colours.grey(200), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play time", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), str(line), colours.alpha_grey(190), 12)
 
             if pref_box.enabled:
                 rect = [0, 0, window_size[0], window_size[1]]
