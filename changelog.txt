@@ -3,10 +3,11 @@ Changelog-------------------------------------
 
 v1.7.0
 
- - Redesigned icons
+ - Moved last.fm setup to new tab in settings
  - Tweaked styling of various interface elements
  - Tweaked playlist formatting and appearance
  - Tweaked config file formatting
+ - Redesigned icons
  - Removed custom playlist row formatting
  - Removed hide scroll bar as option
  - Removed highlight artist as option

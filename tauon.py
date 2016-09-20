@@ -513,12 +513,6 @@ multi_playlist = [['Default', 0, [], 0, 0, 0]]
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
 
-playlist_entry_box_size = [250, 60]
-
-playlist_entry_box_half = [int(playlist_entry_box_size[0] / 2), int(playlist_entry_box_size[1] / 2)]
-NPN = ""
-NSN = ""
-new_playlist_box = False
 rename_playlist_box = False
 rename_index = 0
 
@@ -1384,12 +1378,13 @@ class LastFMapi:
             return 0
 
         if lfm_username == "":
-            lfm_user_box = True
+            #lfm_user_box = True
+            show_message("No account. See last fm tab in settings")
             return False
 
         if lfm_hash == "":
             if lfm_password == "":
-                lfm_pass_box = True
+                show_message("Missing Password. See last fm tab in settings")
                 return False
             else:
                 lfm_hash = pylast.md5(lfm_password)
@@ -2956,6 +2951,43 @@ def draw_text(location, text, colour, font, max=1000):
     global text_cache
     return draw_text2(location, text, colour, font, max)
 
+class TextBox:
+
+    blink_activate = 0
+    cursor = True
+    blink_time = 0
+
+    def __init__(self):
+
+        self.text = ""
+
+    def draw(self, x, y, colour, active=True, secret=False):
+
+        if active:
+            self.text += input_text
+            if input_text != "":
+                cursor_blink_timer.get()
+                self.blink_time = 0
+                self.cursor = True
+            if key_backspace_press and len(self.text) > 0:
+                self.text = self.text[:-1]
+
+        if secret:
+            space = draw_text((x, y), '●' * len(self.text), colour, 12)
+        else:
+            space = draw_text((x, y), self.text, colour, 12)
+
+        if active and TextBox.cursor:
+            xx = x + space + 2
+            yy = y + 3
+            draw.line(xx, yy, xx, yy + 10, colour)
+
+        TextBox.blink_activate = 100
+
+rename_text_area = TextBox()
+search_text = TextBox()
+last_fm_user_field = TextBox()
+last_fm_pass_field = TextBox()
 
 temp_dest = SDL_Rect(0, 0)
 
@@ -4231,11 +4263,10 @@ def activate_genre_box(index):
 def rename_playlist(index):
     global rename_playlist_box
     global rename_index
-    global NPN
 
     rename_playlist_box = True
     rename_index = index
-    NPN = ""
+    rename_text_area.text = ""
 
 
 tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True)
@@ -7037,6 +7068,10 @@ class Over:
 
         self.drives = []
 
+        self.temp_lastfm_user = ""
+        self.temp_lastfm_pass = ""
+        self.lastfm_input_box = 0
+
         self.tab_active = 4
         self.tabs = [
             ["Folder Import", self.files],
@@ -7044,6 +7079,7 @@ class Over:
             ["Playlist", self.config_v],
             ["Transcode", self.codec_config],
             ["View", self.config_b],
+            ["Last.fm", self.last_fm_box],
             ["Stats", self.stats],
             ["About", self.about]
         ]
@@ -7074,10 +7110,10 @@ class Over:
         if w == 0:
             w = draw.text_calc(text, 11) + 10
         rect = (x, y, w, 20)
-        draw.rect_r(rect, colours.grey(50))
+        draw.rect_r(rect, colours.alpha_grey(9), True)
         fields.add(rect)
         if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [40, 40, 40, 60], True)
+            draw.rect_r(rect, [255, 255, 255, 15], True)
             if self.click:
                 plug()
         draw_text((x + int(w/2), rect[1] + 2, 2), text, [255, 255, 255, 140], 11)
@@ -7092,6 +7128,76 @@ class Over:
             function()
         if function(1):
             draw.rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
+
+    def last_fm_box(self):
+
+        x = self.box_x + self.item_x_offset
+        y = self.box_y + 20
+        draw_text((x + 20, y - 3), 'Last.fm account', [255, 255, 255, 140], 11)
+        if lfm_username != "":
+            draw_text((x + 130, y - 3), "Current user: " + lfm_username , [255, 255, 255, 70], 11)
+
+        rect = [x + 20, y + 40, 210, 16]
+        rect2 = [x + 20, y + 80, 210, 16]
+        if self.click:
+            if coll_point(mouse_position, rect):
+                self.lastfm_input_box = 0
+
+            elif coll_point(mouse_position, rect2):
+                self.lastfm_input_box = 1
+
+        if key_tab:
+            if self.lastfm_input_box == 0:
+                self.lastfm_input_box = 1
+            elif self.lastfm_input_box == 1:
+                self.lastfm_input_box = 0
+            else:
+                self.lastfm_input_box = 0
+
+        draw.rect_r(rect, colours.alpha_grey(10), True)
+        draw.rect_r(rect2, colours.alpha_grey(10), True)
+
+        if last_fm_user_field.text == "":
+            draw_text((rect[0] + 9, rect[1]), "Username", colours.alpha_grey(30), 11)
+        if last_fm_pass_field.text == "":
+            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.alpha_grey(30), 11)
+
+        if self.lastfm_input_box == 0:
+            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180))
+        else:
+            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180), False)
+
+        if self.lastfm_input_box == 1:
+            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.alpha_grey(180), secret=True)
+        else:
+            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.alpha_grey(180), False, True)
+
+        if key_return_press:
+            self.update_lfm()
+
+        y += 120
+        self.button(x + 50, y, "Update", self.update_lfm, 65)
+        self.button(x + 130, y, "Clear", self.clear_lfm, 65)
+
+    def clear_lfm(self):
+        global lfm_hash
+        global lfm_password
+        global lfm_username
+        lfm_hash = ""
+        lfm_password = ""
+        lfm_username = ""
+        last_fm_user_field.text = ""
+        last_fm_pass_field.text = ""
+        self.lastfm_input_box = 0
+
+    def update_lfm(self):
+
+        global lfm_password
+        global lfm_username
+        lfm_password = last_fm_pass_field.text
+        lfm_username = last_fm_user_field.text
+        last_fm_pass_field.text = ""
+        self.lastfm_input_box = 3
 
     def codec_config(self):
 
@@ -7588,9 +7694,9 @@ class Over:
                                 shutil.rmtree(folder_path)
                                 os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
 
-            draw.rect_r(box, colours.grey(50))
+            draw.rect_r(box, colours.alpha_grey(8), True)
             fields.add(box)
-            draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", [200, 200, 200, 200], 12)
+            draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", colours.alpha_grey(130), 12)
         y = y2
         y += 0
 
@@ -7598,7 +7704,7 @@ class Over:
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw.rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, colours.alpha_grey(15), True)
             if self.click:
                 order = LoadClass()
                 order.playlist = copy.deepcopy(pctl.playlist_active)
@@ -7606,15 +7712,15 @@ class Over:
                 load_orders.append(copy.deepcopy(order))
 
 
-        draw.rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.alpha_grey(8), True)
         fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to current playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to current playlist", colours.alpha_grey(130), 12)
 
         y += 25
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw.rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, colours.alpha_grey(15), True)
             if self.click:
                 pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
                 order = LoadClass()
@@ -7623,15 +7729,15 @@ class Over:
                 load_orders.append(copy.deepcopy(order))
 
 
-        draw.rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.alpha_grey(8), True)
         fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to new playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to new playlist", colours.alpha_grey(130), 12)
 
         y += 25
 
         box = (x + 300, y + 7, 200, 20)
         if coll_point(mouse_position, box):
-            draw.rect_r(box, [40, 40, 40, 60], True)
+            draw.rect_r(box, colours.alpha_grey(15), True)
             if self.click:
 
                 in_current = os.listdir(self.current_path)
@@ -7646,9 +7752,9 @@ class Over:
                         load_orders.append(copy.deepcopy(order))
 
 
-        draw.rect_r(box, colours.grey(50))
+        draw.rect_r(box, colours.alpha_grey(8), True)
         fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "Each sub folder as new playlist", [200, 200, 200, 200], 12)
+        draw_text((box[0] + 100, box[1] + 2, 2), "Each sub folder as new playlist", colours.alpha_grey(130), 12)
 
 
 class Fields:
@@ -8543,7 +8649,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         line = str(n_track.track_number)
         line = line.split("/", 1)[0]
 
-        if dd_index and len(line) == 3:
+        if dd_index and len(line) == 1:
             line = "0" + line
 
         indexLine = line
@@ -9333,6 +9439,7 @@ while running:
         key_comma_press = False
         key_quote_hit = False
         key_return_press_w = False
+        key_tab = False
         mouse_wheel = 0
         input_text = ''
 
@@ -9521,6 +9628,8 @@ while running:
                 key_comma_press = True
             elif event.key.keysym.sym == SDLK_QUOTE:
                 key_quote_hit = True
+            elif event.key.keysym.sym == SDLK_TAB:
+                key_tab = True
 
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
@@ -9692,10 +9801,7 @@ while running:
                 SDL_SetWindowBordered(t_window, SDL_FALSE)
 
         if key_F8:
-            lfm_hash = ""
-            lfm_password = ""
-            lfm_username = ""
-            show_message("Account Info Reset")
+            pass
 
         if key_del:
             del_selected()
@@ -10216,7 +10322,6 @@ while running:
                     and radiobox is False \
                     and encoding_box is False \
                     and rename_playlist_box is False \
-                    and new_playlist_box is False \
                     and gui.message_box is False \
                     and pref_box.enabled is False \
                     and track_box is False \
@@ -10720,7 +10825,6 @@ while running:
                                 and encoding_box is False \
                                 and pref_box.enabled is False \
                                 and rename_playlist_box is False \
-                                and new_playlist_box is False \
                                 and gui.message_box is False \
                                 and track_box is False \
                                 and genre_box is False:
@@ -11101,74 +11205,26 @@ while running:
 
                     p += 1
 
+            if rename_playlist_box:
+                rect = [0,0, 250, 60]
+                rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
+                rect[1] = int(window_size[1] / 2) - rect[3]
 
+                draw.rect((rect[0] - 3, rect[1] - 3), (rect[2] + 6, rect[3] + 6), colours.grey(60), True)
+                draw.rect_r(rect, colours.top_panel_background, True)
+                draw.rect((rect[0] + 15, rect[1] + 30), (220, 19), colours.alpha_grey(10), True)
 
+                rename_text_area.draw(rect[0] + 20, rect[1] + 30, colours.alpha_grey(120))
 
-            if new_playlist_box is True:
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
+                draw_text((rect[0] + 17, rect[1] + 5), "Rename Playlist", colours.side_bar_line2, 12)
 
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
-                NPN += input_text
-                if key_backspace_press and len(NPN) > 0:
-                    NPN = NPN[:-1]
-                draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 9,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 5,
-                           playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), "New Playlist:",
-                          colours.side_bar_line2,
-                          12)
-                c_blink = 200
-                draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 20,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30,
-                           playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), NPN + cursor,
-                          colours.side_bar_line2, 12)
                 if (key_esc_press and len(editline) == 0) or mouse_click or right_click:
-
-                    new_playlist_box = False
-                elif key_return_press:
-                    new_playlist_box = False
-                    key_return_press = False
-                    if len(NPN) > 0:
-                        pctl.multi_playlist.append([NPN, 0, [], 0, 0, 0])
-                    # else:
-                    #     pctl.multi_playlist.append(["Playlist", 0, [], 0, 0, 0])
-
-            if rename_playlist_box is True:
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.top_panel_background, True)
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]),
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1]))),
-                          (playlist_entry_box_size[0], playlist_entry_box_size[1]), colours.grey(75))
-
-                draw.rect((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 15,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30), (220, 19), colours.grey(50))
-                NPN += input_text
-                if key_backspace_press and len(NPN) > 0:
-                    NPN = NPN[:-1]
-                draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 9,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 5,
-                           playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), "Rename Playlist:",
-                          colours.side_bar_line2,
-                          12)
-                c_blink = 200
-                draw_text((int(window_size[0] / 2) - (playlist_entry_box_half[0]) + 20,
-                           (int(window_size[1] / 2) - (playlist_entry_box_half[1])) + 30,
-                           playlist_entry_box_size[0] - 40, playlist_entry_box_size[1] - 95), NPN + cursor,
-                          colours.side_bar_line2, 12)
-                if (key_esc_press and len(editline) == 0) or mouse_click or right_click:
-
                     rename_playlist_box = False
                 elif key_return_press:
                     rename_playlist_box = False
                     key_return_press = False
-                    if len(NPN) > 0:
-                        pctl.multi_playlist[rename_index][0] = NPN
+                    if len(rename_text_area.text) > 0:
+                        pctl.multi_playlist[rename_index][0] = rename_text_area.text
 
             if gui.message_box:
                 if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
@@ -11182,66 +11238,12 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(55), True)
                 draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(75))
+
 
                 draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
 
-            if lfm_pass_box:
-                if key_esc_press:
-                    lfm_pass_box = False
-                if key_return_press:
-                    lfm_pass_box = False
-                    key_return_press = False
-                    lastfm.connect()
-
-                w = 400
-                h = 50
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(75))
-
-                lfm_password += input_text
-
-                if key_backspace_press and len(lfm_password) > 0:
-                    lfm_password = lfm_password[:-1]
-
-                line = "Last FM Account Password: "
-
-                for c in lfm_password:
-                    line += "●"
-
-                draw_text((x + 10, y + 7 + 20), line, colours.grey(150), 12)
-                draw_text((x + 10, y + 7), "Please enter the following.", colours.grey(150), 12)
-
-            if lfm_user_box:
-                if key_return_press:
-                    lfm_user_box = False
-                    lfm_pass_box = True
-                    key_return_press = False
-                if key_esc_press:
-                    lfm_user_box = False
-
-                w = 400
-                h = 50
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(75))
-
-                lfm_username += input_text
-
-                if key_backspace_press and len(lfm_username) > 0:
-                    lfm_username = lfm_username[:-1]
-
-                line = "Last FM Account Username: " + lfm_username
-
-                draw_text((x + 10, y + 7 + 20), line, colours.grey(150), 12)
-                draw_text((x + 10, y + 7), "Please enter the following then try again.  Press F8 at any time to reset.",
-                          colours.grey(150), 12)
 
             if genre_box:
 
@@ -11732,19 +11734,19 @@ while running:
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
                 quick_search_mode = True
-                NSN = ""
+                search_text.text = ""
                 input_text = ""
             elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
                     key_esc_press and len(editline) == 0)) or mouse_click and quick_search_mode is True:
                 quick_search_mode = False
-                NSN = ""
+                search_text.text = ""
 
             if quick_search_mode is True:
 
                 if key_ctrl_down and key_v_press:
                     try:
-                        # NSN += r_window.clipboard_get()
-                        NSN += pyperclip.paste()
+                        # search_text.text += r_window.clipboard_get()
+                        search_text.text += pyperclip.paste()
                     except:
                         print("Clipboard Error")
 
@@ -11755,65 +11757,49 @@ while running:
 
                 draw.rect_r(rect, colours.bottom_panel_colour, True)
                 draw.rect_r(rect2, [255,255,255,10], True)
-                #draw.rect_r(rect, colours.grey(60))
 
                 if len(input_text) > 0:
                     search_index = -1
-
-                NSN += input_text
-
-                if key_backspace_press and len(NSN) > 0:
-                    NSN = NSN[:-1]
-
-                c_blink = 200
-                if len(NSN) != 0 and NSN[0] == '/':
+                
+                if len(search_text.text) != 0 and search_text.text[0] == '/':
                     line = "Folder filter mode. Enter path segment."
                 else:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                 draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
 
+                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(125))
 
-                space = draw_text((rect[0] + 8, rect[1] + 4), NSN, colours.grey(125), 12)
-                if cursor == "":
-                    x = rect[0] + space + 10
-                    y = rect[1] + 7
-                    draw.line(x, y, x, y + 11, colours.grey(115))
-
-
-                if key_esc_press:
-                    new_playlist_box = False
-
-                if (key_shift_down or (len(NSN) > 0 and NSN[0] == '/')) and key_return_press:
+                if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
                     key_return_press = False
                     playlist = []
-                    if len(NSN) > 0:
-                        if NSN[0] == '/':
-                            if NSN.lower() == "/random" or NSN.lower() == "/shuffle":
+                    if len(search_text.text) > 0:
+                        if search_text.text[0] == '/':
+                            if search_text.text.lower() == "/random" or search_text.text.lower() == "/shuffle":
                                 gen_500_random(pctl.playlist_active)
-                            elif NSN.lower() == "/top" or NSN.lower() == "/most":
+                            elif search_text.text.lower() == "/top" or search_text.text.lower() == "/most":
                                 gen_top_100(pctl.playlist_active)
-                            elif NSN.lower() == "/length" or NSN.lower() == "/duration" or NSN.lower() == "/len":
+                            elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration" or search_text.text.lower() == "/len":
                                 gen_sort_len(pctl.playlist_active)
                             else:
 
-                                if NSN[-1] == "/":
-                                    title = NSN.replace('/', "")
+                                if search_text.text[-1] == "/":
+                                    title = search_text.text.replace('/', "")
                                 else:
-                                    NSN = NSN.replace('/', "")
-                                    title = NSN
-                                NSN = NSN.lower()
+                                    search_text.text = search_text.text.replace('/', "")
+                                    title = search_text.text
+                                search_text.text = search_text.text.lower()
                                 for item in default_playlist:
-                                    if NSN in pctl.master_library[item].parent_folder_path.lower():
+                                    if search_text.text in pctl.master_library[item].parent_folder_path.lower():
                                         playlist.append(item)
                                 if len(playlist) > 0:
 
-                                    # title = NSN
+                                    # title = search_text.text
                                     pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
                                     switch_playlist(len(pctl.multi_playlist) - 1)
 
 
                         else:
-                            search_terms = NSN.lower().split()
+                            search_terms = search_text.text.lower().split()
                             for item in default_playlist:
                                 line = pctl.master_library[item].title.lower() + \
                                        pctl.master_library[item].artist.lower() \
@@ -11824,7 +11810,7 @@ while running:
                             if len(playlist) > 0:
                                 pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
                                 switch_playlist(len(pctl.multi_playlist) - 1)
-                        NSN = ""
+                        search_text.text = ""
                         quick_search_mode = False
 
 
@@ -11832,7 +11818,7 @@ while running:
 
                     gui.pl_update += 1
 
-                    if len(NSN) > 0 and NSN[0] != "/":
+                    if len(search_text.text) > 0 and search_text.text[0] != "/":
                         oi = search_index
 
                         while search_index < len(default_playlist) - 1:
@@ -11840,7 +11826,7 @@ while running:
                             if search_index > len(default_playlist) - 1:
                                 search_index = 0
 
-                            search_terms = NSN.lower().split()
+                            search_terms = search_text.text.lower().split()
                             line = pctl.master_library[default_playlist[search_index]].title.lower() + \
                                    pctl.master_library[default_playlist[search_index]].artist.lower() \
                                    + pctl.master_library[default_playlist[search_index]].album.lower() + \
@@ -11873,7 +11859,7 @@ while running:
                         search_index -= 1
                         if search_index > len(default_playlist) - 1:
                             search_index = len(default_playlist) - 1
-                        search_terms = NSN.lower().split()
+                        search_terms = search_text.text.lower().split()
                         line = pctl.master_library[default_playlist[search_index]].title.lower() + \
                                 pctl.master_library[default_playlist[search_index]].artist.lower() \
                                 + pctl.master_library[default_playlist[search_index]].album.lower() + \
@@ -12364,22 +12350,19 @@ while running:
         pctl.queue_step -= 1
 
     # cursor blinker
-    if c_blink > 0:
-        c_blink -= 1
-        c_time += cursor_blink_timer.hit()
-        if c_time > 3:
-            c_time = 0
-        if c_time > 0.6:
-            c_time = 0
+
+    if TextBox.blink_activate > 0:
+        TextBox.blink_activate -= 1
+        TextBox.blink_time += cursor_blink_timer.hit()
+        if TextBox.blink_time > 3:
+            TextBox.blink_time = 0
+        if TextBox.blink_time > 0.6:
+            TextBox.blink_time = 0
             gui.update += 1
-            if cursor == "|":
-                cursor = ""
-            elif cursor == "":
-                cursor = "|"
-        if input_text != "":
-            c_time = 0
-            cursor = "|"
-            gui.update += 1
+            if TextBox.cursor is True:
+                TextBox.cursor = False
+            elif TextBox.cursor is False:
+                TextBox.cursor = True
 
     if system == 'windows':
 
