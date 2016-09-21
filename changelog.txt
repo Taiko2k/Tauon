@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v1.7.0
 
+ - Added shortcut hints to various menu entries
  - Moved last.fm setup to new tab in settings
  - Tweaked styling of various interface elements
  - Tweaked playlist formatting and appearance
@@ -12,6 +13,7 @@ v1.7.0
  - Removed hide scroll bar as option
  - Removed highlight artist as option
  - Removed pause lock option
+ - Removed pyperclip as dependency
 
 v1.6.3
 

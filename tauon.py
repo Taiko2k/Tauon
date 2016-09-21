@@ -126,7 +126,6 @@ import math
 import locale
 import colorsys
 import webbrowser
-import pyperclip
 import base64
 import re
 import xml.etree.ElementTree as ET
@@ -272,8 +271,8 @@ side_panel_enable = True
 quick_drag = False
 scrobble_mark = False
 radiobox = False
-NXN = "http://"
-NRN = "%n. %a - %t%x"
+radio_field_text = "http://"
+
 
 renamebox = False
 p_stay = 0
@@ -714,7 +713,7 @@ try:
     default_playlist = save[9]
     playlist_playing = save[10]
     cue_list = save[11]
-    NXN = save[12]
+    radio_field_text = save[12]
     theme = save[13]
     folder_image_offsets = save[14]
     lfm_username = save[15]
@@ -2951,6 +2950,7 @@ def draw_text(location, text, colour, font, max=1000):
     global text_cache
     return draw_text2(location, text, colour, font, max)
 
+
 class TextBox:
 
     blink_activate = 0
@@ -2971,6 +2971,10 @@ class TextBox:
                 self.cursor = True
             if key_backspace_press and len(self.text) > 0:
                 self.text = self.text[:-1]
+            if key_ctrl_down and key_v_press:
+                clip = SDL_GetClipboardText().decode('utf-8')
+                if clip != "" and clip != '\n' and clip != 'SDL_GetClipboardText()':
+                    self.text += clip
 
         if secret:
             space = draw_text((x, y), '●' * len(self.text), colour, 12)
@@ -2988,6 +2992,10 @@ rename_text_area = TextBox()
 search_text = TextBox()
 last_fm_user_field = TextBox()
 last_fm_pass_field = TextBox()
+rename_files = TextBox()
+rename_files.text = "%n. %a - %t%x"
+radio_field = TextBox()
+radio_field.text = radio_field_text
 
 temp_dest = SDL_Rect(0, 0)
 
@@ -3817,10 +3825,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint])
 
     def add_sub(self, title, width):
         self.items.append([title, True, self.sub_number, self.deco, width])
@@ -3886,7 +3894,11 @@ class Menu:
                              colours.grey(40), True)
 
                 # Render the items label
-                draw_text((self.pos[0] + 7 + 5, self.pos[1] + ytoff + i * self.h), label, fx[0], 11)
+                draw_text((self.pos[0] + 12, self.pos[1] + ytoff + i * self.h), label, fx[0], 11)
+
+                # Render the items hint
+                if len(self.items[i]) > 6 and self.items[i][6] != None:
+                    draw_text((self.pos[0] + self.w - 5, self.pos[1] + ytoff + i * self.h, 1), self.items[i][6], colours.alpha_grey(40), 10)
 
                 # Render sub menu if active
                 if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
@@ -4269,7 +4281,7 @@ def rename_playlist(index):
     rename_text_area.text = ""
 
 
-tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True)
+tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 def export_xspf(pl):
 
@@ -4444,7 +4456,7 @@ def delete_playlist(index):
     del pctl.multi_playlist[index]
     reload()
 
-tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True)
+tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 
@@ -4871,7 +4883,7 @@ def ser_rym(index):
 def clip_ar_al(index):
     line = pctl.master_library[index].artist + " - " + \
            pctl.master_library[index].album
-    pyperclip.copy(line)
+    SDL_SetClipboardText(line.encode('utf-8'))
 
 if prefs.show_rym:
     track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
@@ -4882,8 +4894,7 @@ def clip_ar_tr(index):
     line = pctl.master_library[index].artist + " - " + \
            pctl.master_library[index].title
 
-    pyperclip.copy(line)
-
+    SDL_SetClipboardText(line.encode('utf-8'))
 
 track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
 
@@ -5281,7 +5292,7 @@ x_menu.add('Clear Queue', clear_queue, queue_deco)
 
 
 # x_menu.add_sub("Playback...", 120)
-extra_menu = Menu(140)
+extra_menu = Menu(150)
 
 
 def play_pause_deco():
@@ -5318,46 +5329,29 @@ def random_track():
     pctl.advance()
     pctl.random_mode = old
 
-# x_menu.add_to_sub('Random Track', 1, random_track)
 extra_menu.add('Random Track', random_track)
 
 def radio_random():
 
     pctl.advance(rr=True)
 
-# x_menu.add_to_sub('Radio Random', 1, radio_random)
-extra_menu.add('Radio Random', radio_random)
+extra_menu.add('Radio Random', radio_random, hint='/')
 
-# x_menu.add_to_sub('Revert', 1, pctl.revert)
 extra_menu.add('Revert', pctl.revert)
-
-
-def repeat_deco():
-    line_colour = colours.grey(150)
-    if pctl.repeat_mode:
-        return [line_colour, colours.menu_background, "Repeat - Disable"]
-    return [line_colour, colours.menu_background, None]
 
 
 def toggle_repeat():
     pctl.repeat_mode ^= True
 
-# x_menu.add_to_sub('Repeat - Enable', 1, toggle_repeat, repeat_deco)
-extra_menu.add('Repeat - Enable', toggle_repeat, repeat_deco)
-
-def random_deco():
-    line_colour = colours.grey(150)
-    if pctl.random_mode:
-        return [line_colour, colours.menu_background, "Random - Disable"]
-    return [line_colour, colours.menu_background, None]
+extra_menu.add('Toggle Repeat', toggle_repeat, hint='COMMA')
 
 
 def toggle_random():
     pctl.random_mode ^= True
 
-# x_menu.add_to_sub('Random - Enable', 1, toggle_random, random_deco)
-extra_menu.add('Random - Enable', toggle_random, random_deco)
-extra_menu.add("Go To Playing", pctl.show_current)
+extra_menu.add('Toggle Random', toggle_random,  hint='PERIOD')
+extra_menu.add("Go To Playing", pctl.show_current, hint="QUOTE")
+
 
 def toggle_level_meter(mode=0):
     global gui
@@ -5373,18 +5367,11 @@ def toggle_level_meter(mode=0):
         gui.vis = 2
 
 
-# if default_player == 'BASS':
-#     x_menu.add("Toggle Level Meter", toggle_level_meter, bass_features_deco)
-
-
 def advance_theme():
     global theme
     global themeChange
     theme += 1
     themeChange = True
-
-
-# x_menu.add("Next Theme", advance_theme)
 
 
 def activate_radio_box():
@@ -5394,13 +5381,6 @@ def activate_radio_box():
 
 if default_player == 'BASS':
     x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
-
-
-# def activate_info_box():
-#     pref_box.enabled = True
-#
-#
-# x_menu.add("Stats/Config...", activate_info_box)
 
 
 def last_fm_menu_deco():
@@ -5424,7 +5404,7 @@ def exit_func():
     running = False
 
 
-x_menu.add("Exit", exit_func)
+x_menu.add("Exit", exit_func, hint="Alt+F4")
 
 
 def switch_playlist(number, cycle=False):
@@ -5456,7 +5436,6 @@ def switch_playlist(number, cycle=False):
     while pctl.playlist_active < 0:
         pctl.playlist_active += len(pctl.multi_playlist)
 
-    # pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
     default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
     playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
     playlist_selected = pctl.multi_playlist[pctl.playlist_active][5]
@@ -5465,12 +5444,7 @@ def switch_playlist(number, cycle=False):
         pctl.playlist_playing = playlist_selected  # pctl.multi_playlist[pctl.playlist_active][1]
         pctl.playlist_playing = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][1])
         pctl.active_playlist_playing = pctl.playlist_active
-        # 
-        # print(pctl.playlist_playing)
 
-    # playlist_selected = playlist_position + 5
-    # if playlist_selected > len(default_playlist):
-    #     playlist_selected = 0
     shift_selection = [playlist_selected]
 
     if album_mode:
@@ -5532,11 +5506,13 @@ def view_standard():
     if not side_panel_enable:
         toggle_side_panel()
 
+
 def standard_view_deco():
     line_colour = colours.grey(50)
     if album_mode or gui.combo_mode or not side_panel_enable:
         line_colour = colours.grey(150)
     return [line_colour, colours.menu_background, None]
+
 
 def gallery_only_view():
     if gui.show_playlist is False:
@@ -5554,8 +5530,6 @@ def gallery_only_view():
     album_playlist_width = playlist_width
     playlist_width = -19
 
-
-    # album_playlist_width = 0
 
 def force_album_view():
     toggle_album_mode(True)
@@ -5588,8 +5562,6 @@ def loader():
     global to_got
 
     loaded_pathes_cache = {}
-
-
     added = []
 
     def get_end_folder(direc):
@@ -5599,6 +5571,7 @@ def loader():
                 direc = direc[-w:]
                 return direc
         return None
+
 
     def add_from_cue(path):
 
@@ -9835,8 +9808,6 @@ while running:
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
 
-            print(window_size)
-
             key_F7 = False
 
             # GUI_Mode = 3
@@ -11210,7 +11181,7 @@ while running:
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect[1] = int(window_size[1] / 2) - rect[3]
 
-                draw.rect((rect[0] - 3, rect[1] - 3), (rect[2] + 6, rect[3] + 6), colours.grey(60), True)
+                draw.rect((rect[0] - 2, rect[1] - 2), (rect[2] + 4, rect[3] + 4), colours.grey(60), True)
                 draw.rect_r(rect, colours.top_panel_background, True)
                 draw.rect((rect[0] + 15, rect[1] + 30), (220, 19), colours.alpha_grey(10), True)
 
@@ -11501,18 +11472,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(50))
-
-                # NRN = rename_in.update()
-                NRN += input_text
-                c_blink = 200
-
-                if key_backspace_press and len(NRN) > 0:
-                    NRN = NRN[:-1]
-
-                if key_ctrl_down and key_v_press:
-                    NRN = pyperclip.paste()
 
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     renamebox = False
@@ -11528,7 +11489,9 @@ while running:
                             r_todo.append(item)
 
                 draw_text((x + 10, y + 10,), "Physically rename all tracks in folder to format:", colours.grey(150), 12)
-                draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+                # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+                rename_files.draw(x + 14, y + 40, colours.alpha_grey(150))
+                NRN = rename_files.text
                 # c_blink = 200
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
@@ -11690,24 +11653,14 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(50))
-
-                NXN += input_text
-
-                if key_backspace_press and len(NXN) > 0:
-                    NXN = NXN[:-1]
-
-                if key_ctrl_down and key_v_press:
-                    # NXN = r_window.clipboard_get()
-                    NXN = pyperclip.paste()
 
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
                 draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
-                draw_text((x + 14, y + 40,), NXN + cursor, colours.grey(150), 12)
-                c_blink = 200
+                radio_field.draw(x + 14, y + 40, colours.alpha_grey(150))
 
                 draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
 
@@ -11722,8 +11675,8 @@ while running:
 
                 if (key_return_press_w or (
                             mouse_click and coll_point(mouse_position,
-                                                       (x + 8 + 350 + 10, y + 38, 40, 22)))) and 'http' in NXN:
-                    pctl.url = NXN.encode('utf-8')
+                                                       (x + 8 + 350 + 10, y + 38, 40, 22)))) and 'http' in radio_field.text:
+                    pctl.url = radio_field.text.encode('utf-8')
                     radiobox = False
                     pctl.playing_state = 0
                     pctl.playerCommand = "url"
@@ -11731,6 +11684,7 @@ while running:
                     pctl.playing_state = 3
 
                 input_text = ""
+
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
                 quick_search_mode = True
@@ -11742,13 +11696,6 @@ while running:
                 search_text.text = ""
 
             if quick_search_mode is True:
-
-                if key_ctrl_down and key_v_press:
-                    try:
-                        # search_text.text += r_window.clipboard_get()
-                        search_text.text += pyperclip.paste()
-                    except:
-                        print("Clipboard Error")
 
                 rect2 = [0, window_size[1] - 90, 400, 25]
                 rect = [0, window_size[1] - 120, 400, 65]
@@ -12437,7 +12384,7 @@ save = [pctl.master_library,
         default_playlist,
         pctl.playlist_playing,
         cue_list,
-        NXN,
+        radio_field.text,
         theme,
         folder_image_offsets,
         lfm_username,
