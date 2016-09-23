@@ -83,7 +83,6 @@ print('Install directory: ' + install_directory)
 encoder_output = user_directory + '/encoder/'
 b_active_directory = install_directory.encode('utf-8')
 
-
 try:
     open(user_directory + '/lock', 'x')
     pass
@@ -587,7 +586,8 @@ class Prefs:
         self.transcode_codec = 'opus'
         self.transcode_mode = 'single'
         self.transcode_bitrate = 64
-        
+
+        self.line_style = 1
 
 
 
@@ -725,34 +725,37 @@ try:
     savetime = save[21]
     gui.vis = save[22]
     playlist_selected = save[23]
-    if save[24] != None:
+    if save[24] is not None:
         album_mode_art_size = save[24]
-    if save[25] != None:
+    if save[25] is not None:
         draw_border = save[25]
-    if save[26] != None:
+    if save[26] is not None:
         prefs.enable_web = save[26]
-    if save[27] != None:
+    if save[27] is not None:
         prefs.allow_remote = save[27]
-    if save[28] != None:
+    if save[28] is not None:
         prefs.expose_web = save[28]
-    if save[29] != None:
+    if save[29] is not None:
         prefs.enable_transcode = save[29]
-    if save[30] != None:
+    if save[30] is not None:
         prefs.show_rym = save[30]
-    if save[31] != None:
+    if save[31] is not None:
         combo_mode_art_size = save[31]
-    if save[32] != None:
+    if save[32] is not None:
         gui.maximized = save[32]
-    if save[33] != None:
+    if save[33] is not None:
         prefs.prefer_bottom_title = save[33]
-    if save[34] != None:
+    if save[34] is not None:
         gui.display_time_mode = save[34]
-    if save[35] != None:
+    if save[35] is not None:
         prefs.transcode_mode = save[35]
-    if save[36] != None:
+    if save[36] is not None:
         prefs.transcode_codec = save[36]
-    if save[37] != None:
+    if save[37] is not None:
         prefs.transcode_bitrate = save[37]
+    if save[38] is not None:
+        prefs.line_style = save[38]
+        
 
 except:
     print('Error loading save file')
@@ -918,6 +921,7 @@ class PlayerCtl:
         self.time_to_get = []
         self.a_time = 0
         self.b_time = 0
+        self.playlist_backup = []
 
         # Broadcasting
 
@@ -2656,7 +2660,9 @@ font_dict[14] = (font7, font7b)
 font_dict[212] = (fontG, font2b)
 font_dict[213] = (fontG13, font6b)
 
-flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
+
+
 
 if gui.maximized:
     flags |= SDL_WINDOW_MAXIMIZED
@@ -2673,6 +2679,7 @@ t_window = SDL_CreateWindow(window_title,
 SDL_SetWindowMinimumSize(t_window,450,175)
 # get window surface and set up renderer
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+
 
 window_surface = SDL_GetWindowSurface(t_window)
 
@@ -2700,7 +2707,6 @@ gui.pl_update = 2
 
 SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
 SDL_RenderClear(renderer)
-SDL_RenderPresent(renderer)
 
 fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
 
@@ -2971,10 +2977,9 @@ class TextBox:
                 self.cursor = True
             if key_backspace_press and len(self.text) > 0:
                 self.text = self.text[:-1]
-            if key_ctrl_down and key_v_press:
+            if key_ctrl_down and key_v_press and SDL_HasClipboardText():
                 clip = SDL_GetClipboardText().decode('utf-8')
-                if clip != "" and clip != '\n' and clip != 'SDL_GetClipboardText()':
-                    self.text += clip
+                self.text += clip
 
         if secret:
             space = draw_text((x, y), '●' * len(self.text), colour, 12)
@@ -4342,6 +4347,8 @@ def clear_playlist(index):
 
     global default_playlist
 
+    pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[index])
+
     del pctl.multi_playlist[index][2][:]
     if pctl.playlist_active == index:
         default_playlist = pctl.multi_playlist[index][2]
@@ -4453,6 +4460,7 @@ def delete_playlist(index):
         playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
 
     pctl.active_playlist_playing = pctl.playlist_active
+    pctl.playlist_backup = pctl.multi_playlist[index]
     del pctl.multi_playlist[index]
     reload()
 
@@ -4632,6 +4640,9 @@ def convert_folder(index):
             return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
+            return
+        if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
+            show_message("Error: Missing oggenc2.exe from '/encoder' directory")
             return
 
     folder = []
@@ -5122,7 +5133,7 @@ def activate_info_box():
 
 # x_menu.add("Go To Playing", pctl.show_current)
 
-x_menu.add("Create Empty Playlist", new_playlist)
+x_menu.add("New Playlist", new_playlist)
 
 x_menu.add("Settings...", activate_info_box)
 
@@ -6084,6 +6095,29 @@ def loader():
 
                             command += full_wav_out + ' ' + full_target_out
 
+                        elif prefs.transcode_codec == 'ogg':
+
+                            command = install_directory + '/encoder/oggenc2 --bitrate ' + str(
+                                prefs.transcode_bitrate) + ' '
+
+                            if system != 'windows':
+                                command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) + ' '
+
+                            if pctl.master_library[item].title != "":
+                                command += '--title "' + pctl.master_library[item].title.replace('"', "").replace("'", "") + '" '
+
+                            if pctl.master_library[item].artist != "":
+                                command += '--artist "' + pctl.master_library[item].artist.replace('"', "").replace("'", "") + '" '
+
+                            if pctl.master_library[item].album != "":
+                                command += '--album "' + pctl.master_library[item].album.replace('"', "").replace("'", "") + '" '
+
+                            if pctl.master_library[item].album != "":
+                                command += '--tracknum "' + str(pctl.master_library[item].track_number).replace('"', "").replace("'", "") + '" '
+
+                            command += full_wav_out + ' ' + full_target_out
+
+
                         print(shlex.split(command))
                         subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
                         print('done')
@@ -6162,6 +6196,13 @@ def loader():
 
                         if system != 'windows':
                             command = 'opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+
+                    elif prefs.transcode_codec == 'ogg':
+
+                        command = install_directory + '/encoder/oggenc2 --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+
+                        if system != 'windows':
+                            command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
 
                     print(shlex.split(command))
                     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
@@ -6981,6 +7022,13 @@ def switch_mp3(mode=0):
             return False
     prefs.transcode_codec = 'mp3'
 
+def switch_ogg(mode=0):
+    if mode == 1:
+        if prefs.transcode_codec == 'ogg':
+            return True
+        else:
+            return False
+    prefs.transcode_codec = 'ogg'
 
 def switch_opus(mode=0):
     if mode == 1:
@@ -7188,6 +7236,8 @@ class Over:
         y += 40
         self.toggle_square(x, y, switch_opus, "OPUS")
         y += 25
+        self.toggle_square(x, y, switch_ogg, "OGG")
+        y += 25
         self.toggle_square(x, y, switch_mp3, "MP3")
 
 
@@ -7206,7 +7256,7 @@ class Over:
         draw_text((x+4, y), "<", colours.grey(200), 11)
         x += 20
         # draw.rect_r((x,y,40,15), [255,255,255,10], True)
-        draw_text((x + 4, y), str(prefs.transcode_bitrate) + " kbs", [255,255,255,150], 11)
+        draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", [255,255,255,150], 11)
         x +=  40 + 15
         rect = (x, y, 15, 15)
         fields.add(rect)
@@ -7362,11 +7412,11 @@ class Over:
         x = self.box_x + self.item_x_offset - 10
         y = self.box_y - 10
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Playlist:", colours.grey(200), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(default_playlist)), colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in playlist", colours.alpha_grey(100), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(default_playlist)), colours.alpha_grey(190), 12)
         y += 20
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Playlist Length:", colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 10, y + 40), "Playlist length", colours.alpha_grey(100), 12)
 
         playlist_time = 0
         for item in default_playlist:
@@ -7374,14 +7424,13 @@ class Over:
 
         line = str(datetime.timedelta(seconds=int(playlist_time)))
 
-        draw_text((x + 8 + 10 + 130, y + 40), line, colours.grey(200), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), line, colours.alpha_grey(190), 12)
+        y += 35
+        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in database", colours.alpha_grey(100), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(pctl.master_library)), colours.alpha_grey(190), 12)
         y += 20
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in Database:", colours.grey(200), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(pctl.master_library)), colours.grey(200), 12)
-        y += 20
-        y += 20
-        draw_text((x + 8 + 10 + 10, y + 40), "Total Playtime:", colours.grey(200), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(pctl.total_playtime))), colours.grey(200), 14)
+        draw_text((x + 8 + 10 + 10, y + 40), "Total playtime", colours.alpha_grey(100), 12)
+        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(pctl.total_playtime))), colours.alpha_grey(190), 14)
 
     def config_v(self):
 
@@ -7409,6 +7458,20 @@ class Over:
             if y - y2 > 190:
                 y = y2
                 x += 205
+        y += 7
+        self.button(x,y, "Cycle line format", self.style_up)
+
+        x += 110
+        y += 2
+        if prefs.line_style == 1:
+            draw_text((x,y), "TN ARTIST TITLE     L T", colours.alpha_grey(35), 11)
+        elif prefs.line_style == 2:
+            draw_text((x, y), "TN ARTIST  TITLE  ALBUM T", colours.alpha_grey(35), 11)
+
+    def style_up(self):
+        prefs.line_style += 1
+        if prefs.line_style > 2:
+            prefs.line_style = 1
 
     def inside(self):
 
@@ -8588,7 +8651,7 @@ def star_line_render(x, y, track_object, render=True):
                 return star_x
 
 
-def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width):
+def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1):
     timec = colours.bar_time
     titlec = colours.title_text
     indexc = colours.index_text
@@ -8613,78 +8676,184 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
     artistoffset = 0
     indexLine = ""
 
-    if n_track.artist != "" or \
-                    n_track.title != "":
-        # force sequential indexing
-        # if pctl.multi_playlist[pctl.playlist_active][4] == 1:
-        #     line = str(p_track + 1)
+    if style == 2:
+
+        if n_track.artist != "" or \
+                        n_track.title != "":
+            line = str(n_track.track_number)
+            line = line.split("/", 1)[0]
+
+            if dd_index and len(line) == 1:
+                line = "0" + line
+
+            draw_text((start_x,
+                       y), line,
+                      alpha_mod(indexc, album_fade), row_font_size)
+
+        title_line = n_track.title
+        if title_line == "":
+            title_line = os.path.splitext((n_track.filename))[0]
+
+        draw_text2((start_x + 30,
+                       y),
+                       title_line,
+                      alpha_mod(titlec, album_fade),
+                      row_font_size,
+                      int(width * 0.32),
+                      1,
+                      default_playlist[p_track])
+
+        draw_text2((start_x + 30 + int(width * 0.35),
+                    y),
+                   n_track.artist,
+                   alpha_mod(artistc, album_fade),
+                   row_font_size,
+                   int(width * 0.25),
+                   1,
+                   default_playlist[p_track])
+
+        draw_text2((start_x + 30 + int(width * 0.63),
+                    y),
+                   n_track.album,
+                   alpha_mod(albumc, album_fade),
+                   row_font_size,
+                   int(width * 0.35) - 70,
+                   1,
+                   default_playlist[p_track])
+
+        #     indexLine = line
+        #     line = ""
+        #
+        #     if len(indexLine) > 2:
+        #         indexoffset += len(indexLine) * 5 - 15
+        #
+        #     if n_track.artist != "":
+        #         line0 = n_track.artist
+        #         artistoffset = draw_text2((start_x + 27,
+        #                                    y),
+        #                                   line0,
+        #                                   alpha_mod(artistc, album_fade),
+        #                                   row_font_size,
+        #                                   int(width / 3),
+        #                                   1,
+        #                                   default_playlist[p_track])
+        #
+        #         line = n_track.title
+        #     else:
+        #         line += n_track.title
         # else:
-        line = str(n_track.track_number)
-        line = line.split("/", 1)[0]
+        #     line = \
+        #         os.path.splitext((n_track.filename))[
+        #             0]
+        #
+        # index = default_playlist[p_track]
+        # key = pctl.master_library[index].title + pctl.master_library[index].filename
+        # star_x = 0
+        # if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+        #     index].length != 0:
+        #     total = pctl.star_library[key]
+        #     ratio = total / pctl.master_library[index].length
+        #     if ratio > 0.55:
+        #         star_x = int(ratio * 4)
+        #         if star_x > 60:
+        #             star_x = 60
+        #         draw.line(width + start_x - star_x - 45,
+        #                   y + 8,
+        #                   width + start_x - 42,
+        #                   y + 8,
+        #                   alpha_mod(colours.star_line, album_fade))
+        #
+        # draw_text((start_x,
+        #            y), indexLine,
+        #           alpha_mod(indexc, album_fade), row_font_size)
+        #
+        # draw_text2((start_x + 33 + artistoffset,
+        #             y),
+        #            line,
+        #            alpha_mod(titlec, album_fade),
+        #            row_font_size,
+        #            width - 71 - artistoffset - star_x - 20,
+        #            2,
+        #            default_playlist[p_track])
 
-        if dd_index and len(line) == 1:
-            line = "0" + line
 
-        indexLine = line
-        line = ""
 
-        if len(indexLine) > 2:
-            indexoffset += len(indexLine) * 5 - 15
+        line = get_display_time(n_track.length)
 
-        if n_track.artist != "":
-            line0 = n_track.artist
-            artistoffset = draw_text2((start_x + 27,
-                                       y),
-                                      line0,
-                                      alpha_mod(artistc, album_fade),
-                                      row_font_size,
-                                      int(width / 2),
-                                      1,
-                                      default_playlist[p_track])
+        draw_text((width + start_x - 36,
+                   y, 0), line,
+                  alpha_mod(timec, album_fade), row_font_size)
 
-            line = n_track.title
-        else:
-            line += n_track.title
     else:
-        line = \
-            os.path.splitext((n_track.filename))[
-                0]
 
-    index = default_playlist[p_track]
-    key = pctl.master_library[index].title + pctl.master_library[index].filename
-    star_x = 0
-    if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
-        index].length != 0:
-        total = pctl.star_library[key]
-        ratio = total / pctl.master_library[index].length
-        if ratio > 0.55:
-            star_x = int(ratio * 4)
-            if star_x > 60:
-                star_x = 60
-            draw.line(width + start_x - star_x - 45,
-                      y + 8,
-                      width + start_x - 42,
-                      y + 8,
-                      alpha_mod(colours.star_line, album_fade))
+        if n_track.artist != "" or \
+                        n_track.title != "":
+            line = str(n_track.track_number)
+            line = line.split("/", 1)[0]
 
-    draw_text((start_x,
-               y), indexLine,
-              alpha_mod(indexc, album_fade), row_font_size)
+            if dd_index and len(line) == 1:
+                line = "0" + line
 
-    draw_text2((start_x + 33 + artistoffset,
-                y),
-               line,
-               alpha_mod(titlec, album_fade),
-               row_font_size,
-               width - 71 - artistoffset - star_x - 20,
-               2,
-               default_playlist[p_track])
+            indexLine = line
+            line = ""
 
-    line = get_display_time(n_track.length)
+            if len(indexLine) > 2:
+                indexoffset += len(indexLine) * 5 - 15
 
-    draw_text((width + start_x - 36,
-               y, 0), line,
-              alpha_mod(timec, album_fade), row_font_size)
+            if n_track.artist != "":
+                line0 = n_track.artist
+                artistoffset = draw_text2((start_x + 27,
+                                           y),
+                                          line0,
+                                          alpha_mod(artistc, album_fade),
+                                          row_font_size,
+                                          int(width / 2),
+                                          1,
+                                          default_playlist[p_track])
+
+                line = n_track.title
+            else:
+                line += n_track.title
+        else:
+            line = \
+                os.path.splitext((n_track.filename))[
+                    0]
+
+        index = default_playlist[p_track]
+        key = pctl.master_library[index].title + pctl.master_library[index].filename
+        star_x = 0
+        if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+            index].length != 0:
+            total = pctl.star_library[key]
+            ratio = total / pctl.master_library[index].length
+            if ratio > 0.55:
+                star_x = int(ratio * 4)
+                if star_x > 60:
+                    star_x = 60
+                draw.line(width + start_x - star_x - 45,
+                          y + 8,
+                          width + start_x - 42,
+                          y + 8,
+                          alpha_mod(colours.star_line, album_fade))
+
+        draw_text((start_x,
+                   y), indexLine,
+                  alpha_mod(indexc, album_fade), row_font_size)
+
+        draw_text2((start_x + 33 + artistoffset,
+                    y),
+                   line,
+                   alpha_mod(titlec, album_fade),
+                   row_font_size,
+                   width - 71 - artistoffset - star_x - 20,
+                   2,
+                   default_playlist[p_track])
+
+        line = get_display_time(n_track.length)
+
+        draw_text((width + start_x - 36,
+                   y, 0), line,
+                  alpha_mod(timec, album_fade), row_font_size)
 
 
 
@@ -9002,7 +9171,7 @@ class StandardPlaylist:
 
             # time.sleep(0.1)
 
-            line_render(n_track, p_track, playlist_text_offset + playlist_top + playlist_row_height * w, this_line_playing, album_fade, playlist_left, playlist_width)
+            line_render(n_track, p_track, playlist_text_offset + playlist_top + playlist_row_height * w, this_line_playing, album_fade, playlist_left, playlist_width, prefs.line_style)
 
 
             w += 1
@@ -9270,7 +9439,7 @@ class ComboPlaylist:
 
 
                 # Draw track text
-                line_render(track, pl_entry_on, y - 1, playing, 255, x + 17, playlist_width - 20)
+                line_render(track, pl_entry_on, y - 1, playing, 255, x + 17, playlist_width - 20, style=prefs.line_style)
 
                 # Right click menu
                 if right_click and line_hit:
@@ -9359,6 +9528,8 @@ for item in r_arg_queue:
     if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tauon.exe' not in item:
         arg_queue.append(item)
 
+SDL_ShowWindow(t_window)
+SDL_RenderPresent(renderer)
 # C-ML
 while running:
     # bm.get('main')
@@ -9404,6 +9575,7 @@ while running:
         key_f_press = False
         key_a_press = False
         key_w_press = False
+        key_z_press = False
         key_r_press = False
         key_dash_press = False
         key_eq_press = False
@@ -9563,6 +9735,8 @@ while running:
                 key_a_press = True
             elif event.key.keysym.sym == SDLK_w:
                 key_w_press = True
+            elif event.key.keysym.sym == SDLK_z:
+                key_z_press = True
             elif event.key.keysym.sym == SDLK_r:
                 key_r_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
@@ -9702,6 +9876,8 @@ while running:
         power += 2
     if gui.level_update:
         power = 6
+    if not running:
+        break
 
     if power < 5:
         time.sleep(0.003)
@@ -9794,6 +9970,12 @@ while running:
 
         if key_F4:
             standard_size()
+
+        if key_ctrl_down and key_z_press:
+            if pctl.playlist_backup != []:
+                pctl.multi_playlist.append(pctl.playlist_backup)
+                pctl.playlist_backup = []
+            # show_message("There is no undo, sorry.")
 
         if key_F7:
             # spec_smoothing ^= True
@@ -12352,6 +12534,8 @@ while running:
     if gui.lowered:
         time.sleep(0.1)
 
+SDL_DestroyWindow(t_window)
+
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
@@ -12410,7 +12594,7 @@ save = [pctl.master_library,
         prefs.transcode_mode,
         prefs.transcode_codec,
         prefs.transcode_bitrate,
-        None,
+        prefs.line_style,
         None,
         None
         ]
@@ -12424,7 +12608,6 @@ if os.path.isfile(user_directory + '/lock'):
 if system == 'windows':
 
     print("unloading SDL")
-    SDL_DestroyWindow(t_window)
     IMG_Quit()
     TTF_Quit()
     SDL_QuitSubSystem(SDL_INIT_EVERYTHING)

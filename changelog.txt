@@ -4,7 +4,12 @@ Changelog-------------------------------------
 v1.7.0
 
  - Added shortcut hints to various menu entries
+ - Added ctrl+z shortcut to undo playlist delete
+ - Added ogg support for folder encoding output
+ - Added row formatting cycle button to settings
  - Moved last.fm setup to new tab in settings
+ - Improved window closing speed
+ - Fixed window showing white during startup
  - Tweaked styling of various interface elements
  - Tweaked playlist formatting and appearance
  - Tweaked config file formatting
