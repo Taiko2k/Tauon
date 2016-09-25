@@ -1758,10 +1758,10 @@ def player():
                     if gui.time_passed > 1:
                         gui.time_passed = 0
                     while gui.time_passed > 0.019:
-                        gui.level_peak[1] -= 0.4
+                        gui.level_peak[1] -= 0.35
                         if gui.level_peak[1] < 0:
                             gui.level_peak[1] = 0
-                        gui.level_peak[0] -= 0.4
+                        gui.level_peak[0] -= 0.35
                         if gui.level_peak[0] < 0:
                             gui.level_peak[0] = 0
                         gui.time_passed -= 0.020
@@ -12424,7 +12424,11 @@ while running:
             y = 16
             w = 5
             s = 1
-            # draw.rect((x - 70, y - 10), (80, 18), colours.grey(15), True)
+            draw.rect((x - 70, y - 10), (79, 18), colours.grey(10), True)
+
+            if gui.level_peak[0] > 0 or gui.level_peak[1] > 0:
+                gui.level_update = True
+
 
             for t in range(12):
 
@@ -12478,6 +12482,10 @@ while running:
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
                 draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
+
+            if pctl.playing_state == 0 or pctl.playing_state == 2:
+                gui.level_peak[0] -= 0.017
+                gui.level_peak[1] -= 0.017
 
         SDL_RenderPresent(renderer)
 

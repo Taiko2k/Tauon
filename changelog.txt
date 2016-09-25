@@ -11,6 +11,7 @@ v1.7.0
  - Moved last.fm setup to new tab in settings
  - Improved window closing speed
  - Fixed window showing white during startup
+ - Fixed level visualiser not decaying after stop
  - Tweaked styling of various interface elements
  - Tweaked playlist formatting and appearance
  - Tweaked config file formatting
