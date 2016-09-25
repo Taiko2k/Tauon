@@ -1,9 +1,9 @@
-Basic Usage. Updated for v1.6.3
+Basic Usage. Updated for v1.7.0
 ===========
 
-Player is playlist based (rather than library based) and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists. 
+Player is playlist based and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists. 
 
-For best experience it is recommended to have an organised and structured music library. I  recommended the following file structure especially for large music libraries: MUSIC_LIBRARY/GENRE/ARTIST/ALBUM/tracks
+For best experience it is recommended to have an organised and structured music library. I recommended the following file structure especially for large music libraries: MUSIC_LIBRARY/GENRE/ARTIST/ALBUM/TRACKS
 
 ##### Importing Music:
 
@@ -21,7 +21,7 @@ For best experience it is recommended to have an organised and structured music 
 
 - Copy 'star.p' file from old install to keep play counts.
 - Copy 'state.p' file to keep rest of player data. 
-- If you are moving platforms or reseting player and have custom playlists you want to keep, export them using the export playlist function.
+- If you are moving platforms, reseting player or moved your music location and have custom playlists you want to keep, export then reimport using the export playlist function.
 
 
 Advanced Use
@@ -29,50 +29,45 @@ Advanced Use
 
 ##### Track Navigation:
 
-- 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist. However with random mode on, 'Back' functions as an absolute back, playing the previous track played. (So if you intended to play the track that appears after the last track that was played, you could enter the sequence RANDOM ON > BACK > RANDOM OFF > FORWARD) (Does that make sense? no? I thought not.)
+- 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist. 
+- With random mode on, 'Back' plays songs from playback history.
 
 
 ##### Quick Search:
 
-- Press the backslash key or Ctrl+F to open search entry.
-- Type word fragments separated by spaces. Use UP and DOWN keys to navigate matching results in current playlst. Press enter key to play selected track.
+- Press the backslash key or Ctrl+F to open search box.
+- Type word fragments separated by spaces. Use UP and DOWN keys to navigate any matching results in current playlst. Press enter key to play selected track.
 - Press Shift+Enter to create a new playlist from results
 
 
 ##### Folder Filtering
 
 - Press the backslash key '\' or Ctrl+F to open search entry.
-- Begin search text with a forwardslash '/', then type a part of a folder to search for. (Capitalization will be ignored but used for playlist title)
+- Begin search text with a forwardslash '/', then type part of a folder path to search for. (Capitalization will be ignored but used for playlist title)
 - Press Shift-Enter to create the new playlist. Will fail if no matching results found.
-- Tip: End the search text with another forwardslash '/' to search just for folders with that name. For example entering '/Pop' may bring up results for J-Pop and K-Pop, however '/Pop/' will avoid those.
+- Tip: End the search text with another forwardslash '/' (without quotes) to search just for folders with that name. For example entering '/Pop' may bring up results for J-Pop and K-Pop, however '/Pop/' will only return folders with that name.
 
 
 ##### Panel Buttons:
 
 ![Screenshot - Panel](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/panel-guide.png)
 
-##### Shortcuts:
+##### Extra Shortcuts:
 
 - ***Search***: Backslash \ or Ctrl + F  
-***Show playing***: Quote ' (the button next to the enter/return key)   
-***Random Mode***: Period .   
-***Repeat Mode***: Comma ,   
-***Radio Random***: Slash /  
-***Change Theme***: F2   
+***Cycle Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
 ***Seek***: + and -   
-***Play next/previous track***: Shift + Left and Right arrow keys   
+***Play next/previous track***: Shift + Left and Right arrow keys (or mediakeys)   
 ***Volume Up/Down***: Shift + Up and Down arrow keys   
 ***Toggle Gallery View***: Mouse button 4   
-***Delete Current Playlist***: Ctrl + w   
-***Toggle folder break for playlist***: F1
+***Toggle folder break for current playlist***: F1
 
 
 ##### Outbound Streaming:
 
-- See config file to set up encoder. Install, configure (optional) and run icecast. From player right click top bar and
-select 'Start Broadcast' from menu. You should now see an entry in the icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This'
-to play a track immediately.
+- Install, configure (optional) and run icecast. See config.txt for further required setup. 
+- From player right click top bar and select 'Start Broadcast' from menu. You should now see an entry in the icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
 
 - The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).
 
@@ -84,7 +79,7 @@ Intended to be an easy way to reduce file sizes for copying to devices. Results 
 Requires ffmpeg and opusenc/lame in encoder subdirectory. (For Linux, programs simply need be installed)
 
 Will encode based on settings in MENU->Settings...->Transcode
-Output folders will be placed in same encoder subdirectory
+Output folders will be placed in same encoder subdirectory (can be changed in config.txt)
 
 
 ##### Tag Editing
@@ -98,13 +93,13 @@ After editing tracks externally, metadata can be updated by: Right clicking trac
 
 Playlists can be backed up and shared using the XSPF playlist file format. 
 
-To import; drag and drop playlist file onto program window. (Any playlist files in subfolders will be ignored)
+To import; drag and drop XSPF playlist file onto program window. (Any playlist files in subfolders will be ignored)
 To export; right click playlist tab and select Export.
 
 Note: Its best to import any corresponding audio files before importing playlists.
 Note: Importing large playlists can take a very long time, cleaning database beforehand (MENU->Database->Remove Missing Tracks) may help speed this up.
 Note: Some tracks with strange characters in metadata may cause process to fail.
-Tip: Exporting then importing tracks also serves the function of reviving dead tracks where files have been moved.
+Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
 
 
 User data files
