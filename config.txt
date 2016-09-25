@@ -12,8 +12,8 @@ mediakey=2
 #output-dir=C:\example
 
 ## Icecast mounting. Codec can be MP3, OGG
-## On Windows requires lame.exe, oggenc2.exe in /encoder subdirectory respectively. 
-## On linux install lame, oggenc(part of vorbis-tools)
+## On Windows requires lame.exe or oggenc2.exe in /encoder subdirectory for either codec respectively. 
+## On linux install lame or oggenc(part of vorbis-tools)
 icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
