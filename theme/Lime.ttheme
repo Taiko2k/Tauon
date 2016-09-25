@@ -3,10 +3,10 @@
 
 #-Backgrounds-----
 
-31,31,31		player background (top panel)
-21,21,21	  	playlist panel
-18,18,18		side panel
-31,31,31		bottom panel
+26,26,26		player background (top panel)
+15,15,15	  	playlist panel
+10,10,10		side panel
+22,22,22		bottom panel
 
 #-Frame--------
 
@@ -17,10 +17,10 @@
 
 #-Playlist-------
 
-180,180,180		track line
+130,130,130		track line
 110,110,110		track time
 110,110,110		track index
-130,130,130		track artist
+180,180,180		track artist
 110,110,110		album line
 
 166,247,4		track playing
@@ -60,7 +60,7 @@
 
 245,245,245		tab active line
 235,235,235		tab line
-31,31,31		tab background
+32,32,32		tab background
 35,35,35		tab over
 45,45,45		tab active background
 
