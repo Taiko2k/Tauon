@@ -200,7 +200,7 @@ resize_drag = [0, 0]
 resize_mode = False
 resize_size = [0, 0]
 
-version = 0.9
+version = 1.1
 
 block6 = False
 
@@ -289,7 +289,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 1
+theme = 9
 themeChange = True
 panelY = 78
 
@@ -308,6 +308,8 @@ class ColoursClass:
         return [255, 255, 255, value]
 
     def __init__(self):
+
+        self.link_text = [100, 200, 252, 255]
         
         self.sep_line = self.grey(50)
         self.bb_line = self.grey(50)
@@ -549,8 +551,6 @@ master_count = 0
 # items_loaded = []
 load_orders = []
 
-
-
 volume = 100
 
 pause_lock = False
@@ -634,6 +634,7 @@ class GuiVar:
 
         self.row_extra = 0
         self.test = False
+        self.cursor_mode = 0
 
 gui = GuiVar()
 
@@ -688,6 +689,7 @@ class TrackClass:
         self.genre = ""
         self.found = True
         self.skips = 0
+        self.comment = ""
 
 class LoadClass:
 
@@ -779,6 +781,10 @@ if db_version == 0.8:
     for key, value in master_library.items():
         setattr(master_library[key], 'skips', 0)
 
+    if db_version == 0.8:
+        print("Updating database from version 0.9 to 1.1")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'comment', "")
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -2671,6 +2677,10 @@ font_dict[14] = (font7, font7b)
 font_dict[212] = (fontG, font2b)
 font_dict[213] = (fontG13, font6b)
 
+cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
+cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
+
+
 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
 
 
@@ -2928,10 +2938,13 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
                     back = True
                     break
 
-        if back:
-            font_surface = TTF_RenderUTF8_Blended(font_dict[font][1], text_utf, colour_sdl)
+        if len(location) > 2 and location[2] == 4:
+            font_surface = TTF_RenderUTF8_Blended_Wrapped(font_dict[font][1], text_utf, colour_sdl, location[3])
         else:
-            font_surface = TTF_RenderUTF8_Blended(font_dict[font][0], text_utf, colour_sdl)
+            if back:
+                font_surface = TTF_RenderUTF8_Blended(font_dict[font][1], text_utf, colour_sdl)
+            else:
+                font_surface = TTF_RenderUTF8_Blended(font_dict[font][0], text_utf, colour_sdl)
 
         c = SDL_CreateTextureFromSurface(renderer, font_surface)
         SDL_SetTextureAlphaMod(c, colour[3])
@@ -2966,6 +2979,38 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 def draw_text(location, text, colour, font, max=1000):
     global text_cache
     return draw_text2(location, text, colour, font, max)
+
+
+def draw_linked_text(location, text, colour, font):
+
+    base = ""
+    link_text = ""
+    rest = ""
+    on_base = True
+    for i in range(len(text)):
+        if text[i:i+7] == "http://" or text[i:i+4] == "www.":
+            on_base = False
+        if on_base:
+            base += text[i]
+        else:
+            if i == len(text) or text[i] in '\\) "\'':
+                rest = text[i:]
+                break
+            else:
+                link_text += text[i]
+
+    left = draw.text_calc(base, font)
+    right = draw.text_calc(base + link_text, font)
+
+    x = location[0]
+    y = location[1]
+
+    draw_text((x, y), base, colour, font)
+    draw_text((x + left, y), link_text, colours.link_text, font)
+    draw_text((x + right, y), rest, colour, font)
+    draw.line(x + left + 1, y + font + 2, x + right - 1, y + font + 2, alpha_mod(colours.link_text, 120))
+
+    return left, right - left, link_text
 
 
 class TextBox:
@@ -3752,6 +3797,7 @@ def load_xspf(path):
                 nt.samplerate = audio.sample_rate
                 nt.size = audio.size
                 nt.length = audio.duration
+                nt.comment = audio.comment
                 if nt.title == "":
                     nt.title = rm_16(audio.title)
                 if nt.artist == "":
@@ -4063,6 +4109,34 @@ def gen_top_100(index):
 
 tab_menu.add_to_sub("Most Played", 0, gen_top_100, pass_ref=True)
 
+def gen_comment(pl):
+
+    playlist = []
+
+    for item in pctl.multi_playlist[pl][2]:
+        cm = pctl.master_library[item].comment
+        if len(cm) > 20 and \
+            cm[0] != "0" and \
+            'http://' not in cm and \
+            'www.' not in cm and \
+            'Release' not in cm and \
+            'EAC' not in cm and \
+            '@' not in cm and \
+            '.com' not in cm and \
+            'ipped' not in cm and \
+            'ncoded' not in cm and \
+            'ExactA' not in cm and \
+            'WWW.' not in cm and \
+            cm[2] != "+" and \
+            cm[1] != "+":
+            playlist.append(item)
+
+    if len(playlist) > 0:
+        pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
+    else:
+        show_message("Nothing Found")
+
+
 
 def gen_most_skip(pl):
 
@@ -4274,7 +4348,7 @@ def gen_sort_album(index):
             [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
-
+tab_menu.add_to_sub("Comment", 0, gen_comment, pass_ref=True)
 
 def activate_genre_box(index):
     global genre_box
@@ -4803,6 +4877,7 @@ def reload_metadata(index):
         pctl.master_library[track].date = audio.year
         pctl.master_library[track].genre = rm_16(audio.genre)
         pctl.master_library[track].samplerate = audio.sample_rate
+        pctl.master_library[track].comment = audio.comment
 
 
         key = pctl.master_library[track].title + pctl.master_library[track].filename
@@ -5890,6 +5965,13 @@ def loader():
         nt.genre = rm_16(audio.genre)
         nt.samplerate = audio.sample_rate
         nt.size = audio.size
+        if audio.comment != "":
+            if audio.comment[0:3] == '000':
+                pass
+            elif audio.comment[2] == '+':
+                pass
+            else:
+                nt.comment = audio.comment
 
         pctl.master_library[master_count] = nt
         added.append(master_count)
@@ -11477,107 +11559,123 @@ while running:
                 draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
 
 
-            if genre_box:
-
-                w = 640
-                h = 260
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                box_rect = (x, y, w, h)
-
-                if genre_box_click and not coll_point(mouse_position, box_rect):
-                    genre_box = False
-
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
-                draw.rect((x, y), (w, h), colours.grey(75))
-
-                stats_gen.update(genre_box_pl)
-
-                oy = int(window_size[1] / 2) - int(h / 2)
-                x += 20
-
-                y += 20
-                dd = 0
-                selection_list = stats_gen.genre_list  # [:40]
-
-                def key_g(item):
-                    return len(stats_gen.genre_dict[item[0]])
-
-                selection_list = sorted(selection_list, key=key_g, reverse=True)
-
-                # for i in reversed(range(len(selection_list))):
-                #     if len(stats_gen.genre_dict[selection_list[i][0]]) < 40:
-                #         del selection_list[i]
-                #         continue
-
-                for item in selection_list:
-                    if item[0] == '<Genre Unspecified>':
-                        selection_list.remove(item)
-                        break
-
-                selection_list = selection_list[:40]
-                for item in selection_list:
-
-                    item_rect = [x, y, 110, 20]
-
-                    if genre_box_click and coll_point(mouse_position, (x - 5, y - 2, 110 + 10, 20 + 4)):
-                        if item[0] in genre_items:
-                            genre_items.remove(item[0])
-                        else:
-                            genre_items.append(item[0])
-
-                    if item[0] in genre_items:
-                        draw.rect((x, y), (110, 20), [255, 255, 255, 35], True)
-
-                    fields.add(copy.deepcopy(item_rect))
-                    if coll_point(mouse_position, item_rect):
-                        draw.rect_r(item_rect, [255, 255, 255, 10], True)
-
-                    draw.rect((x, y), (110, 20), colours.grey(25))
-                    line = item[0][:18]
-                    draw_text((x + 3, y + 2), line, colours.grey(175), 10)
-
-                    y += 25
-                    if y > oy + h - 50:
-                        y = oy + 20
-                        x += 122
-
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-                x = x + w - 100
-                y = y + h - 35
-                w = 70
-                h = 20
-
-                ok_rect = (x, y, w, h)
-                fields.add(ok_rect)
-                if coll_point(mouse_position, ok_rect):
-                    draw.rect_r(ok_rect, [255, 255, 255, 8], True)
-                draw.rect_r(ok_rect, colours.grey(50))
-                draw_text((x + 14, y + 2), 'Generate', colours.grey(150), 10)
-
-                if genre_box_click and coll_point(mouse_position, ok_rect):
-                    print('ok')
-                    playlist = []
-                    for genre in genre_items:
-                        playlist += stats_gen.genre_dict[genre]
-
-                        for index in pctl.multi_playlist[genre_box_pl][2]:
-                            if genre.lower() in pctl.master_library[index].parent_folder_path.lower().replace('-',
-                                                                                                   '') and index not in playlist:
-                                playlist.append(index)
-                    line = pctl.multi_playlist[genre_box_pl][0] + ": " + ' + '.join(genre_items)
-                    pctl.multi_playlist.append([line, 0, copy.deepcopy(playlist), 0, 0, 0])
-                    genre_box = False
-                    switch_playlist(len(pctl.multi_playlist) - 1)
+            # if genre_box:
+            #
+            #     w = 640
+            #     h = 260
+            #     x = int(window_size[0] / 2) - int(w / 2)
+            #     y = int(window_size[1] / 2) - int(h / 2)
+            #
+            #     box_rect = (x, y, w, h)
+            #
+            #     if genre_box_click and not coll_point(mouse_position, box_rect):
+            #         genre_box = False
+            #
+            #     draw.rect((x, y), (w, h), colours.top_panel_background, True)
+            #     draw.rect((x, y), (w, h), colours.grey(75))
+            #
+            #     stats_gen.update(genre_box_pl)
+            #
+            #     oy = int(window_size[1] / 2) - int(h / 2)
+            #     x += 20
+            #
+            #     y += 20
+            #     dd = 0
+            #     selection_list = stats_gen.genre_list  # [:40]
+            #
+            #     def key_g(item):
+            #         return len(stats_gen.genre_dict[item[0]])
+            #
+            #     selection_list = sorted(selection_list, key=key_g, reverse=True)
+            #
+            #     # for i in reversed(range(len(selection_list))):
+            #     #     if len(stats_gen.genre_dict[selection_list[i][0]]) < 40:
+            #     #         del selection_list[i]
+            #     #         continue
+            #
+            #     for item in selection_list:
+            #         if item[0] == '<Genre Unspecified>':
+            #             selection_list.remove(item)
+            #             break
+            #
+            #     selection_list = selection_list[:40]
+            #     for item in selection_list:
+            #
+            #         item_rect = [x, y, 110, 20]
+            #
+            #         if genre_box_click and coll_point(mouse_position, (x - 5, y - 2, 110 + 10, 20 + 4)):
+            #             if item[0] in genre_items:
+            #                 genre_items.remove(item[0])
+            #             else:
+            #                 genre_items.append(item[0])
+            #
+            #         if item[0] in genre_items:
+            #             draw.rect((x, y), (110, 20), [255, 255, 255, 35], True)
+            #
+            #         fields.add(copy.deepcopy(item_rect))
+            #         if coll_point(mouse_position, item_rect):
+            #             draw.rect_r(item_rect, [255, 255, 255, 10], True)
+            #
+            #         draw.rect((x, y), (110, 20), colours.grey(25))
+            #         line = item[0][:18]
+            #         draw_text((x + 3, y + 2), line, colours.grey(175), 10)
+            #
+            #         y += 25
+            #         if y > oy + h - 50:
+            #             y = oy + 20
+            #             x += 122
+            #
+            #     x = int(window_size[0] / 2) - int(w / 2)
+            #     y = int(window_size[1] / 2) - int(h / 2)
+            #     x = x + w - 100
+            #     y = y + h - 35
+            #     w = 70
+            #     h = 20
+            #
+            #     ok_rect = (x, y, w, h)
+            #     fields.add(ok_rect)
+            #     if coll_point(mouse_position, ok_rect):
+            #         draw.rect_r(ok_rect, [255, 255, 255, 8], True)
+            #     draw.rect_r(ok_rect, colours.grey(50))
+            #     draw_text((x + 14, y + 2), 'Generate', colours.grey(150), 10)
+            #
+            #     if genre_box_click and coll_point(mouse_position, ok_rect):
+            #         print('ok')
+            #         playlist = []
+            #         for genre in genre_items:
+            #             playlist += stats_gen.genre_dict[genre]
+            #
+            #             for index in pctl.multi_playlist[genre_box_pl][2]:
+            #                 if genre.lower() in pctl.master_library[index].parent_folder_path.lower().replace('-',
+            #                                                                                        '') and index not in playlist:
+            #                     playlist.append(index)
+            #         line = pctl.multi_playlist[genre_box_pl][0] + ": " + ' + '.join(genre_items)
+            #         pctl.multi_playlist.append([line, 0, copy.deepcopy(playlist), 0, 0, 0])
+            #         genre_box = False
+            #         switch_playlist(len(pctl.multi_playlist) - 1)
 
             if track_box:
                 if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
                     track_box = False
+                    if gui.cursor_mode == 1:
+                        gui.cursor_mode = 0
+                        SDL_SetCursor(cursor_standard)
                     key_return_press = False
+
+                tc = pctl.master_library[r_menu_index]
+
                 w = 540
                 h = 240
+                comment_mode = 0
+
+                if len(tc.comment) > 0:
+                    h += 22
+                    w += 25
+                    if draw.text_calc(tc.comment, 12) > 335:
+                        h += 80
+                        w += 30
+                        comment_mode = 1
+
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -11619,7 +11717,10 @@ while running:
 
                 else:
                     # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
-                    album_art_gen.display(r_menu_index, (x + w - 140, y + h - 135), (110, 110))
+                    if comment_mode == 1:
+                        album_art_gen.display(r_menu_index, (x + w - 140, y + 105), (110, 110))
+                    else:
+                        album_art_gen.display(r_menu_index, (x + w - 140, y + h - 135), (110, 110))
                     y -= 24
 
                     draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(140), 12)
@@ -11720,6 +11821,34 @@ while running:
 
                     draw_text((x + 8 + 10, y + 40), "Play time", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.alpha_grey(190), 12)
+
+                    if len(tc.comment) > 0:
+                        y += 20
+                        draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
+                        if ('http://' in tc.comment or 'www.' in tc.comment) and draw.text_calc(tc.comment, 12) < 335:
+                            link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.alpha_grey(190), 12)
+                            link_rect = [x + 98 + link_pa[0], y + 38, link_pa[1], 20]
+                            #draw.rect_r(link_rect, [255,0,0,30], True)
+                            fields.add(link_rect)
+                            if coll_point(mouse_position, link_rect):
+                                if gui.cursor_mode == 0 and not mouse_click:
+                                    SDL_SetCursor(cursor_hand)
+                                    gui.cursor_mode = 1
+                                if mouse_click:
+                                    if gui.cursor_mode == 1:
+                                        gui.cursor_mode = 0
+                                        SDL_SetCursor(cursor_standard)
+                                    webbrowser.open(link_pa[2], new=2, autoraise=True)
+                                    track_box = True
+                            elif gui.cursor_mode == 1:
+                                gui.cursor_mode = 0
+                                SDL_SetCursor(cursor_standard)
+
+                        elif comment_mode == 1:
+                            draw_text((x + 18, y + 58, 4, w - 36), tc.comment, colours.alpha_grey(190), 12)
+                        else:
+                            draw_text((x + 8 + 90, y + 40), tc.comment, colours.alpha_grey(190), 12)
+
 
             if pref_box.enabled:
                 rect = [0, 0, window_size[0], window_size[1]]
