@@ -8,6 +8,7 @@ v1.7.0
  - Added ogg support for folder encoding output
  - Added row formatting cycle button to settings
  - Added play times to playlist readout
+ - Added comment display to track info box
  - Moved last.fm setup to new tab in settings
  - Improved window closing speed
  - Fixed window showing white during startup
