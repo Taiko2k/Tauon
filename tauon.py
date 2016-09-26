@@ -775,16 +775,15 @@ if window_size is None:
     window_size = window_default_size
     side_panel_size = 200
 
-
 if db_version == 0.8:
     print("Updating database from version 0.8 to 0.9")
     for key, value in master_library.items():
         setattr(master_library[key], 'skips', 0)
 
-    if db_version == 0.8:
-        print("Updating database from version 0.9 to 1.1")
-        for key, value in master_library.items():
-            setattr(master_library[key], 'comment', "")
+if db_version == 0.9:
+    print("Updating database from version 0.9 to 1.1")
+    for key, value in master_library.items():
+        setattr(master_library[key], 'comment', "")
 
 # LOADING CONFIG
 player_config = "BASS"
