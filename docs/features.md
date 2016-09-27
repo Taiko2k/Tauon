@@ -4,7 +4,7 @@
 - Tag metadata (MP3, M4A, OGG, FLAC, WMA*) *Windows only
 - Embedded album art (MP3, FLAC)
 - Multiple album art
-- Last.fm scrobbling (likely to be dropped in future version)
+- Last.fm scrobbling
 - Multiple playlists
 - CUE sheet integration (Single source only)
 - Folder batch file renaming
@@ -47,7 +47,6 @@
  - Library view
  - Ratings
  - Artist metadata scraping
- - Comment metadata
  - Album artist metadata
  - Output device configuration
  - A-B repreat
