@@ -4,19 +4,20 @@ Changelog-------------------------------------
 v1.7.0
 
  - Added shortcut hints to various menu entries
- - Added ctrl+z shortcut to undo playlist delete
+ - Added ctrl+z shortcut to undo last playlist delete
  - Added ogg support for folder encoding output
  - Added row formatting cycle button to settings
  - Added play times to playlist readout
  - Added comment display to track info box
- - Moved last.fm setup to new tab in settings
+ - Added duplicate playlist function
+ - Added new last.fm setup tab in settings
  - Improved window closing speed
  - Fixed window showing white during startup
  - Fixed level visualiser not decaying after stop
  - Tweaked styling of various interface elements
  - Tweaked playlist formatting and appearance
  - Tweaked config file formatting
- - Redesigned icons
+ - Redesigned application icon
  - Removed custom playlist row formatting
  - Removed hide scroll bar as option
  - Removed highlight artist as option
