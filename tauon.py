@@ -4222,13 +4222,13 @@ def gen_sort_date(index, rev=False):
     pctl.multi_playlist.append(
             [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
 
-tab_menu.add_to_sub("Year Old → New", 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub("Year → Old-New", 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
-tab_menu.add_to_sub("Year New → Old", 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub("Year → New-Old", 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -4291,7 +4291,6 @@ tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
 
 
 def gen_reverse(index):
-    global pctl
     playlist = list(reversed(pctl.multi_playlist[index][2]))
 
     pctl.multi_playlist.append(
@@ -4301,9 +4300,16 @@ def gen_reverse(index):
 tab_menu.add_to_sub("Reverse", 0, gen_reverse, pass_ref=True)
 
 
-def gen_sort_path(index):
-    global pctl
+def gen_dupe(index):
+    playlist = pctl.multi_playlist[index][2]
 
+    pctl.multi_playlist.append(
+            [pctl.multi_playlist[index][0], pctl.multi_playlist[index][1], copy.deepcopy(playlist), pctl.multi_playlist[index][3], pctl.multi_playlist[index][4], pctl.multi_playlist[index][5]])
+
+
+tab_menu.add_to_sub("Duplicate", 0, gen_dupe, pass_ref=True)
+
+def gen_sort_path(index):
     def path(index):
 
         return pctl.master_library[index].fullpath
