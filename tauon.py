@@ -298,90 +298,6 @@ side_panel_size = 80 + int(window_size[0] * 0.18)
 row_font_size = 13
 
 
-class ColoursClass:
-
-
-    def grey(self, value):
-        return [value, value, value, 255]
-    
-    def alpha_grey(self, value):
-        return [255, 255, 255, value]
-
-    def __init__(self):
-
-        self.link_text = [100, 200, 252, 255]
-        
-        self.sep_line = self.grey(50)
-        self.bb_line = self.grey(50)
-        self.tb_line = self.grey(50)
-        self.art_box = self.grey(20)
-        
-        self.volume_bar_background = self.grey(19)
-        self.volume_bar_outline = self.grey(100)
-        self.volume_bar_fill = self.grey(95)
-        self.seek_bar_background = self.grey(28)
-        self.seek_bar_outline = self.grey(100)
-        self.seek_bar_fill = self.grey(110)
-
-        self.tab_text_active = self.grey(170)
-        self.tab_text = self.grey(140)
-        self.tab_background = self.grey(14)
-        self.tab_highlight = self.grey(18)
-        self.tab_background_active = self.grey(27)
-
-        self.title_text = [0, 125, 0, 255]
-        self.index_text = self.title_text
-        self.time_text = self.index_text
-        self.artist_text = [50, 170, 5, 255]
-        self.album_text = self.grey(50)
-        
-        self.index_playing = self.title_text
-        self.artist_playing = [50, 170, 5, 255]
-        self.album_playing = self.artist_text
-        self.title_playing = self.title_text
-        self.time_playing = self.grey(200)
-
-        self.playlist_text_missing = self.grey(50)
-        self.bar_time = self.title_text
-
-        self.top_panel_background = self.grey(0)
-        self.side_panel_background = self.top_panel_background
-        self.playlist_panel_background = self.grey(4)
-        self.bottom_panel_colour = self.grey(8)
-
-        self.row_playing_highlight = self.grey(15)
-        self.row_select_highlight = self.grey(15)
-
-        self.side_bar_line1 = self.grey(175)
-        self.side_bar_line2 = self.grey(155)
-    
-        self.mode_button_off = self.grey(20)
-        self.mode_button_over = self.grey(40)
-        self.mode_button_active = self.grey(120)
-
-        self.media_buttons_over = self.grey(200)
-        self.media_buttons_active = self.grey(150)
-        self.media_buttons_off = self.grey(30)
-
-        self.star_line = [140, 140, 0, 255]
-        self.folder_title = [200, 200, 0, 255]
-        self.folder_line = [140, 140, 0, 255]
-
-        self.scroll_colour = [30, 30, 30, 255]
-
-        self.level_green = [0, 100, 0, 255]
-        self.level_red = [175, 0, 0, 255]
-        self.level_yellow = [90, 90, 20, 255]
-
-        self.vis_colour = self.title_text
-        # Pre caclulate blend for spec background
-        self.vis_bg = [0, 0, 0, 255]
-        self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
-        self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
-        self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
-        self.menu_background = self.grey(8)
-
-colours = ColoursClass()
 
 playlist_width = int(window_size[0] * 0.65) + 25
 
@@ -593,6 +509,8 @@ class Prefs:
         self.transcode_bitrate = 64
 
         self.line_style = 1
+        self.device = 1
+        self.device_name = ""
 
 
 
@@ -636,7 +554,130 @@ class GuiVar:
         self.test = False
         self.cursor_mode = 0
 
+        self.light_mode = False
+
 gui = GuiVar()
+
+def alpha_mod(colour, alpha):
+    return [colour[0], colour[1], colour[2], alpha]
+
+class ColoursClass:
+    def grey(self, value):
+        return [value, value, value, 255]
+
+    def alpha_grey(self, value):
+        return [255, 255, 255, value]
+
+    def __init__(self):
+        self.link_text = [100, 200, 252, 255]
+
+        self.sep_line = self.grey(50)
+        self.bb_line = self.grey(50)
+        self.tb_line = self.grey(50)
+        self.art_box = self.grey(20)
+
+        self.volume_bar_background = self.grey(19)
+        self.volume_bar_outline = self.grey(100)
+        self.volume_bar_fill = self.grey(95)
+        self.seek_bar_background = self.grey(28)
+        self.seek_bar_outline = self.grey(100)
+        self.seek_bar_fill = self.grey(110)
+
+        self.tab_text_active = self.grey(170)
+        self.tab_text = self.grey(140)
+        self.tab_background = self.grey(14)
+        self.tab_highlight = self.grey(18)
+        self.tab_background_active = self.grey(27)
+
+        self.title_text = [0, 125, 0, 255]
+        self.index_text = self.title_text
+        self.time_text = self.index_text
+        self.artist_text = [50, 170, 5, 255]
+        self.album_text = self.grey(50)
+
+        self.index_playing = self.title_text
+        self.artist_playing = [50, 170, 5, 255]
+        self.album_playing = self.artist_text
+        self.title_playing = self.title_text
+        self.time_playing = self.grey(200)
+
+        self.playlist_text_missing = self.grey(50)
+        self.bar_time = self.title_text
+
+        self.top_panel_background = self.grey(0)
+        self.side_panel_background = self.top_panel_background
+        self.playlist_panel_background = self.grey(4)
+        self.bottom_panel_colour = self.grey(8)
+
+        self.row_playing_highlight = self.grey(15)
+        self.row_select_highlight = self.grey(15)
+
+        self.side_bar_line1 = self.grey(175)
+        self.side_bar_line2 = self.grey(155)
+
+        self.mode_button_off = self.grey(20)
+        self.mode_button_over = self.grey(40)
+        self.mode_button_active = self.grey(120)
+
+        self.media_buttons_over = self.grey(200)
+        self.media_buttons_active = self.grey(150)
+        self.media_buttons_off = self.grey(30)
+
+        self.star_line = [140, 140, 0, 255]
+        self.folder_title = [200, 200, 0, 255]
+        self.folder_line = [140, 140, 0, 255]
+
+        self.scroll_colour = [30, 30, 30, 255]
+
+        self.level_green = [0, 100, 0, 255]
+        self.level_red = [175, 0, 0, 255]
+        self.level_yellow = [90, 90, 20, 255]
+
+        self.vis_colour = self.title_text
+        self.vis_bg = [0, 0, 0, 255]
+
+        self.menu_background = self.grey(8)
+        self.menu_text = [170, 170, 170, 255]
+        self.menu_text_disabled = self.grey(50)
+
+        # self.sys_background = self.menu_background
+        # self.sys_background_2 = self.tab_background
+        # self.sys_background_3 = self.top_panel_background
+        # self.sys_tab_bg = self.tab_background
+        # self.sys_tab_hl = self.tab_background_active
+
+        self.post_config()
+
+    def post_config(self):
+
+        # Pre calculate alpha blend for spec background
+        self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
+        self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
+        self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
+
+        self.sys_background = self.menu_background
+        self.sys_background_2 = self.tab_background
+        self.sys_background_3 = self.top_panel_background
+        self.sys_background_4 = self.bottom_panel_colour
+        self.sys_tab_bg = self.tab_background
+        self.sys_tab_hl = self.tab_background_active
+        self.toggle_box_on = self.folder_title
+        self.time_sub = [255,255,255,80]
+
+        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
+
+        if gui.light_mode:
+            self.sys_background = self.grey(20)
+            self.sys_background_2 = self.grey(25)
+            self.sys_tab_bg = self.grey(25)
+            self.sys_tab_hl = self.grey(45)
+            self.sys_background_3 = self.grey(20)
+            self.sys_background_4 = self.grey(19)
+            self.toggle_box_on = self.tab_background_active
+            self.time_sub = [0, 0, 0, 200]
+            self.gallery_artist_line = self.grey(40)
+
+colours = ColoursClass()
 
 view_prefs = {
 
@@ -1340,11 +1381,6 @@ def get_colour_from_line(cline):
 def checkEqual(lst):
     return not lst or lst.count(lst[0]) == len(lst)
 
-
-def alpha_mod(colour, alpha):
-    return [colour[0], colour[1], colour[2], alpha]
-
-
 def rm_16(line):
     if "ÿ þ" in line:
         for c in line:
@@ -1585,6 +1621,8 @@ def player():
     BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_ChannelGetTags', bass_module))
 
+
+
     def py_down(buffer, length, user):
         # if url_record:
         #
@@ -1598,7 +1636,6 @@ def player():
 
     down_func = DownloadProc(py_down)
 
-    #
     # def py_cmp_func(handle, channel, buffer, length):
     #     return 0
     #
@@ -1615,6 +1652,24 @@ def player():
         ('BASS_Encode_SetChannel', enc_module))
     BASS_Encode_CastSetTitle = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_bool)(
         ('BASS_Encode_CastSetTitle', enc_module))
+
+    class BASS_DEVICEINFO(ctypes.Structure):
+        _fields_ = [('name', ctypes.c_char_p),
+                    ('driver', ctypes.c_char_p),
+                    ('flags', ctypes.c_ulong)
+                    ]
+
+    BASS_GetDeviceInfo = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_DEVICEINFO))(
+        ('BASS_GetDeviceInfo', bass_module))
+
+    # a = 1
+    # d_info = BASS_DEVICEINFO()
+    # while True:
+    #     if not BASS_GetDeviceInfo(a, d_info):
+    #         break
+    #     print(d_info.name.decode('utf-8'))
+    #     a += 1
+
 
     if system == 'windows':
         #print(BASS_ErrorGetCode())
@@ -3878,7 +3933,7 @@ class Menu:
 
     @staticmethod
     def deco():
-        return [[170, 170, 170, 255], colours.menu_background, None]
+        return [colours.menu_text, colours.menu_background, None]
 
     def click(self):
         self.clicked = True
@@ -4049,10 +4104,10 @@ def append_here():
 
 
 def paste_deco():
-    line_colour = colours.grey(50)
-
     if len(cargo) > 0:
-        line_colour = [150, 150, 150, 255]
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
@@ -4569,11 +4624,10 @@ def append_playlist(index):
 
 
 def drop_deco():
-    line_colour = colours.grey(50)
-
     if len(cargo) > 0:
-        line_colour = [150, 150, 150, 255]
-
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
     return [line_colour, [0, 0, 0, 255], None]
 
 
@@ -5002,19 +5056,20 @@ track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
 
 
 def queue_deco():
-    line_colour = colours.grey(50)
 
     if len(pctl.force_queue) > 0:
-        line_colour = [150, 150, 150, 255]
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
 
 def broadcast_feature_deco():
-    line_colour = colours.grey(50)
-
     if pctl.broadcast_active:
-        line_colour = [150, 150, 150, 255]
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
@@ -5042,9 +5097,9 @@ x_menu = Menu(160)
 view_menu = Menu(170)
 
 def bass_features_deco():
-    line_colour = colours.grey(150)
+    line_colour = colours.menu_text
     if default_player != 'BASS':
-        line_colour = colours.grey(20)
+        line_colour = colours.menu_text_disabled
     return [line_colour, colours.menu_background, None]
 
 
@@ -5379,7 +5434,7 @@ def toggle_broadcast():
 
 
 def broadcast_deco():
-    line_colour = colours.grey(150)
+    line_colour = colours.menu_text
     if default_player != 'BASS':
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
@@ -5404,20 +5459,20 @@ x_menu.add('Clear Queue', clear_queue, queue_deco)
 extra_menu = Menu(150)
 
 
-def play_pause_deco():
-    line_colour = colours.grey(150)
-    if pctl.playing_state == 1:
-        return [line_colour, colours.menu_background, "Pause"]
-    if pctl.playing_state == 2:
-        return [line_colour, colours.menu_background, "Resume"]
-    return [line_colour, colours.menu_background, None]
-
-
-def play_pause():
-    if pctl.playing_state == 0:
-        pctl.play()
-    else:
-        pctl.pause()
+# def play_pause_deco():
+#     line_colour = colours.grey(150)
+#     if pctl.playing_state == 1:
+#         return [line_colour, colours.menu_background, "Pause"]
+#     if pctl.playing_state == 2:
+#         return [line_colour, colours.menu_background, "Resume"]
+#     return [line_colour, colours.menu_background, None]
+#
+#
+# def play_pause():
+#     if pctl.playing_state == 0:
+#         pctl.play()
+#     else:
+#         pctl.pause()
 
 # x_menu.add_to_sub('Play', 1, play_pause, play_pause_deco)
 # extra_menu.add('Play', play_pause, play_pause_deco)
@@ -5502,7 +5557,7 @@ def last_fm_menu_deco():
     if lastfm.hold:
         line = "Scrobbling Has Stopped"
         bg = [60, 30 , 30, 255]
-    return [[150, 150, 150, 255], bg, line]
+    return [colours.menu_text, bg, line]
 
 
 x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco)
@@ -5617,9 +5672,11 @@ def view_standard():
 
 
 def standard_view_deco():
-    line_colour = colours.grey(50)
+
     if album_mode or gui.combo_mode or not side_panel_enable:
-        line_colour = colours.grey(150)
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
     return [line_colour, colours.menu_background, None]
 
 
@@ -7253,7 +7310,7 @@ class Over:
         if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
             function()
         if function(1):
-            draw.rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
+            draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
 
     def last_fm_box(self):
 
@@ -7544,7 +7601,6 @@ class Over:
         x = self.box_x + self.item_x_offset
         y = self.box_y
 
-
         # x += 8
         y += 25
         y2 = y
@@ -7556,7 +7612,7 @@ class Over:
             if self.click and coll_point(mouse_position, (x - 20, y - 10, 180 , 25)):
                 k[1]()
             if k[1](1) is True:
-                draw.rect((x + 3, y + 3), (6, 6), colours.folder_title, True)
+                draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
 
             y += 30
 
@@ -7612,8 +7668,8 @@ class Over:
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
         draw.rect((self.box_x - 5, self.box_y - 5), (self.w + 10, self.h + 10), colours.grey(50), True)
-        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.menu_background, True)
-        draw.rect((self.box_x, self.box_y), (110, self.h), colours.tab_background, True)
+        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
+        draw.rect((self.box_x, self.box_y), (110, self.h), colours.sys_background_2, True)
 
         #draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
@@ -7634,11 +7690,11 @@ class Over:
                 self.tab_active = current_tab
 
             if current_tab == self.tab_active:
-                colour = copy.deepcopy(colours.tab_background_active)
+                colour = copy.deepcopy(colours.sys_tab_hl)
                 colour[3] = 190
                 draw.rect_r(box, colour, True)
             else:
-                draw.rect_r(box, colours.tab_background, True)
+                draw.rect_r(box, colours.sys_tab_bg, True)
 
             if coll_point(mouse_position, box2):
                 draw.rect_r(box, [255,255,255,10], True)
@@ -8506,7 +8562,7 @@ class BottomBarType1:
                 if line != "":
                     line += "  -  "
                 line += title
-            line = trunc_line(line, 13, window_size[0] - 710)
+            line = trunc_line(line, 13, window_size[0] - 750)
             draw_text((self.seek_bar_position[0], self.seek_bar_position[1] + 22), line, colours.side_bar_line1,
                       213)  # fontb1
             if mouse_click and coll_point(mouse_position, (
@@ -8543,12 +8599,12 @@ class BottomBarType1:
             text_time = get_display_time(pctl.playing_time)
             draw_text((x - 25, y), text_time, colours.time_playing,
                       12)
-            draw_text((x + 10, y), "/", [255,255,255,80],
+            draw_text((x + 10, y), "/", colours.time_sub,
                   12)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
-            draw_text((x + 17, y), text_time,  [255,255,255,80],
+            draw_text((x + 17, y), text_time, colours.time_sub,
                       12)
         # BUTTONS
         # bottom buttons
@@ -10150,9 +10206,9 @@ while running:
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
 
-            key_F7 = False
+            # key_F7 = False
 
-            gui.test ^= True
+            # gui.test ^= True
 
             # GUI_Mode = 3
             pass
@@ -10442,7 +10498,7 @@ while running:
             else:
                 side_panel_size = window_size[0] - playlist_width - 30
         else:
-            playlist_width = window_size[0] - 43
+            playlist_width = window_size[0] - 30
             # if custom_line_mode:
             #     playlist_width = window_size[0] - 30
 
@@ -10487,6 +10543,7 @@ while running:
         theme += 1
 
     if themeChange is True:
+        gui.light_mode = False
         gui.pl_update = 1
         if theme > 25:
             theme = 0
@@ -10505,6 +10562,9 @@ while running:
                             for p in content:
                                 if "#" in p:
                                     continue
+                                if 'light-theme-mode' in p:
+                                    gui.light_mode = True
+                                    print("light mode")
                                 if 'index playing' in p:
                                     colours.index_playing = get_colour_from_line(p)
                                 if 'time playing' in p:
@@ -10593,13 +10653,21 @@ while running:
                                     colours.vis_colour = get_colour_from_line(p)
                                 if 'menu background' in p:
                                     colours.menu_background = get_colour_from_line(p)
+                                if 'menu text' in p:
+                                    colours.menu_text = get_colour_from_line(p)
+                                if 'menu disable' in p:
+                                    colours.menu_text_disabled = get_colour_from_line(p)
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
                                     colours.menu_background = colours.bottom_panel_colour
-                            colours.vis_bg = [0, 0, 0, 255]
-                            colours.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * colours.top_panel_background[0])
-                            colours.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * colours.top_panel_background[1])
-                            colours.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * colours.top_panel_background[2])
+
+                            colours.post_config()
+
+
+
+
+
+
                         break
                 else:
                     theme = 0
@@ -10808,7 +10876,7 @@ while running:
 
                                 draw_text2((x, y + album_mode_art_size + 8),
                                            line,
-                                           alpha_mod(artisttitle, 120),
+                                           colours.gallery_artist_line,
                                            11,
                                            album_mode_art_size - 5,
                                            3,
@@ -10827,7 +10895,7 @@ while running:
 
                                 draw_text2((x, y + album_mode_art_size + 10 + 13),
                                            line,
-                                           alpha_mod(artisttitle, 120),
+                                           colours.gallery_artist_line,
                                            11,
                                            album_mode_art_size - 5,
                                            3,
@@ -11289,9 +11357,9 @@ while running:
                                                 line += " - "
                                             line += title
                                         # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                        offset_extra = 0
-                                        if draw_border:
-                                            offset_extra = 61
+                                        # offset_extra = 0
+                                        # if draw_border:
+                                        #     offset_extra = 61
 
                                         if gui.turbo:
                                             draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, colours.side_bar_line1,
@@ -11412,6 +11480,10 @@ while running:
                 # Normal Drawing
                 # if side_panel_enable:
                 #     draw.line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
+                # draw.line(playlist_width + 30, panelY + 1, playlist_width + 30, window_size[1] - 30, colours.sep_line)
+                # if gui.light_mode:
+                #     rect = [playlist_width + 30, panelY, 6, window_size[1] - 30]
+                #     draw.rect_r(rect, colours.top_panel_background, True)
 
             # Title position logic
             if album_mode:
@@ -11558,7 +11630,7 @@ while running:
                 y = int(window_size[1] / 2) - int(h / 2)
 
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(55), True)
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
 
                 draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
@@ -11687,7 +11759,7 @@ while running:
                 # draw.rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
 
                 draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
                 
 
                 if key_shift_down:
@@ -11868,7 +11940,7 @@ while running:
                 y = int(window_size[1] / 2) - int(h / 2)
 
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     renamebox = False
@@ -12049,7 +12121,7 @@ while running:
                 y = int(window_size[1] / 2) - int(h / 2)
 
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
@@ -12097,7 +12169,7 @@ while running:
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect2[0] = rect[0]
 
-                draw.rect_r(rect, colours.bottom_panel_colour, True)
+                draw.rect_r(rect, colours.sys_background_4, True)
                 draw.rect_r(rect2, [255,255,255,10], True)
 
                 if len(input_text) > 0:
@@ -12109,7 +12181,7 @@ while running:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                 draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
 
-                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(125))
+                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(165))
 
                 if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
                     key_return_press = False
@@ -12296,7 +12368,7 @@ while running:
             if encoding_box_click and not coll_point(mouse_position, (x, y, w, h)):
                 encoding_box = False
 
-            draw.rect((x, y), (w, h), colours.top_panel_background, True)
+            draw.rect((x, y), (w, h), colours.sys_background_3, True)
             draw.rect((x, y), (w, h), colours.grey(75))
 
             draw_text((x + 105, y + 21), "Japanese text encoding correction.", colours.grey(190), 12)
@@ -12374,7 +12446,7 @@ while running:
                 title = pctl.master_library[encoding_target].title
                 album = pctl.master_library[encoding_target].album
 
-                draw.rect((x, y), (w, h), colours.top_panel_background, True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 rect = (x, y, w, h - 1)
                 fields.add(rect)
@@ -12405,29 +12477,32 @@ while running:
 
             rect = (window_size[0] - 55, window_size[1] - 35, 55 - 2, 35 - 2)
             fields.add(rect)
-            if draw_border and coll_point(mouse_position, rect):
-                draw_text((window_size[0] - 15, window_size[1] - 20), "↘", [200, 200, 200, 255], 16)
+            # if draw_border and coll_point(mouse_position, rect):
+            #     draw_text((window_size[0] - 15, window_size[1] - 20), "↘", [200, 200, 200, 255], 16)
 
-            rect = (window_size[0] - 65, 5, 35, 20)
+
+            rect = (window_size[0] - 65, 1, 36, 28)
+            draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((window_size[0] - 65, 5), (35, 20), [70, 70, 70, 100], True)
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [70, 70, 70, 100], True)
                 if mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     mouse_click = False
                     drag_mode = False
-            draw.rect((window_size[0] - 65, 5), (35, 20), colours.grey(40))
 
-            rect = (window_size[0] - 25, 5, 20, 20)
+
+            rect = (window_size[0] - 29, 1, 27, 28)
+            draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 100], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((window_size[0] - 25, 5), (20, 20), [80, 80, 80, 120], True)
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [80, 80, 80, 120], True)
                 if mouse_click or ab_click:
                     running = False
-            draw.rect((window_size[0] - 25, 5), (20, 20), colours.grey(40))
 
-            draw.rect((0, 0), window_size, colours.grey(90))
+
+            # draw.rect((0, 0), window_size, colours.grey(90))
 
         gui.update -= 1
 
@@ -12550,9 +12625,9 @@ while running:
 
         if gui.vis == 1:
 
-            offset_extra = 0
-            if draw_border:
-                offset_extra = 61
+            # offset_extra = 0
+            # if draw_border:
+            #     offset_extra = 61
 
             x = window_size[0] - 20 - offset_extra
             y = 16
