@@ -37,6 +37,7 @@
 
 255,255,255,0		playing highlight
 255,255,255,8		select highlight
+249,190,3		gallery highlight
 
 #-Bottom panel------
 
