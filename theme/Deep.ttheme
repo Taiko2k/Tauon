@@ -36,7 +36,7 @@
 
 40,40,40,50		playing highlight
 40,40,40,100		select highlight
-
+150,150,150		gallery highlight
 #-Bottom panel------
 
 55,55,55		buttons off

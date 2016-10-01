@@ -7,16 +7,19 @@ light-theme-mode
 230,230,230		player background (top panel)
 250,250,250	  	playlist panel
 250,250,250		side panel
-225,225,225		bottom panel
+220,220,220		bottom panel
 
 #-Frame--------
 
-21,21,21		sep line
-21,21,21		bb line
-21,21,21		tb line
+draw-frame
+200,200,200		sep line
+170,170,170		bb line
+170,170,170		tb line
 
-50,50,50		menu text
-220,220,220		menu background
+#-Menus---------
+
+40,40,40		menu text
+235,235,235		menu background
 145,145,145		menu disable
 
 #-Playlist-------
@@ -42,26 +45,27 @@ light-theme-mode
 
 0,0,0,30		playing highlight
 117,198,214,180	        select highlight
-	
+245,150,150			gallery highlight
 		
 
 #-Bottom panel------
 
-160,160,160		buttons off
+140,140,140		buttons off
 70,70,70		buttons over
 70,70,70		buttons active
 
 50,50,50		playing time
 
-170,165,230		seek bar
-130,130,130		volume bar
+#170,165,230		seek bar
+150,145,210		seek bar
+100,100,100		volume bar
 200,200,200		seek bg
 190,190,190		volume bg
 60,60,60		scroll bar
 
 160,160,160		mode off
-70,70,70      		mode over
-70,70,70		mode on
+80,80,80      		mode over
+80,80,80		mode on
 
 #-Top panel---------
 

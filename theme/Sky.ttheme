@@ -24,6 +24,7 @@
 
 25,25,25,0		playing highlight
 38,38,38,255		select highlight
+255,195,50		gallery highlight
 
 25,25,25		buttons off
 245,245,245		buttons over

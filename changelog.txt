@@ -19,6 +19,7 @@ v1.7.0
  - Tweaked playlist formatting and appearance
  - Tweaked config file formatting
  - Redesigned application icon
+ - Set UI frame as option in theme files
  - Removed custom playlist row formatting
  - Removed hide scroll bar as option
  - Removed highlight artist as option
