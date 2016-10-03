@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.0"
+t_version = "v1.7.0b"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -1839,9 +1839,10 @@ def player():
                         gui.level_peak[0] = ppp1
                     if ppp2 > gui.level_peak[1]:
                         gui.level_peak[1] = ppp2
-
-                    if int(gui.level_peak[0]) != int(last_level[0]) or int(gui.level_peak[1]) != int(last_level[1]):
-                        gui.level_update = True
+                    #
+                    # if int(gui.level_peak[0]) != int(last_level[0]) or int(gui.level_peak[1]) != int(last_level[1]):
+                    #     #gui.level_update = True
+                    #     pass
                     gui.level_update = True
                     last_level = copy.deepcopy(gui.level_peak)
 
@@ -9759,7 +9760,7 @@ for item in r_arg_queue:
 
 SDL_ShowWindow(t_window)
 SDL_RenderPresent(renderer)
-time.sleep(13)
+# time.sleep(13)
 # C-ML
 while running:
     # bm.get('main')
@@ -12548,18 +12549,19 @@ while running:
 
 
     if pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
-
+        # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
         if gui.time_passed > 1:
             gui.time_passed = 0
-        while gui.time_passed > 0.020:
-            gui.level_peak[1] -= 0.4
+        while gui.time_passed > 0.01:
+            gui.level_peak[1] -= 0.5
             if gui.level_peak[1] < 0:
                 gui.level_peak[1] = 0
-            gui.level_peak[0] -= 0.4
+            gui.level_peak[0] -= 0.5
             if gui.level_peak[0] < 0:
                 gui.level_peak[0] = 0
             gui.time_passed -= 0.020
+
         gui.level_update = True
 
     if gui.level_update is True and not resize_mode:
@@ -12670,8 +12672,12 @@ while running:
             s = 1
             draw.rect((x - 70, y - 10), (79, 18), colours.grey(10), True)
 
-            if gui.level_peak[0] > 0 or gui.level_peak[1] > 0:
+            if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and pctl.playing_state != 1:
                 gui.level_update = True
+                time.sleep(0.016)
+                #print(vis_decay_timer.get())
+                #vis_decay_timer.set()
+                pass
 
 
             for t in range(12):
@@ -12727,9 +12733,9 @@ while running:
                     pass
                 draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
-            if pctl.playing_state == 0 or pctl.playing_state == 2:
-                gui.level_peak[0] -= 0.017
-                gui.level_peak[1] -= 0.017
+            # if pctl.playing_state == 0 or pctl.playing_state == 2:
+            #     gui.level_peak[0] -= 0.017
+            #     gui.level_peak[1] -= 0.017
 
         SDL_RenderPresent(renderer)
 
