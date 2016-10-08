@@ -4559,8 +4559,8 @@ def convert_playlist(pl):
         if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
-            show_message("Error: Missing opusenc.exe from '/encoder' directory")
+        # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
+        #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
             return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
@@ -4824,8 +4824,8 @@ def convert_folder(index):
         if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
-            show_message("Error: Missing opusenc.exe from '/encoder' directory")
+        # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
+        #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
             return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
