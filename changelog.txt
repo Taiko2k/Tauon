@@ -7,7 +7,7 @@ v1.7.1
  - Added setting for gallery view scroll speed
  - Added setting for scrolling gallery view by row
  - Added scroll controls to gallery view
- - Imporved encoding performance for opus
+ - Improved encoding performance for opus output
  - Fixed error importing certain tracks
  - Fixed max cpu usage with level meter
  - Fixed encode not working with cue files to single tracks
