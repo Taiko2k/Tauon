@@ -1,6 +1,15 @@
 
 Changelog-------------------------------------
 
+v1.7.1
+
+ - Added setting for disk caching gallery art
+ - Added setting for gallery view scroll speed
+ - Added setting for scrolling gallery view by row
+ - Added scroll controls to gallery view
+ - Fixed error importing certain tracks
+ - Fixed max cpu usage with level meter
+
 v1.7.0
 
  - Added shortcut hints to various menu entries

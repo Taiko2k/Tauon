@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.0b"
+t_version = "v1.7.0c"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -97,6 +97,11 @@ except:
 
     if result == 0:
         print('Socket is already open')
+
+        if os.path.isfile('.gitignore'):
+            print("Dev mode, ignoring single instancing")
+        else:
+            sys.exit()
         # import http.client
         #
         # pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
@@ -107,7 +112,7 @@ except:
         # doc = c.getresponse().read()
         # print(doc)
         #pass
-        sys.exit()
+
 
 import time
 import ctypes
@@ -190,6 +195,9 @@ vis_rate_timer = Timer()
 vis_rate_timer.set()
 vis_decay_timer = Timer()
 vis_decay_timer.set()
+
+scroll_timer = Timer()
+scroll_timer.set()
 
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
@@ -499,7 +507,7 @@ class Prefs:
         self.allow_remote = True
         self.expose_web = False
         
-        self.enable_transcode = False
+        self.enable_transcode = True
         self.show_rym = True
         self.prefer_bottom_title = True
         self.append_date = True
@@ -512,6 +520,9 @@ class Prefs:
         self.device = 1
         self.device_name = ""
 
+        self.cache_gallery = False
+        self.gallery_row_scroll = False
+        self.gallery_scroll_wheel_px = 90
 
 
 prefs = Prefs()
@@ -556,6 +567,7 @@ class GuiVar:
 
         self.light_mode = False
         self.draw_frame = False
+
 
 gui = GuiVar()
 
@@ -759,6 +771,7 @@ try:
 except:
     print('No existing star.p file')
 
+
 try:
     save = pickle.load(open(user_directory + "/state.p", "rb"))
     master_library = save[0]
@@ -815,10 +828,17 @@ try:
         prefs.transcode_bitrate = save[37]
     if save[38] is not None:
         prefs.line_style = save[38]
-        
+    if save[39] is not None:
+        prefs.cache_gallery = save[39]
 
 except:
     print('Error loading save file')
+    cache_direc = os.path.join(user_directory, 'cache')
+    if os.path.exists(cache_direc):
+        print("clearing old cache")
+        shutil.rmtree(cache_direc)
+        time.sleep(0.01)
+        os.makedirs(cache_direc)
 
 # temporary
 if window_size is None:
@@ -848,6 +868,13 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 continue
             if p[0] == " " or p[0] == "#":
                 continue
+            if 'scroll-gallery-wheel=' in p:
+                result = p.split('=')[1]
+                if result.isdigit() and -1000 < int(result) < 1000:
+                    prefs.gallery_scroll_wheel_px = int(result)
+
+            if 'scroll-gallery-row=True' in p:
+                prefs.gallery_row_scroll = True
             if 'mediakey=' in p:
                 mediakeymode = int(p.split('=')[1])
             # if 'seek-pause-lock' in p:
@@ -2763,7 +2790,7 @@ t_window = SDL_CreateWindow(window_title,
 
 SDL_SetWindowMinimumSize(t_window,450,175)
 # get window surface and set up renderer
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
 
 window_surface = SDL_GetWindowSurface(t_window)
@@ -3140,7 +3167,7 @@ class GallClass:
         if len(sources) == 0:
             return False
         offset = album_art_gen.get_offset(pctl.master_library[index].fullpath,sources)
-        return sources[offset]
+        return sources[offset] + [offset]
 
 
     def render(self, index, location):
@@ -3198,7 +3225,7 @@ class GallClass:
             self.key_list.append((index, self.size))
 
             # Remove old images to conserve RAM usage
-            if len(self.key_list) > 250:
+            if len(self.key_list) > 500:
                 key = self.key_list[0]
                 while key in self.queue:
                     self.queue.remove(key)
@@ -3222,6 +3249,10 @@ def clear_img_cache():
     for key, value in gall_ren.gall.items():
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
+
+    direc = os.path.join(user_directory, 'cache')
+    shutil.rmtree(direc)
+    os.makedirs(direc)
 
     global gui
     gui.update += 1
@@ -3627,6 +3658,9 @@ scroll_bpoint = 0
 sbl = 50
 sbp = 100
 
+
+asbp = 50
+album_scroll_hold = False
 
 def fix_encoding(index, mode, enc):
     global pctl
@@ -4548,7 +4582,7 @@ def convert_playlist(pl):
         print(transcode_list)
 
 
-# tab_menu.add('Transcode Folders', convert_playlist, pass_ref=True)
+tab_menu.add('Transcode Folders', convert_playlist, pass_ref=True)
 
 
 def get_folder_tracks_local(pl_in):
@@ -6041,7 +6075,7 @@ def loader():
         if audio.comment != "":
             if audio.comment[0:3] == '000':
                 pass
-            elif audio.comment[2] == '+':
+            elif len(audio.comment) > 4 and audio.comment[2] == '+':
                 pass
             else:
                 nt.comment = audio.comment
@@ -6480,8 +6514,15 @@ def loader():
                 del gall_ren.queue[0]
                 continue
 
+            img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
+
+
             try:
-                if source[0] is True:
+                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
+                    #print('load from cache')
+
+                elif source[0] is True:
                     # print('tag')
                     source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
 
@@ -6497,6 +6538,10 @@ def loader():
                 im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
 
                 im.save(g, 'JPEG')
+                if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    #print("no old found")
+                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
+
                 g.seek(0)
 
                 source_image.close()
@@ -7165,10 +7210,20 @@ def toggle_transcode(mode=0):
     prefs.enable_transcode ^= True
 
 def toggle_rym(mode=0):
-    global prefs
     if mode == 1:
         return prefs.show_rym
     prefs.show_rym ^= True
+
+def toggle_cache(mode=0):
+    if mode == 1:
+        return prefs.cache_gallery
+    if not prefs.cache_gallery:
+        prefs.cache_gallery = True
+        direc = os.path.join(user_directory, 'cache')
+        if not os.path.exists(direc):
+            os.makedirs(direc)
+    else:
+        prefs.cache_gallery = False
 
 def switch_cue(mode=0):
     if mode == 1:
@@ -7294,6 +7349,8 @@ class Over:
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
         # y += 25
         self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
+        y += 35
+        self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
 
         y = self.box_y + 220
         draw_text((x, y), "* Changes apply on restart", colours.grey(150), 11)
@@ -10101,7 +10158,7 @@ while running:
             gui.update += 1
 
     power += 1
-    if resize_mode or scroll_hold:
+    if resize_mode or scroll_hold or album_scroll_hold:
         power += 3
     if side_drag:
         power += 2
@@ -10706,6 +10763,7 @@ while running:
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
 
+
         fields.clear()
 
         if GUI_Mode == 1 or GUI_Mode == 2:
@@ -10789,7 +10847,130 @@ while running:
                 render_pos = 0
                 album_on = 0
                 if mouse_position[0] > playlist_width + 35 and mouse_position[1] < window_size[1] - panelBY:
-                    album_pos_px -= mouse_wheel * 90
+                    if prefs.gallery_row_scroll:
+                        album_pos_px -= mouse_wheel *  (album_mode_art_size + album_v_gap)#90
+                    else:
+                        album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
+
+                # ----
+                rect = (window_size[0] - 33, panelY, 31, window_size[1] - panelBY - panelY)
+                # draw.rect_r(rect, [255,0,0,5], True)
+
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    draw_text((rect[0] + 10, (int((rect[1] + rect[3]) * 0.25))), "▲", alpha_mod(colours.side_bar_line2, 150), 13)
+                    draw_text((rect[0] + 10, (int((rect[1] + rect[3]) * 0.75))), "▼", alpha_mod(colours.side_bar_line2, 150), 13)
+
+                if right_click:
+
+                    if coll_point(mouse_position, rect):
+                        per = (mouse_position[1] - panelY - 25) / (window_size[1] - panelBY - panelY)
+                        if per > 100:
+                            per = 100
+                        if per < 0:
+                            per = 0
+                        album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50
+
+                if mouse_down:
+                    #rect = (window_size[0] - 30, panelY, 30, window_size[1] - panelBY - panelY)
+                    if coll_point(mouse_position, rect):
+                        # if mouse_position[1] > window_size[1] / 2:
+                        #     album_pos_px += 30
+                        # else:
+                        #     album_pos_px -= 30
+                        album_scroll_hold = True
+                        tt = scroll_timer.hit()
+                        if tt > 1:
+                            mv = 0
+                        else:
+                            mv = int(tt * 1500)
+                            if mv < 30:
+                                if mouse_position[1] > (rect[1] + rect[3]) * 0.5:
+                                    album_pos_px += mv
+                                else:
+                                    album_pos_px -= mv
+                else:
+                    album_scroll_hold = False
+                # #-------------------
+                #
+                # # Combo mode scroll:
+                # sy = 31
+                # ey = window_size[1] - 30 - 22
+                #
+                # sbl = 70
+                #
+                # fields.add((window_size[0] - 15, asbp, 20, sbl))
+                #
+                # if coll_point(mouse_position, (window_size[0] - 15, panelY, 28, ey - panelY)) and (
+                #             mouse_down or right_click) \
+                #         and coll_point(click_location, (window_size[0] - 15, panelY, 28, ey - panelY)):
+                #
+                #     gui.update = 1
+                #     if right_click:
+                #
+                #         asbp = mouse_position[1] - int(sbl / 2)
+                #         if asbp + sbl > ey:
+                #             asbp = ey - sbl
+                #         elif asbp < panelY:
+                #             asbp = panelY
+                #         per = (asbp - panelY) / (ey - panelY - sbl)
+                #
+                #         print('---')
+                #         print(per)
+                #         print(row_len)
+                #         print(len(album_dex))
+                #         album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50
+                #         print(album_pos_px)
+                #
+                #         #
+                #         # # if playlist_position < 0:
+                #         # #     playlist_position = 0
+                #     elif mouse_position[1] < asbp:
+                #         album_pos_px -= 30
+                #     elif mouse_position[1] > asbp + sbl:
+                #         album_pos_px += 30
+                #     elif mouse_click:
+                #
+                #         p_y = pointer(c_int(0))
+                #         p_x = pointer(c_int(0))
+                #         SDL_GetGlobalMouseState(p_x, p_y)
+                #
+                #         album_scroll_hold = True
+                #         scroll_point = p_y.contents.value  # mouse_position[1]
+                #         scroll_bpoint = asbp
+                #
+                # if not mouse_down:
+                #     album_scroll_hold = False
+                #
+                # if album_scroll_hold and not mouse_click:
+                #     gui.update = 1
+                #     p_y = pointer(c_int(0))
+                #     p_x = pointer(c_int(0))
+                #     SDL_GetGlobalMouseState(p_x, p_y)
+                #     asbp = p_y.contents.value - (scroll_point - scroll_bpoint)
+                #     if asbp + sbl > ey:
+                #         asbp = ey - sbl
+                #     elif asbp < panelY:
+                #         asbp = panelY
+                #     per = (asbp - panelY) / (ey - panelY - sbl)
+                #     # playlist_position = int(len(default_playlist) * per)
+                #     album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50
+                #     #combo_pl_render.last_dex = 0
+                #
+                # else:
+                #
+                #     if len(album_dex) > 0:
+                #         per = album_pos_px / (len(album_dex) * (album_mode_art_size + album_v_gap))
+                #         #per = (album_pos_px * row_len) / len(album_dex) * (album_mode_art_size + album_v_gap)
+                #         print(per)
+                #         asbp = int((ey - panelY - sbl) * per) + panelY + 1
+                #
+                # draw.rect((window_size[0] - 15, asbp), (14, sbl), colours.scroll_colour, True)
+                #
+                # if (coll_point(mouse_position, (window_size[0] - 15, asbp, 20, sbl)) and mouse_position[0] != 0) or album_scroll_hold:
+                #     draw.rect((window_size[0] - 15, asbp), (14, sbl), [255, 255, 255, 11], True)
+
+                #--------------------------------
 
                 if last_row != row_len:
                     last_row = row_len
@@ -12935,6 +13116,10 @@ save = [pctl.master_library,
         prefs.transcode_codec,
         prefs.transcode_bitrate,
         prefs.line_style,
+        prefs.cache_gallery,
+        None,
+        None,
+        None,
         None,
         None
         ]

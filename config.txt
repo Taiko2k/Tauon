@@ -4,6 +4,8 @@
 pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True
+scroll-gallery-row=False
+scroll-gallery-wheel=95
 
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
 mediakey=2
@@ -18,4 +20,5 @@ icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
 icecast-password=hackme
+
 
