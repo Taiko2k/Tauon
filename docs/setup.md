@@ -1,6 +1,6 @@
 # Binary release setup on Windows
 
-Release bundle should 'just work' by running tauon.exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
+Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
 
 # Development setup on Linux
@@ -27,11 +27,11 @@ Finally run using python 3 (Alternatively create a desktop or launcher shortcut.
 
     $ python3 tauon.py
 
-  Note: Python 3.5 reccomended (or later), you may need to specifiy this if you have multiple python versions i.e python3.5
+  Note: Python 3.5 reccomended. You may need to specifiy this if you have multiple python versions i.e python3.5
 
 # Development setup on OS X
 
-OSX is not fully supported, but the program may run. As a rough guide to get started: 
+OSX is not officially supported, but the program may run. As a rough guide to get started: 
 
 Install Python 3, SDL, SDL_ttf and SDL_image frameworks
 Install Bass libraries to programs /lib folder, required are libbass.dylib, libbassenc.dylib and libbassmix.dylib

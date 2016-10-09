@@ -12,6 +12,7 @@ v1.7.1
  - Fixed max cpu usage with level meter
  - Fixed encode not working with cue files to single tracks
  - Fixed opus output files not containing track number metadata
+ - Fixed transcoding on Linux
 
 v1.7.0
 

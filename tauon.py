@@ -1574,6 +1574,18 @@ def get_backend_time(path):
 
 lastfm = LastFMapi()
 
+# class LyricsCore:
+#
+#     def __init__(self):
+#         pass
+#
+#     def get(self, title, artist):
+#         if title == "" or artist == "":
+#             return
+#         lyrics = lyricwikia.get_lyrics(artist, title)
+#         print(lyrics)
+#
+# lyrics_s = LyricsCore()
 
 def player():
 
@@ -2559,6 +2571,7 @@ elif system != 'mac':
         hookman.KeyDown = kbevent
         hookman.HookKeyboard()
         hookman.start()
+        print("Started X key hook")
 
 
 class GStats:
@@ -4559,8 +4572,8 @@ def convert_playlist(pl):
         if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
-        #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
+        if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
+            show_message("Error: Missing oggenc2.exe from '/encoder' directory")
             return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
@@ -4582,7 +4595,7 @@ def convert_playlist(pl):
         print(transcode_list)
 
 
-tab_menu.add('Transcode Folders', convert_playlist, pass_ref=True)
+tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 
 
 def get_folder_tracks_local(pl_in):
@@ -5815,8 +5828,10 @@ def transcode_single(item):
 
 
     print(shlex.split(command))
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo = None
+    if system == 'windows':
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
@@ -6209,8 +6224,6 @@ def loader():
     global album_art_gen
     global cm_clean_db
 
-    import multiprocessing
-
     while True:
         time.sleep(0.05)
 
@@ -6308,13 +6321,6 @@ def loader():
 
                                 break
 
-                        # for item in folder_items:
-                        #     todo.append([item, folder_name])
-
-
-                        # pool = multiprocessing.Pool()
-                        # pool.map(transcode_single, todo)
-
                     else:
                         for item in folder_items:
 
@@ -6351,8 +6357,10 @@ def loader():
                             gui.update += 1
 
                             print(shlex.split(command))
-                            startupinfo = subprocess.STARTUPINFO()
-                            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                            startupinfo = None
+                            if system == 'windows':
+                                startupinfo = subprocess.STARTUPINFO()
+                                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                             subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
                             # out = subprocess.popen.communicate(shlex.split(command), stdout=subprocess.PIPE, shell=False,
                             #                 startupinfo=startupinfo)
@@ -6492,8 +6500,10 @@ def loader():
                     gui.update += 1
 
                     print(shlex.split(command))
-                    startupinfo = subprocess.STARTUPINFO()
-                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo = None
+                    if system == 'windows':
+                        startupinfo = subprocess.STARTUPINFO()
+                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
 
                     print('done ffmpeg')
@@ -10393,7 +10403,7 @@ while running:
             #gui.show_playlist ^= True
 
             # key_F7 = False
-            win32gui.DrawText()
+
             # gui.test ^= True
 
             # GUI_Mode = 3

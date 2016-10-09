@@ -7,11 +7,13 @@ Uses BASS audio library.
 ### Features :sparkles:
 
   - Playback support for common codecs such as MP3 and FLAC
-  - CUE sheet support
-  - Switchable visual layouts
+  - Dark themed with customisable colours
+  - Simple drag and drop track importing
+  - Batch transcode folders to OPUS for easy compressing for devices
+  - Integrated CUE sheet detection
+  - Tracks and/or gallery artwork layout
   - Last.fm scrobbling
   - Outbound streaming (via icecast)
-  - Customisable colours
   - Multi-platform (Windows and Linux)
 
 ### Screenshots :star2:
@@ -29,7 +31,7 @@ Extract archive to a user directory of your choosing.
 
 Start program by running 'tauon.exe'. Requires [Visual C++ 2015 Redistributable](https://www.microsoft.com/en-nz/download/details.aspx?id=48145).
 
-For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature list see [features](docs/features.md).
+For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature status see [features](docs/features.md).
 
 
 
