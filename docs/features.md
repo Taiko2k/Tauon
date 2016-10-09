@@ -1,7 +1,7 @@
 ##### Implemented features:
 
 - Audio playback (MP3, M4A/MP4, AAC, OGG, FLAC, WAV, TTA, APE, OPUS, WMA*)
-- Tag metadata (MP3, M4A, OGG, FLAC, WMA*) *Windows only
+- Tag metadata (MP3, M4A, OGG, FLAC, WMA*)  *Windows only
 - Embedded album art (MP3, FLAC)
 - Multiple album art
 - Last.fm scrobbling
@@ -48,6 +48,7 @@
  - Ratings
  - Artist metadata scraping
  - Album artist metadata
+ - Extra metadata
  - Output device configuration
  - A-B repreat
  - Bookmarks

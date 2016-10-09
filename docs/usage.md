@@ -76,7 +76,7 @@ Advanced Use
 
 Intended to be an easy way to reduce file sizes for copying to devices. Results will be of degraded quality and should not be used for archival.
 
-Requires ffmpeg and opusenc/lame in encoder subdirectory. (For Linux, programs simply need be installed)
+Requires ffmpeg in encoder subdirectory. Additionally 'oggenc2.exe' for ogg encoding and 'lame.exe' for mp3 encoding. (On Linux, programs only need be installed)
 
 Will encode based on settings in MENU->Settings...->Transcode
 Output folders will be placed in same encoder subdirectory (can be changed in config.txt)
