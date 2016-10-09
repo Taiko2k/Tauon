@@ -8,10 +8,12 @@ Uses BASS audio library.
 
   - Playback support for common codecs such as MP3 and FLAC
   - Dark themed with customisable colours
+  - Clean minimal layout with large album art view
   - Simple drag and drop track importing
-  - Batch transcode folders to OPUS for easy compressing for devices
-  - Integrated CUE sheet detection
-  - Tracks and/or gallery artwork layout
+  - Batch transcode folders of tracks to OPUS for easy compressing to devices
+  - Automatic CUE sheet detection and integration
+  - Switch between tracks and/or gallery layouts
+  - Quick searching and creating filtered playlists
   - Last.fm scrobbling
   - Outbound streaming (via icecast)
   - Multi-platform (Windows and Linux)
