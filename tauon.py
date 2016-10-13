@@ -3263,11 +3263,12 @@ def clear_img_cache():
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
 
-    direc = os.path.join(user_directory, 'cache')
-    shutil.rmtree(direc)
-    os.makedirs(direc)
+    if prefs.cache_gallery:
+        direc = os.path.join(user_directory, 'cache')
+        if os.path.isdir(direc):
+            shutil.rmtree(direc)
+        os.makedirs(direc)
 
-    global gui
     gui.update += 1
 
 
@@ -6611,7 +6612,6 @@ def loader():
                 transcode_state = ""
                 gui.update += 1
             except:
-                raise
                 transcode_state = "Transcode Error"
                 show_message("Unknown error encountered")
                 gui.update += 1

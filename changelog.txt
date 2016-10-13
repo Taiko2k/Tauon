@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v1.7.2
+
+ - Fixed reset cache crash
+
 v1.7.1
 
  - Added setting for disk caching gallery art
