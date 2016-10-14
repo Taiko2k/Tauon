@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v1.7.2
 
+ - Enabled fast encoding for OGG codec
  - Fixed reset cache crash
+ - Removed CUE type encoding option
 
 v1.7.1
 
