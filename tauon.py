@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.1"
+t_version = "v1.7.2"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -820,8 +820,8 @@ try:
         prefs.prefer_bottom_title = save[33]
     if save[34] is not None:
         gui.display_time_mode = save[34]
-    if save[35] is not None:
-        prefs.transcode_mode = save[35]
+    # if save[35] is not None:
+    #     prefs.transcode_mode = save[35]
     if save[36] is not None:
         prefs.transcode_codec = save[36]
     if save[37] is not None:
@@ -6301,7 +6301,7 @@ def loader():
 
                 if prefs.transcode_mode == 'single':
 
-                    if prefs.transcode_codec == 'opus':
+                    if prefs.transcode_codec == 'opus' or  prefs.transcode_codec == 'ogg':
                         global core_use
                         cores = os.cpu_count()
 
@@ -7580,19 +7580,19 @@ class Over:
         y = self.box_y - 5
 
         y += 30
-        self.toggle_square(x, y, toggle_transcode, "Enable / Show in track menu (Applies on restart)")
+        self.toggle_square(x, y, toggle_transcode, "Show in track menu (Applies on restart)")
         self.button(x + 370, y - 4, "Open output folder", open_encode_out)
-        y += 40
-        self.toggle_square(x, y, switch_cue, "Single Stream + CUE")
-        y += 25
-        self.toggle_square(x, y, switch_single, "Individual Tracks")
+        # y += 40
+        # self.toggle_square(x, y, switch_cue, "Single Stream + CUE")
+        # y += 25
+        # self.toggle_square(x, y, switch_single, "Individual Tracks")
 
         y += 40
-        self.toggle_square(x, y, switch_opus, "OPUS   [Multicore Transcode]")
+        self.toggle_square(x, y, switch_opus, "OPUS")
         y += 25
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25
-        self.toggle_square(x, y, switch_mp3, "MP3")
+        self.toggle_square(x, y, switch_mp3, "MP3  [slow, requires Lame]")
 
 
         y += 35
@@ -10226,13 +10226,14 @@ while running:
                 gui.update += 1
 
                 # Workaround for SDL bug 2610
-                if SDL_GetWindowFlags(t_window) & SDL_WINDOW_MAXIMIZED:
-                    SDL_RestoreWindow(t_window)
-                    SDL_MaximizeWindow(t_window)
-                elif SDL_GetWindowFlags(t_window) & SDL_WINDOW_FULLSCREEN_DESKTOP:
+                if system == 'windows':
+                    if SDL_GetWindowFlags(t_window) & SDL_WINDOW_MAXIMIZED:
+                        SDL_RestoreWindow(t_window)
+                        SDL_MaximizeWindow(t_window)
+                    elif SDL_GetWindowFlags(t_window) & SDL_WINDOW_FULLSCREEN_DESKTOP:
 
-                    SDL_RestoreWindow(t_window)
-                    SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
+                        SDL_RestoreWindow(t_window)
+                        SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 x_menu.active = False
