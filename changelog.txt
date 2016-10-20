@@ -3,8 +3,11 @@ Changelog-------------------------------------
 
 v1.7.2
 
+ - Changed side panel metadata font and tab font
  - Enabled fast encoding for OGG codec
+ - Increased number of worker threads
  - Fixed reset cache crash
+ - Fixed scroll bar hitbox overlaping play button
  - Removed CUE type encoding option
 
 v1.7.1

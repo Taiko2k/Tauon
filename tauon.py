@@ -2745,49 +2745,65 @@ def load_font(name, size, ext=False):
 main_font = 'Koruri-Regular.ttf'
 alt_font = 'DroidSansFallback.ttf'
 gui_font = 'Koruri-Semibold.ttf'
-
-fontG = load_font(gui_font, 12)
-fontG13 = load_font(gui_font, 13)
-
-font1 = load_font(main_font, 16)
-font1b = load_font(alt_font, 16)
+light_font = 'Koruri-Light.ttf'
 
 
-font2 = load_font(main_font, 12)
-#font2b = load_font("C:\\Windows\\Fonts\\msyh.ttc", 12, True )
-font2b = load_font(alt_font, 12)
+font11c = load_font(gui_font, 11)
+font12c = load_font(gui_font, 12)
+font13c = load_font(gui_font, 13)
+font14c = load_font(gui_font, 14)
 
-font3 = load_font(main_font, 10)
-font3b = load_font(alt_font, 10)
+font10a = load_font(main_font, 10)
+font11a = load_font(main_font, 11)
+font12a = load_font(main_font, 12)
+font13a = load_font(main_font, 13)
+font14a = load_font(main_font, 14)
+font15a = load_font(main_font, 15)
+font16a = load_font(main_font, 16)
+font17a = load_font(main_font, 17)
 
-font4 = load_font(main_font, 11)
-font4b = load_font(alt_font, 11)
+font10b = load_font(alt_font, 10)
+font11b = load_font(alt_font, 11)
+font12b = load_font(alt_font, 12)
+font13b = load_font(alt_font, 13)
+font14b = load_font(alt_font, 14)
+font15b = load_font(alt_font, 15)
+font16b = load_font(alt_font, 16)
+font17b = load_font(alt_font, 17)
 
-font6 = load_font(main_font, 13)
-#font6b = load_font("C:\\Windows\\Fonts\\malgun.ttf", 13, True )
-font6b = load_font(alt_font, 13)
-
-font7 = load_font(main_font, 14)
-font7b = load_font(alt_font, 14)
+font12d = load_font(light_font, 12)
+font13d = load_font(light_font, 13)
+font14d = load_font(light_font, 14)
+font15d = load_font(light_font, 15)
+font16d = load_font(light_font, 16)
+font17d = load_font(light_font, 17)
 
 font_dict = {}
-font_dict[13] = (font6, font6b)
-font_dict[11] = (font4, font4b)
-font_dict[10] = (font3, font3b)
-font_dict[12] = (font2, font2b)
-font_dict[16] = (font1, font1b)
-font_dict[14] = (font7, font7b)
 
-font_dict[212] = (fontG, font2b)
-font_dict[213] = (fontG13, font6b)
+font_dict[13] = (font13a, font13b)
+font_dict[11] = (font11a, font11b)
+font_dict[10] = (font10a, font10b)
+font_dict[12] = (font12a, font12b)
+font_dict[16] = (font16a, font16b)
+font_dict[14] = (font14a, font14b)
+font_dict[15] = (font15a, font15b)
+font_dict[17] = (font17a, font17b)
+font_dict[211] = (font11c, font11b)
+font_dict[212] = (font12c, font12b)
+font_dict[213] = (font13c, font13b)
+font_dict[214] = (font14c, font14b)
+font_dict[317] = (font17d, font17b)
+font_dict[316] = (font16d, font16b)
+font_dict[315] = (font15d, font15b)
+font_dict[314] = (font14d, font14b)
+font_dict[313] = (font13d, font13b)
+font_dict[312] = (font12d, font12b)
 
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 
 
 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
-
-
 
 if gui.maximized:
     flags |= SDL_WINDOW_MAXIMIZED
@@ -3943,7 +3959,7 @@ playlist_top = 38
 r = (130, 8, 10, 15)
 
 
-scroll_hide_box = (0, panelY, 28, window_size[0] - panelBY)
+scroll_hide_box = (0, panelY, 28, window_size[1] - panelBY - panelY)
 
 encoding_menu = False
 enc_index = 0
@@ -5848,7 +5864,79 @@ def transcode_single(item):
 added = []
 
 
-def loader():
+def worker2():
+
+    while True:
+
+        time.sleep(0.07)
+
+        while len(gall_ren.queue) > 0:
+
+            # print("ready")
+
+            key = gall_ren.queue[0]
+            order = gall_ren.gall[key]
+
+            source = gall_ren.get_file_source(key[0])
+
+            # print(source)
+
+            if source is False:
+                order[0] = 0
+                gall_ren.gall[key] = order
+                del gall_ren.queue[0]
+                continue
+
+            img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
+
+            try:
+                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
+                    # print('load from cache')
+
+                elif source[0] is True:
+                    # print('tag')
+                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+
+                else:
+                    source_image = open(source[1], 'rb')
+
+                g = io.BytesIO()
+                g.seek(0)
+                # print('pro stage 1')
+                im = Image.open(source_image)
+                if im.mode != "RGB":
+                    im = im.convert("RGB")
+                im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
+
+                im.save(g, 'JPEG')
+                if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    # print("no old found")
+                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
+
+                g.seek(0)
+
+                source_image.close()
+
+                order = [2, g, None, None]
+                gall_ren.gall[key] = order
+
+                gui.update += 1
+                if gui.combo_mode:
+                    gui.pl_update = 1
+                del source
+                time.sleep(0.01)
+
+            except:
+                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
+                order = [0, None, None, None]
+                gall_ren.gall[key] = order
+
+            del gall_ren.queue[0]
+
+
+
+def worker1():
 
     global cue_list
     global loaderCommand
@@ -6226,7 +6314,7 @@ def loader():
     global cm_clean_db
 
     while True:
-        time.sleep(0.05)
+        time.sleep(0.15)
 
         # Clean database
         if cm_clean_db is True:
@@ -6621,70 +6709,70 @@ def loader():
             if len(transcode_list) == 0:
                 show_message("Encoding Completed")
 
-        while len(gall_ren.queue) > 0:
-
-            # print("ready")
-
-            key = gall_ren.queue[0]
-            order = gall_ren.gall[key]
-
-            source = gall_ren.get_file_source(key[0])
-
-            # print(source)
-
-            if source is False:
-                order[0] = 0
-                gall_ren.gall[key] = order
-                del gall_ren.queue[0]
-                continue
-
-            img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
-
-
-            try:
-                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
-                    #print('load from cache')
-
-                elif source[0] is True:
-                    # print('tag')
-                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-
-                else:
-                    source_image = open(source[1], 'rb')
-
-                g = io.BytesIO()
-                g.seek(0)
-                # print('pro stage 1')
-                im = Image.open(source_image)
-                if im.mode != "RGB":
-                    im = im.convert("RGB")
-                im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
-
-                im.save(g, 'JPEG')
-                if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-                    #print("no old found")
-                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
-
-                g.seek(0)
-
-                source_image.close()
-
-                order = [2, g, None, None]
-                gall_ren.gall[key] = order
-
-                gui.update += 1
-                if gui.combo_mode:
-                    gui.pl_update = 1
-                del source
-                time.sleep(0.01)
-
-            except:
-                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
-                order = [0, None, None, None]
-                gall_ren.gall[key] = order
-
-            del gall_ren.queue[0]
+        # while len(gall_ren.queue) > 0:
+        #
+        #     # print("ready")
+        #
+        #     key = gall_ren.queue[0]
+        #     order = gall_ren.gall[key]
+        #
+        #     source = gall_ren.get_file_source(key[0])
+        #
+        #     # print(source)
+        #
+        #     if source is False:
+        #         order[0] = 0
+        #         gall_ren.gall[key] = order
+        #         del gall_ren.queue[0]
+        #         continue
+        #
+        #     img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
+        #
+        #
+        #     try:
+        #         if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+        #             source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
+        #             #print('load from cache')
+        #
+        #         elif source[0] is True:
+        #             # print('tag')
+        #             source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+        #
+        #         else:
+        #             source_image = open(source[1], 'rb')
+        #
+        #         g = io.BytesIO()
+        #         g.seek(0)
+        #         # print('pro stage 1')
+        #         im = Image.open(source_image)
+        #         if im.mode != "RGB":
+        #             im = im.convert("RGB")
+        #         im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
+        #
+        #         im.save(g, 'JPEG')
+        #         if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+        #             #print("no old found")
+        #             im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
+        #
+        #         g.seek(0)
+        #
+        #         source_image.close()
+        #
+        #         order = [2, g, None, None]
+        #         gall_ren.gall[key] = order
+        #
+        #         gui.update += 1
+        #         if gui.combo_mode:
+        #             gui.pl_update = 1
+        #         del source
+        #         time.sleep(0.01)
+        #
+        #     except:
+        #         print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
+        #         order = [0, None, None, None]
+        #         gall_ren.gall[key] = order
+        #
+        #     del gall_ren.queue[0]
 
         if loaderCommandReady is True:
             for order in load_orders:
@@ -6708,10 +6796,13 @@ def loader():
                     break
 
 
-loaderThread = threading.Thread(target=loader)
-loaderThread.daemon = True
-loaderThread.start()
+worker1Thread = threading.Thread(target=worker1)
+worker1Thread.daemon = True
+worker1Thread.start()
 
+worker2Thread = threading.Thread(target=worker2)
+worker2Thread.daemon = True
+worker2Thread.start()
 
 def get_album_info(position):
     current = position
@@ -8207,7 +8298,7 @@ class TopPanel:
         self.start_space_left = 8
         self.start_space_compact_left = 25
 
-        self.tab_text_font = 12
+        self.tab_text_font = 211 #12
         self.tab_extra_width = 17
         self.tab_text_start_space = 8
         self.tab_text_y_offset = 8
@@ -10665,7 +10756,7 @@ while running:
         #     highlight_x_offset = 16
 
         random_button_position = window_size[0] - 90, 83
-        scroll_hide_box = (1, panelY, 28, window_size[0] - panelBY)
+        scroll_hide_box = (1, panelY, 28, window_size[1] - panelBY - panelY)
 
         if thick_lines or gui.combo_mode:
             playlist_row_height = 31
@@ -11697,10 +11788,10 @@ while running:
                                 else:
                                     # -------------------------------
 
-                                    if 38 + box + 126 > window_size[1] + 52:
+                                    if 38 + box + 130 > window_size[1] + 52:
                                         block6 = True
                                     if block6 != True:
-                                        if 38 + box + 126 > window_size[1] + 37:
+                                        if 38 + box + 134 > window_size[1] + 37:
                                             block5 = True
 
                                         if 38 + box + 126 > window_size[1] + 10:
@@ -11724,17 +11815,17 @@ while running:
 
                                             if title != "":
                                                 playing_info = title
-                                                playing_info = trunc_line(playing_info, 12,
+                                                playing_info = trunc_line(playing_info, 315,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((x - 1, block1 + 2), playing_info, colours.side_bar_line1,
-                                                          13, max=side_panel_size - 20)
+                                                          315, max=side_panel_size - 20)
 
                                             if artist != "":
                                                 playing_info = artist
-                                                playing_info = trunc_line(playing_info, 11,
+                                                playing_info = trunc_line(playing_info, 313,
                                                                           window_size[0] - playlist_width - 54)
-                                                draw_text((x - 1, block1 + 17 + 4), playing_info, colours.side_bar_line2,
-                                                          12)
+                                                draw_text((x - 1, block1 + 17 + 6), playing_info, colours.side_bar_line2,
+                                                          313)
                                         else:
                                             block1 -= 14
 
@@ -11745,33 +11836,33 @@ while running:
                                                 if line != "":
                                                     line += " - "
                                                 line += title
-                                            line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                            draw_text((x - 1, block1), line, colours.side_bar_line1, 11)
+                                            line = trunc_line(line, 315, window_size[0] - playlist_width - 53)
+                                            draw_text((x - 1, block1), line, colours.side_bar_line1, 315)
 
                                         if block3 == False:
 
                                             if album != "":
                                                 playing_info = album
-                                                playing_info = trunc_line(playing_info, 11,
+                                                playing_info = trunc_line(playing_info, 314,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((x - 1, block2), playing_info, colours.side_bar_line2,
-                                                          11)
+                                                          314)
 
                                             if date != "":
                                                 playing_info = date
                                                 if genre != "":
                                                     playing_info += " | " + genre
-                                                playing_info = trunc_line(playing_info, 11,
+                                                playing_info = trunc_line(playing_info, 313,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((x - 1, block2 + 18), playing_info, colours.side_bar_line2,
-                                                          11)
+                                                          313)
 
                                             if ext != "":
                                                 playing_info = ext  # + " | " + sample
-                                                playing_info = trunc_line(playing_info, 11,
+                                                playing_info = trunc_line(playing_info, 312,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((x - 1, block2 + 36), playing_info, colours.side_bar_line2,
-                                                          11)
+                                                          312)
                                         else:
                                             if block5 != True:
                                                 line = ""
@@ -11782,8 +11873,8 @@ while running:
                                                 if date != "":
                                                     line += date + " | "
                                                 line += ext
-                                                line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                                draw_text((x - 1, block2 + 35), line, colours.side_bar_line2, 11)
+                                                line = trunc_line(line, 314, window_size[0] - playlist_width - 53)
+                                                draw_text((x - 1, block2 + 33), line, colours.side_bar_line2, 314)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
