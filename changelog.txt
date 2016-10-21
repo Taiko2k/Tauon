@@ -1,12 +1,14 @@
 
 Changelog-------------------------------------
 
-v1.7.2
+v1.7.3
 
  - Added drop on top panel to import to new playlist functionality
+ - Added 'search term not found' indicator
  - Changed side panel metadata font and tab font
  - Enabled fast encoding for OGG codec
  - Increased number of worker threads
+ - Moved IME edit display location
  - Fixed reset cache crash
  - Fixed scroll bar hitbox overlaping play button
  - Fixed hitbox overlap on tab buttons

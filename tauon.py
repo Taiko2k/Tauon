@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.2"
+t_version = "v1.7.3"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -242,8 +242,8 @@ album_dex_l = []
 album_artist_dict = {}
 row_len = 5
 last_row = 0
-album_v_gap = 65
-album_h_gap = 30
+album_v_gap = 66
+album_h_gap = 30 #30
 album_mode_art_size = 160
 combo_mode_art_size = 190
 albums_to_render = 0
@@ -544,6 +544,7 @@ class GuiVar:
         self.show_playlist = True
         self.show_bottom_title = False
         self.show_top_title = True
+        self.search_error = False
         
         self.level_update = False
         self.level_time = Timer()
@@ -677,7 +678,7 @@ class ColoursClass:
         self.time_sub = [255,255,255,80]
         self.bar_title_text = self.side_bar_line1
 
-        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
+        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 130)
 
         self.status_text_normal = self.grey(95)
         self.status_text_over = self.grey(130)
@@ -3158,14 +3159,14 @@ class TextBox:
                 self.text += clip
 
         if secret:
-            space = draw_text((x, y), '●' * len(self.text), colour, 12)
+            space = draw_text((x, y), '●' * len(self.text), colour, 13)
         else:
-            space = draw_text((x, y), self.text, colour, 12)
+            space = draw_text((x, y), self.text, colour, 13)
 
         if active and TextBox.cursor:
-            xx = x + space + 2
+            xx = x + space + 1
             yy = y + 3
-            draw.line(xx, yy, xx, yy + 10, colour)
+            draw.line(xx, yy, xx, yy + 12, colour)
 
         TextBox.blink_activate = 100
 
@@ -5869,6 +5870,7 @@ def worker2():
 
     while True:
 
+
         time.sleep(0.07)
 
         while len(gall_ren.queue) > 0:
@@ -5926,7 +5928,11 @@ def worker2():
                 if gui.combo_mode:
                     gui.pl_update = 1
                 del source
-                time.sleep(0.01)
+
+                if not prefs.cache_gallery:
+                    time.sleep(0.01)
+                else:
+                    time.sleep(0.002)
 
             except:
                 print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
@@ -5983,13 +5989,13 @@ def worker1():
                 with open(path, encoding="utf_8") as f:
                     content = f.readlines()
             except:
-                print("Thats not right")
+                #print("Thats not right")
                 try:
                     with open(path, encoding="utf_16") as f:
                         content = f.readlines()
 
                 except:
-                    print("Wrong again")
+                    #print("Wrong again")
                     try:
                         with open(path) as f:
                             content = f.readlines()
@@ -11241,8 +11247,14 @@ while running:
                                           colours.gallery_highlight, True)
                                 draw.rect((x, y ), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
+
+                            # Draw back colour
                             draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
 
+                            # Draw faint outline
+                            draw.rect((x - 1, y - 1), (album_mode_art_size + 2, album_mode_art_size + 2), [255, 255, 255, 11])
+
+                            # Draw album art
                             gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
 
                             if info[0] != 1 and pctl.playing_state != 0 and dim_art:
@@ -11294,7 +11306,7 @@ while running:
 
                             if line2 == "":
 
-                                draw_text2((x, y + album_mode_art_size + 8),
+                                draw_text2((x, y + album_mode_art_size + 9),
                                            line,
                                            colours.gallery_artist_line,
                                            11,
@@ -11304,7 +11316,7 @@ while running:
                                            )
                             else:
 
-                                draw_text2((x, y + album_mode_art_size + 7),
+                                draw_text2((x, y + album_mode_art_size + 8),
                                            line2,
                                            albumtitle,
                                            212,
@@ -11313,7 +11325,7 @@ while running:
                                            default_playlist[album_dex[album_on]]
                                            )
 
-                                draw_text2((x, y + album_mode_art_size + 10 + 13),
+                                draw_text2((x, y + album_mode_art_size + 10 + 14),
                                            line,
                                            colours.gallery_artist_line,
                                            11,
@@ -12615,12 +12627,20 @@ while running:
 
                 if len(input_text) > 0:
                     search_index = -1
+
+                if len(search_text.text) == 0:
+                    gui.search_error = False
                 
                 if len(search_text.text) != 0 and search_text.text[0] == '/':
                     line = "Folder filter mode. Enter path segment."
                 else:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                 draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
+
+                if gui.search_error:
+                    draw.rect_r([rect[0], rect[1], rect[2], 30], [255,0,0,45], True)
+                if key_backspace_press:
+                    gui.search_error = False
 
                 search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(165))
 
@@ -12669,9 +12689,12 @@ while running:
                         quick_search_mode = False
 
 
-                if len(input_text) > 0 or key_down_press is True:
+                if len(input_text) > 0 or key_down_press is True or key_backspace_press:
 
                     gui.pl_update = 1
+
+                    if key_backspace_press:
+                        search_index = 0
 
                     if len(search_text.text) > 0 and search_text.text[0] != "/":
                         oi = search_index
@@ -12700,10 +12723,10 @@ while running:
 
                                 break
 
-
-
                         else:
                             search_index = oi
+                            if len(input_text) > 0:
+                                gui.search_error = True
 
                 if key_up_press is True:
 
@@ -12783,9 +12806,9 @@ while running:
 
         # Unicode edit display---------------------
         if len(editline) > 0:
-            ll = draw.text_calc(editline, 12)
-            draw.rect((window_size[0] - ll - 10, 0), (ll + 15, 18), [0, 0, 0, 255], True)
-            draw_text((window_size[0] - ll - 5, 3), editline, colours.grey(210), 12)
+            ll = draw.text_calc(editline, 14)
+            draw.rect((window_size[0] - ll - 12, window_size[1] - 26), (ll + 15, 26), [0, 0, 0, 255], True)
+            draw_text((window_size[0] - ll - 5, window_size[1] - 24), editline, colours.grey(210), 14)
 
         # Render Menus-------------------------------
         x_menu.render()
