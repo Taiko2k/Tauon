@@ -12,6 +12,7 @@ v1.7.3
  - Fixed reset cache crash
  - Fixed scroll bar hitbox overlaping play button
  - Fixed hitbox overlap on tab buttons
+ - Fixed queue highlight area
  - Removed CUE type encoding option
 
 v1.7.1

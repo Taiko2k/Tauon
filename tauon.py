@@ -9568,9 +9568,12 @@ class StandardPlaylist:
             # Highlight green if track in queue
             for item in pctl.force_queue:
                 if default_playlist[p_track] == item[0] and item[1] == p_track:
-                    draw.rect((playlist_left, playlist_top + playlist_row_height * w),
-                              (playlist_width, playlist_row_height - 1), [130, 220, 130, 30],
-                              True)
+                    # draw.rect((playlist_left, playlist_top + playlist_row_height * w),
+                    #           (playlist_width, playlist_row_height - 1), [130, 220, 130, 30],
+                    #           True)
+                    draw.rect((highlight_left, playlist_top + playlist_row_height * w),
+                              (highlight_right, playlist_row_height - 1), [130, 220, 130, 30], True)
+
 
             # Make track the selection if right clicked
             if right_click and line_hit and not playlist_panel:
