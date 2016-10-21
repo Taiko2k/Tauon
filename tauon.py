@@ -59,13 +59,13 @@ server_port = 7590
 
 if sys.platform == 'win32':
     system = 'windows'
-    print("Detected platform: Windows")
+    print("Platform mode: Windows")
 elif sys.platform == 'darwin':
     system = 'mac'
-    print("Detected platform: Max OS X")
+    print("Platform mode: Max OS X")
 else:
     system = 'linux'
-    print("Detected platform: Linux")
+    print("Platform mode: Linux")
 
 working_directory = os.getcwd()
 install_directory = sys.path[0]
@@ -4189,9 +4189,9 @@ def paste_deco():
 playlist_menu.add('Paste', append_here, paste_deco)
 
 # Create playlist tab menu
-tab_menu = Menu(135)
+tab_menu = Menu(160)
 
-tab_menu.add_sub("New Sorted Playlist...", 100)
+tab_menu.add_sub("Create Sorted Playlist...", 110)
 
 
 def new_playlist():
@@ -4209,6 +4209,7 @@ def new_playlist():
 
     pctl.multi_playlist.append([title, 0, [], 0, 0, 0])
     switch_playlist(len(pctl.multi_playlist) - 1)
+    return len(pctl.multi_playlist) - 1
 
 
 tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -4374,7 +4375,7 @@ def gen_500_random(index):
 
 
 
-tab_menu.add_to_sub("Shuffled", 0, gen_500_random, pass_ref=True)
+tab_menu.add_to_sub("Shuffled Tracks", 0, gen_500_random, pass_ref=True)
 
 
 def gen_folder_shuffle(index):
@@ -4427,7 +4428,7 @@ def gen_reverse(index):
             [pctl.multi_playlist[index][0] + " <Reversed>", 0, copy.deepcopy(playlist), 0, pctl.multi_playlist[index][4], 0])
 
 
-tab_menu.add_to_sub("Reverse", 0, gen_reverse, pass_ref=True)
+tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
 
 
 def gen_dupe(index):
@@ -4483,7 +4484,7 @@ def gen_sort_album(index):
             [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
-tab_menu.add_to_sub("Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 
 def activate_genre_box(index):
     global genre_box
@@ -8406,7 +8407,7 @@ class TopPanel:
             rect = [x, y, tab_width, self.height]
 
             # Detect mouse over and add tab to mouse over detection
-            f_rect = [x, y + 1, tab_width, self.height - 1]
+            f_rect = [x, y + 1, tab_width - 1, self.height - 1]
             fields.add(f_rect)
             tab_hit = coll_point(mouse_position, f_rect)
             playing_hint = False
@@ -10089,6 +10090,7 @@ while running:
         key_return_press_w = False
         key_tab = False
         mouse_wheel = 0
+        new_playlist_cooldown = False
         input_text = ''
 
     if not mouse_down:
@@ -10111,7 +10113,7 @@ while running:
             i_x = i_x.contents.value
             playlist_target = 0
 
-            if i_y < panelY:
+            if i_y < panelY and not new_playlist_cooldown:
                 x = top_panel.start_space_left
                 for w in range(len(pctl.multi_playlist)):
                     wid = top_panel.tab_text_spaces[w] + top_panel.tab_extra_width
@@ -10123,7 +10125,12 @@ while running:
                         break
                     x += wid
                 else:
-                    playlist_target = pctl.playlist_active
+                    print("MISS")
+                    if new_playlist_cooldown:
+                        playlist_target = pctl.playlist_active
+                    else:
+                        playlist_target = new_playlist()
+                        new_playlist_cooldown = True
 
             else:
                 playlist_target = pctl.playlist_active
@@ -10369,6 +10376,7 @@ while running:
                 gui.maximized = True
 
 
+
     if mouse_moved:
         if fields.test():
             gui.update += 1
@@ -10392,7 +10400,7 @@ while running:
     if gui.pl_update > 2:
         gui.pl_update = 2
 
-
+    new_playlist_cooldown = False
 
 
     if check_file_timer.get() > 0.5:
@@ -12295,7 +12303,7 @@ while running:
 
                     draw_text((x + 8 + 10, y + 40), "Duration", colours.alpha_grey(140), 12)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 11)
+                    draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     y += 15
                     if pctl.master_library[r_menu_index].size != 0:
@@ -12345,9 +12353,9 @@ while running:
                                     SDL_SetCursor(cursor_hand)
                                     gui.cursor_mode = 1
                                 if mouse_click:
-                                    if gui.cursor_mode == 1:
-                                        gui.cursor_mode = 0
-                                        SDL_SetCursor(cursor_standard)
+                                    # if gui.cursor_mode == 1:
+                                    #     gui.cursor_mode = 0
+                                    #     SDL_SetCursor(cursor_standard)
                                     webbrowser.open(link_pa[2], new=2, autoraise=True)
                                     track_box = True
                             elif gui.cursor_mode == 1:
