@@ -3,11 +3,13 @@ Changelog-------------------------------------
 
 v1.7.2
 
+ - Added drop on top panel to import to new playlist functionality
  - Changed side panel metadata font and tab font
  - Enabled fast encoding for OGG codec
  - Increased number of worker threads
  - Fixed reset cache crash
  - Fixed scroll bar hitbox overlaping play button
+ - Fixed hitbox overlap on tab buttons
  - Removed CUE type encoding option
 
 v1.7.1
