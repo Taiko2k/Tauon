@@ -83,6 +83,8 @@ print('Install directory: ' + install_directory)
 encoder_output = user_directory + '/encoder/'
 b_active_directory = install_directory.encode('utf-8')
 
+# os.chdir(install_directory)
+
 try:
     open(user_directory + '/lock', 'x')
     pass
@@ -3144,7 +3146,7 @@ class TextBox:
 
         self.text = ""
 
-    def draw(self, x, y, colour, active=True, secret=False):
+    def draw(self, x, y, colour, active=True, secret=False, font=13):
 
         if active:
             self.text += input_text
@@ -3159,9 +3161,9 @@ class TextBox:
                 self.text += clip
 
         if secret:
-            space = draw_text((x, y), '●' * len(self.text), colour, 13)
+            space = draw_text((x, y), '●' * len(self.text), colour, font)
         else:
-            space = draw_text((x, y), self.text, colour, 13)
+            space = draw_text((x, y), self.text, colour, font)
 
         if active and TextBox.cursor:
             xx = x + space + 1
@@ -7636,9 +7638,9 @@ class Over:
             draw_text((rect2[0] + 9, rect2[1]), "Password", colours.alpha_grey(30), 11)
 
         if self.lastfm_input_box == 0:
-            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180))
+            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180), font=12)
         else:
-            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180), False)
+            last_fm_user_field.draw(x + 25, y + 40, colours.alpha_grey(180), False, font=12)
 
         if self.lastfm_input_box == 1:
             last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.alpha_grey(180), secret=True)
@@ -10516,6 +10518,12 @@ while running:
             # gui.test ^= True
 
             # GUI_Mode = 3
+
+            key_F7 = False
+
+
+
+
             pass
 
         if key_F3:
