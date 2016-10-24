@@ -20,5 +20,3 @@ icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
 icecast-password=hackme
-
-
