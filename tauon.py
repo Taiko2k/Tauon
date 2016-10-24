@@ -5807,8 +5807,12 @@ def transcode_single(item):
     if t.is_cue:
         out_line = str(t.track_number) + ". "
         out_line += t.artist + " - " + t.title
+        for c in r'[]/\;,><&*:%=+@!#^()|?^.':
+            out_line = out_line.replace(c, '')
+
     else:
         out_line = os.path.splitext(pctl.master_library[track].filename)[0]
+
     target_out = output_dir + 'output' + str(track) + "." + prefs.transcode_codec
 
     command = install_directory + "/encoder/ffmpeg "
