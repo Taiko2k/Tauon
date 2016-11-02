@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.3"
+t_version = "v1.7.4"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -508,7 +508,7 @@ class Prefs:
         self.enable_web = True
         self.allow_remote = True
         self.expose_web = False
-        
+
         self.enable_transcode = True
         self.show_rym = True
         self.prefer_bottom_title = True
@@ -526,11 +526,17 @@ class Prefs:
         self.gallery_row_scroll = False
         self.gallery_scroll_wheel_px = 90
 
+        self.playlist_font_size = 13
+
 
 prefs = Prefs()
 
 
 class GuiVar:
+
+    def update_layout(self):
+        global update_layout
+        update_layout = True
 
     def __init__(self):
 
@@ -547,7 +553,7 @@ class GuiVar:
         self.show_bottom_title = False
         self.show_top_title = True
         self.search_error = False
-        
+
         self.level_update = False
         self.level_time = Timer()
         self.level_peak = [0, 0]
@@ -571,6 +577,8 @@ class GuiVar:
         self.light_mode = False
         self.draw_frame = False
 
+        self.track_box_click = False
+        self.universal_y_text_offset = 2
 
 gui = GuiVar()
 
@@ -657,7 +665,7 @@ class ColoursClass:
         self.menu_text_disabled = self.grey(50)
 
         self.gallery_highlight = self.artist_playing
-        
+
         self.status_info_text = [245, 205, 0, 255]
         self.streaming_text = [220, 75, 60, 255]
 
@@ -684,7 +692,7 @@ class ColoursClass:
 
         self.status_text_normal = self.grey(95)
         self.status_text_over = self.grey(130)
-        
+
 
         if gui.light_mode:
             self.sys_background = self.grey(20)
@@ -716,17 +724,17 @@ view_prefs = {
 }
 
 
-def num_from_line(line):
-    number = ""
-    for ch in line:
-        if ch.isdigit():
-            number += ch
-    number = int(number)
-    if number < 50:
-        number = 50
-    if number > 5000:
-        number = 5000
-    return number
+# def num_from_line(line):
+#     number = ""
+#     for ch in line:
+#         if ch.isdigit():
+#             number += ch
+#     number = int(number)
+#     if number < 50:
+#         number = 50
+#     if number > 5000:
+#         number = 5000
+#     return number
 
 
 class TrackClass:
@@ -833,6 +841,8 @@ try:
         prefs.line_style = save[38]
     if save[39] is not None:
         prefs.cache_gallery = save[39]
+    if save[40] is not None:
+        prefs.playlist_font_size = save[40]
 
 except:
     print('Error loading save file')
@@ -861,6 +871,10 @@ if db_version == 0.9:
 # LOADING CONFIG
 player_config = "BASS"
 
+main_font = 'Koruri-Regular.ttf'
+alt_font = 'DroidSansFallback.ttf'
+gui_font = 'Koruri-Semibold.ttf'
+light_font = 'Koruri-Light.ttf'
 
 path = install_directory + "/config.txt"
 if os.path.isfile(os.path.join(install_directory, "config.txt")):
@@ -871,6 +885,25 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 continue
             if p[0] == " " or p[0] == "#":
                 continue
+            if 'font-regular=' in p:
+                result = p.split('=')[1]
+                main_font = result
+            if 'font-fallback=' in p:
+                result = p.split('=')[1]
+                alt_font = result
+            if 'font-bold=' in p:
+                result = p.split('=')[1]
+                gui_font = result
+            if 'font-extra=' in p:
+                result = p.split('=')[1]
+                light_font = result
+            if 'font-height-offset=' in p:
+                result = p.split('=')[1]
+                try:
+                    gui.universal_y_text_offset = int(result)
+                except:
+                    print("Expected number")
+
             if 'scroll-gallery-wheel=' in p:
                 result = p.split('=')[1]
                 if result.isdigit() and -1000 < int(result) < 1000:
@@ -884,11 +917,11 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
             #     pause_lock = True
             if 'pause-fade-time=' in p:
                 result = p.split('=')[1]
-                if result.isdigit() and 50 < int(result) < 5000:
+                if result.isdigit() and 50 < int(result) < 3000:
                     prefs.pause_fade_time = int(result)
             if 'cross-fade-time=' in p:
                 result = p.split('=')[1]
-                if result.isdigit() and 50 < int(result) < 5000:
+                if result.isdigit() and 50 < int(result) < 3000:
                     prefs.cross_fade_time = int(result)
             if 'scrobble-mark=True' in p:
                 scrobble_mark = True
@@ -967,7 +1000,7 @@ def get_display_time(seconds):
         result = divmod(result[0], 60)
         return str(result[0]) + 'h ' + str(result[1]).zfill(2)
     return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
-        
+
 
 class PlayerCtl:
     # C-PC
@@ -1287,7 +1320,7 @@ class PlayerCtl:
             self.playerCommandReady = True
             self.playing_state = 1
 
-        # If stopped...    
+        # If stopped...
         elif pctl.playing_state == 0:
 
             # If the queue is empty
@@ -1764,8 +1797,8 @@ def player():
     if BassInitSuccess == True:
         print("Bass library initialised")
 
-    
-    
+
+
 
     player1_status = p_stopped
     player2_status = p_stopped
@@ -2745,10 +2778,7 @@ def load_font(name, size, ext=False):
 
     return TTF_OpenFont(fontpath, size)
 
-main_font = 'Koruri-Regular.ttf'
-alt_font = 'DroidSansFallback.ttf'
-gui_font = 'Koruri-Semibold.ttf'
-light_font = 'Koruri-Light.ttf'
+
 
 
 font11c = load_font(gui_font, 11)
@@ -2967,14 +2997,13 @@ class Drawing:
 
     def rect_r(self, rect, colour, fill=False):
         self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill)
-        
+
     def line(self, x1, y1, x2, y2, colour):
 
         SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
         SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
 
     def text_calc(self, text, font):
-
         TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
         return self.text_width_p.contents.value
 
@@ -3007,6 +3036,8 @@ def clear_text_cache():
 def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
     # draw_text(location,trunc_line(text,font,maxx),colour,font)
+    location = list(location)
+    location[1] += gui.universal_y_text_offset
 
     if len(text) == 0:
         return 0
@@ -3994,7 +4025,8 @@ class Menu:
         self.active = False
         self.clicked = False
         self.pos = [0, 0]
-        self.h = 20
+        self.vertical_size = 20
+        self.h = self.vertical_size
         self.w = width
         self.reference = 0
         self.items = []
@@ -4044,7 +4076,7 @@ class Menu:
                 self.h = 14
                 ytoff = -1
             else:
-                self.h = 20
+                self.h = self.vertical_size
 
             if Menu.switch != self.id:
                 self.active = False
@@ -4149,7 +4181,7 @@ class Menu:
                 self.clicked = False
 
             # Render the menu outline
-            # draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+            #draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
 
@@ -5114,6 +5146,8 @@ def ser_rym(index):
     line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + pctl.master_library[index].artist
     webbrowser.open(line, new=2, autoraise=True)
 
+def copy_to_clipboard(text):
+    SDL_SetClipboardText(text.encode('utf-8'))
 
 def clip_ar_al(index):
     line = pctl.master_library[index].artist + " - " + \
@@ -6169,7 +6203,7 @@ def worker1():
                     nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
                     nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
                     nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
-                    
+
                     nt.artist = PERFORMER
                     nt.title = TITLE
                     nt.length = LENGTH
@@ -6184,7 +6218,7 @@ def worker1():
                         nt.size = os.path.getsize(nt.fullpath)
 
                     pctl.master_library[master_count] = nt
-                    
+
                     cued.append(master_count)
                     loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
                     # added.append(master_count)
@@ -6245,7 +6279,7 @@ def worker1():
         audio = auto.File(path)
 
         nt = TrackClass()
-        
+
         nt.index = master_count
         nt.fullpath = path.replace('\\', '/')
         nt.filename = os.path.basename(path)
@@ -7424,13 +7458,13 @@ def toggle_allow_remote(mode=0):
     if mode == 1:
         return prefs.allow_remote ^ True
     prefs.allow_remote ^= True
-    
+
 def toggle_expose_web(mode=0):
     global prefs
     if mode == 1:
         return prefs.expose_web
     prefs.expose_web ^= True
-    
+
 def toggle_transcode(mode=0):
     global prefs
     if mode == 1:
@@ -7505,7 +7539,7 @@ config_items.append(['Break playlist by folders', toggle_break])
 
 config_items.append(['Use double digit track indices', toggle_dd])
 
-config_items.append(['Double height rows', toggle_thick])
+#config_items.append(['Double height rows', toggle_thick])
 
 # config_items.append(['Use custom line format [broken]', toggle_custom_line])
 
@@ -7520,12 +7554,30 @@ key_shiftr_down = False
 key_ctrl_down = False
 
 
+class LoadImageAsset:
+
+    def __init__(self, local_path):
+
+        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+
+    def render(self, x, y):
+
+        self.rect.x = x
+        self.rect.y = y
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+
 class Over:
     def __init__(self):
 
         global window_size
 
         self.init2done = False
+        self.about_image = LoadImageAsset('/gui/v2-64.png')
 
         self.w = 650
         self.h = 250
@@ -7851,14 +7903,16 @@ class Over:
 
     def about(self):
 
-        x = self.box_x + 110 + int((self.w - 110) / 2)
-        y = self.box_y + 70
+        x = self.box_x + int(self.w * 0.3) + 80 #110 + int((self.w - 110) / 2)
+        y = self.box_y + 78
 
-        draw_text((x, y, 2), "Tauon Music Box", colours.grey(200), 16)
+        self.about_image.render(x - 85 , y + 5)
+
+        draw_text((x, y), "Tauon Music Box", colours.grey(200), 16)
         y += 32
-        draw_text((x, y, 2), t_version, colours.grey(200), 12)
+        draw_text((x, y), t_version, colours.grey(200), 12)
         y += 20
-        draw_text((x, y, 2), "Copyright © 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
+        draw_text((x, y), "Copyright © 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
@@ -7928,10 +7982,58 @@ class Over:
             draw_text((x, y), "TN TITLE              T", colours.alpha_grey(35), 11)
         elif prefs.line_style == 4:
             draw_text((x, y), "ARTIST  TN TITLE   ALBUM T", colours.alpha_grey(35), 11)
+        elif prefs.line_style == 5:
+            draw_text((x, y), "T ARTIST ALBUM TITLE", colours.alpha_grey(35), 11)
+
+        y = self.box_y + 25
+        x = self.box_x + self.item_x_offset + 200
+
+        self.toggle_square(x, y, toggle_thick, "Large Rows")
+
+        y += 20
+        x += 30
+
+        draw_text((x, y), "Font size:", [255,255,255,150], 11)
+
+        x += 65
+
+        rect = (x, y, 15, 15)
+        fields.add(rect)
+        draw.rect_r(rect, [255, 255, 255, 20], True)
+        if coll_point(mouse_position, rect):
+            draw.rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if prefs.playlist_font_size > 13:
+                    prefs.playlist_font_size -= 1
+                    gui.update_layout()
+
+        draw_text((x + 4, y), "<", colours.grey(180), 11)
+
+        x += 25
+
+        draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
+        draw_text((x + 18, y, 2), str(prefs.playlist_font_size) + "px", colours.grey(180), 11)
+
+        x += 40 + 10
+
+        rect = (x, y, 15, 15)
+        fields.add(rect)
+        draw.rect_r(rect, [255, 255, 255, 20], True)
+        if coll_point(mouse_position, rect):
+            draw.rect_r(rect, [255, 255, 255, 25], True)
+            if self.click:
+                if prefs.playlist_font_size < 16:
+                    prefs.playlist_font_size += 1
+                    gui.update_layout()
+
+
+        draw_text((x + 4, y), ">", colours.grey(180), 11)
+
+
 
     def style_up(self):
         prefs.line_style += 1
-        if prefs.line_style > 4:
+        if prefs.line_style > 5:
             prefs.line_style = 1
 
     def inside(self):
@@ -8626,6 +8728,8 @@ class TopPanel:
 
 top_panel = TopPanel()
 
+
+
 class WhiteModImageAsset:
 
     def __init__(self, local_path):
@@ -8649,7 +8753,7 @@ class WhiteModImageAsset:
 class BottomBarType1:
 
     def __init__(self):
-        
+
         self.mode = 0
 
         self.seek_time = 0
@@ -9139,6 +9243,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
     artistoffset = 0
     indexLine = ""
 
+    offset_font_extra = 0
+    if row_font_size > 14:
+        offset_font_extra = 8
+    offset_y_extra = 0
+    if row_font_size > 13:
+        offset_y_extra = 2
+        if row_font_size > 14:
+            offset_y_extra = 3
     if style == 4:
 
         if n_track.artist != "" or \
@@ -9149,7 +9261,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             if dd_index and len(line) == 1:
                 line = "0" + line
 
-            draw_text((start_x + int(width * 0.22),
+            draw_text((start_x + int(width * 0.22) - offset_font_extra,
                        y), line,
                       alpha_mod(indexc, album_fade), row_font_size)
 
@@ -9175,19 +9287,19 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                    1,
                    default_playlist[p_track])
 
-        draw_text2((start_x + 0 + int(width * 0.70),
+        draw_text2((start_x + 0 + int(width * 0.68),
                     y),
                    n_track.album,
                    alpha_mod(albumc, album_fade),
                    row_font_size,
-                   int(width * 0.28) - 38,
+                   int(width * 0.29) - 38,
                    1,
                    default_playlist[p_track])
 
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36,
+        draw_text((width + start_x - 36 - offset_font_extra,
                    y, 0), line,
                   alpha_mod(timec, album_fade), row_font_size)
 
@@ -9221,9 +9333,71 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36,
+        draw_text((width + start_x - 36 - offset_font_extra,
                    y, 0), line,
                   alpha_mod(timec, album_fade), row_font_size)
+
+
+    elif style == 5:
+
+        # if n_track.artist != "" or \
+        #                 n_track.title != "":
+        #     line = str(n_track.track_number)
+        #     line = line.split("/", 1)[0]
+        #
+        #     if dd_index and len(line) == 1:
+        #         line = "0" + line
+        #
+        #     draw_text((start_x,
+        #                y), line,
+        #               alpha_mod(indexc, album_fade), row_font_size)
+        #
+
+        line = get_display_time(n_track.length)
+
+        draw_text((start_x + 0,
+                   y, 0), line,
+                  alpha_mod(timec, album_fade), row_font_size)
+
+        title_line = n_track.title
+        if title_line == "":
+            title_line = os.path.splitext((n_track.filename))[0]
+
+        draw_text2((start_x + 54,
+                    y),
+                   n_track.artist,
+                   alpha_mod(artistc, album_fade),
+                   row_font_size,
+                   int(width * 0.23),
+                   1,
+                   default_playlist[p_track])
+
+
+        draw_text2((start_x + 30 + int(width * 0.31),
+                    y),
+                   n_track.album,
+                   alpha_mod(albumc, album_fade),
+                   row_font_size,
+                   int(width * 0.32) - 30,
+                   1,
+                   default_playlist[p_track])
+
+
+        draw_text2((start_x + 30 + int(width * 0.60),
+                       y),
+                       title_line,
+                      alpha_mod(titlec, album_fade),
+                      row_font_size,
+                      int(width * 0.32),
+                      1,
+                      default_playlist[p_track])
+
+
+
+
+
+
+
 
     elif style == 2:
 
@@ -9273,7 +9447,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36,
+        draw_text((width + start_x - 36 - offset_font_extra,
                    y, 0), line,
                   alpha_mod(timec, album_fade), row_font_size)
 
@@ -9323,11 +9497,18 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 star_x = int(ratio * 4)
                 if star_x > 60:
                     star_x = 60
-                draw.line(width + start_x - star_x - 45,
-                          y + 8,
-                          width + start_x - 42,
-                          y + 8,
-                          alpha_mod(colours.star_line, album_fade))
+                draw.rect_r([width + start_x - star_x - 45 - offset_font_extra,
+                             y + 8 + offset_y_extra,
+                             star_x + 3,
+                             1
+                             ], alpha_mod(colours.star_line, album_fade), True)
+
+                # draw.line(width + start_x - star_x - 45 - offset_font_extra,
+                #           y + 8 + offset_y_extra,
+                #           width + start_x - 42 - offset_font_extra,
+                #           y + 8 + offset_y_extra,
+                #           alpha_mod(colours.star_line, album_fade))
+
 
         draw_text((start_x,
                    y), indexLine,
@@ -9344,7 +9525,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36,
+        draw_text((width + start_x - 36 - offset_font_extra,
                    y, 0), line,
                   alpha_mod(timec, album_fade), row_font_size)
 
@@ -9649,9 +9830,11 @@ class StandardPlaylist:
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width,
                     playlist_row_height)) and playlist_hold_position != p_track:
-                draw.line(playlist_left, playlist_top + playlist_row_height + playlist_row_height * w,
-                          playlist_width + playlist_left,
-                          playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
+                # draw.line(0, playlist_top + playlist_row_height + playlist_row_height * w,
+                #           playlist_width + 30,
+                #           playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
+                draw.rect_r([0, -1 + playlist_top + playlist_row_height + playlist_row_height * w, playlist_width + 30, 3],
+                            [35, 45, 90, 255], True)
 
             # Shift click actions
             if mouse_click and line_hit and key_shift_down:
@@ -10552,6 +10735,15 @@ while running:
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.playlist_active)
 
+        if track_box and mouse_click:
+            w = 540
+            h = 240
+            x = int(window_size[0] / 2) - int(w / 2)
+            y = int(window_size[1] / 2) - int(h / 2)
+            if rect_in([x,y,w,h]):
+                mouse_click = False
+                gui.track_box_click = True
+
         if pref_box.enabled:
 
             if pref_box.inside():
@@ -10778,7 +10970,7 @@ while running:
         offset_extra = 0
         if draw_border:
             offset_extra = 61
-        
+
         gui.spec_rect[0] = window_size[0] - offset_extra - 90
         # highlight_x_offset = 0
         # if scroll_enable and custom_line_mode and not gui.combo_mode:
@@ -10788,10 +10980,26 @@ while running:
         scroll_hide_box = (1, panelY, 28, window_size[1] - panelBY - panelY)
 
         if thick_lines or gui.combo_mode:
-            playlist_row_height = 31
-            playlist_text_offset = 6
-            playlist_x_offset = 7
-            row_font_size = 13
+            if prefs.playlist_font_size == 13:
+                playlist_row_height = 31
+                playlist_text_offset = 6
+                playlist_x_offset = 7
+                row_font_size = 13
+            elif prefs.playlist_font_size == 14:
+                playlist_row_height = 31
+                playlist_text_offset = 4
+                playlist_x_offset = 7
+                row_font_size = 14
+            elif prefs.playlist_font_size == 15:
+                playlist_row_height = 31
+                playlist_text_offset = 4
+                playlist_x_offset = 7
+                row_font_size = 15
+            elif prefs.playlist_font_size == 16:
+                playlist_row_height = 32
+                playlist_text_offset = 4
+                playlist_x_offset = 7
+                row_font_size = 16
         else:
             playlist_row_height = 16
             playlist_text_offset = 0
@@ -11909,7 +12117,7 @@ while running:
                                                     line += date + " | "
                                                 line += ext
                                                 line = trunc_line(line, 314, window_size[0] - playlist_width - 53)
-                                                draw_text((x - 1, block2 + 33), line, colours.side_bar_line2, 314)
+                                                draw_text((x - 1, block2 + 32), line, colours.side_bar_line2, 314)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
@@ -12085,23 +12293,7 @@ while running:
                     if len(rename_text_area.text) > 0:
                         pctl.multi_playlist[rename_index][0] = rename_text_area.text
 
-            if gui.message_box:
-                if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
-                    gui.message_box = False
-                    key_return_press = False
 
-                w = draw.text_calc(gui.message_text, 12) + 20
-                if w < 210:
-                    w = 210
-                h = 20
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(55), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
-
-
-                draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
 
 
             # if genre_box:
@@ -12200,12 +12392,16 @@ while running:
             #         switch_playlist(len(pctl.multi_playlist) - 1)
 
             if track_box:
-                if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
                     track_box = False
                     if gui.cursor_mode == 1:
                         gui.cursor_mode = 0
                         SDL_SetCursor(cursor_standard)
                     key_return_press = False
+
+                if gui.track_box_click:
+                    mouse_click = True
+                gui.track_box_click = False
 
                 tc = pctl.master_library[r_menu_index]
 
@@ -12228,7 +12424,13 @@ while running:
 
                 draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
-                
+
+                if mouse_click and not rect_in([x,y,w,h]):
+                    track_box = False
+                    if gui.cursor_mode == 1:
+                        gui.cursor_mode = 0
+                        SDL_SetCursor(cursor_standard)
+
 
                 if key_shift_down:
 
@@ -12268,7 +12470,17 @@ while running:
                         album_art_gen.display(r_menu_index, (x + w - 140, y + h - 135), (110, 110))
                     y -= 24
 
-                    draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("Title copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].title)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(140), 12)
+
                     draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].title, colours.alpha_grey(190), 12)
 
                     ext_rect = [x + w - 78, y + 42, 12, 12]
@@ -12299,19 +12511,49 @@ while running:
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Artist", colours.alpha_grey(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Artist", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("Artist field copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].artist)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Artist", colours.alpha_grey(140), 12)
+
+
                     draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].artist, 12, 420), colours.alpha_grey(190), 12)
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Album", colours.alpha_grey(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Album", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("Album field copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].album)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Album", colours.alpha_grey(140), 12)
+
                     draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album, 12, 420), colours.alpha_grey(190),
                               12)
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Path", colours.alpha_grey(140), 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 420),
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Path", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("File path copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].fullpath)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Path", colours.alpha_grey(140), 12)
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 435),
                               colours.alpha_grey(190), 10)
 
                     y += 15
@@ -12340,11 +12582,29 @@ while running:
 
                     y += 23
 
-                    draw_text((x + 8 + 10, y + 40), "Genre", colours.alpha_grey(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Genre", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("Genre field copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].genre)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Genre", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].genre, colours.alpha_grey(190), 12)
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Date", colours.alpha_grey(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Date", colours.alpha_grey(170), 12)
+                        if mouse_click:
+                            show_message("Date field copied to clipboard")
+                            copy_to_clipboard(pctl.master_library[r_menu_index].date)
+                            mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Date", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date), colours.alpha_grey(190), 12)
 
                     y += 23
@@ -12364,12 +12624,24 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
+
                     draw_text((x + 8 + 10, y + 40), "Play time", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.alpha_grey(190), 12)
 
                     if len(tc.comment) > 0:
                         y += 20
-                        draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
+                        rect = [x + 17, y + 41, 60, 14]
+                        fields.add(rect)
+                        if rect_in(rect):
+                            draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(170), 12)
+                            if mouse_click:
+                                show_message("Comment copied to clipboard")
+                                copy_to_clipboard(pctl.master_library[r_menu_index].comment)
+                                mouse_click = False
+                        else:
+                            draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
+                        #draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
+
                         if ('http://' in tc.comment or 'www.' in tc.comment) and draw.text_calc(tc.comment, 12) < 335:
                             link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.alpha_grey(190), 12)
                             link_rect = [x + 98 + link_pa[0], y + 38, link_pa[1], 20]
@@ -12582,6 +12854,22 @@ while running:
                     else:
                         show_message("Done.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
 
+            if gui.message_box:
+                if mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                    gui.message_box = False
+                    key_return_press = False
+
+                w = draw.text_calc(gui.message_text, 12) + 20
+                if w < 210:
+                    w = 210
+                h = 20
+                x = int(window_size[0] / 2) - int(w / 2)
+                y = int(window_size[1] / 2) - int(h / 2)
+
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(55), True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+
+                draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
             if radiobox:
                 w = 420
                 h = 87
@@ -12645,7 +12933,7 @@ while running:
 
                 if len(search_text.text) == 0:
                     gui.search_error = False
-                
+
                 if len(search_text.text) != 0 and search_text.text[0] == '/':
                     line = "Folder filter mode. Enter path segment."
                 else:
@@ -13379,7 +13667,7 @@ save = [pctl.master_library,
         prefs.transcode_bitrate,
         prefs.line_style,
         prefs.cache_gallery,
-        None,
+        prefs.playlist_font_size,
         None,
         None,
         None,

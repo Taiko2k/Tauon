@@ -1,11 +1,18 @@
 ﻿## Tauon Music Box config file
 
-##Fade times in ms. Gapless playback not supported (min 50ms, max 5000ms). Note that crossfade function blocks player so high values may reduce track change responsiveness.
+## Fade times in ms. Gapless playback not supported (min 50ms, max 3000ms)
 pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True
 scroll-gallery-row=False
 scroll-gallery-wheel=95
+
+## Font files must be in /gui subfolder
+font-regular=Koruri-Regular.ttf
+font-fallback=DroidSansFallback.ttf
+font-bold=Koruri-Semibold.ttf
+font-extra=Koruri-Light.ttf
+font-height-offset=0
 
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
 mediakey=2
