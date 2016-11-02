@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v1.7.4
+
+ - Added option to increase playlist font size
+ - Added function to copy fields to clipboard from track info box
+ - Added font options to config file
+ - Added additional playlist format option
+
 v1.7.3
 
  - Added drop on top panel to import to new playlist functionality
@@ -10,7 +17,7 @@ v1.7.3
  - Increased number of worker threads
  - Moved IME edit display location
  - Fixed reset cache crash
- - Fixed scroll bar hitbox overlaping play button
+ - Fixed scroll bar hitbox overlapping play button
  - Fixed hitbox overlap on tab buttons
  - Fixed queue highlight area
  - Fixed transcoding from cue files sometimes failing
@@ -24,7 +31,7 @@ v1.7.1
  - Added scroll controls to gallery view
  - Improved encoding performance for opus output
  - Fixed error importing certain tracks
- - Fixed max cpu usage with level meter
+ - Fixed max CPU usage with level meter
  - Fixed encode not working with cue files to single tracks
  - Fixed opus output files not containing track number metadata
  - Fixed transcoding on Linux
