@@ -27,3 +27,13 @@ icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
 icecast-password=hackme
+
+## External Tag editor loading. Program is the command used on Linux, Path is filepath to the exe used on Windows (exclude quotes). The other is ignored for either platorm. When program is closed, tags will be updated in Tauon provided the filenames of tracks have not changed.
+tag-editor-name=Picard
+tag-editor-program=picard
+tag-editor-path=C:/Program Files (x86)/MusicBrainz Picard/picard.exe
+## Note: Picard seems to have a problem with unicode filepaths on Windows. Works on Linux.
+
+#tag-editor-name=AIMP
+#tag-editor-program=
+#tag-editor-path=C:/Program Files (x86)/AIMP/AIMPate.exe

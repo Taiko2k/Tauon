@@ -6,7 +6,7 @@ v1.7.4
  - Added option to increase playlist font size
  - Added function to copy fields to clipboard from track info box
  - Added font options to config file
- - Added additional playlist format option
+ - Added configuration for external tag editor integration
 
 v1.7.3
 

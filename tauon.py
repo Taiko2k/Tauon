@@ -528,6 +528,10 @@ class Prefs:
 
         self.playlist_font_size = 13
 
+        self.tag_editor_name = ""
+        self.tag_editor_target = ""
+        self.tag_editor_path = ""
+
 
 prefs = Prefs()
 
@@ -885,6 +889,15 @@ if os.path.isfile(os.path.join(install_directory, "config.txt")):
                 continue
             if p[0] == " " or p[0] == "#":
                 continue
+            if 'tag-editor-path=' in p:
+                result = p.split('=')[1]
+                prefs.tag_editor_path = result
+            if 'tag-editor-program=' in p:
+                result = p.split('=')[1]
+                prefs.tag_editor_target = result
+            if 'tag-editor-name=' in p:
+                result = p.split('=')[1]
+                prefs.tag_editor_name = result
             if 'font-regular=' in p:
                 result = p.split('=')[1]
                 main_font = result
@@ -5062,8 +5075,57 @@ def activate_encoding_box(index):
     encoding_target = index
 
 
+def editor(index):
+
+    todo = []
+    for k in default_playlist:
+        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
+            if pctl.master_library[k].is_cue == False:
+                todo.append(k)
+
+    file_line = ""
+    for track in todo:
+        file_line += ' "'
+        file_line += pctl.master_library[track].fullpath
+        file_line += '"'
+
+    if system == 'windows':
+        file_line = file_line.replace("/", "\\")
+
+    if system == 'windows':
+        file_line = '"' + prefs.tag_editor_path.replace("/", "\\") + '"' + file_line
+    else:
+        file_line = prefs.tag_editor_target + file_line
+
+    show_message(prefs.tag_editor_name + " launched. Once application is closed, fields will be updated")
+    gui.update = 1
+
+    subprocess.run(shlex.split(file_line))
+
+    gui.message_box = False
+    reload_metadata(index)
+    gui.pl_update = 1
+    gui.update = 1
+
+def launch_editor(index):
+
+    mini_t = threading.Thread(target=editor, args=[index])
+    mini_t.daemon = True
+    mini_t.start()
+
+
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
 track_menu.add_to_sub("Reload Metadata", 0, reload_metadata, pass_ref=True)
+
+if prefs.tag_editor_name != "":
+
+    if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
+        track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
+
+    elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
+        track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
+
+
 track_menu.add_to_sub("Fix Mojibake...", 0, activate_encoding_box, pass_ref=True)
 
 
@@ -10704,7 +10766,9 @@ while running:
 
             # gui.test ^= True
 
-            # GUI_Mode = 3
+            GUI_Mode = 3
+
+
 
             key_F7 = False
 
@@ -13106,6 +13170,11 @@ while running:
                     pctl.jump(default_playlist[playlist_selected], playlist_selected)
                     if album_mode:
                         goto_album(pctl.playlist_playing)
+
+        elif GUI_Mode == 3:
+
+            album_art_gen.display(pctl.track_queue[pctl.queue_step],
+                                  (0,0), (window_size[1], window_size[1]))
 
         # Unicode edit display---------------------
         if len(editline) > 0:
