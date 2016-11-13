@@ -5028,6 +5028,14 @@ def reset_play_count(index):
 
 track_menu.add_to_sub("Reset Play Count", 0, reset_play_count, pass_ref=True)
 
+def get_like_folder(index):
+
+    tracks = []
+    for k in default_playlist:
+        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
+            if pctl.master_library[k].is_cue == False:
+                tracks.append(k)
+    return tracks
 
 def reload_metadata(index):
     global todo
@@ -9698,13 +9706,20 @@ class StandardPlaylist:
                 if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
                     line += " (" + n_track.date + ")"
 
+                ex = playlist_width + playlist_left
+                if not side_panel_enable and not album_mode:
+                    ex -= 5
+
                 if thick_lines:
-                    draw_text2((playlist_width + playlist_left + 6,
-                                playlist_row_height - 19 + playlist_top + playlist_row_height * w, 1), line,
+                    height = playlist_row_height - 19 + 13 - row_font_size + playlist_top + playlist_row_height * w
+                    if row_font_size > 15:
+                        height -= 1
+                    draw_text2((ex + 6,
+                                height, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
-                               13, playlist_width)
+                               row_font_size, playlist_width)
                 else:
-                    draw_text2((playlist_width + playlist_left + 3,
+                    draw_text2((ex + 3,
                                 playlist_row_height - 17 + playlist_top + playlist_row_height * w, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
                                11, playlist_width)
@@ -10331,7 +10346,7 @@ while running:
         key_del = False
         key_backspace_press = False
         key_1_press = False
-        # key_2_press = False
+        key_2_press = False
         # key_3_press = False
         # key_4_press = False
         # key_5_press = False
@@ -10521,8 +10536,8 @@ while running:
                 key_right_press = True
             elif event.key.keysym.sym == SDLK_1:
                 key_1_press = True
-            # elif event.key.keysym.sym == SDLK_2:
-            #     key_2_press = True
+            elif event.key.keysym.sym == SDLK_2:
+                key_2_press = True
             # elif event.key.keysym.sym == SDLK_3:
             #     key_3_press = True
             # elif event.key.keysym.sym == SDLK_4:
@@ -12510,7 +12525,7 @@ while running:
                         if 'AlbumArt' in item or 'desktop.ini' in item or 'Folder.jpg' in item:
                             files_to_purge.append(os.path.join(pctl.master_library[r_menu_index].parent_folder_path, item))
 
-                    line = "1. Purge potentially hidden image/ini files from folder (" + str(
+                    line = "1. Purge potentially hidden image and ini files from folder (" + str(
                         len(files_to_purge)) + " Found)"
                     draw_text((x + 8 + 10, y + 40), line, colours.grey(200), 12)
 
@@ -12523,6 +12538,33 @@ while running:
                                 print(" Item Removed Successfully")
                             except:
                                 print(" Error in removing file")
+                        clear_img_cache()
+                    y += 20
+                    line = "2. Remove embedded album art from MP3 files in folder"
+                    draw_text((x + 8 + 10, y + 40), line, colours.grey(200), 12)
+
+                    if key_2_press:
+                        tracks = get_like_folder(r_menu_index)
+                        for item in tracks:
+                            if "MP3" == pctl.master_library[item].file_ext:
+                                tag = stagger.read_tag(pctl.master_library[item].fullpath)
+                                try:
+                                    del tag[APIC]
+                                    print("Delete APIC successful")
+                                    clear_img_cache()
+                                except:
+                                    print("No APIC found")
+
+                                try:
+                                    del tag[PIC]
+                                    print("Delete PIC successful")
+                                    clear_img_cache()
+                                except:
+                                    print("No PIC found")
+
+                                tag.write()
+
+
 
                     time.sleep(0.2)
 
