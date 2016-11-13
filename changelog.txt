@@ -8,6 +8,7 @@ v1.7.4
  - Added font options to config file
  - Added configuration for external tag editor integration
  - Added function to remove embedded album art from MP3 files
+ - Misc UI fixes
 
 v1.7.3
 
