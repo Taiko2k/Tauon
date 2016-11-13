@@ -2863,6 +2863,11 @@ t_window = SDL_CreateWindow(window_title,
                             flags)
 # print(SDL_GetError())
 
+try:
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+except:
+    print("old version of SDL detected")
+
 SDL_SetWindowMinimumSize(t_window,450,175)
 # get window surface and set up renderer
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
@@ -2897,6 +2902,7 @@ SDL_RenderClear(renderer)
 
 fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
 
+#SDL_SetWindowOpacity(t_window, 0.98)
 
 
 
@@ -8470,6 +8476,28 @@ fields = Fields()
 
 pref_box = Over()
 
+
+
+class WhiteModImageAsset:
+
+    def __init__(self, local_path):
+
+        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+        self.colour = [255,255,255,255]
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+
+    def render(self, x, y, colour):
+
+        if colour != self.colour:
+            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+        self.rect.x = x
+        self.rect.y = y
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
 
@@ -8502,6 +8530,8 @@ class TopPanel:
         self.index_playing = -1
         self.playing_title = ""
         self.drag_zone_start_x = 300
+
+        self.exit_button = WhiteModImageAsset('/gui/ex.png')
 
 
     def render(self):
@@ -8799,26 +8829,6 @@ class TopPanel:
 top_panel = TopPanel()
 
 
-
-class WhiteModImageAsset:
-
-    def __init__(self, local_path):
-
-        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-        self.colour = [255,255,255,255]
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-
-    def render(self, x, y, colour):
-
-        if colour != self.colour:
-            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
-        self.rect.x = x
-        self.rect.y = y
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 class BottomBarType1:
 
@@ -10445,6 +10455,7 @@ while running:
             k_input = True
             power += 5
             gui.update += 1
+
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_click = True
                 right_down = True
@@ -10597,6 +10608,8 @@ while running:
                 mouse_down = False
                 gui.pl_update = 1
                 gui.update += 1
+
+
 
                 # Workaround for SDL bug 2610
                 if system == 'windows':
@@ -11877,7 +11890,7 @@ while running:
 
                 # Switch Vis:
 
-                if mouse_click and coll_point(mouse_position, (window_size[0] - 130 - offset_extra, 0, 130, panelY)):
+                if mouse_click and coll_point(mouse_position, (window_size[0] - 130 - offset_extra, 0, 120, panelY)):
                     if gui.vis == 0:
                         gui.vis = 1
                         gui.turbo = True
@@ -13359,25 +13372,32 @@ while running:
             #     draw_text((window_size[0] - 15, window_size[1] - 20), "↘", [200, 200, 200, 255], 16)
 
 
-            rect = (window_size[0] - 65, 1, 36, 28)
-            draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 50], True)
+            rect = (window_size[0] - 65, 1, 35, 28)
+            draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [70, 70, 70, 100], True)
+                draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [70, 70, 70, 100], True)
+                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [150, 150, 150, 120], True)
                 if mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     mouse_click = False
                     drag_mode = False
+            else:
+                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [120, 120, 120, 45], True)
 
 
-            rect = (window_size[0] - 29, 1, 27, 28)
-            draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 100], True)
+
+            rect = (window_size[0] - 29, 1, 26, 28)
+            draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [80, 80, 80, 120], True)
+                draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [80, 80, 80, 120], True)
+                top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, colours.artist_playing)
                 if mouse_click or ab_click:
                     running = False
+            else:
+                top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
 
 
             # draw.rect((0, 0), window_size, colours.grey(90))

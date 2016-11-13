@@ -8,6 +8,8 @@ v1.7.4
  - Added font options to config file
  - Added configuration for external tag editor integration
  - Added function to remove embedded album art from MP3 files
+ - Added minimise and exit icons for borderless mode
+ - Fixed click on window focus not registering
  - Misc UI fixes
 
 v1.7.3
