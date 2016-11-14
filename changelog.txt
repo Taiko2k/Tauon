@@ -10,7 +10,8 @@ v1.7.4
  - Added function to remove embedded album art from MP3 files
  - Added minimise and exit icons for borderless mode
  - Fixed click on window focus not registering
- - Misc UI fixes
+ - Fixed some track highlights not being full playlist width
+ - Tweaked menu behavior to switch on mouse over
 
 v1.7.3
 
