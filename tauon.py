@@ -2855,12 +2855,18 @@ if gui.maximized:
     flags |= SDL_WINDOW_MAXIMIZED
 
 if draw_border:
-    flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS
+    flags = SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
 
 t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                             window_size[0], window_size[1],
                             flags)
+
+# t_window = SDL_CreateShapedWindow(window_title,
+#                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#                              window_size[0], window_size[1],
+#                              flags)
+
 # print(SDL_GetError())
 
 try:
@@ -2904,6 +2910,13 @@ fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
 
 #SDL_SetWindowOpacity(t_window, 0.98)
 
+# m_surface = SDL_CreateRGBSurface(0, window_size[0], window_size[1], 32,0,0,0,0);
+# SDL_SetSurfaceBlendMode(m_surface, SDL_BLENDMODE_BLEND)
+#
+# mode = SDL_WindowShapeMode()
+# mode.mode = ShapeModeColorKey
+#
+# mode.parameters.colorKey = SDL_Color(0, 0, 0)
 
 
 if system == 'windows' and taskbar_progress:
@@ -2970,8 +2983,6 @@ if system == 'windows' and taskbar_progress:
 # ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
 
 
-
-
 def coll_point(l, r):
     # rect point collision detection
     if l[0] < r[0]:
@@ -3000,7 +3011,7 @@ class Drawing:
         self.sdl_rect.h = h
         SDL_RenderFillRect(renderer, self.sdl_rect)
 
-    def rect(self, location, wh, colour, fill=False):
+    def rect(self, location, wh, colour, fill=False, target=renderer):
 
         self.sdl_rect.x = location[0]
         self.sdl_rect.y = location[1]
@@ -3008,11 +3019,11 @@ class Drawing:
         self.sdl_rect.h = wh[1]
 
         if fill is True:
-            SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderFillRect(renderer, self.sdl_rect)
+            SDL_SetRenderDrawColor(target, colour[0], colour[1], colour[2], colour[3])
+            SDL_RenderFillRect(target, self.sdl_rect)
         else:
-            SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderDrawRect(renderer, self.sdl_rect)
+            SDL_SetRenderDrawColor(target, colour[0], colour[1], colour[2], colour[3])
+            SDL_RenderDrawRect(target, self.sdl_rect)
 
     def rect_r(self, rect, colour, fill=False):
         self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill)
@@ -3034,6 +3045,14 @@ text_cache = []  # location, text, dst(sdl rect), c(texture)
 calc_cache = []
 ttc = {}
 ttl = []
+
+
+# m_renderer = SDL_CreateSoftwareRenderer(m_surface)
+# draw.rect((0, 0), (window_size[0], window_size[1]), [255,255,255,255], True, m_renderer)
+# draw.rect((0, 0), (8, 30), [0,0,0,0], True, m_renderer)
+#
+# SDL_SetWindowShape(t_window, m_surface, mode)
+
 
 
 # Draw text function with enhanced performance via given search reference values
@@ -8740,6 +8759,11 @@ class TopPanel:
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
 
+        if hit and view_menu.active:
+            view_menu.active = False
+            x_menu.activate(position=(x + 15, self.height))
+            gui.render = 1
+
         if hit and mouse_click:
             if x_menu.active:
                 x_menu.active = False
@@ -8759,6 +8783,11 @@ class TopPanel:
         rect = [x - self.click_buffer, self.ty, word_length + self.click_buffer * 2, self.height]
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
+
+        if hit and x_menu.active:
+            x_menu.active = False
+            view_menu.activate(position=(x + 15, self.height))
+            gui.render = 1
 
         if hit and mouse_click:
             if view_menu.active:
@@ -10794,7 +10823,7 @@ while running:
 
             # gui.test ^= True
 
-            GUI_Mode = 3
+            #GUI_Mode = 3
 
 
 
@@ -12672,7 +12701,7 @@ while running:
                             mouse_click = False
                     else:
                         draw_text((x + 8 + 10, y + 40), "Path", colours.alpha_grey(140), 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 435),
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 430),
                               colours.alpha_grey(190), 10)
 
                     y += 15
