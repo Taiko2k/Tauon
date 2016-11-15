@@ -9,6 +9,7 @@ v1.7.4
  - Added configuration for external tag editor integration
  - Added function to remove embedded album art from MP3 files
  - Added minimise and exit icons for borderless mode
+ - Added function to extract and save embedded images from track tags
  - Fixed click on window focus not registering
  - Fixed some track highlights not being full playlist width
  - Tweaked menu behavior to switch on mouse over
