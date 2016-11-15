@@ -4244,6 +4244,61 @@ class Menu:
 # Create empty area menu
 playlist_menu = Menu(130)
 
+picture_menu = Menu(120)
+
+
+def save_embed_img():
+
+    index = pctl.track_queue[pctl.queue_step]
+    filepath = pctl.master_library[index].fullpath
+    folder = pctl.master_library[index].parent_folder_path
+
+    try:
+        if '.mp3' in filepath or '.MP3' in filepath:
+            tag = stagger.read_tag(filepath)
+            try:
+                tt = tag[APIC][0]
+            except:
+                try:
+                    tt = tag[PIC][0]
+                except:
+                    show_message("Error: No album art found / MP3")
+                    return
+            pic = tt.data
+
+        elif '.flac' in filepath or '.FLAC' in filepath:
+
+            tt = Flac(filepath)
+            tt.read()
+            if tt.has_pic is False:
+                show_message("Error: No album art found / FLAC")
+                return
+            pic = tt.picture
+
+        source_image = io.BytesIO(pic)
+        im = Image.open(source_image)
+        print(im.format)
+        # im.format
+        source_image.close()
+
+        ext = "." + im.format.lower()
+        if im.format == "JPEG":
+            ext = ".jpg"
+
+        target = os.path.join(folder, "embed-" + str(im.height) + "px-" + str(index) + ext)
+        if len(pic) > 30:
+            with open(target, 'wb') as w:
+                w.write(pic)
+        open_folder(index)
+
+
+    except:
+        show_message("A mysterious error occurred")
+
+
+picture_menu.add('Extract Image', save_embed_img)
+
+
 def append_here():
     global cargo
     global gui
@@ -10655,6 +10710,7 @@ while running:
                 view_menu.active = False
                 extra_menu.active = False
                 tab_menu.active = False
+                picture_menu.active = False
                 track_menu.active = False
                 playlist_menu.active = False
                 combo_menu.active = False
@@ -10825,8 +10881,6 @@ while running:
 
             #GUI_Mode = 3
 
-
-
             key_F7 = False
 
 
@@ -10895,6 +10949,11 @@ while running:
 
             if view_menu.active is True and mouse_click:
                 view_menu.click()
+                mouse_click = False
+                ab_click = True
+
+            if picture_menu.active is True and mouse_click:
+                picture_menu.click()
                 mouse_click = False
                 ab_click = True
 
@@ -11959,6 +12018,7 @@ while running:
                             #     goto_album(pctl.playlist_playing)
                             gui.update += 1
 
+
                         if len(pctl.track_queue) > 0:
 
                             if coll_point(mouse_position, (x, 38, box, box)) and mouse_click is True:
@@ -11984,6 +12044,7 @@ while running:
                         rect = (x, 38, box, box)
                         fields.add(rect)
 
+
                         if showc is not False and coll_point(mouse_position, rect) \
                                 and renamebox is False \
                                 and radiobox is False \
@@ -11993,6 +12054,10 @@ while running:
                                 and gui.message_box is False \
                                 and track_box is False \
                                 and genre_box is False:
+
+
+                            if right_click and showc[0] is True:
+                                picture_menu.activate()
 
                             line = ""
                             if showc[0] is True:
@@ -13268,6 +13333,7 @@ while running:
 
         # Render Menus-------------------------------
         x_menu.render()
+        picture_menu.render()
         view_menu.render()
         track_menu.render()
         tab_menu.render()
