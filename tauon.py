@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.7.4"
+t_version = "v1.8.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -166,6 +166,7 @@ from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
 from tflac import Flac
+from tflac import Opus
 
 
 class Timer:  # seconds
@@ -210,7 +211,7 @@ resize_drag = [0, 0]
 resize_mode = False
 resize_size = [0, 0]
 
-version = 1.1
+version = 1.2
 
 block6 = False
 
@@ -754,6 +755,7 @@ class TrackClass:
         self.size = 0
 
         self.artist = ""
+        self.album_artist = ""
         self.title = ""
         self.length = 0
         self.bitrate = 0
@@ -871,6 +873,11 @@ if db_version == 0.9:
     print("Updating database from version 0.9 to 1.1")
     for key, value in master_library.items():
         setattr(master_library[key], 'comment', "")
+
+if db_version == 1.1:
+    print("Updating database from version 1.1 to 1.2")
+    for key, value in master_library.items():
+        setattr(master_library[key], 'album_artist', "")
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -1013,6 +1020,84 @@ def get_display_time(seconds):
         result = divmod(result[0], 60)
         return str(result[0]) + 'h ' + str(result[1]).zfill(2)
     return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
+
+
+def tag_scan(nt):
+
+    try:
+        if nt.file_ext == "FLAC":
+
+            # print("get opus")
+            audio = Flac(nt.fullpath)
+            audio.read()
+
+            # print(audio.title)
+
+            nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            nt.date = audio.date
+            nt.samplerate = audio.sample_rate
+            nt.size = os.path.getsize(nt.fullpath)
+            nt.track_number = audio.track_number
+            nt.genre = audio.genre
+            nt.album_artist = audio.album_artist
+
+            return nt
+
+        elif nt.file_ext == "OPUS" or nt.file_ext == "OGG":
+
+            # print("get opus")
+            audio = Opus(nt.fullpath)
+            audio.read()
+
+            # print(audio.title)
+
+            nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            nt.date = audio.date
+            nt.samplerate = audio.sample_rate
+            nt.size = os.path.getsize(nt.fullpath)
+            nt.track_number = audio.track_number
+            nt.genre = audio.genre
+            nt.album_artist = audio.album_artist
+            nt.bitrate = audio.bit_rate
+            return nt
+
+        else:
+
+            # Use HSAUDIOTAG
+            audio = auto.File(nt.fullpath)
+
+            nt.length = audio.duration
+            nt.title = rm_16(audio.title)
+            nt.artist = rm_16(audio.artist)
+            nt.album = rm_16(audio.album)
+            nt.track_number = str(audio.track)
+            nt.bitrate = audio.bitrate
+            nt.date = audio.year
+            nt.genre = rm_16(audio.genre)
+            nt.samplerate = audio.sample_rate
+            nt.size = audio.size
+            if audio.comment != "":
+                if audio.comment[0:3] == '000':
+                    pass
+                elif len(audio.comment) > 4 and audio.comment[2] == '+':
+                    pass
+                else:
+                    nt.comment = audio.comment
+
+            if nt.file_ext == "MP3":
+                tag = stagger.read_tag(nt.fullpath)
+                nt.album_artist = tag.album_artist
+
+            return nt
+    except:
+        return nt
+
 
 
 class PlayerCtl:
@@ -3430,12 +3515,20 @@ class AlbumArt():
             elif '.flac' in filepath or '.FLAC' in filepath:
 
                 tt = Flac(filepath)
-                tt.read()
-                if tt.has_pic is True and len(tt.picture) > 30:
+                tt.read(True)
+                if tt.has_picture is True and len(tt.picture) > 30:
                     source_list.append([True, filepath])
 
-        except:
+            # elif '.opus' in filepath or '.OPUS' in filepath or ".ogg" in filepath or ".OGG" in filepath:
+            #
+            #     tt = Opus(filepath)
+            #     tt.read()
+            #     print("test")
+            #     if tt.has_picture is True and len(tt.picture) > 30:
+            #         source_list.append([True, filepath])
 
+        except:
+            # raise
             pass
 
         for i in range(len(items_in_dir)):
@@ -3568,8 +3661,13 @@ class AlbumArt():
 
         elif pctl.master_library[index].file_ext == 'FLAC':
             tag = Flac(filepath)
-            tag.read()
+            tag.read(True)
             return tag.picture
+
+        # elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
+        #     tag = Opus(filepath)
+        #     tag.read()
+        #     return tag.picture
 
     def get_base64(self, index, size):
 
@@ -3713,6 +3811,7 @@ class AlbumArt():
                 del self.image_cache[0]
         except:
             print("Image processing error")
+            # raise
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -3990,21 +4089,22 @@ def load_xspf(path):
                 nt.album = track['album']
             nt.is_cue = False
             if nt.found is True:
-                audio = auto.File(location)
-                nt.track_number = str(audio.track)
-                nt.bitrate = audio.bitrate
-                nt.date = audio.year
-                nt.genre = rm_16(audio.genre)
-                nt.samplerate = audio.sample_rate
-                nt.size = audio.size
-                nt.length = audio.duration
-                nt.comment = audio.comment
-                if nt.title == "":
-                    nt.title = rm_16(audio.title)
-                if nt.artist == "":
-                    nt.artist = rm_16(audio.artist)
-                if nt.album == "":
-                    nt.album = rm_16(audio.album)
+                nt = tag_scan(nt)
+                # audio = auto.File(location)
+                # nt.track_number = str(audio.track)
+                # nt.bitrate = audio.bitrate
+                # nt.date = audio.year
+                # nt.genre = rm_16(audio.genre)
+                # nt.samplerate = audio.sample_rate
+                # nt.size = audio.size
+                # nt.length = audio.duration
+                # nt.comment = audio.comment
+                # if nt.title == "":
+                #     nt.title = rm_16(audio.title)
+                # if nt.artist == "":
+                #     nt.artist = rm_16(audio.artist)
+                # if nt.album == "":
+                #     nt.album = rm_16(audio.album)
 
 
 
@@ -4269,8 +4369,8 @@ def save_embed_img():
         elif '.flac' in filepath or '.FLAC' in filepath:
 
             tt = Flac(filepath)
-            tt.read()
-            if tt.has_pic is False:
+            tt.read(True)
+            if tt.has_picture is False:
                 show_message("Error: No album art found / FLAC")
                 return
             pic = tt.picture
@@ -4741,9 +4841,6 @@ def convert_playlist(pl):
         print(transcode_list)
 
 
-tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
-
-
 def get_folder_tracks_local(pl_in):
 
     selection = []
@@ -4814,6 +4911,7 @@ def delete_playlist(index):
     reload()
 
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
+tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 
@@ -5119,8 +5217,6 @@ def get_like_folder(index):
 
 def reload_metadata(index):
     global todo
-    global pctl
-    global pctl
 
     todo = []
     for k in default_playlist:
@@ -5138,17 +5234,19 @@ def reload_metadata(index):
             star = pctl.star_library[key]
             del pctl.star_library[key]
 
-        audio = auto.File(pctl.master_library[track].fullpath)
-        pctl.master_library[track].length = audio.duration
-        pctl.master_library[track].title = rm_16(audio.title)
-        pctl.master_library[track].artist = rm_16(audio.artist)
-        pctl.master_library[track].album = rm_16(audio.album)
-        pctl.master_library[track].track_number = str(audio.track)
-        pctl.master_library[track].bitrate = audio.bitrate
-        pctl.master_library[track].date = audio.year
-        pctl.master_library[track].genre = rm_16(audio.genre)
-        pctl.master_library[track].samplerate = audio.sample_rate
-        pctl.master_library[track].comment = audio.comment
+        pctl.master_library[track] = tag_scan(pctl.master_library[track])
+
+        # audio = auto.File(pctl.master_library[track].fullpath)
+        # pctl.master_library[track].length = audio.duration
+        # pctl.master_library[track].title = rm_16(audio.title)
+        # pctl.master_library[track].artist = rm_16(audio.artist)
+        # pctl.master_library[track].album = rm_16(audio.album)
+        # pctl.master_library[track].track_number = str(audio.track)
+        # pctl.master_library[track].bitrate = audio.bitrate
+        # pctl.master_library[track].date = audio.year
+        # pctl.master_library[track].genre = rm_16(audio.genre)
+        # pctl.master_library[track].samplerate = audio.sample_rate
+        # pctl.master_library[track].comment = audio.comment
 
 
         key = pctl.master_library[track].title + pctl.master_library[track].filename
@@ -6236,13 +6334,28 @@ def worker1():
                 # print(filepath)
                 if os.path.isfile(filepath) is True:
 
-                    audio = auto.File(filepath)
-                    SAMPLERATE = 0
-                    try:
-                        SAMPLERATE = audio.sample_rate
-                    except:
-                        print("cant read samplerate")
-                    lasttime = audio.duration
+                    if '.opus' in filepath or '.OPUS' in filepath:
+
+                        audio = Opus(filepath)
+                        audio.read()
+
+                        SAMPLERATE = 0
+                        try:
+                            SAMPLERATE = audio.sample_rate
+                        except:
+                            print("cant read samplerate")
+                        lasttime = audio.length
+
+
+                    else:
+
+                        audio = auto.File(filepath)
+                        SAMPLERATE = 0
+                        try:
+                            SAMPLERATE = audio.sample_rate
+                        except:
+                            print("cant read samplerate")
+                        lasttime = audio.duration
 
                 else:
                     print("Trying to find file...")
@@ -6252,12 +6365,21 @@ def worker1():
                                 0] and "cue" not in item.lower():
                             filepath = os.path.dirname(filepath) + "/" + item
                             break
-                    audio = auto.File(filepath)
-                    print(filepath)
-                    SAMPLERATE = audio.sample_rate
-                    lasttime = audio.duration
 
-                    print("Found matching file name")
+                    if '.opus' in filepath or '.OPUS' in filepath:
+
+                        audio = Opus(filepath)
+                        audio.read()
+
+                        SAMPLERATE = audio.sample_rate
+                        lasttime = audio.length
+
+                    else:
+                        audio = auto.File(filepath)
+                        # print(filepath)
+                        SAMPLERATE = audio.sample_rate
+                        lasttime = audio.duration
+
 
             except:
                 print("UNABLE TO READ FILE LENGTH")
@@ -6354,6 +6476,7 @@ def worker1():
                     nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
                     nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
 
+                    nt.album_artist = MAIN_PERFORMER
                     nt.artist = PERFORMER
                     nt.title = TITLE
                     nt.length = LENGTH
@@ -6426,7 +6549,7 @@ def worker1():
 
         time.sleep(0.002)
 
-        audio = auto.File(path)
+        #audio = auto.File(path)
 
         nt = TrackClass()
 
@@ -6436,23 +6559,28 @@ def worker1():
         nt.parent_folder_path = os.path.dirname(path.replace('\\', '/'))
         nt.parent_folder_name = get_end_folder(os.path.dirname(path))
         nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
-        nt.length = audio.duration
-        nt.title = rm_16(audio.title)
-        nt.artist = rm_16(audio.artist)
-        nt.album = rm_16(audio.album)
-        nt.track_number = str(audio.track)
-        nt.bitrate = audio.bitrate
-        nt.date = audio.year
-        nt.genre = rm_16(audio.genre)
-        nt.samplerate = audio.sample_rate
-        nt.size = audio.size
-        if audio.comment != "":
-            if audio.comment[0:3] == '000':
-                pass
-            elif len(audio.comment) > 4 and audio.comment[2] == '+':
-                pass
-            else:
-                nt.comment = audio.comment
+
+        nt = tag_scan(nt)
+
+
+        # nt.length = audio.duration
+        # nt.title = rm_16(audio.title)
+        # nt.artist = rm_16(audio.artist)
+        # nt.album = rm_16(audio.album)
+        # nt.track_number = str(audio.track)
+        # nt.bitrate = audio.bitrate
+        # nt.date = audio.year
+        # nt.genre = rm_16(audio.genre)
+        # nt.samplerate = audio.sample_rate
+        # nt.size = audio.size
+        # if audio.comment != "":
+        #     if audio.comment[0:3] == '000':
+        #         pass
+        #     elif len(audio.comment) > 4 and audio.comment[2] == '+':
+        #         pass
+        #     else:
+        #         nt.comment = audio.comment
+
 
         pctl.master_library[master_count] = nt
         added.append(master_count)
@@ -7498,17 +7626,22 @@ def toggle_titlebar_line(mode=0):
 
 
 def toggle_borderless(mode=0):
+
     global draw_border
     global update_layout
     update_layout = True
+    print(draw_border)
     if mode == 1:
         return draw_border
 
     draw_border ^= True
+
     if draw_border:
         SDL_SetWindowBordered(t_window, False)
     else:
         SDL_SetWindowBordered(t_window, True)
+        # SDL_SetWindowBordered(t_window, False)
+        # SDL_SetWindowBordered(t_window, True)
 
 config_items = [
     ['Show playtime lines', star_toggle],
@@ -10693,18 +10826,6 @@ while running:
                 gui.pl_update = 1
                 gui.update += 1
 
-
-
-                # Workaround for SDL bug 2610
-                if system == 'windows':
-                    if SDL_GetWindowFlags(t_window) & SDL_WINDOW_MAXIMIZED:
-                        SDL_RestoreWindow(t_window)
-                        SDL_MaximizeWindow(t_window)
-                    elif SDL_GetWindowFlags(t_window) & SDL_WINDOW_FULLSCREEN_DESKTOP:
-
-                        SDL_RestoreWindow(t_window)
-                        SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
                 x_menu.active = False
                 view_menu.active = False
@@ -10726,18 +10847,25 @@ while running:
                 gui.maximized = False
                 # print('resize')
 
+            # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
+            #
+            elif event.window.event == SDL_WINDOWEVENT_EXPOSED:
+                # print("expose")
+                gui.lowered = False
+
             elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
                 gui.lowered = True
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
-                gui.lowered = False
+                #gui.lowered = False
 
                 gui.pl_update = 1
                 gui.update += 1
 
                 if update_title:
                     update_title_do()
-               #  print("restore")
+                #print("restore")
+
 
             elif event.window.event == SDL_WINDOWEVENT_SHOWN:
 
@@ -10747,6 +10875,7 @@ while running:
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
+
 
 
 
@@ -11388,6 +11517,7 @@ while running:
     # ---------------------------------------------------------------------------------------------------------
     # GUI DRAWING------
     # print(gui.update)
+    # print(gui.lowered)
 
     if gui.update > 0 and gui.lowered != True and not resize_mode:
         if gui.update > 2:
@@ -11693,16 +11823,21 @@ while running:
                                 pass
                             else:
                                 i = album_dex[album_on]
-                                while i < len(default_playlist) - 1:
-                                    if pctl.master_library[default_playlist[i]].parent_folder_name != pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name:
-                                        album_artist_dict[c_index] = pctl.master_library[default_playlist[album_dex[album_on]]].artist
-                                        break
-                                    if pctl.master_library[default_playlist[i]].artist != pctl.master_library[default_playlist[album_dex[album_on]]].artist:
-                                        album_artist_dict[c_index] = "Various Artists"
-                                        break
-                                    i += 1
+                                if pctl.master_library[default_playlist[i]].album_artist != "":
+                                    album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
                                 else:
-                                    album_artist_dict[c_index] = pctl.master_library[default_playlist[album_dex[album_on]]].artist
+                                    while i < len(default_playlist) - 1:
+                                        if pctl.master_library[default_playlist[i]].parent_folder_name != pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name:
+                                            album_artist_dict[c_index] = pctl.master_library[default_playlist[album_dex[album_on]]].artist
+                                            break
+                                        if pctl.master_library[default_playlist[i]].artist != pctl.master_library[default_playlist[album_dex[album_on]]].artist:
+                                            album_artist_dict[c_index] = "Various Artists"
+
+
+                                            break
+                                        i += 1
+                                    else:
+                                        album_artist_dict[c_index] = pctl.master_library[default_playlist[album_dex[album_on]]].artist
 
                             line = album_artist_dict[c_index]
                             line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
