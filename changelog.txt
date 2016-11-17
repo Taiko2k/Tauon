@@ -12,6 +12,7 @@ v1.8.0
  - Added function to extract and save embedded images from track tags
  - Added support for reading OPUS metadata
  - Added album artist field support for OPUS, FLAC, MP3, OGG and CUE
+ - Added cue sheet indicator to track info box
  - Fixed click on window focus not registering
  - Fixed some track highlights not being full playlist width
  - Fixed window flash on focus maximised
