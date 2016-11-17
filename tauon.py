@@ -533,6 +533,8 @@ class Prefs:
         self.tag_editor_target = ""
         self.tag_editor_path = ""
 
+        self.use_title = False
+
 
 prefs = Prefs()
 
@@ -849,6 +851,9 @@ try:
         prefs.cache_gallery = save[39]
     if save[40] is not None:
         prefs.playlist_font_size = save[40]
+    if save[41] is not None:
+        prefs.use_title = save[41]
+
 
 except:
     print('Error loading save file')
@@ -7630,7 +7635,7 @@ def toggle_borderless(mode=0):
     global draw_border
     global update_layout
     update_layout = True
-    print(draw_border)
+
     if mode == 1:
         return draw_border
 
@@ -7816,6 +7821,11 @@ def toggle_sbt(mode=0):
         return prefs.prefer_bottom_title
     prefs.prefer_bottom_title ^= True
 
+def toggle_use_title(mode=0):
+    if mode == 1:
+        return prefs.use_title
+    prefs.use_title ^= True
+
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
 config_items.append(['Break playlist by folders', toggle_break])
@@ -7825,6 +7835,8 @@ config_items.append(['Use double digit track indices', toggle_dd])
 #config_items.append(['Double height rows', toggle_thick])
 
 # config_items.append(['Use custom line format [broken]', toggle_custom_line])
+
+config_items.append(['Always use folder name as title', toggle_use_title])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
 
@@ -8065,6 +8077,8 @@ class Over:
 
     def config_b(self):
 
+
+
         global album_mode_art_size
         global combo_mode_art_size
         global update_layout
@@ -8111,6 +8125,7 @@ class Over:
 
         #---------------
 
+
         x = self.box_x + self.item_x_offset - 10
         x += 10
         y += 25
@@ -8132,6 +8147,7 @@ class Over:
         draw_text((x+4, y), "<", colours.grey(200), 11)
 
         x += 25
+
 
         draw.rect_r((x,y,40,15), [255,255,255,10], True)
         draw_text((x + 4, y), str(combo_mode_art_size) + "px", colours.grey(200), 11)
@@ -8161,6 +8177,7 @@ class Over:
 
         y += 35
 
+
         x = self.box_x + self.item_x_offset
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
@@ -8171,6 +8188,7 @@ class Over:
         y += 30
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 30
+
         if default_player == 'BASS':
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
         y += 30
@@ -8187,7 +8205,7 @@ class Over:
     def about(self):
 
         x = self.box_x + int(self.w * 0.3) + 80 #110 + int((self.w - 110) / 2)
-        y = self.box_y + 78
+        y = self.box_y + 76
 
         self.about_image.render(x - 85 , y + 5)
 
@@ -9926,6 +9944,9 @@ class StandardPlaylist:
                             pctl.multi_playlist[pctl.playlist_active][4] == 0 and break_enable:
 
                 line = n_track.parent_folder_name
+
+                if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
+                    line = n_track.album_artist + " - " + n_track.album
 
                 if len(line) < 6 and "CD" in line:
                     line = n_track.album
@@ -12854,10 +12875,15 @@ while running:
                     elif line == 'AAC':
                         ex_colour = [79, 247, 168, 255]
                     draw.rect_r(ext_rect, ex_colour, True)
-
                     draw_text((x + w - 60, y + 40), line, colours.alpha_grey(190), 11)
 
                     y += 15
+
+                    if pctl.master_library[r_menu_index].is_cue:
+                        ext_rect[1] += 16
+                        draw.rect_r(ext_rect, [218, 222, 73, 255], True)
+                        draw_text((x + w - 60, y + 41), "CUE", colours.alpha_grey(190), 11)
+
 
                     rect = [x + 17, y + 41, 60, 14]
                     fields.add(rect)
@@ -14029,6 +14055,8 @@ save = [pctl.master_library,
         prefs.line_style,
         prefs.cache_gallery,
         prefs.playlist_font_size,
+        prefs.use_title,
+        None,
         None,
         None,
         None,
