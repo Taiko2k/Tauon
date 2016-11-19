@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v1.7.4
+Basic usage guide. Updated for v1.8.0
 ===========
 
 Player is playlist based and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists.
