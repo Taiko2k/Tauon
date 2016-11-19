@@ -10534,7 +10534,7 @@ if system != 'windows':
 playlist_view_length = int(((window_size[1] - playlist_top) / 16) - 1)
 
 running = True
-
+ab_click = False
 d_border = 1
 
 update_layout = True
