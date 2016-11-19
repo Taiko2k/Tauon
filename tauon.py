@@ -300,7 +300,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2,12,10,10)
 
-theme = 9
+theme = 5
 themeChange = True
 panelY = 78
 
