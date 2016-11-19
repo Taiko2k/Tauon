@@ -10878,7 +10878,7 @@ while running:
                 gui.lowered = True
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
-                #gui.lowered = False
+                gui.lowered = False
 
                 gui.pl_update = 1
                 gui.update += 1
