@@ -10,7 +10,7 @@ Uses BASS audio library.
   - Dark themed with customisable colours
   - Clean minimal layout with large album art view
   - Simple drag and drop track importing
-  - Batch transcode folders of tracks to OPUS for easy compressing to devices
+  - Batch transcode folders of tracks to OGG or OPUS for easy compressing to devices
   - Automatic CUE sheet detection and integration
   - Switch between tracks and/or gallery layouts
   - Quick searching and creating filtered playlists
