@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v1.8.1
+
+ - Fixed random crash when using radio random
+
 v1.8.0
 
  - Added option to increase playlist font size
