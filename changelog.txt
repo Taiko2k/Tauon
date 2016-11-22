@@ -3,7 +3,10 @@ Changelog-------------------------------------
 
 v1.8.1
 
- - Fixed random crash when using radio random
+ - Added 'paste' and 'clear' buttons to URL input box
+ - Fixed random crash when using random track
+ - Fixed seek bar, track title and playing time display for radio streaming
+ - Improved inbound radio streaming error feedback
 
 v1.8.0
 

@@ -185,6 +185,8 @@ vis_decay_timer = Timer()
 vis_decay_timer.set()
 scroll_timer = Timer()
 scroll_timer.set()
+radio_meta_timer = Timer()
+
 
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
@@ -621,6 +623,7 @@ class ColoursClass:
             self.status_info_text = [40, 40, 40, 255]
 
 colours = ColoursClass()
+
 
 view_prefs = {
 
@@ -1295,7 +1298,8 @@ class PlayerCtl:
             update_title_do()  #  Update title bar text
 
     def pause(self):
-
+        if self.playing_state == 3:
+            return
         if self.playing_state == 1:
             self.playerCommand = 'pause'
             self.playing_state = 2
@@ -1792,7 +1796,7 @@ def player():
         print("Bass library initialised")
 
 
-
+    # BASS_SetConfig(11, )
 
     player1_status = p_stopped
     player2_status = p_stopped
@@ -1924,19 +1928,20 @@ def player():
                     gui.level_peak = [0, 0]
 
         if pctl.playing_state == 3 and player1_status == p_playing:
-
-            # print(BASS_ChannelGetTags(handle1,4 ))
-            pctl.tag_meta = BASS_ChannelGetTags(handle1, 5)
-            if pctl.tag_meta is not None:
-                pctl.tag_meta = pctl.tag_meta.decode('utf-8')[13:-2]
-            else:
-                pctl.tag_meta = BASS_ChannelGetTags(handle1, 2)
+            if radio_meta_timer.get() > 3:
+                radio_meta_timer.set()
+                # print(BASS_ChannelGetTags(handle1,4 ))
+                pctl.tag_meta = BASS_ChannelGetTags(handle1, 5)
                 if pctl.tag_meta is not None:
-                    pctl.tag_meta = pctl.tag_meta.decode('utf-8')[6:]
+                    pctl.tag_meta = pctl.tag_meta.decode('utf-8')[13:-2]
                 else:
-                    pctl.tag_meta = ""
-
-                    # time.sleep(0.5)
+                    pctl.tag_meta = BASS_ChannelGetTags(handle1, 2)
+                    if pctl.tag_meta is not None:
+                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')[6:]
+                    else:
+                        pctl.tag_meta = ""
+                pctl.tag_meta = pctl.tag_meta.strip("';StreamUrl='")
+                        # time.sleep(0.5)
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
             pctl.broadcast_time += broadcast_timer.hit()
@@ -1945,6 +1950,7 @@ def player():
 
             add_time = player_timer.hit()
             pctl.playing_time += add_time
+
 
             if pctl.playing_state == 1:
 
@@ -2051,13 +2057,36 @@ def player():
                     BASS_StreamFree(handle2)
 
                 # fileline = str(datetime.datetime.now()) + ".ogg"
-
-                handle1 = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
                 # print(BASS_ErrorGetCode())
-                BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                channel1 = BASS_ChannelPlay(handle1, True)
-                player1_status = p_playing
-                pctl.playing_time = 0
+                # print(pctl.url)
+                bass_error = BASS_ErrorGetCode()
+                handle1 = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
+                bass_error = BASS_ErrorGetCode()
+                if bass_error == 40:
+                    show_message("Stream error: Connection timeout")
+                elif bass_error == 32:
+                    show_message("Stream error: No internet connection")
+                elif bass_error == 20:
+                    show_message("Stream error: Bad URL")
+                elif bass_error == 2:
+                    show_message("Stream error: Could not open stream")
+                elif bass_error == 41:
+                    show_message("Stream error: Unknown file format")
+                elif bass_error == 44:
+                    show_message("Stream error: Unknown/unsupported codec")
+                elif bass_error == -1:
+                    show_message("Stream error: Its a mystery!!")
+                elif bass_error != 0:
+                    show_message("Stream error: Something went wrong... somewhere")
+                if bass_error == 0:
+                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
+                    BASS_ChannelPlay(handle1, True)
+                    player1_status = p_playing
+                    pctl.playing_time = 0
+                    pctl.last_playing_time = 0
+                    player_timer.hit()
+                else:
+                    pctl.playing_status = 0
 
             if pctl.playerCommand == 'encnext':
                 print("Next Enc Rec")
@@ -3060,7 +3089,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
     if len(text) == 0:
         return 0
-    key = (maxx, text, colour[0], colour[1], colour[2], colour[3])
+    key = (maxx, text, font, colour[0], colour[1], colour[2], colour[3])
 
     global ttc
 
@@ -3196,6 +3225,16 @@ class TextBox:
 
         self.text = ""
 
+    def paste(self):
+
+        if SDL_HasClipboardText():
+            clip = SDL_GetClipboardText().decode('utf-8')
+
+            if 'http://' in self.text and 'http://' in clip:
+                self.text = ""
+
+            self.text += clip
+
     def draw(self, x, y, colour, active=True, secret=False, font=13):
 
         if active:
@@ -3206,9 +3245,8 @@ class TextBox:
                 self.cursor = True
             if key_backspace_press and len(self.text) > 0:
                 self.text = self.text[:-1]
-            if key_ctrl_down and key_v_press and SDL_HasClipboardText():
-                clip = SDL_GetClipboardText().decode('utf-8')
-                self.text += clip
+            if key_ctrl_down and key_v_press:
+                self.paste()
 
         if secret:
             space = draw_text((x, y), '●' * len(self.text), colour, font)
@@ -8975,6 +9013,8 @@ class BottomBarType1:
         global auto_stop
         global volume_store
         global clicked
+        global mouse_click
+        global right_click
 
         draw.rect((0, window_size[1] - panelBY), (window_size[0], panelBY), colours.bottom_panel_colour, True)
         draw.rect(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
@@ -9063,6 +9103,7 @@ class BottomBarType1:
                 pctl.playerCommand = 'seek'
                 pctl.playerCommandReady = True
                 pctl.playing_time = pctl.new_time
+
                 if system == 'windows' and taskbar_progress:
                     windows_progress.update(True)
             self.seek_time = pctl.playing_time
@@ -9074,7 +9115,7 @@ class BottomBarType1:
                       colours.seek_bar_fill, True)
 
 
-        # Volume Bar--------------------------------------------------------
+        # Volume Bar --------------------------------------------------------
 
         if mouse_click and coll_point(mouse_position, (self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0], self.volume_bar_size[1])) or \
                         self.volume_bar_being_dragged is True:
@@ -9123,23 +9164,33 @@ class BottomBarType1:
                   colours.volume_bar_fill, True)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820:
+            if pctl.playing_state < 3:
+                title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
+                artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
 
-            title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
-            artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
+                line = ""
+                if artist != "":
+                    line += artist
+                if title != "":
+                    if line != "":
+                        line += "  -  "
+                    line += title
+            else:
+                line = pctl.tag_meta
 
-            line = ""
-            if artist != "":
-                line += artist
-            if title != "":
-                if line != "":
-                    line += "  -  "
-                line += title
             line = trunc_line(line, 13, window_size[0] - 750)
             draw_text((self.seek_bar_position[0], self.seek_bar_position[1] + 22), line, colours.bar_title_text,
                       213)  # fontb1
-            if mouse_click and coll_point(mouse_position, (
+            if (mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10, self.seek_bar_position[1] + 20, window_size[0] - 710, 30)):
-                pctl.show_current()
+                if pctl.playing_state == 3:
+                    copy_to_clipboard(pctl.tag_meta)
+                    show_message("Line copied to clipboard")
+                    if mouse_click or right_click:
+                        mouse_click = False
+                        right_click = False
+                else:
+                    pctl.show_current()
 
         # TIME----------------------
 
@@ -9176,6 +9227,8 @@ class BottomBarType1:
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
+            elif pctl.playing_state == 3:
+                text_time = "-- : --"
             draw_text((x + 17, y), text_time, colours.time_sub,
                       12)
         # BUTTONS
@@ -9216,7 +9269,6 @@ class BottomBarType1:
                     pctl.show_current()
             self.play_button.render(29, window_size[1] - self.control_line_bottom, play_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
-
 
             # PAUSE---
             x = 75 + buttons_x_offset
@@ -10909,6 +10961,11 @@ while running:
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.playlist_active)
 
+
+        if radiobox and mouse_click:
+            mouse_click = False
+            gui.track_box_click = True
+
         if track_box and mouse_click:
             w = 540
             h = 240
@@ -11055,14 +11112,15 @@ while running:
                     pctl.player_volume = 0
                 pctl.set_volume()
 
-            if key_slash_press:
-                pctl.advance(rr=True)
-            if key_period_press:
-                pctl.random_mode ^= True
-            if key_quote_hit:
-                pctl.show_current()
-            if key_comma_press:
-                pctl.repeat_mode ^= True
+            if not radiobox:
+                if key_slash_press:
+                    pctl.advance(rr=True)
+                if key_period_press:
+                    pctl.random_mode ^= True
+                if key_quote_hit:
+                    pctl.show_current()
+                if key_comma_press:
+                    pctl.repeat_mode ^= True
 
             if key_dash_press:
                 pctl.new_time = pctl.playing_time - 15
@@ -12908,16 +12966,17 @@ while running:
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
+
             if radiobox:
                 w = 420
-                h = 87
+                h = 103 #87
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or (mouse_click and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or (gui.track_box_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
                 draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
@@ -12927,24 +12986,54 @@ while running:
 
                 rect = (x + 8 + 350 + 10, y + 38, 40, 22)
                 fields.add(rect)
-
                 if coll_point(mouse_position, rect):
                     draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
-
-                draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), colours.grey(50))
+                draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [50, 50, 50, 75], True)
                 draw_text((x + 8 + 10 + 350 + 10, y + 40), "GO", colours.grey(150), 12)
 
+
+                rect = (x + 307, y + 70, 50, 22)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
+                    if gui.track_box_click:
+                        radio_field.paste()
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
+                draw_text((rect[0] + 7, rect[1] + 3), "PASTE", colours.grey(140), 12)
+
+                rect = (x + 247, y + 70, 50, 22)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
+                    if gui.track_box_click:
+                        radio_field.text = ""
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
+                draw_text((rect[0] + 7, rect[1] + 3), "CLEAR", colours.grey(140), 12)
+
                 if (key_return_press_w or (
-                            mouse_click and coll_point(mouse_position,
-                                                       (x + 8 + 350 + 10, y + 38, 40, 22)))) and 'http' in radio_field.text:
-                    pctl.url = radio_field.text.encode('utf-8')
-                    radiobox = False
-                    pctl.playing_state = 0
-                    pctl.playerCommand = "url"
-                    pctl.playerCommandReady = True
-                    pctl.playing_state = 3
+                            gui.track_box_click and coll_point(mouse_position,
+                                                       (x + 8 + 350 + 10, y + 38, 40, 22)))):
+                    if "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
+                        print("Start radio")
+                        pctl.url = radio_field.text.encode('utf-8')
+                        radiobox = False
+                        pctl.playing_state = 0
+                        pctl.playerCommand = "url"
+                        pctl.playerCommandReady = True
+                        pctl.playing_state = 3
+                        pctl.playing_time = 0
+                        pctl.playing_length = 0
+
+                    elif radio_field.text == "":
+                        pass
+                    else:
+                        print("Radio fail")
+                        radiobox = False
+                        gui.update = 1
+                        show_message("That doesn't look like a valid URL, make sure is starts with 'http://'")
 
                 input_text = ""
+                gui.track_box_click = False
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
