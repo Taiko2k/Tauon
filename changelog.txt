@@ -4,9 +4,11 @@ Changelog-------------------------------------
 v1.8.1
 
  - Added 'paste' and 'clear' buttons to URL input box
+ - Improved inbound radio streaming error feedback
  - Fixed random crash when using random track
  - Fixed seek bar, track title and playing time display for radio streaming
- - Improved inbound radio streaming error feedback
+ - Fixed a performance leak in playlist config tab
+ - Fixed Korean text truncating
 
 v1.8.0
 

@@ -186,7 +186,8 @@ vis_decay_timer.set()
 scroll_timer = Timer()
 scroll_timer.set()
 radio_meta_timer = Timer()
-
+perf_timer = Timer()
+perf_timer.set()
 
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
@@ -1933,14 +1934,15 @@ def player():
                 # print(BASS_ChannelGetTags(handle1,4 ))
                 pctl.tag_meta = BASS_ChannelGetTags(handle1, 5)
                 if pctl.tag_meta is not None:
-                    pctl.tag_meta = pctl.tag_meta.decode('utf-8')[13:-2]
+                    pctl.tag_meta = pctl.tag_meta.decode('utf-8')
                 else:
                     pctl.tag_meta = BASS_ChannelGetTags(handle1, 2)
                     if pctl.tag_meta is not None:
-                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')[6:]
+                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')[5:]
                     else:
                         pctl.tag_meta = ""
                 pctl.tag_meta = pctl.tag_meta.strip("';StreamUrl='")
+                pctl.tag_meta = pctl.tag_meta.strip("Title='")
                         # time.sleep(0.5)
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
@@ -3013,6 +3015,7 @@ class Drawing:
     def __init__(self):
         self.sdl_rect = SDL_Rect(10, 10, 10, 10)
         self.text_width_p = pointer(c_int(0))
+        self.text_calc_cache = {}
 
     def fast_fill_rect(self, x, y, w, h):
         self.sdl_rect.x = x
@@ -3043,8 +3046,24 @@ class Drawing:
         SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
         SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
 
-    def text_calc(self, text, font):
+    def text_calc(self, text, font, cache=True):
+
+        key = hash((text, font))
+        if key in self.text_calc_cache:
+            return self.text_calc_cache[key]
+        print('new len text calc')
+
+        for ch in range(len(text)):
+            if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
+                if TTF_GlyphIsProvided(font_dict[font][1], ord(text[ch])):
+                    TTF_SizeUTF8(font_dict[font][1], text.encode('utf-8'), self.text_width_p, None)
+                    if cache:
+                        self.text_calc_cache[key] = self.text_width_p.contents.value
+                    return self.text_width_p.contents.value
+
         TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
+        if cache:
+            self.text_calc_cache[key] = self.text_width_p.contents.value
         return self.text_width_p.contents.value
 
 
@@ -3091,6 +3110,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         return 0
     key = (maxx, text, font, colour[0], colour[1], colour[2], colour[3])
 
+
     global ttc
 
     if key in ttc:
@@ -3120,11 +3140,13 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         while True: #and (len(location) < 3 or location[2] == 0):
             if len(text) < 3:
                 break
-            TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), tex_w, None)
-            xlen = tex_w.contents.value
+            # TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), tex_w, None)
+            # xlen = tex_w.contents.value
+            xlen = draw.text_calc(text, font, False)
+
             if xlen <= maxx:
                 break
-            text = text[:-2]
+            text = text[:-1]
             trunc = True
 
         if trunc:
@@ -7612,11 +7634,10 @@ def toggle_thick(mode=0):
     global thick_lines
     global update_layout
 
-    clear_text_cache()
-
     if mode == 1:
         return thick_lines
     else:
+        clear_text_cache()
         thick_lines ^= True
         update_layout = True
 
@@ -10461,8 +10482,10 @@ SDL_ShowWindow(t_window)
 SDL_RenderPresent(renderer)
 # time.sleep(13)
 # C-ML
+
 while running:
     # bm.get('main')
+
 
     if k_input:
 
@@ -10808,6 +10831,9 @@ while running:
             gui.update += 1
 
     power += 1
+    if mouse_wheel != 0:
+        power = 5
+
     if resize_mode or scroll_hold or album_scroll_hold:
         power += 3
     if side_drag:
@@ -10829,7 +10855,7 @@ while running:
     new_playlist_cooldown = False
 
 
-    if check_file_timer.get() > 0.5:
+    if check_file_timer.get() > 1.1:
         check_file_timer.set()
         if os.path.isfile(transfer_target):
             r_arg_queue = pickle.load(open(transfer_target, "rb"))
@@ -11448,6 +11474,7 @@ while running:
 
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
+        #perf_timer.set()
 
 
         fields.clear()
@@ -13417,6 +13444,7 @@ while running:
             gui.level_update = True
         else:
             SDL_RenderPresent(renderer)
+            # print(perf_timer.get() * 1000)
 
 
     if pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
