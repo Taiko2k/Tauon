@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.8.0"
+t_version = "v1.8.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -3051,7 +3051,6 @@ class Drawing:
         key = hash((text, font))
         if key in self.text_calc_cache:
             return self.text_calc_cache[key]
-        print('new len text calc')
 
         for ch in range(len(text)):
             if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
@@ -10822,7 +10821,9 @@ while running:
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
-
+                update_layout = True
+                gui.pl_update = 1
+                gui.update += 1
 
 
 
@@ -10838,7 +10839,9 @@ while running:
         power += 3
     if side_drag:
         power += 2
-    if gui.level_update:
+    # Im actually rather confused as to why 'and not album_scroll_hold' is needed here for smooth album scrolling when
+    # running the visualser (so I put in scroll hold too for good measure, dunno if it helps)
+    if gui.level_update and not album_scroll_hold and not scroll_hold:
         power = 6
     if not running:
         break
@@ -11235,7 +11238,7 @@ while running:
 
         gui.spec_rect[0] = window_size[0] - offset_extra - 90
 
-        scroll_hide_box = (1, panelY, 28, window_size[1] - panelBY - panelY)
+        scroll_hide_box = (1 if not gui.maximized else 0, panelY, 28, window_size[1] - panelBY - panelY)
 
         if thick_lines or gui.combo_mode:
             if prefs.playlist_font_size == 13:
@@ -11565,7 +11568,7 @@ while running:
                         album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
                 # ----
-                rect = (window_size[0] - 33, panelY, 31, window_size[1] - panelBY - panelY)
+                rect = (window_size[0] - (33 if not gui.maximized else 32), panelY, 31, window_size[1] - panelBY - panelY)
                 # draw.rect_r(rect, [255,0,0,5], True)
 
                 fields.add(rect)
@@ -13440,6 +13443,7 @@ while running:
 
         gui.update -= 1
 
+
         if gui.turbo:
             gui.level_update = True
         else:
@@ -13447,7 +13451,8 @@ while running:
             # print(perf_timer.get() * 1000)
 
 
-    if pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
+
+    if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo: # and not album_scroll_hold:
         # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
         if gui.time_passed > 1:
@@ -13463,11 +13468,12 @@ while running:
 
         gui.level_update = True
 
+
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
 
-
         if gui.vis == 2 and gui.spec is not None:
+
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
 
@@ -13484,7 +13490,7 @@ while running:
             if vis_rate_timer.get() > 0.016:  # Limit the change rate to 60 fps
                 vis_rate_timer.set()
 
-                if spec_smoothing:
+                if spec_smoothing and pctl.playing_state > 0:
                     if not fast_bin_av:
 
                         for i in range(len(gui.spec)):
