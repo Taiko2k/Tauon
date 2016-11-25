@@ -270,6 +270,8 @@ scroll_opacity = 0
 break_enable = True
 dd_index = False
 
+source = None
+
 album_playlist_width = 430
 
 update_title = False
@@ -1631,21 +1633,32 @@ def player():
     player_timer = Timer()
     broadcast_timer = Timer()
     current_volume = pctl.player_volume / 100
+    has_bass_ogg = True
 
     if system == 'windows':
         bass_module = ctypes.WinDLL('bass')
         enc_module = ctypes.WinDLL('bassenc')
         mix_module = ctypes.WinDLL('bassmix')
+        # opus_module = ctypes.WinDLL('bassenc_opus')
+        try:
+            ogg_module = ctypes.WinDLL('bassenc_ogg')
+        except:
+            has_bass_ogg = False
         function_type = ctypes.WINFUNCTYPE
     elif system == 'mac':
         bass_module = ctypes.CDLL(install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
         enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
+        ogg_module = ctypes.CDLL(install_directory + '/lib/libbassenc_ogg.dylib', mode=ctypes.RTLD_GLOBAL)
         function_type = ctypes.CFUNCTYPE
     else:
         bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
         enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+        try:
+            ogg_module = ctypes.CDLL(install_directory + '/lib/libbassenc_ogg.so', mode=ctypes.RTLD_GLOBAL)
+        except:
+            has_bass_ogg = False
         function_type = ctypes.CFUNCTYPE
 
     BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
@@ -1685,6 +1698,11 @@ def player():
     BASS_ChannelGetLevel = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_ChannelGetLevel', bass_module))
     BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
         ('BASS_ChannelGetData', bass_module))
+
+    SyncProc = function_type(None, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p)
+    BASS_ChannelSetSync = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int64, SyncProc, ctypes.c_void_p)(
+        ('BASS_ChannelSetSync', bass_module))
+
 
     BASS_Mixer_StreamCreate = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_Mixer_StreamCreate', mix_module))
@@ -1735,7 +1753,13 @@ def player():
         ('BASS_Encode_SetChannel', enc_module))
     BASS_Encode_CastSetTitle = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_bool)(
         ('BASS_Encode_CastSetTitle', enc_module))
-
+    #
+    # BASS_Encode_OPUS_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p)(
+    #     ('BASS_Encode_OPUS_Start', opus_module))
+    if has_bass_ogg:
+        BASS_Encode_OGG_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
+                                               ctypes.c_void_p, ctypes.c_void_p)(
+            ('BASS_Encode_OGG_Start', ogg_module))
     class BASS_DEVICEINFO(ctypes.Structure):
         _fields_ = [('name', ctypes.c_char_p),
                     ('driver', ctypes.c_char_p),
@@ -1752,6 +1776,38 @@ def player():
     #         break
     #     print(d_info.name.decode('utf-8'))
     #     a += 1
+    BASS_MIXER_END = 0x10000
+    BASS_SYNC_END = 2
+    BASS_SYNC_MIXTIME = 0x40000000
+    BASS_UNICODE = 0x80000000
+    BASS_STREAM_DECODE = 0x200000
+    BASS_ASYNCFILE = 0x40000000
+    BASS_SAMPLE_FLOAT = 256
+    BASS_STREAM_AUTOFREE = 0x40000
+    BASS_MIXER_NORAMPIN = 0x800000
+
+    if system != 'windows':
+        pctl.target_open = pctl.target_open.encode('utf-8')
+        open_flag = 0
+    else:
+        open_flag = BASS_UNICODE
+    open_flag |= BASS_ASYNCFILE
+    # open_flag |= BASS_STREAM_DECODE
+    open_flag |= BASS_SAMPLE_FLOAT
+
+    # mixer = None
+    #
+    # global source
+    # def py_sync(handle, channel, data, user):
+    #     global source
+    #     print("SYNC")
+    #     source = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
+    #     BASS_Mixer_StreamAddChannel(mixer, source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
+    #     BASS_ChannelSetPosition(mixer, 0, 0)
+    #
+    #     return 0
+    #
+    # EndSync = SyncProc(py_sync)
 
 
     if system == 'windows':
@@ -1777,6 +1833,9 @@ def player():
         BASS_PluginLoad(b'basswma.dll', 0)
         #print("Load bass_wma")
         #print(BASS_ErrorGetCode())
+        BASS_PluginLoad(b'bassenc_opus.dll', 0)
+
+        #bassenc_opus
     elif system == 'mac':
         b = install_directory.encode('utf-8')
         BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
@@ -1828,6 +1887,10 @@ def player():
 
                 # -----------
                 if gui.vis == 2:
+
+                    # # TEMPORARY
+                    # continue
+
                     if gui.lowered:
                         continue
 
@@ -2221,34 +2284,56 @@ def player():
 
                     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
                                          b"genre", b"", b"", int(bitrate), False)
+                #
+                # elif codec == "OGG":
+                #     if system == 'windows':
+                #         line = install_directory + "/encoder/oggenc2.exe" + " -r -b " + bitrate + " -"
+                #     else:
+                #         line = "oggenc" + " -r -b " + bitrate + " -"
+                #
+                #     line = line.encode('utf-8')
+                #     # print(line)
+                #
+                #     encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+                #
+                #     line = "source:" + ice_pass
+                #     line = line.encode('utf-8')
+                #
+                #     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
+                #                          b"genre", b"", b"", int(bitrate), False)
+                #
+                # elif codec == "OPUS":
+                #     if system == 'windows':
+                #         line = install_directory + "/encoder/opusenc.exe --raw --bitrate " + bitrate + " - - "
+                #     else:
+                #         line = "opusenc" + " --raw --bitrate " + bitrate + " - - "
+                #
+                #     line = line.encode('utf-8')
+                #     # print(line)
+                #
+                #     encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+                #
+                #     line = "source:" + ice_pass
+                #     line = line.encode('utf-8')
+                #
+                #     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
+                #                          b"genre", b"", b"", int(bitrate), False)
+
 
                 elif codec == "OGG":
-                    if system == 'windows':
-                        line = install_directory + "/encoder/oggenc2.exe" + " -r -b " + bitrate + " -"
-                    else:
-                        line = "oggenc" + " -r -b " + bitrate + " -"
+                    if not has_bass_ogg:
+                        show_message("Error: Missing bass_enc_ogg module, you may be using an outdated install")
+                        pctl.broadcast_active = False
+                        BASS_ChannelStop(handle3)
+                        BASS_StreamFree(handle3)
+                        pctl.playerCommand = ""
+                        continue
 
+
+                    line = "--bitrate " + bitrate
                     line = line.encode('utf-8')
-                    # print(line)
 
-                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
-
-                    line = "source:" + ice_pass
-                    line = line.encode('utf-8')
-
-                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
-                                         b"genre", b"", b"", int(bitrate), False)
-
-                elif codec == "OPUS":
-                    if system == 'windows':
-                        line = install_directory + "/encoder/opusenc.exe --raw --bitrate " + bitrate + " - - "
-                    else:
-                        line = "opusenc" + " --raw --bitrate " + bitrate + " - - "
-
-                    line = line.encode('utf-8')
-                    # print(line)
-
-                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+                    encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
 
                     line = "source:" + ice_pass
                     line = line.encode('utf-8')
@@ -2258,12 +2343,33 @@ def player():
 
                 channel1 = BASS_ChannelPlay(mhandle, True)
                 print(encoder)
-
+                print(pctl.broadcast_line)
+                line = pctl.broadcast_line.encode('utf-8')
+                BASS_Encode_CastSetTitle(encoder, line, 0)
                 # Trying to send the stream title here causes the stream to fail for some reason
                 # line2 = pctl.broadcast_line.encode('utf-8')
                 # BASS_Encode_CastSetTitle(encoder, line2,0)
 
                 print(BASS_ErrorGetCode())
+
+            # -----------------------------------------------------------------------------
+            # -----------------------------------------------------------------------------
+            # if pctl.playerCommand == 'open' and pctl.target_open != '':
+            #
+            #     if mixer is None:
+            #         mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
+            #         BASS_ChannelSetSync(mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, EndSync, 0);
+            #
+            #
+            #         source = BASS_StreamCreateFile(False, pctl.target_open, 0, 0,  open_flag)
+            #         BASS_Mixer_StreamAddChannel(mixer, source, BASS_STREAM_AUTOFREE)
+            #         BASS_ChannelPlay(mixer, False)
+            #
+            #         player1_status = p_playing
+            #     else:
+            #         pass
+
+            # -----------------------------------------------------------------------------
 
             # OPEN COMMAND
             if pctl.playerCommand == 'open' and pctl.target_open != '':
@@ -2304,19 +2410,19 @@ def player():
 
                 player_timer.hit()
                 # print(pctl.target_open)
-                if system != 'windows':
-                    pctl.target_open = pctl.target_open.encode('utf-8')
-                    flag = 0
-                else:
-                    flag = 0x80000000
+                # if system != 'windows':
+                #     pctl.target_open = pctl.target_open.encode('utf-8')
+                #     flag = 0
+                # else:
+                #     flag = 0x80000000
 
                 # BASS_ASYNCFILE = 0x40000000
-                flag |= 0x40000000
+                # flag |= 0x40000000
 
                 if player1_status == p_stopped and player2_status == p_stopped:
                     # print(BASS_ErrorGetCode())
 
-                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     # print(BASS_ErrorGetCode())
                     channel1 = BASS_ChannelPlay(handle1, True)
 
@@ -2331,7 +2437,7 @@ def player():
                     player1_status = p_stopping
                     BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
 
-                    handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     channel2 = BASS_ChannelPlay(handle2, True)
 
                     BASS_ChannelSetAttribute(handle2, 2, 0)
@@ -2341,7 +2447,7 @@ def player():
                     player2_status = p_stopping
                     BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
 
-                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
+                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     BASS_ChannelSetAttribute(handle1, 2, 0)
                     channel1 = BASS_ChannelPlay(handle1, True)
 
@@ -9502,6 +9608,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             if dd_index and len(line) == 1:
                 line = "0" + line
+            else:
+                line = line.lstrip("0")
 
             draw_text((start_x + int(width * 0.22) - offset_font_extra,
                        y), line,
@@ -9555,6 +9663,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             if dd_index and len(line) == 1:
                 line = "0" + line
+            else:
+                line = line.lstrip("0")
 
             draw_text((start_x,
                        y), line,
@@ -9650,6 +9760,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             if dd_index and len(line) == 1:
                 line = "0" + line
+            else:
+                line = line.lstrip("0")
 
             draw_text((start_x,
                        y), line,
@@ -9702,6 +9814,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             if dd_index and len(line) == 1:
                 line = "0" + line
+            else:
+                line = line.lstrip("0")
 
             indexLine = line
             line = ""
