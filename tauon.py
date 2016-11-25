@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.8.1"
+t_version = "v1.8.2"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -1102,7 +1102,7 @@ class PlayerCtl:
 
         return 0
 
-    def show_current(self, select=True, playing=False):
+    def show_current(self, select=True, playing=False, quiet=False):
 
         # Switch to source playlist
         if self.playlist_active != self.active_playlist_playing and (
@@ -1152,7 +1152,7 @@ class PlayerCtl:
         if gui.combo_mode:
             combo_pl_render.prep(True)
 
-        if album_mode:
+        if album_mode and not quiet:
             goto_album(playlist_selected)
         return 0
 
@@ -1339,7 +1339,7 @@ class PlayerCtl:
 
         self.render_playlist()
 
-    def advance(self, rr=False):
+    def advance(self, rr=False, quiet=False):
 
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -1385,8 +1385,8 @@ class PlayerCtl:
                 self.play_target_rr()
             else:
                 self.play_target()
-            if album_mode:
-                goto_album(self.playlist_playing)
+            # if album_mode:
+            #     goto_album(self.playlist_playing)
 
         # If not random, Step down 1 on the playlist
         elif self.random_mode is False and len(self.playing_playlist()) > 0:
@@ -1419,10 +1419,10 @@ class PlayerCtl:
             print("ADVANCE ERROR: NO CASE!")
 
         if self.playlist_active == self.active_playlist_playing:
-            self.show_current(playing=True)
+            self.show_current(playing=True, quiet=quiet)
 
-        if album_mode:
-            goto_album(self.playlist_playing)
+        # if album_mode:
+        #     goto_album(self.playlist_playing)
 
 
         self.render_playlist()
@@ -13820,7 +13820,7 @@ while running:
             gui.pl_update = 1
 
         else:
-            pctl.advance()
+            pctl.advance(quiet=True)
             pctl.playing_time = 0
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
