@@ -1,16 +1,17 @@
 
 Changelog-------------------------------------
 
-v1.8.1
+v1.8.2
 
  - Added 'paste' and 'clear' buttons to URL input box
  - Improved inbound radio streaming error feedback
- - Fixed random crash when using random track
+ - Tweaked gallery to no longer jump when track advances automatically
+ - Fixed crash when using radio random
  - Fixed seek bar, track title and playing time display for radio streaming
  - Fixed a performance leak in playlist config tab
- - Fixed fallback text truncating
+ - Fixed fallback text not truncating to correct length
  - Fixed edge scroll bar hiding on maximised window
- - Fixed jittery album scrolling when running visualiser
+ - Fixed jittery gallery scrolling when running visualiser
  - Fixed playlist digit setting sometimes not being enforced
  - Fixed broadcast not sending title and artist to icecast server on first track
  - Seperate oggenc download no longer required for broadcasting
