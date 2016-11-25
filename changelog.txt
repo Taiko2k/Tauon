@@ -11,6 +11,9 @@ v1.8.1
  - Fixed fallback text truncating
  - Fixed edge scroll bar hiding on maximised window
  - Fixed jittery album scrolling when running visualiser
+ - Fixed playlist digit setting sometimes not being enforced
+ - Fixed broadcast not sending title and artist to icecast server on first track
+ - Seperate oggenc download no longer required for broadcasting
 
 v1.8.0
 
