@@ -58,14 +58,20 @@ Tip: End the search text with another forward slash to search just for folders w
 ***Volume Up/Down***: Shift + Up and Down arrow keys   
 ***Toggle Gallery View***: Mouse button 4   
 ***Toggle folder break for current playlist***: F1   
+***Toggle broadcast sync mode***: F6   
 ***Undo playlist delete***: Ctrl + Z
 
 ### Outbound Streaming:
 
-- Install, configure (optional) and run Icecast. See config.txt for further setup.
+- Install, configure (optional) and start Icecast. See config.txt for further setup.
 - From player right click top bar and select 'Start Broadcast' from menu. You should now see an entry in the Icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
 
 The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).
+Note: Broadcast will repeat from beginning of playlist once end is reached
+Warning: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
+
+Alternatively, by pressing F6 to enter 'sync' mode, the broadcast will receive commands from the player. The effect of this allows for the listening and control of a stream remotely via the web interface.
+Note: This function is experimental and unreliable. Pausing or stopping the player while in this mode will cause the stream to fail or generate other unexpected behavior
 
 
 ### Transcoding albums:
