@@ -6,8 +6,10 @@ v1.8.2
  - Added 'paste' and 'clear' buttons to URL input box
  - Improved inbound radio streaming error feedback
  - Tweaked gallery to no longer jump when track advances automatically
+ - Tweaked scroll bar appearence
  - Fixed crash when using radio random
  - Fixed seek bar, track title and playing time display for radio streaming
+ - Fixed player not switching to stopped state when stream ends
  - Fixed a performance leak in playlist config tab
  - Fixed fallback text not truncating to correct length
  - Fixed edge scroll bar hiding on maximised window

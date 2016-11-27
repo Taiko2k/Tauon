@@ -890,6 +890,7 @@ get_len_filepath = ""
 def show_message(text):
     gui.message_box = True
     gui.message_text = text
+    gui.update = 1
 
 
 def get_len_backend(filepath):
@@ -1702,7 +1703,8 @@ def player():
     SyncProc = function_type(None, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p)
     BASS_ChannelSetSync = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int64, SyncProc, ctypes.c_void_p)(
         ('BASS_ChannelSetSync', bass_module))
-
+    BASS_ChannelIsActive = function_type(ctypes.c_ulong, ctypes.c_ulong)(
+        ('BASS_ChannelIsActive', bass_module))
 
     BASS_Mixer_StreamCreate = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_Mixer_StreamCreate', mix_module))
@@ -1712,6 +1714,9 @@ def player():
         ('BASS_Mixer_ChannelRemove', mix_module))
     BASS_Mixer_ChannelSetPosition = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_int64, ctypes.c_ulong)(
         ('BASS_Mixer_ChannelSetPosition', mix_module))
+    BASS_Mixer_ChannelFlags = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
+        ('BASS_Mixer_ChannelFlags', mix_module))
+
 
     DownloadProc = function_type(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
 
@@ -1785,6 +1790,7 @@ def player():
     BASS_SAMPLE_FLOAT = 256
     BASS_STREAM_AUTOFREE = 0x40000
     BASS_MIXER_NORAMPIN = 0x800000
+    BASS_MIXER_PAUSE = 0x20000
 
     if system != 'windows':
         pctl.target_open = pctl.target_open.encode('utf-8')
@@ -2007,6 +2013,12 @@ def player():
                 pctl.tag_meta = pctl.tag_meta.strip("';StreamUrl='")
                 pctl.tag_meta = pctl.tag_meta.strip("Title='")
                         # time.sleep(0.5)
+                if BASS_ChannelIsActive(handle1) == 0:
+                    pctl.playing_state = 0
+                    show_message("The stream has ended or connection lost")
+                    player1_status == p_stopped
+                    pctl.playing_time = 0
+
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
             pctl.broadcast_time += broadcast_timer.hit()
@@ -2195,12 +2207,21 @@ def player():
 
             if pctl.playerCommand == 'encpause' and pctl.broadcast_active:
 
+                #Pause broadcast
                 if pctl.encoder_pause == 0:
                     BASS_ChannelPause(mhandle)
                     pctl.encoder_pause = 1
                 else:
                     BASS_ChannelPlay(mhandle, True)
                     pctl.encoder_pause = 0
+                # if pctl.encoder_pause == 0:
+                #     #BASS_ChannelPause(mhandle)
+                #     BASS_Mixer_ChannelFlags(mhandle, BASS_MIXER_PAUSE, BASS_MIXER_PAUSE)
+                #     pctl.encoder_pause = 1
+                # else:
+                #     #BASS_ChannelPlay(mhandle, True)
+                #     BASS_Mixer_ChannelFlags(mhandle, 0, BASS_MIXER_PAUSE)
+                #     pctl.encoder_pause = 0
 
             if pctl.playerCommand == "encstop":
                 BASS_Encode_Stop(encoder)
@@ -9045,8 +9066,8 @@ class TopPanel:
                 text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
             bg = colours.status_info_text
         elif pctl.join_broadcast and pctl.broadcast_active:
-            text = "Streaming"
-            bg = colours.streaming_text
+            text = "Streaming Synced"
+            bg = [60, 75, 220, 255] #colours.streaming_text
         elif pctl.encoder_pause == 1 and pctl.broadcast_active:
             text = "Streaming Paused"
             bg = colours.streaming_text
@@ -11042,8 +11063,9 @@ while running:
             gui.pl_update = 1
 
         if key_F5:
-            pctl.playerCommand = 'encpause'
-            pctl.playerCommandReady = True
+            show_message("This function is broken, sorry")
+            # pctl.playerCommand = 'encpause'
+            # pctl.playerCommandReady = True
 
         if key_F6:
             pctl.join_broadcast ^= True
@@ -11965,7 +11987,7 @@ while running:
                             if len(default_playlist) == 0:
                                 sbp = panelY
                         else:
-                            sbl = 70
+                            sbl = 105
 
                         fields.add((2, sbp, 20, sbl))
                         if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and not playlist_panel and (mouse_down or right_click)\
@@ -12023,16 +12045,17 @@ while running:
                         # if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[
                         #     0] != 0) or scroll_hold:
                         #     scroll_opacity = 255
-                        draw.rect((1, sbp), (14, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
+                        draw.rect((0, panelY), (17, window_size[1] - panelY - panelBY), [18,18,18, 255], True)
+                        draw.rect((1, sbp), (15, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
 
                         if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                            draw.rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
+                            draw.rect((1, sbp), (15, sbl), [255, 255, 255, 11], True)
                     else:
                         # Combo mode scroll:
                         sy = 31
                         ey = window_size[1] - 30 - 22
 
-                        sbl = 70
+                        sbl = 105
 
                         fields.add((2, sbp, 20, sbl))
                         if coll_point(mouse_position, (0, panelY, 28, ey - panelY)) and not playlist_panel and (
@@ -12092,10 +12115,11 @@ while running:
                                 per = combo_pl_render.pl_pos_px / combo_pl_render.max_y
                                 sbp = int((ey - panelY - sbl) * per) + panelY + 1
 
-                        draw.rect((1, sbp), (14, sbl), colours.scroll_colour, True)
+                        draw.rect((0, panelY), (17, window_size[1] - panelY - panelBY), [18, 18, 18, 255], True)
+                        draw.rect((1, sbp), (15, sbl), colours.scroll_colour, True)
 
                         if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                            draw.rect((1, sbp), (14, sbl), [255, 255, 255, 11], True)
+                            draw.rect((1, sbp), (15, sbl), [255, 255, 255, 11], True)
 
                 # Switch Vis:
 
