@@ -63,7 +63,7 @@ Tip: End the search text with another forward slash to search just for folders w
 
 ### Outbound Streaming:
 
-- Install, configure (optional) and start Icecast. See config.txt for further setup.
+- Install, configure (optional) and start Icecast. See config.txt for optional further setup.
 - From player right click top bar and select 'Start Broadcast' from menu. You should now see an entry in the Icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
 
 The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).
@@ -72,7 +72,7 @@ Warning: Modifying the number of tracks in playlist that appear before the broad
 
 Alternatively, by pressing F6 to enter 'sync' mode, the broadcast will receive commands from the player. The effect of this allows for the listening and control of a stream remotely via the web interface.
 Note: This function is experimental and unreliable. Pausing or stopping the player while in this mode will cause the stream to fail or generate other unexpected behavior
-
+Tip: Higher bitrates may help reduce latency
 
 ### Transcoding albums:
 
