@@ -1,6 +1,6 @@
 ﻿## Tauon Music Box config file
 
-## Fade times in ms. Gapless playback not supported (min 50ms, max 3000ms)
+## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
 pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True
@@ -21,8 +21,9 @@ mediakey=2
 #output-dir=C:\example
 
 ## Icecast mounting. Codec can be MP3, OGG
-## On Windows requires lame.exe or oggenc2.exe in /encoder subdirectory for either codec respectively. 
-## On linux install lame or oggenc(part of vorbis-tools)
+## Note: MP3 setting requires lame. On windows place 'lame.exe' in /encoder directory. On Linux install 'lame' package
+## Tip: Higher bitrates may help reduce latency
+
 icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
