@@ -4,9 +4,13 @@ Changelog-------------------------------------
 v1.8.2
 
  - Added 'paste' and 'clear' buttons to URL input box
+ - Added web track sample link generating function
  - Improved inbound radio streaming error feedback
+ - Improved transcoding error feedback on linux
  - Tweaked gallery to no longer jump when track advances automatically
  - Tweaked scroll bar appearence
+ - Tweaked folder break behavior to select on right click
+ - Added 'copy album artist - album' entry to selection menu
  - Fixed crash when using radio random
  - Fixed seek bar, track title and playing time display for radio streaming
  - Fixed player not switching to stopped state when stream ends
@@ -16,7 +20,8 @@ v1.8.2
  - Fixed jittery gallery scrolling when running visualiser
  - Fixed playlist digit setting sometimes not being enforced
  - Fixed broadcast not sending title and artist to icecast server on first track
- - Seperate oggenc download no longer required for broadcasting
+ - Fixed remote control url to allow trailing forward slash, enabled favicon
+ - Separate oggenc download no longer required for broadcasting
 
 v1.8.0
 

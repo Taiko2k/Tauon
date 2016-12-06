@@ -1793,7 +1793,6 @@ def player():
     BASS_MIXER_PAUSE = 0x20000
 
     if system != 'windows':
-        pctl.target_open = pctl.target_open.encode('utf-8')
         open_flag = 0
     else:
         open_flag = BASS_UNICODE
@@ -2362,6 +2361,8 @@ def player():
                     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
                                          b"genre", b"", b"", int(bitrate), False)
 
+                if BASS_ErrorGetCode() == -1:
+                    show_meassage("Error: Sorry, something isn't working right, maybe an issue with icecast?")
                 channel1 = BASS_ChannelPlay(mhandle, True)
                 print(encoder)
                 print(pctl.broadcast_line)
@@ -2396,6 +2397,8 @@ def player():
             if pctl.playerCommand == 'open' and pctl.target_open != '':
 
                 pctl.playerCommand = ""
+                if system != 'windows':
+                    pctl.target_open = pctl.target_open.encode('utf-8')
 
                 if os.path.isfile(pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath):
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = True
@@ -4283,6 +4286,10 @@ class Menu:
     def render(self):
         if self.active:
 
+            if Menu.switch != self.id:
+                self.active = False
+                return
+
             ytoff = 2
 
             if window_size[1] < 250:
@@ -4290,10 +4297,6 @@ class Menu:
                 ytoff = -1
             else:
                 self.h = self.vertical_size
-
-            if Menu.switch != self.id:
-                self.active = False
-                return
 
             for i in range(len(self.items)):
 
@@ -4392,6 +4395,7 @@ class Menu:
             if self.clicked or key_esc_press:
                 self.active = False
                 self.clicked = False
+
 
             # Render the menu outline
             #draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
@@ -4882,12 +4886,18 @@ def convert_playlist(pl):
         if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
-            show_message("Error: Missing oggenc2.exe from '/encoder' directory")
-            return
+        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
+        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
+        #     return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
             return
+    else:
+        if shutil.which('ffmpeg') is None:
+            show_message("Error: FFMPEG does not appear to be installed")
+            return
+        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
+            show_message("Error: LAME does not appear to be installed")
 
     paths = []
 
@@ -5242,7 +5252,7 @@ def activate_track_box(index):
 
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
-track_menu.add_sub("Meta...", 120)
+track_menu.add_sub("Meta...", 130)
 track_menu.add_sub("Remove/Copy/Insert...", 135)
 
 
@@ -5379,6 +5389,56 @@ if prefs.tag_editor_name != "":
 track_menu.add_to_sub("Fix Mojibake...", 0, activate_encoding_box, pass_ref=True)
 
 
+class Samples:
+
+    def __init__(self):
+        self.cache_directroy = os.path.join(user_directory, 'web') + "/"
+        self.auth = {}
+
+    def create_sample(self, index):
+
+        show_message("Generating link...")
+        if not os.path.exists(self.cache_directroy):
+            os.makedirs(self.cache_directroy)
+
+        agg = [index]
+        loaderThread = threading.Thread(target=self.next, args=agg)
+        loaderThread.daemon = True
+        loaderThread.start()
+
+
+
+    def next(self, index):
+
+        for key, value in self.auth.items():
+            if value == index:
+                name = key
+                filename = samples.cache_directroy + key
+                if os.path.isfile(filename):
+                    copy_to_clipboard("http://localhost:" + str(server_port) + "/sample/" + key)
+                    show_message("Link copied to clipboard")
+                    return
+
+        name = str(index) + "-" + str(random.randrange(11111, 99999))
+        filename = samples.cache_directroy + name
+        if os.path.isfile(filename):
+            os.remove(filename)
+
+        self.auth[name] = index
+        transcode_single(index, self.cache_directroy, name)
+        copy_to_clipboard("http://localhost:7590/sample/" + name)
+        show_message("Done, link copied to clipboard")
+        if not prefs.expose_web:
+            show_message("Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
+
+samples = Samples()
+
+if (system == 'windows' and os.path.isfile(install_directory + '/encoder/ffmpeg.exe')) or \
+        (system != 'windows' and shutil.which('ffmpeg') is not None):
+    if prefs.enable_web: #and prefs.expose_web:
+        track_menu.add_to_sub("Generate Websample", 0, samples.create_sample, pass_ref=True)
+
+
 def sel_to_car():
     global cargo
     global default_playlist
@@ -5461,6 +5521,16 @@ def ser_rym(index):
 def copy_to_clipboard(text):
     SDL_SetClipboardText(text.encode('utf-8'))
 
+def clip_aar_al(index):
+    if pctl.master_library[index].album_artist == "":
+        line = pctl.master_library[index].artist + " - " + \
+               pctl.master_library[index].album
+    else:
+        line = pctl.master_library[index].album_artist + " - " + \
+               pctl.master_library[index].album
+    SDL_SetClipboardText(line.encode('utf-8'))
+selection_menu.add('Copy "Album Artist - Album"', clip_aar_al, pass_ref=True)
+
 def clip_ar_al(index):
     line = pctl.master_library[index].artist + " - " + \
            pctl.master_library[index].album
@@ -5469,6 +5539,7 @@ def clip_ar_al(index):
 if prefs.show_rym:
     track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
 track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
+
 
 
 def clip_ar_tr(index):
@@ -6133,18 +6204,26 @@ view_menu.add("Album Art + Tracks", toggle_combo_view)
 
 core_use = 0
 
-def transcode_single(item):
+def transcode_single(item, manual_directroy=None, manual_name=None):
 
     global core_use
 
-    track = item[0]
+    if manual_directroy != None:
+        codec = "opus"
+        output = manual_directroy
+        track = item
+        core_use += 1
+        bitrate = 48
+    else:
+        track = item[0]
+        codec = prefs.transcode_codec
+        output = prefs.encoder_output + item[1] + "/"
+        bitrate = prefs.transcode_bitrate
 
     if not os.path.isfile(pctl.master_library[track].fullpath):
         show_message("Encoding warning: Missing one or more files")
         core_use -= 1
         return
-
-    output_dir = prefs.encoder_output + item[1] + "/"
 
     t = pctl.master_library[track]
     if t.is_cue:
@@ -6156,7 +6235,7 @@ def transcode_single(item):
     else:
         out_line = os.path.splitext(pctl.master_library[track].filename)[0]
 
-    target_out = output_dir + 'output' + str(track) + "." + prefs.transcode_codec
+    target_out = output + 'output' + str(track) + "." + codec
 
     command = install_directory + "/encoder/ffmpeg "
 
@@ -6189,7 +6268,7 @@ def transcode_single(item):
             command += '-metadata year="' + str(t.date).replace('"', "").replace("'", "") + '" '
 
 
-    command += " -b:a " + str(prefs.transcode_bitrate) + "k "
+    command += " -b:a " + str(bitrate) + "k "
     command += '"' + target_out + '"'
 
         # command += full_wav_out
@@ -6207,8 +6286,10 @@ def transcode_single(item):
     print("done")
 
     print(target_out)
-
-    os.rename(target_out, output_dir + out_line + "." + prefs.transcode_codec)
+    if manual_name is None:
+        os.rename(target_out, output + out_line + "." + codec)
+    else:
+        os.rename(target_out, output + manual_name + "." + codec)
     core_use -= 1
 
 # LOADER----------------------------------------------------------------------
@@ -7296,7 +7377,7 @@ def webserv():
     font-size: 85%;
      }
     </style>
-
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     </head>
 
     <body>
@@ -7372,6 +7453,7 @@ def webserv():
     font-family:sans-serif;
      }
     </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     </head>
 
     <body>
@@ -7385,8 +7467,36 @@ def webserv():
     </html>
     """)
 
+    sample_template = Template("""<!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <title>Track Preview</title>
 
-    @app.route('/remote')
+    <style>
+    body {background-color:#1A1A1A;
+    font-family:sans-serif;
+    }
+    p {
+    color:#D1D1D1;
+    font-family:sans-serif;
+     }
+    </style>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    </head>
+
+    <body>
+    <br>
+    <p><br> <br> <br>
+    $image
+    <br> <br>  &nbsp; &nbsp; &nbsp; $play
+    </p>
+    </body>
+
+    </html>
+    """)
+
+    @app.route('/remote/')
     def remote():
 
         if not prefs.allow_remote:
@@ -7461,9 +7571,9 @@ def webserv():
                                           seekbar=seek_line
                                           )
 
-    @app.route('/radio')
+    @app.route('/radio/')
     def radio():
-        global pctl
+
         image_line = '<img src="data:image/jpeg;base64,'
         bimage = album_art_gen.get_base64(pctl.broadcast_index, (300, 300))
         if type(bimage) is list:
@@ -7473,6 +7583,43 @@ def webserv():
             image_line += '" alt="No Album Art" style="float:left;" />'
 
         return radio_template.substitute(play=get_broadcast_line(), image=image_line)
+
+    @app.route('/sample/<string:key>/')
+    def sample(key):
+        if key in samples.auth:
+            index = samples.auth[key]
+        else:
+            abort(404)
+            return 0
+
+        image_line = '<img src="data:image/jpeg;base64,'
+        bimage = album_art_gen.get_base64(index, (250, 250))
+        if type(bimage) is list:
+            image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
+        else:
+            image_line += bimage.decode("utf-8")
+            image_line += '" alt="No Album Art" style="float:left;" />'
+        play_line = "<br>&nbsp&nbsp" + pctl.master_library[index].artist + " - " + pctl.master_library[index].title
+        play_line += "<br><br>&nbsp&nbsp" + '<audio controls> <source src="' + '/scache/' + key + '.opus'
+        play_line += '" type="audio/ogg"></audio>'
+        return sample_template.substitute(play=play_line, image=image_line)
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_file(install_directory + "/gui/v2.ico", mimetype='image/vnd.microsoft.icon')
+
+    @app.route('/scache/<string:key>')
+    def get_sample(key):
+        # if "/" in key or "\\" in key:
+        #     return 0
+        filename = samples.cache_directroy + key
+        print(key)
+        print(filename)
+        if os.path.isfile(filename):
+            return send_file(filename, mimetype='audio/ogg')
+        else:
+            abort(404)
+            return 0
 
     @app.route('/remote/pl-up')
     def pl_up():
@@ -10062,8 +10209,16 @@ class StandardPlaylist:
                             goto_album(pctl.playlist_playing)
 
                     # Show selection menu if right clicked after select
-                    if right_click and len(shift_selection) > 1:
+                    if right_click: # and len(shift_selection) > 1:
                         selection_menu.activate(default_playlist[p_track])
+                        gui.pl_update = 1
+                        if p_track not in shift_selection:
+                            shift_selection = []
+                            playlist_selected = p_track
+                            u = p_track
+                            while u < len(default_playlist) and n_track.parent_folder_path == pctl.master_library[default_playlist[u]].parent_folder_path:
+                                shift_selection.append(u)
+                                u += 1
 
                     # Add folder to selection if clicked
                     if mouse_click:
@@ -13991,6 +14146,9 @@ pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
+
+if os.path.exists(samples.cache_directroy):
+    shutil.rmtree(samples.cache_directroy)
 
 # r_window.destroy()
 if system == 'windows':
