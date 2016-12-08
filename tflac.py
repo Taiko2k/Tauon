@@ -54,6 +54,7 @@ class Flac:
         self.encoder = ""
         self.disc_number = ""
         self.picture = ""
+        self.disc_total = ""
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -126,7 +127,8 @@ class Flac:
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
                         self.artist = b.decode("utf-8")
-
+                    elif a == 'disctotal' or a == 'totaldiscs':
+                        self.disc_total = b.decode("utf-8")
 
         #print("len total: " + str(block_position))
         sss = f.seek(block_position * -1, 1)
@@ -277,6 +279,7 @@ class Opus:
         self.title = ""
         self.encoder = ""
         self.disc_number = ""
+        self.disc_total = ""
         self.picture = ""
 
         self.sample_rate = 48000
@@ -323,6 +326,8 @@ class Opus:
         header = struct.unpack('<4sBBqIIiB', f.read(27))
         #print(header)
 
+        start_position_a = f.tell()
+
         s = f.read(header[7])
         #print(s)
 
@@ -350,11 +355,15 @@ class Opus:
 
         s = f.read(4)
         number = int.from_bytes(s, byteorder='little')
+        #print('number')
         #print(number)
         for i in range(number):
             s = f.read(4)
             length = int.from_bytes(s, byteorder='little')
             s = f.read(length)
+            #print(s)
+
+            #print("Length = " + str(length))
 
             #print(s.decode('utf-8'))
 
@@ -371,7 +380,7 @@ class Opus:
                     a = s[0:position].decode("utf-8").lower()
                     b = s[position + 1:]
 
-                    # print(a)
+                    #print(a)
                     # print(b)
 
                     if a == "genre":
@@ -396,81 +405,169 @@ class Opus:
                         self.artist = b.decode("utf-8")
                     elif a == "metadata_block_picture" and False:
                         self.has_picture = True
-                        #self.picture = b
+                        print("Found picture block")
+                        # import base64
+                        # import io
 
-                        print(b)
-                        import base64
-                        import io
-                        # ss = io.BytesIO()
-                        # bb = io.BytesIO(b)
-                        # base64.decode(bb, ss)
+                        # ee = base64.b64decode(b[0:500])
+                        #
+                        # # return
+                        #
+                        # ss = io.BytesIO(ee)
                         # ss.seek(0)
-
-
-                        ee = base64.b64decode(b)
-                        ss = io.BytesIO(ee)
-                        ss.seek(0)
-
-                        z = ss.read(4)
-                        print(int.from_bytes(z, byteorder='big'))
-
-                        ss.seek(0)
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Picture type: " + str(qqq))
-                        qqq = ss.read(4)
-                        b = int.from_bytes(qqq, byteorder='big')
-                        print("MIME len: " + str(b))
-
-                        qqq = ss.read(b)
-                        # print(qqq)
-                        print("MIME: " + qqq.decode('ascii'))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Description len: " + str(qqq))
-
-                        qqq = ss.read(qqq)
-                        print("Description: " + qqq.decode('utf-8'))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Width: " + str(qqq))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Height: " + str(qqq))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("BPP: " + str(qqq))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Index colour: " + str(qqq))
-
-                        qqq = ss.read(4)
-                        qqq = int.from_bytes(qqq, byteorder='big')
-                        print("Bin len: " + str(qqq))
-
-                        self.has_picture = True
-                        self.picture = ss.read(qqq)
-                        print(self.picture)
-
-                        print("HAS PICTURE")
-                        #print(self.picture)
-                        # print(len(data))
-
-
-                        # print(ss.read(50))
+                        #
+                        # # z = ss.read(4)
+                        # # print(int.from_bytes(z, byteorder='big')) # Type
+                        # #
+                        # # ss.seek(0)
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Picture type: " + str(qqq))
+                        # qqq = ss.read(4)
+                        # b = int.from_bytes(qqq, byteorder='big')
+                        # print("MIME len: " + str(b))
+                        #
+                        # qqq = ss.read(b)
+                        # # print(qqq)
+                        # print("MIME: " + qqq.decode('ascii'))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Description len: " + str(qqq))
+                        #
+                        # qqq = ss.read(qqq)
+                        # print("Description: " + qqq.decode('utf-8'))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Width: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Height: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("BPP: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Index colour: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Bin len: " + str(qqq))
+                        # b_len = str(qqq)
+                        #
+                        # f.seek(start_position_a)
+                        # #header = struct.unpack('<4sBBqIIiB', f.read(27))
+                        # segs = struct.unpack('B' * header[7], f.read(header[7]))
+                        # k = b""
+                        # for p in segs:
+                        #     k += f.read(p)
+                        #
+                        # mmp = 0
+                        # while k[mmp:mmp+23] != b'METADATA_BLOCK_PICTURE=':
+                        #     mmp += 1
+                        #     if mmp > 50000:
+                        #         return
+                        # mmp += 23
+                        # k = k[mmp:]
+                        #
+                        #
+                        #
+                        # while len(k) < qqq * 1.5:
+                        #     header = struct.unpack('<4sBBqIIiB', f.read(27))
+                        #     segs = struct.unpack('B' * header[7], f.read(header[7]))
+                        #     for p in segs:
+                        #         k += f.read(p)
+                        #     #print(len(k))
+                        #
+                        # print(k[0:30]) # Preview start of block
+                        # print(k[-30:]) # Preview end of block
+                        #
+                        #
+                        #
+                        # # print(len(b) / 4)
+                        # # print(len(b) * 8)
+                        # print('start decode')
+                        # #ee = base64.b64decode(k + b'===')
+                        # ss = io.BytesIO(base64.b64decode(k + b'==='))
+                        # # return
+                        #
+                        # #ss = io.BytesIO(ee)
                         # ss.seek(0)
-                        # print(struct.unpack('>i4s8s', ss.read(16)))
-                        # 
-                        # print(ss)
+                        #
+                        # # z = ss.read(4)
+                        # # print(int.from_bytes(z, byteorder='big')) # Type
+                        # #
+                        # # ss.seek(0)
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Picture type: " + str(qqq))
+                        # qqq = ss.read(4)
+                        # b = int.from_bytes(qqq, byteorder='big')
+                        # print("MIME len: " + str(b))
+                        #
+                        # qqq = ss.read(b)
+                        # # print(qqq)
+                        # print("MIME: " + qqq.decode('ascii'))
+                        #
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Description len: " + str(qqq))
+                        #
+                        # qqq = ss.read(qqq)
+                        # print("Description: " + qqq.decode('utf-8'))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Width: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Height: " + str(qqq))
+                        #
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("BPP: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Index colour: " + str(qqq))
+                        #
+                        # qqq = ss.read(4)
+                        # qqq = int.from_bytes(qqq, byteorder='big')
+                        # print("Bin len: " + str(qqq))
+                        #
+                        #
+                        # self.has_picture = True
+                        # self.picture = ss.read(qqq)
+                        #
+                        # print(ss.read(100))
+                        #
+                        # #print(self.picture)
+                        #
+                        # print("HAS PICTURE")
+                        # #print(self.picture)
+                        # # print(len(data))
+                        # with open('test.jpg', 'wb') as w:
+                        #     w.write(self.picture)
+                        #
+                        # # print(ss.read(50))
+                        # # ss.seek(0)
+                        # # print(struct.unpack('>i4s8s', ss.read(16)))
+                        # #
+                        # # print(ss)
 
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
+                    elif a == 'disctotal' or a == 'totaldiscs':
+                        self.disc_total = b.decode("utf-8")
 
                     break
 
@@ -497,7 +594,7 @@ class Opus:
 
 
 
-# file = 'd.ogg'
+# file = 'a.ogg'
 #
 # item = Opus(file)
 # item.read()

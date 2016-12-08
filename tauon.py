@@ -668,6 +668,8 @@ class TrackClass:
         self.found = True
         self.skips = 0
         self.comment = ""
+        self.disc_number = ""
+        self.disc_total = ""
 
 class LoadClass:
 
@@ -783,6 +785,12 @@ if db_version == 1.1:
     for key, value in master_library.items():
         setattr(master_library[key], 'album_artist', "")
 
+if db_version == 1.2:
+    print("Updating database from version 1.2 to 1.3")
+    for key, value in master_library.items():
+        setattr(master_library[key], 'disc_number', "")
+        setattr(master_library[key], 'disc_total', "")
+
 # LOADING CONFIG
 player_config = "BASS"
 
@@ -893,6 +901,18 @@ def show_message(text):
     gui.update = 1
 
 
+def get_global_mouse():
+    i_y = pointer(c_int(0))
+    i_x = pointer(c_int(0))
+    SDL_GetGlobalMouseState(i_x, i_y)
+    return (i_x.contents.value, i_y.contents.value)
+
+def get_window_position():
+    i_y = pointer(c_int(0))
+    i_x = pointer(c_int(0))
+    SDL_GetWindowPosition(t_window, i_x, i_y)
+    return (i_x.contents.value, i_y.contents.value)
+
 def get_len_backend(filepath):
     global get_len
     global get_len_filepath
@@ -946,6 +966,7 @@ def tag_scan(nt):
             nt.track_number = audio.track_number
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
+            nt.disc_number = audio.disc_number
 
             return nt
 
@@ -968,6 +989,7 @@ def tag_scan(nt):
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
             nt.bitrate = audio.bit_rate
+            nt.disc_number = audio.disc_number
             return nt
 
         else:
@@ -996,10 +1018,14 @@ def tag_scan(nt):
             if nt.file_ext == "MP3":
                 tag = stagger.read_tag(nt.fullpath)
                 nt.album_artist = tag.album_artist
+                nt.disc_number = tag.disc
+                nt.disc_total = tag.disc_total
 
             return nt
     except:
+        print("Warning: Tag read error")
         return nt
+
 
 
 
@@ -4872,6 +4898,7 @@ def clear_playlist(index):
         reload()
 
     # pctl.playlist_playing = 0
+    pctl.multi_playlist[index][3] = 0
 
     gui.pl_update = 1
 
@@ -5038,6 +5065,8 @@ def sort_track_2(pl):
 
     def index_key(index):
         s = str(pctl.master_library[index].track_number)
+        if pctl.master_library[index].disc_number != "":
+            s = str(pctl.master_library[index].disc_number) + "d" + s
         if s == "":
             s = pctl.master_library[index].filename
         try:
@@ -5819,7 +5848,7 @@ def export_stats():
         line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
 
     line = line.encode('utf-8')
-    xport = open('stats.txt', 'wb')
+    xport = open(user_directory + '/stats.txt', 'wb')
     xport.write(line)
     xport.close()
     target = os.path.join(install_directory, "stats.txt")
@@ -5833,7 +5862,7 @@ def export_stats():
 
 def export_database():
 
-    xport = open('DatabaseExport.csv', 'wb')
+    xport = open(user_directory + '/DatabaseExport.csv', 'wb')
     for index, track in pctl.master_library.items():
 
         line = []
@@ -10844,11 +10873,29 @@ while running:
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
-            i_y = pointer(c_int(0))
-            i_x = pointer(c_int(0))
-            SDL_GetMouseState(i_x, i_y)
-            i_y = i_y.contents.value
-            i_x = i_x.contents.value
+
+            if system != 'windows':
+                gmp = get_global_mouse()
+                gwp = get_window_position()
+                i_x = gmp[0] - gwp[0]
+                if i_x < 0:
+                    i_x = 0
+                if i_x > window_size[0]:
+                    i_x = window_size[0]
+                i_y = gmp[1] - gwp[1]
+                if i_y < 0:
+                    i_y = 0
+                if i_y > window_size[1]:
+                    i_y = window_size[1]
+            else:
+                i_y = pointer(c_int(0))
+                i_x = pointer(c_int(0))
+
+                SDL_GetMouseState(i_x, i_y)
+                i_y = i_y.contents.value
+                i_x = i_x.contents.value
+
+            # print((i_x, i_y))
             playlist_target = 0
 
             if i_y < panelY and not new_playlist_cooldown:
@@ -11247,6 +11294,8 @@ while running:
             #bottom_bar1.set_mode2()
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
+            for item in default_playlist:
+                print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
 
             # key_F7 = False
 
@@ -14110,7 +14159,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.2,  # version (unused)
+        1.3,  # Version
         view_prefs,
         gui.save_size,
         side_panel_size,
