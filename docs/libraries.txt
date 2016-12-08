@@ -9,6 +9,7 @@ bassenc.dll
 bassflac.dll
 bassmix.dll
 bassopus.dll
+bassenc_opus.dll
 libfreetype-6.dll
 libjpeg-9.dll
 libpng16-16.dll
@@ -26,8 +27,9 @@ libbassenc.so
 libbassflac.so
 libbassmix.so
 libbassopus.so
+libbassenc_ogg.so
 
-OSX:
+OSX: (list may be outdated)
 
 libbass.dylib
 libbass_aac.dylib

@@ -110,7 +110,7 @@ There is currently no built in support for tag editing.
 An external tag editor can be used. See config.txt for linking to an external editor from the track menu (Track menu -> Meta... -> Edit tags with Editor). Is configured for MusicBrainz Picard by default.
 
 Tip: While editing tracks externally, make sure not to change the track file names.  
-Bug: Linking to Picard fails with unicode paths on windows
+Bug: Linking to Picard fails with Unicode paths on windows
 
 
 To remove embedded album art from files (mp3 only): Right click track -> Track Info... -> SHIFT+2
