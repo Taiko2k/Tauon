@@ -10783,8 +10783,6 @@ update_layout = True
 
 event = SDL_Event()
 
-print("Initialization Complete")
-
 mouse_moved = False
 
 power = 0
@@ -10798,8 +10796,14 @@ for item in r_arg_queue:
 
 SDL_ShowWindow(t_window)
 SDL_RenderPresent(renderer)
+
+sv = SDL_version()
+SDL_GetVersion(sv)
+sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
+print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 # time.sleep(13)
 # C-ML
+print("Initialization Complete")
 
 while running:
     # bm.get('main')
@@ -10874,7 +10878,7 @@ while running:
             power += 5
             k = 0
 
-            if system != 'windows':
+            if system != 'windows' and sdl_version >= 204:
                 gmp = get_global_mouse()
                 gwp = get_window_position()
                 i_x = gmp[0] - gwp[0]
@@ -14211,7 +14215,8 @@ if system == 'windows':
 
 else:
     print("Skipping closing SDL cleanly")
-    hookman.cancel()
+    if mediakeymode == 2:
+        hookman.cancel()
 
 while pctl.playerCommand != 'done':
     time.sleep(0.2)
