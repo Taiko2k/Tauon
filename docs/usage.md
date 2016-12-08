@@ -9,18 +9,20 @@ For best experience it is recommended to have an organized and structured music 
 
 - Drag and drop files and folders from your file manager.
 
-- Importing can take a while for large music collections. After importing, right click playlist tab and select 'Sort Tracks' to ensure tracks are ordered correctly.
+- Importing can take a while for large music collections. After importing, right click playlist tab and select 'Sort Track Numbers' to ensure tracks are ordered correctly.
+
+Tip: Try importing all your music to a single playlist to get started
+Quirk: If a music file has an associated .cue file, they needed to be imported together within a folder and not individually otherwise the .cue file may not be detected.
 
 ### Updating Library
 
-- Clear playlist and re-import.
-
+- Clear playlist and re-import. It should be faster the 2nd time.
 
 ### Track Navigation
 
 - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
 - With random mode on, 'Back' plays songs from playback history.
-
+- Right click the play button to jump playlist to the playing track. If an identical track appears in the open playlist it will be jumped to instead.
 
 ### Quick Search
 
@@ -41,22 +43,22 @@ Tip: End the search text with another forward slash to search just for folders w
 ![Screenshot - Panel](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/panel-guide.png)
 
 
-### Tips and Quirks
+### Playlist Scrolling
 
- - Tip: Try importing all your music to a single playlist to get started
- - Tip: Right click the play button to jump to the playing track. If an identical track appears in the open playlist it will be jumped to instead.
+ - The playlist scroll bar is to the left of the playlist, hidden until you mouse over it
+ - Click above or below the scroll bar to scroll quickly in that direction
+ - Right click anywhere in the scroll field to jump immediately to that location
 
- - Tip: The playlist scroll bar is to the left of the playlist, hidden until you mouse over it
- - Tip: Click above or below the scroll bar to scroll fast in that direction.
- - Tip: Right click anywhere in the scroll field to jump to that location
+### Moving Playlists and Tracks
 
- - Tip: You can copy a single track quickly to another playlist by dragging it to another playlists tab. (There's currently no drag animation however you will see a small red + sign on the tab to show this will work)
- - Tip: Playlist tabs and be rearranged by dragging them (There's currently no UI indicator for this function)
- - Tip: To move a block of tracks; click the first track, then while holding shift click the last track, then click and drag while holding shift
- - Tip: Right click albums in album grid view to jump the playlist to their location
- - Tip: If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
+ - Playlists can be rearranged by dragging them
+ - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
+ - Single tracks can be moved within a playlist by holding shift and dragging
+ - To move a block of tracks; click the first track, then while holding shift click the last track, then click and drag while holding shift
 
- - Quirk: If a track has an associated .cue file, they needed to be imported together within a folder and not individually otherwise the .cue file may not be detected
+### Quirks
+
+ - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
  - Quirk: Although it is possible to open tracks via file association, this is not the recommended way of importing music. A different application would be better for this purpose.
  - Quirk: There is no playlist repeat function, player will stop once it reaches the end of a playlist (Broadcasting will repeat from the top however)
  - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Playtimes are periodically saved however.
@@ -116,14 +118,14 @@ To remove embedded album art from files (mp3 only): Right click track -> Track I
 
 ### Importing/Exporting Playlists
 
-Playlists can be backed up and shared using the XSPF playlist file format.
+Playlists can be backed up, shared and imported using the XSPF playlist file format.
 
-To import; drag and drop XSPF playlist file onto program window. (Any playlist files in subfolders will be ignored)
+To import; drag and drop XSPF playlist file onto program window. (Any playlist files inside folders will be ignored)
 
 To export; right click playlist tab and select Export.
 
 Note: Its best to import any corresponding audio files before importing playlists.  
-Note: Importing large playlists can take a very long time, cleaning database beforehand (MENU->Database->Remove Missing Tracks) may help speed this up.  
+Note: Importing large playlists can take a long time, cleaning database beforehand (MENU->Database->Remove Missing Tracks) may help speed this up.  
 Note: Some tracks with strange characters in metadata may cause process to fail.  
 Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
 
