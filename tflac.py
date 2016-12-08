@@ -403,7 +403,7 @@ class Opus:
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
                         self.artist = b.decode("utf-8")
-                    elif a == "metadata_block_picture" and False:
+                    elif a == "metadata_block_picture" and False: # This code kind of works but i've disabled it because its slow and untested
                         self.has_picture = True
                         print("Found picture block")
                         # import base64
