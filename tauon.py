@@ -4524,7 +4524,290 @@ playlist_menu.add('Paste', append_here, paste_deco)
 # Create playlist tab menu
 tab_menu = Menu(160)
 
-tab_menu.add_sub("Create Sorted Playlist...", 110)
+
+
+def rename_playlist(index):
+    global rename_playlist_box
+    global rename_index
+
+    rename_playlist_box = True
+    rename_index = index
+    rename_text_area.text = ""
+
+
+tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True, hint="Ctrl+R")
+
+def export_xspf(pl):
+
+    if len(pctl.multi_playlist[pl][2]) < 1:
+        show_message("There are no tracks in this playlist. Nothing to export")
+        return
+
+    direc = os.path.join(user_directory, 'playlists')
+    if not os.path.exists(direc):
+        os.makedirs(direc)
+    target = os.path.join(direc, pctl.multi_playlist[pl][0] + '.xspf')
+
+    xport = open(target, 'w', encoding='utf-8')
+    xport.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    xport.write('<playlist version="1" xmlns="http://xspf.org/ns/0/">\n')
+    xport.write('  <trackList>\n')
+
+    for number in pctl.multi_playlist[pl][2]:
+        track = pctl.master_library[number]
+        xport.write('    <track>\n')
+        if track.title != "":
+            xport.write('      <title>' + escape(track.title) + '</title>\n')
+        if track.is_cue is False and track.fullpath != "":
+            xport.write('      <location>file:///' + escape(track.fullpath) + '</location>\n')
+        if track.artist != "":
+            xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
+        if track.album != "":
+            xport.write('      <album>' + escape(track.album) + '</album>\n')
+        xport.write('      <duration>' + str(track.length * 1000) + '</duration>\n')
+        xport.write('    </track>\n')
+    xport.write('  </trackList>\n')
+    xport.write('</playlist>\n\n')
+    xport.close()
+
+    if system == 'windows':
+        line = r'explorer /select,"%s"' % (
+            target.replace("/", "\\"))
+        subprocess.Popen(line)
+    else:
+        line = direc
+        line += "/"
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
+
+# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
+
+def reload():
+
+    if album_mode:
+        reload_albums(quiet=True)
+    elif gui.combo_mode:
+        reload_albums(quiet=True)
+        combo_pl_render.prep()
+
+def clear_playlist(index):
+
+    global default_playlist
+
+    pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[index])
+
+    del pctl.multi_playlist[index][2][:]
+    if pctl.playlist_active == index:
+        default_playlist = pctl.multi_playlist[index][2]
+        reload()
+
+    # pctl.playlist_playing = 0
+    pctl.multi_playlist[index][3] = 0
+
+    gui.pl_update = 1
+
+
+
+
+def convert_playlist(pl):
+
+    global transcode_list
+
+    if system == 'windows':
+        if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
+            show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
+            return
+        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
+        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
+        #     return
+        if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
+            show_message("Error: Missing lame.exe from '/encoder' directory")
+            return
+    else:
+        if shutil.which('ffmpeg') is None:
+            show_message("Error: FFMPEG does not appear to be installed")
+            return
+        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
+            show_message("Error: LAME does not appear to be installed")
+
+    paths = []
+
+    for track in pctl.multi_playlist[pl][2]:
+        if pctl.master_library[track].parent_folder_path not in paths:
+            paths.append(pctl.master_library[track].parent_folder_path)
+
+    for path in paths:
+        folder = []
+        for track in pctl.multi_playlist[pl][2]:
+            if pctl.master_library[track].parent_folder_path == path:
+                folder.append(track)
+        transcode_list.append(folder)
+        print(1)
+        print(transcode_list)
+
+
+def get_folder_tracks_local(pl_in):
+
+    selection = []
+    parent = pctl.master_library[default_playlist[pl_in]].parent_folder_name
+    while pl_in < len(default_playlist) and parent == pctl.master_library[default_playlist[pl_in]].parent_folder_name:
+        selection.append(pl_in)
+        pl_in += 1
+    return selection
+
+tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
+
+
+def move_playlist(source, dest):
+
+    global default_playlist
+    if dest > source:
+        dest += 1
+
+    active = pctl.multi_playlist[pctl.active_playlist_playing]
+    view = pctl.multi_playlist[pctl.playlist_active]
+
+    temp = pctl.multi_playlist[source]
+    pctl.multi_playlist[source] = "old"
+    pctl.multi_playlist.insert(dest, temp)
+    pctl.multi_playlist.remove("old")
+
+    pctl.active_playlist_playing = pctl.multi_playlist.index(active)
+    pctl.playlist_active = pctl.multi_playlist.index(view)
+    default_playlist = default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
+
+
+def delete_playlist(index):
+
+    global default_playlist
+    global playlist_position
+    global mouse_click
+
+    gui.pl_update = 1
+    gui.update += 1
+
+    if len(pctl.multi_playlist) < 2:
+
+        pctl.multi_playlist = []
+        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        default_playlist = pctl.multi_playlist[0][2]
+        return
+
+    if index == pctl.playlist_active and len(pctl.multi_playlist) == 1:
+        pctl.playlist_active = 0
+        pctl.playlist_playing = 0
+        default_playlist = []
+        playlist_position = 0
+    elif index == pctl.playlist_active and index > 0:
+        pctl.playlist_active -= 1
+        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
+        default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
+        playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
+    elif index < pctl.playlist_active and pctl.playlist_active > 0:
+        pctl.playlist_active -= 1
+    elif index == pctl.playlist_active == 0 and len(pctl.multi_playlist) > 1:
+        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active + 1][1]
+        default_playlist = pctl.multi_playlist[pctl.playlist_active + 1][2]
+        playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
+
+    pctl.active_playlist_playing = pctl.playlist_active
+    pctl.playlist_backup = pctl.multi_playlist[index]
+    del pctl.multi_playlist[index]
+    reload()
+
+tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
+tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
+tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
+
+
+def append_playlist(index):
+    global cargo
+    global pctl
+    global gui
+    pctl.multi_playlist[index][2] += cargo
+
+    gui.pl_update = 1
+    reload()
+
+
+def drop_deco():
+    if len(cargo) > 0:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+    return [line_colour, [0, 0, 0, 255], None]
+
+
+tab_menu.add('Paste', append_playlist, paste_deco, pass_ref=True)
+
+
+def append_current_playing(index):
+
+    if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
+        pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
+        gui.pl_update = 1
+
+def sort_track_2(pl):
+    current_folder = ""
+    albums = []
+    playlist = pctl.multi_playlist[pl][2]
+
+    for i in range(len(playlist)):
+        if i == 0:
+            albums.append(i)
+            current_folder = pctl.master_library[playlist[i]].parent_folder_name
+        else:
+            if pctl.master_library[playlist[i]].parent_folder_name != current_folder:
+                current_folder = pctl.master_library[playlist[i]].parent_folder_name
+                albums.append(i)
+
+    def tryint(s):
+        try:
+            return int(s)
+        except:
+            return s
+
+    def index_key(index):
+        s = str(pctl.master_library[index].track_number)
+        if pctl.master_library[index].disc_number != "":
+            s = str(pctl.master_library[index].disc_number) + "d" + s
+        if s == "":
+            s = pctl.master_library[index].filename
+        try:
+            return [tryint(c) for c in re.split('([0-9]+)', s)]
+        except:
+            return "a"
+
+    i = 0
+    while i < len(albums) - 1:
+        playlist[albums[i]:albums[i+1]] = sorted(playlist[albums[i]:albums[i+1]], key=index_key )
+        i += 1
+    if len(albums) > 0:
+        playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
+
+
+
+tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
+
+
+def sort_path_pl(pl):
+
+    global default_playlist
+
+    def path(index):
+
+        return pctl.master_library[index].fullpath
+
+    playlist = pctl.multi_playlist[pl][2]
+    pctl.multi_playlist[pl][2] = sorted(playlist, key=path)
+    default_playlist = pctl.multi_playlist[pl][2]
+
+tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
+
+
+tab_menu.add_sub("Sort To New...", 110)
 
 
 def new_playlist():
@@ -4818,287 +5101,6 @@ def gen_sort_album(index):
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
-
-
-def rename_playlist(index):
-    global rename_playlist_box
-    global rename_index
-
-    rename_playlist_box = True
-    rename_index = index
-    rename_text_area.text = ""
-
-
-tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True, hint="Ctrl+R")
-
-def export_xspf(pl):
-
-    if len(pctl.multi_playlist[pl][2]) < 1:
-        show_message("There are no tracks in this playlist. Nothing to export")
-        return
-
-    direc = os.path.join(user_directory, 'playlists')
-    if not os.path.exists(direc):
-        os.makedirs(direc)
-    target = os.path.join(direc, pctl.multi_playlist[pl][0] + '.xspf')
-
-    xport = open(target, 'w', encoding='utf-8')
-    xport.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-    xport.write('<playlist version="1" xmlns="http://xspf.org/ns/0/">\n')
-    xport.write('  <trackList>\n')
-
-    for number in pctl.multi_playlist[pl][2]:
-        track = pctl.master_library[number]
-        xport.write('    <track>\n')
-        if track.title != "":
-            xport.write('      <title>' + escape(track.title) + '</title>\n')
-        if track.is_cue is False and track.fullpath != "":
-            xport.write('      <location>file:///' + escape(track.fullpath) + '</location>\n')
-        if track.artist != "":
-            xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
-        if track.album != "":
-            xport.write('      <album>' + escape(track.album) + '</album>\n')
-        xport.write('      <duration>' + str(track.length * 1000) + '</duration>\n')
-        xport.write('    </track>\n')
-    xport.write('  </trackList>\n')
-    xport.write('</playlist>\n\n')
-    xport.close()
-
-    if system == 'windows':
-        line = r'explorer /select,"%s"' % (
-            target.replace("/", "\\"))
-        subprocess.Popen(line)
-    else:
-        line = direc
-        line += "/"
-        if system == 'mac':
-            subprocess.Popen(['open', line])
-        else:
-            subprocess.Popen(['xdg-open', line])
-
-# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
-
-def reload():
-
-    if album_mode:
-        reload_albums(quiet=True)
-    elif gui.combo_mode:
-        reload_albums(quiet=True)
-        combo_pl_render.prep()
-
-def clear_playlist(index):
-
-    global default_playlist
-
-    pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[index])
-
-    del pctl.multi_playlist[index][2][:]
-    if pctl.playlist_active == index:
-        default_playlist = pctl.multi_playlist[index][2]
-        reload()
-
-    # pctl.playlist_playing = 0
-    pctl.multi_playlist[index][3] = 0
-
-    gui.pl_update = 1
-
-
-
-
-def convert_playlist(pl):
-
-    global transcode_list
-
-    if system == 'windows':
-        if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
-            return
-        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
-        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
-        #     return
-        if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
-            show_message("Error: Missing lame.exe from '/encoder' directory")
-            return
-    else:
-        if shutil.which('ffmpeg') is None:
-            show_message("Error: FFMPEG does not appear to be installed")
-            return
-        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-            show_message("Error: LAME does not appear to be installed")
-
-    paths = []
-
-    for track in pctl.multi_playlist[pl][2]:
-        if pctl.master_library[track].parent_folder_path not in paths:
-            paths.append(pctl.master_library[track].parent_folder_path)
-
-    for path in paths:
-        folder = []
-        for track in pctl.multi_playlist[pl][2]:
-            if pctl.master_library[track].parent_folder_path == path:
-                folder.append(track)
-        transcode_list.append(folder)
-        print(1)
-        print(transcode_list)
-
-
-def get_folder_tracks_local(pl_in):
-
-    selection = []
-    parent = pctl.master_library[default_playlist[pl_in]].parent_folder_name
-    while pl_in < len(default_playlist) and parent == pctl.master_library[default_playlist[pl_in]].parent_folder_name:
-        selection.append(pl_in)
-        pl_in += 1
-    return selection
-
-tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
-
-
-def move_playlist(source, dest):
-
-    global default_playlist
-    if dest > source:
-        dest += 1
-
-    active = pctl.multi_playlist[pctl.active_playlist_playing]
-    view = pctl.multi_playlist[pctl.playlist_active]
-
-    temp = pctl.multi_playlist[source]
-    pctl.multi_playlist[source] = "old"
-    pctl.multi_playlist.insert(dest, temp)
-    pctl.multi_playlist.remove("old")
-
-    pctl.active_playlist_playing = pctl.multi_playlist.index(active)
-    pctl.playlist_active = pctl.multi_playlist.index(view)
-    default_playlist = default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
-
-
-def delete_playlist(index):
-
-    global default_playlist
-    global playlist_position
-    global mouse_click
-
-    gui.pl_update = 1
-    gui.update += 1
-
-    if len(pctl.multi_playlist) < 2:
-
-        pctl.multi_playlist = []
-        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-        default_playlist = pctl.multi_playlist[0][2]
-        return
-
-    if index == pctl.playlist_active and len(pctl.multi_playlist) == 1:
-        pctl.playlist_active = 0
-        pctl.playlist_playing = 0
-        default_playlist = []
-        playlist_position = 0
-    elif index == pctl.playlist_active and index > 0:
-        pctl.playlist_active -= 1
-        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
-        default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
-        playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
-    elif index < pctl.playlist_active and pctl.playlist_active > 0:
-        pctl.playlist_active -= 1
-    elif index == pctl.playlist_active == 0 and len(pctl.multi_playlist) > 1:
-        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active + 1][1]
-        default_playlist = pctl.multi_playlist[pctl.playlist_active + 1][2]
-        playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
-
-    pctl.active_playlist_playing = pctl.playlist_active
-    pctl.playlist_backup = pctl.multi_playlist[index]
-    del pctl.multi_playlist[index]
-    reload()
-
-tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
-tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
-tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
-
-
-def append_playlist(index):
-    global cargo
-    global pctl
-    global gui
-    pctl.multi_playlist[index][2] += cargo
-
-    gui.pl_update = 1
-    reload()
-
-
-def drop_deco():
-    if len(cargo) > 0:
-        line_colour = colours.menu_text
-    else:
-        line_colour = colours.menu_text_disabled
-    return [line_colour, [0, 0, 0, 255], None]
-
-
-tab_menu.add('Paste', append_playlist, paste_deco, pass_ref=True)
-
-
-def append_current_playing(index):
-
-    if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
-        pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
-        gui.pl_update = 1
-
-def sort_track_2(pl):
-    current_folder = ""
-    albums = []
-    playlist = pctl.multi_playlist[pl][2]
-
-    for i in range(len(playlist)):
-        if i == 0:
-            albums.append(i)
-            current_folder = pctl.master_library[playlist[i]].parent_folder_name
-        else:
-            if pctl.master_library[playlist[i]].parent_folder_name != current_folder:
-                current_folder = pctl.master_library[playlist[i]].parent_folder_name
-                albums.append(i)
-
-    def tryint(s):
-        try:
-            return int(s)
-        except:
-            return s
-
-    def index_key(index):
-        s = str(pctl.master_library[index].track_number)
-        if pctl.master_library[index].disc_number != "":
-            s = str(pctl.master_library[index].disc_number) + "d" + s
-        if s == "":
-            s = pctl.master_library[index].filename
-        try:
-            return [tryint(c) for c in re.split('([0-9]+)', s)]
-        except:
-            return "a"
-
-    i = 0
-    while i < len(albums) - 1:
-        playlist[albums[i]:albums[i+1]] = sorted(playlist[albums[i]:albums[i+1]], key=index_key )
-        i += 1
-    if len(albums) > 0:
-        playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
-
-
-
-tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
-
-
-def sort_path_pl(pl):
-
-    global default_playlist
-
-    def path(index):
-
-        return pctl.master_library[index].fullpath
-
-    playlist = pctl.multi_playlist[pl][2]
-    pctl.multi_playlist[pl][2] = sorted(playlist, key=path)
-    default_playlist = pctl.multi_playlist[pl][2]
-
-tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
@@ -5836,15 +5838,15 @@ def export_stats():
     line += "\r\n\r\n\r\nTop Artists ---------------------------------------\r\n\r\n"
 
     ls = stats_gen.artist_list
-    for item in ls[:20]:
+    for item in ls[:25]:
         line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
     line += "\r\n\r\nTop Albums ---------------------------------------\r\n\r\n"
     ls = stats_gen.album_list
-    for item in ls[:20]:
+    for item in ls[:25]:
         line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
     line += "\r\n\r\nTop Genres ---------------------------------------\r\n\r\n"
     ls = stats_gen.genre_list
-    for item in ls[:20]:
+    for item in ls[:25]:
         line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
 
     line = line.encode('utf-8')
@@ -11309,9 +11311,6 @@ while running:
 
             key_F7 = False
 
-
-
-
             pass
 
         # if key_F3:
@@ -14130,7 +14129,7 @@ SDL_DestroyWindow(t_window)
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
-print("writing database to disk")
+print("Writing database to disk")
 pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
 
 view_prefs['star-lines'] = star_lines
