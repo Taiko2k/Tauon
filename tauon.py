@@ -79,6 +79,7 @@ transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
 # print('User directory: ' + user_directory)
 print('Install directory: ' + install_directory)
+config_directory = install_directory
 
 b_active_directory = install_directory.encode('utf-8')
 
@@ -405,6 +406,7 @@ class Prefs:
 
     def __init__(self):
 
+        self.colour_from_image = False
         self.dim_art = False
         self.prefer_side = True # Saves whether side panel is shown or not
         self.pause_fade_time = 400
@@ -509,6 +511,8 @@ class ColoursClass:
         return [255, 255, 255, value]
 
     def __init__(self):
+
+        self.last_album = ""
         self.link_text = [100, 200, 252, 255]
 
         self.sep_line = self.grey(50)
@@ -691,7 +695,9 @@ except:
 
 
 try:
-    save = pickle.load(open(user_directory + "/state.p", "rb"))
+    state_file = open(user_directory + "/state.p", "rb")
+    save = pickle.load(state_file)
+
     master_library = save[0]
     master_count = save[1]
     playlist_playing = save[2]
@@ -753,10 +759,12 @@ try:
     if save[41] is not None:
         prefs.use_title = save[41]
 
-    save.close()
+    state_file.close()
+    del save
 
 
 except:
+    raise
     print('Error loading save file')
     cache_direc = os.path.join(user_directory, 'cache')
     if os.path.exists(cache_direc):
@@ -799,8 +807,8 @@ alt_font = 'DroidSansFallback.ttf'
 gui_font = 'Koruri-Semibold.ttf'
 light_font = 'Koruri-Light.ttf'
 
-path = install_directory + "/config.txt"
-if os.path.isfile(os.path.join(install_directory, "config.txt")):
+path = config_directory + "/config.txt"
+if os.path.isfile(os.path.join(config_directory, "config.txt")):
     with open(path, encoding="utf_8") as f:
         content = f.read().splitlines()
         for p in content:
@@ -2261,7 +2269,7 @@ def player():
                 codec = ""
                 bitrate = ""
 
-                path = install_directory + "/config.txt"
+                path = config_directory + "/config.txt"
                 with open(path, encoding="utf_8") as f:
                     content = f.read().splitlines()
                     for p in content:
@@ -3555,6 +3563,13 @@ def clear_img_cache():
 
     gui.update += 1
 
+def colour_value(c1):
+
+    return c1[0] + c1[1] + c1[2]
+
+def test_lumi(c1):
+
+    return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
 class ImageObject():
 
@@ -3770,10 +3785,12 @@ class AlbumArt():
             except:
                 return tag[PIC][0].data
 
+
         elif pctl.master_library[index].file_ext == 'FLAC':
             tag = Flac(filepath)
             tag.read(True)
             return tag.picture
+
 
         # elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
         #     tag = Opus(filepath)
@@ -3874,14 +3891,124 @@ class AlbumArt():
             im.save(g, 'JPEG')
             g.seek(0)
 
-            # im.thumbnail((50, 50), Image.ANTIALIAS)
-            # pixels = im.getcolors(maxcolors=2500)
-            # print(pixels)
-            # pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:3]
-            # colours.playlist_panel_background = [pixels[0][1][0], pixels[0][1][1], pixels[0][1][2], 255]
-            # colours.row_select_highlight = [pixels[1][1][0], pixels[1][1][1], pixels[1][1][2], 255]
-            # colours.title_text = [pixels[2][1][0], pixels[2][1][1], pixels[2][1][2], 255]
-            # colours.artist_text = [pixels[2][1][0], pixels[2][1][1], pixels[2][1][2], 255]
+
+            if prefs.colour_from_image and pctl.master_library[index].parent_folder_path != colours.last_album:
+                colours.last_album = pctl.master_library[index].parent_folder_path
+
+                im.thumbnail((50, 50), Image.ANTIALIAS)
+                pixels = im.getcolors(maxcolors=2500)
+                # print(pixels)
+                pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
+                # print(pixels)
+
+                min_colour_varience = 75
+
+                x_colours = []
+                for item in pixels:
+                    colour = item[1]
+                    for cc in x_colours:
+                        if abs(colour[0] - cc[0]) < min_colour_varience and abs(colour[1] - cc[1]) < min_colour_varience and abs(colour[2] - cc[2]) < min_colour_varience:
+                        # if abs(colour[0] - cc[0]) + abs(
+                        #                 colour[1] - cc[1]) + abs(
+                        #                 colour[2] - cc[2]) < min_colour_varience:
+                            break
+                    else:
+                        x_colours.append(colour)
+
+                # print(x_colours)
+
+                colours.playlist_panel_background = x_colours[0] + (255,)
+                if len(x_colours) > 1:
+                    colours.side_panel_background = x_colours[1] + (255,)
+                    if len(x_colours) > 2:
+                        colours.title_text = x_colours[2] + (255,)
+                        colours.title_playing = x_colours[2] + (255,)
+                        if len(x_colours) > 3:
+                            colours.artist_text = x_colours[3] + (255,)
+                            colours.artist_playing = x_colours[3] + (255,)
+
+                bg = 0
+                ar = 0
+                ti = 0
+
+                print("")
+
+                if colour_value(colours.playlist_panel_background) < 120:
+                    print("Backgroud is dark")
+                    bg = 1
+                if colour_value(colours.playlist_panel_background) > 300:
+                    print("Backgroud is Light")
+                    bg = 2
+                if colour_value(colours.title_text) < 190:
+                    print("Title is dark")
+                    ti = 1
+                if colour_value(colours.title_text) > 300:
+                    print("Title is Light")
+                    ti = 2
+                if colour_value(colours.artist_text) < 190:
+                    print("Artist is dark")
+                    ar = 1
+                if colour_value(colours.artist_text) > 400:
+                    print("Artist is Light")
+                    ar = 2
+
+                if bg == 2 and ti == 2:
+                    #print("fix!")
+                    colours.title_text = [40, 40, 40, 255]
+                    colours.title_playing = [40, 40, 40, 255]
+
+                if bg == 2 and ar == 2:
+                    #print("fix!")
+                    colours.artist_text = [20, 20, 20, 255]
+                    colours.artist_playing = [20, 20, 20, 255]
+
+                if bg == 1 and ti == 1:
+                    #print("fix!")
+                    colours.title_text = [200, 200, 200, 255]
+                    colours.title_playing = [200, 200, 200, 255]
+
+                if bg == 1 and ar == 1:
+                    #print("fix!")
+                    colours.artist_text = [170, 170, 170, 255]
+                    colours.artist_playing = [170, 170, 170, 255]
+
+                gui.pl_update = 1
+                print("Bgr1: ", end="")
+                print(colours.playlist_panel_background)
+                print("Bgr2: ", end="")
+                print(colours.side_panel_background)
+                print("Txt1: ", end="")
+                print(colours.artist_text)
+                print("Txt2: ", end="")
+                print(colours.title_text)
+
+                print("Colours found: ", end="")
+                print(len(x_colours))
+                print("Background perceived lightness: ", end="")
+                prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
+                print(prcl, end="")
+                print("%")
+
+                if prcl > 45:
+                    ce = [40, 40, 40, 255]
+                    colours.index_text = ce
+                    colours.index_playing = ce
+                    colours.time_text = ce
+                    colours.bar_time = ce
+                    colours.folder_title = ce
+                    colours.star_line = [60, 60, 60, 255]
+                    colours.row_select_highlight = [0, 0, 0, 30]
+                    colours.row_playing_highlight = [0, 0, 0, 20]
+                else:
+                    ce = [165, 165, 165, 255]
+                    colours.index_text = ce
+                    colours.index_playing = ce
+                    colours.time_text = ce
+                    colours.bar_time = ce
+                    colours.folder_title = ce
+                    colours.star_line = [150, 150, 150, 255]
+                    colours.row_select_highlight = [255, 255, 255, 12]
+                    colours.row_playing_highlight = [255, 255, 255, 8]
 
             wop = sdl2.rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
@@ -3917,9 +4044,13 @@ class AlbumArt():
 
             self.render(unit, location)
 
-            if len(self.image_cache) > 25:
+            if len(self.image_cache) > 10:
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
+            if prefs.colour_from_image and len(self.image_cache) > 1:
+                SDL_DestroyTexture(self.image_cache[0].texture)
+                del self.image_cache[0]
+
         except:
             print("Image processing error")
             # raise
@@ -4807,7 +4938,7 @@ def sort_path_pl(pl):
 tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
 
-tab_menu.add_sub("Sort To New...", 110)
+tab_menu.add_sub("Sort To New Playlist...", 110)
 
 
 def new_playlist():
@@ -5126,6 +5257,14 @@ def get_broadcast_line():
 # Create track context menu
 track_menu = Menu(150)
 
+def open_config():
+    target = os.path.join(config_directory, "config.txt")
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
 
 def open_license():
     target = os.path.join(install_directory, "license.txt")
@@ -5967,7 +6106,7 @@ def broadcast_deco():
     return [line_colour, colours.menu_background, None]
 
 
-if default_player == 'BASS' and os.path.isfile(os.path.join(install_directory, "config.txt")):
+if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "config.txt")):
     x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco)
 
 
@@ -11313,8 +11452,13 @@ while running:
 
             pass
 
-        # if key_F3:
-        #    pass
+        if key_F3:
+            prefs.colour_from_image ^= True
+            if prefs.colour_from_image:
+                show_message("Enabled colour from image (experimental)")
+            else:
+                show_message("Disabled colour from image")
+                themeChange = True
 
         if mouse4:
             toggle_album_mode()
