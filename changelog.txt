@@ -6,6 +6,7 @@ v1.8.2
  - Added disc number tag reading for OPUS, OGG, MP3 and FLAC. Updated sotring function to recognice this.
  - Added 'paste' and 'clear' buttons to URL input box
  - Added web track sample link generating function (experimental feature)
+ - Added colourise from album art function (experimental feature, press F3 to activate)
  - Improved inbound radio streaming error feedback
  - Improved transcoding error feedback on linux
  - Tweaked gallery to no longer jump when track advances automatically
