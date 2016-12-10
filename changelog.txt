@@ -1,18 +1,21 @@
 
 Changelog-------------------------------------
 
-v1.8.2
+v1.8.6
 
- - Added disc number tag reading for OPUS, OGG, MP3 and FLAC. Updated sotring function to recognice this.
+ - Added disc number tag reading for OPUS, OGG, MP3 and FLAC. Updated sorting function to recognise this.
+ - Added disc number and track total display to track info box.
  - Added 'paste' and 'clear' buttons to URL input box
  - Added web track sample link generating function (experimental feature)
  - Added colourise from album art function (experimental feature, press F3 to activate)
- - Added bitrate estimation for FLAC and OPUS
+ - Added bitrate estimation display for FLAC and OPUS
+ - Added button to copy lyrics to clipboard in track info box. Updated scanner for FLAC, OPUS and OGG
  - Improved inbound radio streaming error feedback
  - Improved transcoding error feedback on linux
  - Tweaked gallery to no longer jump when track advances automatically
- - Tweaked scroll bar appearence
+ - Tweaked scroll bar appearance
  - Tweaked folder break behavior to select on right click
+ - Tweaked copy artist - album function to prioritise using artist-album field for artist
  - Added 'copy album artist - album' entry to selection menu
  - Fixed crash when using radio random
  - Fixed seek bar, track title and playing time display for radio streaming
@@ -22,11 +25,12 @@ v1.8.2
  - Fixed edge scroll bar hiding on maximised window
  - Fixed jittery gallery scrolling when running visualiser
  - Fixed playlist digit setting sometimes not being enforced
- - Fixed broadcast not sending title and artist to icecast server on first track
+ - Fixed broadcast not sending title and artist to Icecast server on first track
  - Fixed remote control url to allow trailing forward slash, enabled favicon
  - Fixed playlist being at end after clear and import
- - Fixed playlist stats open missing file on Linux
+ - Fixed playlist stats missing file on Linux
  - Fixed drag dropping import onto panel and tab on Linux
+ - Fixed comment not highlighting https URL links
  - Separate oggenc download no longer required for broadcasting
 
 v1.8.0

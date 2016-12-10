@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.8.2"
+t_version = "v1.8.6"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -153,6 +153,10 @@ import stagger
 from stagger.id3 import *
 from tflac import Flac
 from tflac import Opus
+
+import warnings
+warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
+warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
 
 class Timer:  # seconds
@@ -666,6 +670,7 @@ class TrackClass:
         self.album = ""
         self.date = ""
         self.track_number = ""
+        self.track_total = ""
         self.start_time = 0
         self.is_cue = False
         self.genre = ""
@@ -674,6 +679,7 @@ class TrackClass:
         self.comment = ""
         self.disc_number = ""
         self.disc_total = ""
+        self.lyrics = ""
 
 class LoadClass:
 
@@ -777,26 +783,35 @@ if window_size is None:
     window_size = window_default_size
     side_panel_size = 200
 
-if db_version == 0.8:
-    print("Updating database from version 0.8 to 0.9")
-    for key, value in master_library.items():
-        setattr(master_library[key], 'skips', 0)
 
-if db_version == 0.9:
-    print("Updating database from version 0.9 to 1.1")
-    for key, value in master_library.items():
-        setattr(master_library[key], 'comment', "")
+if db_version > 0:
 
-if db_version == 1.1:
-    print("Updating database from version 1.1 to 1.2")
-    for key, value in master_library.items():
-        setattr(master_library[key], 'album_artist', "")
+    if db_version <= 0.8:
+        print("Updating database from version 0.8 to 0.9")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'skips', 0)
 
-if db_version == 1.2:
-    print("Updating database from version 1.2 to 1.3")
-    for key, value in master_library.items():
-        setattr(master_library[key], 'disc_number', "")
-        setattr(master_library[key], 'disc_total', "")
+    if db_version <= 0.9:
+        print("Updating database from version 0.9 to 1.1")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'comment', "")
+
+    if db_version <= 1.1:
+        print("Updating database from version 1.1 to 1.2")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'album_artist', "")
+
+    if db_version <= 1.2:
+        print("Updating database from version 1.2 to 1.3")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'disc_number', "")
+            setattr(master_library[key], 'disc_total', "")
+
+    if db_version <= 1.3:
+        print("Updating database from version 1.3 to 1.4")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'lyrics', "")
+            setattr(master_library[key], 'track_total', "")
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -974,7 +989,10 @@ def tag_scan(nt):
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
+            nt.lyrics = audio.lyrics
             nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+            nt.track_total = audio.track_total
+            nt.disk_total = audio.disc_total
 
             return nt
 
@@ -997,7 +1015,10 @@ def tag_scan(nt):
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
             nt.bitrate = audio.bit_rate
+            nt.lyrics = audio.lyrics
             nt.disc_number = audio.disc_number
+            nt.track_total = audio.track_total
+            nt.disk_total = audio.disc_total
             if nt.bitrate == 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
@@ -1028,10 +1049,16 @@ def tag_scan(nt):
             if nt.file_ext == "MP3":
                 tag = stagger.read_tag(nt.fullpath)
                 nt.album_artist = tag.album_artist
-                nt.disc_number = tag.disc
-                nt.disc_total = tag.disc_total
+                nt.disc_number = str(tag.disc)
+                nt.disc_total = str(tag.disc_total)
+                nt.track_total = str(tag.track_total)
+
 
             return nt
+    except stagger.errors.NoTagError as err:
+        # print("Tag Scanner: " + str(err))
+        # print("      In file: " + nt.fullpath)
+        return nt
     except:
         print("Warning: Tag read error")
         return nt
@@ -3377,7 +3404,7 @@ def draw_linked_text(location, text, colour, font):
     rest = ""
     on_base = True
     for i in range(len(text)):
-        if text[i:i+7] == "http://" or text[i:i+4] == "www.":
+        if text[i:i+7] == "http://" or text[i:i+4] == "www." or text[i:i+8] == "https://":
             on_base = False
         if on_base:
             base += text[i]
@@ -5701,7 +5728,8 @@ def clip_aar_al(index):
         line = pctl.master_library[index].album_artist + " - " + \
                pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
-selection_menu.add('Copy "Album Artist - Album"', clip_aar_al, pass_ref=True)
+
+selection_menu.add('Copy "Artist - Album"', clip_aar_al, pass_ref=True)
 
 def clip_ar_al(index):
     line = pctl.master_library[index].artist + " - " + \
@@ -5710,7 +5738,7 @@ def clip_ar_al(index):
 
 if prefs.show_rym:
     track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
-track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
+#track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
 
 
 
@@ -5908,6 +5936,10 @@ def toggle_album_mode(force_on=False):
     global old_album_pos
     global album_pos_px
     global playlist_width
+
+    if prefs.colour_from_image:
+        prefs.colour_from_image = False
+        themeChange = True
 
     if gui.show_playlist is False:
         gui.show_playlist = True
@@ -13079,9 +13111,9 @@ while running:
                 else:
                     # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
                     if comment_mode == 1:
-                        album_art_gen.display(r_menu_index, (x + w - 140, y + 105), (110, 110))
+                        album_art_gen.display(r_menu_index, (x + w - 135, y + 105), (115, 115))
                     else:
-                        album_art_gen.display(r_menu_index, (x + w - 140, y + h - 135), (110, 110))
+                        album_art_gen.display(r_menu_index, (x + w - 135, y + h - 135), (115, 115))
                     y -= 24
 
                     rect = [x + 17, y + 41, 60, 14]
@@ -13160,7 +13192,7 @@ while running:
                     draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album, 12, 420), colours.alpha_grey(190),
                               12)
 
-                    y += 23
+                    y += 23 + 3
 
                     rect = [x + 17, y + 41, 60, 14]
                     fields.add(rect)
@@ -13190,17 +13222,51 @@ while running:
                             line = "~" + line + " kbps"
                         draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
+                    # -----------
+                    if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
+                        x += 170
+                        rect = [x + 17, y + 41, 60, 14]
+                        fields.add(rect)
+                        if rect_in(rect):
+                            draw_text((x + 8 + 10, y + 40), "Album Artist", colours.alpha_grey(170), 12)
+                            if mouse_click:
+                                show_message("Album artist copied to clipboard")
+                                copy_to_clipboard(pctl.master_library[r_menu_index].album_artist)
+                                mouse_click = False
+                        else:
+                            draw_text((x + 8 + 10, y + 40), "Album Artist", colours.alpha_grey(140), 12)
+                        draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 140),
+                                  colours.alpha_grey(190), 12)
+                        x -= 170
+
                     y += 15
 
                     draw_text((x + 8 + 10, y + 40), "Duration", colours.alpha_grey(140), 12)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
                     draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
+                    # -----------
+                    if pctl.master_library[r_menu_index].track_total not in ("", "0"):
+                        x += 170
+                        line = str(pctl.master_library[r_menu_index].track_number) + " of " + str(pctl.master_library[r_menu_index].track_total)
+                        draw_text((x + 8 + 10, y + 40), "Track", colours.alpha_grey(140), 12)
+                        draw_text((x + 8 + 90, y + 40), line,
+                                  colours.alpha_grey(190), 12)
+                        x -= 170
+
                     y += 15
                     if pctl.master_library[r_menu_index].size != 0:
                         draw_text((x + 8 + 10, y + 40), "Filesize", colours.alpha_grey(140), 12)
                         draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size), colours.alpha_grey(190), 12)
 
+                    # -----------
+                    if pctl.master_library[r_menu_index].disc_total not in ("", "0"):
+                        x += 170
+                        line = str(pctl.master_library[r_menu_index].disc_number) + " of " + str(pctl.master_library[r_menu_index].disc_total)
+                        draw_text((x + 8 + 10, y + 40), "Disc", colours.alpha_grey(140), 12)
+                        draw_text((x + 8 + 90, y + 40), line,
+                                  colours.alpha_grey(190), 12)
+                        x -= 170
 
                     y += 23
 
@@ -13215,6 +13281,8 @@ while running:
                     else:
                         draw_text((x + 8 + 10, y + 40), "Genre", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].genre, colours.alpha_grey(190), 12)
+
+
                     y += 15
 
                     rect = [x + 17, y + 41, 60, 14]
@@ -13250,6 +13318,23 @@ while running:
                     draw_text((x + 8 + 10, y + 40), "Play time", colours.alpha_grey(140), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.alpha_grey(190), 12)
 
+                    # -------
+                    if pctl.master_library[r_menu_index].lyrics != "":
+
+                        x += 170
+                        rect = [x + 17, y + 41, 60, 14]
+                        fields.add(rect)
+                        if rect_in(rect):
+                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.alpha_grey(170), 12)
+                            if mouse_click:
+                                show_message("Lyrics copied to clipboard")
+                                copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
+                                mouse_click = False
+                        else:
+                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.alpha_grey(140), 12)
+                        x -= 170
+
+
                     if len(tc.comment) > 0:
                         y += 20
                         rect = [x + 17, y + 41, 60, 14]
@@ -13264,7 +13349,7 @@ while running:
                             draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
                         #draw_text((x + 8 + 10, y + 40), "Comment", colours.alpha_grey(140), 12)
 
-                        if ('http://' in tc.comment or 'www.' in tc.comment) and draw.text_calc(tc.comment, 12) < 335:
+                        if ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(tc.comment, 12) < 335:
                             link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.alpha_grey(190), 12)
                             link_rect = [x + 98 + link_pa[0], y + 38, link_pa[1], 20]
                             #draw.rect_r(link_rect, [255,0,0,30], True)
@@ -14313,7 +14398,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.3,  # Version
+        1.4,  # Version
         view_prefs,
         gui.save_size,
         side_panel_size,

@@ -55,6 +55,7 @@ class Flac:
         self.disc_number = ""
         self.picture = ""
         self.disc_total = ""
+        self.lyrics = ""
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -129,6 +130,12 @@ class Flac:
                         self.artist = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
                         self.disc_total = b.decode("utf-8")
+                    elif a == "discnumber":
+                        self.disc_number = b.decode("utf-8")
+                    elif a == "metadata_block_picture":
+                        print("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Shouldn't be there")
+                    elif a == 'lyrics' or a == 'unsyncedlyrics':
+                        self.lyrics = b.decode("utf-8")
 
         #print("len total: " + str(block_position))
         sss = f.seek(block_position * -1, 1)
@@ -281,6 +288,7 @@ class Opus:
         self.disc_number = ""
         self.disc_total = ""
         self.picture = ""
+        self.lyrics = ""
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -403,9 +411,13 @@ class Opus:
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
                         self.artist = b.decode("utf-8")
-                    elif a == "metadata_block_picture" and False: # This code kind of works but i've disabled it because its slow and untested
-                        self.has_picture = True
-                        print("Found picture block")
+                    elif a == "metadata_block_picture":
+                        # This code kind of works but i've disabled it because its slow and untested
+                        print("Tag Scanner: Found picture in OGG/OPUS file. Ignoring")
+                        print("      In file: " + self.filepath)
+
+                        # self.has_picture = True
+                        # print("Found picture block")
                         # import base64
                         # import io
 
@@ -568,6 +580,11 @@ class Opus:
                         self.disc_number = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
                         self.disc_total = b.decode("utf-8")
+                    elif a == 'lyrics' or a == 'unsyncedlyrics':
+                        self.lyrics = b.decode("utf-8")
+                    else:
+                        print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
+                        print(b.decode("utf-8"))
 
                     break
 
