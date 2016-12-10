@@ -4,8 +4,8 @@
 pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True
-scroll-gallery-row=False
-scroll-gallery-wheel=100
+scroll-gallery-row=True
+scroll-gallery-wheel=75
 
 ## Font files must be in /gui subfolder
 font-regular=Koruri-Regular.ttf
