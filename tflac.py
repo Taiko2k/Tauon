@@ -26,11 +26,11 @@
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE
 
 
-# The purpose of this module is to read embedded images from FLAC files.
+# The purpose of this module is to:
+# - Read embedded images from FLAC files.
+# - Read metadata from FLAC, OGG and OPUS files
 
 
-import io
-import copy
 import struct
 
 

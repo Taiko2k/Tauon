@@ -68,7 +68,7 @@ else:
 working_directory = os.getcwd()
 install_directory = sys.path[0].replace('\\', '/')
 
-# Workaround for Pyinstaller
+# Workaround for Py-Installer
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 
@@ -123,6 +123,7 @@ import locale
 import webbrowser
 import base64
 import re
+import warnings
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 from ctypes import *
@@ -140,7 +141,6 @@ if system == 'windows':  # Windows specific imports
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, atexit
 
-import sdl2
 from sdl2 import *
 from sdl2.sdlttf import *
 from sdl2.sdlimage import *
@@ -154,7 +154,6 @@ from stagger.id3 import *
 from tflac import Flac
 from tflac import Opus
 
-import warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
@@ -1518,6 +1517,7 @@ def get_colour_from_line(cline):
 def checkEqual(lst):
     return not lst or lst.count(lst[0]) == len(lst)
 
+
 def rm_16(line):
     if "ÿ þ" in line:
         for c in line:
@@ -1660,7 +1660,6 @@ class LastFMapi:
 
 
 def get_backend_time(path):
-    global pctl
 
     pctl.time_to_get = path
 
@@ -2997,8 +2996,6 @@ def load_font(name, size, ext=False):
     return TTF_OpenFont(fontpath, size)
 
 
-
-
 font11c = load_font(gui_font, 11)
 font12c = load_font(gui_font, 12)
 font13c = load_font(gui_font, 13)
@@ -3096,7 +3093,7 @@ icon = IMG_Load(b_active_directory + b"/gui/icon.png")
 
 SDL_SetWindowIcon(t_window, icon)
 
-#SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,b"1")
+# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,b"1")
 
 
 ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
@@ -3111,9 +3108,7 @@ gui.pl_update = 2
 SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1], colours.top_panel_background[2], colours.top_panel_background[3])
 SDL_RenderClear(renderer)
 
-fontb1 = load_font('NotoSansCJKjp-Bold.ttf', 12)
-
-#SDL_SetWindowOpacity(t_window, 0.98)
+# SDL_SetWindowOpacity(t_window, 0.98)
 
 # m_surface = SDL_CreateRGBSurface(0, window_size[0], window_size[1], 32,0,0,0,0);
 # SDL_SetSurfaceBlendMode(m_surface, SDL_BLENDMODE_BLEND)
@@ -3524,7 +3519,7 @@ class GallClass:
             if order[0] == 2:
                 # finish processing
 
-                wop = sdl2.rw_from_object(order[1])
+                wop = rw_from_object(order[1])
                 s_image = IMG_Load_RW(wop, 0)
                 c = SDL_CreateTextureFromSurface(renderer, s_image)
                 SDL_FreeSurface(s_image)
@@ -4039,7 +4034,7 @@ class AlbumArt():
                     colours.row_select_highlight = [255, 255, 255, 12]
                     colours.row_playing_highlight = [255, 255, 255, 8]
 
-            wop = sdl2.rw_from_object(g)
+            wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
             # print(IMG_GetError())
             c = SDL_CreateTextureFromSurface(renderer, s_image)
@@ -5729,7 +5724,7 @@ def clip_aar_al(index):
                pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
 
-selection_menu.add('Copy "Artist - Album"', clip_aar_al, pass_ref=True)
+
 
 def clip_ar_al(index):
     line = pctl.master_library[index].artist + " - " + \
@@ -5748,6 +5743,7 @@ def clip_ar_tr(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
+track_menu.add('Copy "Artist - Album"', clip_aar_al, pass_ref=True)
 track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
 
 
@@ -5936,6 +5932,7 @@ def toggle_album_mode(force_on=False):
     global old_album_pos
     global album_pos_px
     global playlist_width
+    global themeChange
 
     if prefs.colour_from_image:
         prefs.colour_from_image = False
@@ -9480,7 +9477,6 @@ class BottomBarType1:
         self.play_button = WhiteModImageAsset('/gui/play.png')
         self.forward_button = WhiteModImageAsset('/gui/ff.png')
         self.back_button = WhiteModImageAsset('/gui/bb.png')
-
 
     def set_mode2(self):
 
@@ -13210,16 +13206,17 @@ while running:
                     y += 15
                     if pctl.master_library[r_menu_index].samplerate != 0:
                         draw_text((x + 8 + 10, y + 40), "Samplerate", colours.alpha_grey(140), 12)
-                        line = str(pctl.master_library[r_menu_index].samplerate) + " hz"
+                        line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
                         draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     y += 15
 
-                    if pctl.master_library[r_menu_index].bitrate != 0:
+                    if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
                         draw_text((x + 8 + 10, y + 40), "Bitrate", colours.alpha_grey(140), 12)
                         line =  str(pctl.master_library[r_menu_index].bitrate)
                         if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS'):
-                            line = "~" + line + " kbps"
+                            line = "~" + line
+                        line += " kbps"
                         draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     # -----------
