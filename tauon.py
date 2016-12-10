@@ -764,7 +764,6 @@ try:
 
 
 except:
-    raise
     print('Error loading save file')
     cache_direc = os.path.join(user_directory, 'cache')
     if os.path.exists(cache_direc):
@@ -975,6 +974,7 @@ def tag_scan(nt):
             nt.genre = audio.genre
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
+            nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
             return nt
 
@@ -998,6 +998,8 @@ def tag_scan(nt):
             nt.album_artist = audio.album_artist
             nt.bitrate = audio.bit_rate
             nt.disc_number = audio.disc_number
+            if nt.bitrate == 0:
+                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
 
         else:
@@ -4047,7 +4049,7 @@ class AlbumArt():
             if len(self.image_cache) > 10:
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
-            if prefs.colour_from_image and len(self.image_cache) > 1:
+            if prefs.colour_from_image and len(self.image_cache) > 2:
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
 
@@ -11439,12 +11441,14 @@ while running:
             #bottom_bar1.set_mode2()
             #gui.full_gallery ^= True
             #gui.show_playlist ^= True
-            for item in default_playlist:
-                print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
+            # for item in default_playlist:
+            #     print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
 
             # key_F7 = False
-
+            for item in default_playlist:
+                print(pctl.master_library[item].size / pctl.master_library[item].length * 8 / 1024)
             # gui.test ^= True
+
 
             #GUI_Mode = 3
 
@@ -13174,13 +13178,16 @@ while running:
                     y += 15
                     if pctl.master_library[r_menu_index].samplerate != 0:
                         draw_text((x + 8 + 10, y + 40), "Samplerate", colours.alpha_grey(140), 12)
-                        draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].samplerate), colours.alpha_grey(190), 12)
+                        line = str(pctl.master_library[r_menu_index].samplerate) + " hz"
+                        draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     y += 15
 
                     if pctl.master_library[r_menu_index].bitrate != 0:
                         draw_text((x + 8 + 10, y + 40), "Bitrate", colours.alpha_grey(140), 12)
                         line =  str(pctl.master_library[r_menu_index].bitrate)
+                        if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS'):
+                            line = "~" + line + " kbps"
                         draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)
 
                     y += 15
