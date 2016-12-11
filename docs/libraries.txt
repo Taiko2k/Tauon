@@ -29,7 +29,7 @@ libbassmix.so
 libbassopus.so
 libbassenc_ogg.so
 
-OSX: (list may be outdated)
+OSX:
 
 libbass.dylib
 libbass_aac.dylib
@@ -38,3 +38,4 @@ libbassenc.dylib
 libbassflac.dylib
 libbassmix.dylib
 libbassopus.dylib
+libbassenc_ogg.dylib
