@@ -9,18 +9,19 @@ BASS binaries are included with release package or can be downloaded from http:/
 
 Use the following commands to install other dependencies:
 
+
 Arch Linux:
 
-        $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools
+        $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
 
    Note: You mas also need to install the 'pulseaudio-alsa' package for desktop audio to function correctly
-   Warning: Installing python libraries with pip like this may cause conflicts with applications that use system packages instead, especially ones installed from the AUR. In this case just uninstall the pip version then install the system version.
+   Warning: Installing python libraries with pip like this may conflict with installing applications from the AUR that use AUR versions of these libraries. In this case just uninstall the conflicting pip versions first. $ sudo pip3 uninstall example.
 
 Ubuntu:
 
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip python3-pil python3-setuptools
-        $ sudo pip3 install hsaudiotag3k pylast pysdl2 flask stagger
+        $ sudo pip3 install hsaudiotag3k pylast pysdl2 flask stagger python3-xlib
 
 
 

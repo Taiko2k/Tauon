@@ -3,13 +3,15 @@ Changelog-------------------------------------
 
 v1.8.6
 
+ - Added quick drag tracks onto top panel to send to new playlist functionality
  - Added disc number tag reading for OPUS, OGG, MP3 and FLAC. Updated sorting function to recognise this.
- - Added disc number and track total display to track info box.
+ - Added disc total and track total display to track info box.
  - Added 'paste' and 'clear' buttons to URL input box
  - Added web track sample link generating function (experimental feature)
  - Added colourise from album art function (experimental feature, press F3 to activate)
- - Added bitrate estimation display for FLAC and OPUS
- - Added button to copy lyrics to clipboard in track info box. Updated scanner for FLAC, OPUS and OGG
+ - Added bitrate estimation display for FLAC and OPUS in track info box
+ - Added button to copy lyrics to clipboard in track info box. Updated scanner to detect lyrics for FLAC, OPUS and OGG
+ - Added shortcut to open config file from settings box
  - Improved inbound radio streaming error feedback
  - Improved transcoding error feedback on linux
  - Tweaked gallery to no longer jump when track advances automatically

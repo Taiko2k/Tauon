@@ -1,56 +1,84 @@
-##### Implemented features:
+## Implemented features:
 
-- Audio playback (MP3, M4A/MP4, AAC, OGG, FLAC, WAV, TTA, APE, OPUS, WMA*)
-- Tag metadata (MP3, M4A, OGG, FLAC, OPUS, WMA*)  *Windows only
-- Embedded album art (MP3, FLAC)
-- Multiple album art
+### Codecs
+
+ - Audio only: AAC, WAV, TTA, APE
+ - Audio and metadata: M4A, OGG, OPUS, WMA (windows only)
+ - Audio, metadata and embedded picture: MP3, FLAC
+
+### UI and Layouts
+
+ - Theme files for changing UI colours (not all elements customisable)
+ - Tracks
+ - Tracks + Single large album art
+ - Tracks + Single album art + metadata
+ - Tracks + Album gallery
+ - Album gallery
+ - All album art and tracks (buggy, some features missing)
+ - Basic spectrum visualization or level meter
+
+### External service integration
+
 - Last.fm scrobbling
+
+### Other file formats
+
+ - XSPF (import and export) (cross-app compatibility not tested)
+ - CUE sheets targeting single files (automaticly read when importing)
+
+### Player features
+
 - Multiple playlists
-- CUE sheet integration (Single source only)
-- Folder batch file renaming
-- Keyboard shortcuts (some)
 - Quick search
 - Filter from seach (via new playlist)
-- Cross fade (only)
-- Spectrum visualization
-- Art grid view
-- Tracks view
-- Combined art and tracks view
-- User defineable themes (colours only)
-- Web interface (basic playback control only)
+- Playcount preview
+- Sorting (via new playlist)
+- Web interface (basic playback control)
 - Inbound streaming (HTTP)
 - Outbound streaming with icecast (MP3, OGG)
-- Media Keys (OSX: Not implemented)
-- Folder transcode (MP3, OGG, OPUS) (Single tracks, CUE) (Windows:Working, Linux:Not Tested, OSX:Not tested)
-- Text Encoding fix (Japanese only)
-- Sorting (via new playlist)
-- Skip counting
-- Importing and exporting XSPF playlist files (cross-app compatibility not tested)
+- Global media keys + some local harcoded keyboard shortcuts
 
-##### Other common player features not implemented:
+### Editing
 
+- Folder batch file renaming
+- Folder batch transcode (MP3, OGG, OPUS)
+- Text Encoding fix (Japanese only, not written back to files)
+- External tag editor linking
+
+### Audio
+
+- Cross fade (only)
+
+
+## Other common player features not implemented:
+
+ - Codecs: ALAC, Musepack, TAK, WavPack
  - Customisable list format
  - Replay gain
  - Gapless playback
  - Folder tree view
  - Folder monitoring / auto update
- - Skins / UI customisation
- - Lyrics (local or web)
+ - Skins
+ - UI customisation
+ - Lyrics display
  - Customisable shortcuts
  - Global hotkeys (other than media keys)
  - High DPI
- - EQ
- - DSP / Plugins
+ - Audio EQ
+ - DSPs
+ - Plugins
  - Audiobooks
- - Tag editing
- - External services
- - Library view
+ - Internal tag editing
+ - Various external services
+ - Library view / filter
  - Ratings
+ - Extract/read archive
  - Artist metadata scraping
- - Album artist metadata
- - Extra metadata
+ - All tag metadata
  - Output device configuration
  - A-B repreat
  - Bookmarks
+ - Various playlist formats
+ - Radio station list
  - Audio CD
 

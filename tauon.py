@@ -4965,7 +4965,7 @@ tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 tab_menu.add_sub("Sort To New Playlist...", 110)
 
 
-def new_playlist():
+def new_playlist(switch=True):
 
     ex = 1
     title = "New Playlist"
@@ -4979,7 +4979,8 @@ def new_playlist():
             break
 
     pctl.multi_playlist.append([title, 0, [], 0, 0, 0])
-    switch_playlist(len(pctl.multi_playlist) - 1)
+    if switch:
+        switch_playlist(len(pctl.multi_playlist) - 1)
     return len(pctl.multi_playlist) - 1
 
 
@@ -5299,6 +5300,14 @@ def open_license():
     else:
         subprocess.call(["xdg-open", target])
 
+def open_config_file():
+    target = os.path.join(config_directory, "config.txt")
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
 
 def open_encode_out():
     if system == 'windows':
@@ -8316,7 +8325,8 @@ class Over:
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
 
         y = self.box_y + 220
-        draw_text((x, y), "* Changes apply on restart", colours.grey(150), 11)
+        draw_text((x, y - 2), "* Changes apply on restart", colours.grey(150), 11)
+        self.button(x + 410, y - 4, "Open config file", open_config_file)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -9300,6 +9310,15 @@ class TopPanel:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
 
             x += tab_width + self.tab_spacing
+
+        # Quick drag single track onto bar to create new playlist
+        if quick_drag and mouse_position[0] > x and mouse_position[1] < panelY:
+            draw_text((x + 5, y), '+', [200, 20, 40, 255], 12)
+            if mouse_up:
+                pl = new_playlist(False)
+                for item in shift_selection:
+                    pctl.multi_playlist[pl][2].append(default_playlist[item])
+
 
         # -------------
         # Other input
@@ -13122,8 +13141,10 @@ while running:
                             mouse_click = False
                     else:
                         draw_text((x + 8 + 10, y + 40), "Title", colours.alpha_grey(140), 12)
+                        #
 
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].title, colours.alpha_grey(190), 12)
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].title, 12, w - 190)
+                              , colours.alpha_grey(190), 12)
 
                     ext_rect = [x + w - 78, y + 42, 12, 12]
 
