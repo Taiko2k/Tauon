@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.8.6"
+t_version = "v1.9.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -1185,9 +1185,14 @@ class PlayerCtl:
 
                 if select:
                     playlist_selected = i
+
+                    # Make the found track the playing track
+                    self.playlist_playing = i
+                    self.active_playlist_playing = self.playlist_active
+
+
                 if playing:
                     self.playlist_playing = i
-
                 if i == playlist_position - 1 and playlist_position > 1:
                     playlist_position -= 1
                 elif playlist_position + playlist_view_length - 2 == i and i < len(
@@ -4786,6 +4791,7 @@ def convert_playlist(pl):
             return
         if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
             show_message("Error: LAME does not appear to be installed")
+            return
 
     paths = []
 
@@ -4798,6 +4804,11 @@ def convert_playlist(pl):
         for track in pctl.multi_playlist[pl][2]:
             if pctl.master_library[track].parent_folder_path == path:
                 folder.append(track)
+                if prefs.transcode_codec == 'flac' and pctl.master_library[track].file_ext.lower() in ('mp3', 'opus',
+                                                                                                      'm4a', 'mp4',
+                                                                                                      'ogg', 'aac'):
+                    show_message("Warning: This includes transcoding of a lossy codec to a lossless codec! Bad Bad Bad!")
+
         transcode_list.append(folder)
         print(1)
         print(transcode_list)
@@ -5367,12 +5378,26 @@ def convert_folder(index):
         if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
             show_message("Error: Missing oggenc2.exe from '/encoder' directory")
             return
+    else:
+        if shutil.which('ffmpeg') is None:
+            show_message("Error: FFMPEG does not appear to be installed")
+            return
+        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
+            show_message("Error: LAME does not appear to be installed")
+            return
 
     folder = []
     r_folder = pctl.master_library[index].parent_folder_name
     for item in default_playlist:
         if r_folder == pctl.master_library[item].parent_folder_name:
             folder.append(item)
+            print(prefs.transcode_codec)
+            print(pctl.master_library[item].file_ext)
+            if prefs.transcode_codec == 'flac' and pctl.master_library[item].file_ext.lower() in ('mp3', 'opus',
+                'm4a', 'mp4', 'ogg', 'aac'):
+                show_message("You're trying to convert a lossy codec to a lossless codec, I wont let you do that.")
+                return
+
 
     print(folder)
     transcode_list.append(folder)
@@ -6477,8 +6502,9 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         if t.date != "":
             command += '-metadata year="' + str(t.date).replace('"', "").replace("'", "") + '" '
 
+    if codec != 'flac':
+        command += " -b:a " + str(bitrate) + "k "
 
-    command += " -b:a " + str(bitrate) + "k "
     command += '"' + target_out + '"'
 
         # command += full_wav_out
@@ -7066,7 +7092,7 @@ def worker1():
 
                 if prefs.transcode_mode == 'single':
 
-                    if prefs.transcode_codec == 'opus' or  prefs.transcode_codec == 'ogg':
+                    if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
                         global core_use
                         cores = os.cpu_count()
 
@@ -7132,7 +7158,7 @@ def worker1():
                             #                 startupinfo=startupinfo)
                             # print(out)
 
-                            print('done ffmpeg')
+                            print('Done transcoding track via ffmpeg')
 
                             transcode_state = "(Encoding)"
                             gui.update += 1
@@ -7185,193 +7211,193 @@ def worker1():
                             #
                             #     command += full_wav_out + ' ' + full_target_out
                             #
-                            elif prefs.transcode_codec == 'ogg':
-
-                                command = install_directory + '/encoder/oggenc2 --bitrate ' + str(
-                                    prefs.transcode_bitrate) + ' '
-
-                                if system != 'windows':
-                                    command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) + ' '
-
-                                if pctl.master_library[item].title != "":
-                                    command += '--title "' + pctl.master_library[item].title.replace('"', "").replace("'", "") + '" '
-
-                                if pctl.master_library[item].artist != "":
-                                    command += '--artist "' + pctl.master_library[item].artist.replace('"', "").replace("'", "") + '" '
-
-                                if pctl.master_library[item].album != "":
-                                    command += '--album "' + pctl.master_library[item].album.replace('"', "").replace("'", "") + '" '
-
-                                if pctl.master_library[item].album != "":
-                                    command += '--tracknum "' + str(pctl.master_library[item].track_number).replace('"', "").replace("'", "") + '" '
-
-                                command += full_wav_out + ' ' + full_target_out
-
-
-                            print(shlex.split(command))
-                            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                            print('done')
-
-                            os.remove(full_wav_out_p)
-                            output_dir = prefs.encoder_output + folder_name + "/"
-
-                            out_line = os.path.splitext(pctl.master_library[item].filename)[0]
-                            if pctl.master_library[item].is_cue:
-                                out_line = str(pctl.master_library[item].track_number) + ". "
-                                out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
-
-                            print(output_dir)
-                            shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
+                            # elif prefs.transcode_codec == 'ogg':
+                            #
+                            #     command = install_directory + '/encoder/oggenc2 --bitrate ' + str(
+                            #         prefs.transcode_bitrate) + ' '
+                            #
+                            #     if system != 'windows':
+                            #         command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) + ' '
+                            #
+                            #     if pctl.master_library[item].title != "":
+                            #         command += '--title "' + pctl.master_library[item].title.replace('"', "").replace("'", "") + '" '
+                            #
+                            #     if pctl.master_library[item].artist != "":
+                            #         command += '--artist "' + pctl.master_library[item].artist.replace('"', "").replace("'", "") + '" '
+                            #
+                            #     if pctl.master_library[item].album != "":
+                            #         command += '--album "' + pctl.master_library[item].album.replace('"', "").replace("'", "") + '" '
+                            #
+                            #     if pctl.master_library[item].album != "":
+                            #         command += '--tracknum "' + str(pctl.master_library[item].track_number).replace('"', "").replace("'", "") + '" '
+                            #
+                            #     command += full_wav_out + ' ' + full_target_out
+                            #
+                            #
+                            # print(shlex.split(command))
+                            # subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
+                            # print('done')
+                            #
+                            # os.remove(full_wav_out_p)
+                            # output_dir = prefs.encoder_output + folder_name + "/"
+                            #
+                            # out_line = os.path.splitext(pctl.master_library[item].filename)[0]
+                            # if pctl.master_library[item].is_cue:
+                            #     out_line = str(pctl.master_library[item].track_number) + ". "
+                            #     out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
+                            #
+                            # print(output_dir)
+                            # shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
 
                     output_dir = prefs.encoder_output + folder_name + "/"
                     album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
 
-                elif prefs.transcode_mode == 'cue':
-
-                    print(full_wav_out)
-                    print(full_target_out)
-
-                    command = install_directory + "/encoder/ffmpeg "
-
-                    if system != 'windows':
-                        command = "ffmpeg "
-
-                    for item in folder_items:
-                        print(pctl.master_library[item].fullpath)
-                        command += '-i "'
-                        command += pctl.master_library[item].fullpath
-                        command += '" '
-
-                    command += '-filter_complex "[0:a:0][1:a:0] concat=n='
-                    command += str(len(folder_items))
-                    command += ':v=0:a=1[out]" -map "[out]" '
-                    command += full_wav_out
-
-                    print(4)
-                    if pctl.master_library[folder_items[0]].is_cue == True or len(folder_items) == 1:
-                        command = install_directory + '/encoder/ffmpeg -i "' + pctl.master_library[folder_items[0]].fullpath + '" ' + full_wav_out
-
-                        n_folder = []
-                        for i in reversed(range(len(folder_items))):
-                            if pctl.master_library[folder_items[i]].fullpath != pctl.master_library[folder_items[0]].fullpath:
-                                n_folder.append(folder_items[i])
-                                del folder_items[i]
-                        print(2)
-                        if len(n_folder) > 0:
-                            transcode_list.append(n_folder)
-
-                    print(command)
-
-                    transcode_state = "(Decoding)"
-                    gui.update += 1
-
-                    print(shlex.split(command))
-                    startupinfo = None
-                    if system == 'windows':
-                        startupinfo = subprocess.STARTUPINFO()
-                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                    subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
-
-                    print('done ffmpeg')
-
-                    transcode_state = "(Encoding)"
-                    gui.update += 1
-
-                    if prefs.transcode_codec == 'mp3':
-
-                        command = install_directory + '/encoder/lame --silent --abr ' + str(
-                            prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
-
-                        if system != 'windows':
-                            command = 'lame --silent --abr ' + str(
-                                prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
-
-                    elif prefs.transcode_codec == 'opus':
-
-                        command = install_directory + '/encoder/opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-
-                        if system != 'windows':
-                            command = 'opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-
-                    elif prefs.transcode_codec == 'ogg':
-
-                        command = install_directory + '/encoder/oggenc2 --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-
-                        if system != 'windows':
-                            command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-
-                    print(shlex.split(command))
-                    subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                    print('done')
-
-                    os.remove(full_wav_out_p)
-                    output_dir = prefs.encoder_output + folder_name + "/"
-                    print(output_dir)
-                    #print(output_dir + folder_name + ".opus test")
-                    shutil.move(full_target_out_p, output_dir + folder_name + "." + prefs.transcode_codec) #opus")
-
-                    cu = ""
-                    cu += 'PERFORMER "' + pctl.master_library[folder_items[0]].artist + '"\n'
-                    cu += 'TITLE "' + pctl.master_library[folder_items[0]].album + '"\n'
-                    cu += 'REM DATE "' + pctl.master_library[folder_items[0]].date + '"\n'
-                    cu += 'FILE "' + folder_name + "." + prefs.transcode_codec + '" WAVE\n'
-
-                    run_time = 0
-                    track = 1
-
-                    for item in folder_items:
-
-                        cu += 'TRACK '
-                        if track < 10:
-                            cu += '0'
-                        cu += str(track)
-                        cu += ' AUDIO\n'
-
-                        cu += ' TITLE "'
-                        cu += pctl.master_library[item].title
-                        cu += '"\n'
-
-                        cu += ' PERFORMER "'
-                        cu += pctl.master_library[item].artist
-                        cu += '"\n'
-
-                        cu += ' INDEX 01 '
-
-                        m, s = divmod(run_time, 60)
-                        s, ms = divmod(s, 1)
-                        ms = int(round(ms, 2) * 100)
-
-                        if ms < 10:
-                            ms = '0' + str(ms)
-                        else:
-                            ms = str(ms)
-
-                        if m < 10:
-                            m = '0' + str(int(m))
-                        else:
-                            m = str(int(m))
-
-                        if s < 10:
-                            s = '0' + str(int(s))
-                        else:
-                            s = str(int(s))
-
-                        cu += m + ":" + s + ":" + ms + "\n"
-
-                        if default_player == 'BASS' and pctl.master_library[item].is_cue is False:
-                            tracklen = get_backend_time(pctl.master_library[item].fullpath)
-                        else:
-                            tracklen = int(pctl.master_library[item].length)
-
-                        run_time += tracklen
-                        track += 1
-
-                    cue = open(output_dir + folder_name + ".cue", 'w', encoding="utf_8")
-                    cue.write(cu)
-                    cue.close()
-
-                    album_art_gen.save_thumb(folder_items[0], (720, 720), output_dir + folder_name)
-                    print('finish')
+                # elif prefs.transcode_mode == 'cue':
+                #
+                #     print(full_wav_out)
+                #     print(full_target_out)
+                #
+                #     command = install_directory + "/encoder/ffmpeg "
+                #
+                #     if system != 'windows':
+                #         command = "ffmpeg "
+                #
+                #     for item in folder_items:
+                #         print(pctl.master_library[item].fullpath)
+                #         command += '-i "'
+                #         command += pctl.master_library[item].fullpath
+                #         command += '" '
+                #
+                #     command += '-filter_complex "[0:a:0][1:a:0] concat=n='
+                #     command += str(len(folder_items))
+                #     command += ':v=0:a=1[out]" -map "[out]" '
+                #     command += full_wav_out
+                #
+                #     print(4)
+                #     if pctl.master_library[folder_items[0]].is_cue == True or len(folder_items) == 1:
+                #         command = install_directory + '/encoder/ffmpeg -i "' + pctl.master_library[folder_items[0]].fullpath + '" ' + full_wav_out
+                #
+                #         n_folder = []
+                #         for i in reversed(range(len(folder_items))):
+                #             if pctl.master_library[folder_items[i]].fullpath != pctl.master_library[folder_items[0]].fullpath:
+                #                 n_folder.append(folder_items[i])
+                #                 del folder_items[i]
+                #         print(2)
+                #         if len(n_folder) > 0:
+                #             transcode_list.append(n_folder)
+                #
+                #     print(command)
+                #
+                #     transcode_state = "(Decoding)"
+                #     gui.update += 1
+                #
+                #     print(shlex.split(command))
+                #     startupinfo = None
+                #     if system == 'windows':
+                #         startupinfo = subprocess.STARTUPINFO()
+                #         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                #     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
+                #
+                #     print('done ffmpeg')
+                #
+                #     transcode_state = "(Encoding)"
+                #     gui.update += 1
+                #
+                #     if prefs.transcode_codec == 'mp3':
+                #
+                #         command = install_directory + '/encoder/lame --silent --abr ' + str(
+                #             prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #         if system != 'windows':
+                #             command = 'lame --silent --abr ' + str(
+                #                 prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #     elif prefs.transcode_codec == 'opus':
+                #
+                #         command = install_directory + '/encoder/opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #         if system != 'windows':
+                #             command = 'opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #     elif prefs.transcode_codec == 'ogg':
+                #
+                #         command = install_directory + '/encoder/oggenc2 --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #         if system != 'windows':
+                #             command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
+                #
+                #     print(shlex.split(command))
+                #     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
+                #     print('done')
+                #
+                #     os.remove(full_wav_out_p)
+                #     output_dir = prefs.encoder_output + folder_name + "/"
+                #     print(output_dir)
+                #     #print(output_dir + folder_name + ".opus test")
+                #     shutil.move(full_target_out_p, output_dir + folder_name + "." + prefs.transcode_codec) #opus")
+                #
+                #     cu = ""
+                #     cu += 'PERFORMER "' + pctl.master_library[folder_items[0]].artist + '"\n'
+                #     cu += 'TITLE "' + pctl.master_library[folder_items[0]].album + '"\n'
+                #     cu += 'REM DATE "' + pctl.master_library[folder_items[0]].date + '"\n'
+                #     cu += 'FILE "' + folder_name + "." + prefs.transcode_codec + '" WAVE\n'
+                #
+                #     run_time = 0
+                #     track = 1
+                #
+                #     for item in folder_items:
+                #
+                #         cu += 'TRACK '
+                #         if track < 10:
+                #             cu += '0'
+                #         cu += str(track)
+                #         cu += ' AUDIO\n'
+                #
+                #         cu += ' TITLE "'
+                #         cu += pctl.master_library[item].title
+                #         cu += '"\n'
+                #
+                #         cu += ' PERFORMER "'
+                #         cu += pctl.master_library[item].artist
+                #         cu += '"\n'
+                #
+                #         cu += ' INDEX 01 '
+                #
+                #         m, s = divmod(run_time, 60)
+                #         s, ms = divmod(s, 1)
+                #         ms = int(round(ms, 2) * 100)
+                #
+                #         if ms < 10:
+                #             ms = '0' + str(ms)
+                #         else:
+                #             ms = str(ms)
+                #
+                #         if m < 10:
+                #             m = '0' + str(int(m))
+                #         else:
+                #             m = str(int(m))
+                #
+                #         if s < 10:
+                #             s = '0' + str(int(s))
+                #         else:
+                #             s = str(int(s))
+                #
+                #         cu += m + ":" + s + ":" + ms + "\n"
+                #
+                #         if default_player == 'BASS' and pctl.master_library[item].is_cue is False:
+                #             tracklen = get_backend_time(pctl.master_library[item].fullpath)
+                #         else:
+                #             tracklen = int(pctl.master_library[item].length)
+                #
+                #         run_time += tracklen
+                #         track += 1
+                #
+                #     cue = open(output_dir + folder_name + ".cue", 'w', encoding="utf_8")
+                #     cue.write(cu)
+                #     cue.close()
+                #
+                #     album_art_gen.save_thumb(folder_items[0], (720, 720), output_dir + folder_name)
+                #     print('finish')
 
                 del transcode_list[0]
                 transcode_state = ""
@@ -7384,7 +7410,10 @@ def worker1():
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
-                show_message("Encoding Completed")
+                line = "Encoding Completed"
+                if prefs.transcode_codec == 'flac':
+                    line += ". Note that any associated output picture is a thumbnail and not a lossless copy."
+                show_message(line)
 
         # while len(gall_ren.queue) > 0:
         #
@@ -8215,6 +8244,15 @@ def switch_opus(mode=0):
             return False
     prefs.transcode_codec = 'opus'
 
+def switch_flac(mode=0):
+    if mode == 1:
+        if prefs.transcode_codec == 'flac':
+            return True
+        else:
+            return False
+    prefs.transcode_codec = 'flac'
+
+
 def toggle_sbt(mode=0):
     if mode == 1:
         return prefs.prefer_bottom_title
@@ -8437,40 +8475,42 @@ class Over:
         # self.toggle_square(x, y, switch_single, "Individual Tracks")
 
         y += 40
+        self.toggle_square(x, y, switch_flac, "FLAC")
+        y += 25
         self.toggle_square(x, y, switch_opus, "OPUS")
         y += 25
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25
         self.toggle_square(x, y, switch_mp3, "MP3  [slow, requires Lame]")
 
+        if prefs.transcode_codec != 'flac':
+            y += 35
+            draw_text((x, y), "Bitrate:", [255, 255, 255, 150], 12)
 
-        y += 35
-        draw_text((x, y), "Bitrate:", [255, 255, 255, 150], 12)
+            x += 60
+            rect = (x,y,15,15)
+            fields.add(rect)
+            draw.rect_r(rect, [255,255,255,20], True)
+            if coll_point(mouse_position, rect):
+                draw.rect_r(rect, [255, 255, 255, 25], True)
+                if self.click:
+                    if prefs.transcode_bitrate > 32:
+                        prefs.transcode_bitrate -= 8
+            draw_text((x+4, y), "<", colours.grey(200), 11)
+            x += 20
+            # draw.rect_r((x,y,40,15), [255,255,255,10], True)
+            draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", [255,255,255,150], 11)
+            x +=  40 + 15
+            rect = (x, y, 15, 15)
+            fields.add(rect)
+            draw.rect_r(rect, [255,255,255,20], True)
+            if coll_point(mouse_position, rect):
+                draw.rect_r(rect, [255, 255, 255, 25], True)
+                if self.click:
+                    if prefs.transcode_bitrate < 320:
+                        prefs.transcode_bitrate += 8
 
-        x += 60
-        rect = (x,y,15,15)
-        fields.add(rect)
-        draw.rect_r(rect, [255,255,255,20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if prefs.transcode_bitrate > 32:
-                    prefs.transcode_bitrate -= 8
-        draw_text((x+4, y), "<", colours.grey(200), 11)
-        x += 20
-        # draw.rect_r((x,y,40,15), [255,255,255,10], True)
-        draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", [255,255,255,150], 11)
-        x +=  40 + 15
-        rect = (x, y, 15, 15)
-        fields.add(rect)
-        draw.rect_r(rect, [255,255,255,20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if prefs.transcode_bitrate < 320:
-                    prefs.transcode_bitrate += 8
-
-        draw_text((x + 4, y), ">", colours.grey(200), 11)
+            draw_text((x + 4, y), ">", colours.grey(200), 11)
 
 
     def config_b(self):
@@ -10408,7 +10448,7 @@ class StandardPlaylist:
                         playlist_left, playlist_top + playlist_row_height * w, playlist_width,
                         playlist_row_height)):
 
-                    if mouse_up and key_shift_down:
+                    if mouse_up: # and key_shift_down:
                         move_on_title = True
 
 
@@ -10439,14 +10479,15 @@ class StandardPlaylist:
                                 shift_selection.append(u)
                                 u += 1
 
+
                     # Add folder to selection if clicked
                     if mouse_click:
                         temp = get_folder_tracks_local(p_track)
-                        if not key_shift_down:
-                            shift_selection = []
+                        # if p_track not in shift_selection: # not key_shift_down:
+                        #     shift_selection = []
                         playlist_selected = p_track
 
-                        if len(shift_selection) > 0:
+                        if len(shift_selection) > 0 and key_shift_down:
                             if p_track < shift_selection[0]:
                                 for item in reversed(temp):
                                     if item not in shift_selection:
@@ -10474,12 +10515,19 @@ class StandardPlaylist:
             #               (playlist_width, playlist_row_height - 1), [0, 0, 0, 20], True)
 
             # Test if line hit
-            if (mouse_click or right_click or middle_click) and coll_point(mouse_position, (
+            line_over = False
+            if coll_point(mouse_position, (
                         playlist_left + 10, playlist_top + playlist_row_height * w, playlist_width - 10,
                         playlist_row_height - 1)) and mouse_position[1] < window_size[1] - panelBY:
-                line_hit = True
+                line_over = True
+                if (mouse_click or right_click or middle_click):
+                    line_hit = True
+                else:
+                    line_hit = False
             else:
                 line_hit = False
+                line_over = False
+
             if scroll_enable and mouse_position[0] < 30:
                 line_hit = False
 
@@ -10528,9 +10576,16 @@ class StandardPlaylist:
                 if p_track not in shift_selection:
                     shift_selection = [p_track]
 
-            if mouse_click and key_shift_down is False and line_hit:
+            if mouse_click and line_hit and p_track not in shift_selection: #key_shift_down is False and line_hit:
                 # shift_selection = []
                 shift_selection = [p_track]
+            if mouse_up and line_over and not key_shift_down and not playlist_hold:
+                shift_selection = []
+                gui.pl_update = 1
+            if mouse_down and line_over and p_track not in shift_selection and len(shift_selection) > 1:
+                playlist_hold = True
+
+
             if mouse_click and line_hit:
                 quick_drag = True
 

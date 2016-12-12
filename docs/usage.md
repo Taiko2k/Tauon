@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v1.8.6
+Basic usage guide. Updated for v1.9.0
 ===========
 
 Player is playlist oriented and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists.
@@ -54,12 +54,12 @@ Tip: End the search text with another forward slash to search just for folders w
  - Playlists can be rearranged by dragging them
  - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
  - Single tracks can be moved within a playlist by holding shift and dragging
- - To move a block of tracks; click the first track, then while holding shift click the last track, then click and drag while holding shift
+ - To move a block of tracks; click the first track, then while holding shift click the last track, then click and drag.
 
 ### Quirks
 
  - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
- - Quirk: Although it is possible to open tracks via file association, this is not the recommended way of importing music. A different application would be better for this purpose.
+ - Quirk: Although it is possible to open tracks via file association, this is not the recommended way of importing music. A different application might be better for this purpose.
  - Quirk: There is no playlist repeat function, player will stop once it reaches the end of a playlist (Broadcasting will repeat from the top however)
  - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Playtimes are periodically saved however.
 
