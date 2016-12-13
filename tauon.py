@@ -782,6 +782,10 @@ if window_size is None:
     window_size = window_default_size
     side_panel_size = 200
 
+def show_message(text):
+    gui.message_box = True
+    gui.message_text = text
+    gui.update = 1
 
 if db_version > 0:
 
@@ -811,6 +815,7 @@ if db_version > 0:
         for key, value in master_library.items():
             setattr(master_library[key], 'lyrics', "")
             setattr(master_library[key], 'track_total', "")
+        show_message("Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -914,12 +919,6 @@ if prefs.prefer_side is False:
 
 get_len = 0
 get_len_filepath = ""
-
-
-def show_message(text):
-    gui.message_box = True
-    gui.message_text = text
-    gui.update = 1
 
 
 def get_global_mouse():
@@ -4973,7 +4972,7 @@ def sort_path_pl(pl):
 tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
 
-tab_menu.add_sub("Sort To New Playlist...", 110)
+tab_menu.add_sub("Sort To New Playlist...", 120)
 
 
 def new_playlist(switch=True):
@@ -4999,7 +4998,6 @@ tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
 
 def gen_top_100(index):
-    global pctl
 
     def best(index):
         key = pctl.master_library[index].title + pctl.master_library[index].filename
@@ -5021,6 +5019,46 @@ def gen_top_100(index):
 
 
 tab_menu.add_to_sub("Most Played", 0, gen_top_100, pass_ref=True)
+
+def gen_folder_top(pl):
+
+    if len(pctl.multi_playlist[pl][2]) < 3:
+        return
+
+    sets = []
+    se = []
+    last = pctl.master_library[pctl.multi_playlist[pl][2][0]].parent_folder_path
+    last_al = pctl.master_library[pctl.multi_playlist[pl][2][0]].album
+    for track in pctl.multi_playlist[pl][2]:
+        se.append(track)
+        if last != pctl.master_library[track].parent_folder_path or last_al != pctl.master_library[track].album:
+            last = pctl.master_library[track].parent_folder_path
+            last_al = pctl.master_library[track].album
+            sets.append(copy.deepcopy(se))
+            se = []
+    sets.append(copy.deepcopy(se))
+
+    def best(folder):
+        print(folder)
+        total_star = 0
+        for item in folder:
+            key = pctl.master_library[item].title + pctl.master_library[item].filename
+            if key in pctl.star_library:
+                total_star += int(pctl.star_library[key])
+        print(total_star)
+        return total_star
+
+    sets = sorted(sets, key=best, reverse=True)
+    playlist = []
+
+    for se in sets:
+        playlist += se
+
+    pctl.multi_playlist.append(
+        [pctl.multi_playlist[pl][0] + " <Most Played Albums>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
+
 
 def gen_comment(pl):
 

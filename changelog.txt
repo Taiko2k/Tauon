@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v1.9.0
 
- - Added quick drag tracks onto top panel to send to new playlist functionality
+ - Added 'most played albums' sorting option
+ - Added functionality for quick dragging tracks onto top panel to send to new playlist
  - Added disc number tag reading for OPUS, OGG, MP3 and FLAC. Updated sorting function to recognise this.
  - Added disc total and track total display to track info box.
  - Added 'paste' and 'clear' buttons to URL input box
@@ -17,11 +18,10 @@ v1.9.0
  - Improved transcoding error feedback on linux
  - Tweaked gallery to no longer jump when track advances automatically
  - Tweaked scroll bar appearance
- - Tweaked folder break behavior to select on right click
- - Tweaked copy artist - album function to prioritise using artist-album field for artist
+ - Tweaked folder title to select on right click
+ - Tweaked 'copy artist - album' function to prioritise using artist-album field for artist
  - Tweaked track dragging to no longer require shift to be held to move multiple tracks
  - Tweaked Go To Playing function to make any matching track in the open playlist the playing track and playlist
- - Added 'copy album artist - album' entry to selection menu
  - Fixed crash when using radio random
  - Fixed seek bar, track title and playing time display for radio streaming
  - Fixed player not switching to stopped state when stream ends
