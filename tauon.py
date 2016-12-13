@@ -5030,12 +5030,12 @@ def gen_folder_top(pl):
     last = pctl.master_library[pctl.multi_playlist[pl][2][0]].parent_folder_path
     last_al = pctl.master_library[pctl.multi_playlist[pl][2][0]].album
     for track in pctl.multi_playlist[pl][2]:
-        se.append(track)
         if last != pctl.master_library[track].parent_folder_path or last_al != pctl.master_library[track].album:
             last = pctl.master_library[track].parent_folder_path
             last_al = pctl.master_library[track].album
             sets.append(copy.deepcopy(se))
             se = []
+        se.append(track)
     sets.append(copy.deepcopy(se))
 
     def best(folder):
@@ -13346,7 +13346,7 @@ while running:
                                 mouse_click = False
                         else:
                             draw_text((x + 8 + 10, y + 40), "Album Artist", colours.alpha_grey(140), 12)
-                        draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 140),
+                        draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 135),
                                   colours.alpha_grey(190), 12)
                         x -= 170
 
