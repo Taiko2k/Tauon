@@ -160,6 +160,8 @@ warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
 
 default_player = 'BASS'
+gapless_type1 = False
+
 if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.so'):
     print("BASS not found")
     try:
@@ -167,6 +169,7 @@ if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.
         gi.require_version('Gst', '1.0')
         from gi.repository import GObject, Gst
         default_player = "GTK"
+        gapless_type1 = True
         print("Using fallback GStreamer")
     except:
         print("ERROR: gi.repository not found")
@@ -1302,14 +1305,15 @@ class PlayerCtl:
         if update_title:
             update_title_do()
 
-    def play_target(self):
+    def play_target(self, gapless=False):
 
         self.playing_time = 0
         # print(self.track_queue)
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
-        self.playerCommand = 'open'
-        self.playerCommandReady = True
+        if not gapless:
+            self.playerCommand = 'open'
+            self.playerCommandReady = True
         self.playing_state = 1
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.last_playing_time = 0
@@ -1430,7 +1434,7 @@ class PlayerCtl:
 
         self.render_playlist()
 
-    def advance(self, rr=False, quiet=False):
+    def advance(self, rr=False, quiet=False, gapless=False):
 
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -1503,7 +1507,7 @@ class PlayerCtl:
                 self.playlist_playing += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing])
                 self.queue_step = len(self.track_queue) - 1
-                self.play_target()
+                self.play_target(gapless=gapless)
 
         else:
             print("ADVANCE ERROR: NO CASE!")
@@ -1806,6 +1810,17 @@ def player3():
 
             self.mainloop.run()
 
+        def about_to_finish(self, player):
+
+            print("trigger-end")
+            if gapless_type1:
+                player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
+                pctl.playing_time = 0
+
+                if pctl.start_time > 1:
+                    self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                        pctl.start_time * Gst.SECOND)
+
         def test11(self):
 
             if pctl.playerCommandReady:
@@ -1828,6 +1843,8 @@ def player3():
 
                     self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                         pctl.start_time * Gst.SECOND)
+
+                    self.pl.connect("about-to-finish", self.about_to_finish)
 
                     player_timer.hit()
 
@@ -14633,7 +14650,7 @@ while running:
             gui.pl_update = 1
 
         else:
-            pctl.advance(quiet=True)
+            pctl.advance(quiet=True, gapless=gapless_type1)
             pctl.playing_time = 0
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
