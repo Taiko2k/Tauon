@@ -3,7 +3,7 @@
 Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
 
-# Development setup on Linux
+# Setup on Linux
 
 #### Backend:
 
