@@ -3,11 +3,22 @@
 Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
 
-# Development setup on Linux
+# Setup on Linux
+
+#### Backend:
 
 BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions).
 
-Use the following commands to install other dependencies:
+Alternatively GStreamer can be used as the audio backend and thus not requiring proprietary libraries. (Install on Arch: python-gobject). However the following player features will not be avaliable:
+
+ - Inbound streaming
+ - Outbound streaming
+ - Track crossfade
+ - Pause fade
+ - Visualizations
+ - Some audio codecs depending on gstreamer plugins installed on your system
+
+#### Use the following commands to install other dependencies:
 
 
 Arch Linux:
@@ -15,7 +26,7 @@ Arch Linux:
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
 
-   Note: You mas also need to install the 'pulseaudio-alsa' package for desktop audio to function correctly
+   Note: You mas also need to install the 'pulseaudio-alsa' package for desktop audio to function correctly  
    Warning: Installing python libraries with pip like this may conflict with installing applications from the AUR that use AUR versions of these libraries. In this case just uninstall the conflicting pip versions first. $ sudo pip3 uninstall example.
 
 Ubuntu:
@@ -51,10 +62,10 @@ Finally run from install directroy using:
 
 As a rough guide:
 
-Download and run python3, pywin32, pillow and pysdl2 installers for windows
-Find and place BASS and SDL dll's in lib directory as listed in libraries.txt
-Install python libraries with cmd command: python -m pip install hsaudiotag3k pylast pysdl2 flask stagger
+- Download and run python3, pywin32, pillow and pysdl2 installers for windows
+- Find and place BASS and SDL dll's in lib directory as listed in libraries.txt
+- Install python libraries with cmd command: python -m pip install hsaudiotag3k pylast pysdl2 flask stagger
 
-Start by running command from program directroy: python tauon.py
+Start by running command from program directroy: python tauon.py  
 Install any other dependencies as required, see cmd output for details etc
 
