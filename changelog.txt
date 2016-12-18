@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v1.9.1
+
+ - Added GStreamber fallback on linux with basic functionality
+ - Tweaked playlist rename input box to apply input on click out, not just enter key.
+ - Fixed not being able to delete or arrange playlist while importing
+
 v1.9.0
 
  - Added 'most played albums' sorting option
