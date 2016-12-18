@@ -161,6 +161,7 @@ warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
 default_player = 'BASS'
 gapless_type1 = False
+running = True
 
 if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.so'):
     print("BASS not found")
@@ -1314,6 +1315,8 @@ class PlayerCtl:
         if not gapless:
             self.playerCommand = 'open'
             self.playerCommandReady = True
+        else:
+            self.playerCommand = 'gapless'
         self.playing_state = 1
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.last_playing_time = 0
@@ -1813,7 +1816,7 @@ def player3():
         def about_to_finish(self, player):
 
             print("trigger-end")
-            if gapless_type1:
+            if gapless_type1 and pctl.playerCommand == 'gapless':
                 player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
                 pctl.playing_time = 0
 
@@ -1920,7 +1923,7 @@ def player3():
                 pctl.playerCommand = 'done'
 
             else:
-                GObject.timeout_add(20, self.test11)
+                GObject.timeout_add(25, self.test11)
 
     g_player = GPlayer()
 
@@ -14650,7 +14653,11 @@ while running:
             gui.pl_update = 1
 
         else:
-            pctl.advance(quiet=True, gapless=gapless_type1)
+            if pctl.playing_time < pctl.playing_length:
+                pctl.advance(quiet=True, gapless=gapless_type1)
+            else:
+                pctl.advance(quiet=True)
+
             pctl.playing_time = 0
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
