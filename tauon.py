@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v1.9.0"
+t_version = "v1.9.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -158,6 +158,18 @@ from tflac import Opus
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
+
+default_player = 'BASS'
+if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.so'):
+    print("BASS not found")
+    try:
+        import gi
+        gi.require_version('Gst', '1.0')
+        from gi.repository import GObject, Gst
+        default_player = "GTK"
+        print("Using fallback GStreamer")
+    except:
+        print("ERROR: gi.repository not found")
 
 class Timer:  # seconds
     def __init__(self):
@@ -318,7 +330,7 @@ p_stopping = 2
 p_paused = 3
 
 cargo = []
-default_player = 'BASS'
+
 # ---------------------------------------------------------------------
 # Player variables
 
@@ -355,8 +367,24 @@ random_mode = False
 repeat_mode = False
 direct_jump = False
 
-# [Name, playing, playlist, position, hide folder title, selected]
-multi_playlist = [['Default', 0, [], 0, 0, 0]]
+def pl_uid_gen():
+    return random.randrange(100, 10000000)
+
+def pl_gen(title='Default',
+           playing=0,
+           playlist=None,
+           position=0,
+           hide_title=0,
+           selected=0):
+
+    if playlist == None:
+        playlist = []
+
+    return [title, playing, playlist, position, hide_title, selected, pl_uid_gen()]
+
+# [Name, playing, playlist, position, hide folder title, selected, uid]
+#multi_playlist = [['Default', 0, [], 0, 0, 0, 5555]]
+multi_playlist = [pl_gen()]
 
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
@@ -678,7 +706,7 @@ class TrackClass:
 class LoadClass:
     def __init__(self):
         self.target = ""
-        self.playlist = 0
+        self.playlist = 0  # Playlist UID
         self.tracks = []
         self.stage = 0
 
@@ -812,6 +840,12 @@ if db_version > 0:
         show_message(
             "Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
 
+    if db_version <= 1.4:
+        print("Updating database from version 1.4 to 1.5")
+        for playlist in multi_playlist:
+            playlist.append(pl_uid_gen())
+
+
 # LOADING CONFIG
 player_config = "BASS"
 
@@ -918,14 +952,14 @@ def get_global_mouse():
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
     SDL_GetGlobalMouseState(i_x, i_y)
-    return (i_x.contents.value, i_y.contents.value)
+    return i_x.contents.value, i_y.contents.value
 
 
 def get_window_position():
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
     SDL_GetWindowPosition(t_window, i_x, i_y)
-    return (i_x.contents.value, i_y.contents.value)
+    return i_x.contents.value, i_y.contents.value
 
 
 def get_len_backend(filepath):
@@ -1680,6 +1714,202 @@ lastfm = LastFMapi()
 #
 # lyrics_s = LyricsCore()
 
+class LastScrob:
+    
+    def __init__(self):
+        
+        self.a_index = -1
+        self.a_sc = False
+        self.a_pt = False
+        
+    def update(self, add_time):
+
+        if self.a_index != pctl.track_queue[pctl.queue_step]:
+            pctl.a_time = 0
+            pctl.b_time = 0
+            self.a_index = pctl.track_queue[pctl.queue_step]
+            self.a_pt = False
+            self.a_sc = False
+        if pctl.playing_time == 0 and self.a_sc is True:
+            print("Reset scrobble timer")
+            pctl.a_time = 0
+            pctl.b_time = 0
+            self.a_pt = False
+            self.a_sc = False
+        if pctl.a_time > 10 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
+            self.a_pt = True
+
+            if lastfm.connected:
+                mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
+                                                                      pctl.master_library[self.a_index].artist,
+                                                                      pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+
+        if pctl.a_time > 10 and self.a_pt:
+            pctl.b_time += add_time
+            if pctl.b_time > 20:
+                pctl.b_time = 0
+                if lastfm.connected:
+                    mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
+                                                                          pctl.master_library[self.a_index].artist,
+                                                                          pctl.master_library[self.a_index].album))
+                    mini_t.daemon = True
+                    mini_t.start()
+
+        if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
+                * 0.50 and self.a_sc is False:
+            self.a_sc = True
+            if lastfm.connected:
+                gui.pl_update = 1
+                print(
+                    "Scrobble " + pctl.master_library[self.a_index].title + " - " + pctl.master_library[
+                        self.a_index].artist)
+
+                mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[self.a_index].title,
+                                                                        pctl.master_library[self.a_index].artist,
+                                                                        pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+
+        if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
+            if lastfm.connected:
+                gui.pl_update = 1
+                print(
+                    "Scrobble " + pctl.master_library[self.a_index].title + " - " + pctl.master_library[
+                        self.a_index].artist)
+
+                mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[self.a_index].title,
+                                                                        pctl.master_library[self.a_index].artist,
+                                                                        pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+            self.a_sc = True
+
+lfm_scrobbler = LastScrob()
+
+def player3():
+
+    player_timer = Timer()
+
+    class GPlayer:
+
+        def __init__(self):
+
+            Gst.init()
+            self.mainloop = GObject.MainLoop()
+
+            self.play_state = 0
+            self.pl = Gst.ElementFactory.make("playbin", "player")
+
+            GObject.timeout_add(500, self.test11)
+
+            self.mainloop.run()
+
+        def test11(self):
+
+            if pctl.playerCommandReady:
+                if pctl.playerCommand == 'open' and pctl.target_open != '':
+                    print("open")
+
+                    # Stop if playing or paused
+                    if self.play_state == 1 or self.play_state == 2:
+                        self.pl.set_state(Gst.State.NULL)
+
+                    self.play_state = 1
+
+                    self.pl.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
+
+                    self.pl.set_property('volume', pctl.player_volume / 100)
+
+                    self.pl.set_state(Gst.State.PLAYING)
+
+                    time.sleep(0.1)
+
+                    self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                        pctl.start_time * Gst.SECOND)
+
+                    player_timer.hit()
+
+                    # elif pctl.playerCommand == 'url':
+                    #
+                    #    # Stop if playing or paused
+                    #    if self.play_state == 1 or self.play_state == 2:
+                    #        self.pl.set_state(Gst.State.NULL)
+                    #
+                    #
+                    #        self.pl.set_property('uri', pctl.url)
+                    #        self.pl.set_property('volume', pctl.player_volume / 100)
+                    #        self.pl.set_state(Gst.State.PLAYING)
+                    #        self.play_state = 3
+                    #        player_timer.hit()
+
+
+                elif pctl.playerCommand == 'volume':
+                    if self.play_state == 1:
+                        print("volume")
+                        self.pl.set_property('volume', pctl.player_volume / 100)
+
+                elif pctl.playerCommand == 'stop':
+                    if self.play_state > 0:
+                        self.pl.set_state(Gst.State.NULL)
+
+                elif pctl.playerCommand == 'seek':
+                    if self.play_state > 0:
+                        self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                            (pctl.new_time + pctl.start_time) * Gst.SECOND)
+                elif pctl.playerCommand == 'pause':
+                    player_timer.hit()
+                    if self.play_state == 1:
+                        self.play_state = 2
+                        self.pl.set_state(Gst.State.PAUSED)
+                    elif self.play_state == 2:
+                        self.pl.set_state(Gst.State.PLAYING)
+                        self.play_state = 1
+
+                pctl.playerCommandReady = False
+
+            if self.play_state == 1:
+
+                # Progress main seek head
+                add_time = player_timer.hit()
+                pctl.playing_time += add_time
+
+                lfm_scrobbler.update(add_time)
+
+                # Update track play count
+                if len(pctl.track_queue) > 0:
+                    index = pctl.track_queue[pctl.queue_step]
+                    key = pctl.master_library[index].title + pctl.master_library[index].filename
+                    if key in pctl.star_library:
+                        if 3 > add_time > 0:
+                            pctl.star_library[key] += add_time
+                    else:
+                        pctl.star_library[key] = 0
+
+            # if self.play_state == 3:
+            #    # Progress main seek head
+            #    add_time = player_timer.hit()
+            #    pctl.playing_time += add_time
+
+
+            if not running:
+                print("quit")
+                if self.play_state > 0:
+                    self.pl.set_state(Gst.State.NULL)
+                    time.sleep(0.5)
+
+                self.mainloop.quit()
+                pctl.playerCommand = 'done'
+
+            else:
+                GObject.timeout_add(20, self.test11)
+
+    g_player = GPlayer()
+
+    pctl.playerCommand = 'done'
+
+
 def player():
     a_index = -1
     a_sc = False
@@ -2067,7 +2297,7 @@ def player():
                 if BASS_ChannelIsActive(handle1) == 0:
                     pctl.playing_state = 0
                     show_message("The stream has ended or connection lost")
-                    player1_status == p_stopped
+                    player1_status = p_stopped
                     pctl.playing_time = 0
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
@@ -2083,67 +2313,69 @@ def player():
                 pctl.a_time += add_time
                 pctl.total_playtime += add_time
 
-                if a_index != pctl.track_queue[pctl.queue_step]:
-                    pctl.a_time = 0
-                    pctl.b_time = 0
-                    a_index = pctl.track_queue[pctl.queue_step]
-                    a_pt = False
-                    a_sc = False
-                if pctl.playing_time == 0 and a_sc is True:
-                    print("Reset scrobble timer")
-                    pctl.a_time = 0
-                    pctl.b_time = 0
-                    a_pt = False
-                    a_sc = False
-                if pctl.a_time > 10 and a_pt is False and pctl.master_library[a_index].length > 30:
-                    a_pt = True
+                lfm_scrobbler.update(add_time)
 
-                    if lastfm.connected:
-                        mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
-                                                                              pctl.master_library[a_index].artist,
-                                                                              pctl.master_library[a_index].album))
-                        mini_t.daemon = True
-                        mini_t.start()
-
-                if pctl.a_time > 10 and a_pt:
-                    pctl.b_time += add_time
-                    if pctl.b_time > 20:
-                        pctl.b_time = 0
-                        if lastfm.connected:
-                            mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
-                                                                                  pctl.master_library[a_index].artist,
-                                                                                  pctl.master_library[a_index].album))
-                            mini_t.daemon = True
-                            mini_t.start()
-
-                if pctl.master_library[a_index].length > 30 and pctl.a_time > pctl.master_library[a_index].length \
-                        * 0.50 and a_sc is False:
-                    a_sc = True
-                    if lastfm.connected:
-                        gui.pl_update = 1
-                        print(
-                            "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
-                                a_index].artist)
-
-                        mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
-                                                                                pctl.master_library[a_index].artist,
-                                                                                pctl.master_library[a_index].album))
-                        mini_t.daemon = True
-                        mini_t.start()
-
-                if a_sc is False and pctl.master_library[a_index].length > 30 and pctl.a_time > 240:
-                    if lastfm.connected:
-                        gui.pl_update = 1
-                        print(
-                            "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
-                                a_index].artist)
-
-                        mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
-                                                                                pctl.master_library[a_index].artist,
-                                                                                pctl.master_library[a_index].album))
-                        mini_t.daemon = True
-                        mini_t.start()
-                    a_sc = True
+                # if a_index != pctl.track_queue[pctl.queue_step]:
+                #     pctl.a_time = 0
+                #     pctl.b_time = 0
+                #     a_index = pctl.track_queue[pctl.queue_step]
+                #     a_pt = False
+                #     a_sc = False
+                # if pctl.playing_time == 0 and a_sc is True:
+                #     print("Reset scrobble timer")
+                #     pctl.a_time = 0
+                #     pctl.b_time = 0
+                #     a_pt = False
+                #     a_sc = False
+                # if pctl.a_time > 10 and a_pt is False and pctl.master_library[a_index].length > 30:
+                #     a_pt = True
+                # 
+                #     if lastfm.connected:
+                #         mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
+                #                                                               pctl.master_library[a_index].artist,
+                #                                                               pctl.master_library[a_index].album))
+                #         mini_t.daemon = True
+                #         mini_t.start()
+                # 
+                # if pctl.a_time > 10 and a_pt:
+                #     pctl.b_time += add_time
+                #     if pctl.b_time > 20:
+                #         pctl.b_time = 0
+                #         if lastfm.connected:
+                #             mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
+                #                                                                   pctl.master_library[a_index].artist,
+                #                                                                   pctl.master_library[a_index].album))
+                #             mini_t.daemon = True
+                #             mini_t.start()
+                # 
+                # if pctl.master_library[a_index].length > 30 and pctl.a_time > pctl.master_library[a_index].length \
+                #         * 0.50 and a_sc is False:
+                #     a_sc = True
+                #     if lastfm.connected:
+                #         gui.pl_update = 1
+                #         print(
+                #             "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
+                #                 a_index].artist)
+                # 
+                #         mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
+                #                                                                 pctl.master_library[a_index].artist,
+                #                                                                 pctl.master_library[a_index].album))
+                #         mini_t.daemon = True
+                #         mini_t.start()
+                # 
+                # if a_sc is False and pctl.master_library[a_index].length > 30 and pctl.a_time > 240:
+                #     if lastfm.connected:
+                #         gui.pl_update = 1
+                #         print(
+                #             "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
+                #                 a_index].artist)
+                # 
+                #         mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
+                #                                                                 pctl.master_library[a_index].artist,
+                #                                                                 pctl.master_library[a_index].album))
+                #         mini_t.daemon = True
+                #         mini_t.start()
+                #     a_sc = True
 
             if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
                 index = pctl.track_queue[pctl.queue_step]
@@ -2651,11 +2883,18 @@ def player():
 
     pctl.playerCommand = 'done'
 
+if default_player == 'BASS':
 
-playerThread = threading.Thread(target=player)
-playerThread.daemon = True
-playerThread.start()
+    playerThread = threading.Thread(target=player)
+    playerThread.daemon = True
+    playerThread.start()
 
+elif default_player == 'GTK':
+
+    playerThread = threading.Thread(target=player3)
+    playerThread.daemon = True
+    playerThread.start()
+    
 # --------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------
 mediaKey = ''
@@ -4355,7 +4594,9 @@ def load_xspf(path):
 
     if missing > 0:
         show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
-    pctl.multi_playlist.append([name, 0, playlist, 0, 0, 0])
+    # pctl.multi_playlist.append([name, 0, playlist, 0, 0, 0])
+    pctl.multi_playlist.append(pl_gen(title=name,
+                                      playlist=playlist))
     gui.update = 1
 
 
@@ -4817,12 +5058,18 @@ def delete_playlist(index):
     global playlist_position
     global mouse_click
 
+    if rename_playlist_box:
+        return
+
     gui.pl_update = 1
     gui.update += 1
 
     if len(pctl.multi_playlist) < 2:
         pctl.multi_playlist = []
-        pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        pctl.multi_playlist.append(pl_gen())
+        print(pl_gen())
+        print(pctl.multi_playlist)
         default_playlist = pctl.multi_playlist[0][2]
         return
 
@@ -4951,7 +5198,7 @@ def new_playlist(switch=True):
         else:
             break
 
-    pctl.multi_playlist.append([title, 0, [], 0, 0, 0])
+    pctl.multi_playlist.append(pl_gen(title=title))  # [title, 0, [], 0, 0, 0])
     if switch:
         switch_playlist(len(pctl.multi_playlist) - 1)
     return len(pctl.multi_playlist) - 1
@@ -4976,8 +5223,10 @@ def gen_top_100(index):
     # if len(playlist) > 1000:
     #     playlist = playlist[:1000]
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Playtime Sorted>",
+                               playlist=copy.deepcopy(playlist),
+                               hide_title=1))
+    #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
 tab_menu.add_to_sub("Most Played", 0, gen_top_100, pass_ref=True)
@@ -5016,9 +5265,13 @@ def gen_folder_top(pl):
     for se in sets:
         playlist += se
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[pl][0] + " <Most Played Albums>", 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[pl][0] + " <Most Played Albums>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Played Albums>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
 
@@ -5045,7 +5298,10 @@ def gen_comment(pl):
             playlist.append(item)
 
     if len(playlist) > 0:
-        pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
+        #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
+        pctl.multi_playlist.append(pl_gen(title="Interesting Comments",
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
     else:
         show_message("Nothing Found")
 
@@ -5064,9 +5320,13 @@ def gen_most_skip(pl):
 
     playlist = sorted(playlist, key=worst, reverse=True)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=1))
 
 tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
 
@@ -5084,9 +5344,12 @@ def gen_sort_len(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=length, reverse=True)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Duration Sorted>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=1))
 
 tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
 
@@ -5132,9 +5395,12 @@ def gen_sort_date(index, rev=False):
         else:
             line = " <" + str(lowest) + "-" + str(highest) + ">"
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + line,
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 tab_menu.add_to_sub("Year → Old-New", 0, gen_sort_date, pass_ref=True)
 
@@ -5153,10 +5419,13 @@ def gen_500_random(index):
     playlist = list(set(playlist))
     random.shuffle(playlist)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Shuffled>", 0, copy.deepcopy(playlist), 0,
-         1, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Shuffled>", 0, copy.deepcopy(playlist), 0,
+    #      1, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=1))
 
 tab_menu.add_to_sub("Shuffled Tracks", 0, gen_500_random, pass_ref=True)
 
@@ -5178,9 +5447,12 @@ def gen_folder_shuffle(index):
     for folder in folders:
         playlist += dick[folder]
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Shuffled Folders>", 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Shuffled Folders>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled Folders>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 tab_menu.add_to_sub("Shuffled Folders", 0, gen_folder_shuffle, pass_ref=True)
 
@@ -5196,9 +5468,12 @@ def gen_best_random(index):
             if pctl.star_library[key] > 300:
                 playlist.append(p)
     random.shuffle(playlist)
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Random Played>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=1))
 
 tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
 
@@ -5206,10 +5481,13 @@ tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
 def gen_reverse(index):
     playlist = list(reversed(pctl.multi_playlist[index][2]))
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Reversed>", 0, copy.deepcopy(playlist), 0, pctl.multi_playlist[index][4],
-         0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Reversed>", 0, copy.deepcopy(playlist), 0, pctl.multi_playlist[index][4],
+    #      0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=pctl.multi_playlist[index][4]))
 
 tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
 
@@ -5217,10 +5495,17 @@ tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
 def gen_dupe(index):
     playlist = pctl.multi_playlist[index][2]
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0], pctl.multi_playlist[index][1], copy.deepcopy(playlist),
-         pctl.multi_playlist[index][3], pctl.multi_playlist[index][4], pctl.multi_playlist[index][5]])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0], pctl.multi_playlist[index][1], copy.deepcopy(playlist),
+    #      pctl.multi_playlist[index][3], pctl.multi_playlist[index][4], pctl.multi_playlist[index][5]])
 
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0],
+                                      playing=pctl.multi_playlist[index][1],
+                                      playlist=copy.deepcopy(playlist),
+                                      position=pctl.multi_playlist[index][3],
+                                      hide_title=pctl.multi_playlist[index][4],
+                                      selected=pctl.multi_playlist[index][5]))
 
 tab_menu.add_to_sub("Duplicate", 0, gen_dupe, pass_ref=True)
 
@@ -5232,9 +5517,12 @@ def gen_sort_path(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=path)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Filepath Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Filepath Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Filepath Sorted>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 tab_menu.add_to_sub("Filepath", 0, gen_sort_path, pass_ref=True)
 
@@ -5248,9 +5536,12 @@ def gen_sort_artist(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=artist)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Artist Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Artist Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Artist Sorted>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 tab_menu.add_to_sub("Artist → ABC", 0, gen_sort_artist, pass_ref=True)
 
@@ -5262,8 +5553,12 @@ def gen_sort_album(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=album)
 
-    pctl.multi_playlist.append(
-        [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+    # pctl.multi_playlist.append(
+    #     [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Album Sorted>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
 
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
@@ -9044,7 +9339,7 @@ class Over:
             draw.rect_r(box, colours.alpha_grey(15), True)
             if self.click:
                 order = LoadClass()
-                order.playlist = copy.deepcopy(pctl.playlist_active)
+                order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
                 order.target = copy.deepcopy(self.current_path)
                 load_orders.append(copy.deepcopy(order))
 
@@ -9058,9 +9353,10 @@ class Over:
         if coll_point(mouse_position, box):
             draw.rect_r(box, colours.alpha_grey(15), True)
             if self.click:
-                pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
+                #pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
+                pctl.multi_playlist.append(pl_gen(title=os.path.basename(self.current_path)))
                 order = LoadClass()
-                order.playlist = len(pctl.multi_playlist) - 1
+                order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
                 order.target = copy.deepcopy(self.current_path)
                 load_orders.append(copy.deepcopy(order))
 
@@ -9080,9 +9376,11 @@ class Over:
 
                     full_path = os.path.join(self.current_path, item)
                     if os.path.isdir(full_path):
-                        pctl.multi_playlist.append([item, 0, [], 0, 0, 0])
+                        #pctl.multi_playlist.append([item, 0, [], 0, 0, 0])
+                        pctl.multi_playlist.append(pl_gen(title=item))
+
                         order = LoadClass()
-                        order.playlist = len(pctl.multi_playlist) - 1
+                        order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
                         order.target = copy.deepcopy(full_path)
                         load_orders.append(copy.deepcopy(order))
 
@@ -9320,7 +9618,7 @@ class TopPanel:
                     self.tab_hold = False
 
                 # Delete playlist on wheel click
-                elif tab_menu.active is False and loading_in_progress is False and middle_click:
+                elif tab_menu.active is False and middle_click:
                     delete_playlist(i)
                     break
 
@@ -9401,14 +9699,14 @@ class TopPanel:
 
         if hit and view_menu.active:
             view_menu.active = False
-            x_menu.activate(position=(x + 15, self.height))
+            x_menu.activate(position=(x + 12, self.height))
             gui.render = 1
 
         if hit and mouse_click:
             if x_menu.active:
                 x_menu.active = False
             else:
-                x_menu.activate(position=(x + 15, self.height))
+                x_menu.activate(position=(x + 12, self.height))
 
         if x_menu.active or hit:
             bg = colours.status_text_over
@@ -9426,14 +9724,14 @@ class TopPanel:
 
         if hit and x_menu.active:
             x_menu.active = False
-            view_menu.activate(position=(x + 15, self.height))
+            view_menu.activate(position=(x + 12, self.height))
             gui.render = 1
 
         if hit and mouse_click:
             if view_menu.active:
                 view_menu.active = False
             else:
-                view_menu.activate(position=(x + 15, self.height))
+                view_menu.activate(position=(x + 12, self.height))
 
         if view_menu.active or hit:
             bg = colours.status_text_over
@@ -11015,6 +11313,8 @@ sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
 print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 # time.sleep(13)
 # C-ML
+if default_player == "GTK":
+    show_message("Using GStreamer as fallback. Some functions disabled")
 print("Initialization Complete")
 
 while running:
@@ -11138,7 +11438,7 @@ while running:
             dropped_file_sdl = event.drop.file
             load_order = LoadClass()
             load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
-            load_order.playlist = playlist_target
+            load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
 
             # print('dropped: ' + str(dropped_file))
@@ -11425,11 +11725,12 @@ while running:
 
                 for w in range(len(pctl.multi_playlist)):
                     if pctl.multi_playlist[w][0] == "Default":
-                        load_order.playlist = copy.deepcopy(w)
+                        load_order.playlist = pctl.multi_playlist[w][6] # copy.deepcopy(w)
                         break
                 else:
-                    pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-                    load_order.playlist = len(pctl.multi_playlist) - 1
+                    # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+                    pctl.multi_playlist.append(pl_gen())
+                    load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
                     switch_playlist(len(pctl.multi_playlist) - 1)
 
                 load_order.target = arg_queue[i]
@@ -11509,10 +11810,10 @@ while running:
             #     print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
 
             # key_F7 = False
-            for item in default_playlist:
-                print(pctl.master_library[item].size / pctl.master_library[item].length * 8 / 1024)
+            # for item in default_playlist:
+            #     print(pctl.master_library[item].size / pctl.master_library[item].length * 8 / 1024)
             # gui.test ^= True
-
+            print(pctl.multi_playlist)
 
             # GUI_Mode = 3
 
@@ -12350,7 +12651,22 @@ while running:
             if len(load_orders) > 0:
                 for i, order in enumerate(load_orders):
                     if order.stage == 2:
-                        pctl.multi_playlist[order.playlist][2] += order.tracks
+                        target_pl = 0
+                        for p, playlist in enumerate(pctl.multi_playlist):
+                            if playlist[6] == order.playlist:
+                                target_pl = p
+                                print("target found")
+                                print(p)
+                                print(playlist[6])
+                                break
+                        else:
+                            del load_orders[i]
+                            print("Error: Target playlist lost")
+                            break
+
+                        print(order.tracks)
+                        pctl.multi_playlist[target_pl][2] += order.tracks
+
                         gui.update += 1
                         gui.pl_update = 1
                         reload()
@@ -13031,6 +13347,8 @@ while running:
 
                 if (key_esc_press and len(editline) == 0) or mouse_click or right_click:
                     rename_playlist_box = False
+                    if len(rename_text_area.text) > 0:
+                        pctl.multi_playlist[rename_index][0] = rename_text_area.text
                 elif key_return_press:
                     rename_playlist_box = False
                     key_return_press = False
@@ -13743,7 +14061,9 @@ while running:
                                         playlist.append(item)
                                 if len(playlist) > 0:
                                     # title = search_text.text
-                                    pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
+                                    # pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
+                                    pctl.multi_playlist.append(pl_gen(title=title,
+                                                                      playlist=copy.deepcopy(playlist)))
                                     switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -13757,7 +14077,9 @@ while running:
                                 if all(word in line for word in search_terms):
                                     playlist.append(item)
                             if len(playlist) > 0:
-                                pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
+                                #pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
+                                pctl.multi_playlist.append(pl_gen(title="Search Results",
+                                                                  playlist=copy.deepcopy(playlist)))
                                 switch_playlist(len(pctl.multi_playlist) - 1)
                         search_text.text = ""
                         quick_search_mode = False
@@ -14141,6 +14463,7 @@ while running:
                                        colours.vis_colour[1], colours.vis_colour[2],
                                        colours.vis_colour[3])
 
+
                 for item in gui.s_spec:
 
                     if on > 19:
@@ -14421,7 +14744,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.4,  # Version
+        1.5,  # Version
         view_prefs,
         gui.save_size,
         side_panel_size,
@@ -14476,7 +14799,11 @@ else:
     if mediakeymode == 2:
         hookman.cancel()
 
+exit_timer = Timer()
+exit_timer.set()
 while pctl.playerCommand != 'done':
     time.sleep(0.2)
+    if exit_timer.get() > 3:
+        break
 
 print("bye")
