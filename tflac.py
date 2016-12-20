@@ -26,9 +26,8 @@
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE
 
 
-# The purpose of this module is to:
-# - Read embedded images from FLAC files.
-# - Read metadata from FLAC, OGG and OPUS files
+# The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
+
 
 
 import struct
@@ -82,7 +81,7 @@ class Flac:
         buffer = f.read(4)
         block_position += 4
         fields = int.from_bytes(buffer, byteorder='little')
-        #print(fields)
+        # print(fields)
         for i in range(fields):
             buffer = f.read(4)
             block_position += 4
@@ -91,9 +90,8 @@ class Flac:
             buffer = f.read(jump)
             block_position += jump
 
-            #print(buffer.decode('utf-8'))
+            # print(buffer.decode('utf-8'))
 
-            point = 0
             position = 0
             while position < 40:
                 # print(sss[position:position+1])
@@ -150,25 +148,24 @@ class Flac:
         a = (int.from_bytes(buffer, byteorder='big'))
         k = bin(a)[2:].zfill(64)
 
-        #print("SEEKTABLE")
-        #print(k)
-
         samplerate = int(k[0:20], 2)
-        #print(samplerate)
+        # print(samplerate)
         self.sample_rate = samplerate
 
         bps = int(k[23:28], 2)
-        #print(bps)
+        # print(bps)
         self.sample_rate = samplerate
 
         samples = int(k[28:64], 2)
-        #print(samples)
+        # print(samples)
         self.length = samples / samplerate
 
         f.seek(-18, 1)
 
 
     def read(self, get_picture=False):
+
+        # Very helpful: https://xiph.org/flac/format.html
 
         f = open(self.filepath, "rb")
         s = f.read(4)
@@ -180,14 +177,10 @@ class Flac:
             i += 1
 
             z = self.read_block(f)
-            # print(z)
 
             if z[1] == 0:
-
                 self.read_seek_table(f)
-
             if z[1] == 4:
-
                 self.read_vorbis(f)
 
             if z[1] == 6 and get_picture:
@@ -297,86 +290,55 @@ class Opus:
         f = open(self.filepath, "rb")
 
         header = struct.unpack('<4sBBqIIiB', f.read(27))
-        #print(header)
+        # print(header)
 
-        #s = f.read(header[7])
-        #print(s)
         segs = struct.unpack('B'*header[7], f.read(header[7]))
-        #print(segs)
-
-
         s = f.read(7)
-        #print(s)
 
         if s == b'OpusHea':
             f.seek(-7, 1)
         elif s == b'\x01vorbis':
 
             s = f.read(4)
-            #print(s)
-
-            # a = struct.unpack("<BBHIHB", f.read(11))
             a = struct.unpack("<B4i", f.read(17)) # 44100
             self.sample_rate = a[1]
             self.bit_rate = int(a[3] / 1000)
-            #print(a)
-
             f.seek(-28, 1)
+
         else:
             return
 
         for p in segs:
             f.read(p)
 
-
         header = struct.unpack('<4sBBqIIiB', f.read(27))
-        #print(header)
-
-        start_position_a = f.tell()
 
         s = f.read(header[7])
-        #print(s)
-
-        #s = f.read(20)
-        #print(s)
         s = f.read(7)
-        #print(s)
+
         if s == b"OpusTag":
             f.read(1)
         elif s == b"\x03vorbis":
             pass
         else:
             return
-        # print(s)
-
-        #s = f.read(4)
 
         s = f.read(4)
         a = int.from_bytes(s, byteorder='little')
-        #print(a)
-
-
         s = f.read(a)
-        #print(s)
+
 
         s = f.read(4)
         number = int.from_bytes(s, byteorder='little')
-        #print('number')
-        #print(number)
+
         for i in range(number):
             s = f.read(4)
             length = int.from_bytes(s, byteorder='little')
             s = f.read(length)
-            #print(s)
 
-            #print("Length = " + str(length))
-
-            #print(s.decode('utf-8'))
-
-            point = 0
             position = 0
             while position < 40:
-                #print(s[position:position+1])
+
                 position += 1
 
                 if s[position:position+1] == b'=':
@@ -386,7 +348,7 @@ class Opus:
                     a = s[0:position].decode("utf-8").lower()
                     b = s[position + 1:]
 
-                    #print(a)
+                    # print(a)
                     # print(b)
 
                     if a == "genre":
@@ -410,7 +372,9 @@ class Opus:
                     elif a == "artist":
                         self.artist = b.decode("utf-8")
                     elif a == "metadata_block_picture":
-                        # This code kind of works but i've disabled it because its slow and untested
+
+                        # This code kind of works but i've disabled it because its very slow
+
                         print("Tag Scanner: Found picture in OGG/OPUS file. Ignoring")
                         print("      In file: " + self.filepath)
 
@@ -586,9 +550,10 @@ class Opus:
 
                     break
 
+        # Find the last Ogg page from end of file to get track length
         f.seek(-1, 2)
-        # s = f.read(50)
-        # print(s)
+
+        # Crudely seek back for it
         g = 100000
         while g > 0:
             if f.tell() < 10:
@@ -596,15 +561,12 @@ class Opus:
             g -= 1
             f.seek(-5, 1)
             s = f.read(4)
-            #print(s)
+
             if s == b"OggS":
-                # print('found')
                 f.seek(-4, 1)
                 header = struct.unpack('<4sBBqIIiB', f.read(27))
-                # print(header)
-                # print(header[3] / 48000)
                 self.length = header[3] / 48000
-                # print(self.length)
+
                 break
 
 
@@ -648,15 +610,21 @@ class Ape:
 
         a = open(self.filepath, 'rb')
 
+        # Check size of file
         a.seek(0, 2)
+        file_size = a.tell()
+
+        # Helpful: http://wiki.hydrogenaud.io/index.php?title=APEv2_specification
+
+        # Get last 32 bytes where ape tag footer might be
         a.seek(-32, 1)
         b = a.read(32)
-        #print(b)
-
         footer = struct.unpack('<8c6i', b)
-        #print(footer)
+
+        # For use later
         found = 1
 
+        # If its not an ape footer, seek through the file for a bit to see if we find it
         if b"".join(footer[0:8]) != b'APETAGEX':
             found = False
             a.seek(0, 2)
@@ -667,39 +635,37 @@ class Ape:
                 g -= 1
                 a.seek(-9, 1)
                 s = a.read(8)
-                #print(s)
+
+                # Found it
                 if s == b"APETAGEX":
                     found = 2
                     a.seek(-8, 1)
                     b = a.read(32)
                     footer = struct.unpack('<8c6i', b)
-                    # print(footer)
 
         if found == 0:
             print("Tag Scanner: Cant find APE tag")
         else:
 
-            tag_len = footer[9]
-            #print("Tag len: " + str(tag_len))
+            tag_len = footer[9]  # The size of the tag data (excludes header)
+            num_items = footer[10]  # Number of fields in tag
 
-            num_items = footer[10]
-            #print("Items: " + str(num_items))
+            # print("Tag len: " + str(tag_len))
+            # print("Items: " + str(num_items))
 
+            # Seek to start of tag (after any header)
             if found == 1:
                 a.seek(tag_len * -1, 2)
             else:
                 a.seek(8 + (tag_len * -1), 1)
 
-            # a.seek(-32, 1)
-            #b = a.read(8)
-
-            # print(a.read(20))
-            # a.seek(-20, 1)
-
+            # For every field in tag
             for q in range(num_items):
 
+                # (field value length, 0=text 2=binary)
                 ta = struct.unpack("<ii", a.read(8))
 
+                # Collect every character until we reach null terminator
                 name = b""
                 for i in range(100):
                     ch = a.read(1)
@@ -708,18 +674,18 @@ class Ape:
                     name += ch
 
                 key = name.decode('utf-8')
-                #print("Key: " + key)
+                # print("Key: " + key)
 
                 value = a.read(ta[0])
                 # print(value)
 
                 if ta[1] == 0:
                     value = value.decode('utf-8')
-                    #print(value)
                 elif ta[1] == 2:
-                    #print("[BINARY-DATA]")
+                    # Avoid decode of binary data
                     pass
 
+                # Fill in the class attributes
                 if key.lower() == "title":
                     self.title = value
                 elif key.lower() == "artist":
@@ -727,6 +693,9 @@ class Ape:
                 elif key.lower() == "genre":
                     self.genre = value
                 elif key.lower() == "disc":
+
+                    # Ape tags appear to use fraction format 1/10, rather than separate fields for number and total
+                    # So we need to handle that
                     if "/" in value:
                         self.disc_number, self.disc_total = value.split('/')
                     else:
@@ -735,10 +704,13 @@ class Ape:
                 elif key.lower() == "comment":
                     self.comment = value
                 elif key.lower() == "track":
+
+                    # Same deal as disc number/total
                     if "/" in value:
                         self.track_number, self.track_total = value.split('/')
                     else:
                         self.track_number = value
+
                 elif key.lower() == "year":
                     self.date = value
                 elif key.lower() == "album":
@@ -752,6 +724,9 @@ class Ape:
                 elif key.lower() == "lyrics":
                     self.lyrics = value
                 elif key.lower() == "cover art (front)":
+
+                    # Data appears to have a filename at the start of it, we need to remove to recover a valid picture
+                    # Im not sure what the actual specification is here
 
                     off = 0
                     while off < 64:
@@ -768,32 +743,58 @@ class Ape:
                     self.has_picture = True
                     # print(value)
 
+        # Back to start of file to see if we can find sample rate and duration information
         a.seek(0)
 
         start = a.read(128)
-        if start[0:3] != b'MAC':
-            print("Tag Scanner: Does not appear to be an APE file")
-            return
+        if start[0:3] == b'MAC':  # Ape files start with MAC
 
-        version = struct.unpack("<h", start[4:6])[0]
+            version = struct.unpack("<h", start[4:6])[0]
+            if version > 3980:
 
-        if version > 3980:
+                audio_info = struct.unpack("<IIIHHI", start[56:76])
+                # print(audio_info)
 
-            audio_info = struct.unpack("<IIIHHI", start[56:76])
-            # print(audio_info)
+                self.sample_rate = audio_info[5]
 
-            self.sample_rate = audio_info[5]
+                frames = audio_info[2] - 1
+                blocks = audio_info[0]
 
-            frames = audio_info[2] - 1
-            blocks = audio_info[0]
+                self.length = (frames * blocks) / self.sample_rate
+            else:
+                print("WARNING: Old APE codec version; not supported")
 
-            self.length = (frames * blocks) / self.sample_rate
+        elif '.wv' in self.filepath:
+            #  We can handle WavPack files too here
+            #  This code likely wont cover all cases as it is, I only tested it on a few files
+
+            a.seek(0)
+
+            #  I found that some WavPack files have padding and/or id3 tags at the beginning
+            #  So here I crudely search for the actual start
+            off = 0
+            while off < file_size - 100:
+                if a.read(4) == b'wvpk':
+                    a.seek(-4, 1)
+                    b = a.read(32)
+                    header = struct.unpack("<4cIH2B5I", b)
+                    # print(header)
+
+                    sample_rates = [6000, 8000, 9600, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000,
+                                    88200, 96000, 192000]   # Adapted from example in WavPack/cli/wvparser.c
+                    n = ((header[11] & (15 << 23)) >> 23)   # Does my head in this
+                    self.sample_rate = sample_rates[n]
+                    self.length = header[8] / self.sample_rate
+                    break
+            else:
+                print("Tag Scanner: Cannot verify WavPack file")
+
         else:
-            print("WARNING: Old APE codec version; not supported")
+            print("Tag Scanner: Does not appear to be an APE file")
 
 
 
-# file = 'test.wv'
+# file = 'test2.wv'
 #
 # item = Ape(file)
 # item.read()
