@@ -155,6 +155,7 @@ from stagger.id3 import *
 from tflac import Flac
 from tflac import Opus
 from tflac import Ape
+from tflac import Wav
 
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
@@ -1026,6 +1027,16 @@ def tag_scan(nt):
 
             return nt
 
+        elif nt.file_ext == "WAV":
+
+            audio = Wav(nt.fullpath)
+            audio.read()
+
+            nt.samplerate = audio.sample_rate
+            nt.length = audio.length
+
+            return nt
+
         elif nt.file_ext == "OPUS" or nt.file_ext == "OGG":
 
             # print("get opus")
@@ -1053,7 +1064,7 @@ def tag_scan(nt):
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
 
-        elif nt.file_ext == "APE" or nt.file_ext == "WV":
+        elif nt.file_ext == "APE" or nt.file_ext == "WV" or nt.file_ext == "TTA":
 
             audio = Ape(nt.fullpath)
             audio.read()
@@ -1076,6 +1087,22 @@ def tag_scan(nt):
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
+
+            if audio.found_tag is False:
+                try:
+                    tag = stagger.read_tag(nt.fullpath)
+                    print("Tag Scan: Found ID3v2 tag")
+                    nt.album_artist = tag.album_artist
+                    nt.disc_number = str(tag.disc)
+                    nt.disc_total = str(tag.disc_total)
+                    nt.track_total = str(tag.track_total)
+                    nt.title = tag.title
+                    nt.artist = tag.artist
+                    nt.album = tag.album
+                    nt.genre = tag.genre
+                    nt.date = tag.date
+                except:
+                    print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
 
             return nt
 

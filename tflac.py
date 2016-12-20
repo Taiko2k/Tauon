@@ -28,9 +28,15 @@
 
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
+# Functionality status:
+# Tags: FLAC, OGG, OPUS, APE, WV
+# Pictures: FLAC, APE, WV
+# Properties: FLAC, OGG, OPUS, APE, WV, WAV
+
 
 
 import struct
+import wave
 
 
 class Flac:
@@ -586,6 +592,7 @@ class Ape:
         self.has_picture = False
         self.picture = ""
 
+        self.found_tag = False
         self.album_artist = ""
         self.artist = ""
         self.genre = ""
@@ -647,6 +654,7 @@ class Ape:
             print("Tag Scanner: Cant find APE tag")
         else:
 
+            self.found_tag = True
             tag_len = footer[9]  # The size of the tag data (excludes header)
             num_items = footer[10]  # Number of fields in tag
 
@@ -764,6 +772,22 @@ class Ape:
             else:
                 print("WARNING: Old APE codec version; not supported")
 
+        elif ".tta" in self.filepath:
+
+            a.seek(0)
+            header = struct.unpack("<4c3H3L", a.read(22))
+
+            if b"".join(header[0:3]) != b'TTA1':
+
+                self.sample_rate = header[7]
+                # bps = header[6]
+                # channels = header[5]
+                self.length = header[8] / self.sample_rate
+            elif b"".join(header[0:3]) != b'TTA2':
+                print("WARNING: TTA2 type TTA file not supported")
+            else:
+                print("WARNING: Does not appear to be a valid TTA file")
+
         elif '.wv' in self.filepath:
             #  We can handle WavPack files too here
             #  This code likely wont cover all cases as it is, I only tested it on a few files
@@ -793,8 +817,28 @@ class Ape:
             print("Tag Scanner: Does not appear to be an APE file")
 
 
+class Wav:
 
-# file = 'test2.wv'
+    def __init__(self, file):
+
+        self.filepath = file
+        self.sample_rate = 48000
+        self.length = 0
+
+    def read(self):
+
+        wav = wave.open(self.filepath, "rb")
+
+        self.sample_rate = wav.getframerate()
+        self.length = wav.getnframes() / self.sample_rate
+        print(self.sample_rate)
+        print(self.length)
+
+        wav.close()
+
+
+
+# file = 'test.tta'
 #
 # item = Ape(file)
 # item.read()
