@@ -3,8 +3,8 @@ Changelog-------------------------------------
 
 v1.9.1
 
- - Added playback support for WavPack (.wv) files
- - Added tag reading support for APE and WavPack files that have ape tags
+ - Added support for WavPack (.wv) files
+ - Added tag reading support for APE and WavPack files (ape tags only, excludes id3)
  - Added GStreamer fallback on linux with basic functionality
  - Tweaked playlist rename input box to apply input on click out, not just enter key.
  - Fixed not being able to delete or arrange playlist while importing
