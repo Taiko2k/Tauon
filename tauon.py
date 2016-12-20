@@ -154,6 +154,7 @@ import stagger
 from stagger.id3 import *
 from tflac import Flac
 from tflac import Opus
+from tflac import Ape
 
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
@@ -321,7 +322,7 @@ clicked = False
 
 
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
-              'm4a', 'mp4', 'ogg', 'aac', 'tta', }
+              'm4a', 'mp4', 'ogg', 'aac', 'tta', 'wv', }
 
 if system == 'windows':
     DA_Formats.add('wma')
@@ -1048,8 +1049,34 @@ def tag_scan(nt):
             nt.disc_number = audio.disc_number
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
-            if nt.bitrate == 0:
+            if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+            return nt
+
+        elif nt.file_ext == "APE" or nt.file_ext == "WV":
+
+            audio = Ape(nt.fullpath)
+            audio.read()
+
+            # print(audio.title)
+
+            nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            nt.date = audio.date
+            nt.samplerate = audio.sample_rate
+            nt.size = os.path.getsize(nt.fullpath)
+            nt.track_number = audio.track_number
+            nt.genre = audio.genre
+            nt.album_artist = audio.album_artist
+            nt.disc_number = audio.disc_number
+            nt.lyrics = audio.lyrics
+            if nt.length > 0:
+                nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+            nt.track_total = audio.track_total
+            nt.disk_total = audio.disc_total
+
             return nt
 
         else:
@@ -1089,6 +1116,7 @@ def tag_scan(nt):
         return nt
     except:
         print("Warning: Tag read error")
+        # raise
         return nt
 
 
@@ -2141,7 +2169,7 @@ def player():
         BASS_PluginLoad(b'basswma.dll', 0)
         # print("Load bass_wma")
         # print(BASS_ErrorGetCode())
-        BASS_PluginLoad(b'bassenc_opus.dll', 0)
+        BASS_PluginLoad(b'basswv.dll', 0)
 
         # bassenc_opus
     elif system == 'mac':
@@ -2151,6 +2179,7 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
+        BASS_PluginLoad(b + b'/lib/libbasswv.dylib', 0)
     else:
         b = install_directory.encode('utf-8')
         BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
@@ -2158,6 +2187,7 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
         BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
 
     BassInitSuccess = BASS_Init(-1, 44100, 0, 0, 0)
     if BassInitSuccess == True:
@@ -3902,6 +3932,13 @@ class AlbumArt():
                 if tt.has_picture is True and len(tt.picture) > 30:
                     source_list.append([True, filepath])
 
+            elif '.ape' in filepath or '.APE' in filepath:
+
+                tt = Ape(filepath)
+                tt.read()
+                if tt.has_picture is True and len(tt.picture) > 30:
+                    source_list.append([True, filepath])
+
                     # elif '.opus' in filepath or '.OPUS' in filepath or ".ogg" in filepath or ".OGG" in filepath:
                     #
                     #     tt = Opus(filepath)
@@ -4046,6 +4083,10 @@ class AlbumArt():
             tag.read(True)
             return tag.picture
 
+        elif pctl.master_library[index].file_ext == 'APE':
+            tag = Ape(filepath)
+            tag.read()
+            return tag.picture
 
             # elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
             #     tag = Opus(filepath)
@@ -7301,6 +7342,7 @@ def worker1():
                     to_get += 1
                     gui.update += 1
 
+
     def gets(direc):
 
         global DA_Formats
@@ -7812,6 +7854,13 @@ def worker1():
                     loaderCommand = LC_Done
                     # print('ADDED: ' + str(added))
                     order.tracks = added
+
+                    # Double check for cue dupes
+                    for i in reversed(range(len(order.tracks))):
+                        if pctl.master_library[order.tracks[i]].fullpath in cue_list:
+                            if pctl.master_library[order.tracks[i]].is_cue is False:
+                                del order.tracks[i]
+
                     added = []
                     order.stage = 2
                     loaderCommandReady = False
@@ -12675,16 +12724,13 @@ while running:
                         for p, playlist in enumerate(pctl.multi_playlist):
                             if playlist[6] == order.playlist:
                                 target_pl = p
-                                print("target found")
-                                print(p)
-                                print(playlist[6])
                                 break
                         else:
                             del load_orders[i]
                             print("Error: Target playlist lost")
                             break
 
-                        print(order.tracks)
+                        # print(order.tracks)
                         pctl.multi_playlist[target_pl][2] += order.tracks
 
                         gui.update += 1
@@ -13516,6 +13562,8 @@ while running:
                         ex_colour = [247, 79, 146, 255]
                     elif line == 'AAC':
                         ex_colour = [79, 247, 168, 255]
+                    elif line == 'WV':
+                        ex_colour = [229, 23, 18, 255]
                     draw.rect_r(ext_rect, ex_colour, True)
                     draw_text((x + w - 60, y + 40), line, colours.alpha_grey(190), 11)
 
@@ -13583,7 +13631,7 @@ while running:
                     if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
                         draw_text((x + 8 + 10, y + 40), "Bitrate", colours.alpha_grey(140), 12)
                         line = str(pctl.master_library[r_menu_index].bitrate)
-                        if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS'):
+                        if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
                         line += " kbps"
                         draw_text((x + 8 + 90, y + 40), line, colours.alpha_grey(190), 12)

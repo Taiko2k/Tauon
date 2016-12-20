@@ -133,7 +133,8 @@ class Flac:
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == "metadata_block_picture":
-                        print("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Shouldn't be there")
+                        print("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
+                        print("      In file: " + self.filepath)
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
 
@@ -165,9 +166,6 @@ class Flac:
         self.length = samples / samplerate
 
         f.seek(-18, 1)
-
-
-
 
 
     def read(self, get_picture=False):
@@ -614,4 +612,188 @@ class Opus:
 # file = 'a.ogg'
 #
 # item = Opus(file)
+# item.read()
+
+
+
+class Ape:
+
+    def __init__(self, file):
+
+        self.filepath = file
+        self.has_picture = False
+        self.picture = ""
+
+        self.album_artist = ""
+        self.artist = ""
+        self.genre = ""
+        self.date = ""
+        self.comment = ""
+        self.album = ""
+        self.track_number = ""
+        self.track_total = ""
+        self.title = ""
+        self.encoder = ""
+        self.disc_number = ""
+        self.disc_total = ""
+        self.picture = ""
+        self.lyrics = ""
+        self.label = ""
+
+        self.sample_rate = 48000
+        self.bit_rate = 0
+        self.length = 0
+
+    def read(self):
+
+        a = open(self.filepath, 'rb')
+
+        a.seek(0, 2)
+        a.seek(-32, 1)
+        b = a.read(32)
+        #print(b)
+
+        footer = struct.unpack('<8c6i', b)
+        #print(footer)
+        found = 1
+
+        if b"".join(footer[0:8]) != b'APETAGEX':
+            found = False
+            a.seek(0, 2)
+            g = 1000
+            while g > 0:
+                if a.tell() < 1000:
+                    break
+                g -= 1
+                a.seek(-9, 1)
+                s = a.read(8)
+                #print(s)
+                if s == b"APETAGEX":
+                    found = 2
+                    a.seek(-8, 1)
+                    b = a.read(32)
+                    footer = struct.unpack('<8c6i', b)
+                    # print(footer)
+
+        if found == 0:
+            print("Tag Scanner: Cant find APE tag")
+        else:
+
+            tag_len = footer[9]
+            #print("Tag len: " + str(tag_len))
+
+            num_items = footer[10]
+            #print("Items: " + str(num_items))
+
+            if found == 1:
+                a.seek(tag_len * -1, 2)
+            else:
+                a.seek(8 + (tag_len * -1), 1)
+
+            # a.seek(-32, 1)
+            #b = a.read(8)
+
+            # print(a.read(20))
+            # a.seek(-20, 1)
+
+            for q in range(num_items):
+
+                ta = struct.unpack("<ii", a.read(8))
+
+                name = b""
+                for i in range(100):
+                    ch = a.read(1)
+                    if ch == b"\x00":
+                        break
+                    name += ch
+
+                key = name.decode('utf-8')
+                #print("Key: " + key)
+
+                value = a.read(ta[0])
+                # print(value)
+
+                if ta[1] == 0:
+                    value = value.decode('utf-8')
+                    #print(value)
+                elif ta[1] == 2:
+                    #print("[BINARY-DATA]")
+                    pass
+
+                if key.lower() == "title":
+                    self.title = value
+                elif key.lower() == "artist":
+                    self.artist = value
+                elif key.lower() == "genre":
+                    self.genre = value
+                elif key.lower() == "disc":
+                    if "/" in value:
+                        self.disc_number, self.disc_total = value.split('/')
+                    else:
+                        self.disc_number = value
+
+                elif key.lower() == "comment":
+                    self.comment = value
+                elif key.lower() == "track":
+                    if "/" in value:
+                        self.track_number, self.track_total = value.split('/')
+                    else:
+                        self.track_number = value
+                elif key.lower() == "year":
+                    self.date = value
+                elif key.lower() == "album":
+                    self.album = value
+                elif key.lower() == "artist":
+                    self.artist = value
+                elif key.lower() == "album artist":
+                    self.album_artist = value
+                elif key.lower() == "label":
+                    self.label = value
+                elif key.lower() == "lyrics":
+                    self.lyrics = value
+                elif key.lower() == "cover art (front)":
+
+                    off = 0
+                    while off < 64:
+                        if value[off:off+1] == b'\x00':
+
+                            off += 1
+                            break
+                        off += 1
+                    else:
+                        print("Tag Scanner: Error reading APE album art")
+                        continue
+
+                    self.picture = value[off:]
+                    self.has_picture = True
+                    # print(value)
+
+        a.seek(0)
+
+        start = a.read(128)
+        if start[0:3] != b'MAC':
+            print("Tag Scanner: Does not appear to be an APE file")
+            return
+
+        version = struct.unpack("<h", start[4:6])[0]
+
+        if version > 3980:
+
+            audio_info = struct.unpack("<IIIHHI", start[56:76])
+            # print(audio_info)
+
+            self.sample_rate = audio_info[5]
+
+            frames = audio_info[2] - 1
+            blocks = audio_info[0]
+
+            self.length = (frames * blocks) / self.sample_rate
+        else:
+            print("WARNING: Old APE codec version; not supported")
+
+
+
+# file = 'test.wv'
+#
+# item = Ape(file)
 # item.read()
