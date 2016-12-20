@@ -1823,6 +1823,7 @@ class LastScrob:
 
 lfm_scrobbler = LastScrob()
 
+
 def player3():
 
     player_timer = Timer()
@@ -1841,16 +1842,38 @@ def player3():
 
             self.mainloop.run()
 
+        def check_duration(self):
+
+            # If the duration of track is unknown, query gst for it
+            if pctl.master_library[pctl.track_queue[pctl.queue_step]].length < 1:
+
+                result = self.pl.query_duration(Gst.Format.TIME)
+                print(result)
+                if result[0] is True:
+                    print("Updating track duration")
+                    pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
+                else:
+                    time.sleep(1.5)
+                    result = self.pl.query_duration(Gst.Format.TIME)
+                    print(result)
+                    if result[0] is True:
+                        print("Updating track duration")
+                        pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
+
         def about_to_finish(self, player):
 
-            print("trigger-end")
+            # print("End of track callback triggered")
             if gapless_type1 and pctl.playerCommand == 'gapless':
                 player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
                 pctl.playing_time = 0
 
+                time.sleep(0.05)
                 if pctl.start_time > 1:
                     self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                         pctl.start_time * Gst.SECOND)
+
+                time.sleep(0.15)
+                self.check_duration()
 
         def test11(self):
 
@@ -1875,6 +1898,9 @@ def player3():
                     self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                         pctl.start_time * Gst.SECOND)
 
+                    time.sleep(0.15)
+                    self.check_duration()
+
                     self.pl.connect("about-to-finish", self.about_to_finish)
 
                     player_timer.hit()
@@ -1891,7 +1917,6 @@ def player3():
                     #        self.pl.set_state(Gst.State.PLAYING)
                     #        self.play_state = 3
                     #        player_timer.hit()
-
 
                 elif pctl.playerCommand == 'volume':
                     if self.play_state == 1:
@@ -1939,7 +1964,6 @@ def player3():
             #    # Progress main seek head
             #    add_time = player_timer.hit()
             #    pctl.playing_time += add_time
-
 
             if not running:
                 print("quit")
@@ -14666,47 +14690,53 @@ while running:
 
     # Playlist and pctl.track_queue
 
+    # Trigger track advance once end of track is reached
     if pctl.playing_state == 1 and pctl.playing_time + (
-                prefs.cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 2:
+                prefs.cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 0.4:
 
-        if auto_stop:
-            pctl.stop()
-            gui.update += 2
-            auto_stop = False
-
-        elif pctl.repeat_mode is True:
-
-            pctl.playing_time = 0
-            pctl.new_time = 0
-            pctl.playerCommand = 'seek'
-            pctl.playerCommandReady = True
-
-        elif pctl.random_mode is False and len(default_playlist) - 2 > pctl.playlist_playing and \
-                        pctl.master_library[default_playlist[pctl.playlist_playing]].is_cue is True \
-                and pctl.master_library[default_playlist[pctl.playlist_playing + 1]].filename == \
-                        pctl.master_library[default_playlist[pctl.playlist_playing]].filename and int(
-            pctl.master_library[default_playlist[pctl.playlist_playing]].track_number) == int(
-            pctl.master_library[default_playlist[pctl.playlist_playing + 1]].track_number) - 1:
-            print("CUE Gap-less")
-            pctl.playlist_playing += 1
-            pctl.queue_step += 1
-            pctl.track_queue.append(default_playlist[pctl.playlist_playing])
-
-            pctl.playing_state = 1
-            pctl.playing_time = 0
-            pctl.playing_length = pctl.master_library[pctl.track_queue[pctl.queue_step]].length
-            pctl.start_time = pctl.master_library[pctl.track_queue[pctl.queue_step]].start_time
-
-            gui.update += 1
-            gui.pl_update = 1
-
+        if pctl.playing_length == 0 and pctl.playing_time < 4:
+            # If the length is unknown, allow backend some time to provide a duration
+            pass
         else:
-            if pctl.playing_time < pctl.playing_length:
-                pctl.advance(quiet=True, gapless=gapless_type1)
-            else:
-                pctl.advance(quiet=True)
 
-            pctl.playing_time = 0
+            if auto_stop:
+                pctl.stop()
+                gui.update += 2
+                auto_stop = False
+
+            elif pctl.repeat_mode is True:
+
+                pctl.playing_time = 0
+                pctl.new_time = 0
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
+
+            elif pctl.random_mode is False and len(default_playlist) - 2 > pctl.playlist_playing and \
+                            pctl.master_library[default_playlist[pctl.playlist_playing]].is_cue is True \
+                    and pctl.master_library[default_playlist[pctl.playlist_playing + 1]].filename == \
+                            pctl.master_library[default_playlist[pctl.playlist_playing]].filename and int(
+                pctl.master_library[default_playlist[pctl.playlist_playing]].track_number) == int(
+                pctl.master_library[default_playlist[pctl.playlist_playing + 1]].track_number) - 1:
+                print("CUE Gap-less")
+                pctl.playlist_playing += 1
+                pctl.queue_step += 1
+                pctl.track_queue.append(default_playlist[pctl.playlist_playing])
+
+                pctl.playing_state = 1
+                pctl.playing_time = 0
+                pctl.playing_length = pctl.master_library[pctl.track_queue[pctl.queue_step]].length
+                pctl.start_time = pctl.master_library[pctl.track_queue[pctl.queue_step]].start_time
+
+                gui.update += 1
+                gui.pl_update = 1
+
+            else:
+                if pctl.playing_time < pctl.playing_length:
+                    pctl.advance(quiet=True, gapless=gapless_type1)
+                else:
+                    pctl.advance(quiet=True)
+
+                pctl.playing_time = 0
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
         windows_progress.update()
