@@ -21,15 +21,17 @@ Alternatively GStreamer can be used as the audio backend and thus not requiring 
 #### Use the following commands to install other dependencies:
 
 
-Arch Linux:
+###Arch Linux:
 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib pulseaudio-alsa
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
 	
-   Upgrading Note: Previously (v some packages were advised to be installed via pip now use pacman instead. To remove existing files that will conflict when upgrading use this command first (not tested):  sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
+   Upgrading Note: Previously (v some packages were advised to be installed via pip now use pacman instead. To remove existing files that will conflict when upgrading use this command first (not tested):  
+   
+        $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
    
 
-Ubuntu:
+###Ubuntu:
 
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip python3-pil python3-setuptools
         $ sudo pip3 install hsaudiotag3k pylast pysdl2 flask stagger python3-xlib
