@@ -5,7 +5,7 @@ Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Run
 
 # Setup on Linux
 
-#### Backend:
+### Backend:
 
 BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions).
 
@@ -18,10 +18,10 @@ Alternatively GStreamer can be used as the audio backend and thus not requiring 
  - Visualizations
  - Some audio codecs depending on gstreamer plugins installed on your system
 
-#### Use the following commands to install other dependencies:
+### Use the following commands to install other dependencies:
 
 
-###Arch Linux:
+####Arch Linux:
 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib pulseaudio-alsa
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
@@ -31,7 +31,7 @@ Alternatively GStreamer can be used as the audio backend and thus not requiring 
         $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
    
 
-###Ubuntu:
+####Ubuntu:
 
         $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip python3-pil python3-setuptools
         $ sudo pip3 install hsaudiotag3k pylast pysdl2 flask stagger python3-xlib
