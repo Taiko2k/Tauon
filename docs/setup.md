@@ -26,7 +26,7 @@ Experimental: Alternatively GStreamer can be used as the audio backend and thus 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib pulseaudio-alsa
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
 	
-   Upgrading Note: Previously (v some packages were advised to be installed via pip now use pacman instead. To remove existing files that will conflict when upgrading use this command first (not tested):  
+   Upgrading Note: Previously some packages were advised to be installed via pip now use pacman instead. To remove existing files that will conflict when upgrading use this command (not tested):  
    
         $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
    
