@@ -40,7 +40,6 @@ Finally run using python 3 (Alternatively create a desktop or launcher shortcut.
 
     $ python3 tauon.py
 
-  Note: Python 3.5 reccomended. You may need to specifiy this if you have multiple python versions i.e python3.5
 
 # Development setup on OS X
 
