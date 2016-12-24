@@ -9,7 +9,7 @@ Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Run
 
 BASS binaries are included with release package or can be downloaded from http://www.un4seen.com/. See [libraries.txt](libraries.txt) for needed files in lib/ folder (use 64 bit versions).
 
-Alternatively GStreamer can be used as the audio backend and thus not requiring proprietary libraries. (Install on Arch: python-gobject). However the following player features will not be avaliable:
+Experimental: Alternatively GStreamer can be used as the audio backend and thus not requiring proprietary libraries. (Install on Arch: python-gobject). However the following player features will not be avaliable:
 
  - Inbound streaming
  - Outbound streaming
