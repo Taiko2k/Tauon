@@ -23,11 +23,11 @@ Alternatively GStreamer can be used as the audio backend and thus not requiring 
 
 Arch Linux:
 
-        $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib
+        $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib pulseaudio-alsa
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
-
-   Note: You mas also need to install the 'pulseaudio-alsa' package for desktop audio to function correctly  
-   Warning: Installing python libraries with pip like this may conflict with installing applications from the AUR that use AUR versions of these libraries. In this case just uninstall the conflicting pip versions first. $ sudo pip3 uninstall example.
+	
+   Upgrading Note: Previously (v some packages were advised to be installed via pip now use pacman instead. To remove existing files that will conflict when upgrading use this command first (not tested):  sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
+   
 
 Ubuntu:
 
