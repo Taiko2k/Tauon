@@ -29,10 +29,9 @@
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
 # Functionality status:
-# Tags: FLAC, OGG, OPUS, APE, WV
-# Pictures: FLAC, APE, WV
-# Properties: FLAC, OGG, OPUS, APE, WV, WAV
-
+# Tags: Vorbis(FLAC, OPUS, OGG), APEv2(APE, WV, TTA)
+# Pictures: FLAC, APE
+# Properties: FLAC, OGG, OPUS, APE, WV, WAV, TTA
 
 
 import struct
@@ -66,23 +65,16 @@ class Flac:
         self.bit_rate = 0
         self.length = 0
 
-
     def read_vorbis(self, f):
 
-        #print(f.tell())
-
-        #print("LEN: " + str(z[2]))
         block_position = 0
 
         buffer = f.read(4)
         block_position += 4
         jump = int.from_bytes(buffer, byteorder='little')
 
-        buffer = f.read(jump)
+        f.read(jump)
         block_position += jump
-
-        # f.seek(block_position * -1, 1)
-        # print(f.tell())
 
         buffer = f.read(4)
         block_position += 4
@@ -104,8 +96,7 @@ class Flac:
                 position += 1
 
                 if buffer[position:position + 1] == b'=':
-                    # print(sss[0:position])
-                    # print(sss[position + 1:])
+
                     a = buffer[0:position].decode("utf-8").lower()
                     b = buffer[position + 1:]
 
@@ -142,10 +133,7 @@ class Flac:
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
 
-        #print("len total: " + str(block_position))
-        sss = f.seek(block_position * -1, 1)
-        #print(f.tell())
-
+        f.seek(block_position * -1, 1)
 
     def read_seek_table(self, f):
 
@@ -154,20 +142,13 @@ class Flac:
         a = (int.from_bytes(buffer, byteorder='big'))
         k = bin(a)[2:].zfill(64)
 
-        samplerate = int(k[0:20], 2)
-        # print(samplerate)
-        self.sample_rate = samplerate
+        self.sample_rate = int(k[0:20], 2)
 
-        bps = int(k[23:28], 2)
-        # print(bps)
-        self.sample_rate = samplerate
-
+        # bps = int(k[23:28], 2)
         samples = int(k[28:64], 2)
-        # print(samples)
-        self.length = samples / samplerate
 
+        self.length = samples / self.sample_rate
         f.seek(-18, 1)
-
 
     def read(self, get_picture=False):
 
@@ -232,10 +213,9 @@ class Flac:
 
                 self.has_picture = True
                 self.picture = f.read(a)
-                # print(len(data))
 
             else:
-                data = f.read(z[2])
+                f.read(z[2])
 
             if z[0] == 1:
                 break
@@ -287,7 +267,7 @@ class Opus:
         self.picture = ""
         self.lyrics = ""
 
-        self.sample_rate = 48000
+        self.sample_rate = 48000  # OPUS files are always 48000
         self.bit_rate = 0
         self.length = 0
 
@@ -333,7 +313,6 @@ class Opus:
         a = int.from_bytes(s, byteorder='little')
         s = f.read(a)
 
-
         s = f.read(4)
         number = int.from_bytes(s, byteorder='little')
 
@@ -349,13 +328,11 @@ class Opus:
 
                 if s[position:position+1] == b'=':
 
-                    # print(s[0:position])
-                    # print(s[position + 1:])
                     a = s[0:position].decode("utf-8").lower()
                     b = s[position + 1:]
 
-                    # print(a)
-                    # print(b)
+                    # print(a)  # Key
+                    # print(b)  # Value
 
                     if a == "genre":
                         self.genre = b.decode("utf-8")
@@ -379,170 +356,11 @@ class Opus:
                         self.artist = b.decode("utf-8")
                     elif a == "metadata_block_picture":
 
-                        # This code kind of works but i've disabled it because its very slow
-
                         print("Tag Scanner: Found picture in OGG/OPUS file. Ignoring")
                         print("      In file: " + self.filepath)
+                        self.has_picture = True
 
-                        # self.has_picture = True
-                        # print("Found picture block")
-                        # import base64
-                        # import io
-
-                        # ee = base64.b64decode(b[0:500])
-                        #
-                        # # return
-                        #
-                        # ss = io.BytesIO(ee)
-                        # ss.seek(0)
-                        #
-                        # # z = ss.read(4)
-                        # # print(int.from_bytes(z, byteorder='big')) # Type
-                        # #
-                        # # ss.seek(0)
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Picture type: " + str(qqq))
-                        # qqq = ss.read(4)
-                        # b = int.from_bytes(qqq, byteorder='big')
-                        # print("MIME len: " + str(b))
-                        #
-                        # qqq = ss.read(b)
-                        # # print(qqq)
-                        # print("MIME: " + qqq.decode('ascii'))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Description len: " + str(qqq))
-                        #
-                        # qqq = ss.read(qqq)
-                        # print("Description: " + qqq.decode('utf-8'))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Width: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Height: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("BPP: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Index colour: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Bin len: " + str(qqq))
-                        # b_len = str(qqq)
-                        #
-                        # f.seek(start_position_a)
-                        # #header = struct.unpack('<4sBBqIIiB', f.read(27))
-                        # segs = struct.unpack('B' * header[7], f.read(header[7]))
-                        # k = b""
-                        # for p in segs:
-                        #     k += f.read(p)
-                        #
-                        # mmp = 0
-                        # while k[mmp:mmp+23] != b'METADATA_BLOCK_PICTURE=':
-                        #     mmp += 1
-                        #     if mmp > 50000:
-                        #         return
-                        # mmp += 23
-                        # k = k[mmp:]
-                        #
-                        #
-                        #
-                        # while len(k) < qqq * 1.5:
-                        #     header = struct.unpack('<4sBBqIIiB', f.read(27))
-                        #     segs = struct.unpack('B' * header[7], f.read(header[7]))
-                        #     for p in segs:
-                        #         k += f.read(p)
-                        #     #print(len(k))
-                        #
-                        # print(k[0:30]) # Preview start of block
-                        # print(k[-30:]) # Preview end of block
-                        #
-                        #
-                        #
-                        # # print(len(b) / 4)
-                        # # print(len(b) * 8)
-                        # print('start decode')
-                        # #ee = base64.b64decode(k + b'===')
-                        # ss = io.BytesIO(base64.b64decode(k + b'==='))
-                        # # return
-                        #
-                        # #ss = io.BytesIO(ee)
-                        # ss.seek(0)
-                        #
-                        # # z = ss.read(4)
-                        # # print(int.from_bytes(z, byteorder='big')) # Type
-                        # #
-                        # # ss.seek(0)
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Picture type: " + str(qqq))
-                        # qqq = ss.read(4)
-                        # b = int.from_bytes(qqq, byteorder='big')
-                        # print("MIME len: " + str(b))
-                        #
-                        # qqq = ss.read(b)
-                        # # print(qqq)
-                        # print("MIME: " + qqq.decode('ascii'))
-                        #
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Description len: " + str(qqq))
-                        #
-                        # qqq = ss.read(qqq)
-                        # print("Description: " + qqq.decode('utf-8'))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Width: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Height: " + str(qqq))
-                        #
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("BPP: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Index colour: " + str(qqq))
-                        #
-                        # qqq = ss.read(4)
-                        # qqq = int.from_bytes(qqq, byteorder='big')
-                        # print("Bin len: " + str(qqq))
-                        #
-                        #
-                        # self.has_picture = True
-                        # self.picture = ss.read(qqq)
-                        #
-                        # print(ss.read(100))
-                        #
-                        # #print(self.picture)
-                        #
-                        # print("HAS PICTURE")
-                        # #print(self.picture)
-                        # # print(len(data))
-                        # with open('test.jpg', 'wb') as w:
-                        #     w.write(self.picture)
-                        #
-                        # # print(ss.read(50))
-                        # # ss.seek(0)
-                        # # print(struct.unpack('>i4s8s', ss.read(16)))
-                        # #
-                        # # print(ss)
+                        # To do
 
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
@@ -575,13 +393,10 @@ class Opus:
 
                 break
 
-
-
 # file = 'a.ogg'
 #
 # item = Opus(file)
 # item.read()
-
 
 
 class Ape:
@@ -702,8 +517,8 @@ class Ape:
                     self.genre = value
                 elif key.lower() == "disc":
 
-                    # Ape tags appear to use fraction format 1/10, rather than separate fields for number and total
-                    # So we need to handle that
+                    # Ape track fields appear to use fraction format, rather than separate fields for number and total
+                    # So we need to handle that here for consistency
                     if "/" in value:
                         self.disc_number, self.disc_total = value.split('/')
                     else:
@@ -713,7 +528,7 @@ class Ape:
                     self.comment = value
                 elif key.lower() == "track":
 
-                    # Same deal as disc number/total
+                    # Same deal as with disc number
                     if "/" in value:
                         self.track_number, self.track_total = value.split('/')
                     else:
@@ -785,16 +600,17 @@ class Ape:
                 self.length = header[8] / self.sample_rate
             elif b"".join(header[0:3]) != b'TTA2':
                 print("WARNING: TTA2 type TTA file not supported")
+                # To do
             else:
                 print("WARNING: Does not appear to be a valid TTA file")
 
         elif '.wv' in self.filepath:
-            #  We can handle WavPack files too here
-            #  This code likely wont cover all cases as it is, I only tested it on a few files
+            #  We can handle WavPack files here too
+            #  This code likely wont cover all cases as is, I only tested it on a few files
 
             a.seek(0)
 
-            #  I found that some WavPack files have padding and/or id3 tags at the beginning
+            #  I found that some WavPack files have padding at the beginning
             #  So here I crudely search for the actual start
             off = 0
             while off < file_size - 100:
@@ -828,15 +644,9 @@ class Wav:
     def read(self):
 
         wav = wave.open(self.filepath, "rb")
-
         self.sample_rate = wav.getframerate()
         self.length = wav.getnframes() / self.sample_rate
-        print(self.sample_rate)
-        print(self.length)
-
         wav.close()
-
-
 
 # file = 'test.tta'
 #
