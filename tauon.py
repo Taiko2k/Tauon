@@ -73,13 +73,38 @@ if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 
 user_directory = install_directory
+
+install_mode = False
+
+if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/"):
+
+    user_directory = os.path.expanduser('~') + "/.tauonmb-user"
+    install_mode = True
+
+
+elif system == 'windows' and ('Program Files' in install_directory or
+                                  os.path.isfile(install_directory + '\\unins000.exe')):
+
+    user_directory = os.path.expanduser('~') + "/Music/TauonMusicBox"
+    install_mode = True
+
+if install_mode:
+    print("Running from installed location")
+    print("User files and config r/w location: " + user_directory)
+    if not os.path.isdir(user_directory):
+        print("User directory is missing... creating")
+        os.makedirs(user_directory + "/encoder")
+        import shutil
+        shutil.copy(install_directory + "/config.txt", user_directory)
+else:
+    print("Running in portable mode")
+
 transfer_target = user_directory + "/transfer.p"
 
 # print("Working directory: " + working_directory)
 # print('Argument List: ' + str(sys.argv))
-# print('User directory: ' + user_directory)
 print('Install directory: ' + install_directory)
-config_directory = install_directory
+config_directory = user_directory
 
 b_active_directory = install_directory.encode('utf-8')
 
@@ -132,8 +157,10 @@ from ctypes import *
 fast_bin_av = True
 try:
     from fastbin import fast_display, fast_bin
+    print("Fastbin found")
 except ImportError:
     fast_bin_av = False
+    print("Fastbin not found")
 
 locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
@@ -229,10 +256,6 @@ spec_smoothing = True
 
 auto_play_import = False
 offset_extra = 0
-
-# custom_line = "t;r65;o;l;r2;n;p0.33;a;p0.65;b"
-# custom_pro = custom_line.split(";")
-# custom_line_mode = False
 
 old_album_pos = -55
 old_side_pos = 200
@@ -389,7 +412,6 @@ def pl_gen(title='Default',
     return [title, playing, playlist, position, hide_title, selected, pl_uid_gen()]
 
 # [Name, playing, playlist, position, hide folder title, selected, uid]
-#multi_playlist = [['Default', 0, [], 0, 0, 0, 5555]]
 multi_playlist = [pl_gen()]
 
 default_playlist = multi_playlist[0][2]
@@ -518,6 +540,7 @@ class GuiVar:
         self.bar = SDL_Rect(10, 10, 3, 10)
 
         self.combo_mode = False
+        self.showcase_mode = False
         self.display_time_mode = 0
 
         self.row_extra = 0
@@ -930,6 +953,9 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 else:
     scrobble_mark = True
     print("Warning: Missing config file")
+
+if system == 'linux' and not os.path.isfile(install_directory + "/pyxhook.py"):
+    mediakeymode = 1
 
 try:
     star_lines = view_prefs['star-lines']
@@ -1576,7 +1602,6 @@ class PlayerCtl:
         # if album_mode:
         #     goto_album(self.playlist_playing)
 
-
         self.render_playlist()
 
 
@@ -1762,19 +1787,6 @@ def get_backend_time(path):
 
 lastfm = LastFMapi()
 
-
-# class LyricsCore:
-#
-#     def __init__(self):
-#         pass
-#
-#     def get(self, title, artist):
-#         if title == "" or artist == "":
-#             return
-#         lyrics = lyricwikia.get_lyrics(artist, title)
-#         print(lyrics)
-#
-# lyrics_s = LyricsCore()
 
 class LastScrob:
     
@@ -1987,7 +1999,7 @@ def player3():
                     else:
                         pctl.star_library[key] = 0
 
-            # if self.play_state == 3:
+            # if self.play_state == 3:   #  URL Mode
             #    # Progress main seek head
             #    add_time = player_timer.hit()
             #    pctl.playing_time += add_time
@@ -2010,9 +2022,6 @@ def player3():
 
 
 def player():
-    a_index = -1
-    a_sc = False
-    a_pt = False
 
     player_timer = Timer()
     broadcast_timer = Timer()
@@ -2416,67 +2425,6 @@ def player():
 
                 lfm_scrobbler.update(add_time)
 
-                # if a_index != pctl.track_queue[pctl.queue_step]:
-                #     pctl.a_time = 0
-                #     pctl.b_time = 0
-                #     a_index = pctl.track_queue[pctl.queue_step]
-                #     a_pt = False
-                #     a_sc = False
-                # if pctl.playing_time == 0 and a_sc is True:
-                #     print("Reset scrobble timer")
-                #     pctl.a_time = 0
-                #     pctl.b_time = 0
-                #     a_pt = False
-                #     a_sc = False
-                # if pctl.a_time > 10 and a_pt is False and pctl.master_library[a_index].length > 30:
-                #     a_pt = True
-                # 
-                #     if lastfm.connected:
-                #         mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
-                #                                                               pctl.master_library[a_index].artist,
-                #                                                               pctl.master_library[a_index].album))
-                #         mini_t.daemon = True
-                #         mini_t.start()
-                # 
-                # if pctl.a_time > 10 and a_pt:
-                #     pctl.b_time += add_time
-                #     if pctl.b_time > 20:
-                #         pctl.b_time = 0
-                #         if lastfm.connected:
-                #             mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[a_index].title,
-                #                                                                   pctl.master_library[a_index].artist,
-                #                                                                   pctl.master_library[a_index].album))
-                #             mini_t.daemon = True
-                #             mini_t.start()
-                # 
-                # if pctl.master_library[a_index].length > 30 and pctl.a_time > pctl.master_library[a_index].length \
-                #         * 0.50 and a_sc is False:
-                #     a_sc = True
-                #     if lastfm.connected:
-                #         gui.pl_update = 1
-                #         print(
-                #             "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
-                #                 a_index].artist)
-                # 
-                #         mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
-                #                                                                 pctl.master_library[a_index].artist,
-                #                                                                 pctl.master_library[a_index].album))
-                #         mini_t.daemon = True
-                #         mini_t.start()
-                # 
-                # if a_sc is False and pctl.master_library[a_index].length > 30 and pctl.a_time > 240:
-                #     if lastfm.connected:
-                #         gui.pl_update = 1
-                #         print(
-                #             "Scrobble " + pctl.master_library[a_index].title + " - " + pctl.master_library[
-                #                 a_index].artist)
-                # 
-                #         mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[a_index].title,
-                #                                                                 pctl.master_library[a_index].artist,
-                #                                                                 pctl.master_library[a_index].album))
-                #         mini_t.daemon = True
-                #         mini_t.start()
-                #     a_sc = True
 
             if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
                 index = pctl.track_queue[pctl.queue_step]
@@ -2689,41 +2637,6 @@ def player():
 
                     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
                                          b"genre", b"", b"", int(bitrate), False)
-                #
-                # elif codec == "OGG":
-                #     if system == 'windows':
-                #         line = install_directory + "/encoder/oggenc2.exe" + " -r -b " + bitrate + " -"
-                #     else:
-                #         line = "oggenc" + " -r -b " + bitrate + " -"
-                #
-                #     line = line.encode('utf-8')
-                #     # print(line)
-                #
-                #     encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
-                #
-                #     line = "source:" + ice_pass
-                #     line = line.encode('utf-8')
-                #
-                #     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
-                #                          b"genre", b"", b"", int(bitrate), False)
-                #
-                # elif codec == "OPUS":
-                #     if system == 'windows':
-                #         line = install_directory + "/encoder/opusenc.exe --raw --bitrate " + bitrate + " - - "
-                #     else:
-                #         line = "opusenc" + " --raw --bitrate " + bitrate + " - - "
-                #
-                #     line = line.encode('utf-8')
-                #     # print(line)
-                #
-                #     encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
-                #
-                #     line = "source:" + ice_pass
-                #     line = line.encode('utf-8')
-                #
-                #     BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
-                #                          b"genre", b"", b"", int(bitrate), False)
-
 
                 elif codec == "OGG":
                     if not has_bass_ogg:
@@ -2746,7 +2659,7 @@ def player():
                                          b"genre", b"", b"", int(bitrate), False)
 
                 if BASS_ErrorGetCode() == -1:
-                    show_meassage("Error: Sorry, something isn't working right, maybe an issue with icecast?")
+                    show_message("Error: Sorry, something isn't working right, maybe an issue with icecast?")
                 channel1 = BASS_ChannelPlay(mhandle, True)
                 print(encoder)
                 print(pctl.broadcast_line)
@@ -3325,6 +3238,7 @@ font11c = load_font(gui_font, 11)
 font12c = load_font(gui_font, 12)
 font13c = load_font(gui_font, 13)
 font14c = load_font(gui_font, 14)
+font28c = load_font(gui_font, 28)
 
 font10a = load_font(main_font, 10)
 font11a = load_font(main_font, 11)
@@ -3334,6 +3248,9 @@ font14a = load_font(main_font, 14)
 font15a = load_font(main_font, 15)
 font16a = load_font(main_font, 16)
 font17a = load_font(main_font, 17)
+font22a = load_font(main_font, 22)
+font24a = load_font(main_font, 24)
+font28a = load_font(main_font, 28)
 
 font10b = load_font(alt_font, 10)
 font11b = load_font(alt_font, 11)
@@ -3343,6 +3260,9 @@ font14b = load_font(alt_font, 14)
 font15b = load_font(alt_font, 15)
 font16b = load_font(alt_font, 16)
 font17b = load_font(alt_font, 17)
+font22b = load_font(alt_font, 22)
+font24b = load_font(alt_font, 24)
+font28b = load_font(alt_font, 28)
 
 font12d = load_font(light_font, 12)
 font13d = load_font(light_font, 13)
@@ -3361,10 +3281,17 @@ font_dict[16] = (font16a, font16b)
 font_dict[14] = (font14a, font14b)
 font_dict[15] = (font15a, font15b)
 font_dict[17] = (font17a, font17b)
+font_dict[22] = (font22a, font22b)
+font_dict[24] = (font24a, font24b)
+font_dict[28] = (font28a, font28b)
+
+
 font_dict[211] = (font11c, font11b)
 font_dict[212] = (font12c, font12b)
 font_dict[213] = (font13c, font13b)
 font_dict[214] = (font14c, font14b)
+font_dict[228] = (font28c, font28b)
+
 font_dict[317] = (font17d, font17b)
 font_dict[316] = (font16d, font16b)
 font_dict[315] = (font15d, font15b)
@@ -4682,21 +4609,6 @@ def load_xspf(path):
             nt.is_cue = False
             if nt.found is True:
                 nt = tag_scan(nt)
-                # audio = auto.File(location)
-                # nt.track_number = str(audio.track)
-                # nt.bitrate = audio.bitrate
-                # nt.date = audio.year
-                # nt.genre = rm_16(audio.genre)
-                # nt.samplerate = audio.sample_rate
-                # nt.size = audio.size
-                # nt.length = audio.duration
-                # nt.comment = audio.comment
-                # if nt.title == "":
-                #     nt.title = rm_16(audio.title)
-                # if nt.artist == "":
-                #     nt.artist = rm_16(audio.artist)
-                # if nt.album == "":
-                #     nt.album = rm_16(audio.album)
 
             pctl.master_library[master_count] = nt
             playlist.append(master_count)
@@ -5955,19 +5867,6 @@ def reload_metadata(index):
 
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        # audio = auto.File(pctl.master_library[track].fullpath)
-        # pctl.master_library[track].length = audio.duration
-        # pctl.master_library[track].title = rm_16(audio.title)
-        # pctl.master_library[track].artist = rm_16(audio.artist)
-        # pctl.master_library[track].album = rm_16(audio.album)
-        # pctl.master_library[track].track_number = str(audio.track)
-        # pctl.master_library[track].bitrate = audio.bitrate
-        # pctl.master_library[track].date = audio.year
-        # pctl.master_library[track].genre = rm_16(audio.genre)
-        # pctl.master_library[track].samplerate = audio.sample_rate
-        # pctl.master_library[track].comment = audio.comment
-
-
         key = pctl.master_library[track].title + pctl.master_library[track].filename
         pctl.star_library[key] = star
 
@@ -6098,6 +5997,9 @@ def del_selected():
 
     gui.update += 1
     gui.pl_update = 1
+
+    if len(shift_selection) == 0:
+        shift_selection = [playlist_selected]
 
     if len(default_playlist) == 0:
         return
@@ -6472,7 +6374,7 @@ def export_stats():
     xport = open(user_directory + '/stats.txt', 'wb')
     xport.write(line)
     xport.close()
-    target = os.path.join(install_directory, "stats.txt")
+    target = os.path.join(user_directory, "stats.txt")
     if system == "windows":
         os.startfile(target)
     elif system == 'mac':
@@ -6847,7 +6749,7 @@ def force_album_view():
     toggle_album_mode(True)
 
 
-view_menu.add("Restore", view_standard, standard_view_deco)
+view_menu.add("Restore To Default", view_standard, standard_view_deco)
 view_menu.add("Tracks", view_tracks)
 view_menu.add("Tracks + Metadata", view_standard_meta)
 view_menu.add("Tracks + Full Art", view_standard_full)
@@ -7352,25 +7254,6 @@ def worker1():
 
         nt = tag_scan(nt)
 
-        # nt.length = audio.duration
-        # nt.title = rm_16(audio.title)
-        # nt.artist = rm_16(audio.artist)
-        # nt.album = rm_16(audio.album)
-        # nt.track_number = str(audio.track)
-        # nt.bitrate = audio.bitrate
-        # nt.date = audio.year
-        # nt.genre = rm_16(audio.genre)
-        # nt.samplerate = audio.sample_rate
-        # nt.size = audio.size
-        # if audio.comment != "":
-        #     if audio.comment[0:3] == '000':
-        #         pass
-        #     elif len(audio.comment) > 4 and audio.comment[2] == '+':
-        #         pass
-        #     else:
-        #         nt.comment = audio.comment
-
-
         pctl.master_library[master_count] = nt
         added.append(master_count)
         master_count += 1
@@ -7499,7 +7382,7 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
-                if prefs.transcode_mode == 'single':
+                if prefs.transcode_mode == 'single':  #  Previously there was a CUE option
 
                     if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
                         global core_use
@@ -7600,213 +7483,9 @@ def worker1():
                                                                                                                    "") + '" '
 
                                 command += full_wav_out + ' ' + full_target_out
-                                #
-                                # elif prefs.transcode_codec == 'opus':
-                                #
-                                #     command = install_directory + '/encoder/opusenc --bitrate ' + str(
-                                #         prefs.transcode_bitrate) + ' '
-                                #
-                                #     if system != 'windows':
-                                #         command = 'opusenc --bitrate ' + str(prefs.transcode_bitrate) + ' '
-                                #
-                                #     if pctl.master_library[item].title != "":
-                                #         command += '--title "' + pctl.master_library[item].title.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     if pctl.master_library[item].artist != "":
-                                #         command += '--artist "' + pctl.master_library[item].artist.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     if pctl.master_library[item].album != "":
-                                #         command += '--album "' + pctl.master_library[item].album.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     command += full_wav_out + ' ' + full_target_out
-                                #
-                                # elif prefs.transcode_codec == 'ogg':
-                                #
-                                #     command = install_directory + '/encoder/oggenc2 --bitrate ' + str(
-                                #         prefs.transcode_bitrate) + ' '
-                                #
-                                #     if system != 'windows':
-                                #         command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) + ' '
-                                #
-                                #     if pctl.master_library[item].title != "":
-                                #         command += '--title "' + pctl.master_library[item].title.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     if pctl.master_library[item].artist != "":
-                                #         command += '--artist "' + pctl.master_library[item].artist.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     if pctl.master_library[item].album != "":
-                                #         command += '--album "' + pctl.master_library[item].album.replace('"', "").replace("'", "") + '" '
-                                #
-                                #     if pctl.master_library[item].album != "":
-                                #         command += '--tracknum "' + str(pctl.master_library[item].track_number).replace('"', "").replace("'", "") + '" '
-                                #
-                                #     command += full_wav_out + ' ' + full_target_out
-                                #
-                                #
-                                # print(shlex.split(command))
-                                # subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                                # print('done')
-                                #
-                                # os.remove(full_wav_out_p)
-                                # output_dir = prefs.encoder_output + folder_name + "/"
-                                #
-                                # out_line = os.path.splitext(pctl.master_library[item].filename)[0]
-                                # if pctl.master_library[item].is_cue:
-                                #     out_line = str(pctl.master_library[item].track_number) + ". "
-                                #     out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
-                                #
-                                # print(output_dir)
-                                # shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
 
                     output_dir = prefs.encoder_output + folder_name + "/"
                     album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
-
-                # elif prefs.transcode_mode == 'cue':
-                #
-                #     print(full_wav_out)
-                #     print(full_target_out)
-                #
-                #     command = install_directory + "/encoder/ffmpeg "
-                #
-                #     if system != 'windows':
-                #         command = "ffmpeg "
-                #
-                #     for item in folder_items:
-                #         print(pctl.master_library[item].fullpath)
-                #         command += '-i "'
-                #         command += pctl.master_library[item].fullpath
-                #         command += '" '
-                #
-                #     command += '-filter_complex "[0:a:0][1:a:0] concat=n='
-                #     command += str(len(folder_items))
-                #     command += ':v=0:a=1[out]" -map "[out]" '
-                #     command += full_wav_out
-                #
-                #     print(4)
-                #     if pctl.master_library[folder_items[0]].is_cue == True or len(folder_items) == 1:
-                #         command = install_directory + '/encoder/ffmpeg -i "' + pctl.master_library[folder_items[0]].fullpath + '" ' + full_wav_out
-                #
-                #         n_folder = []
-                #         for i in reversed(range(len(folder_items))):
-                #             if pctl.master_library[folder_items[i]].fullpath != pctl.master_library[folder_items[0]].fullpath:
-                #                 n_folder.append(folder_items[i])
-                #                 del folder_items[i]
-                #         print(2)
-                #         if len(n_folder) > 0:
-                #             transcode_list.append(n_folder)
-                #
-                #     print(command)
-                #
-                #     transcode_state = "(Decoding)"
-                #     gui.update += 1
-                #
-                #     print(shlex.split(command))
-                #     startupinfo = None
-                #     if system == 'windows':
-                #         startupinfo = subprocess.STARTUPINFO()
-                #         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                #     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
-                #
-                #     print('done ffmpeg')
-                #
-                #     transcode_state = "(Encoding)"
-                #     gui.update += 1
-                #
-                #     if prefs.transcode_codec == 'mp3':
-                #
-                #         command = install_directory + '/encoder/lame --silent --abr ' + str(
-                #             prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #         if system != 'windows':
-                #             command = 'lame --silent --abr ' + str(
-                #                 prefs.transcode_bitrate) + ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #     elif prefs.transcode_codec == 'opus':
-                #
-                #         command = install_directory + '/encoder/opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #         if system != 'windows':
-                #             command = 'opusenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #     elif prefs.transcode_codec == 'ogg':
-                #
-                #         command = install_directory + '/encoder/oggenc2 --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #         if system != 'windows':
-                #             command = 'oggenc --bitrate ' + str(prefs.transcode_bitrate) +  ' ' + full_wav_out + ' ' + full_target_out
-                #
-                #     print(shlex.split(command))
-                #     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                #     print('done')
-                #
-                #     os.remove(full_wav_out_p)
-                #     output_dir = prefs.encoder_output + folder_name + "/"
-                #     print(output_dir)
-                #     #print(output_dir + folder_name + ".opus test")
-                #     shutil.move(full_target_out_p, output_dir + folder_name + "." + prefs.transcode_codec) #opus")
-                #
-                #     cu = ""
-                #     cu += 'PERFORMER "' + pctl.master_library[folder_items[0]].artist + '"\n'
-                #     cu += 'TITLE "' + pctl.master_library[folder_items[0]].album + '"\n'
-                #     cu += 'REM DATE "' + pctl.master_library[folder_items[0]].date + '"\n'
-                #     cu += 'FILE "' + folder_name + "." + prefs.transcode_codec + '" WAVE\n'
-                #
-                #     run_time = 0
-                #     track = 1
-                #
-                #     for item in folder_items:
-                #
-                #         cu += 'TRACK '
-                #         if track < 10:
-                #             cu += '0'
-                #         cu += str(track)
-                #         cu += ' AUDIO\n'
-                #
-                #         cu += ' TITLE "'
-                #         cu += pctl.master_library[item].title
-                #         cu += '"\n'
-                #
-                #         cu += ' PERFORMER "'
-                #         cu += pctl.master_library[item].artist
-                #         cu += '"\n'
-                #
-                #         cu += ' INDEX 01 '
-                #
-                #         m, s = divmod(run_time, 60)
-                #         s, ms = divmod(s, 1)
-                #         ms = int(round(ms, 2) * 100)
-                #
-                #         if ms < 10:
-                #             ms = '0' + str(ms)
-                #         else:
-                #             ms = str(ms)
-                #
-                #         if m < 10:
-                #             m = '0' + str(int(m))
-                #         else:
-                #             m = str(int(m))
-                #
-                #         if s < 10:
-                #             s = '0' + str(int(s))
-                #         else:
-                #             s = str(int(s))
-                #
-                #         cu += m + ":" + s + ":" + ms + "\n"
-                #
-                #         if default_player == 'BASS' and pctl.master_library[item].is_cue is False:
-                #             tracklen = get_backend_time(pctl.master_library[item].fullpath)
-                #         else:
-                #             tracklen = int(pctl.master_library[item].length)
-                #
-                #         run_time += tracklen
-                #         track += 1
-                #
-                #     cue = open(output_dir + folder_name + ".cue", 'w', encoding="utf_8")
-                #     cue.write(cu)
-                #     cue.close()
-                #
-                #     album_art_gen.save_thumb(folder_items[0], (720, 720), output_dir + folder_name)
-                #     print('finish')
 
                 del transcode_list[0]
                 transcode_state = ""
@@ -7824,70 +7503,6 @@ def worker1():
                     line += ". Note that any associated output picture is a thumbnail and not a lossless copy."
                 show_message(line)
 
-        # while len(gall_ren.queue) > 0:
-        #
-        #     # print("ready")
-        #
-        #     key = gall_ren.queue[0]
-        #     order = gall_ren.gall[key]
-        #
-        #     source = gall_ren.get_file_source(key[0])
-        #
-        #     # print(source)
-        #
-        #     if source is False:
-        #         order[0] = 0
-        #         gall_ren.gall[key] = order
-        #         del gall_ren.queue[0]
-        #         continue
-        #
-        #     img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
-        #
-        #
-        #     try:
-        #         if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-        #             source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
-        #             #print('load from cache')
-        #
-        #         elif source[0] is True:
-        #             # print('tag')
-        #             source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-        #
-        #         else:
-        #             source_image = open(source[1], 'rb')
-        #
-        #         g = io.BytesIO()
-        #         g.seek(0)
-        #         # print('pro stage 1')
-        #         im = Image.open(source_image)
-        #         if im.mode != "RGB":
-        #             im = im.convert("RGB")
-        #         im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
-        #
-        #         im.save(g, 'JPEG')
-        #         if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-        #             #print("no old found")
-        #             im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
-        #
-        #         g.seek(0)
-        #
-        #         source_image.close()
-        #
-        #         order = [2, g, None, None]
-        #         gall_ren.gall[key] = order
-        #
-        #         gui.update += 1
-        #         if gui.combo_mode:
-        #             gui.pl_update = 1
-        #         del source
-        #         time.sleep(0.01)
-        #
-        #     except:
-        #         print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
-        #         order = [0, None, None, None]
-        #         gall_ren.gall[key] = order
-        #
-        #     del gall_ren.queue[0]
 
         if loaderCommandReady is True:
             for order in load_orders:
@@ -7932,7 +7547,7 @@ def get_album_info(position):
 
     while position > 0:
         if pctl.master_library[default_playlist[position]].parent_folder_name == pctl.master_library[
-            default_playlist[current - 1]].parent_folder_name:
+                default_playlist[current - 1]].parent_folder_name:
             current -= 1
             continue
         else:
@@ -7945,7 +7560,7 @@ def get_album_info(position):
         if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
         if pctl.master_library[default_playlist[current]].parent_folder_name != pctl.master_library[
-            default_playlist[current + 1]].parent_folder_name:
+                default_playlist[current + 1]].parent_folder_name:
             break
         else:
             current += 1
@@ -10987,6 +10602,9 @@ class StandardPlaylist:
                           (highlight_right, playlist_row_height - 0), colours.row_select_highlight, True)
                 playlist_selected = p_track
 
+                # if not key_shift_down:
+                #     shift_selection = [playlist_selected]
+
             # Shift Move Selection
             if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width, playlist_row_height)):
@@ -11091,28 +10709,6 @@ class StandardPlaylist:
             1] - 55 and
                             playlist_width + playlist_left > mouse_position[0] > playlist_left + 15):
             playlist_menu.activate()
-
-        # if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + playlist_top\
-        #         and not (playlist_panel and coll_point(mouse_position, pl_rect)):
-        #
-        #     if album_mode and mouse_position[0] > playlist_width + 34:
-        #         pass
-        #     else:
-        #         mx = 4
-        #         if playlist_view_length < 25:
-        #             mx = 3
-        #         if thick_lines:
-        #             mx = 3
-        #         playlist_position -= mouse_wheel * mx
-        #         # if playlist_view_length > 15:
-        #         #     playlist_position -= mouse_wheel
-        #         if playlist_view_length > 40:
-        #             playlist_position -= mouse_wheel
-        #
-        #         if playlist_position > len(default_playlist):
-        #             playlist_position = len(default_playlist)
-        #         if playlist_position < 1:
-        #             playlist_position = 0
 
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, ttext, None, abc)
@@ -11364,6 +10960,43 @@ class ComboPlaylist:
 combo_pl_render = ComboPlaylist()
 playlist_render = StandardPlaylist()
 
+
+class Showcase:
+
+    def __init__(self):
+
+        pass
+
+    def render(self):
+
+        draw.rect_r((0, panelY, window_size[0], window_size[1] - panelY), colours.playlist_panel_background, True)
+
+        box = int(window_size[1] * 0.4 + 120)
+        x = int(0 + window_size[0] * 0.15)
+        y = int((window_size[1] / 2) - (box / 2)) - 10
+
+        index = pctl.track_queue[pctl.queue_step]
+        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+        album_art_gen.display(index, (x, y), (box, box))
+
+        x = int(window_size[0] * 0.735)
+
+
+        y = int(window_size[1] / 2) - 60
+        draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, 800)
+
+        y += 45
+        draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, 800)
+
+
+
+
+
+
+showcase = Showcase()
+
+
 # Set SDL window drag areas
 if system != 'windows':
 
@@ -11434,7 +11067,7 @@ print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(s
 # time.sleep(13)
 # C-ML
 if default_player == "GTK":
-    show_message("Using GStreamer as fallback. Some functions disabled")
+    print("Using GStreamer as fallback. Some functions disabled")
 print("Initialization Complete")
 
 while running:
@@ -11928,12 +11561,12 @@ while running:
             # gui.show_playlist ^= True
             # for item in default_playlist:
             #     print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
-
+            gui.showcase_mode = True
+            toggle_combo_view()
             # key_F7 = False
             # for item in default_playlist:
             #     print(pctl.master_library[item].size / pctl.master_library[item].length * 8 / 1024)
             # gui.test ^= True
-            print(pctl.multi_playlist)
 
             # GUI_Mode = 3
 
@@ -12809,13 +12442,19 @@ while running:
 
                     gui.pl_update -= 1
                     if gui.combo_mode:
-                        combo_pl_render.full_render()
+                        if gui.showcase_mode:
+                            showcase.render()
+                        else:
+                            combo_pl_render.full_render()
                     else:
                         playlist_render.full_render()
 
                 else:
                     if gui.combo_mode:
-                        combo_pl_render.cache_render()
+                        if gui.showcase_mode:
+                            showcase.render()
+                        else:
+                            combo_pl_render.cache_render()
                     else:
                         playlist_render.cache_render()
 
@@ -13095,114 +12734,6 @@ while running:
 
                                 if side_panel_text_align == 1:
                                     pass
-                                    # # --------------------------------
-                                    # if 38 + box + 126 > window_size[1] + 52:
-                                    #     block6 = True
-                                    # if block6 != True:
-                                    #     if 38 + box + 126 > window_size[1] + 37:
-                                    #         block5 = True
-                                    #
-                                    #     if 38 + box + 126 > window_size[1] + 10:
-                                    #         block4 = True
-                                    #     if 38 + box + 126 > window_size[1] - 31:
-                                    #         block3 = True
-                                    #
-                                    #     if 38 + box + 126 > window_size[1] - 70:
-                                    #
-                                    #         block1 = 38 + box + 20
-                                    #         block2 = window_size[1] - 70 - 36
-                                    #
-                                    #     else:
-                                    #         block1 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box - 50
-                                    #         block2 = int((window_size[1] - 38 - box - panelBY) / 2) + 38 + box + 5
-                                    #
-                                    #     if block4 is False:
-                                    #
-                                    #         if block3 is True:
-                                    #             block1 -= 14
-                                    #
-                                    #         if title != "":
-                                    #             playing_info = title
-                                    #             playing_info = trunc_line(playing_info, 12,
-                                    #                                       window_size[0] - playlist_width - 53)
-                                    #             draw_text((x + 20 + int(side_panel_size / 2), block1, 2),
-                                    #                       playing_info, colours.side_bar_line1, 12)
-                                    #
-                                    #         if artist != "":
-                                    #             playing_info = artist
-                                    #             playing_info = trunc_line(playing_info, 11,
-                                    #                                       window_size[0] - playlist_width - 54)
-                                    #             draw_text((x + 20 + int(side_panel_size / 2), block1 + 17, 2),
-                                    #                       playing_info, colours.side_bar_line2, 11)
-                                    #     else:
-                                    #         block1 -= 14
-                                    #
-                                    #         line = ""
-                                    #         if artist != "":
-                                    #             line += artist
-                                    #         if title != "":
-                                    #             if line != "":
-                                    #                 line += " - "
-                                    #             line += title
-                                    #         line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    #         draw_text((x + 20 + int(side_panel_size / 2), block1, 2), line,
-                                    #                   colours.side_bar_line1, 11)
-                                    #
-                                    #     if block3 == False:
-                                    #
-                                    #         if album != "":
-                                    #             playing_info = album
-                                    #             playing_info = trunc_line(playing_info, 11,
-                                    #                                       window_size[0] - playlist_width - 53)
-                                    #             draw_text((x + 20 + int(side_panel_size / 2), block2, 2),
-                                    #                       playing_info, colours.side_bar_line2, 11)
-                                    #
-                                    #         if date != "":
-                                    #             playing_info = date
-                                    #             if genre != "":
-                                    #                 playing_info += " | " + genre
-                                    #             playing_info = trunc_line(playing_info, 11,
-                                    #                                       window_size[0] - playlist_width - 53)
-                                    #             draw_text((x + 20 + int(side_panel_size / 2), block2 + 18, 2),
-                                    #                       playing_info, colours.side_bar_line2, 11)
-                                    #
-                                    #
-                                    #     else:
-                                    #         if block5 != True:
-                                    #             line = ""
-                                    #             if album != "":
-                                    #                 line += album
-                                    #             if line != "":
-                                    #                 line += " | "
-                                    #             if date != "":
-                                    #                 line += date + " | "
-                                    #             line += ext
-                                    #             line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    #             draw_text((x + 20 + int(side_panel_size / 2), block2 + 35, 2),
-                                    #                       line, colours.side_bar_line2, 11)
-                                    # # Topline
-                                    # elif pctl.broadcast_active != True:
-                                    #     line = ""
-                                    #     if artist != "":
-                                    #         line += artist
-                                    #     if title != "":
-                                    #         if line != "":
-                                    #             line += " - "
-                                    #         line += title
-                                    #     # line = trunc_line(line, 11, window_size[0] - playlist_width - 53)
-                                    #     # offset_extra = 0
-                                    #     # if draw_border:
-                                    #     #     offset_extra = 61
-                                    #
-                                    #     if gui.turbo:
-                                    #         draw_text((window_size[0] - 104 - offset_extra, 8, 1), line, colours.side_bar_line1,
-                                    #                   11)
-                                    #
-                                    #     else:
-                                    #         draw_text((window_size[0] - 15 - offset_extra, 8, 1), line, colours.side_bar_line1,
-                                    #                   11)
-
-
 
                                 else:
                                     # -------------------------------
@@ -13367,15 +12898,6 @@ while running:
             #     draw.line(0, panelY, window_size[0], panelY, colours.tb_line)
             if gui.draw_frame:
                 draw.line(0, panelY, window_size[0], panelY, colours.tb_line)
-
-            # Extra sep bar test
-            # if side_panel_enable and gui.draw_frame:
-            #     if gui.light_mode:
-            #         rect = [playlist_width + 30 + 1, panelY - 2, 4, window_size[1] - panelBY - panelY + 2]
-            #         draw.rect_r(rect, colours.top_panel_background, True)
-            #         x = 5
-            #         draw.line(playlist_width + 30 + x, panelY + 1, playlist_width + 30 + x, window_size[1] - panelBY - 1,
-            #                   colours.sep_line)
 
             if GUI_Mode == 1:
                 top_panel.render()

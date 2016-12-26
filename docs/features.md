@@ -2,9 +2,10 @@
 
 ### Codecs
 
- - Audio only: AAC, WAV, TTA
+ - Audio only: AAC, WAV
  - Audio and metadata: M4A, OGG, OPUS, WMA (windows only)
- - Audio, metadata and embedded picture: MP3, FLAC, APE, WV
+ - Audio, metadata and embedded picture: MP3, FLAC, APE*, WV*, TTA*   *Picture from APEv2 tags only
+
 
 ### UI and Layouts
 
