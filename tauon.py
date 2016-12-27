@@ -6365,7 +6365,7 @@ def toggle_album_mode(force_on=False):
         side_panel_size = old_side_pos
     else:
         if gui.combo_mode:
-            toggle_combo_view()
+            toggle_combo_view(off=True)
         album_mode = True
         side_panel_enable = True
 
@@ -6734,7 +6734,7 @@ def view_tracks():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view()
+        toggle_combo_view(off=True)
     if side_panel_enable:
         toggle_side_panel()
 
@@ -6746,7 +6746,7 @@ def view_standard_full():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view()
+        toggle_combo_view(off=True)
     if not side_panel_enable:
         toggle_side_panel()
     global side_panel_size
@@ -6761,7 +6761,7 @@ def view_standard_meta():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view()
+        toggle_combo_view(off=True)
     if not side_panel_enable:
         toggle_side_panel()
     global side_panel_size
@@ -11046,6 +11046,8 @@ class Showcase:
         track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
         album_art_gen.display(index, (x, y), (box, box))
+        if coll_point(mouse_position, (x, y, box, box)) and mouse_click is True:
+            album_art_gen.cycle_offset(index)
 
         if track.lyrics == "":
 
@@ -11649,7 +11651,7 @@ while running:
             # for item in default_playlist:
             #     print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
             #gui.showcase_mode = True
-            toggle_combo_view()
+
             # key_F7 = False
             # for item in default_playlist:
             #     print(pctl.master_library[item].size / pctl.master_library[item].length * 8 / 1024)
