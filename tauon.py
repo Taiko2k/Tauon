@@ -3634,10 +3634,59 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
         return dst.w
 
 
+
 def draw_text(location, text, colour, font, max=1000):
     global text_cache
     return draw_text2(location, text, colour, font, max)
 
+
+class LyricsRen:
+
+    def __init__(self):
+
+        self.index = -1
+        self.text = ""
+        self.colour = colours.side_bar_line1
+        self.colour_sdl = SDL_Color(self.colour[0], self.colour[1], self.colour[2], self.colour[3])
+        self.tex_w = pointer(c_int(0))
+        self.tex_h = pointer(c_int(0))
+        self.font = 15
+        self.dst = SDL_Rect(1, 1)
+        self.texture = None
+
+        self.lyrics_position = 0
+
+    def generate(self, index, w):
+
+        self.text = pctl.master_library[index].lyrics
+        self.lyrics_position = 0
+
+        if self.text == "":
+            return
+        if self.texture is not None:
+            SDL_DestroyTexture(self.texture)
+
+        font_surface = TTF_RenderUTF8_Blended_Wrapped(font_dict[self.font][0], self.text.encode("utf-8"), self.colour_sdl, w)
+        self.texture = SDL_CreateTextureFromSurface(renderer, font_surface)
+        SDL_QueryTexture(self.texture, None, None, self.tex_w, self.tex_h)
+        self.dst.w = self.tex_w.contents.value
+        self.dst.h = self.tex_h.contents.value
+        SDL_FreeSurface(font_surface)
+
+    def render(self, index, x, y, w, h, p):
+
+        if index != self.index:
+            self.index = index
+            self.generate(index, w)
+
+        self.dst.x = x
+        self.dst.y = y
+
+        if self.texture is not None:
+            SDL_RenderCopy(renderer, self.texture, None, self.dst)
+
+
+lyrics_ren = LyricsRen()
 
 def draw_linked_text(location, text, colour, font):
     base = ""
@@ -6191,7 +6240,7 @@ def toggle_side_panel(mode=0):
 
 
 
-def toggle_combo_view(mode=0):
+def toggle_combo_view(mode=0, showcase=False, off=False):
     global update_layout
     global side_panel_enable
     global old_side_pos
@@ -6199,6 +6248,15 @@ def toggle_combo_view(mode=0):
 
     if mode == 1:
         return gui.combo_mode
+
+    if not off:
+        if showcase:
+            gui.showcase_mode = True
+        else:
+            if gui.combo_mode and gui.showcase_mode:
+                gui.showcase_mode = False
+                return
+            gui.showcase_mode = False
 
     if gui.combo_mode is False:
         if not album_mode:
@@ -6632,6 +6690,9 @@ def switch_playlist(number, cycle=False):
     if pl_follow:
         pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
 
+    if gui.showcase_mode:
+        view_standard()
+
     pctl.multi_playlist[pctl.playlist_active][2] = default_playlist
     pctl.multi_playlist[pctl.playlist_active][3] = playlist_position
     pctl.multi_playlist[pctl.playlist_active][5] = playlist_selected
@@ -6715,7 +6776,7 @@ def view_standard():
     if album_mode:
         toggle_album_mode()
     if gui.combo_mode:
-        toggle_combo_view()
+        toggle_combo_view(off=True)
     if not side_panel_enable:
         toggle_side_panel()
 
@@ -6748,6 +6809,11 @@ def gallery_only_view():
 def force_album_view():
     toggle_album_mode(True)
 
+def switch_showcase():
+
+    if gui.combo_mode:
+        toggle_combo_view()
+    toggle_combo_view(showcase=True)
 
 view_menu.add("Restore To Default", view_standard, standard_view_deco)
 view_menu.add("Tracks", view_tracks)
@@ -6756,6 +6822,7 @@ view_menu.add("Tracks + Full Art", view_standard_full)
 view_menu.add("Tracks + Gallery", force_album_view)
 view_menu.add("Gallery Only", gallery_only_view)
 view_menu.add("Album Art + Tracks", toggle_combo_view)
+view_menu.add("Single Art + Lyrics", switch_showcase)
 # ---------------------------------------------------------------------------------------
 
 core_use = 0
@@ -10980,17 +11047,37 @@ class Showcase:
 
         album_art_gen.display(index, (x, y), (box, box))
 
-        x = int(window_size[0] * 0.735)
+        if track.lyrics == "":
+
+            x = int(x + box + (window_size[0] - x - box) / 2)
 
 
-        y = int(window_size[1] / 2) - 60
-        draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, 800)
+            y = int(window_size[1] / 2) - 60
+            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, 800)
 
-        y += 45
-        draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, 800)
+            y += 45
+            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, 800)
 
+        else:
+            x += box + int(window_size[0] * 0.15) + 20
 
+            #y = 80
+            x -= 100
+            w = window_size[0] - x
 
+            if mouse_wheel != 0:
+                lyrics_ren.lyrics_position += mouse_wheel * 35
+            if key_up_press:
+                lyrics_ren.lyrics_position += 35
+            if key_down_press:
+                lyrics_ren.lyrics_position -= 35
+
+            lyrics_ren.render(index,
+                              x,
+                              y + lyrics_ren.lyrics_position,
+                              w,
+                              int(window_size[1] - 100),
+                              0)
 
 
 
@@ -11561,7 +11648,7 @@ while running:
             # gui.show_playlist ^= True
             # for item in default_playlist:
             #     print(str(pctl.master_library[item].disc_number) + " of " + str(pctl.master_library[item].disc_total))
-            gui.showcase_mode = True
+            #gui.showcase_mode = True
             toggle_combo_view()
             # key_F7 = False
             # for item in default_playlist:

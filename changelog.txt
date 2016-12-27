@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v1.9.1
 
+ - Added new lyrics + art layout view
  - Added support for WavPack (.wv) files
  - Added tag reading support for APE, TTA and WavPack files
  - Added GStreamer fallback on linux with basic functionality
