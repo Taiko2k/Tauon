@@ -9,6 +9,7 @@ v1.9.1
  - Added 'has lyrics' filter option
  - Added GStreamer fallback on linux with basic functionality
  - Added home holder user files location when detected as installed
+ - Added rescan tags option for playlists
  - Tweaked playlist rename input box to apply input on click out, not just enter key.
  - Fixed not being able to delete or arrange playlist while importing
  - Fixed tracks importing to playlist that already have cue sheets (folders only, again)

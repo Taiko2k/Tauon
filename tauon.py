@@ -5085,7 +5085,7 @@ def convert_playlist(pl):
             return
     else:
         if shutil.which('ffmpeg') is None:
-            show_message("Error: FFMPEG does not appear to be installed")
+            show_message("Error: ffmpeg does not appear to be installed")
             return
         if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
             show_message("Error: LAME does not appear to be installed")
@@ -5186,8 +5186,18 @@ def delete_playlist(index):
     reload()
 
 
+to_scan = []
+
+def rescan_tags(pl):
+
+    for track in pctl.multi_playlist[pl][2]:
+        if pctl.master_library[track].is_cue is False:
+            to_scan.append(track)
+            # pctl.master_library[track] = tag_scan(pctl.master_library[track])
+
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
+tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
 tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 
@@ -5374,12 +5384,11 @@ def gen_lyrics(pl):
             playlist.append(item)
 
     if len(playlist) > 0:
-        #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
         pctl.multi_playlist.append(pl_gen(title="Tracks with lyrics",
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
-        show_message("Nothing Found")
+        show_message("No track with lyrics found")
 
 
 def gen_comment(pl):
@@ -5786,7 +5795,7 @@ def convert_folder(index):
             return
     else:
         if shutil.which('ffmpeg') is None:
-            show_message("Error: FFMPEG does not appear to be installed")
+            show_message("Error: ffmpeg does not appear to be installed")
             return
         if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
             show_message("Error: LAME does not appear to be installed")
@@ -7604,8 +7613,15 @@ def worker1():
                     line += ". Note that any associated output picture is a thumbnail and not a lossless copy."
                 show_message(line)
 
+        while len(to_scan) > 0:
+            track = to_scan[0]
+            pctl.master_library[track] = tag_scan(pctl.master_library[track])
+            del to_scan[0]
+            gui.update = 1
 
         if loaderCommandReady is True:
+
+
             for order in load_orders:
                 if order.stage == 1:
                     if loaderCommand == LC_Folder:
@@ -9587,6 +9603,9 @@ class TopPanel:
             if to_got == 'xspfl':
                 text = "Importing XSPF playlist. May take a while."
             bg = colours.status_info_text
+        elif len(to_scan) > 0:
+            text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
+            bg = [100, 200, 100, 255]
         elif len(transcode_list) > 0:
             text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
             if len(transcode_list) > 1:
