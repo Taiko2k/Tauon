@@ -6,6 +6,7 @@ v1.9.1
  - Added new lyrics + art layout view
  - Added support for WavPack (.wv) files
  - Added tag reading support for APE, TTA and WavPack files
+ - Added 'has lyrics' filter option
  - Added GStreamer fallback on linux with basic functionality
  - Added home holder user files location when detected as installed
  - Tweaked playlist rename input box to apply input on click out, not just enter key.
@@ -14,6 +15,10 @@ v1.9.1
  - Fixed wav tracks duration not being detected on import
  - Fixed delete key not working on single track
  - Fixed stats open (this time for sure)
+ - Fixed art+tracks view tracks for up to 100 tracks per album
+ - Fixed page up/down keys not working for art+tracks view
+ - Fixed comment field only being read from MP3 files
+ - Fixed lyrics field not being read from MP3 files
 
 v1.9.0
 
