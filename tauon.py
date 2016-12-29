@@ -192,7 +192,7 @@ default_player = 'BASS'
 gapless_type1 = False
 running = True
 
-if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.so'):
+if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so'):
     print("BASS not found")
     try:
         import gi
@@ -203,6 +203,7 @@ if system != 'windows' and not os.path.isfile(install_directory + '/lib/libbass.
         print("Using fallback GStreamer")
     except:
         print("ERROR: gi.repository not found")
+        default_player = "None"
 
 class Timer:  # seconds
     def __init__(self):
@@ -1050,6 +1051,7 @@ def tag_scan(nt):
             nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
+            nt.comment = audio.comment
 
             return nt
 
@@ -1086,6 +1088,7 @@ def tag_scan(nt):
             nt.disc_number = audio.disc_number
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
+            nt.comment = audio.comment
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
@@ -1113,6 +1116,7 @@ def tag_scan(nt):
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
+            nt.comment = audio.comment
 
             if audio.found_tag is False:
                 try:
@@ -1162,14 +1166,27 @@ def tag_scan(nt):
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
 
+                if USLT in tag:
+                    lyrics = tag[USLT][0].text
+                    if len(lyrics) > 30 and ".com" not in lyrics:
+                        nt.lyrics = lyrics
+                    elif len(lyrics) > 2:
+                        print("Tag Scen: Possible spam found in lyric field")
+                        print("     In file: " + nt.fullpath)
+                        print("     Value: " + lyrics)
+
+                if SYLT in tag:
+                    print("Tag Scan: Found unhandled id3 field 'Synced Lyrics'")
+                    print(tag[SYLT][0].text)
+
             return nt
+
     except stagger.errors.NoTagError as err:
         # print("Tag Scanner: " + str(err))
         # print("      In file: " + nt.fullpath)
         return nt
     except:
         print("Warning: Tag read error")
-        # raise
         return nt
 
 
@@ -5349,6 +5366,22 @@ def gen_folder_top(pl):
 tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
 
 
+def gen_lyrics(pl):
+    playlist = []
+
+    for item in pctl.multi_playlist[pl][2]:
+        if pctl.master_library[item].lyrics != "":
+            playlist.append(item)
+
+    if len(playlist) > 0:
+        #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
+        pctl.multi_playlist.append(pl_gen(title="Tracks with lyrics",
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+    else:
+        show_message("Nothing Found")
+
+
 def gen_comment(pl):
     playlist = []
 
@@ -5636,6 +5669,7 @@ def gen_sort_album(index):
 
 tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
 
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 
@@ -10865,13 +10899,18 @@ class ComboPlaylist:
         # Get scroll movement
 
         if panelY < mouse_position[1] < window_size[1] - panelBY:
-            self.pl_pos_px -= mouse_wheel * 70
+            self.pl_pos_px -= mouse_wheel * 75
             if self.pl_pos_px < 0:
                 self.pl_pos_px = 0
             elif self.pl_pos_px > self.max_y:
                 self.pl_pos_px = self.max_y
                 # if key_shift_down:
                 #     self.pl_pos_px -= mouse_wheel * 10000
+
+        if key_PGU:
+            self.pl_pos_px -= abs(window_size[1] - 80)
+        if key_PGD:
+            self.pl_pos_px += abs(window_size[1] - 80)
 
         # Set some things
         pl_render_pos = 0
@@ -10883,7 +10922,7 @@ class ComboPlaylist:
         i = 0
         for item in self.mirror_cache:
 
-            if item > self.pl_pos_px - 1100:
+            if item > self.pl_pos_px - 2000:
                 pl_render_pos = self.mirror_cache[i]
                 pl_entry_on = album_dex[i]
                 album_dex_on = i
@@ -11011,6 +11050,7 @@ class ComboPlaylist:
             pl_render_pos += 16
             min -= 16
 
+
         # Set the render target back to window and render playlist texture
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, ttext, None, abc)
@@ -11065,7 +11105,7 @@ class Showcase:
 
             #y = 80
             x -= 100
-            w = window_size[0] - x
+            w = window_size[0] - x - 30
 
             if mouse_wheel != 0:
                 lyrics_ren.lyrics_position += mouse_wheel * 35
@@ -11157,6 +11197,9 @@ print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(s
 # C-ML
 if default_player == "GTK":
     print("Using GStreamer as fallback. Some functions disabled")
+elif default_player == "None":
+    show_message("ERROR: No backend found")
+
 print("Initialization Complete")
 
 while running:
