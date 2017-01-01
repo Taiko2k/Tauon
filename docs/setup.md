@@ -15,7 +15,7 @@ To uninstall:
 Open terminal to directory with downloaded PKGBUILD and run:
 
     $ makepkg  
-    $ sudo packman -U tauon-music-box-x.x.x-x-x86_64.pkg.tar.xz
+    $ sudo pacman -U tauon-music-box-x.x.x-x-x86_64.pkg.tar.xz
 
 To uninstall:
 
