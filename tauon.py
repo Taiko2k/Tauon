@@ -2,7 +2,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2016, Taiko2k captain.gxj@gmail.com
+# Copyright © 2015-2017, Taiko2k captain.gxj@gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -49,11 +49,11 @@ import sys
 import os
 import pickle
 
-t_version = "v1.9.1"
+t_version = "v1.9.2"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
-print('Copyright (c) 2015-2016 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright (c) 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
 server_port = 7590
 
@@ -8802,7 +8802,7 @@ class Over:
         y += 32
         draw_text((x, y), t_version, colours.grey(200), 12)
         y += 20
-        draw_text((x, y), "Copyright © 2015-2016 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
+        draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
@@ -11098,8 +11098,9 @@ class Showcase:
         draw.rect_r((0, panelY, window_size[0], window_size[1] - panelY), colours.playlist_panel_background, True)
 
         box = int(window_size[1] * 0.4 + 120)
-        x = int(0 + window_size[0] * 0.15)
+        x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10
+
 
         index = pctl.track_queue[pctl.queue_step]
         track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
@@ -11110,14 +11111,14 @@ class Showcase:
 
         if track.lyrics == "":
 
+            w = window_size[0] - (x + box) - 30
             x = int(x + box + (window_size[0] - x - box) / 2)
 
-
             y = int(window_size[1] / 2) - 60
-            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, 800)
+            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
 
             y += 45
-            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, 800)
+            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
 
         else:
             x += box + int(window_size[0] * 0.15) + 20
@@ -11720,6 +11721,12 @@ while running:
             # gui.test ^= True
 
             # GUI_Mode = 3
+            # i = 0
+            # perf_timer.set()
+            # while i < 10000:
+            #     i += 1
+            #     draw_text((100, random.randrange(20, 500)), "hello", [0,0,0,255], 12)
+            # print(perf_timer.get())
 
             key_F7 = False
 

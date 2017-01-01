@@ -1,11 +1,11 @@
 
 Changelog-------------------------------------
 
-v1.9.1
+v1.9.2
 
- - Added new lyrics + art layout view
+ - Added new lyrics view
  - Added support for WavPack (.wv) files
- - Added tag reading support for APE, TTA and WavPack files
+ - Added tag reading support for APEv2 tags (APE, TTA and WavPack files)
  - Added 'has lyrics' filter option
  - Added GStreamer fallback on linux with basic functionality
  - Added home holder user files location when detected as installed
