@@ -1,9 +1,34 @@
-# Binary release setup on Windows
+# Setup release on Windows
 
-Release bundle should work by running tauon.exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
+Program should work after running setup installer exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
+# Deb release setup on Ubuntu
 
-# Setup on Linux
+Double click the .deb file from file manager and follow prompts.
+
+To uninstall:
+
+     $ sudo apt-get remove tauonmusicbox 
+	
+# PKGBUILD setup on Arch Linux
+
+Open terminal to directory with downloaded PKGBUILD and run:
+
+    $ makepkg  
+    $ sudo packman -U tauon-music-box-x.x.x-x-x86_64.pkg.tar.xz
+
+To uninstall:
+
+    $ sudo pacman -R tauon-music-box
+ 
+####If upgrading from before v1.9.2: 
+
+To remove existing files that will cause a conflict use this command (not tested):  
+   
+        $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
+ 
+ 
+# Development setup on Linux
 
 ### Backend:
 
@@ -41,7 +66,7 @@ Finally run using python 3 (Alternatively create a desktop or launcher shortcut.
     $ python3 tauon.py
 
 
-####Notice for upgrading from before v1.9.1: 
+####Notice for upgrading from before v1.9.2: 
 
 Previously this guide suggested to install dependencies via pip but now lists system packages instead. To remove existing files that will cause a conflict when upgrading use this command (not tested):  
    
