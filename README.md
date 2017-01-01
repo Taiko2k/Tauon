@@ -28,10 +28,7 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 ### Getting Started :dizzy:
 
-On Windows download latest binary release from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
-Extract archive to a user directory of your choosing.
-
-Start program by running 'tauon.exe'. Requires [Visual C++ 2015 Redistributable](https://www.microsoft.com/en-nz/download/details.aspx?id=48145).
+On Windows download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
 For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature status see [features](docs/features.md).
 
