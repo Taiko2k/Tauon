@@ -1,21 +1,21 @@
 # Tauon Music Box
 
 Tauon Music Box is a desktop music player for playback of local audio files.
-Designed for ease of use and comfort with minimal configuration required.
+Designed for ease of use, simplicity and comfort with minimal configuration required.
 Uses BASS audio library.
 
 ### Features :sparkles:
 
-  - Playback support for common codecs such as MP3 and FLAC
-  - Dark themed with customisable colours
-  - Clean minimal layout with large album art view
+  - Playback support for most common codecs including MP3, FLAC, OGG, OPUS, and APE
+  - Visually keep track of playtimes
+  - Dark themed and minimal user interface
+  - Includes large album art and gallery views
   - Simple drag and drop track importing
-  - Batch transcode folders of tracks to OGG or OPUS for easy compressing to devices
+  - Batch transcode folders of tracks to OGG or OPUS to save space when copying to portable device
   - Automatic CUE sheet detection and integration
-  - Switch between tracks and/or gallery layouts
-  - Quick searching and creating filtered playlists
+  - Quick search and filter playlists
   - Last.fm scrobbling
-  - Outbound streaming (via icecast)
+  - Outbound streaming via Icecast
   - Multi-platform (Windows and Linux)
 
 ### Screenshots :star2:
@@ -28,9 +28,11 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 ### Getting Started :dizzy:
 
-On Windows download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
+For Windows, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
 For linux see [setup instructions](docs/setup.md). For further documentation see [usage](docs/usage.md). For detailed feature status see [features](docs/features.md).
+
+Feel free to contact me or submit an issue if you have any comments or suggestions
 
 
 
