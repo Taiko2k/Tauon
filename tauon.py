@@ -6963,6 +6963,7 @@ def toggle_library_mode():
     else:
         gui.set_mode = True
         gui.set_bar = True
+    gui.update_layout()
 
 view_menu.add("Restore To Default", view_standard, standard_view_deco)
 view_menu.add("Toggle Library Mode", toggle_library_mode)
