@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v2.0.0
+
+ - Added new library playlist list layout
+
 v1.9.2
 
  - Added new lyrics view
