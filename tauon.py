@@ -849,6 +849,9 @@ try:
     if save[42] is not None:
         gui.pl_st = save[42]
         gui.set_load_old = True
+    if save[43] is not None:
+        gui.set_mode = save[43]
+        gui.set_bar = gui.set_mode
 
     state_file.close()
     del save
@@ -4798,6 +4801,9 @@ class Menu:
             render_func = self.deco
         self.items.append([title, False, func, render_func, no_exit, pass_ref, hint])
 
+    def br(self):
+        self.items.append(None)
+
     def add_sub(self, title, width):
         self.items.append([title, True, self.sub_number, self.deco, width])
         self.sub_number += 1
@@ -4817,6 +4823,7 @@ class Menu:
                 return
 
             ytoff = 2
+            y_run = self.pos[1]
 
             if window_size[1] < 250:
                 self.h = 14
@@ -4825,6 +4832,17 @@ class Menu:
                 self.h = self.vertical_size
 
             for i in range(len(self.items)):
+                if self.items[i] is None:
+                    self.break_height = 4
+                    draw.rect((self.pos[0], y_run), (self.w, self.break_height),
+                              colours.menu_background, True)
+                    draw.rect((self.pos[0], y_run + 2), (self.w, 2),
+                              [255, 255, 255, 13], True)
+                    # Draw tab
+                    draw.rect((self.pos[0], y_run), (5, self.break_height),
+                              colours.grey(40), True)
+                    y_run += self.break_height
+                    continue
 
                 # Get properties for menu item
                 fx = self.items[i][3]()
@@ -4834,16 +4852,16 @@ class Menu:
                     label = self.items[i][0]
 
                 # Draw item background, black by default
-                draw.rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
+                draw.rect((self.pos[0], y_run), (self.w, self.h),
                           fx[1], True)
 
                 # Detect if mouse is over this item
-                rect = (self.pos[0], self.pos[1] + i * self.h, self.w, self.h - 1)
+                rect = (self.pos[0], y_run, self.w, self.h - 1)
                 fields.add(rect)
 
                 if coll_point(mouse_position,
-                              (self.pos[0], self.pos[1] + i * self.h, self.w, self.h - 1)):
-                    draw.rect((self.pos[0], self.pos[1] + i * self.h), (self.w, self.h),
+                              (self.pos[0], y_run, self.w, self.h - 1)):
+                    draw.rect((self.pos[0], y_run), (self.w, self.h),
                               [colours.artist_text[0], colours.artist_text[1], colours.artist_text[2], 100],
                               True)  # [15, 15, 15, 255]
 
@@ -4859,17 +4877,18 @@ class Menu:
                             self.sub_active = self.items[i][2]
 
                 # Draw tab
-                draw.rect((self.pos[0], self.pos[1] + i * self.h), (5, self.h),
+                draw.rect((self.pos[0], y_run), (5, self.h),
                           colours.grey(40), True)
 
                 # Render the items label
-                draw_text((self.pos[0] + 12, self.pos[1] + ytoff + i * self.h), label, fx[0], 11)
+                draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], 11)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
-                    draw_text((self.pos[0] + self.w - 5, self.pos[1] + ytoff + i * self.h, 1), self.items[i][6],
+                    draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
                               colours.alpha_grey(40), 10)
 
+                y_run += self.h
                 # Render sub menu if active
                 if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
 
@@ -5236,11 +5255,6 @@ def rescan_tags(pl):
             to_scan.append(track)
             # pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
-tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
-tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
-tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
-
 
 def append_playlist(index):
     global cargo
@@ -5258,15 +5272,6 @@ def drop_deco():
     else:
         line_colour = colours.menu_text_disabled
     return [line_colour, [0, 0, 0, 255], None]
-
-
-tab_menu.add('Paste', append_playlist, paste_deco, pass_ref=True)
-
-
-def append_current_playing(index):
-    if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
-        pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
-        gui.pl_update = 1
 
 
 def sort_track_2(pl):
@@ -5308,8 +5313,6 @@ def sort_track_2(pl):
         playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
 
 
-tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
-
 
 def sort_path_pl(pl):
     global default_playlist
@@ -5321,9 +5324,22 @@ def sort_path_pl(pl):
     pctl.multi_playlist[pl][2] = sorted(playlist, key=path)
     default_playlist = pctl.multi_playlist[pl][2]
 
+def append_current_playing(index):
+    if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
+        pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
+        gui.pl_update = 1
 
+tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
+tab_menu.br()
+tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
+tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
+tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
+tab_menu.br()
+tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
+tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
+tab_menu.br()
+tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
-
 tab_menu.add_sub("Sort To New Playlist...", 120)
 
 
@@ -5721,7 +5737,7 @@ tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
 
-tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
+
 
 
 def get_playing_line():
@@ -5942,7 +5958,7 @@ def activate_track_box(index):
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
 track_menu.add_sub("Meta...", 130)
-track_menu.add_sub("Remove/Copy/Insert...", 135)
+track_menu.add_sub("Shift...", 135)
 
 
 def rename_tracks(index):
@@ -6015,7 +6031,7 @@ def activate_encoding_box(index):
 def editor(index):
     todo = []
     for k in default_playlist:
-        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
+        if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
             if pctl.master_library[k].is_cue == False:
                 todo.append(k)
 
@@ -6276,10 +6292,13 @@ x_menu = Menu(160)
 view_menu = Menu(170)
 set_menu = Menu(150)
 
+
 def sa_remove(h):
     if len(gui.pl_st) > 1:
         del gui.pl_st[h]
         gui.update_layout()
+    else:
+        show_message("Cannot remove the only column")
 
 def sa_artist():
     gui.pl_st.append(["Artist", 220, False])
@@ -6317,6 +6336,9 @@ def sa_bitrate():
 def sa_lyrics():
     gui.pl_st.append(["Lyrics", 50, True])
     gui.update_layout()
+def sa_star():
+    gui.pl_st.append(["Starline", 80, False])
+    gui.update_layout()
 
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
@@ -6330,6 +6352,7 @@ set_menu.add("+ Codec", sa_codec)
 set_menu.add("+ Bitrate", sa_bitrate)
 set_menu.add("+ Has Lyrics", sa_lyrics)
 set_menu.add("+ Filepath", sa_file)
+set_menu.add("+ Starline", sa_star)
 set_menu.add("- Remove", sa_remove, pass_ref=True)
 
 
@@ -6512,6 +6535,12 @@ def toggle_album_mode(force_on=False):
 
         old_side_pos = side_panel_size
 
+    if album_mode and gui.set_mode and len(gui.pl_st) > 7:
+        gui.set_mode = False
+        gui.set_bar = False
+        gui.pl_update = True
+        gui.update_layout()
+
     reload_albums()
 
     goto_album(pctl.playlist_playing)
@@ -6521,14 +6550,20 @@ def activate_info_box():
     pref_box.enabled = True
 
 
+def activate_radio_box():
+    global radiobox
+    radiobox = True
 # x_menu.add("Go To Playing", pctl.show_current)
 
 x_menu.add("New Playlist", new_playlist)
 
+if default_player == 'BASS':
+    x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
+x_menu.br()
+
 x_menu.add("Settings...", activate_info_box)
-
-x_menu.add_sub("Database...", 140)
-
+x_menu.add_sub("Database...", 170)
+x_menu.br()
 
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
 
@@ -6644,10 +6679,10 @@ def clean_db():
     show_message("Working on it...")
 
 
-x_menu.add_to_sub("Remove Missing Tracks", 0, clean_db)
+x_menu.add_to_sub("Find and Remove Dead Tracks", 0, clean_db)
 
 # x_menu.add('Reset Missing Flags', reset_missing_flags)
-x_menu.add_to_sub("Reset Missing Flags", 0, reset_missing_flags)
+x_menu.add_to_sub("Mark Missing as Found", 0, reset_missing_flags)
 
 
 def toggle_broadcast():
@@ -6690,11 +6725,10 @@ if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "c
 
 
 def clear_queue():
-    global pctl
     pctl.force_queue = []
 
 
-x_menu.add('Clear Queue', clear_queue, queue_deco)
+#x_menu.add('Clear Queue', clear_queue, queue_deco)
 
 # x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(150)
@@ -6759,6 +6793,8 @@ def toggle_random():
 
 
 extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
+extra_menu.add('Clear Queue', clear_queue, queue_deco)
+
 extra_menu.add("Go To Playing", pctl.show_current, hint="QUOTE")
 
 
@@ -6781,16 +6817,6 @@ def advance_theme():
     global themeChange
     theme += 1
     themeChange = True
-
-
-def activate_radio_box():
-    global radiobox
-    radiobox = True
-
-
-if default_player == 'BASS':
-    x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
-
 
 def last_fm_menu_deco():
     if lastfm.connected:
@@ -6965,15 +6991,22 @@ def toggle_library_mode():
         gui.set_bar = True
     gui.update_layout()
 
-view_menu.add("Restore To Default", view_standard, standard_view_deco)
-view_menu.add("Toggle Library Mode", toggle_library_mode)
+def library_deco():
+    if gui.set_mode:
+        return [colours.menu_text, colours.menu_background, "Disable Library Bar"]
+    else:
+        return [colours.menu_text, colours.menu_background, 'Enable Library Bar']
+
+view_menu.add("Return to Standard", view_standard, standard_view_deco)
+view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
+view_menu.br()
 view_menu.add("Tracks", view_tracks)
 view_menu.add("Tracks + Metadata", view_standard_meta)
 view_menu.add("Tracks + Full Art", view_standard_full)
 view_menu.add("Tracks + Gallery", force_album_view)
 view_menu.add("Gallery Only", gallery_only_view)
-view_menu.add("Album Art + Tracks", toggle_combo_view)
-view_menu.add("Single Art + Lyrics", switch_showcase)
+view_menu.add("Combined Art + Tracks", toggle_combo_view)
+view_menu.add("Showcase + Lyrics", switch_showcase)
 # ---------------------------------------------------------------------------------------
 
 core_use = 0
@@ -7716,7 +7749,7 @@ def worker1():
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
-                line = "Encoding Completed"
+                line = "Encoding Completed. Press F9 to show output."
                 if prefs.transcode_codec == 'flac':
                     line += ". Note that any associated output picture is a thumbnail and not a lossless copy."
                 show_message(line)
@@ -10221,22 +10254,22 @@ class BottomBarType1:
 
 bottom_bar1 = BottomBarType1()
 
-
-def star_line_render(x, y, track_object, render=True):
-    key = track_object.title + track_object.filename
-    star_x = 0
-    if (key in pctl.star_library) and pctl.star_library[key] != 0 and track_object.length != 0:
-        total = pctl.star_library[key]
-        ratio = total / track_object.length
-        if ratio > 0.55:
-            star_x = int(ratio * 4)
-            if star_x > 60:
-                star_x = 60
-            if render:
-                draw.line(x - star_x, y, x, y, alpha_mod(colours.star_line, album_fade))
-                return star_x
-            else:
-                return star_x
+#
+# def star_line_render(x, y, track_object, render=True):
+#     key = track_object.title + track_object.filename
+#     star_x = 0
+#     if (key in pctl.star_library) and pctl.star_library[key] != 0 and track_object.length != 0:
+#         total = pctl.star_library[key]
+#         ratio = total / track_object.length
+#         if ratio > 0.55:
+#             star_x = int(ratio * 4)
+#             if star_x > 60:
+#                 star_x = 60
+#             if render:
+#                 draw.line(x - star_x, y, x, y, alpha_mod(colours.star_line, album_fade))
+#                 return star_x
+#             else:
+#                 return star_x
 
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1):
@@ -10931,73 +10964,103 @@ class StandardPlaylist:
                             this_line_playing, album_fade, playlist_left, playlist_width, prefs.line_style)
             else:
                 # NEE ---------------------------------------------------------
+                offset_font_extra = 0
+                if row_font_size > 14:
+                    offset_font_extra = 8
+                offset_y_extra = 0
+                if row_font_size > 13:
+                    offset_y_extra = 2
+                    if row_font_size > 14:
+                        offset_y_extra = 3
+
+
                 start = playlist_left + 16
                 run = 16
                 for h, item in enumerate(gui.pl_st):
 
                     wid = item[1] - 20
+                    y = playlist_text_offset + playlist_top + playlist_row_height * w
 
                     if len(gui.pl_st) == h + 1:
                         wid -= 6
 
-                    text = ""
-                    colour = [200, 200, 200, 255]
-                    if item[0] == "Title":
-                        text = n_track.title
-                        colour = colours.title_text
-                    elif item[0] == "Artist":
-                        text = n_track.artist
-                        colour = colours.artist_text
-                    elif item[0] == "Album":
-                        text = n_track.album
-                        colour = colours.album_text
-                    elif item[0] == "T":
-                        text = str(n_track.track_number)
-                        colour = colours.index_text
-                    elif item[0] == "Date":
-                        text = n_track.date
-                        colour = colours.index_text
-                    elif item[0] == "Filepath":
-                        text = n_track.fullpath
-                        colour = colours.index_text
-                    elif item[0] == "Codec":
-                        text = n_track.file_ext
-                        colour = colours.index_text
-                    elif item[0] == "Lyrics":
-                        text = ""
-                        if n_track.lyrics != "":
-                            text = 'Y'
-                        colour = colours.index_text
-                    elif item[0] == "Genre":
-                        text = n_track.genre
-                        colour = colours.index_text
-                    elif item[0] == "Bitrate":
-                        text = str(n_track.bitrate)
-                        if text == "0":
-                            text = ""
-                        colour = colours.index_text
-                    elif item[0] == "Time":
-                        text = time.strftime('%M:%S', time.gmtime(n_track.length))
-                        colour = colours.time_text
-                    elif item[0] == "P":
+                    if item[0] == "Starline":
                         key = n_track.title + n_track.filename
-                        total = 0
-                        ratio = 0
-                        if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
+                        if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
                             total = pctl.star_library[key]
                             ratio = total / n_track.length
+                            if ratio > 0.55:
+                                star_x = int(ratio * 4)
+                                if star_x > wid:
+                                    star_x = wid
+                                draw.line(run + 4, y + 8 + offset_y_extra, run + star_x + 4, y + 8 + offset_y_extra,
+                                          colours.star_line)
 
-                        text = str(str(int(ratio)))
-                        if text == "0":
+                    else:
+                        text = ""
+                        colour = [200, 200, 200, 255]
+                        if item[0] == "Title":
+                            if n_track.title != "":
+                                text = n_track.title
+                                colour = colours.title_text
+                            else:
+                                text = n_track.filename
+                                colour = colours.index_text
+                        elif item[0] == "Artist":
+                            text = n_track.artist
+                            colour = colours.artist_text
+                        elif item[0] == "Album":
+                            text = n_track.album
+                            colour = colours.album_text
+                        elif item[0] == "T":
+                            text = str(n_track.track_number)
+                            colour = colours.index_text
+                        elif item[0] == "Date":
+                            text = n_track.date
+                            colour = colours.index_text
+                        elif item[0] == "Filepath":
+                            text = n_track.fullpath
+                            colour = colours.index_text
+                        elif item[0] == "Codec":
+                            text = n_track.file_ext
+                            colour = colours.index_text
+                        elif item[0] == "Lyrics":
                             text = ""
-                        colour = colours.index_text
+                            if n_track.lyrics != "":
+                                text = 'Y'
+                            colour = colours.index_text
+                        elif item[0] == "Genre":
+                            text = n_track.genre
+                            colour = colours.index_text
+                        elif item[0] == "Bitrate":
+                            text = str(n_track.bitrate)
+                            if text == "0":
+                                text = ""
+                            colour = colours.index_text
+                        elif item[0] == "Time":
+                            text = get_display_time(n_track.length)
+                            colour = colours.time_text
+                        elif item[0] == "P":
+                            key = n_track.title + n_track.filename
+                            ratio = 0
+                            if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
+                                total = pctl.star_library[key]
+                                ratio = total / n_track.length
 
-                    text = trunc_line(text, row_font_size, wid)
-                    draw_text((run + 6, playlist_text_offset + playlist_top + playlist_row_height * w),
-                              text,
-                              colour,
-                              row_font_size,
-                              )
+                            text = str(str(int(ratio)))
+                            if text == "0":
+                                text = ""
+                            colour = colours.index_text
+
+                        if n_track.found is False:
+                            colour = colours.playlist_text_missing
+
+                        text = trunc_line(text, row_font_size, wid)
+                        draw_text((run + 6, y),
+                                  text,
+                                  colour,
+                                  row_font_size,
+                                  )
                     run += item[1]
 
 
@@ -11446,6 +11509,7 @@ while running:
         key_F5 = False
         key_F6 = False
         # key_F7 = False
+        key_F9 = False
         key_F1 = False
         key_PGU = False
         key_PGD = False
@@ -11632,6 +11696,8 @@ while running:
                 key_F6 = True
             elif event.key.keysym.sym == SDLK_F7:
                 key_F7 = True
+            elif event.key.keysym.sym == SDLK_F9:
+                key_F9 = True
             elif event.key.keysym.sym == SDLK_PAGEUP:
                 key_PGU = True
             elif event.key.keysym.sym == SDLK_PAGEDOWN:
@@ -11892,6 +11958,8 @@ while running:
                 pctl.multi_playlist.append(pctl.playlist_backup)
                 pctl.playlist_backup = []
                 # show_message("There is no undo, sorry.")
+        if key_F9:
+            open_encode_out()
 
         if key_F7:
             # spec_smoothing ^= True
@@ -12109,7 +12177,10 @@ while running:
 
             if not radiobox:
                 if key_slash_press:
-                    pctl.advance(rr=True)
+                    if key_shiftr_down:
+                        pctl.revert()
+                    else:
+                        pctl.advance(rr=True)
                 if key_period_press:
                     pctl.random_mode ^= True
                 if key_quote_hit:
@@ -12867,7 +12938,7 @@ while running:
                     if not mouse_down:
                         gui.set_label_hold = -1
                     # print(in_grip)
-                    if in_grip and not x_menu.active and not view_menu.active:
+                    if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active:
                         if gui.cursor_mode == 0 or True:
                             gui.cursor_mode = 2
                             SDL_SetCursor(cursor_shift)
@@ -13218,10 +13289,10 @@ while running:
 
                                             if title != "":
                                                 playing_info = title
-                                                playing_info = trunc_line(playing_info, 315,
+                                                playing_info = trunc_line(playing_info, 15,
                                                                           window_size[0] - playlist_width - 53)
                                                 draw_text((x - 1, block1 + 2), playing_info, colours.side_bar_line1,
-                                                          315, max=side_panel_size - 20)
+                                                          14, max=side_panel_size - 20)
 
                                             if artist != "":
                                                 playing_info = artist
@@ -14875,7 +14946,7 @@ save = [pctl.master_library,
         prefs.playlist_font_size,
         prefs.use_title,
         gui.pl_st,
-        None,
+        gui.set_mode,
         None,
         None,
         None

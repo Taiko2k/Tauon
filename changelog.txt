@@ -3,7 +3,11 @@ Changelog-------------------------------------
 
 v2.0.0
 
- - Added new library playlist list layout
+ - Added new library playlist column layout
+ - Added visual subgroups in menus
+ - Bound F9 key to open encode output
+ - Bound r-shift + slash to revert to last track
+ - Fixed edit tags externally sometimes including other folders
 
 v1.9.2
 
