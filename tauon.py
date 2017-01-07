@@ -514,6 +514,7 @@ class GuiVar:
         update_layout = True
 
     def __init__(self):
+        self.window_id = 0
         self.update = 2  # UPDATE
         self.turbo = False
         self.turbo_next = 0
@@ -1297,6 +1298,11 @@ class PlayerCtl:
         self.broadcast_time = 0
         self.broadcast_last_time = 0
         self.broadcast_line = ""
+
+        # Bass
+
+        self.bass_devices = []
+        self.set_device = 0
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -2232,14 +2238,30 @@ def player():
 
     BASS_GetDeviceInfo = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_DEVICEINFO))(
         ('BASS_GetDeviceInfo', bass_module))
+    BASS_SetDevice = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_SetDevice', bass_module))
 
-    # a = 1
-    # d_info = BASS_DEVICEINFO()
-    # while True:
-    #     if not BASS_GetDeviceInfo(a, d_info):
-    #         break
-    #     print(d_info.name.decode('utf-8'))
-    #     a += 1
+    BASS_DEVICE_ENABLED = 1
+    BASS_DEVICE_DEFAULT = 2
+    BASS_DEVICE_INIT = 4
+
+    BASS_DEVICE_ENABLED = 1
+    BASS_DEVICE_DEFAULT = 2
+    BASS_DEVICE_INIT = 4
+
+    # BASS_DEVICE_TYPE_MASK = 0xff000000
+    # BASS_DEVICE_TYPE_NETWORK = 0x01000000
+    # BASS_DEVICE_TYPE_SPEAKERS = 0x02000000
+    # BASS_DEVICE_TYPE_LINE = 0x03000000
+    # BASS_DEVICE_TYPE_HEADPHONES = 0x04000000
+    # BASS_DEVICE_TYPE_MICROPHONE = 0x05000000
+    # BASS_DEVICE_TYPE_HEADSET = 0x06000000
+    # BASS_DEVICE_TYPE_HANDSET = 0x07000000
+    # BASS_DEVICE_TYPE_DIGITAL = 0x08000000
+    # BASS_DEVICE_TYPE_SPDIF = 0x09000000
+    # BASS_DEVICE_TYPE_HDMI = 0x0a000000
+    # BASS_DEVICE_TYPE_DISPLAYPORT = 0x40000000
+
+
     BASS_MIXER_END = 0x10000
     BASS_SYNC_END = 2
     BASS_SYNC_MIXTIME = 0x40000000
@@ -2317,9 +2339,30 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
 
-    BassInitSuccess = BASS_Init(-1, 44100, 0, 0, 0)
+    BassInitSuccess = BASS_Init(-1, 44100, 0, gui.window_id, 0)
     if BassInitSuccess == True:
         print("Bass library initialised")
+
+
+    a = 1
+    if system == "linux":
+        a = 2
+    d_info = BASS_DEVICEINFO()
+    while True:
+        if not BASS_GetDeviceInfo(a, d_info):
+            break
+        name = d_info.name.decode('utf-8')
+        flags = d_info.flags
+        enabled = BASS_DEVICE_ENABLED & flags
+        default = BASS_DEVICE_DEFAULT & flags
+        current = BASS_DEVICE_INIT & flags
+
+        # print((name, enabled, default, current))
+        if current > 0:
+            pctl.set_device = a
+        pctl.bass_devices.append((name, enabled, default, current, a))
+        # print(d_info.name.decode('utf-8'))
+        a += 1
 
     # BASS_SetConfig(11, )
 
@@ -2522,6 +2565,13 @@ def player():
                 pctl.time_to_get = tlen
                 BASS_StreamFree(handle9)
                 pctl.playerCommand = 'done'
+
+            elif pctl.playerCommand == "setdev":
+
+                print("Changeing output device")
+                print(BASS_Init(pctl.set_device, 44100, 0, gui.window_id, 0))
+                print(BASS_SetDevice(pctl.set_device))
+
 
             if pctl.playerCommand == "url":
                 if player1_status != p_stopped:
@@ -2965,17 +3015,17 @@ def player():
 
     pctl.playerCommand = 'done'
 
-if default_player == 'BASS':
-
-    playerThread = threading.Thread(target=player)
-    playerThread.daemon = True
-    playerThread.start()
-
-elif default_player == 'GTK':
-
-    playerThread = threading.Thread(target=player3)
-    playerThread.daemon = True
-    playerThread.start()
+# if default_player == 'BASS':
+#
+#     playerThread = threading.Thread(target=player)
+#     playerThread.daemon = True
+#     playerThread.start()
+#
+# elif default_player == 'GTK':
+#
+#     playerThread = threading.Thread(target=player3)
+#     playerThread.daemon = True
+#     playerThread.start()
     
 # --------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------
@@ -3385,6 +3435,11 @@ t_window = SDL_CreateWindow(window_title,
                             window_size[0], window_size[1],
                             flags)
 
+if system == 'windows':
+    sss = SDL_SysWMinfo()
+    SDL_GetWindowWMInfo(t_window, sss)
+    gui.window_id = sss.info.win.window
+
 # t_window = SDL_CreateShapedWindow(window_title,
 #                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 #                              window_size[0], window_size[1],
@@ -3439,6 +3494,18 @@ SDL_RenderClear(renderer)
 #
 # mode.parameters.colorKey = SDL_Color(0, 0, 0)
 
+if default_player == 'BASS':
+
+    playerThread = threading.Thread(target=player)
+    playerThread.daemon = True
+    playerThread.start()
+
+elif default_player == 'GTK':
+
+    playerThread = threading.Thread(target=player3)
+    playerThread.daemon = True
+    playerThread.start()
+
 
 if system == 'windows' and taskbar_progress:
 
@@ -3447,10 +3514,11 @@ if system == 'windows' and taskbar_progress:
         def __init__(self, ):
             self.start = time.time()
             self.updated_state = 0
-            global t_window
-            sss = SDL_SysWMinfo()
-            SDL_GetWindowWMInfo(t_window, sss)
-            self.window_id = sss.info.win.window
+            # global t_window
+            # sss = SDL_SysWMinfo()
+            # SDL_GetWindowWMInfo(t_window, sss)
+            # self.window_id = sss.info.win.window
+            self.window_id = gui.window_id
             import comtypes.client as cc
             cc.GetModule("TaskbarLib.tlb")
             import comtypes.gen.TaskbarLib as tbl
@@ -8696,6 +8764,31 @@ class Over:
         y = self.box_y + 220
         draw_text((x, y - 2), "* Changes apply on restart", colours.grey(150), 11)
         self.button(x + 410, y - 4, "Open config file", open_config_file)
+
+        if default_player == "BASS":
+
+            y = self.box_y + 47
+            x = self.box_x + 385
+
+            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 12)
+            # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
+
+            for item in pctl.bass_devices:
+                rect = (x, y - 1, 245, 14)
+                #draw.rect_r(rect, [0, 255, 0, 50])
+
+                if self.click and coll_point(mouse_position, rect):
+                    pctl.set_device = item[4]
+                    pctl.playerCommandReady = True
+                    pctl.playerCommand = "setdev"
+
+                line = trunc_line(item[0], 10, 245)
+                if pctl.set_device == item[4]: #item[3] > 0:
+                    draw_text((x, y), line, [140, 140, 140, 255], 10)
+                else:
+                    draw_text((x, y), line, [100, 100, 100, 255], 10)
+                y += 14
+
 
     def button(self, x, y, text, plug, width=0):
 
