@@ -3,11 +3,12 @@ Changelog-------------------------------------
 
 v2.0.0
 
- - Added new library playlist column layout
+ - Added customisable playlist column layout with sorting
  - Added customisation of playlist row size
  - Added visual subgroups in menus
  - Added re-import function
  - Added output device selection to system settings tab
+ - Added menu shortcut for toggling playlist breaks
  - Bound F9 key to open encode output
  - Bound r-shift + slash to revert to last track
  - Fixed edit tags externally sometimes including other folders
