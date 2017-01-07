@@ -282,7 +282,7 @@ volume_store = 50  # Used to save the previous volume when muted
 playlist_row_height = 16
 playlist_text_offset = 0
 row_alt = False
-thick_lines = True
+#thick_lines = False
 playlist_x_offset = 7
 
 to_get = 0  # Used to store temporary import count display
@@ -410,9 +410,9 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return [title, playing, playlist, position, hide_title, selected, pl_uid_gen()]
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), ""])
 
-# [Name, playing, playlist, position, hide folder title, selected, uid]
+# [Name, playing, playlist, position, hide folder title, selected, uid, last_folder]
 multi_playlist = [pl_gen()]
 
 default_playlist = multi_playlist[0][2]
@@ -496,6 +496,7 @@ class Prefs:
         self.gallery_scroll_wheel_px = 90
 
         self.playlist_font_size = 13
+        self.playlist_row_height = 18
 
         self.tag_editor_name = ""
         self.tag_editor_target = ""
@@ -543,6 +544,9 @@ class GuiVar:
         self.combo_mode = False
         self.showcase_mode = False
         self.display_time_mode = 0
+
+        self.pl_text_real_height = 12
+        self.pl_title_real_height = 11
 
         self.row_extra = 0
         self.test = False
@@ -852,6 +856,9 @@ try:
     if save[43] is not None:
         gui.set_mode = save[43]
         gui.set_bar = gui.set_mode
+    if save[45] is not None:
+        prefs.playlist_row_height = save[45]
+
 
     state_file.close()
     del save
@@ -914,6 +921,11 @@ if db_version > 0:
         for playlist in multi_playlist:
             playlist.append(pl_uid_gen())
 
+    if db_version <= 1.5:
+        print("Updating database from version 1.5 to 1.6")
+        for i in range(len(multi_playlist)):
+            if len(multi_playlist[i]) == 7:
+                multi_playlist[i].append("")
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -1008,7 +1020,7 @@ try:
     break_enable = view_prefs['break-enable']
     dd_index = view_prefs['dd-index']
     # custom_line_mode = view_prefs['custom-line']
-    thick_lines = view_prefs['thick-lines']
+    #thick_lines = view_prefs['thick-lines']
     prefs.append_date = view_prefs['append-date']
 except:
     print("warning: error loading settings")
@@ -3542,24 +3554,29 @@ class Drawing:
         SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
         SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
 
-    def text_calc(self, text, font, cache=True):
+    def text_calc(self, text, font, cache=True, height=False):
 
-        key = hash((text, font))
-        if key in self.text_calc_cache:
-            return self.text_calc_cache[key]
+        if height:
+            TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), None, self.text_width_p)
+            return self.text_width_p.contents.value
 
-        for ch in range(len(text)):
-            if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
-                if TTF_GlyphIsProvided(font_dict[font][1], ord(text[ch])):
-                    TTF_SizeUTF8(font_dict[font][1], text.encode('utf-8'), self.text_width_p, None)
-                    if cache:
-                        self.text_calc_cache[key] = self.text_width_p.contents.value
-                    return self.text_width_p.contents.value
+        else:
+            key = hash((text, font))
+            if key in self.text_calc_cache:
+                return self.text_calc_cache[key]
 
-        TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
-        if cache:
-            self.text_calc_cache[key] = self.text_width_p.contents.value
-        return self.text_width_p.contents.value
+            for ch in range(len(text)):
+                if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
+                    if TTF_GlyphIsProvided(font_dict[font][1], ord(text[ch])):
+                        TTF_SizeUTF8(font_dict[font][1], text.encode('utf-8'), self.text_width_p, None)
+                        if cache:
+                            self.text_calc_cache[key] = self.text_width_p.contents.value
+                        return self.text_width_p.contents.value
+
+            TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
+            if cache:
+                self.text_calc_cache[key] = self.text_width_p.contents.value
+            return self.text_width_p.contents.value
 
 
 draw = Drawing()
@@ -5255,6 +5272,19 @@ def rescan_tags(pl):
             to_scan.append(track)
             # pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
+def re_import(pl):
+
+    path = pctl.multi_playlist[pl][7]
+    if path == "":
+        return
+    for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
+        if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
+            del pctl.multi_playlist[pl][2][i]
+    load_order = LoadClass()
+    load_order.target = path
+    load_order.playlist = pctl.multi_playlist[pl][6]
+    load_orders.append(copy.deepcopy(load_order))
+
 
 def append_playlist(index):
     global cargo
@@ -5333,6 +5363,7 @@ tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
 tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
+tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
 tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
@@ -5361,7 +5392,7 @@ def new_playlist(switch=True):
     return len(pctl.multi_playlist) - 1
 
 
-tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
+#tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
 
 def gen_top_100(index):
@@ -5500,7 +5531,7 @@ def gen_most_skip(pl):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
+#tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
 
 
 def gen_sort_len(index):
@@ -8432,16 +8463,16 @@ def toggle_follow(mode=0):
         pl_follow ^= True
 
 
-def toggle_thick(mode=0):
-    global thick_lines
-    global update_layout
-
-    if mode == 1:
-        return thick_lines
-    else:
-        clear_text_cache()
-        thick_lines ^= True
-        update_layout = True
+# def toggle_thick(mode=0):
+#     global thick_lines
+#     global update_layout
+#
+#     if mode == 1:
+#         return thick_lines
+#     else:
+#         clear_text_cache()
+#         thick_lines ^= True
+#         update_layout = True
 
 
 def toggle_append_date(mode=0):
@@ -9018,25 +9049,80 @@ class Over:
             draw_text((x, y), "T ARTIST ALBUM TITLE", colours.alpha_grey(35), 11)
 
         y = self.box_y + 25
-        x = self.box_x + self.item_x_offset + 200
+        x = self.box_x + self.item_x_offset + 270
 
-        self.toggle_square(x, y, toggle_thick, "Large Rows")
+        # self.toggle_square(x, y, toggle_thick, "Large Rows")
 
         y += 20
-        x += 30
+        # x += 30
 
-        draw_text((x, y), "Font size:", [255, 255, 255, 150], 11)
+        # draw_text((x, y), "Font size:", [255, 255, 255, 150], 11)
+        # x += 65
+        # rect = (x, y, 15, 15)
+        # fields.add(rect)
+        # draw.rect_r(rect, [255, 255, 255, 20], True)
+        # if coll_point(mouse_position, rect):
+        #     draw.rect_r(rect, [255, 255, 255, 25], True)
+        #     if self.click:
+        #         if prefs.playlist_font_size > 13:
+        #             prefs.playlist_font_size -= 1
+        #             gui.update_layout()
+        #
+        # draw_text((x + 4, y), "<", colours.grey(180), 11)
+        #
+        # x += 25
+        #
+        # draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
+        # draw_text((x + 18, y, 2), str(prefs.playlist_font_size) + "px", colours.grey(180), 11)
+        #
+        # x += 40 + 10
+        #
+        # rect = (x, y, 15, 15)
+        # fields.add(rect)
+        # draw.rect_r(rect, [255, 255, 255, 20], True)
+        # if coll_point(mouse_position, rect):
+        #     draw.rect_r(rect, [255, 255, 255, 25], True)
+        #     if self.click:
+        #         if prefs.playlist_font_size < 16:
+        #             prefs.playlist_font_size += 1
+        #             gui.update_layout()
+        #
+        # draw_text((x + 4, y), ">", colours.grey(180), 11)
+        self.slide_control(x, y, "Font Size:", "px", self.font_size_set, 12, 16)
+        y += 25
+        self.slide_control(x, y, "Row Size:", "px", self.row_size_set, 15, 45)
+        y += 30
 
+        self.button(x, y, "Small Preset", self.small_preset, 75)
+        x += 85
+        self.button(x, y, "Large Preset", self.large_preset, 75)
+
+    def small_preset(self):
+
+        prefs.playlist_row_height = 16
+        prefs.playlist_font_size = 13
+        gui.update_layout()
+
+    def large_preset(self):
+
+        prefs.playlist_row_height = 31
+        prefs.playlist_font_size = 13
+        gui.update_layout()
+
+    def slide_control(self, x, y, label, units, plug, lower_limit, upper_limit):
+
+        value = plug()
+
+        draw_text((x, y), label, [255, 255, 255, 150], 11)
         x += 65
-
         rect = (x, y, 15, 15)
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 25], True)
             if self.click:
-                if prefs.playlist_font_size > 13:
-                    prefs.playlist_font_size -= 1
+                if value > lower_limit:
+                    plug(value - 1)
                     gui.update_layout()
 
         draw_text((x + 4, y), "<", colours.grey(180), 11)
@@ -9044,7 +9130,7 @@ class Over:
         x += 25
 
         draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
-        draw_text((x + 18, y, 2), str(prefs.playlist_font_size) + "px", colours.grey(180), 11)
+        draw_text((x + 18, y, 2), str(value) + units, colours.grey(180), 11)
 
         x += 40 + 10
 
@@ -9054,11 +9140,26 @@ class Over:
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 25], True)
             if self.click:
-                if prefs.playlist_font_size < 16:
-                    prefs.playlist_font_size += 1
+                if value < upper_limit:
+                    plug(value + 1)
                     gui.update_layout()
 
         draw_text((x + 4, y), ">", colours.grey(180), 11)
+
+
+    def font_size_set(self, set=None):
+
+        if set is not None:
+            prefs.playlist_font_size = set
+
+        return prefs.playlist_font_size
+
+    def row_size_set(self, set=None):
+
+        if set is not None:
+            prefs.playlist_row_height = set
+
+        return prefs.playlist_row_height
 
     def style_up(self):
         prefs.line_style += 1
@@ -10624,8 +10725,8 @@ class StandardPlaylist:
                 mx = 4
                 if playlist_view_length < 25:
                     mx = 3
-                if thick_lines:
-                    mx = 3
+                # if thick_lines:
+                #     mx = 3
                 playlist_position -= mouse_wheel * mx
                 # if playlist_view_length > 15:
                 #     playlist_position -= mouse_wheel
@@ -10696,19 +10797,25 @@ class StandardPlaylist:
                 if not side_panel_enable and not album_mode:
                     ex -= 5
 
-                if thick_lines:
-                    height = playlist_row_height - 19 + 13 - row_font_size + playlist_top + playlist_row_height * w
-                    if row_font_size > 15:
-                        height -= 1
-                    draw_text2((ex + 6,
+                if False:
+                    pass
+                    # height = playlist_row_height - 19 + 13 - row_font_size + playlist_top + playlist_row_height * w
+                    # if row_font_size > 15:
+                    #     height -= 1
+                    # draw_text2((ex + 6,
+                    #             height, 1), line,
+                    #            alpha_mod(colours.folder_title, album_fade),
+                    #            row_font_size, playlist_width)
+                else:
+                    # draw_text2((ex + 3,
+                    #             playlist_row_height - 17 + playlist_top + playlist_row_height * w, 1), line,
+                    #            alpha_mod(colours.folder_title, album_fade),
+                    #            11, playlist_width)
+                    height =  (playlist_top + playlist_row_height * w) + (playlist_row_height - gui.pl_title_real_height)
+                    draw_text2((ex + 3,
                                 height, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
-                               row_font_size, playlist_width)
-                else:
-                    draw_text2((ex + 3,
-                                playlist_row_height - 17 + playlist_top + playlist_row_height * w, 1), line,
-                               alpha_mod(colours.folder_title, album_fade),
-                               11, playlist_width)
+                               row_font_size - 1, playlist_width)
 
                 draw.line(0, playlist_top + playlist_row_height - 1 + playlist_row_height * w,
                           playlist_width + 30,
@@ -10860,7 +10967,7 @@ class StandardPlaylist:
             if (mouse_click and key_shift_down is False and line_hit or
                         playlist_selected == p_track):
                 draw.rect((highlight_left, playlist_top + playlist_row_height * w),
-                          (highlight_right, playlist_row_height - 0), colours.row_select_highlight, True)
+                          (highlight_right, playlist_row_height), colours.row_select_highlight, True)
                 playlist_selected = p_track
 
                 # if not key_shift_down:
@@ -11052,6 +11159,10 @@ class StandardPlaylist:
                                 text = ""
                             colour = colours.index_text
 
+                        if prefs.dim_art and album_mode and \
+                                n_track.parent_folder_name \
+                                != pctl.master_library[pctl.track_queue[pctl.queue_step]].parent_folder_name:
+                            colour = alpha_mod(colour, 150)
                         if n_track.found is False:
                             colour = colours.playlist_text_missing
 
@@ -11598,11 +11709,16 @@ while running:
             else:
                 playlist_target = pctl.playlist_active
 
+
             dropped_file_sdl = event.drop.file
             load_order = LoadClass()
             load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
+
+            pctl.multi_playlist[playlist_target][7] = load_order.target
+
             load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
+
 
             # print('dropped: ' + str(dropped_file))
             gui.update += 1
@@ -11989,6 +12105,7 @@ while running:
             #     i += 1
             #     draw_text((100, random.randrange(20, 500)), "hello", [0,0,0,255], 12)
             # print(perf_timer.get())
+            print(pctl.multi_playlist)
 
             key_F7 = False
 
@@ -12277,32 +12394,34 @@ while running:
 
         scroll_hide_box = (1 if not gui.maximized else 0, panelY, 28, window_size[1] - panelBY - panelY)
 
-        if thick_lines or gui.combo_mode:
-            if prefs.playlist_font_size == 13:
-                playlist_row_height = 31
-                playlist_text_offset = 6
-                playlist_x_offset = 7
-                row_font_size = 13
-            elif prefs.playlist_font_size == 14:
-                playlist_row_height = 31
-                playlist_text_offset = 4
-                playlist_x_offset = 7
-                row_font_size = 14
-            elif prefs.playlist_font_size == 15:
-                playlist_row_height = 31
-                playlist_text_offset = 4
-                playlist_x_offset = 7
-                row_font_size = 15
-            elif prefs.playlist_font_size == 16:
-                playlist_row_height = 32
-                playlist_text_offset = 4
-                playlist_x_offset = 7
-                row_font_size = 16
+        if gui.combo_mode:
+            playlist_row_height = 31
+            playlist_text_offset = 6
+            playlist_x_offset = 7
+            row_font_size = 13
+            # elif prefs.playlist_font_size == 14:
+            #     playlist_row_height = 31
+            #     playlist_text_offset = 4
+            #     playlist_x_offset = 7
+            #     row_font_size = 14
+            # elif prefs.playlist_font_size == 15:
+            #     playlist_row_height = 31
+            #     playlist_text_offset = 4
+            #     playlist_x_offset = 7
+            #     row_font_size = 15
+            # elif prefs.playlist_font_size == 16:
+            #     playlist_row_height = 32
+            #     playlist_text_offset = 4
+            #     playlist_x_offset = 7
+            #     row_font_size = 16
         else:
-            playlist_row_height = 16
+            playlist_row_height = prefs.playlist_row_height #18 #16
             playlist_text_offset = 0
             playlist_x_offset = 0
-            row_font_size = 12
+            row_font_size = prefs.playlist_font_size #13
+            gui.pl_text_real_height = draw.text_calc("Testあ", row_font_size, False, True)
+            gui.pl_title_real_height = draw.text_calc("Testあ", row_font_size - 1, False, True)
+            playlist_text_offset = int((playlist_row_height - gui.pl_text_real_height) / 2)
 
         playlist_view_length = int(((window_size[1] - panelBY - playlist_top) / playlist_row_height) - 1)
 
@@ -14900,7 +15019,7 @@ view_prefs['scroll-enable'] = scroll_enable
 view_prefs['break-enable'] = break_enable
 view_prefs['dd-index'] = dd_index
 # view_prefs['custom-line'] = custom_line_mode
-view_prefs['thick-lines'] = thick_lines
+#view_prefs['thick-lines'] = thick_lines
 view_prefs['append-date'] = prefs.append_date
 
 save = [pctl.master_library,
@@ -14920,7 +15039,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.5,  # Version
+        1.6,  # Version
         view_prefs,
         gui.save_size,
         side_panel_size,
@@ -14947,6 +15066,13 @@ save = [pctl.master_library,
         prefs.use_title,
         gui.pl_st,
         gui.set_mode,
+        prefs.playlist_row_height,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None
