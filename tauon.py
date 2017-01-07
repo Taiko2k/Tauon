@@ -5462,16 +5462,26 @@ def new_playlist(switch=True):
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
+def best(index):
+    key = pctl.master_library[index].title + pctl.master_library[index].filename
+    if pctl.master_library[index].length < 1:
+        return 0
+    if key in pctl.star_library:
+        return int(pctl.star_library[key])  # / pctl.master_library[index].length)
+    else:
+        return 0
+
+def key_playcount(index):
+    key = pctl.master_library[index].title + pctl.master_library[index].filename
+    if pctl.master_library[index].length < 1:
+        return 0
+    if key in pctl.star_library:
+        return pctl.star_library[key] / pctl.master_library[index].length
+    else:
+        return 0
 
 def gen_top_100(index):
-    def best(index):
-        key = pctl.master_library[index].title + pctl.master_library[index].filename
-        if pctl.master_library[index].length < 1:
-            return 0
-        if key in pctl.star_library:
-            return int(pctl.star_library[key])  # / pctl.master_library[index].length)
-        else:
-            return 0
+
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=best, reverse=True)
@@ -5799,7 +5809,6 @@ tab_menu.add_to_sub("Filepath", 0, gen_sort_path, pass_ref=True)
 
 
 def gen_sort_artist(index):
-    global pctl
 
     def artist(index):
         return pctl.master_library[index].artist
@@ -5814,7 +5823,7 @@ def gen_sort_artist(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Artist → ABC", 0, gen_sort_artist, pass_ref=True)
+# tab_menu.add_to_sub("Artist → ABC", 0, gen_sort_artist, pass_ref=True)
 
 
 def gen_sort_album(index):
@@ -5832,7 +5841,7 @@ def gen_sort_album(index):
                                       hide_title=0))
 
 
-tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
+# tab_menu.add_to_sub("Album → ABC", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
 
@@ -6439,6 +6448,103 @@ def sa_star():
     gui.pl_st.append(["Starline", 80, False])
     gui.update_layout()
 
+def key_artist(index):
+    return pctl.master_library[index].artist
+
+def key_title(index):
+    return pctl.master_library[index].title
+
+def key_album(index):
+    return pctl.master_library[index].album
+
+def key_duration(index):
+    return pctl.master_library[index].length
+
+def key_date(index):
+    return pctl.master_library[index].date
+
+def key_genre(index):
+    return pctl.master_library[index].genre
+
+def key_t(index):
+    return pctl.master_library[index].track_number
+
+def key_codec(index):
+    return pctl.master_library[index].file_ext
+
+def key_bitrate(index):
+    return pctl.master_library[index].bitrate
+
+def key_p(index):
+    return pctl.master_library[index].bitrate
+
+def key_hl(index):
+    if len(pctl.master_library[index].lyrics) > 5:
+        return 0
+    else:
+        return 1
+
+def sort_ass(h, invert=False):
+    global default_playlist
+    global playlist_position
+
+    name = gui.pl_st[h][0]
+    key = None
+
+    if name == "Artist":
+        key = key_artist
+    if name == "Title":
+        key = key_title
+    if name == "Album":
+        key = key_album
+    if name == "Time":
+        key = key_duration
+    if name == "Date":
+        key = key_date
+    if name == "Genre":
+        key = key_genre
+    if name == "T":
+        key = key_t
+    if name == "P":
+        key = key_playcount
+    if name == 'Starline':
+        key = best
+    if name == "Codec":
+        key = key_codec
+    if name == "Bitrate":
+        key = key_bitrate
+    if name == "Lyrics":
+        key = key_hl
+
+    if key is not None:
+        playlist = pctl.multi_playlist[pctl.playlist_active][2]
+        playlist.sort(key=key)
+
+        if invert:
+            playlist = list(reversed(playlist))
+
+        pctl.multi_playlist[pctl.playlist_active][2] = playlist
+        default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
+
+    playlist_position = 0
+    gui.pl_update = 1
+
+
+def sort_dec(h):
+    sort_ass(h, True)
+
+# def sort_deco(h):
+#     name = gui.pl_st[h][0]
+#     line_colour = colours.menu_text_disabled
+#
+#     if name in ("Artist",):
+#         line_colour = colours.menu_text
+
+
+
+set_menu.add("Sort Acceding", sort_ass, pass_ref=True)
+set_menu.add("Sort Decending", sort_dec, pass_ref=True)
+set_menu.br()
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
 set_menu.add("+ Album", sa_album)
@@ -6452,6 +6558,7 @@ set_menu.add("+ Bitrate", sa_bitrate)
 set_menu.add("+ Has Lyrics", sa_lyrics)
 set_menu.add("+ Filepath", sa_file)
 set_menu.add("+ Starline", sa_star)
+set_menu.br()
 set_menu.add("- Remove", sa_remove, pass_ref=True)
 
 
@@ -7096,8 +7203,23 @@ def library_deco():
     else:
         return [colours.menu_text, colours.menu_background, 'Enable Library Bar']
 
+def break_deco():
+    tex = colours.menu_text_disabled
+    if break_enable:
+        tex = colours.menu_text
+
+    if pctl.multi_playlist[pctl.playlist_active][4] == 0:
+        return [tex, colours.menu_background, "Disable Playlist Breaks"]
+    else:
+        return [tex, colours.menu_background, 'Enable Playlist Breaks']
+
+def toggle_playlist_break():
+    pctl.multi_playlist[pctl.playlist_active][4] ^= 1
+    gui.pl_update = 1
+
 view_menu.add("Return to Standard", view_standard, standard_view_deco)
 view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
+view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco)
 view_menu.br()
 view_menu.add("Tracks", view_tracks)
 view_menu.add("Tracks + Metadata", view_standard_meta)
@@ -8477,7 +8599,7 @@ def toggle_break(mode=0):
     global break_enable
     global gui
     if mode == 1:
-        return break_enable
+        return break_enable ^ True
     else:
         break_enable ^= True
         gui.pl_update = 1
@@ -8665,7 +8787,7 @@ def toggle_use_title(mode=0):
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
-config_items.append(['Break playlist by folders', toggle_break])
+config_items.append(['Force off breaking playlist by folders', toggle_break])
 
 config_items.append(['Use double digit track indices', toggle_dd])
 
