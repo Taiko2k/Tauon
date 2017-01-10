@@ -18,6 +18,7 @@ v2.0.0
  - Fixed edit tags externally sometimes including other folders
  - Fixed volume not being affected by windows volume mixer
  - Fixed messages not disappearing while settings box was open
+ - Fixed dragging tracks sometimes not applying
  - Removed 'most skipped' and 'empty playlist' playlist filters
 
 v1.9.2

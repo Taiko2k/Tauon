@@ -4569,6 +4569,12 @@ class AlbumArt():
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
 
+            # temp fix
+            global move_on_title
+            global playlist_hold
+            move_on_title = False
+            playlist_hold = False
+
         except:
             print("Image processing error")
             # raise
@@ -9940,6 +9946,9 @@ class TopPanel:
         global quick_drag
         global playlist_panel
 
+        if quick_drag is True:
+            gui.pl_update = 1
+
         # Draw the background
         draw.rect_r((0, self.ty, window_size[0], self.height), colours.top_panel_background, True)
 
@@ -10082,6 +10091,8 @@ class TopPanel:
                         quick_drag = False
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
+
+
 
             x += tab_width + self.tab_spacing
 
@@ -11234,10 +11245,10 @@ class StandardPlaylist:
                         else:
                             shift_selection = copy.deepcopy(temp)
 
-                # Shade ever other line for folder row
+                # # Shade ever other line for folder row
                 # if row_alt and w % 2 == 0:
                 #     draw.rect((playlist_left, playlist_top + playlist_row_height * w),
-                #               (playlist_width, playlist_row_height - 1), [0, 0, 0, 20], True)
+                #               (playlist_width, playlist_row_height - 1), [255, 255, 255, 10], True)
 
                 w += 1
                 if playlist_selected > p_track + 1:
@@ -11335,7 +11346,7 @@ class StandardPlaylist:
             if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width, playlist_row_height)):
 
-                if p_track != playlist_hold_position and p_track not in shift_selection:
+                if p_track not in shift_selection: #p_track != playlist_hold_position and
 
                     if len(shift_selection) == 0:
 
@@ -11380,7 +11391,7 @@ class StandardPlaylist:
 
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, playlist_top + playlist_row_height * w, playlist_width,
-                    playlist_row_height)) and playlist_hold_position != p_track:
+                    playlist_row_height - 1)) and p_track not in shift_selection: #playlist_hold_position != p_track:
                 # draw.line(0, playlist_top + playlist_row_height + playlist_row_height * w,
                 #           playlist_width + 30,
                 #           playlist_top + playlist_row_height + playlist_row_height * w, [35, 45, 90, 255])
