@@ -17,6 +17,8 @@
  - Album gallery
  - All album art and tracks (buggy, some features missing)
  - Basic spectrum visualization or level meter
+ - Custom columns with sorting
+ - Lyrics display
 
 ### External service integration
 
@@ -38,6 +40,7 @@
 - Inbound streaming (HTTP)
 - Outbound streaming with icecast (MP3, OGG)
 - Global media keys + some local harcoded keyboard shortcuts
+- Output device override
 
 ### Editing
 
@@ -53,17 +56,14 @@
 
 ## Other common player features not implemented:
 
- - Codecs: ALAC, Musepack, TAK, WavPack
- - Customisable list format
+ - Codecs: ALAC, Musepack, TAK
  - Replay gain
  - Gapless playback
  - Folder tree view
  - Folder monitoring / auto update
  - Skins
- - UI customisation
- - Lyrics display
  - Customisable shortcuts
- - Global hotkeys (other than media keys)
+ - Global hotkeys (other than default media keys)
  - High DPI
  - Audio EQ
  - DSPs
@@ -71,15 +71,13 @@
  - Audiobooks
  - Internal tag editing
  - Various external services
- - Library view / filter
  - Ratings
  - Extract/read archive
- - Artist metadata scraping
+ - Artist/metadata scraping
  - All tag metadata
- - Output device configuration
  - A-B repreat
  - Bookmarks
  - Various playlist formats
  - Radio station list
  - Audio CD
-
+ - Auto DJ

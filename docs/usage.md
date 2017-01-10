@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v1.9.0
+Basic usage guide. Updated for v2.0.0
 ===========
 
 Player is playlist oriented and makes the assumption that folders are albums.  Sorting and filtering is applied by creating new playlists from existing playlists.
@@ -9,7 +9,7 @@ For best experience it is recommended to have an organized and structured music 
 
 - Drag and drop files and folders from your file manager.
 
-- Importing can take a while for large music collections. After importing, right click playlist tab and select 'Sort Track Numbers' to ensure tracks are ordered correctly.
+Tip: After importing, right click playlist tab and select 'Sort Track Numbers' to ensure tracks are ordered correctly.
 
 Tip: Try importing all your music to a single playlist to get started
 Quirk: If a music file has an associated .cue file, they needed to be imported together within a folder and not individually otherwise the .cue file may not be detected.
@@ -18,25 +18,28 @@ Quirk: If a music file has an associated .cue file, they needed to be imported t
 
 - Clear playlist and re-import. It should be faster the 2nd time.
 
+- New in v2.0.0: If the last folder that was imported to the playlist contains all the tracks you wish to import, use the 're-import folder' fuction from playlist tab menu.
+
 ### Track Navigation
 
 - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
 - With random mode on, 'Back' plays songs from playback history.
-- Right click the play button to jump playlist to the playing track. If an identical track appears in the open playlist it will be jumped to instead.
+- Right click the 'Play' button to jump playlist to the playing track. Trick: If an identical track appears in the currently open playlist it will be jumped to instead.
 
 ### Quick Search
 
-- Press the backslash key or Ctrl+F to open search box.
-- Type word fragments separated by spaces. Use UP and DOWN keys to navigate any matching results in current playlist. Press enter key to play selected track.
-- Press Shift+Enter to create a new playlist from results
+1) Press the backslash key or Ctrl+F to open search box.
+2) Type word fragments separated by spaces. Use UP and DOWN keys to navigate any matching results in current playlist. Press enter key to play selected track.
+3) Press Shift+Enter to create a new playlist from results
 
 
-### Filtering By Folder
+### Filtering By Folder Name
 
-- Press the backslash key '\' or Ctrl+F to open search entry.
-- Begin search text with a forward slash '/', then type part of a folder path to search for. (Capitalization will be ignored but used for playlist title)
-- Press Shift-Enter to create the new playlist. Will fail if no matching results found.
-Tip: End the search text with another forward slash to search just for folders with that name. For example, entering '/Pop' may bring up results for J-Pop and K-Pop, however '/Pop/' will only return folders with that name.
+1) Press the backslash key '\' or Ctrl+F to open search entry.
+2) Begin search text with a forward slash '/', then type part of a folder path to search for. (Capitalization will be ignored but used for playlist title)
+3) Press Shift-Enter to create the new playlist. Will fail if no matching results found.
+
+Tip: End the search text with another forward slash to search just for folders with that name. For example, entering '/Pop' may bring up results for J-Pop and K-Pop, however '/Pop/' will only return folders with that exact name.
 
 ### Panel Buttons
 
@@ -45,7 +48,7 @@ Tip: End the search text with another forward slash to search just for folders w
 
 ### Playlist Scrolling
 
- - The playlist scroll bar is to the left of the playlist, hidden until you mouse over it
+ - The playlist scroll bar is to the left of the playlist, hidden until moused over
  - Click above or below the scroll bar to scroll quickly in that direction
  - Right click anywhere in the scroll field to jump immediately to that location
 
@@ -54,7 +57,7 @@ Tip: End the search text with another forward slash to search just for folders w
  - Playlists can be rearranged by dragging them
  - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
  - Single tracks can be moved within a playlist by holding shift and dragging
- - To move a block of tracks; click the first track, then while holding shift click the last track, then click and drag.
+ - To move a block of tracks; highlight, then click and drag
 
 ### Quirks
 
@@ -78,22 +81,25 @@ Tip: End the search text with another forward slash to search just for folders w
 
 ### Outbound Streaming
 
-- Install, configure (optional) and start Icecast. See config.txt for optional further setup.
-- From player right click top bar and select 'Start Broadcast' from menu. You should now see an entry in the Icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
+1) Install, configure (optional) and start Icecast. See config.txt for optional further setup.
+2) From player right click top bar and select 'Start Broadcast' from menu. You should now see an entry in the Icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
 
 The general idea here is that you can listen to music locally while streaming from and editing another playlist (Like a DJ might).  
+
 Note: Broadcast will repeat from beginning of playlist once end is reached  
 Warning: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
 
 Alternatively, by pressing F6 to enter 'sync' mode, the broadcast will receive commands from the player. The effect of this allows for the listening and control of a stream remotely via the web interface.  
+
 Note: This function is experimental and unreliable. Pausing or stopping the player while in this mode will cause the stream to fail or generate other unexpected behavior  
+
 Tip: Higher bitrates may help reduce latency
 
 Linux Note: In my test I had difficulty getting this to work on Linux. Icecast appeared to be running and configured ok however BASS would report an unknown error and the stream would not appear. I have tested this to work previously on Linux and streaming works from Linux to a windows Icecast so I'm inclined to believe this is some sort of configuration issue rather than a bug in Tauon. Your luck may vary if you wish to try.
 
 ### Transcoding albums
 
-Intended to be an easy way to reduce file sizes for copying to devices. Results will be of degraded quality and should not be used for archival.
+Intended to be an easy way to reduce file sizes for copying tracks to devices with limited storage. Results will be of degraded quality and should not be used for archival.
 
 Requires FFMPEG in encoder subdirectory. Additionally 'lame.exe' for mp3 encoding. (On Linux, programs only need be installed)
 
@@ -101,8 +107,23 @@ Will encode based on settings in MENU->Settings...->Transcode
 Output folders will be placed in same encoder subdirectory (can be changed in config.txt)
 
 Tip: 64Kbps Opus should be good enough for most portable music listening.  
+
 Tip: Not many players on Android support Opus. I suggest Rocket Player or AIMP
 
+
+### Japanese Mojibake
+
+In case of mojibake (where track metadata is garbled), the ideal solution is to re-apply tags in a decent tag editor, preferably using a sane encoding (i.e UTF-8) with a tag type that supports it (i.e ID3v2 for MP3's)
+
+As a temporary solution Tauon Music Box offers a fix mojibake function under TRACK MENU-> META...->FIX MOJIBAKE
+
+ - 'Fix mojibake auto' should automatically correct the displayed characters in around 90% of cases.  
+ - 'Fix mojibake manual' to apply manually based on preseted suggestions, can be used for extreme cases where there are multiple encodings for different fields within the same tag (yes this actually happens sometimes)
+
+Note: These functions will apply changes to all tracks in folder/album   
+
+Tip: To undo changes make by these functions, use TRACK MENU-> META...->RELOAD METADATA
+Note: Changes made by these functions only apply to internal database and are not written back to tags on disk
 
 ### Tag Editing
 
@@ -110,10 +131,10 @@ There is currently no built in support for tag editing.
 An external tag editor can be used. See config.txt for linking to an external editor from the track menu (Track menu -> Meta... -> Edit tags with Editor). Is configured for MusicBrainz Picard by default.
 
 Tip: While editing tracks externally, make sure not to change the track file names.  
+
 Bug: Linking to Picard fails with Unicode paths on windows
 
-
-To remove embedded album art from files (mp3 only): Right click track -> Track Info... -> SHIFT+2
+Secret function: To remove embedded album art from files (mp3 only): Right click track -> Track Info... -> SHIFT+2
 
 
 ### Importing/Exporting Playlists
@@ -125,8 +146,8 @@ To import; drag and drop XSPF playlist file onto program window. (Any playlist f
 To export; right click playlist tab and select Export.
 
 Note: Its best to import any corresponding audio files before importing playlists.  
-Note: Importing large playlists can take a long time, cleaning database beforehand (MENU->Database->Remove Missing Tracks) may help speed this up.  
-Note: Some tracks with strange characters in metadata may cause process to fail.  
+Note: Importing large playlists can take a long time, cleaning database beforehand (MENU->Database->Find And Remove Dead Tracks) may help speed this up.  
+Bug: Some tracks with strange characters in metadata may cause process to fail.  
 Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
 
 
@@ -138,9 +159,15 @@ User data files
 
 ### Upgrading / Moving
 
-- Copy 'star.p' file from old install to keep play counts.
+New in v1.9.2: When proram is installed to program files / via installer, files are kept in a dedicated location. ~/.tauonmb-user on Linux and ~\Music\TauonMusicBox on Windows.
+
+For portable installations:
+
+- Copy 'star.p' file from old directroy to keep play counts.
 - Copy 'state.p' file to keep rest of player data.
-- If you are moving platforms, resetting player or moved your music location and have custom playlists you want to keep, export using the export playlist function then re-import.
+
+Tip: If you are moving platforms, resetting player or moved your music location and have custom playlists you want to keep, export using the export playlist function then re-import.
+
 
 Web components
 =================================

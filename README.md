@@ -7,13 +7,13 @@ Uses BASS audio library.
 ### Features :sparkles:
 
   - Playback support for most common codecs including MP3, FLAC, OGG, OPUS, and APE
-  - Visually keep track of playtimes
-  - Dark themed and minimal user interface
+  - Dark themed, minimal user interface
   - Includes large album art and gallery views
   - Simple drag and drop track importing
-  - Batch transcode folders of tracks to OGG or OPUS to save space when copying to portable device
   - Automatic CUE sheet detection and integration
-  - Quick search and filter playlists
+  - Batch transcode folders of tracks to OGG or OPUS to save space when copying to portable devices
+  - Quick search
+  - Playlist sorting
   - Last.fm scrobbling
   - Outbound streaming via Icecast
   - Multi-platform (Windows and Linux)

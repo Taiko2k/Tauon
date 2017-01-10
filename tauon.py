@@ -279,10 +279,9 @@ fullscreen = 0
 
 volume_store = 50  # Used to save the previous volume when muted
 
-playlist_row_height = 16
+playlist_row_height = 16  # Set by preferences
 playlist_text_offset = 0
 row_alt = False
-#thick_lines = False
 playlist_x_offset = 7
 
 to_get = 0  # Used to store temporary import count display
@@ -301,7 +300,7 @@ compact_bar = False
 pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
-theme = 5
+theme = 6
 themeChange = True
 panelY = 78
 
@@ -480,6 +479,7 @@ class Prefs:
 
         self.enable_transcode = True
         self.show_rym = True
+        self.show_wiki = True
         self.prefer_bottom_title = True
         self.append_date = True
 
@@ -566,13 +566,15 @@ class GuiVar:
         self.set_label_hold = -1
         self.set_point = 0
         self.set_old = 0
-        self.pl_st = [
-            # Name, Reserve
-            ["Artist", 90, False],
-            ["Title", 350, False],
-            ["T", 30, True],
-            ["Album", 100, False]
-        ]
+        self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
+
+
+        #     # Name, Reserve
+        #     ["Artist", 90, False],
+        #     ["Title", 350, False],
+        #     ["T", 30, True],
+        #     ["Album", 100, False]
+        # ]
         self.set_load_old = False
 
 gui = GuiVar()
@@ -633,11 +635,11 @@ class ColoursClass:
         self.index_text = self.title_text
         self.time_text = self.index_text
         self.artist_text = [50, 170, 5, 255]
-        self.album_text = self.grey(50)
+        self.album_text = [0, 125, 0, 255]
 
         self.index_playing = self.title_text
         self.artist_playing = [50, 170, 5, 255]
-        self.album_playing = self.artist_text
+        self.album_playing = [0, 125, 0, 255]
         self.title_playing = self.title_text
         self.time_playing = self.grey(200)
 
@@ -859,6 +861,8 @@ try:
         gui.set_bar = gui.set_mode
     if save[45] is not None:
         prefs.playlist_row_height = save[45]
+    if save[46] is not None:
+        prefs.show_wiki = save[46]
 
 
     state_file.close()
@@ -1347,6 +1351,12 @@ class PlayerCtl:
 
         return 0
 
+    def playing_object(self):
+        if len(self.track_queue) > 0:
+            return self.master_library[self.track_queue[self.queue_step]]
+        else:
+            return None
+
     def show_current(self, select=True, playing=False, quiet=False):
 
         # Switch to source playlist
@@ -1775,7 +1785,7 @@ class LastFMapi:
             show_message("Connected")
             print('Connection appears successful')
         except Exception as e:
-            show_message("Error: " + str(e))
+            show_message("lastfm Connection Error: " + str(e))
             print(e)
 
     def toggle(self):
@@ -1783,6 +1793,35 @@ class LastFMapi:
             self.hold ^= True
         else:
             self.connect()
+
+    def no_user_connect(self):
+
+        try:
+            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
+            self.API_SECRET)
+
+            print('Connection appears successful')
+            return True
+        except Exception as e:
+            show_message("Error communicating with lastfm: " + str(e))
+            print(e)
+            return False
+
+
+    def artist_info(self, artist):
+
+        if self.network is None:
+            if self.no_user_connect() is False:
+                return
+
+        print(artist)
+        if artist != "":
+            l_artist = pylast.Artist(artist, self.network)
+            #print(artist.get_bio_summary(language="en"))
+            print(l_artist.get_bio_content())
+            print(l_artist.get_cover_image())
+
+
 
     def scrobble(self, title, artist, album):
         if self.hold:
@@ -2273,6 +2312,8 @@ def player():
     BASS_MIXER_NORAMPIN = 0x800000
     BASS_MIXER_PAUSE = 0x20000
 
+    BASS_DEVICE_DMIX = 0x2000
+
     if system != 'windows':
         open_flag = 0
     else:
@@ -2339,7 +2380,7 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
 
-    BassInitSuccess = BASS_Init(-1, 44100, 0, gui.window_id, 0)
+    BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
     if BassInitSuccess == True:
         print("Bass library initialised")
 
@@ -2569,7 +2610,7 @@ def player():
             elif pctl.playerCommand == "setdev":
 
                 print("Changeing output device")
-                print(BASS_Init(pctl.set_device, 44100, 0, gui.window_id, 0))
+                print(BASS_Init(pctl.set_device, 48000, BASS_DEVICE_DMIX, gui.window_id, 0))
                 print(BASS_SetDevice(pctl.set_device))
 
 
@@ -2753,8 +2794,9 @@ def player():
                     line = "source:" + ice_pass
                     line = line.encode('utf-8')
 
-                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
+                    result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
                                          b"genre", b"", b"", int(bitrate), False)
+
 
                 elif codec == "OGG":
                     if not has_bass_ogg:
@@ -2773,7 +2815,7 @@ def player():
                     line = "source:" + ice_pass
                     line = line.encode('utf-8')
 
-                    BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
+                    result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
                                          b"genre", b"", b"", int(bitrate), False)
 
                 if BASS_ErrorGetCode() == -1:
@@ -2786,6 +2828,12 @@ def player():
                 # Trying to send the stream title here causes the stream to fail for some reason
                 # line2 = pctl.broadcast_line.encode('utf-8')
                 # BASS_Encode_CastSetTitle(encoder, line2,0)
+                if result is True:
+                    show_message("Connection to Icecast successful")
+                else:
+                    show_message("Error:  Failed to connect to Icecast. Make sure Icecast is running, and configuration is correct")
+                    pctl.playerCommand = "encstop"
+                    pctl.playerCommandReady = True
 
                 print(BASS_ErrorGetCode())
 
@@ -4439,6 +4487,9 @@ class AlbumArt():
                     colours.artist_text = [170, 170, 170, 255]
                     colours.artist_playing = [170, 170, 170, 255]
 
+                colours.album_text = colours.title_text
+                colours.album_playing = colours.title_playing
+
                 gui.pl_update = 1
                 print("Bgr1: ", end="")
                 print(colours.playlist_panel_background)
@@ -4576,7 +4627,6 @@ album_scroll_hold = False
 
 
 def fix_encoding(index, mode, enc):
-    global pctl
     global default_playlist
     global enc_field
 
@@ -5867,7 +5917,7 @@ def get_broadcast_line():
 
 
 # Create track context menu
-track_menu = Menu(150)
+track_menu = Menu(156)
 
 
 def open_config():
@@ -6185,7 +6235,104 @@ if prefs.tag_editor_name != "":
     elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
         track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
 
-track_menu.add_to_sub("Fix Mojibake...", 0, activate_encoding_box, pass_ref=True)
+
+def recode(text, enc):
+    return text.encode("Latin-1", 'ignore').decode(enc, 'ignore')
+
+j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
+
+def intel_moji(index):
+
+    track = pctl.master_library[index]
+
+    lot = []
+
+    for item in default_playlist:
+
+        if track.album == pctl.master_library[item].album and \
+            track.parent_folder_name == pctl.master_library[item].parent_folder_name:
+            lot.append(item)
+
+    lot = set(lot)
+
+
+    l_artist = track.artist.encode("Latin-1", 'ignore')
+    l_album = track.album.encode("Latin-1", 'ignore')
+    detect = None
+
+    if track.artist not in track.parent_folder_path:
+        for enc in encodings:
+            try:
+                q_artist = l_artist.decode(enc,)
+                if q_artist.strip(" ") in track.parent_folder_path.strip(" "):
+                    detect = enc
+                    break
+            except:
+                continue
+
+
+    if detect is None and track.album not in track.parent_folder_path:
+        for enc in encodings:
+            try:
+                q_album = l_album.decode(enc,)
+                if q_album in track.parent_folder_path:
+                    detect = enc
+                    break
+            except:
+                continue
+
+    for item in lot:
+        t_track = pctl.master_library[item]
+
+        if detect is None:
+            for enc in encodings:
+                test = recode(t_track.artist, enc)
+                for cha in test:
+                    if cha in j_chars:
+                        detect = enc
+                        print("This looks like Japanese: " + test)
+                        break
+                    if detect is not None:
+                        break
+
+        if detect is None:
+            for enc in encodings:
+                test = recode(t_track.title, enc)
+                for cha in test:
+                    if cha in j_chars:
+                        detect = enc
+                        print("This looks like Japanese: " + test)
+                        break
+                    if detect is not None:
+                        break
+        if detect is not None:
+            break
+
+    if detect is not None:
+        print("Fix Mojibake: Detected encoding as: " + detect)
+        for item in lot:
+            track = pctl.master_library[item]
+            key = pctl.master_library[item].title + pctl.master_library[item].filename
+
+            track.title = recode(track.title, detect)
+            track.album = recode(track.album, detect)
+            track.artist = recode(track.artist, detect)
+            track.album_artist = recode(track.album_artist, detect)
+            track.genre = recode(track.genre, detect)
+            track.comment = recode(track.comment, detect)
+            track.lyrics = recode(track.lyrics, detect)
+
+            if key in pctl.star_library:
+                newkey = pctl.master_library[item].title + pctl.master_library[item].filename
+                if newkey not in pctl.star_library:
+                    pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
+
+    else:
+        show_message("Autodetect failed")
+
+
+track_menu.add_to_sub("Fix Mojibake Auto", 0, intel_moji, pass_ref=True)
+track_menu.add_to_sub("Fix Mojibake Manual...", 0, activate_encoding_box, pass_ref=True)
 
 
 class Samples:
@@ -6340,6 +6487,15 @@ def clip_ar_al(index):
            pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
 
+def ser_wiki(index):
+    if len(pctl.master_library[index].artist) < 2:
+        return
+    line = "http://en.wikipedia.org/wiki/Special:Search?search=" + \
+           urllib.parse.quote(pctl.master_library[index].artist)
+    webbrowser.open(line, new=2, autoraise=True)
+
+if prefs.show_wiki:
+    track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True)
 
 if prefs.show_rym:
     track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
@@ -6467,7 +6623,7 @@ def key_genre(index):
     return pctl.master_library[index].genre
 
 def key_t(index):
-    return pctl.master_library[index].track_number
+    return str(pctl.master_library[index].track_number)
 
 def key_codec(index):
     return pctl.master_library[index].file_ext
@@ -6539,8 +6695,6 @@ def sort_dec(h):
 #
 #     if name in ("Artist",):
 #         line_colour = colours.menu_text
-
-
 
 set_menu.add("Sort Acceding", sort_ass, pass_ref=True)
 set_menu.add("Sort Decending", sort_dec, pass_ref=True)
@@ -7424,6 +7578,7 @@ def worker1():
     def add_from_cue(path):
 
         global added
+        global master_count
 
         cued = []
 
@@ -7434,31 +7589,26 @@ def worker1():
 
         try:
 
-            global master_count
-            global pctl
-
             try:
 
                 with open(path, encoding="utf_8") as f:
                     content = f.readlines()
             except:
-                # print("Thats not right")
                 try:
                     with open(path, encoding="utf_16") as f:
                         content = f.readlines()
-
+                        print("CUE: Detected encoding as UTF-16")
                 except:
-                    # print("Wrong again")
                     try:
-                        with open(path) as f:
+                        with open(path, encoding='shiftjis') as f:
                             content = f.readlines()
+                        print("CUE: Detected encoding as SHIFT-JIS")
 
                     except:
-                        print("Cant detect encoding of CUE file")
+                        print("WARNING: Can't detect encoding of CUE file")
                         return 1
 
             f.close()
-            # print(content)
 
             # GET "FILE" LINE
             count = 0
@@ -7491,63 +7641,37 @@ def worker1():
                 if FILE[i] == '"':
                     switch = 1
 
-            # print("CUE FILE TARGET: " + filename)
             filepath = os.path.dirname(path.replace('\\', '/')) + "/" + filename
-            # print("CUE FILE FILEPATH: " + filepath)
 
             try:
                 # print(filepath)
                 if os.path.isfile(filepath) is True:
 
-                    if '.opus' in filepath or '.OPUS' in filepath:
-
-                        audio = Opus(filepath)
-                        audio.read()
-
-                        SAMPLERATE = 0
-                        try:
-                            SAMPLERATE = audio.sample_rate
-                        except:
-                            print("cant read samplerate")
-                        lasttime = audio.length
-
-
-                    else:
-
-                        audio = auto.File(filepath)
-                        SAMPLERATE = 0
-                        try:
-                            SAMPLERATE = audio.sample_rate
-                        except:
-                            print("cant read samplerate")
-                        lasttime = audio.duration
+                    source_track = TrackClass()
+                    source_track.fullpath = filepath
+                    source_track = tag_scan(source_track)
+                    lasttime = source_track.length
 
                 else:
-                    print("Trying to find file...")
+                    print("CUE: The referenced source file wasn't found. Searching for matching file name...")
 
                     for item in os.listdir(os.path.dirname(filepath)):
                         if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[
-                            0] and "cue" not in item.lower():
+                                0] and "cue" not in item.lower():
                             filepath = os.path.dirname(filepath) + "/" + item
+                            print("CUE: Source found")
                             break
-
-                    if '.opus' in filepath or '.OPUS' in filepath:
-
-                        audio = Opus(filepath)
-                        audio.read()
-
-                        SAMPLERATE = audio.sample_rate
-                        lasttime = audio.length
-
                     else:
-                        audio = auto.File(filepath)
-                        # print(filepath)
-                        SAMPLERATE = audio.sample_rate
-                        lasttime = audio.duration
+                        print("CUE: Source file not found")
+                        return 1
 
+                    source_track = TrackClass()
+                    source_track.fullpath = filepath
+                    source_track = tag_scan(source_track)
+                    lasttime = source_track.length
 
             except:
-                print("UNABLE TO READ FILE LENGTH")
+                print("CUE Error: Unable to read file length")
                 return 1
 
             # Get length from backend
@@ -7625,10 +7749,10 @@ def worker1():
 
                     TN = int(TN)
 
-                    try:
-                        bitrate = audio.info.bitrate
-                    except:
-                        bitrate = 0
+                    # try:
+                    #     bitrate = audio.info.bitrate
+                    # except:
+                    #     bitrate = 0
 
                     if PERFORMER == "":
                         PERFORMER = MAIN_PERFORMER
@@ -7645,13 +7769,14 @@ def worker1():
                     nt.artist = PERFORMER
                     nt.title = TITLE
                     nt.length = LENGTH
-                    nt.bitrate = bitrate
+                    nt.bitrate = source_track.bitrate
                     nt.album = ALBUM
                     nt.date = DATE.replace('"', '')
                     nt.track_number = TN
                     nt.start_time = START
                     nt.is_cue = True
-                    nt.samplerate = SAMPLERATE
+                    nt.size = 0 #source_track.size
+                    nt.samplerate = source_track.samplerate
                     if TN == 1:
                         nt.size = os.path.getsize(nt.fullpath)
 
@@ -7673,6 +7798,7 @@ def worker1():
 
         except:
             print("Error in processing CUE file")
+            raise
 
     def add_file(path):
         # bm.get("add file start")
@@ -8692,6 +8818,8 @@ def toggle_expose_web(mode=0):
     if mode == 1:
         return prefs.expose_web
     prefs.expose_web ^= True
+    if prefs.expose_web:
+        show_message("Warning: This setting may pose security and/or privacy risks, including ones as a result of design, and potentially ones unintentional") # especially if incomming connections are allowed through firewall")
 
 
 def toggle_transcode(mode=0):
@@ -8705,6 +8833,12 @@ def toggle_rym(mode=0):
     if mode == 1:
         return prefs.show_rym
     prefs.show_rym ^= True
+
+
+def toggle_wiki(mode=0):
+    if mode == 1:
+        return prefs.show_wiki
+    prefs.show_wiki ^= True
 
 
 def toggle_cache(mode=0):
@@ -8879,6 +9013,8 @@ class Over:
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
         # y += 25
+        self.toggle_square(x, y, toggle_wiki, "Track Menu: Search on Wikipedia*")
+        y += 25
         self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
         y += 35
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
@@ -8931,7 +9067,7 @@ class Over:
         draw_text((x + 20, y - 3), text, [255, 255, 255, 150], 11)
         draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
         draw.rect((x, y), (12, 12), [255, 255, 255, 16])
-        if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
+        if self.click and coll_point(mouse_position, (x - 20, y - 7, 180, 24)):
             function()
         if function(1):
             draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
@@ -9314,7 +9450,7 @@ class Over:
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 16
+        prefs.playlist_row_height = 18
         prefs.playlist_font_size = 13
         gui.update_layout()
 
@@ -9423,6 +9559,9 @@ class Over:
 
         current_tab = 0
         for item in self.tabs:
+
+            if self.click and gui.message_box:
+                gui.message_box = False
 
             box = [self.box_x, self.box_y + (current_tab * 30), 110, 30]
             box2 = [self.box_x, self.box_y + (current_tab * 30), 110, 29]
@@ -10130,6 +10269,8 @@ class BottomBarType1:
         self.forward_button = WhiteModImageAsset('/gui/ff.png')
         self.back_button = WhiteModImageAsset('/gui/bb.png')
 
+        self.scrob_stick = 0
+
     def set_mode2(self):
 
         self.volume_bar_size[1] = 12
@@ -10181,7 +10322,6 @@ class BottomBarType1:
         # Scrobble marker
 
         if scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
-            l_target = 0
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
@@ -10189,11 +10329,14 @@ class BottomBarType1:
             l_lead = l_target - pctl.a_time
 
             if l_lead > 0 and pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 30:
-                l_x = self.seek_bar_position[0] + int(
-                    pctl.playing_time * self.seek_bar_size[0] / int(pctl.playing_length))
-                l_x += int(self.seek_bar_size[0] / int(pctl.playing_length) * l_lead)
-                draw.rect_r((l_x, self.seek_bar_position[1] + 13, 2, 2), [255, 0, 0, 100], True)
-                # self.seek_bar_size[1]
+                l_x = self.seek_bar_position[0] + int(math.ceil(
+                    pctl.playing_time * self.seek_bar_size[0] / int(pctl.playing_length)))
+                l_x += int(math.ceil(self.seek_bar_size[0] / int(pctl.playing_length) * l_lead))
+                if abs(self.scrob_stick - l_x) < 2:
+                    l_x = self.scrob_stick
+                else:
+                    self.scrob_stick = l_x
+                draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2, self.seek_bar_size[1]), [255, 0, 0, 70], True)
 
         # SEEK BAR------------------
         if pctl.playing_time < 1:
@@ -11302,6 +11445,8 @@ class StandardPlaylist:
 
                     wid = item[1] - 20
                     y = playlist_text_offset + playlist_top + playlist_row_height * w
+                    if run > playlist_width + 24:
+                        break
 
                     if len(gui.pl_st) == h + 1:
                         wid -= 6
@@ -11322,46 +11467,68 @@ class StandardPlaylist:
                         text = ""
                         colour = [200, 200, 200, 255]
                         if item[0] == "Title":
+                            colour = colours.title_text
                             if n_track.title != "":
                                 text = n_track.title
-                                colour = colours.title_text
                             else:
                                 text = n_track.filename
-                                colour = colours.index_text
+                            #     colour = colours.index_playing
+                            if this_line_playing is True:
+                                colour = colours.title_playing
+
                         elif item[0] == "Artist":
                             text = n_track.artist
                             colour = colours.artist_text
+                            if this_line_playing is True:
+                                colour = colours.artist_playing
                         elif item[0] == "Album":
                             text = n_track.album
                             colour = colours.album_text
+                            if this_line_playing is True:
+                                colour = colours.album_playing
                         elif item[0] == "T":
                             text = str(n_track.track_number)
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Date":
                             text = n_track.date
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Filepath":
                             text = n_track.fullpath
                             colour = colours.index_text
                         elif item[0] == "Codec":
                             text = n_track.file_ext
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Lyrics":
                             text = ""
                             if n_track.lyrics != "":
                                 text = 'Y'
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Genre":
                             text = n_track.genre
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Bitrate":
                             text = str(n_track.bitrate)
                             if text == "0":
                                 text = ""
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "Time":
                             text = get_display_time(n_track.length)
+                            # colour = colours.bar_time
                             colour = colours.time_text
+                            if this_line_playing is True:
+                                colour = colours.time_text
                         elif item[0] == "P":
                             key = n_track.title + n_track.filename
                             ratio = 0
@@ -11373,6 +11540,8 @@ class StandardPlaylist:
                             if text == "0":
                                 text = ""
                             colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
 
                         if prefs.dim_art and album_mode and \
                                 n_track.parent_folder_name \
@@ -11665,7 +11834,13 @@ class Showcase:
 
     def __init__(self):
 
-        pass
+        self.lastfm_artist = None
+
+    def get_artist_info(self):
+
+        track = pctl.playing_object()
+        if track is not None:
+            artist = track.artist
 
     def render(self):
 
@@ -11675,9 +11850,15 @@ class Showcase:
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10
 
+        if len(pctl.track_queue) < 1:
+            return
 
         index = pctl.track_queue[pctl.queue_step]
         track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+        if track.artist == self.lastfm_artist:
+
+            return
 
         album_art_gen.display(index, (x, y), (box, box))
         if coll_point(mouse_position, (x, y, box, box)) and mouse_click is True:
@@ -12320,7 +12501,8 @@ while running:
             #     i += 1
             #     draw_text((100, random.randrange(20, 500)), "hello", [0,0,0,255], 12)
             # print(perf_timer.get())
-            print(pctl.multi_playlist)
+            #lastfm.artist_info()
+            #print(gui.pl_st)
 
             key_F7 = False
 
@@ -12614,23 +12796,8 @@ while running:
             playlist_text_offset = 6
             playlist_x_offset = 7
             row_font_size = 13
-            # elif prefs.playlist_font_size == 14:
-            #     playlist_row_height = 31
-            #     playlist_text_offset = 4
-            #     playlist_x_offset = 7
-            #     row_font_size = 14
-            # elif prefs.playlist_font_size == 15:
-            #     playlist_row_height = 31
-            #     playlist_text_offset = 4
-            #     playlist_x_offset = 7
-            #     row_font_size = 15
-            # elif prefs.playlist_font_size == 16:
-            #     playlist_row_height = 32
-            #     playlist_text_offset = 4
-            #     playlist_x_offset = 7
-            #     row_font_size = 16
         else:
-            playlist_row_height = prefs.playlist_row_height #18 #16
+            playlist_row_height = prefs.playlist_row_height
             playlist_text_offset = 0
             playlist_x_offset = 0
             row_font_size = prefs.playlist_font_size #13
@@ -14102,6 +14269,7 @@ while running:
                         x -= 170
 
                     y += 15
+                    #print(pctl.master_library[r_menu_index].size)
                     if pctl.master_library[r_menu_index].size != 0:
                         draw_text((x + 8 + 10, y + 40), "File size", colours.alpha_grey(140), 12)
                         draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size),
@@ -14687,7 +14855,7 @@ while running:
                     if playlist_selected < 0:
                         playlist_selected = 0
 
-                if key_return_press:
+                if key_return_press and not pref_box.enabled and not radiobox:
                     gui.pl_update = 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
@@ -15281,8 +15449,9 @@ save = [pctl.master_library,
         prefs.use_title,
         gui.pl_st,
         gui.set_mode,
-        prefs.playlist_row_height,
         None,
+        prefs.playlist_row_height,
+        prefs.show_wiki,
         None,
         None,
         None,

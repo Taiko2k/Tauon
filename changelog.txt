@@ -9,10 +9,15 @@ v2.0.0
  - Added re-import function
  - Added output device selection to system settings tab
  - Added menu shortcut for toggling playlist breaks
+ - Added search artist on Wikipeida track menu entry
+ - Added auto fix mojibake function
  - Bound F9 key to open encode output
- - Bound r-shift + slash to revert to last track
+ - Bound r-shift + slash to revert
+ - Tweaked scrobble marker appearance
+ - Improved error feedback for broadcasting
  - Fixed edit tags externally sometimes including other folders
  - Fixed volume not being affected by windows volume mixer
+ - Fixed messages not disappearing while settings box was open
  - Removed 'most skipped' and 'empty playlist' playlist filters
 
 v1.9.2
