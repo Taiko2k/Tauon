@@ -62,7 +62,6 @@ Tip: End the search text with another forward slash to search just for folders w
 ### Quirks
 
  - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
- - Quirk: Although it is possible to open tracks via file association, this is not the recommended way of importing music. A different application might be better for this purpose.
  - Quirk: There is no playlist repeat function, player will stop once it reaches the end of a playlist (Broadcasting will repeat from the top however)
  - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Playtimes are periodically saved however.
 
