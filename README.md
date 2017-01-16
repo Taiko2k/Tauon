@@ -11,7 +11,7 @@ Uses BASS audio library.
   - Includes large album art and gallery views
   - Simple drag and drop track importing
   - Automatic CUE sheet detection and integration
-  - Batch transcode folders of tracks to OGG or OPUS to save space when copying to portable devices
+  - Batch transcode folders of tracks to save space when copying to portable devices
   - Quick search
   - Playlist sorting
   - Last.fm scrobbling
