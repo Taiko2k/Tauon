@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+
+v2.0.1
+
+ - Added auto extract zip archive option
+ - Fixed UI slowdown with filepath column
+ - Tweaked column grip area
+
 v2.0.0
 
  - Added customisable playlist column layout with sorting
