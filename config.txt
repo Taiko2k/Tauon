@@ -3,15 +3,20 @@
 ## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
 pause-fade-time=400
 cross-fade-time=700
+
 scrobble-mark=True
 scroll-gallery-row=True
 scroll-gallery-wheel=90
+
+## Windows font rendering options, overides other font options. No effect on Linux. Better performance when off.
+windows-native-font-rendering=True
+#windows-set-font-family=Arial
+#windows-font-use-bold=True
 
 ## Font files must be in /gui subfolder
 font-regular=Koruri-Regular.ttf
 font-fallback=DroidSansFallback.ttf
 font-bold=Koruri-Semibold.ttf
-font-extra=Koruri-Light.ttf
 font-height-offset=0
 
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)

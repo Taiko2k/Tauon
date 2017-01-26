@@ -2,11 +2,15 @@
 Changelog-------------------------------------
 
 
-v2.0.1
+v2.0.9
 
  - Added auto extract zip archive option
- - Fixed UI slowdown with filepath column
+ - Added native font rendering (windows only)
+ - Fixed title bar text updating
+ - Fixed poor album art image display quality
+ - Fixed play count column not incrementing after single play through
  - Tweaked column grip area
+ - Tweaked UI fonts
 
 v2.0.0
 
