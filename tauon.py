@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.0.9"
+t_version = "v2.1.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -596,10 +596,14 @@ class GuiVar:
         self.set_load_old = False
 
         self.win_text = False
+        if system == 'windows':
+            self.win_text = True
         self.win_fore = [255, 255, 255, 255]
 
 
         self.trunk_end = "..." #"…"
+        self.temp_themes = {}
+        self.theme_temp_current = -1
 
 
 gui = GuiVar()
@@ -735,6 +739,7 @@ class ColoursClass:
 
         self.status_info_text = [245, 205, 0, 255]
         self.streaming_text = [220, 75, 60, 255]
+        self.lyrics = self.grey(210)
 
         #self.post_config()
 
@@ -776,6 +781,7 @@ class ColoursClass:
             self.status_text_normal = self.grey(70)
             self.status_text_over = self.grey(40)
             self.status_info_text = [40, 40, 40, 255]
+
 
 
 colours = ColoursClass()
@@ -918,6 +924,8 @@ try:
         prefs.show_wiki = save[46]
     if save[47] is not None:
         prefs.auto_extract = save[47]
+    if save[48] is not None:
+        prefs.colour_from_image = save[48]
 
     state_file.close()
     del save
@@ -1060,8 +1068,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
                 print('Encode output: ' + prefs.encoder_output)
 
-            if 'windows-native-font-rendering=True' in p and system == 'windows':
-                gui.win_text = True
+            # if 'windows-native-font-rendering=True' in p and system == 'windows':
+            #     gui.win_text = True
             if 'windows-set-font-family=' in p:
                 result = p.split('=')[1]
                 prefs.windows_font_family = result
@@ -3467,70 +3475,71 @@ def load_font(name, size, ext=False):
     return TTF_OpenFont(fontpath, size)
 
 
-font11c = load_font(gui_font, 11)
-font12c = load_font(gui_font, 12)
-font13c = load_font(gui_font, 13)
-font14c = load_font(gui_font, 14)
-font28c = load_font(gui_font, 28)
+if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and os.path.isfile("gui/" + alt_font):
+    font11c = load_font(gui_font, 11)
+    font12c = load_font(gui_font, 12)
+    font13c = load_font(gui_font, 13)
+    font14c = load_font(gui_font, 14)
+    font28c = load_font(gui_font, 28)
 
-font10a = load_font(main_font, 10)
-font11a = load_font(main_font, 11)
-font12a = load_font(main_font, 12)
-font13a = load_font(main_font, 13)
-font14a = load_font(main_font, 14)
-font15a = load_font(main_font, 15)
-font16a = load_font(main_font, 16)
-font17a = load_font(main_font, 17)
-font22a = load_font(main_font, 22)
-font24a = load_font(main_font, 24)
-font28a = load_font(main_font, 28)
+    font10a = load_font(main_font, 10)
+    font11a = load_font(main_font, 11)
+    font12a = load_font(main_font, 12)
+    font13a = load_font(main_font, 13)
+    font14a = load_font(main_font, 14)
+    font15a = load_font(main_font, 15)
+    font16a = load_font(main_font, 16)
+    font17a = load_font(main_font, 17)
+    font22a = load_font(main_font, 22)
+    font24a = load_font(main_font, 24)
+    font28a = load_font(main_font, 28)
 
-font10b = load_font(alt_font, 10)
-font11b = load_font(alt_font, 11)
-font12b = load_font(alt_font, 12)
-font13b = load_font(alt_font, 13)
-font14b = load_font(alt_font, 14)
-font15b = load_font(alt_font, 15)
-font16b = load_font(alt_font, 16)
-font17b = load_font(alt_font, 17)
-font22b = load_font(alt_font, 22)
-font24b = load_font(alt_font, 24)
-font28b = load_font(alt_font, 28)
+    font10b = load_font(alt_font, 10)
+    font11b = load_font(alt_font, 11)
+    font12b = load_font(alt_font, 12)
+    font13b = load_font(alt_font, 13)
+    font14b = load_font(alt_font, 14)
+    font15b = load_font(alt_font, 15)
+    font16b = load_font(alt_font, 16)
+    font17b = load_font(alt_font, 17)
+    font22b = load_font(alt_font, 22)
+    font24b = load_font(alt_font, 24)
+    font28b = load_font(alt_font, 28)
 
-# font12d = load_font(light_font, 12)
-# font13d = load_font(light_font, 13)
-# font14d = load_font(light_font, 14)
-# font15d = load_font(light_font, 15)
-# font16d = load_font(light_font, 16)
-# font17d = load_font(light_font, 17)
+    # font12d = load_font(light_font, 12)
+    # font13d = load_font(light_font, 13)
+    # font14d = load_font(light_font, 14)
+    # font15d = load_font(light_font, 15)
+    # font16d = load_font(light_font, 16)
+    # font17d = load_font(light_font, 17)
 
-font_dict = {}
+    font_dict = {}
 
-font_dict[13] = (font13a, font13b)
-font_dict[11] = (font11a, font11b)
-font_dict[10] = (font10a, font10b)
-font_dict[12] = (font12a, font12b)
-font_dict[16] = (font16a, font16b)
-font_dict[14] = (font14a, font14b)
-font_dict[15] = (font15a, font15b)
-font_dict[17] = (font17a, font17b)
-font_dict[22] = (font22a, font22b)
-font_dict[24] = (font24a, font24b)
-font_dict[28] = (font28a, font28b)
+    font_dict[13] = (font13a, font13b)
+    font_dict[11] = (font11a, font11b)
+    font_dict[10] = (font10a, font10b)
+    font_dict[12] = (font12a, font12b)
+    font_dict[16] = (font16a, font16b)
+    font_dict[14] = (font14a, font14b)
+    font_dict[15] = (font15a, font15b)
+    font_dict[17] = (font17a, font17b)
+    font_dict[22] = (font22a, font22b)
+    font_dict[24] = (font24a, font24b)
+    font_dict[28] = (font28a, font28b)
 
 
-font_dict[211] = (font11c, font11b)
-font_dict[212] = (font12c, font12b)
-font_dict[213] = (font13c, font13b)
-font_dict[214] = (font14c, font14b)
-font_dict[228] = (font28c, font28b)
+    font_dict[211] = (font11c, font11b)
+    font_dict[212] = (font12c, font12b)
+    font_dict[213] = (font13c, font13b)
+    font_dict[214] = (font14c, font14b)
+    font_dict[228] = (font28c, font28b)
 
-# font_dict[317] = (font17d, font17b)
-# font_dict[316] = (font16d, font16b)
-# font_dict[315] = (font15d, font15b)
-# font_dict[314] = (font14d, font14b)
-# font_dict[313] = (font13d, font13b)
-# font_dict[312] = (font12d, font12b)
+    # font_dict[317] = (font17d, font17b)
+    # font_dict[316] = (font16d, font16b)
+    # font_dict[315] = (font15d, font15b)
+    # font_dict[314] = (font14d, font14b)
+    # font_dict[313] = (font13d, font13b)
+    # font_dict[312] = (font12d, font12b)
 
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
@@ -4219,7 +4228,7 @@ class LyricsRen:
 
         self.index = -1
         self.text = ""
-        self.colour = colours.side_bar_line1
+        self.colour = colours.lyrics
         self.colour_sdl = SDL_Color(self.colour[0], self.colour[1], self.colour[2], self.colour[3])
         self.tex_w = pointer(c_int(0))
         self.tex_h = pointer(c_int(0))
@@ -4298,7 +4307,7 @@ class LyricsRenWin:
             self.index = index
             self.generate(index, w)
 
-        draw_text((x, y, 4, w, 2000), self.text, colours.side_bar_line1, 17, w, colours.playlist_panel_background)
+        draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
 if gui.win_text:
     lyrics_ren = LyricsRenWin()
@@ -4788,6 +4797,13 @@ class AlbumArt():
 
         filepath = pctl.master_library[index].fullpath
 
+        if prefs.colour_from_image and index != gui.theme_temp_current:
+            if pctl.master_library[index].album in gui.temp_themes:
+                global colours
+                colours = gui.temp_themes[pctl.master_library[index].album]
+
+        gui.theme_temp_current = index
+
         source = self.get_sources(index)
         if len(source) == 0:
             return False
@@ -4835,7 +4851,7 @@ class AlbumArt():
             im.save(g, 'BMP')
             g.seek(0)
 
-            if prefs.colour_from_image and pctl.master_library[index].parent_folder_path != colours.last_album:
+            if prefs.colour_from_image: # and pctl.master_library[index].parent_folder_path != colours.last_album:
                 colours.last_album = pctl.master_library[index].parent_folder_path
 
                 im.thumbnail((50, 50), Image.ANTIALIAS)
@@ -4917,6 +4933,13 @@ class AlbumArt():
                     colours.artist_text = [170, 170, 170, 255]
                     colours.artist_playing = [170, 170, 170, 255]
 
+                if (colour_value(colours.side_panel_background)) > 350:
+                    colours.side_bar_line1 = [40, 40, 40, 255]
+                    colours.side_bar_line2 = [50, 50, 50, 255]
+                else:
+                    colours.side_bar_line1 = [210, 210, 210, 255]
+                    colours.side_bar_line2 = [190, 190, 190, 255]
+
                 colours.album_text = colours.title_text
                 colours.album_playing = colours.title_playing
 
@@ -4957,6 +4980,9 @@ class AlbumArt():
                     colours.star_line = [150, 150, 150, 255]
                     colours.row_select_highlight = [255, 255, 255, 12]
                     colours.row_playing_highlight = [255, 255, 255, 8]
+
+                gui.temp_themes[pctl.master_library[index].album] = copy.deepcopy(colours)
+                gui.theme_temp_current = index
 
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
@@ -5007,7 +5033,7 @@ class AlbumArt():
 
         except:
             print("Image processing error")
-            # raise
+            raise
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -7617,6 +7643,17 @@ extra_menu.add('Clear Queue', clear_queue, queue_deco)
 extra_menu.add("Go To Playing", pctl.show_current, hint="QUOTE")
 
 
+def toggle_auto_theme(mode=0):
+
+    if mode == 1:
+        return prefs.colour_from_image
+
+    prefs.colour_from_image ^= True
+    gui.theme_temp_current = -1
+    global themeChange
+    themeChange = True
+
+
 def toggle_level_meter(mode=0):
 
     if mode == 1:
@@ -7628,7 +7665,6 @@ def toggle_level_meter(mode=0):
     elif gui.turbo is False:
         gui.turbo = True
         gui.vis = 2
-
 
 def advance_theme():
     global theme
@@ -9803,11 +9839,15 @@ class Over:
         self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
-        x += 50
-        y += 15
-        self.button(x + 250, y, "Reset Layout", standard_size)
-        x += 110
-        self.button(x + 240, y, "Next Theme", advance_theme)
+        x += 290
+        y -= 120
+        self.toggle_square(x, y, toggle_auto_theme, "Auto theme from image")
+
+        y += 30
+        x -= 5
+        self.button(x, y, "Reset Layout", standard_size)
+        x += 100
+        self.button(x, y, "Next Theme", advance_theme)
 
     def about(self):
 
@@ -10331,7 +10371,7 @@ class Over:
                         order.target = copy.deepcopy(full_path)
                         load_orders.append(copy.deepcopy(order))
 
-        draw.rect_r(box, colours.grey_blend_bg(8), True)
+        draw.rect_r(box, colours.alpha_grey(8), True)
         fields.add(box)
         draw_text((box[0] + 100, box[1] + 2, 2), "Each sub folder as new playlist", colours.grey_blend_bg(130), 12)
 
@@ -12056,6 +12096,8 @@ class StandardPlaylist:
 
         global click_time
         global quick_drag
+        global mouse_down
+        global mouse_up
 
         w = 0
         gui.row_extra = 0
@@ -12258,6 +12300,9 @@ class StandardPlaylist:
 
                 click_time -= 1.5
                 pctl.jump(default_playlist[p_track], p_track)
+                quick_drag = False
+                mouse_down = False
+                mouse_up = False
 
                 if album_mode:
                     goto_album(pctl.playlist_playing)
@@ -13625,10 +13670,11 @@ while running:
         if key_F3:
             prefs.colour_from_image ^= True
             if prefs.colour_from_image:
-                show_message("Enabled colour from image (experimental)")
+                show_message("Enabled auto theme")
             else:
-                show_message("Disabled colour from image")
+                show_message("Disabled auto theme")
                 themeChange = True
+                gui.theme_temp_current = -1
 
         if mouse4:
             toggle_album_mode()
@@ -13979,6 +14025,8 @@ while running:
     # THEME SWITCHER--------------------------------------------------------------------
     if key_F2:
         themeChange = True
+        gui.theme_temp_current = -1
+        gui.temp_themes.clear()
         theme += 1
 
     if themeChange is True:
@@ -14103,6 +14151,8 @@ while running:
                                     colours.menu_text_disabled = get_colour_from_line(p)
                                 if 'menu highlight' in p:
                                     colours.menu_highlight_background = get_colour_from_line(p)
+                                if 'lyrics showcase' in p:
+                                    colours.lyrics = get_colour_from_line(p)
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
                                     colours.menu_background = colours.bottom_panel_colour
@@ -16592,7 +16642,7 @@ save = [pctl.master_library,
         prefs.playlist_row_height,
         prefs.show_wiki,
         prefs.auto_extract,
-        None,
+        prefs.colour_from_image,
         None,
         None,
         None,

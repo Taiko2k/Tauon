@@ -2,13 +2,15 @@
 Changelog-------------------------------------
 
 
-v2.0.9
+v2.1.0
 
  - Added auto extract zip archive option
  - Added native font rendering (windows only)
+ - Added auto theme option to settings
  - Fixed title bar text updating
  - Fixed poor album art image display quality
  - Fixed play count column not incrementing after single play through
+ - Improved auto theme mode
  - Tweaked column grip area
  - Tweaked UI fonts
 
