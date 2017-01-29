@@ -42,8 +42,8 @@
 #-Bottom panel------
 
 55,55,55		buttons off
-170,170,170		buttons over
-150,150,150		buttons active
+210,210,210		buttons over
+200,200,200		buttons active
 
 180,194,107		playing time
 
@@ -68,6 +68,6 @@
 
 #-Side panel--------
 
-190,190,190		title info
-180,180,180		extra info
+210,210,210		title info
+190,190,190		extra info
 21,21,21		art border

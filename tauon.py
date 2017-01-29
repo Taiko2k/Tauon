@@ -647,6 +647,12 @@ def alpha_blend(colour, base):
             int(alpha * colour[1] + (1 - alpha) * base[1]),
             int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
 
+def colour_value(c1):
+    return c1[0] + c1[1] + c1[2]
+
+
+def test_lumi(c1):
+    return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
 class ColoursClass:
     def grey(self, value):
@@ -756,6 +762,8 @@ class ColoursClass:
         self.sys_tab_bg = self.tab_background
         self.sys_tab_hl = self.tab_background_active
         self.toggle_box_on = self.folder_title
+        if colour_value(self.toggle_box_on) < 150:
+            self.toggle_box_on = [160, 160, 160, 255]
         self.time_sub = alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
         self.bar_title_text = self.side_bar_line1
 
@@ -950,6 +958,13 @@ def show_message(text):
     gui.message_box = True
     gui.message_text = text
     gui.update = 1
+
+def track_number_process(line):
+    line = str(line).split("/", 1)[0].lstrip("0")
+    if dd_index and len(line) == 1:
+        return "0" + line
+    return line
+
 
 
 if db_version > 0:
@@ -3506,6 +3521,9 @@ if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and 
     font24b = load_font(alt_font, 24)
     font28b = load_font(alt_font, 28)
 
+    font12m = font12a
+    font13m = font13a
+
     # font12d = load_font(light_font, 12)
     # font13d = load_font(light_font, 13)
     # font14d = load_font(light_font, 14)
@@ -3534,6 +3552,8 @@ if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and 
     font_dict[214] = (font14c, font14b)
     font_dict[228] = (font28c, font28b)
 
+    font_dict[412] = (font12m, font12b)
+    font_dict[413] = (font13m, font13b)
     # font_dict[317] = (font17d, font17b)
     # font_dict[316] = (font16d, font16b)
     # font_dict[315] = (font15d, font15b)
@@ -4099,11 +4119,13 @@ if system == 'windows':
     class PrettyText:
 
         def __init__(self):
-            self.f = Win32Font("Koruri", 15)
+
             if prefs.windows_font_family != None:
                 standard_font = prefs.windows_font_family
             else:
                 standard_font = "Meiryo"
+
+            menu_font = "Meiryo UI"
             semibold_font = standard_font
             standard_weight = prefs.windows_font_weight
             bold_weight = prefs.windows_font_weight_bold
@@ -4124,8 +4146,10 @@ if system == 'windows':
                 213: Win32Font(semibold_font, 13 + 5, weight=bold_weight),
                 214: Win32Font(semibold_font, 14 + 4, weight=bold_weight),
                 215: Win32Font(semibold_font, 15 + 4, weight=bold_weight),
-
                 228: Win32Font(semibold_font, 28 + 4),
+
+                412: Win32Font(menu_font, 14, weight=500),
+                413: Win32Font(menu_font, 15, weight=500),
             }
 
             self.cache = {}
@@ -4340,7 +4364,9 @@ def draw_linked_text(location, text, colour, font):
     draw_text((x, y), base, colour, font)
     draw_text((x + left, y), link_text, colours.link_text, font)
     draw_text((x + right, y), rest, colour, font)
-    draw.line(x + left + 1, y + font + 2, x + right - 1, y + font + 2, alpha_mod(colours.link_text, 120))
+    if gui.win_text:
+        y += 2
+    draw.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
 
@@ -4506,13 +4532,6 @@ def clear_img_cache():
 
     gui.update += 1
 
-
-def colour_value(c1):
-    return c1[0] + c1[1] + c1[2]
-
-
-def test_lumi(c1):
-    return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
 
 class ImageObject():
@@ -4797,12 +4816,12 @@ class AlbumArt():
 
         filepath = pctl.master_library[index].fullpath
 
-        if prefs.colour_from_image and index != gui.theme_temp_current:
+        if prefs.colour_from_image and index != gui.theme_temp_current and box[0] != 115: #mark2233
             if pctl.master_library[index].album in gui.temp_themes:
                 global colours
                 colours = gui.temp_themes[pctl.master_library[index].album]
 
-        gui.theme_temp_current = index
+                gui.theme_temp_current = index
 
         source = self.get_sources(index)
         if len(source) == 0:
@@ -4851,7 +4870,7 @@ class AlbumArt():
             im.save(g, 'BMP')
             g.seek(0)
 
-            if prefs.colour_from_image: # and pctl.master_library[index].parent_folder_path != colours.last_album:
+            if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
                 colours.last_album = pctl.master_library[index].parent_folder_path
 
                 im.thumbnail((50, 50), Image.ANTIALIAS)
@@ -4934,11 +4953,11 @@ class AlbumArt():
                     colours.artist_playing = [170, 170, 170, 255]
 
                 if (colour_value(colours.side_panel_background)) > 350:
-                    colours.side_bar_line1 = [40, 40, 40, 255]
-                    colours.side_bar_line2 = [50, 50, 50, 255]
+                    colours.side_bar_line1 = [25, 25, 25, 255]
+                    colours.side_bar_line2 = [35, 35, 35, 255]
                 else:
-                    colours.side_bar_line1 = [210, 210, 210, 255]
-                    colours.side_bar_line2 = [190, 190, 190, 255]
+                    colours.side_bar_line1 = [220, 220, 220, 255]
+                    colours.side_bar_line2 = [205, 205, 205, 255]
 
                 colours.album_text = colours.title_text
                 colours.album_playing = colours.title_playing
@@ -5402,6 +5421,7 @@ class Menu:
         self.selected = -1
         self.up = False
         self.down = False
+        self.font = 412
 
         self.id = Menu.count
         Menu.count += 1
@@ -5506,7 +5526,7 @@ class Menu:
                           colours.grey(40), True)
 
                 # Render the items label
-                draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], 11, bg=bg)
+                draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], self.font, bg=bg)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
@@ -5563,7 +5583,7 @@ class Menu:
 
                         # Render the items label
                         draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), label, fx[0],
-                                  11, bg=bg)
+                                  self.font, bg=bg)
 
                         # Render the menu outline
                         # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
@@ -7090,7 +7110,7 @@ def sa_lyrics():
     gui.pl_st.append(["Lyrics", 50, True])
     gui.update_layout()
 def sa_star():
-    gui.pl_st.append(["Starline", 80, False])
+    gui.pl_st.append(["Starline", 80, True])
     gui.update_layout()
 
 def key_artist(index):
@@ -7184,9 +7204,16 @@ def sort_dec(h):
 #
 #     if name in ("Artist",):
 #         line_colour = colours.menu_text
+def hide_set_bar():
+    gui.set_bar = False
+    gui.update_layout()
+    gui.pl_update = 1
+
 
 set_menu.add("Sort Acceding", sort_ass, pass_ref=True)
 set_menu.add("Sort Decending", sort_dec, pass_ref=True)
+set_menu.br()
+set_menu.add("Hide bar", hide_set_bar)
 set_menu.br()
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
@@ -7355,7 +7382,7 @@ def toggle_album_mode(force_on=False):
     global themeChange
 
     if prefs.colour_from_image:
-        prefs.colour_from_image = False
+        #prefs.colour_from_image = False
         themeChange = True
 
     if gui.show_playlist is False:
@@ -9595,7 +9622,7 @@ class Over:
 
     def toggle_square(self, x, y, function, text):
 
-        draw_text((x + 20, y - 3), text, colours.grey_blend_bg(150), 11)
+        draw_text((x + 20, y - 3), text, colours.grey_blend_bg(150), 12)
         draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
         draw.rect((x, y), (12, 12), [255, 255, 255, 16])
         if self.click and coll_point(mouse_position, (x - 20, y - 7, 180, 24)):
@@ -9905,7 +9932,7 @@ class Over:
         y2 = y
         x2 = x
         for k in config_items:
-            draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(150), 11)
+            draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(150), 12)
             draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
             draw.rect((x, y), (12, 12), [255, 255, 255, 16])
             if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
@@ -9974,7 +10001,7 @@ class Over:
         #             gui.update_layout()
         #
         # draw_text((x + 4, y), ">", colours.grey(180), 11)
-        self.slide_control(x, y, "Font Size:", "px", self.font_size_set, 12, 16)
+        self.slide_control(x, y, "Font Size:", "px", self.font_size_set, 12, 17)
         y += 25
         self.slide_control(x, y, "Row Size:", "px", self.row_size_set, 15, 45)
         y += 30
@@ -10120,9 +10147,9 @@ class Over:
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], [200, 200, 200, 220], 12)
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 220], gui.win_fore), 13)
             else:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], [200, 200, 200, 100], 12)
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 100], gui.win_fore), 13)
 
             current_tab += 1
 
@@ -11803,13 +11830,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if n_track.artist != "" or \
                         n_track.title != "":
-            line = str(n_track.track_number)
-            line = line.split("/", 1)[0]
-
-            if dd_index and len(line) == 1:
-                line = "0" + line
-            else:
-                line = line.lstrip("0")
+            line = track_number_process(n_track.track_number)
+            # line = str(n_track.track_number)
+            # line = line.split("/", 1)[0]
+            #
+            # if dd_index and len(line) == 1:
+            #     line = "0" + line
+            # else:
+            #     line = line.lstrip("0")
 
             draw_text((start_x + int(width * 0.22) - offset_font_extra,
                        y), line,
@@ -11833,7 +11861,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                    n_track.artist,
                    alpha_mod(artistc, album_fade),
                    gui.row_font_size,
-                   int(width * 0.21) - 10,
+                   int(width * 0.20) - 10,
                    1,
                    default_playlist[p_track])
 
@@ -11856,13 +11884,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if n_track.artist != "" or \
                         n_track.title != "":
-            line = str(n_track.track_number)
-            line = line.split("/", 1)[0]
-
-            if dd_index and len(line) == 1:
-                line = "0" + line
-            else:
-                line = line.lstrip("0")
+            line = track_number_process(n_track.track_number)
 
             draw_text((start_x,
                        y), line,
@@ -11951,13 +11973,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if n_track.artist != "" or \
                         n_track.title != "":
-            line = str(n_track.track_number)
-            line = line.split("/", 1)[0]
-
-            if dd_index and len(line) == 1:
-                line = "0" + line
-            else:
-                line = line.lstrip("0")
+            line = track_number_process(n_track.track_number)
 
             draw_text((start_x,
                        y), line,
@@ -12004,13 +12020,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if n_track.artist != "" or \
                         n_track.title != "":
-            line = str(n_track.track_number)
-            line = line.split("/", 1)[0]
-
-            if dd_index and len(line) == 1:
-                line = "0" + line
-            else:
-                line = line.lstrip("0")
+            line = track_number_process(n_track.track_number)
 
             indexLine = line
             line = ""
@@ -12540,7 +12550,7 @@ class StandardPlaylist:
                             if this_line_playing is True:
                                 colour = colours.album_playing
                         elif item[0] == "T":
-                            text = str(n_track.track_number)
+                            text = track_number_process(n_track.track_number)
                             colour = colours.index_text
                             if this_line_playing is True:
                                 colour = colours.index_playing
@@ -13661,7 +13671,9 @@ while running:
             #lastfm.artist_info()
             #print(gui.pl_st)
             gui.win_text ^= True
-            gui.pl_update = 1
+            #gui.set_bar ^= True
+            #gui.update_layout()
+            #gui.pl_update = 1
 
             key_F7 = False
 
@@ -14223,10 +14235,13 @@ while running:
                 if input.mouse_click:
                     side_drag = True
 
+
+
             # side drag update
             if side_drag is True:
                 gui.side_panel_size = window_size[0] - mouse_position[0]
-                update_layout_do()
+                gui.update_layout()
+                #update_layout_do()
 
             if gui.show_playlist:
                 if gui.side_panel_size < 100:
@@ -14906,7 +14921,7 @@ while running:
                             draw.rect((x + box - xoff, 36 + box - 19), (xoff, 18),
                                       [10, 10, 10, 190], True)
                             # [0, 0, 0, 190]
-                            draw_text((x + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12)
+                            draw_text((x + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12, bg=[30, 30, 30, 255])
 
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
@@ -14957,10 +14972,10 @@ while running:
                                         if 38 + box + 126 > window_size[1] - 39:
                                             block3 = True
 
-                                        if 38 + box + 126 > window_size[1] - 70:
+                                        if 38 + box + 126 + 2 > window_size[1] - 70:
 
                                             block1 = 38 + box + 20
-                                            block2 = window_size[1] - 70 - 36
+                                            block2 = window_size[1] - 70 - 36 - 2
 
                                         else:
                                             block1 = 38 + box + 20
@@ -15238,6 +15253,7 @@ while running:
 
                 draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                gui.win_fore = colours.sys_background_3
 
                 if input.mouse_click and not rect_in([x, y, w, h]):
                     track_box = False
@@ -15304,7 +15320,7 @@ while running:
                 else:
                     # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
                     if comment_mode == 1:
-                        album_art_gen.display(r_menu_index, (x + w - 135, y + 105), (115, 115))
+                        album_art_gen.display(r_menu_index, (x + w - 135, y + 105), (115, 115)) # Mirror this size in auto theme #mark2233
                     else:
                         album_art_gen.display(r_menu_index, (x + w - 135, y + h - 135), (115, 115))
                     y -= 24
@@ -15401,7 +15417,7 @@ while running:
                             input.mouse_click = False
                     else:
                         draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(140), 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 430),
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 425),
                               colours.grey_blend_bg3(190), 10)
 
                     y += 15
@@ -15797,7 +15813,8 @@ while running:
                     radiobox = False
 
                 draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
-                radio_field.draw(x + 14, y + 40, colours.alpha_grey(150))
+                #gui.win_fore = colours.sys_background_3
+                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(185))
 
                 draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
 

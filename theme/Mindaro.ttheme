@@ -16,17 +16,17 @@
 
 #-Playlist-------
 
-170,170,170		track line
+190,190,190		track line
 70,70,70		track time
 70,70,70		track index
 195,255,104		track artist
 245,240,90		album line
 
-180,180,180		track playing
-140,140,140		index playing
+210,210,210		track playing
+200,200,200		index playing
 195,255,104		artist playing
 245,240,90		album playing
-140,140,140		time playing
+210,210,210		time playing
 
 85,85,85		track missing
 
@@ -41,25 +41,25 @@
 #-Bottom panel------
 
 55,55,55		buttons off
-170,170,170		buttons over
-150,150,150		buttons active
+220,220,220		buttons over
+220,220,220		buttons active
 
 180,194,107		playing time
 
-50,50,50		seek bar
-90,90,90		volume bar
+80,80,80		seek bar
+125,125,125		volume bar
 30,30,30		seek bg
 30,30,30		volume bg
 40,40,40		scroll bar
 
 50,50,50		mode off
-180,180,180		mode over
-160,160,160		mode on
+200,200,200		mode over
+190,190,190		mode on
 
 #-Top panel---------
 
-245,245,245		tab active line
-235,235,235		tab line
+225,225,225		tab active line
+215,215,215		tab line
 25,25,25		tab background
 40,40,40		tab over
 45,45,45		tab active background
@@ -67,6 +67,6 @@
 
 #-Side panel--------
 
-190,190,190		title info
-180,180,180		extra info
-21,21,21		art border
+210,210,210		title info
+200,200,200		extra info
+24,24,24		art border
