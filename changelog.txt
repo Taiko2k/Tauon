@@ -7,9 +7,10 @@ v2.1.0
  - Added auto extract zip archive option
  - Added native font rendering (windows only)
  - Added auto theme option to settings
+ - Added hide column bar function to menu
  - Fixed title bar text updating
  - Fixed poor album art image display quality
- - Fixed play count column not incrementing after single play through
+ - Fixed double digit setting not applying in some cases
  - Improved auto theme mode
  - Tweaked column grip area
  - Tweaked UI fonts

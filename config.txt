@@ -8,12 +8,13 @@ scrobble-mark=True
 scroll-gallery-row=True
 scroll-gallery-wheel=90
 
-## Windows font rendering options, overides other font options. No effect on Linux. Better performance when off.
-windows-native-font-rendering=True
+## Windows Fonts:
+## Sugestions: Meiryo (default), Franklin Gothic Medium, Arial
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
+ 
 
-## Font files must be in /gui subfolder
+## Linux Fonts: Font files must be in /gui subfolder
 font-regular=Koruri-Regular.ttf
 font-fallback=DroidSansFallback.ttf
 font-bold=Koruri-Semibold.ttf
