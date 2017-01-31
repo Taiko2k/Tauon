@@ -498,8 +498,8 @@ class Prefs:
         self.gallery_row_scroll = False
         self.gallery_scroll_wheel_px = 90
 
-        self.playlist_font_size = 13
-        self.playlist_row_height = 18
+        self.playlist_font_size = 15
+        self.playlist_row_height = 19
 
         self.tag_editor_name = ""
         self.tag_editor_target = ""
@@ -600,13 +600,28 @@ class GuiVar:
             self.win_text = True
         self.win_fore = [255, 255, 255, 255]
 
-
         self.trunk_end = "..." #"…"
         self.temp_themes = {}
         self.theme_temp_current = -1
 
+        self.pl_title_y_offset = 0
+        self.pl_title_font_offset = -1
+
 
 gui = GuiVar()
+
+
+class Fonts:
+
+    def __init__(self):
+
+        self.tabs = 211
+        self.panel_title = 213
+
+        self.side_panel_line1 = 214
+        self.side_panel_line2 = 13
+
+fonts = Fonts()
 
 
 class Input:
@@ -4029,7 +4044,7 @@ if system == 'windows':
                      italic=False, underline=False):
             self.font = win32ui.CreateFont({
                 'name': name, 'height': height,
-                'weight': weight, 'italic': italic, 'underline': underline, 'charset': win32con.MAC_CHARSET})
+                'weight': weight, 'italic': italic, 'underline': underline,}) #'charset': win32con.MAC_CHARSET})
 
             #create a compatible DC we can use to draw:
             self.desktopHwnd = win32gui.GetDesktopWindow()
@@ -4120,40 +4135,16 @@ if system == 'windows':
 
         def __init__(self):
 
-            if prefs.windows_font_family != None:
-                standard_font = prefs.windows_font_family
-            else:
-                standard_font = "Meiryo"
-
-            menu_font = "Meiryo UI"
-            semibold_font = standard_font
-            standard_weight = prefs.windows_font_weight
-            bold_weight = prefs.windows_font_weight_bold
-
-            self.f_dict = {
-                10: Win32Font(standard_font, 10 + 6, weight=standard_weight),
-                11: Win32Font(standard_font, 11 + 6, weight=standard_weight),
-                12: Win32Font(standard_font, 12 + 6, weight=standard_weight),
-                13: Win32Font(standard_font, 13 + 6, weight=standard_weight),
-                14: Win32Font(standard_font, 14 + 6, weight=standard_weight),
-                15: Win32Font(standard_font, 15 + 6, weight=standard_weight),
-                16: Win32Font(standard_font, 16 + 6, weight=standard_weight),
-                17: Win32Font(standard_font, 17 + 6, weight=standard_weight),
-
-                210: Win32Font(semibold_font, 10 + 4, weight=bold_weight),
-                211: Win32Font(semibold_font, 11 + 4, weight=bold_weight),
-                212: Win32Font(semibold_font, 12 + 4, weight=bold_weight),
-                213: Win32Font(semibold_font, 13 + 5, weight=bold_weight),
-                214: Win32Font(semibold_font, 14 + 4, weight=bold_weight),
-                215: Win32Font(semibold_font, 15 + 4, weight=bold_weight),
-                228: Win32Font(semibold_font, 28 + 4),
-
-                412: Win32Font(menu_font, 14, weight=500),
-                413: Win32Font(menu_font, 15, weight=500),
-            }
+            self.f_dict = {}
+            self.y_offset_dict = {}
 
             self.cache = {}
             self.ca_li = []
+
+        def prime_font(self, name, size, user_handle, weight=500, y_offset=0):
+
+            self.f_dict[user_handle] = Win32Font(name, size, weight)
+            self.y_offset_dict[user_handle] = y_offset
 
         def text_xy(self, text, font):
 
@@ -4166,9 +4157,8 @@ if system == 'windows':
 
         def draw(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None):
 
+            y += self.y_offset_dict[font]
 
-
-            y += 1
             key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[1], bg[2], bg[3])
             if key in self.cache:
 
@@ -4240,6 +4230,94 @@ if system == 'windows':
             return dst.w
 
     pretty_text = PrettyText()
+
+    menu_font = "Meiryo UI"
+    if prefs.windows_font_family != None:
+        standard_font = prefs.windows_font_family
+    else:
+        #standard_font = 'Arial'
+        standard_font = 'Meiryo'
+        #standard_font = 'Koruri'
+        #standard_font = 'Segoe UI'
+        #standard_font = "Franklin Gothic Medium"
+        if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
+            standard_font = 'Arial'
+
+
+    semibold_font = standard_font
+    standard_weight = prefs.windows_font_weight
+    bold_weight = prefs.windows_font_weight_bold
+
+    if standard_font == "Meiryo":
+
+        pretty_text.prime_font(standard_font, 10 + 6, 10, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 11 + 6, 11, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 12 + 6, 12, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 13 + 6, 13, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 14 + 6, 14, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 15 + 6, 15, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 16 + 6, 16, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 17 + 6, 17, weight=standard_weight, y_offset=1)
+
+        pretty_text.prime_font(semibold_font, 10 + 4, 210, weight=600, y_offset=1)
+        pretty_text.prime_font(semibold_font, 11 + 4, 211, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
+
+        pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
+        pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
+
+    else:
+
+        pretty_text.prime_font(standard_font, 10 + 3, 10, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 11 + 3, 11, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 12 + 3, 12, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 13 + 3, 13, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 14 + 3, 14, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 15 + 3, 15, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 16 + 3, 16, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 17 + 3, 17, weight=standard_weight, y_offset=1)
+
+        pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
+        pretty_text.prime_font('Arial', 11 + 4, 211, weight=500, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
+        pretty_text.prime_font(semibold_font, 14 + 3, 214, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 15 + 3, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 28 + 3, 228, weight=bold_weight)
+
+        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
+        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
+
+        gui.pl_title_y_offset = -1
+        gui.pl_title_font_offset = -1
+
+    # pretty_text.prime_font(menu_font, 14, 412, weight=500)
+    # pretty_text.prime_font(menu_font, 15, 413, weight=500)
+
+    # self.f_dict = {
+    #     10: Win32Font(standard_font, 10 + 6, weight=standard_weight),
+    #     11: Win32Font(standard_font, 11 + 6, weight=standard_weight),
+    #     12: Win32Font(standard_font, 12 + 6, weight=standard_weight),
+    #     13: Win32Font(standard_font, 13 + 6, weight=standard_weight),
+    #     14: Win32Font(standard_font, 14 + 6, weight=standard_weight),
+    #     15: Win32Font(standard_font, 15 + 6, weight=standard_weight),
+    #     16: Win32Font(standard_font, 16 + 6, weight=standard_weight),
+    #     17: Win32Font(standard_font, 17 + 6, weight=standard_weight),
+    #
+    #     210: Win32Font(semibold_font, 10 + 3, weight=600),
+    #     211: Win32Font(semibold_font, 11 + 4, weight=bold_weight),
+    #     212: Win32Font(semibold_font, 12 + 4, weight=bold_weight),
+    #     213: Win32Font(semibold_font, 13 + 5, weight=bold_weight),
+    #     214: Win32Font(semibold_font, 14 + 4, weight=bold_weight),
+    #     215: Win32Font(semibold_font, 15 + 4, weight=bold_weight),
+    #     228: Win32Font(semibold_font, 28 + 4),
+    #
+    #     412: Win32Font(menu_font, 14, weight=500),
+    #     413: Win32Font(menu_font, 15, weight=500),
 
 
 # pretty_text.draw(x, y + 1, word, colours.top_panel_background, bg)
@@ -4365,7 +4443,7 @@ def draw_linked_text(location, text, colour, font):
     draw_text((x + left, y), link_text, colours.link_text, font)
     draw_text((x + right, y), rest, colour, font)
     if gui.win_text:
-        y += 2
+        y += 1
     draw.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
@@ -5052,7 +5130,7 @@ class AlbumArt():
 
         except:
             print("Image processing error")
-            raise
+            # raise
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -10001,7 +10079,7 @@ class Over:
         #             gui.update_layout()
         #
         # draw_text((x + 4, y), ">", colours.grey(180), 11)
-        self.slide_control(x, y, "Font Size:", "px", self.font_size_set, 12, 17)
+        self.slide_control(x, y, "Font Size:", "", self.font_size_set, 12, 17)
         y += 25
         self.slide_control(x, y, "Row Size:", "px", self.row_size_set, 15, 45)
         y += 30
@@ -10478,7 +10556,7 @@ class TopPanel:
         self.start_space_left = 8
         self.start_space_compact_left = 25
 
-        self.tab_text_font = 211  # 12
+        self.tab_text_font = fonts.tabs #211 # 211
         self.tab_extra_width = 17
         self.tab_text_start_space = 8
         self.tab_text_y_offset = 8
@@ -10698,7 +10776,7 @@ class TopPanel:
         # PLAYLIST -----------------------
         if draw_alt:
             word = "PLAYLIST"
-            word_length = draw.text_calc(word, 12)
+            word_length = draw.text_calc(word, 212)
             rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
             hit = coll_point(mouse_position, rect)
             fields.add(rect)
@@ -11046,9 +11124,9 @@ class BottomBarType1:
             else:
                 line = pctl.tag_meta
 
-            line = trunc_line(line, 13, window_size[0] - 750)
+            line = trunc_line(line, 213, window_size[0] - 710)
             draw_text((self.seek_bar_position[0], self.seek_bar_position[1] + 22), line, colours.bar_title_text,
-                      213)
+                      fonts.panel_title)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10, self.seek_bar_position[1] + 20, window_size[0] - 710, 30)):
                 if pctl.playing_state == 3:
@@ -12203,11 +12281,11 @@ class StandardPlaylist:
                 if gui.win_text:
                     gui.win_fore = colours.playlist_panel_background
 
-                height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height)
+                height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
                 draw_text2((ex + 3,
                             height, 1), line,
                            alpha_mod(colours.folder_title, album_fade),
-                           gui.row_font_size - 1, gui.playlist_width)
+                           gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
 
                 draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
                           gui.playlist_width + 30,
@@ -13095,8 +13173,8 @@ def update_layout_do():
         gui.playlist_row_height = prefs.playlist_row_height
         gui.playlist_text_offset = 0
         gui.row_font_size = prefs.playlist_font_size  # 13
-        gui.pl_text_real_height = draw.text_calc("Testあ", gui.row_font_size, False, True)
-        gui.pl_title_real_height = draw.text_calc("Testあ", gui.row_font_size - 1, False, True)
+        gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
+        gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
         gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)
 
     gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
@@ -14988,10 +15066,10 @@ while running:
 
                                             if title != "":
                                                 playing_info = title
-                                                playing_info = trunc_line(playing_info, 15,
+                                                playing_info = trunc_line(playing_info, fonts.side_panel_line1,
                                                                           window_size[0] - gui.playlist_width - 53)
                                                 draw_text((x - 1, block1 + 2), playing_info, colours.side_bar_line1,
-                                                          214, max=gui.side_panel_size - 20)
+                                                          fonts.side_panel_line1, max=gui.side_panel_size - 20)
 
                                             if artist != "":
                                                 playing_info = artist
@@ -14999,7 +15077,7 @@ while running:
                                                                           window_size[0] - gui.playlist_width - 54)
                                                 draw_text((x - 1, block1 + 17 + 6), playing_info,
                                                           colours.side_bar_line2,
-                                                          13)
+                                                          fonts.side_panel_line2)
                                         else:
                                             block1 -= 14
 
@@ -15155,6 +15233,7 @@ while running:
                 pl_rect = (x, y, w, h)
                 draw.rect_r(pl_rect, colours.bottom_panel_colour, True)
                 draw.rect_r(pl_rect, [60, 60, 60, 255], False)
+                gui.win_fore = colours.bottom_panel_colour
 
                 if genre_box_click and not coll_point(mouse_position, pl_rect):
                     playlist_panel = False
@@ -15172,6 +15251,7 @@ while running:
                     if coll_point(mouse_position, rect):
                         rect2 = (x, y + 1 + p * 14, w - 2, 13)
                         draw.rect_r(rect2, [40, 40, 40, 255], True)
+                        gui.win_fore = [40, 40, 40, 255]
                         draw_text2((x + 1, y - 1 + p * 14), "X", [220, 60, 60, 255], 12, 300)
                         if genre_box_click:
                             delete_playlist(i)
@@ -15183,6 +15263,7 @@ while running:
                     if coll_point(mouse_position, rect) and not tab_menu.active:
 
                         draw.rect_r(rect, [40, 40, 40, 255], True)
+                        gui.win_fore = [40, 40, 40, 255]
                         if genre_box_click:
                             switch_playlist(i)
                             playlist_panel = False
@@ -15205,6 +15286,7 @@ while running:
                 draw.rect((rect[0] - 2, rect[1] - 2), (rect[2] + 4, rect[3] + 4), colours.grey(60), True)
                 draw.rect_r(rect, colours.sys_background_3, True)
                 draw.rect((rect[0] + 15, rect[1] + 30), (220, 19), colours.alpha_grey(10), True)
+                gui.win_fore = colours.sys_background_3
 
                 rename_text_area.draw(rect[0] + 20, rect[1] + 30, colours.alpha_grey(150))
 
