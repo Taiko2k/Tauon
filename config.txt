@@ -9,7 +9,7 @@ scroll-gallery-row=True
 scroll-gallery-wheel=90
 
 ## Windows Fonts:
-## Sugestions: Meiryo (default), Franklin Gothic Medium, Arial
+# Currently optimised for Meiryo (preferred) and Arial (fallback) only
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
  

@@ -507,6 +507,7 @@ class Prefs:
 
         self.use_title = False
         self.auto_extract = False
+        self.pl_thumb = False
 
         self.windows_font_family = None
         self.windows_font_weight = 500
@@ -600,7 +601,7 @@ class GuiVar:
             self.win_text = True
         self.win_fore = [255, 255, 255, 255]
 
-        self.trunk_end = "..." #"…"
+        self.trunk_end = "..."#"..." #"…"
         self.temp_themes = {}
         self.theme_temp_current = -1
 
@@ -949,6 +950,8 @@ try:
         prefs.auto_extract = save[47]
     if save[48] is not None:
         prefs.colour_from_image = save[48]
+    if save[49] is not None:
+        gui.set_bar = save[49]
 
     state_file.close()
     del save
@@ -4292,7 +4295,7 @@ if system == 'windows':
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
         pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
 
-        gui.pl_title_y_offset = -1
+        gui.pl_title_y_offset = -2
         gui.pl_title_font_offset = -1
 
     # pretty_text.prime_font(menu_font, 14, 412, weight=500)
@@ -4507,11 +4510,13 @@ temp_dest = SDL_Rect(0, 0)
 
 
 class GallClass:
-    def __init__(self):
+    def __init__(self, size=250, save_out=True):
         self.gall = {}
-        self.size = album_mode_art_size
+        self.size = size
         self.queue = []
         self.key_list = []
+        self.save_out = save_out
+        self.i = 0
 
     def get_file_source(self, index):
 
@@ -4522,6 +4527,83 @@ class GallClass:
             return False
         offset = album_art_gen.get_offset(pctl.master_library[index].fullpath, sources)
         return sources[offset] + [offset]
+
+    def worker_render(self):
+
+        while len(self.queue) > 0:
+
+            # print("ready")
+            i += 1
+
+            key = self.queue[0]
+            order = self.gall[key]
+
+            source = self.get_file_source(key[0])
+
+            # print(source)
+
+            if source is False:
+                order[0] = 0
+                self.gall[key] = order
+                del self.queue[0]
+                continue
+
+            img_name = str(self.size) + '-' + str(key[0]) + "-" + str(source[2])
+
+            try:
+                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
+                    # print('load from cache')
+
+                elif source[0] is True:
+                    # print('tag')
+                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+
+                else:
+                    source_image = open(source[1], 'rb')
+
+                g = io.BytesIO()
+                g.seek(0)
+                # print('pro stage 1')
+                im = Image.open(source_image)
+                if im.mode != "RGB":
+                    im = im.convert("RGB")
+                im.thumbnail((self.size, self.size), Image.ANTIALIAS)
+
+                im.save(g, 'BMP')
+                if self.save_out and prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                    # print("no old found")
+                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
+
+                g.seek(0)
+
+                source_image.close()
+
+                order = [2, g, None, None]
+                self.gall[key] = order
+
+                gui.update += 1
+                if gui.combo_mode:
+                    gui.pl_update = 1
+                del source
+
+                if not prefs.cache_gallery:
+                    time.sleep(0.01)
+                else:
+                    time.sleep(0.002)
+
+            except:
+                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
+                order = [0, None, None, None]
+                self.gall[key] = order
+
+            del self.queue[0]
+
+        if self.i > 0:
+            self.i = 0
+            return True
+        else:
+            return False
 
     def render(self, index, location):
 
@@ -4588,7 +4670,9 @@ class GallClass:
                 del self.key_list[0]
 
 
-gall_ren = GallClass()
+gall_ren = GallClass(album_mode_art_size)
+
+pl_thumbnail = GallClass(save_out=False)
 
 
 def clear_img_cache():
@@ -5472,7 +5556,7 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-playlist_left = 20
+playlist_left = 20 #20
 
 #playlist_top = gui.panelY + 8
 # playlist_top_bk = gui.panelY + 8
@@ -7307,7 +7391,7 @@ set_menu.add("+ Has Lyrics", sa_lyrics)
 set_menu.add("+ Filepath", sa_file)
 set_menu.add("+ Starline", sa_star)
 set_menu.br()
-set_menu.add("- Remove", sa_remove, pass_ref=True)
+set_menu.add("- Remove This", sa_remove, pass_ref=True)
 
 
 def bass_features_deco():
@@ -7383,7 +7467,6 @@ def toggle_combo_view(mode=0, showcase=False, off=False):
 
         # clear_img_cache()
         gall_ren.size = combo_mode_art_size
-
         combo_pl_render.prep(True)
 
         if album_mode:
@@ -7676,6 +7759,7 @@ if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "c
 
 def clear_queue():
     pctl.force_queue = []
+    gui.pl_update = 1
 
 
 #x_menu.add('Clear Queue', clear_queue, queue_deco)
@@ -8075,73 +8159,12 @@ def worker2():
 
         time.sleep(0.07)
 
-        while len(gall_ren.queue) > 0:
 
-            # print("ready")
+        gall_ren.worker_render()
+        # if pl_thumbnail.worker_render():
+        #     gui.pl_update += 1
+        #     #gui.update = 1
 
-            key = gall_ren.queue[0]
-            order = gall_ren.gall[key]
-
-            source = gall_ren.get_file_source(key[0])
-
-            # print(source)
-
-            if source is False:
-                order[0] = 0
-                gall_ren.gall[key] = order
-                del gall_ren.queue[0]
-                continue
-
-            img_name = str(gall_ren.size) + '-' + str(key[0]) + "-" + str(source[2])
-
-            try:
-                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
-                    # print('load from cache')
-
-                elif source[0] is True:
-                    # print('tag')
-                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-
-                else:
-                    source_image = open(source[1], 'rb')
-
-                g = io.BytesIO()
-                g.seek(0)
-                # print('pro stage 1')
-                im = Image.open(source_image)
-                if im.mode != "RGB":
-                    im = im.convert("RGB")
-                im.thumbnail((gall_ren.size, gall_ren.size), Image.ANTIALIAS)
-
-                im.save(g, 'BMP')
-                if prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-                    # print("no old found")
-                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
-
-                g.seek(0)
-
-                source_image.close()
-
-                order = [2, g, None, None]
-                gall_ren.gall[key] = order
-
-                gui.update += 1
-                if gui.combo_mode:
-                    gui.pl_update = 1
-                del source
-
-                if not prefs.cache_gallery:
-                    time.sleep(0.01)
-                else:
-                    time.sleep(0.002)
-
-            except:
-                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
-                order = [0, None, None, None]
-                gall_ren.gall[key] = order
-
-            del gall_ren.queue[0]
 
 
 def worker1():
@@ -10023,21 +10046,21 @@ class Over:
             if y - y2 > 190:
                 y = y2
                 x += 205
-        y += 7
-        self.button(x, y, "Cycle list format", self.style_up)
-
-        x += 110
-        y += 2
-        if prefs.line_style == 1:
-            draw_text((x, y), "TN ARTIST TITLE     L T", colours.grey_blend_bg(35), 11)
-        elif prefs.line_style == 2:
-            draw_text((x, y), "TN ARTIST  TITLE  ALBUM T", colours.grey_blend_bg(35), 11)
-        elif prefs.line_style == 3:
-            draw_text((x, y), "TN TITLE              T", colours.grey_blend_bg(35), 11)
-        elif prefs.line_style == 4:
-            draw_text((x, y), "ARTIST  TN TITLE   ALBUM T", colours.grey_blend_bg(35), 11)
-        elif prefs.line_style == 5:
-            draw_text((x, y), "T ARTIST ALBUM TITLE", colours.grey_blend_bg(35), 11)
+        # y += 7
+        # self.button(x, y, "Cycle list format", self.style_up)
+        #
+        # x += 110
+        # y += 2
+        # if prefs.line_style == 1:
+        #     draw_text((x, y), "TN ARTIST TITLE     L T", colours.grey_blend_bg(35), 11)
+        # elif prefs.line_style == 2:
+        #     draw_text((x, y), "TN ARTIST  TITLE  ALBUM T", colours.grey_blend_bg(35), 11)
+        # elif prefs.line_style == 3:
+        #     draw_text((x, y), "TN TITLE              T", colours.grey_blend_bg(35), 11)
+        # elif prefs.line_style == 4:
+        #     draw_text((x, y), "ARTIST  TN TITLE   ALBUM T", colours.grey_blend_bg(35), 11)
+        # elif prefs.line_style == 5:
+        #     draw_text((x, y), "T ARTIST ALBUM TITLE", colours.grey_blend_bg(35), 11)
 
         y = self.box_y + 25
         x = self.box_x + self.item_x_offset + 270
@@ -10091,7 +10114,7 @@ class Over:
     def small_preset(self):
 
         prefs.playlist_row_height = 18
-        prefs.playlist_font_size = 13
+        prefs.playlist_font_size = 15
         gui.update_layout()
 
     def large_preset(self):
@@ -10635,7 +10658,7 @@ class TopPanel:
         else:
             p_text = pctl.tag_meta
 
-        if pctl.playing_state > 0 and not pctl.broadcast_active:
+        if pctl.playing_state > 0 and not pctl.broadcast_active and window_size[0] < 820:
             p_text_len = draw.text_calc(p_text, 11)
         else:
             p_text_len = 0
@@ -11904,197 +11927,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         offset_y_extra = 2
         if gui.row_font_size > 14:
             offset_y_extra = 3
-    if style == 4:
-
-        if n_track.artist != "" or \
-                        n_track.title != "":
-            line = track_number_process(n_track.track_number)
-            # line = str(n_track.track_number)
-            # line = line.split("/", 1)[0]
-            #
-            # if dd_index and len(line) == 1:
-            #     line = "0" + line
-            # else:
-            #     line = line.lstrip("0")
-
-            draw_text((start_x + int(width * 0.22) - offset_font_extra,
-                       y), line,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
-
-        title_line = n_track.title
-        if title_line == "":
-            title_line = os.path.splitext((n_track.filename))[0]
-
-        draw_text2((start_x + int(width * 0.22) + 30,
-                    y),
-                   title_line,
-                   alpha_mod(titlec, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.42) - 16,
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 2,
-                    y),
-                   n_track.artist,
-                   alpha_mod(artistc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.20) - 10,
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 0 + int(width * 0.68),
-                    y),
-                   n_track.album,
-                   alpha_mod(albumc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.29) - 38,
-                   1,
-                   default_playlist[p_track])
-
-        line = get_display_time(n_track.length)
-
-        draw_text((width + start_x - 36 - offset_font_extra,
-                   y, 0), line,
-                  alpha_mod(timec, album_fade), gui.row_font_size)
-
-    if style == 3:
-
-        if n_track.artist != "" or \
-                        n_track.title != "":
-            line = track_number_process(n_track.track_number)
-
-            draw_text((start_x,
-                       y), line,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
-
-        title_line = n_track.title
-        if title_line == "":
-            title_line = os.path.splitext((n_track.filename))[0]
-
-        draw_text2((start_x + 30,
-                    y),
-                   title_line,
-                   alpha_mod(titlec, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.80),
-                   1,
-                   default_playlist[p_track])
-
-        line = get_display_time(n_track.length)
-
-        draw_text((width + start_x - 36 - offset_font_extra,
-                   y, 0), line,
-                  alpha_mod(timec, album_fade), gui.row_font_size)
 
 
-    elif style == 5:
-
-        # if n_track.artist != "" or \
-        #                 n_track.title != "":
-        #     line = str(n_track.track_number)
-        #     line = line.split("/", 1)[0]
-        #
-        #     if dd_index and len(line) == 1:
-        #         line = "0" + line
-        #
-        #     draw_text((start_x,
-        #                y), line,
-        #               alpha_mod(indexc, album_fade), gui.row_font_size)
-        #
-
-        line = get_display_time(n_track.length)
-
-        draw_text((start_x + 0,
-                   y, 0), line,
-                  alpha_mod(timec, album_fade), gui.row_font_size)
-
-        title_line = n_track.title
-        if title_line == "":
-            title_line = os.path.splitext((n_track.filename))[0]
-
-        draw_text2((start_x + 54,
-                    y),
-                   n_track.artist,
-                   alpha_mod(artistc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.23),
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 30 + int(width * 0.31),
-                    y),
-                   n_track.album,
-                   alpha_mod(albumc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.32) - 30,
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 30 + int(width * 0.60),
-                    y),
-                   title_line,
-                   alpha_mod(titlec, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.32),
-                   1,
-                   default_playlist[p_track])
+    if True or style == 1:
 
 
-
-
-
-
-
-
-    elif style == 2:
-
-        if n_track.artist != "" or \
-                        n_track.title != "":
-            line = track_number_process(n_track.track_number)
-
-            draw_text((start_x,
-                       y), line,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
-
-        title_line = n_track.title
-        if title_line == "":
-            title_line = os.path.splitext((n_track.filename))[0]
-
-        draw_text2((start_x + 30,
-                    y),
-                   title_line,
-                   alpha_mod(titlec, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.32),
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 30 + int(width * 0.35),
-                    y),
-                   n_track.artist,
-                   alpha_mod(artistc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.25),
-                   1,
-                   default_playlist[p_track])
-
-        draw_text2((start_x + 30 + int(width * 0.63),
-                    y),
-                   n_track.album,
-                   alpha_mod(albumc, album_fade),
-                   gui.row_font_size,
-                   int(width * 0.35) - 70,
-                   1,
-                   default_playlist[p_track])
-
-        line = get_display_time(n_track.length)
-
-        draw_text((width + start_x - 36 - offset_font_extra,
-                   y, 0), line,
-                  alpha_mod(timec, album_fade), gui.row_font_size)
-
-    elif style == 1:
+        if not side_panel_enable and not gui.combo_mode:
+            width -= 10
 
         if n_track.artist != "" or \
                         n_track.title != "":
@@ -12136,8 +11975,11 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 star_x = int(ratio * 4)
                 if star_x > 60:
                     star_x = 60
+                sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
+                if gui.playlist_row_height > 17:
+                    sp -= 1
                 draw.rect_r([width + start_x - star_x - 45 - offset_font_extra,
-                             y + 8 + offset_y_extra,
+                             sp, #y + 8 + offset_y_extra,
                              star_x + 3,
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
@@ -12265,98 +12107,121 @@ class StandardPlaylist:
 
                 line = n_track.parent_folder_name
 
-                if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
-                    line = n_track.album_artist + " - " + n_track.album
+                if not prefs.pl_thumb:
 
-                if len(line) < 6 and "CD" in line:
-                    line = n_track.album
+                    if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
+                        line = n_track.album_artist + " - " + n_track.album
 
-                if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
-                    line += " (" + n_track.date + ")"
+                    if len(line) < 6 and "CD" in line:
+                        line = n_track.album
 
-                ex = gui.playlist_width + playlist_left
-                if not side_panel_enable and not album_mode:
-                    ex -= 5
+                    if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
+                        line += " (" + n_track.date + ")"
 
-                if gui.win_text:
-                    gui.win_fore = colours.playlist_panel_background
+                    ex = gui.playlist_width + playlist_left
+                    if not side_panel_enable and not album_mode:
+                        ex -= 3 #ex = playlist_left  + int(gui.playlist_width * 4 / 5)
 
-                height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
-                draw_text2((ex + 3,
-                            height, 1), line,
-                           alpha_mod(colours.folder_title, album_fade),
-                           gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
+                    if gui.win_text:
+                        gui.win_fore = colours.playlist_panel_background
 
-                draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
-                          gui.playlist_width + 30,
-                          gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w, colours.folder_line)
+                    height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
 
-                if playlist_hold is True and coll_point(mouse_position, (
-                        playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
-                        gui.playlist_row_height)):
 
-                    if mouse_up:  # and key_shift_down:
-                        move_on_title = True
+                    # if not side_panel_enable and not album_mode:
+                    #     draw_text2((ex,
+                    #                 height, 1), line,
+                    #                alpha_mod(colours.folder_title, album_fade),
+                    #                gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
+                    #
 
-                # Detect folder title click
-                if (input.mouse_click or right_click) and coll_point(mouse_position, (
-                            playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
-                            gui.playlist_row_height - 1)) and mouse_position[1] < window_size[1] - gui.panelBY:
+                    # else:
+                    draw_text2((ex + 3,
+                                height, 1), line,
+                               alpha_mod(colours.folder_title, album_fade),
+                               gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
 
-                    # Play if double click:
-                    if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (
+                    draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
+                              gui.playlist_width + 30,
+                              gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w, colours.folder_line)
+
+                    if playlist_hold is True and coll_point(mouse_position, (
+                            playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
+                            gui.playlist_row_height)):
+
+                        if mouse_up:  # and key_shift_down:
+                            move_on_title = True
+
+                    # Detect folder title click
+                    if (input.mouse_click or right_click) and coll_point(mouse_position, (
                                 playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
-                                gui.playlist_row_height - 1)):
-                        click_time -= 1.5
-                        pctl.jump(default_playlist[p_track], p_track)
+                                gui.playlist_row_height - 1)) and mouse_position[1] < window_size[1] - gui.panelBY:
 
-                        if album_mode:
-                            goto_album(pctl.playlist_playing)
+                        # Play if double click:
+                        if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (
+                                    playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
+                                    gui.playlist_row_height - 1)):
+                            click_time -= 1.5
+                            pctl.jump(default_playlist[p_track], p_track)
 
-                    # Show selection menu if right clicked after select
-                    if right_click:  # and len(shift_selection) > 1:
-                        selection_menu.activate(default_playlist[p_track])
-                        gui.pl_update = 1
-                        if p_track not in shift_selection:
-                            shift_selection = []
+                            if album_mode:
+                                goto_album(pctl.playlist_playing)
+
+                        # Show selection menu if right clicked after select
+                        if right_click:  # and len(shift_selection) > 1:
+                            selection_menu.activate(default_playlist[p_track])
+                            gui.pl_update = 1
+                            if p_track not in shift_selection:
+                                shift_selection = []
+                                playlist_selected = p_track
+                                u = p_track
+                                while u < len(default_playlist) and n_track.parent_folder_path == pctl.master_library[
+                                    default_playlist[u]].parent_folder_path:
+                                    shift_selection.append(u)
+                                    u += 1
+
+                        # Add folder to selection if clicked
+                        if input.mouse_click:
+                            temp = get_folder_tracks_local(p_track)
+                            # if p_track not in shift_selection: # not key_shift_down:
+                            #     shift_selection = []
                             playlist_selected = p_track
-                            u = p_track
-                            while u < len(default_playlist) and n_track.parent_folder_path == pctl.master_library[
-                                default_playlist[u]].parent_folder_path:
-                                shift_selection.append(u)
-                                u += 1
 
-                    # Add folder to selection if clicked
-                    if input.mouse_click:
-                        temp = get_folder_tracks_local(p_track)
-                        # if p_track not in shift_selection: # not key_shift_down:
-                        #     shift_selection = []
-                        playlist_selected = p_track
+                            if len(shift_selection) > 0 and key_shift_down:
+                                if p_track < shift_selection[0]:
+                                    for item in reversed(temp):
+                                        if item not in shift_selection:
+                                            shift_selection.insert(0, item)
+                                else:
+                                    for item in temp:
+                                        if item not in shift_selection:
+                                            shift_selection.append(item)
 
-                        if len(shift_selection) > 0 and key_shift_down:
-                            if p_track < shift_selection[0]:
-                                for item in reversed(temp):
-                                    if item not in shift_selection:
-                                        shift_selection.insert(0, item)
                             else:
-                                for item in temp:
-                                    if item not in shift_selection:
-                                        shift_selection.append(item)
+                                shift_selection = copy.deepcopy(temp)
 
-                        else:
-                            shift_selection = copy.deepcopy(temp)
+                    # # Shade ever other line for folder row
+                    # if True and #row_alt and w % 2 == 0:
+                    #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+                    #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
 
-                # # Shade ever other line for folder row
-                # if row_alt and w % 2 == 0:
-                #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
-                #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
+                    w += 1
+                else:
 
-                w += 1
+                    y = gui.playlist_top + gui.playlist_row_height * w
+                    spaces = 5
+                    w += spaces
+                    hei = spaces * prefs.playlist_row_height
+
+                    pl_thumbnail.size = hei - 15
+                    pl_thumbnail.render(n_track.index, (playlist_left, y + 5))
+
+
                 if playlist_selected > p_track + 1:
                     gui.row_extra += 1
 
             # Shade ever other line if option set
-            # if row_alt and w % 2 == 0:
+            # if (row_alt or True) and w % 2 == 0:
             #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
             #               (gui.playlist_width, gui.playlist_row_height - 1), [0, 0, 0, 20], True)
 
@@ -12580,8 +12445,8 @@ class StandardPlaylist:
 
 
 
-                start = playlist_left + 16
-                run = 16
+                start = playlist_left - 2
+                run = start
                 for h, item in enumerate(gui.pl_st):
 
                     wid = item[1] - 20
@@ -12666,8 +12531,8 @@ class StandardPlaylist:
                                 colour = colours.index_playing
                         elif item[0] == "Time":
                             text = get_display_time(n_track.length)
-                            # colour = colours.bar_time
-                            colour = colours.time_text
+                            colour = colours.bar_time
+                            #colour = colours.time_text
                             if this_line_playing is True:
                                 colour = colours.time_text
                         elif item[0] == "P":
@@ -13183,16 +13048,20 @@ def update_layout_do():
 
         if gui.side_panel_size < 100:
             gui.side_panel_size = 100
+
+
         if gui.side_panel_size > window_size[1] - 77 and album_mode is not True:
             gui.side_panel_size = window_size[1] - 77
 
         if gui.side_panel_size > window_size[0] - 300 and album_mode is True:
             gui.side_panel_size = window_size[0] - 300
 
+
         if album_mode != True:
             gui.playlist_width = window_size[0] - gui.side_panel_size - 30
         else:
             gui.side_panel_size = window_size[0] - gui.playlist_width - 30
+
     else:
         gui.playlist_width = window_size[0] - 30
         # if custom_line_mode:
@@ -13748,10 +13617,12 @@ while running:
             # print(perf_timer.get())
             #lastfm.artist_info()
             #print(gui.pl_st)
-            gui.win_text ^= True
+            #gui.win_text ^= True
+
             #gui.set_bar ^= True
             #gui.update_layout()
             #gui.pl_update = 1
+            prefs.pl_thumb ^= True
 
             key_F7 = False
 
@@ -14290,11 +14161,11 @@ while running:
             if mouse_down is not True:
                 side_drag = False
 
-            rect = (window_size[0] - gui.side_panel_size - 5, gui.panelY, 15, window_size[1] - 90)
+            rect = (window_size[0] - gui.side_panel_size - 5, gui.panelY, 12, window_size[1] - 90)
             fields.add(rect)
 
             if (coll_point(mouse_position,
-                           (window_size[0] - gui.side_panel_size - 5, gui.panelY, 15,
+                           (window_size[0] - gui.side_panel_size - 5, gui.panelY, 12,
                             window_size[1] - 90)) or side_drag is True) \
                     and renamebox is False \
                     and radiobox is False \
@@ -14303,7 +14174,9 @@ while running:
                     and gui.message_box is False \
                     and pref_box.enabled is False \
                     and track_box is False \
-                    and extra_menu.active is False:
+                    and extra_menu.active is False\
+                    and (side_panel_enable or album_mode):
+
 
                 #update_layout = True
 
@@ -14313,11 +14186,19 @@ while running:
                 if input.mouse_click:
                     side_drag = True
 
+                if gui.cursor_mode == 0:
+                    gui.cursor_mode = 2
+                    SDL_SetCursor(cursor_shift)
 
+            elif not side_drag and gui.cursor_mode == 2:
+                SDL_SetCursor(cursor_standard)
+                gui.cursor_mode = 0
 
             # side drag update
             if side_drag is True:
                 gui.side_panel_size = window_size[0] - mouse_position[0]
+                if album_mode and gui.side_panel_size < album_mode_art_size + 50:
+                    gui.side_panel_size = album_mode_art_size + 50
                 gui.update_layout()
                 #update_layout_do()
 
@@ -16742,7 +16623,7 @@ save = [pctl.master_library,
         prefs.show_wiki,
         prefs.auto_extract,
         prefs.colour_from_image,
-        None,
+        gui.set_bar,
         None,
         None,
         None,
