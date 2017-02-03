@@ -12,8 +12,10 @@ v2.1.0
  - Fixed poor album art image display quality
  - Fixed double digit setting not applying in some cases
  - Fixed top bar entering compact mode when title is displayed in bottom bar
+ - Fixed quick drag sometimes being triggered after UI lag
  - Improved sidebar drag area to show drag cursor
  - Improved auto theme mode
+ - Improved playlist selection box, bound to tilde key
  - Tweaked column grip area
  - Tweaked UI fonts
  - Removed cycle list format option

@@ -244,7 +244,10 @@ scroll_timer.set()
 radio_meta_timer = Timer()
 perf_timer = Timer()
 perf_timer.set()
-
+quick_d_timer = Timer()
+quick_d_timer.set()
+d_click_time = Timer()
+quick_d_timer.set()
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
 
@@ -607,6 +610,8 @@ class GuiVar:
 
         self.pl_title_y_offset = 0
         self.pl_title_font_offset = -1
+
+        self.playlist_box_d_click = -1
 
 
 gui = GuiVar()
@@ -1707,8 +1712,7 @@ class PlayerCtl:
     def advance(self, rr=False, quiet=False, gapless=False):
 
         # Temporary Workaround
-        global quick_drag
-        quick_drag = False
+        quick_d_timer.set()
 
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -5017,8 +5021,7 @@ class AlbumArt():
                 source_image = open(source[offset][1], 'rb')
 
             # Temporary Fix
-            global quick_drag
-            quck_drag = False
+            quick_d_timer.set()
 
             # Generate
             g = io.BytesIO()
@@ -5586,6 +5589,7 @@ class Menu:
         self.font = 412
 
         self.id = Menu.count
+        self.break_height = 4
         Menu.count += 1
 
         self.sub_number = 0
@@ -5638,7 +5642,7 @@ class Menu:
 
             for i in range(len(self.items)):
                 if self.items[i] is None:
-                    self.break_height = 4
+
                     draw.rect((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
                     draw.rect((self.pos[0], y_run + 2), (self.w, 2),
@@ -5773,8 +5777,13 @@ class Menu:
         if self.pos[0] + self.w > window_size[0]:
             self.pos[0] = self.pos[0] - self.w - 3
         if self.pos[1] + len(self.items) * self.h > window_size[1]:
-            self.pos[1] -= len(self.items) * self.h
+            #self.pos[1] -= len(self.items) * self.h
             self.pos[0] += 3
+            for i in range(len(self.items)):
+                if self.items[i] is None:
+                    self.pos[1] -= self.break_height
+                else:
+                    self.pos[1] -= self.h
         self.active = True
 
 
@@ -10760,7 +10769,7 @@ class TopPanel:
             x += tab_width + self.tab_spacing
 
         # Quick drag single track onto bar to create new playlist
-        if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
+        if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
             draw_text((x + 5, y), '+', [200, 20, 40, 255], 12)
             if mouse_up:
                 pl = new_playlist(False)
@@ -13155,6 +13164,7 @@ while running:
         key_quote_hit = False
         key_return_press_w = False
         key_tab = False
+        key_tilde = False
         mouse_wheel = 0
         new_playlist_cooldown = False
         input_text = ''
@@ -13378,9 +13388,11 @@ while running:
                 key_quote_hit = True
             elif event.key.keysym.sym == SDLK_TAB:
                 key_tab = True
-
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
+            elif event.key.keysym.sym == SDLK_BACKQUOTE:
+                key_tilde = True
+
         elif event.type == SDL_KEYUP:
             k_input = True
             power += 5
@@ -13587,6 +13599,9 @@ while running:
         if key_F9:
             open_encode_out()
 
+        if key_tilde:
+            playlist_panel ^= True
+
         if key_F7:
             # spec_smoothing ^= True
 
@@ -13617,12 +13632,12 @@ while running:
             # print(perf_timer.get())
             #lastfm.artist_info()
             #print(gui.pl_st)
-            #gui.win_text ^= True
+            gui.win_text ^= True
 
             #gui.set_bar ^= True
             #gui.update_layout()
             #gui.pl_update = 1
-            prefs.pl_thumb ^= True
+            #playlist_panel ^= True
 
             key_F7 = False
 
@@ -15092,6 +15107,20 @@ while running:
 
             if playlist_panel:
 
+                # w = 540
+                # h = 240
+                #
+                # x = int(window_size[0] / 2) - int(w / 2)
+                # y = int(window_size[1] / 2) - int(h / 2)
+                #
+                # draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
+                # draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                # gui.win_fore = colours.sys_background_3
+                #
+                # if genre_box_click and not rect_in([x, y, w, h]):
+                #     playlist_panel = False
+
+
                 pl_items_len = len(pctl.multi_playlist)
                 pl_max_view_len = int((window_size[1] - gui.panelY) / 16)
                 if pl_max_view_len < 1:
@@ -15106,18 +15135,20 @@ while running:
                 if pl_view_offset > pl_items_len - pl_max_view_len:
                     pl_view_offset = pl_items_len - pl_max_view_len
 
-                x = 2
-                y = gui.panelY + 1
+                x = 5
+                y = gui.panelY + 5
                 w = 400
-                h = pl_max_view_len * 14 + 4
+                rh = 25
+                h = pl_max_view_len * rh + 5
 
                 pl_rect = (x, y, w, h)
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect_r(pl_rect, colours.bottom_panel_colour, True)
-                draw.rect_r(pl_rect, [60, 60, 60, 255], False)
                 gui.win_fore = colours.bottom_panel_colour
 
                 if genre_box_click and not coll_point(mouse_position, pl_rect):
                     playlist_panel = False
+
 
                 p = 0
                 for i, item in enumerate(pctl.multi_playlist):
@@ -15127,35 +15158,114 @@ while running:
                     if p >= pl_max_view_len:
                         break
 
-                    rect = (x, y + 1 + p * 14, 13, 13)
-                    fields.add(rect)
-                    if coll_point(mouse_position, rect):
-                        rect2 = (x, y + 1 + p * 14, w - 2, 13)
-                        draw.rect_r(rect2, [40, 40, 40, 255], True)
-                        gui.win_fore = [40, 40, 40, 255]
-                        draw_text2((x + 1, y - 1 + p * 14), "X", [220, 60, 60, 255], 12, 300)
+                    ty = (p * rh) + y
+
+                    x_rect = (x, ty, rh - 1, rh - 1)
+                    fields.add(x_rect)
+
+                    if coll_point(mouse_position, x_rect):
+                        draw_text2((x + int(rh / 2), ty + int(rh / 2) - 10, 2), "✖", [225, 50, 50, 255], 15, 300)
                         if genre_box_click:
                             delete_playlist(i)
                     else:
-                        draw_text2((x + 1, y - 1 + p * 14), "X", [70, 70, 70, 255], 12, 300)
+                        draw_text2((x + int(rh / 2), ty + int(rh / 2) - 10, 2), "✖", [50, 50, 50, 255], 15, 300)
 
-                    rect = (x + 13, y + 1 + p * 14, w - 12, 13)
-                    fields.add(rect)
-                    if coll_point(mouse_position, rect) and not tab_menu.active:
+                    y_rect = (x + rh, ty, 27, rh - 1)
+                    fields.add(y_rect)
 
-                        draw.rect_r(rect, [40, 40, 40, 255], True)
-                        gui.win_fore = [40, 40, 40, 255]
+                    playing_in = False
+                    if i == pctl.active_playlist_playing and pctl.playing_state > 0:
+                        if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] in item[2]:
+                            draw_text2((x + rh + 15, ty + int(rh / 2) - 10, 2), "▶ ", [200, 200, 100, 255], 15, 300)
+                            playing_in = True
+                        else:
+                            draw_text2((x + rh + 15, ty + int(rh / 2) - 10, 2), "▶ ", [50, 50, 50, 255], 15, 300)
+                    elif pctl.playing_state > 0 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] in item[2]:
+                        draw_text2((x + rh + 15, ty + int(rh / 2) - 10, 2), "▶ ", [50, 50, 50, 255], 15, 300)
+                        playing_in = True
+
+                    if not playing_in and coll_point(mouse_position, y_rect) and pctl.playing_state > 0:
+                        draw_text2((x + rh + 15, ty + int(rh / 2) - 10, 2), "+ ", [80, 170, 80, 255], 15, 300)
                         if genre_box_click:
+                            append_current_playing(i)
+                    elif coll_point(mouse_position, y_rect) and playing_in:
+                        if genre_box_click:
+                            pctl.active_playlist_playing = i
+                            pctl.playlist_playing = item[2].index(pctl.track_queue[pctl.queue_step])
+
+
+
+
+                    t_rect = (x + rh + 30, ty, w - rh - 30, rh - 1)
+                    fields.add(t_rect)
+                    #t_rect = (x + rh + 30, ty, w - rh - 30, rh - 1)
+
+                    if coll_point(mouse_position, t_rect):
+                        if not tab_menu.active:
+                            draw.rect_r(t_rect, [30, 30, 30, 255], True)
+                        gui.win_fore = [30, 30, 30, 255]
+                        if genre_box_click:
+                            if i == gui.playlist_box_d_click and quick_d_timer.get() < 0.6 and len(item[2]) > 0:
+                                gui.playlist_box_d_click = -1
+                                pctl.jump(item[2][0], 0)
+
                             switch_playlist(i)
-                            playlist_panel = False
+                            gui.playlist_box_d_click = copy.deepcopy(i)
+                            quick_d_timer.set()
+                        if right_click and coll_point(mouse_position, t_rect):
+                            tab_menu.activate(copy.deepcopy(i), mouse_position)
 
                     if tab_menu.active and tab_menu.reference == i:
-                        draw.rect_r(rect, [40, 40, 40, 255], True)
-                    if right_click and coll_point(mouse_position, rect):
-                        tab_menu.activate(copy.deepcopy(i))
+                        draw.rect_r(t_rect, [30, 30, 30, 255], True)
+                        gui.win_fore = [30, 30, 30, 255]
 
-                    draw_text2((x + 15, y - 1 + p * 14), item[0], [110, 110, 110, 255], 12, 300)
-                    draw_text2((x + w - 5, y - 1 + p * 14, 1), str(len(item[2])), [80, 80, 80, 255], 12, 300)
+                    line = item[0]
+                    line = trunc_line(line, 14, 300)
+                    if i == pctl.playlist_active:
+                        draw_text((x + rh + 35, ty + int(rh / 2) - 10), line, [170, 170, 170, 255], 14)
+                    else:
+                        draw_text((x + rh + 35, ty + int(rh / 2) - 10), line, [100, 100, 100, 255], 14)
+
+
+                    if len(item[2]) == 0:
+                        line = "Empty"
+                    elif len(item[2]) == 1:
+                        line = '1 Track'
+                    else:
+                        line = str(len(item[2])) + " Tracks"
+
+                    draw_text((w - 4, ty + int(rh / 2) - 10, 1), line, [80, 80, 80, 80], 12)
+
+                    gui.win_fore = colours.bottom_panel_colour
+                    # rect = (x, y + 1 + p * rh, rh-1, rh-1)
+                    # fields.add(rect)
+                    # if coll_point(mouse_position, rect):
+                    #     rect2 = (x, y + 1 + p * rh, w - 2, rh - 1)
+                    #     draw.rect_r(rect2, [40, 40, 40, 255], True)
+                    #     gui.win_fore = [40, 40, 40, 255]
+                    #     draw_text2((x + 1, y - 1 + p * rh), "X", [220, 60, 60, 255], 12, 300)
+                    #     if genre_box_click:
+                    #         delete_playlist(i)
+                    # else:
+                    #     draw_text2((x + 1, y - 1 + p * rh), "X", [70, 70, 70, 255], 12, 300)
+                    #
+                    # rect = (x + 19, y + 1 + p * rh, w - 12, rh-1)
+                    # fields.add(rect)
+                    # if coll_point(mouse_position, rect) and not tab_menu.active:
+                    #
+                    #     draw.rect_r(rect, [40, 40, 40, 255], True)
+                    #     gui.win_fore = [40, 40, 40, 255]
+                    #     if genre_box_click:
+                    #         switch_playlist(i)
+                    #         playlist_panel = False
+                    #
+                    # if tab_menu.active and tab_menu.reference == i:
+                    #     draw.rect_r(rect, [40, 40, 40, 255], True)
+                    # if right_click and coll_point(mouse_position, rect):
+                    #     tab_menu.activate(copy.deepcopy(i))
+                    #
+                    # draw_text2((x + 15, y - 1 + p * rh), item[0], [110, 110, 110, 255], 12, 300)
+                    # draw_text2((x + w - 5, y - 1 + p * rh, 1), str(len(item[2])), [80, 80, 80, 255], 12, 300)
 
                     p += 1
 
