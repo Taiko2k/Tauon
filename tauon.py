@@ -4537,7 +4537,7 @@ class GallClass:
         while len(self.queue) > 0:
 
             # print("ready")
-            i += 1
+            self.i += 1
 
             key = self.queue[0]
             order = self.gall[key]
@@ -8037,15 +8037,22 @@ def toggle_library_mode():
     gui.update_layout()
 
 def library_deco():
+    tc = colours.menu_text
+    if gui.combo_mode or gui.showcase_mode or (gui.show_playlist is False and album_mode):
+        tc = colours.menu_text_disabled
+
     if gui.set_mode:
-        return [colours.menu_text, colours.menu_background, "Disable Library Bar"]
+        return [tc, colours.menu_background, "Disable Library Bar"]
     else:
-        return [colours.menu_text, colours.menu_background, 'Enable Library Bar']
+        return [tc, colours.menu_background, 'Enable Library Bar']
 
 def break_deco():
-    tex = colours.menu_text_disabled
-    if break_enable:
-        tex = colours.menu_text
+    tex = colours.menu_text
+    if gui.combo_mode or gui.showcase_mode or (gui.show_playlist is False and album_mode):
+        tex = colours.menu_text_disabled
+    if not break_enable:
+        tex = colours.menu_text_disabled
+
 
     if pctl.multi_playlist[pctl.playlist_active][4] == 0:
         return [tex, colours.menu_background, "Disable Playlist Breaks"]
@@ -11902,7 +11909,6 @@ bottom_bar1 = BottomBarType1()
 #             else:
 #                 return star_x
 
-
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1):
     timec = colours.bar_time
     titlec = colours.title_text
@@ -12442,6 +12448,7 @@ class StandardPlaylist:
                             this_line_playing, album_fade, playlist_left, gui.playlist_width, prefs.line_style)
             else:
                 # NEE ---------------------------------------------------------
+
                 offset_font_extra = 0
                 if gui.row_font_size > 14:
                     offset_font_extra = 8
@@ -12450,9 +12457,6 @@ class StandardPlaylist:
                     offset_y_extra = 2
                     if gui.row_font_size > 14:
                         offset_y_extra = 3
-
-
-
 
                 start = playlist_left - 2
                 run = start
@@ -12615,6 +12619,7 @@ class ComboPlaylist:
         self.max_y = 0
 
         self.hit = True
+        self.preped_row_size = 1
 
     def prep(self, goto=False):
 
@@ -12654,8 +12659,8 @@ class ComboPlaylist:
                     min = self.pl_album_art_size
 
             pl_entry_on += 1
-            pl_render_pos += 16
-            min -= 16
+            pl_render_pos += prefs.playlist_row_height
+            min -= prefs.playlist_row_height
 
         self.max_y = pl_render_pos + 20
 
@@ -12668,6 +12673,10 @@ class ComboPlaylist:
         global playlist_selected
         global shift_selection
         global quick_drag
+
+        if self.preped_row_size != gui.playlist_row_height:
+            self.preped_row_size = gui.playlist_row_height
+            self.prep()
 
         # Draw the background
         SDL_SetRenderTarget(renderer, gui.ttext)
@@ -12783,8 +12792,8 @@ class ComboPlaylist:
                 x = self.pl_album_art_size + 20
                 y = pl_render_pos - self.pl_pos_px
 
-                rect = [x, y, gui.playlist_width, 16]
-                s_rect = [x, y, gui.playlist_width, 15]
+                rect = [x, y, gui.playlist_width, prefs.playlist_row_height]
+                s_rect = [x, y, gui.playlist_width, prefs.playlist_row_height - 1]
                 fields.add(rect)
                 # draw.rect_r(rect,[255,0,0,30], True)
 
@@ -12834,7 +12843,7 @@ class ComboPlaylist:
 
 
                 # Draw track text
-                line_render(track, pl_entry_on, y - 1, playing, 255, x + 17, gui.playlist_width - 20,
+                line_render(track, pl_entry_on, y + gui.playlist_text_offset, playing, 255, x + 17, gui.playlist_width - 28,
                             style=prefs.line_style)
 
                 # Right click menu
@@ -12843,8 +12852,8 @@ class ComboPlaylist:
 
             # Move render position down for next track
             pl_entry_on += 1
-            pl_render_pos += 16
-            min -= 16
+            pl_render_pos += prefs.playlist_row_height
+            min -= prefs.playlist_row_height
 
 
         # Set the render target back to window and render playlist texture
@@ -13040,9 +13049,9 @@ def update_layout_do():
     gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
 
     if gui.combo_mode:
-        gui.playlist_row_height = 31
-        gui.playlist_text_offset = 6
-        gui.row_font_size = 13
+        gui.playlist_row_height = prefs.playlist_row_height #31
+        gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)#6
+        gui.row_font_size = prefs.playlist_font_size #13
     else:
         gui.playlist_row_height = prefs.playlist_row_height
         gui.playlist_text_offset = 0
@@ -14727,7 +14736,7 @@ while running:
                         # if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[
                         #     0] != 0) or scroll_hold:
                         #     scroll_opacity = 255
-                        draw.rect((0, gui.panelY), (17, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
+                        draw.rect((0, gui.panelY), (18, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
                         draw.rect((1, sbp), (15, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
 
                         if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:

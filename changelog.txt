@@ -13,6 +13,7 @@ v2.1.0
  - Fixed double digit setting not applying in some cases
  - Fixed top bar entering compact mode when title is displayed in bottom bar
  - Fixed quick drag sometimes being triggered after UI lag
+ - Fixed playlist row size settings not applying to combo view
  - Improved sidebar drag area to show drag cursor
  - Improved auto theme mode
  - Improved playlist selection box, bound to tilde key
