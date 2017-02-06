@@ -9,16 +9,14 @@ scroll-gallery-row=True
 scroll-gallery-wheel=90
 
 ## Windows Fonts:
-# Currently optimised for Meiryo (preferred) and Arial (fallback) only
+## Currently optimised for Meiryo (preferred) and Arial (fallback) only
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
  
-
-## Linux Fonts: Font files must be in /gui subfolder
-font-regular=Koruri-Regular.ttf
-font-fallback=DroidSansFallback.ttf
-font-bold=Koruri-Semibold.ttf
-font-height-offset=0
+## Linux Fonts:
+#linux-font=Noto Sans
+#linux-font-bold=Noto Sans Bold
+#font-height-offset=0
 
 ## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
 mediakey=2

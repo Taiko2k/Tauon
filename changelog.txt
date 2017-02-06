@@ -5,7 +5,8 @@ Changelog-------------------------------------
 v2.1.0
 
  - Added auto extract zip archive option
- - Added native font rendering (windows only)
+ - Added native text rendering (windows only)
+ - Added cairo as text renderer (experimental, linux only)
  - Added auto theme option to settings
  - Added hide column bar option to menu
  - Fixed title bar text updating
