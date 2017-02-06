@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 # Tauon Music Box
 
@@ -208,6 +209,11 @@ if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so
     except:
         print("ERROR: gi.repository not found")
         default_player = "None"
+
+if system == 'linux':
+    import cairo
+    from gi.repository import Pango
+    from gi.repository import PangoCairo
 
 class Timer:  # seconds
     def __init__(self):
@@ -516,6 +522,9 @@ class Prefs:
         self.windows_font_weight = 500
         self.windows_font_weight_bold = 600
 
+        self.linux_font = "Noto Sans"
+        self.linux_bold_font = "Noto Sans Bold"
+
 
 prefs = Prefs()
 
@@ -600,8 +609,11 @@ class GuiVar:
         self.set_load_old = False
 
         self.win_text = False
+        self.cairo_text = False
         if system == 'windows':
             self.win_text = True
+        elif system == "linux":
+            self.cairo_text = True
         self.win_fore = [255, 255, 255, 255]
 
         self.trunk_end = "..."#"..." #"…"
@@ -1115,6 +1127,14 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 prefs.windows_font_weight = 700
                 #prefs.windows_font_weight_bold = 700
+
+            if 'linux-font=' in p:
+                result = p.split('=')[1]
+                prefs.linux_font = result
+
+            if 'linux-bold-font=' in p:
+                result = p.split('=')[1]
+                prefs.linux_bold_font = result
 
 else:
     scrobble_mark = True
@@ -3796,6 +3816,12 @@ class Drawing:
             else:
                 return xy[0]
 
+        if gui.cairo_text:
+            x, y = cairo_text.wh(text, font)
+            if height:
+                return y
+            else:
+                return x
 
         if height:
             TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), None, self.text_width_p)
@@ -3952,6 +3978,171 @@ def draw_text_sdl(location, text, colour, font, maxx, field=0, index=0):
         return dst.w
 
 
+if system == "linux":
+    class CT:
+
+        def __init__(self):
+            self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
+            self.context = cairo.Context(self.surf)
+            self.layout = PangoCairo.create_layout(self.context)
+            self.pctx = self.layout.get_context()
+            fo = cairo.FontOptions()
+            fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+
+            PangoCairo.context_set_font_options(self.pctx, fo)
+
+            self.calc_last_font = 0
+            self.f_dict = {}
+
+        def prime_font(self, name, size, user_handle):
+
+            self.f_dict[user_handle] = name + " " + str(size)
+
+        def wh(self, text, font):
+            if self.calc_last_font != font:
+                self.calc_last_font = font
+            self.layout.set_font_description(Pango.FontDescription(self.f_dict[font]))
+
+            self.layout.set_text(text, -1)
+
+            return self.layout.get_pixel_size()
+
+
+        def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False):
+
+            key = (max, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
+            global ttc
+
+            x = location[0]
+            y = location[1] + gui.universal_y_text_offset
+
+            if key in ttc:
+                sd = ttc[key]
+                sd[0].x = x
+                sd[0].y = y
+
+                if align == 1:
+                    sd[0].x = x - sd[0].w
+
+                elif align == 2:
+                    sd[0].x = sd[0].x - int(sd[0].w / 2)
+
+                SDL_RenderCopy(renderer, sd[1], None, sd[0])
+
+                return sd[0].w
+
+            w, h = self.wh(text, font)
+
+            h += 4  # Compensate for characters that drop past the baseline, pango dosent seem to allow for this
+
+            if wrap:
+                h = int((w / max_x) * h) + h
+                w = max_x + 1
+            if max_y != None:
+                h = max_y
+
+            #perf_timer.set()
+
+            data = ctypes.c_buffer(b" " * (h * (w * 4)))
+            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
+
+            context = cairo.Context(surf)
+            layout = PangoCairo.create_layout(context)
+            pctx = layout.get_context()
+
+            if max_y != None:
+                layout.set_width(max_x * 1000)  # x1000 seems to make it work, idy why
+                layout.set_height(max_y)  # This doesn't work, idk why
+
+
+            # Antialias settings here dont seem to have any effect, it always seems to be subpixel
+
+            #fo = cairo.FontOptions()
+            #fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+            #fo.set_antialias(cairo.ANTIALIAS_GRAY)
+            #fo.set_subpixel_order(cairo.SUBPIXEL_ORDER_RGB)
+            #PangoCairo.context_set_font_options(pctx, fo)
+
+            context.rectangle(0, 0, w, h)
+            context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
+            context.fill()
+            context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
+            #context.translate(0,0)
+
+            if font not in self.f_dict:
+                print("Font not loaded: " + str(font))
+                return 10
+
+            layout.set_font_description(Pango.FontDescription(self.f_dict[font]))
+            layout.set_text(text, -1)
+
+            PangoCairo.show_layout(context, layout)
+
+            surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_RGB888)
+
+            # Here the background colour is keyed out allowing lines to overlap slightly
+            ke = SDL_MapRGB(surface.contents.format, bg[0], bg[1], bg[2])
+            SDL_SetColorKey(surface, True, ke)
+
+            c = SDL_CreateTextureFromSurface(renderer, surface)
+            SDL_FreeSurface(surface)
+
+            # tex_w = pointer(c_int(0))
+            # tex_h = pointer(c_int(0))
+            # SDL_QueryTexture(c, None, None, tex_w, tex_h)
+            dst = SDL_Rect(x, y)
+            dst.w = w #int(tex_w.contents.value)
+            dst.h = h #int(tex_h.contents.value)
+
+            if align == 1:
+                dst.x = location[0] - dst.w
+
+            elif align == 2:
+                dst.x = dst.x - int(dst.w / 2)
+
+            SDL_RenderCopy(renderer, c, None, dst)
+
+            ttc[key] = [dst, c]
+            ttl.append(key)
+            if len(ttl) > 350:
+                key = ttl[0]
+                so = ttc[key]
+                SDL_DestroyTexture(so[1])
+                del ttc[key]
+                del ttl[0]
+            return dst.w
+
+    cairo_text = CT()
+
+    #standard_font = "Koruri Regular"
+    standard_font = prefs.linux_font #"Noto Sans"
+    cairo_text.prime_font(standard_font, 10 - 2, 10)
+    cairo_text.prime_font(standard_font, 11 - 2.5, 11)
+    cairo_text.prime_font(standard_font, 12 - 3, 12)
+    cairo_text.prime_font(standard_font, 13 - 3, 13)
+    cairo_text.prime_font(standard_font, 14 - 4, 14)
+    cairo_text.prime_font(standard_font, 15 - 4, 15)
+    cairo_text.prime_font(standard_font, 16 - 4, 16)
+    cairo_text.prime_font(standard_font, 17 - 5, 17)
+    cairo_text.prime_font(standard_font, 18 - 6, 18)
+
+    cairo_text.prime_font(standard_font, 12 - 3, 412)
+    cairo_text.prime_font(standard_font, 13 - 3, 413)
+
+    #standard_font = "Koruri Semibold"
+    standard_font = prefs.linux_bold_font #"Noto Sans Bold"
+    cairo_text.prime_font(standard_font, 10 - 3, 210)
+    cairo_text.prime_font(standard_font, 11 - 3, 211)
+    cairo_text.prime_font(standard_font, 12 - 3, 212)
+    cairo_text.prime_font(standard_font, 13 - 3, 213)
+    cairo_text.prime_font(standard_font, 14 - 3, 214)
+    cairo_text.prime_font(standard_font, 15 - 3, 215)
+    cairo_text.prime_font(standard_font, 16 - 3, 216)
+    cairo_text.prime_font(standard_font, 17 - 3, 217)
+    cairo_text.prime_font(standard_font, 28 - 3, 228)
+
+
+
 def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
     return draw_text(location, text, colour, font, maxx)
@@ -3982,7 +4173,25 @@ def draw_text(location, text, colour, font, max=1000, bg=None):
             text = trunc_line(text, font, max)
 
         return pretty_text.draw(location[0], location[1], text, bg, colour, font, align)
+
+    elif gui.cairo_text:
+        if bg == None:
+            bg = gui.win_fore
+        align = 0
+        if len(location) > 2:
+            if location[2] == 1:
+                align = 1
+            if location[2] == 2:
+                align = 2
+            if location[2] == 4:
+                max_y = None
+                if len(location) > 4:
+                    max_y = location[4]
+                return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True)
+
+        return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
     else:
+        print("draw sdl")
         return draw_text_sdl(location, text, colour, font, max)
 
 
@@ -4068,7 +4277,6 @@ if system == 'windows':
             return self.drawDC.GetTextExtent(text)
 
         def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
-            """render text to a PIL image using the windows API."""
 
             self.drawDC.SetTextColor(Wcolour(fg))
             t = self.drawDC.GetSafeHdc()
@@ -4083,7 +4291,6 @@ if system == 'windows':
             if wrap:
                 h = int((w / max_x) * h) + h
                 w = max_x + 1
-
             if max_y != None:
 
                 h = max_y
@@ -4120,7 +4327,7 @@ if system == 'windows':
             #windll.gdi32.ExtTextOutW(t, 0, 0, None, rect, text, len(text), None)
 
 
-            #convert to PIL image
+            #convert to SDL surface
             im, c_bits = native_bmp_to_sdl(self.drawDC.GetSafeHdc(), saveBitMap.GetHandle(), w, h)
 
             #clean-up
@@ -4418,7 +4625,7 @@ class LyricsRenWin:
 
         draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
-if gui.win_text:
+if gui.win_text or gui.cairo_text:
     lyrics_ren = LyricsRenWin()
 else:
     lyrics_ren = LyricsRen()
@@ -8038,7 +8245,7 @@ def toggle_library_mode():
 
 def library_deco():
     tc = colours.menu_text
-    if gui.combo_mode or gui.showcase_mode or (gui.show_playlist is False and album_mode):
+    if gui.combo_mode or (gui.show_playlist is False and album_mode):
         tc = colours.menu_text_disabled
 
     if gui.set_mode:
@@ -8048,7 +8255,7 @@ def library_deco():
 
 def break_deco():
     tex = colours.menu_text
-    if gui.combo_mode or gui.showcase_mode or (gui.show_playlist is False and album_mode):
+    if gui.combo_mode or (gui.show_playlist is False and album_mode):
         tex = colours.menu_text_disabled
     if not break_enable:
         tex = colours.menu_text_disabled
@@ -10809,8 +11016,8 @@ class TopPanel:
         x += self.ini_menu_space
         y += 8
 
-        if gui.win_text:
-            gui.win_fore = colours.top_panel_background
+
+        gui.win_fore = colours.top_panel_background
 
         # PLAYLIST -----------------------
         if draw_alt:
@@ -12137,8 +12344,8 @@ class StandardPlaylist:
                     if not side_panel_enable and not album_mode:
                         ex -= 3 #ex = playlist_left  + int(gui.playlist_width * 4 / 5)
 
-                    if gui.win_text:
-                        gui.win_fore = colours.playlist_panel_background
+
+                    gui.win_fore = colours.playlist_panel_background
 
                     height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
 
@@ -12829,7 +13036,7 @@ class ComboPlaylist:
                     this_line_selected = True
 
                 # Calculate background after highlight
-                if gui.win_text:
+                if True:
                     if playing and this_line_selected:
                         gui.win_fore = alpha_blend(colours.row_select_highlight,
                                                    alpha_blend(colours.row_playing_highlight,
@@ -13641,7 +13848,7 @@ while running:
             # print(perf_timer.get())
             #lastfm.artist_info()
             #print(gui.pl_st)
-            gui.win_text ^= True
+            gui.cairo_text ^= True
 
             #gui.set_bar ^= True
             #gui.update_layout()
@@ -14177,8 +14384,8 @@ while running:
 
         if GUI_Mode == 1 or GUI_Mode == 2:
 
-            if gui.win_text:
-                gui.win_fore = colours.playlist_panel_background
+            #if gui.win_text:
+            gui.win_fore = colours.playlist_panel_background
 
             # Side Bar Draging----------
 
@@ -14619,7 +14826,7 @@ while running:
                             gui.cursor_mode = 2
                             SDL_SetCursor(cursor_shift)
                     else:
-                        if gui.cursor_mode == 2:
+                        if gui.cursor_mode == 2 and mouse_position[1] < 50:
                             SDL_SetCursor(cursor_standard)
                             gui.cursor_mode = 0
 
@@ -14909,8 +15116,8 @@ while running:
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
 
-                                if gui.win_text:
-                                    gui.win_fore = colours.side_panel_background
+
+                                gui.win_fore = colours.side_panel_background
 
                                 block3 = False
                                 block4 = False
@@ -15096,8 +15303,8 @@ while running:
 
             # BOTTOM BAR!
             # C-BB
-            if gui.win_text:
-                gui.win_fore = colours.bottom_panel_colour
+
+            gui.win_fore = colours.bottom_panel_colour
 
             bottom_bar1.render()
 
