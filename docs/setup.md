@@ -2,20 +2,12 @@
 
 Program should work after running setup installer exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
-# Deb release setup on Ubuntu
-
-Double click the .deb file from file manager and follow prompts.
-
-To uninstall:
-
-     $ sudo apt-get remove tauonmusicbox 
 	
 # PKGBUILD setup on Arch Linux
 
 Open terminal to directory with downloaded PKGBUILD and run:
 
-    $ makepkg  
-    $ sudo pacman -U tauon-music-box-x.x.x-x-x86_64.pkg.tar.xz
+    $ yaourt -U
 
 To uninstall:
 
@@ -46,24 +38,19 @@ Experimental: Alternatively GStreamer can be used as the audio backend and thus 
 ### Use the following commands to install other dependencies:
 
 
-####Arch Linux:
+####Arch Linux (note: This list is out of date, see PKGBUILD for latest dependencies):
 
         $ sudo pacman -S python3 sdl2 sdl2_image sdl2_ttf python-pip python-pillow python-pylast python-flask python-setuptools python-xlib pulseaudio-alsa
         $ sudo pip3 install hsaudiotag3k pysdl2 stagger
 	
+### Ubuntu (note: This list is out of date. Install support on Ubuntu is currently unavailable):
 
-   
-
-####Ubuntu:
-
-        $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip python3-pil python3-setuptools python3-pylast python3-flask python3-xlib
-        $ sudo pip3 install hsaudiotag3k pysdl2 stagger
-
-
+        $ sudo apt-get install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 python3-pip python3-pil python3-setuptools
+        $ sudo pip3 install hsaudiotag3k pylast pysdl2 flask stagger python3-xlib
 
 Finally run using python 3 (Alternatively create a desktop or launcher shortcut. Set the command to "python3 /path/to/program/tauon.py").
 
-    $ python3 tauon.py
+    $ python tauon.py
 
 
 ####Notice for upgrading from before v1.9.2: 
@@ -72,20 +59,6 @@ Previously this guide suggested to install dependencies via pip but now lists sy
    
         $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
 
-# Development setup on OS X
-
-
-OSX is not officially supported, but the program may run. As a rough guide to get started: 
-
-Install Python 3, SDL, SDL_ttf and SDL_image frameworks
-Install Bass libraries to programs /lib folder, required are libbass.dylib, libbassenc.dylib and libbassmix.dylib
-Install Python libraries (Install pip if required $ sudo easy_install pip):
-
-        $ sudo python3 -m pip install hsaudiotag3k pylast pysdl2 flask stagger
-
-Finally run from install directroy using:
-
-	$ python3 tauon.py
 
 
 # Development setup on Windows

@@ -4052,10 +4052,10 @@ if system == "linux":
 
             if max_y != None:
                 layout.set_width(max_x * 1000)  # x1000 seems to make it work, idy why
-                layout.set_height(max_y)  # This doesn't work, idk why
+                #layout.set_height(max_y)  # This doesn't seem to work
 
 
-            # Antialias settings here dont seem to have any effect, it always seems to be subpixel
+            # Antialias settings here dont any effect, fontconfg settings override it
 
             #fo = cairo.FontOptions()
             #fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
@@ -4147,6 +4147,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
     return draw_text(location, text, colour, font, maxx)
 
+
 def draw_text(location, text, colour, font, max=1000, bg=None):
 
     if text == "":
@@ -4189,6 +4190,8 @@ def draw_text(location, text, colour, font, max=1000, bg=None):
                     max_y = location[4]
                 return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True)
 
+        if max < 1000:
+            text = trunc_line(text, font, max)
         return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
     else:
         print("draw sdl")
@@ -4490,18 +4493,18 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 11 + 3, 11, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 12 + 3, 12, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 13 + 3, 13, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 14 + 3, 14, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 15 + 3, 15, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 16 + 3, 16, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 17 + 3, 17, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 14 + 2, 14, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 15 + 2, 15, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 16 + 2, 16, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
 
         pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
         pretty_text.prime_font('Arial', 11 + 4, 211, weight=500, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
-        pretty_text.prime_font(semibold_font, 14 + 3, 214, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 15 + 3, 215, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 28 + 3, 228, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
 
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
         pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
@@ -11040,7 +11043,7 @@ class TopPanel:
         # MENU -----------------------------
 
         word = "MENU"
-        word_length = draw.text_calc(word, 12)
+        word_length = draw.text_calc(word, 212)
         rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
