@@ -30,7 +30,7 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 For Windows, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
  
-For Arch Linux, download pkgbuild from releases section, navigate terminal to download location and run:
+For Arch Linux, download pkgbuild from releases section and install. For example using yaourt, navigate terminal to download location and run:
 
     $ yaourt -P -i
 
