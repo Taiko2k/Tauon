@@ -28,7 +28,11 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 ### Getting Started :dizzy:
 
-For Windows, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section. For Linux see [setup instructions](docs/setup.md). 
+For Windows, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
+ 
+For Arch Linux, download pkgbuild from releases section, navigate terminal to download location and run:
+
+    $ yaourt -P -i
 
 For further documentation see [usage](docs/usage.md). For detailed feature status see [features](docs/features.md).
 

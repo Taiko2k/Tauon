@@ -5,9 +5,9 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
 	
 # PKGBUILD setup on Arch Linux
 
-Open terminal to directory with downloaded PKGBUILD and run:
+Open terminal to directory with downloaded PKGBUILD and install. For example using yaourt:
 
-    $ yaourt -U
+    $ yaourt -P -i
 
 To uninstall:
 
