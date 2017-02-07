@@ -18,8 +18,6 @@ Quirk: If a music file has an associated .cue file, they needed to be imported t
 
 - Clear playlist and re-import. It should be faster the 2nd time.
 
-- New in v2.0.0: If the last folder that was imported to the playlist contains all the tracks you wish to import, use the 're-import folder' fuction from playlist tab menu.
-
 ### Track Navigation
 
 - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
@@ -70,6 +68,7 @@ Tip: End the search text with another forward slash to search just for folders w
 ***Search***: Backslash \ or Ctrl + F  
 ***Cycle Theme***: F2   
 ***Change Playlist***: Left and Right arrow keys  
+***View Playlist List***: Tilde ~
 ***Seek***: + and -   
 ***Play next/previous track***: Shift + Left and Right arrow keys (or global mediakeys)   
 ***Volume Up/Down***: Shift + Up and Down arrow keys   
@@ -117,7 +116,7 @@ In case of mojibake (where track metadata is garbled), the ideal solution is to 
 As a temporary solution Tauon Music Box offers a fix mojibake function under TRACK MENU-> META...->FIX MOJIBAKE
 
  - 'Fix mojibake auto' should automatically correct the displayed characters in around 90% of cases.  
- - 'Fix mojibake manual' to apply manually based on preseted suggestions, can be used for extreme cases where there are multiple encodings for different fields within the same tag (yes this actually happens sometimes)
+ - 'Fix mojibake manual' to apply manually based on preseted suggestions, can be used for extreme cases where there are multiple encodings for different fields within the same tag
 
 Note: These functions will apply changes to all tracks in folder/album   
 
@@ -158,7 +157,7 @@ User data files
 
 ### Upgrading / Moving
 
-New in v1.9.2: When proram is installed to program files / via installer, files are kept in a dedicated location. ~/.tauonmb-user on Linux and ~\Music\TauonMusicBox on Windows.
+When proram is installed to program files / via installer, files are kept in a dedicated location. ~/.tauonmb-user on Linux and ~\Music\TauonMusicBox on Windows.
 
 For portable installations:
 

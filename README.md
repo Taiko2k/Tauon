@@ -2,7 +2,7 @@
 
 Tauon Music Box is a desktop music player for playback of local audio files.
 Designed for ease of use and simplicity with minimal configuration required.
-Uses BASS audio library.
+Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linux.
 
 ### Features :sparkles:
 
@@ -16,7 +16,6 @@ Uses BASS audio library.
   - Playlist sorting
   - Last.fm scrobbling
   - Outbound streaming via Icecast
-  - Multi-platform (Windows and Linux)
 
 ### Screenshot :star2:
 

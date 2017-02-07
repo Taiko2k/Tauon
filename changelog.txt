@@ -5,8 +5,8 @@ Changelog-------------------------------------
 v2.1.0
 
  - Added auto extract zip archive option
- - Added native text rendering (windows only)
- - Added cairo as text renderer (experimental, linux only)
+ - Added native text rendering on windows (windows only)
+ - Added cairo as text renderer on linux (experimental, linux only)
  - Added auto theme option to settings
  - Added hide column bar option to menu
  - Fixed title bar text updating
@@ -19,7 +19,9 @@ v2.1.0
  - Improved auto theme mode
  - Improved playlist selection box, bound to tilde key
  - Tweaked column grip area
- - Tweaked UI fonts
+ - Changed font configuration setting
+ - Changed default font on windows to Meiryo, fallback to Arial
+ - Changed default font on linux to Noto Sans
  - Removed cycle list format option
 
 v2.0.0
