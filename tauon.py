@@ -110,28 +110,74 @@ config_directory = user_directory
 b_active_directory = install_directory.encode('utf-8')
 
 # -------------------------------
+if os.path.isfile('.gitignore'):
+    print("Dev mode, ignoring single instancing")
+else:
+    if system == 'windows':
+        from win32event import CreateMutex
+        from win32api import CloseHandle, GetLastError
+        from winerror import ERROR_ALREADY_EXISTS
 
-try:
-    open(user_directory + '/lock', 'x')
-    pass
 
-except:
-    pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-    # sys.exit()
-    import socket
+        class singleinstance:
+            """ Limits application to single instance """
 
-    print('There might already be an instance...')
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = s.connect_ex(('127.0.0.1', server_port))
-    s.close()
+            def __init__(self):
+                self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
+                self.mutex = CreateMutex(None, False, self.mutexname)
+                self.lasterror = GetLastError()
 
-    if result == 0:
-        print('Socket is already open')
+            def aleradyrunning(self):
+                return (self.lasterror == ERROR_ALREADY_EXISTS)
 
-        if os.path.isfile('.gitignore'):
-            print("Dev mode, ignoring single instancing")
-        else:
+            def __del__(self):
+                if self.mutex:
+                    CloseHandle(self.mutex)
+
+        lock = singleinstance()
+
+        if lock.aleradyrunning():
+            print("Program is already running")
+            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
+
+    elif system == 'linux':
+
+        import fcntl
+        pid_file = os.path.join(user_directory, 'program.pid')
+        fp = open(pid_file, 'w')
+        try:
+            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            # another instance is running
+            print("Program is already running")
+            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+            sys.exit()
+
+# try:
+#     open(user_directory + '/lock', 'x')
+#     pass
+#
+# except:
+#     pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+#     # sys.exit()
+#     import socket
+#
+#     print('There might already be an instance...')
+#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     result = s.connect_ex(('127.0.0.1', server_port))
+#     s.close()
+#
+#     if result == 0:
+#         print('Socket is already open')
+#
+#         if os.path.isfile('.gitignore'):
+#             print("Dev mode, ignoring single instancing")
+#         else:
+#             sys.exit()
+#     print("alredat rnning!")
+#
+#     sys.exit()
 
 import time
 import ctypes
@@ -485,7 +531,7 @@ class Prefs:
         self.volume_wheel_increment = 2
         self.encoder_output = user_directory + '/encoder/'
 
-        self.enable_web = True
+        self.enable_web = False
         self.allow_remote = True
         self.expose_web = False
 
@@ -3249,6 +3295,8 @@ def keyboard_hook():
             elif event[1] == 176 and event[0] == 'key down':
                 mediaKey = 'forward'
                 mediaKey_pressed = True
+            if mediaKey_pressed:
+                gui.update += 1
             # Be a good neighbor and call the next hook.
             return windll.user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
 
@@ -3269,7 +3317,7 @@ def keyboard_hook():
             msg = win32gui.GetMessage(None, 0, 0)
             win32gui.TranslateMessage(byref(msg))
             win32gui.DispatchMessage(byref(msg))
-            time.sleep(1)
+            time.sleep(5)
 
     listen()
 
@@ -3307,6 +3355,8 @@ elif system != 'mac':
                 elif what == 'Previous':
                     mediaKey = 'back'
                     mediaKey_pressed = True
+                if mediaKey_pressed:
+                    gui.update = 1
 
             # set up the glib main loop.
             dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -3353,7 +3403,8 @@ elif system != 'mac':
                 if event.ScanCode == 171:
                     mediaKey = 'forward'
                     mediaKey_pressed = True
-
+                if mediaKey_pressed:
+                    gui.update = 1
 
         hookman = pyxhook.HookManager()
         hookman.KeyDown = kbevent
@@ -9102,6 +9153,7 @@ def reload_albums(quiet=False):
 
 def webserv():
     if prefs.enable_web is False:
+
         return 0
 
     from flask import Flask, redirect, send_file, abort, request
@@ -12659,14 +12711,14 @@ class StandardPlaylist:
             else:
                 # NEE ---------------------------------------------------------
 
-                offset_font_extra = 0
-                if gui.row_font_size > 14:
-                    offset_font_extra = 8
-                offset_y_extra = 0
-                if gui.row_font_size > 13:
-                    offset_y_extra = 2
-                    if gui.row_font_size > 14:
-                        offset_y_extra = 3
+                # offset_font_extra = 0
+                # if gui.row_font_size > 14:
+                #     offset_font_extra = 8
+                # offset_y_extra = 0
+                # if gui.row_font_size > 13:
+                #     offset_y_extra = 2
+                #     if gui.row_font_size > 14:
+                #         offset_y_extra = 3
 
                 start = playlist_left - 2
                 run = start
@@ -12689,7 +12741,8 @@ class StandardPlaylist:
                                 star_x = int(ratio * 4)
                                 if star_x > wid:
                                     star_x = wid
-                                draw.line(run + 4, y + 8 + offset_y_extra, run + star_x + 4, y + 8 + offset_y_extra,
+                                sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
+                                draw.line(run + 4, sy, run + star_x + 4, sy,
                                           colours.star_line)
 
                     else:
@@ -13398,6 +13451,7 @@ while running:
 
         # print(event.type)
 
+
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
@@ -13703,22 +13757,29 @@ while running:
             gui.update += 1
 
     power += 1
-    if mouse_wheel != 0:
-        power = 5
+    if mouse_wheel != 0 or k_input or gui.update > 0:# or mouse_moved:
+        power = 1000
 
-    if resize_mode or scroll_hold or album_scroll_hold:
-        power += 3
-    if side_drag:
-        power += 2
-    # Im actually rather confused as to why 'and not album_scroll_hold' is needed here for smooth album scrolling when
-    # running the visualser (so I put in scroll hold too for good measure, dunno if it helps)
+    # if resize_mode or scroll_hold or album_scroll_hold:
+    #     power += 3
+    # if side_drag:
+    #     power += 2
+
     if gui.level_update and not album_scroll_hold and not scroll_hold:
-        power = 6
+        power = 500
     if not running:
         break
 
-    if power < 5:
+    if pctl.playing_state > 0:
+        power += 400
+    if power < 500:
+        #time.sleep(0.003)
         time.sleep(0.003)
+        # if gui.lowered:
+        #     time.sleep(0.2)
+        if pctl.playing_state == 0:
+            SDL_WaitEventTimeout(None, 1000)
+
         continue
     else:
         power = 0
@@ -13728,17 +13789,18 @@ while running:
 
     new_playlist_cooldown = False
 
+
     if check_file_timer.get() > 1.1:
         check_file_timer.set()
-        if os.path.isfile(transfer_target):
-            r_arg_queue = pickle.load(open(transfer_target, "rb"))
-            os.remove(user_directory + "/transfer.p")
-            arg_queue = []
-            for item in r_arg_queue:
-                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-                    arg_queue.append(item)
-                    # SDL_RaiseWindow(t_window)
-                    # SDL_RestoreWindow(t_window)
+        # if os.path.isfile(transfer_target):
+        #     r_arg_queue = pickle.load(open(transfer_target, "rb"))
+        #     os.remove(user_directory + "/transfer.p")
+        #     arg_queue = []
+        #     for item in r_arg_queue:
+        #         if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+        #             arg_queue.append(item)
+        #             # SDL_RaiseWindow(t_window)
+        #             # SDL_RestoreWindow(t_window)
 
         if len(arg_queue) > 0:
             i = 0
@@ -16880,7 +16942,9 @@ while running:
         gui.update += 1
 
     if gui.lowered:
-        time.sleep(0.1)
+        time.sleep(0.2)
+        #print("sleep")
+
 
 SDL_DestroyWindow(t_window)
 
