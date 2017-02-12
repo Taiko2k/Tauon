@@ -11,11 +11,8 @@
 
  - Theme files for changing UI colours (not all elements customisable)
  - Tracks
- - Tracks + Single large album art
- - Tracks + Single album art + metadata
- - Tracks + Album gallery
+ - Album art
  - Album gallery
- - All album art and tracks (buggy, some features missing)
  - Basic spectrum visualization or level meter
  - Custom columns with sorting
  - Lyrics display
@@ -31,16 +28,16 @@
 
 ### Player features
 
-- Multiple playlists
+- Multiple tabbed playlists
 - Quick search
-- Filter from seach (via new playlist)
-- Playcount preview
-- Sorting (via new playlist)
+- Filter from seach to new playlist
+- Play count
+- Sorting to new playlist
 - Web interface (basic playback control)
-- Inbound streaming (HTTP)
-- Outbound streaming with icecast (MP3, OGG)
+- Inbound streaming (HTTP, Icecast, Shoutcast)
+- Outbound streaming with Icecast (MP3, OGG)
 - Global media keys + some local harcoded keyboard shortcuts
-- Output device override
+- Output audio device override
 
 ### Editing
 
@@ -51,33 +48,34 @@
 
 ### Audio
 
+- Volume
 - Cross fade (only)
-
 
 ## Other common player features not implemented:
 
  - Codecs: ALAC, Musepack, TAK
  - Replay gain
- - Gapless playback
+ - True gapless playback
  - Folder tree view
  - Folder monitoring / auto update
  - Skins
- - Customisable shortcuts
+ - Customisable keyboard shortcuts
  - Global hotkeys (other than default media keys)
  - High DPI
- - Audio EQ
- - DSPs
- - Plugins
+ - Audio EQ setting
+ - DSPs / Audio Plugins
+ - Extentions
  - Audiobooks
- - Internal tag editing
+ - Tag editing
  - Various external services
  - Ratings
- - Extract/read archive
+ - Read from archive
  - Artist/metadata scraping
- - All tag metadata
+ - Unknown tag metadata
  - A-B repreat
  - Bookmarks
  - Various playlist formats
  - Radio station list
  - Audio CD
  - Auto DJ
+ - Timer / Alarm
