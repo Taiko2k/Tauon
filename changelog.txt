@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v2.1.1
 
- - Fixed star line positioning
  - Fixed delayed UI update on media key press
- - Slightly reduced idle cpu usage
+ - Fixed star line positioning
+ - Reduced idle cpu usage
+ - Improved compatibility with gnome
  - Set web interface as disabled by default
 
 v2.1.0

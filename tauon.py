@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.1.0"
+t_version = "v2.1.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -218,6 +218,8 @@ if system == 'windows':  # Windows specific imports
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, win32ui, atexit
+elif system == 'linux':
+    os.environ["SDL_VIDEO_X11_WMCLASS"] = title
 
 import sdl2.ext
 from sdl2 import *
@@ -300,6 +302,9 @@ quick_d_timer = Timer()
 quick_d_timer.set()
 d_click_time = Timer()
 quick_d_timer.set()
+
+core_timer = Timer()
+core_timer.set()
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
 
@@ -1558,6 +1563,7 @@ class PlayerCtl:
 
                 if playing:
                     self.playlist_playing = i
+
                 if i == playlist_position - 1 and playlist_position > 1:
                     playlist_position -= 1
                 elif playlist_position + gui.playlist_view_length - 2 == i and i < len(
@@ -2161,7 +2167,7 @@ def player3():
 
         def __init__(self):
 
-            Gst.init()
+            Gst.init([])
             self.mainloop = GObject.MainLoop()
 
             self.play_state = 0
@@ -3330,6 +3336,8 @@ if system == 'windows':
         keyboardHookThread.start()
 
 elif system != 'mac':
+    if mediakeymode == 2 and 'gnome' in os.environ.get('DESKTOP_SESSION'):
+        mediakeymode = 1
     if mediakeymode == 1:
         def gnome():
 
@@ -13450,8 +13458,6 @@ while running:
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         # print(event.type)
-
-
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
@@ -13756,6 +13762,7 @@ while running:
         if fields.test():
             gui.update += 1
 
+
     power += 1
     if mouse_wheel != 0 or k_input or gui.update > 0:# or mouse_moved:
         power = 1000
@@ -13774,11 +13781,13 @@ while running:
         power += 400
     if power < 500:
         #time.sleep(0.003)
-        time.sleep(0.003)
+        #time.sleep(0.003)
+        SDL_Delay(30)
         # if gui.lowered:
         #     time.sleep(0.2)
         if pctl.playing_state == 0:
-            SDL_WaitEventTimeout(None, 1000)
+                SDL_WaitEventTimeout(None, 1000)
+
 
         continue
     else:
