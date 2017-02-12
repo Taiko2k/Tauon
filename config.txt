@@ -18,7 +18,9 @@ scroll-gallery-wheel=90
 #linux-font-bold=Noto Sans Bold
 #font-height-offset=0
 
-## Media keys; 0 = off, 1 = source from gnome/dbus, 2 = source from x server (requires pyxhook; sudo pip3 install pyxhook)
+## Media keys; 0 = off, 1 = source from dbus, 2 = source from x server
+## Note: 2 will be set to 1 if gnome desktop environment is detected
+## Note: Values greater than 0 have the same effect under Windows
 mediakey=2
 
 ## Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
