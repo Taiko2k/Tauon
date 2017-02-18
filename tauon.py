@@ -217,13 +217,13 @@ locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime
 if system == 'windows':  # Windows specific imports
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
-    import win32con, win32api, win32gui, win32ui, atexit
+    import win32con, win32api, win32gui, win32ui, atexit, win32clipboard, pythoncom
 elif system == 'linux':
     os.environ["SDL_VIDEO_X11_WMCLASS"] = title
 
-import sdl2.ext
+#import sdl2.ext
 from sdl2 import *
-from sdl2.sdlttf import *
+#from sdl2.sdlttf import *
 from sdl2.sdlimage import *
 
 from PIL import Image
@@ -389,6 +389,8 @@ star_lines = True
 
 playlist_hold_position = 0
 playlist_hold = False
+selection_stage = 0
+
 
 shift_selection = []
 # Control Variables--------------------------------------------------------------------------
@@ -676,6 +678,8 @@ class GuiVar:
 
         self.playlist_box_d_click = -1
 
+        self.gallery_show_text = True
+
 
 gui = GuiVar()
 
@@ -930,6 +934,7 @@ class LoadClass:
         self.playlist = 0  # Playlist UID
         self.tracks = []
         self.stage = 0
+        self.playlist_position = None
 
 
 # -----------------------------------------------------
@@ -1020,6 +1025,8 @@ try:
         prefs.colour_from_image = save[48]
     if save[49] is not None:
         gui.set_bar = save[49]
+    if save[50] is not None:
+        gui.gallery_show_text = save[50]
 
     state_file.close()
     del save
@@ -3573,94 +3580,94 @@ stats_gen = GStats()
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
 SDL_Init(SDL_INIT_VIDEO)
-TTF_Init()
+#TTF_Init()
 
 window_title = title
 window_title = window_title.encode('utf-8')
 
 
-def load_font(name, size, ext=False):
-    if ext:
-        fontpath = name.encode('utf-8')
-    else:
-        b = install_directory
-        b = b.encode('utf-8')
-        c = name.encode('utf-8')
-        fontpath = b + b'/gui/' + c
-
-    return TTF_OpenFont(fontpath, size)
-
-
-if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and os.path.isfile("gui/" + alt_font):
-    font11c = load_font(gui_font, 11)
-    font12c = load_font(gui_font, 12)
-    font13c = load_font(gui_font, 13)
-    font14c = load_font(gui_font, 14)
-    font28c = load_font(gui_font, 28)
-
-    font10a = load_font(main_font, 10)
-    font11a = load_font(main_font, 11)
-    font12a = load_font(main_font, 12)
-    font13a = load_font(main_font, 13)
-    font14a = load_font(main_font, 14)
-    font15a = load_font(main_font, 15)
-    font16a = load_font(main_font, 16)
-    font17a = load_font(main_font, 17)
-    font22a = load_font(main_font, 22)
-    font24a = load_font(main_font, 24)
-    font28a = load_font(main_font, 28)
-
-    font10b = load_font(alt_font, 10)
-    font11b = load_font(alt_font, 11)
-    font12b = load_font(alt_font, 12)
-    font13b = load_font(alt_font, 13)
-    font14b = load_font(alt_font, 14)
-    font15b = load_font(alt_font, 15)
-    font16b = load_font(alt_font, 16)
-    font17b = load_font(alt_font, 17)
-    font22b = load_font(alt_font, 22)
-    font24b = load_font(alt_font, 24)
-    font28b = load_font(alt_font, 28)
-
-    font12m = font12a
-    font13m = font13a
-
-    # font12d = load_font(light_font, 12)
-    # font13d = load_font(light_font, 13)
-    # font14d = load_font(light_font, 14)
-    # font15d = load_font(light_font, 15)
-    # font16d = load_font(light_font, 16)
-    # font17d = load_font(light_font, 17)
-
-    font_dict = {}
-
-    font_dict[13] = (font13a, font13b)
-    font_dict[11] = (font11a, font11b)
-    font_dict[10] = (font10a, font10b)
-    font_dict[12] = (font12a, font12b)
-    font_dict[16] = (font16a, font16b)
-    font_dict[14] = (font14a, font14b)
-    font_dict[15] = (font15a, font15b)
-    font_dict[17] = (font17a, font17b)
-    font_dict[22] = (font22a, font22b)
-    font_dict[24] = (font24a, font24b)
-    font_dict[28] = (font28a, font28b)
+# def load_font(name, size, ext=False):
+#     if ext:
+#         fontpath = name.encode('utf-8')
+#     else:
+#         b = install_directory
+#         b = b.encode('utf-8')
+#         c = name.encode('utf-8')
+#         fontpath = b + b'/gui/' + c
+#
+#     return TTF_OpenFont(fontpath, size)
 
 
-    font_dict[211] = (font11c, font11b)
-    font_dict[212] = (font12c, font12b)
-    font_dict[213] = (font13c, font13b)
-    font_dict[214] = (font14c, font14b)
-    font_dict[228] = (font28c, font28b)
-
-    font_dict[412] = (font12m, font12b)
-    font_dict[413] = (font13m, font13b)
-    # font_dict[317] = (font17d, font17b)
-    # font_dict[316] = (font16d, font16b)
-    # font_dict[315] = (font15d, font15b)
-    # font_dict[314] = (font14d, font14b)
-    # font_dict[313] = (font13d, font13b)
-    # font_dict[312] = (font12d, font12b)
+# if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and os.path.isfile("gui/" + alt_font):
+#     font11c = load_font(gui_font, 11)
+#     font12c = load_font(gui_font, 12)
+#     font13c = load_font(gui_font, 13)
+#     font14c = load_font(gui_font, 14)
+#     font28c = load_font(gui_font, 28)
+#
+#     font10a = load_font(main_font, 10)
+#     font11a = load_font(main_font, 11)
+#     font12a = load_font(main_font, 12)
+#     font13a = load_font(main_font, 13)
+#     font14a = load_font(main_font, 14)
+#     font15a = load_font(main_font, 15)
+#     font16a = load_font(main_font, 16)
+#     font17a = load_font(main_font, 17)
+#     font22a = load_font(main_font, 22)
+#     font24a = load_font(main_font, 24)
+#     font28a = load_font(main_font, 28)
+#
+#     font10b = load_font(alt_font, 10)
+#     font11b = load_font(alt_font, 11)
+#     font12b = load_font(alt_font, 12)
+#     font13b = load_font(alt_font, 13)
+#     font14b = load_font(alt_font, 14)
+#     font15b = load_font(alt_font, 15)
+#     font16b = load_font(alt_font, 16)
+#     font17b = load_font(alt_font, 17)
+#     font22b = load_font(alt_font, 22)
+#     font24b = load_font(alt_font, 24)
+#     font28b = load_font(alt_font, 28)
+#
+#     font12m = font12a
+#     font13m = font13a
+#
+#     # font12d = load_font(light_font, 12)
+#     # font13d = load_font(light_font, 13)
+#     # font14d = load_font(light_font, 14)
+#     # font15d = load_font(light_font, 15)
+#     # font16d = load_font(light_font, 16)
+#     # font17d = load_font(light_font, 17)
+#
+#     font_dict = {}
+#
+#     font_dict[13] = (font13a, font13b)
+#     font_dict[11] = (font11a, font11b)
+#     font_dict[10] = (font10a, font10b)
+#     font_dict[12] = (font12a, font12b)
+#     font_dict[16] = (font16a, font16b)
+#     font_dict[14] = (font14a, font14b)
+#     font_dict[15] = (font15a, font15b)
+#     font_dict[17] = (font17a, font17b)
+#     font_dict[22] = (font22a, font22b)
+#     font_dict[24] = (font24a, font24b)
+#     font_dict[28] = (font28a, font28b)
+#
+#
+#     font_dict[211] = (font11c, font11b)
+#     font_dict[212] = (font12c, font12b)
+#     font_dict[213] = (font13c, font13b)
+#     font_dict[214] = (font14c, font14b)
+#     font_dict[228] = (font28c, font28b)
+#
+#     font_dict[412] = (font12m, font12b)
+#     font_dict[413] = (font13m, font13b)
+#     # font_dict[317] = (font17d, font17b)
+#     # font_dict[316] = (font16d, font16b)
+#     # font_dict[315] = (font15d, font15b)
+#     # font_dict[314] = (font14d, font14b)
+#     # font_dict[313] = (font13d, font13b)
+#     # font_dict[312] = (font12d, font12b)
 
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
@@ -4543,8 +4550,10 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
 
-        pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
-        pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
+        # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
+        # pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
+        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
+        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
 
     else:
 
@@ -5526,7 +5535,7 @@ def trunc_line(line, font, px, dots=True):
         if len(line) < 3:
             break
     if trunk and dots:
-        line += gui.trunk_end
+        line = line.rstrip(" ") + gui.trunk_end
     return line
 
 
@@ -6128,7 +6137,8 @@ def paste_deco():
     return [line_colour, colours.menu_background, None]
 
 
-playlist_menu.add('Paste', append_here, paste_deco)
+#playlist_menu.add('Paste', append_here, paste_deco)
+
 
 # Create playlist tab menu
 tab_menu = Menu(160)
@@ -6355,7 +6365,12 @@ def re_import(pl):
     load_orders.append(copy.deepcopy(load_order))
 
 
+def s_append(index):
+    paste(playlist=index)
+
+
 def append_playlist(index):
+
     global cargo
     pctl.multi_playlist[index][2] += cargo
 
@@ -6433,7 +6448,8 @@ tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
 tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
 tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
-tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
+#tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
+tab_menu.add('Paste Tracks', s_append, pass_ref=True)
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 tab_menu.br()
 tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
@@ -7061,11 +7077,215 @@ def activate_track_box(index):
     r_menu_index = index
     track_box = True
 
+def menu_paste(position):
+    paste(None, position)
+
+
+if system == 'windows':
+    class DROPFILES(ctypes.Structure):
+        _fields_ = (('pFiles', ctypes.wintypes.DWORD),
+                    ('pt', ctypes.wintypes.POINT),
+                    ('fNC', ctypes.wintypes.BOOL),
+                    ('fWide', ctypes.wintypes.BOOL))
+
+
+    def clip_files(file_list):
+        offset = ctypes.sizeof(DROPFILES)
+        length = sum(len(p) + 1 for p in file_list) + 1
+        size = offset + length * ctypes.sizeof(ctypes.c_wchar)
+        buf = (ctypes.c_char * size)()
+        df = DROPFILES.from_buffer(buf)
+        df.pFiles, df.fWide = offset, True
+        for path in file_list:
+            array_t = ctypes.c_wchar * (len(path) + 1)
+            path_buf = array_t.from_buffer(buf, offset)
+            path_buf.value = path
+            offset += ctypes.sizeof(path_buf)
+        stg = pythoncom.STGMEDIUM()
+        stg.set(pythoncom.TYMED_HGLOBAL, buf)
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        try:
+            win32clipboard.SetClipboardData(win32clipboard.CF_HDROP,
+                                            stg.data)
+        finally:
+            win32clipboard.CloseClipboard()
+
+def s_copy():
+
+    global cargo
+    cargo = []
+    for item in shift_selection:
+        cargo.append(default_playlist[item])
+
+    print("COPY")
+    if len(cargo) > 0:
+        if system == 'windows':
+
+            clips = []
+            for i in range(len(cargo)):
+                clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
+            clips = set(clips)
+
+            clip_files(clips)
+
+        if system == 'linux' and shutil.which('xclip'):
+            content = 'echo "'
+            for item in cargo:
+                content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
+
+            command = content + '" | xclip -i -selection clipboard -t text/uri-list'
+            print(command)
+            subprocess.call(shlex.split(command), shell=True)
+            os.system(command)
+
+def paste(playlist=None, position=None):
+
+    items = None
+    if system == 'windows':
+        clp = win32clipboard
+        clp.OpenClipboard(None)
+        rc = clp.EnumClipboardFormats(0)
+        while rc:
+            # try:
+            #     format_name = clp.GetClipboardFormatName(rc)
+            # except win32api.error:
+            #     format_name = "?"
+            # try:
+            #     print("------")
+            #     print("Format: " + str(rc))
+            #     print("Name: " +  format_name)
+            #     print("Raw: ", end="")
+            #     print(clp.GetClipboardData(rc))
+            #     print("Decode: " + clp.GetClipboardData(rc).decode('utf-8'))
+            # except:
+            #     print('error')
+            if rc == 15:
+                items = clp.GetClipboardData(rc)
+
+            rc = clp.EnumClipboardFormats(rc)
+
+        clp.CloseClipboard()
+        print(items)
+
+    elif system == 'linux':
+
+        #clip = SDL_GetClipboardText().decode('utf-8')
+        command = "xclip -o -selection clipboard"
+        p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
+        clip = p.communicate()[0]
+
+        print(clip)
+        clip = clip.decode().split('\n')
+
+        items = []
+        for item in clip:
+            if item[0] == '/':
+                items.append(item)
+            else:
+                items = None
+                break
+        print(items)
+    else:
+        print("No CLIP")
+        return
+
+
+    clips = []
+    cargs = []
+    print(items)
+    print(cargo)
+    if items is not None:
+        for i in range(len(cargo)):
+            cargs.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
+        for i in range(len(items)):
+            clips.append(os.path.abspath(items[i]))
+
+    print(clips)
+    print(cargs)
+    if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
+        print('Matches clipboard, using internal copy')
+
+        if playlist is None:
+            if position is None:
+                transfer(0, (2, 3))
+            else:
+                transfer(position, (2, 2))
+        else:
+            append_playlist(playlist)
+        return
+
+    print('Importing from clipboard')
+    print(clips)
+
+    for item in clips:
+        print("hit")
+        load_order = LoadClass()
+        load_order.target = item
+        playlist_target = pctl.playlist_active
+        if playlist is not None:
+            playlist_target = playlist
+        load_order.playlist = pctl.multi_playlist[playlist_target][6]
+
+        if position is not None:
+            insert = pctl.multi_playlist[playlist_target][2].index(position)
+            old_insert = insert
+
+            while insert < len(default_playlist) and pctl.master_library[pctl.multi_playlist[playlist_target][2][insert]].parent_folder_name == \
+                    pctl.master_library[pctl.multi_playlist[playlist_target][2][old_insert]].parent_folder_name:
+                insert += 1
+
+            load_order.playlist_position = insert
+
+        load_orders.append(copy.deepcopy(load_order))
+
+
+
+
+
+def s_cut():
+    s_copy()
+    del_selected()
+
+playlist_menu.add('Paste', paste)
+
+def del_selected():
+    global shift_selection
+    global playlist_selected
+
+    gui.update += 1
+    gui.pl_update = 1
+
+    if len(shift_selection) == 0:
+        shift_selection = [playlist_selected]
+
+    if len(default_playlist) == 0:
+        return
+
+    for item in reversed(shift_selection):
+        if item > len(default_playlist) - 1:
+            return
+        del default_playlist[item]
+
+    reload()
+
+    if playlist_selected > len(default_playlist) - 1:
+        playlist_selected = len(default_playlist) - 1
+
+    shift_selection = [playlist_selected]
 
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
 track_menu.add_sub("Meta...", 140)
-track_menu.add_sub("Shift...", 135)
+
+track_menu.br()
+#track_menu.add('Cut', s_cut, pass_ref=False)
+track_menu.add('Remove', del_selected)
+track_menu.add('Copy', s_copy, pass_ref=False)
+track_menu.add('Paste', menu_paste, pass_ref=True)
+track_menu.br()
+
+#track_menu.add_sub("Shift...", 135)
 
 
 def rename_tracks(index):
@@ -7334,7 +7554,7 @@ if (system == 'windows' and os.path.isfile(install_directory + '/encoder/ffmpeg.
 
 
 def sel_to_car():
-    global cargo
+
     global default_playlist
     cargo = []
 
@@ -7344,37 +7564,11 @@ def sel_to_car():
 
 # track_menu.add('Copy Selected', sel_to_car)
 
-def del_selected():
-    global shift_selection
-    global playlist_selected
 
-    gui.update += 1
-    gui.pl_update = 1
-
-    if len(shift_selection) == 0:
-        shift_selection = [playlist_selected]
-
-    if len(default_playlist) == 0:
-        return
-
-    for item in reversed(shift_selection):
-        if item > len(default_playlist) - 1:
-            return
-        del default_playlist[item]
-
-    reload()
-
-    if playlist_selected > len(default_playlist) - 1:
-        playlist_selected = len(default_playlist) - 1
-
-    shift_selection = [playlist_selected]
 
 
 # track_menu.add('Remove Folder', remove_folder, pass_ref=True)
 # track_menu.add('Remove Selected', del_selected)
-
-if prefs.enable_transcode:
-    track_menu.add('Transcode Folder', convert_folder, pass_ref=True)
 
 
 # track_menu.add_sub("Move/Cut...", 90)
@@ -7393,21 +7587,24 @@ def cut_selection():
     del_selected()
 
 
-track_menu.add_to_sub('Remove Folder', 1, remove_folder, pass_ref=True)
-track_menu.add_to_sub('Remove Track', 1, del_selected)
-track_menu.add_to_sub('Copy Track', 1, sel_to_car)
-track_menu.add_to_sub("Copy Folder", 1, transfer, pass_ref=True, args=[1, 2])
-track_menu.add_to_sub("Cut Folder", 1, transfer, pass_ref=True, args=[0, 2])
-track_menu.add_to_sub("Cut Track", 1, cut_selection)
-track_menu.add_to_sub("Insert Before Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 1])
-track_menu.add_to_sub("Insert After Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 2])
-track_menu.add_to_sub("Append to End", 1, transfer, paste_deco, pass_ref=True, args=[2, 3])
+# track_menu.add_to_sub('Remove Folder', 1, remove_folder, pass_ref=True)
+# track_menu.add_to_sub('Remove Track', 1, del_selected)
+# track_menu.add_to_sub('Copy Track', 1, sel_to_car)
+# track_menu.add_to_sub("Copy Folder", 1, transfer, pass_ref=True, args=[1, 2])
+# track_menu.add_to_sub("Cut Folder", 1, transfer, pass_ref=True, args=[0, 2])
+# track_menu.add_to_sub("Cut Track", 1, cut_selection)
+# track_menu.add_to_sub("Insert Before Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 1])
+# track_menu.add_to_sub("Insert After Folder", 1, transfer, paste_deco, pass_ref=True, args=[2, 2])
+# track_menu.add_to_sub("Append to End", 1, transfer, paste_deco, pass_ref=True, args=[2, 3])
 
 selection_menu = Menu(165)
 
-selection_menu.add('Copy Selection', sel_to_car)
-selection_menu.add('Cut Selection', cut_selection)
-selection_menu.add('Remove Selection', del_selected)
+#selection_menu.add('Copy Selection', sel_to_car)
+selection_menu.add('Copy', s_copy)
+selection_menu.add('Cut', s_cut)
+#selection_menu.add('Cut Selection', cut_selection)
+
+selection_menu.add('Remove', del_selected)
 
 
 def ser_rym(index):
@@ -7496,6 +7693,11 @@ def broadcast_select_track(index):
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
                               pctl.master_library[pctl.broadcast_index].title
 
+if prefs.enable_transcode or default_player == 'BASS':
+    track_menu.br()
+
+if prefs.enable_transcode:
+    track_menu.add('Transcode Folder', convert_folder, pass_ref=True)
 
 if default_player == 'BASS':
     track_menu.add('Broadcast This', broadcast_select_track, broadcast_feature_deco, pass_ref=True)
@@ -7687,6 +7889,13 @@ def toggle_dim_albums(mode=0):
     gui.pl_update = 1
     gui.update += 1
 
+def toggle_galler_text(mode=0):
+    if mode == 1:
+        return gui.gallery_show_text
+
+    gui.gallery_show_text ^= True
+    gui.update += 1
+    gui.update_layout()
 
 def toggle_side_panel(mode=0):
     global side_panel_enable
@@ -7971,8 +8180,19 @@ def export_database():
     show_message("Done. Saved as 'DatabaseExport.csv'")
 
 
+def q_to_playlist():
+
+    pctl.multi_playlist.append(pl_gen(title="Play History",
+                                      playing=0,
+                                      playlist=copy.deepcopy(pctl.track_queue),
+                                      position=0,
+                                      hide_title=1,
+                                      selected=0))
+
+
 x_menu.add_to_sub("Export as CSV", 0, export_database)
 x_menu.add_to_sub("Playlist Stats", 0, export_stats)
+x_menu.add_to_sub("Play History to Playlist", 0, q_to_playlist)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
 
 
@@ -10239,17 +10459,20 @@ class Over:
         x = self.box_x + self.item_x_offset
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
-        y += 30
+        y += 28
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
-        # y += 30
+        # y += 28
         # self.toggle_square(x, y, toggle_side_panel, "Show side panel")
-        y += 30
+        y += 28
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        y += 30
+        y += 28
+        self.toggle_square(x, y, toggle_galler_text, "Show gallery titles")
+        y += 28
+
 
         if default_player == 'BASS':
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
-        y += 30
+        y += 28
         self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
@@ -10257,7 +10480,7 @@ class Over:
         y -= 120
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from image")
 
-        y += 30
+        y += 28
         x -= 5
         self.button(x, y, "Reset Layout", standard_size)
         x += 100
@@ -11434,13 +11657,13 @@ class BottomBarType1:
                 line = pctl.tag_meta
 
             line = trunc_line(line, 213, window_size[0] - 710)
-            draw_text((self.seek_bar_position[0], self.seek_bar_position[1] + 22), line, colours.bar_title_text,
+            draw_text((self.seek_bar_position[0] + 1, self.seek_bar_position[1] + 22), line, colours.bar_title_text,
                       fonts.panel_title)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10, self.seek_bar_position[1] + 20, window_size[0] - 710, 30)):
                 if pctl.playing_state == 3:
                     copy_to_clipboard(pctl.tag_meta)
-                    show_message("Line copied to clipboard")
+                    show_message("Text copied to clipboard")
                     if input.mouse_click or right_click:
                         input.mouse_click = False
                         right_click = False
@@ -12313,6 +12536,8 @@ class StandardPlaylist:
         global quick_drag
         global mouse_down
         global mouse_up
+        global selection_stage
+
 
         w = 0
         gui.row_extra = 0
@@ -12455,7 +12680,9 @@ class StandardPlaylist:
                         # Show selection menu if right clicked after select
                         if right_click:  # and len(shift_selection) > 1:
                             selection_menu.activate(default_playlist[p_track])
+                            selection_stage = 2
                             gui.pl_update = 1
+
                             if p_track not in shift_selection:
                                 shift_selection = []
                                 playlist_selected = p_track
@@ -12467,6 +12694,9 @@ class StandardPlaylist:
 
                         # Add folder to selection if clicked
                         if input.mouse_click:
+                            quick_drag = True
+                            playlist_hold = True
+                            selection_stage = 1
                             temp = get_folder_tracks_local(p_track)
                             # if p_track not in shift_selection: # not key_shift_down:
                             #     shift_selection = []
@@ -12485,10 +12715,27 @@ class StandardPlaylist:
                             else:
                                 shift_selection = copy.deepcopy(temp)
 
+
                     # # Shade ever other line for folder row
                     # if True and #row_alt and w % 2 == 0:
                     #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
                     #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
+
+                    # Draw highlight
+                    if p_track in shift_selection and len(shift_selection) > 1:
+
+                        draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                                  (highlight_right, gui.playlist_row_height), colours.row_select_highlight, True)
+
+                    # Draw blue hightlint line
+                    if mouse_down and playlist_hold and coll_point(mouse_position, (
+                            playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
+                            gui.playlist_row_height - 1)) and p_track not in shift_selection:  # playlist_hold_position != p_track:
+
+                        draw.rect_r(
+                            [0, -1 + gui.playlist_top + gui.playlist_row_height * w,
+                             gui.playlist_width + 30, 3],
+                            [35, 45, 90, 255], True)
 
                     w += 1
                 else:
@@ -12586,10 +12833,17 @@ class StandardPlaylist:
             if input.mouse_click and line_hit and p_track not in shift_selection:  # key_shift_down is False and line_hit:
                 # shift_selection = []
                 shift_selection = [p_track]
-            if mouse_up and line_over and not key_shift_down and not playlist_hold:
-                shift_selection = []
-                gui.pl_update = 1
-            if mouse_down and line_over and p_track not in shift_selection and len(shift_selection) > 1:
+
+
+
+            # if mouse_up and line_over and not key_shift_down and not playlist_hold:
+            #     shift_selection = []
+            #     gui.pl_update = 1
+
+
+
+
+            if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
                 playlist_hold = True
 
             if input.mouse_click and line_hit:
@@ -12610,6 +12864,7 @@ class StandardPlaylist:
             if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
                     playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width, gui.playlist_row_height)):
 
+
                 if p_track not in shift_selection: #p_track != playlist_hold_position and
 
                     if len(shift_selection) == 0:
@@ -12629,6 +12884,7 @@ class StandardPlaylist:
 
                     else:
                         ref = []
+                        selection_stage = 2
                         for item in shift_selection:
                             ref.append(default_playlist[item])
 
@@ -12653,19 +12909,18 @@ class StandardPlaylist:
                         playlist_selected = shift_selection[0]
                         gui.pl_update = 1
 
+            # Blue drop line
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                     gui.playlist_row_height - 1)) and p_track not in shift_selection: #playlist_hold_position != p_track:
-                # draw.line(0, gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w,
-                #           gui.playlist_width + 30,
-                #           gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, [35, 45, 90, 255])
+
                 draw.rect_r(
                     [0, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, gui.playlist_width + 30, 3],
                     [35, 45, 90, 255], True)
 
             # Shift click actions
             if input.mouse_click and line_hit and key_shift_down:
-
+                selection_stage = 2
                 if p_track != playlist_selected:
 
                     start_s = p_track
@@ -12693,24 +12948,20 @@ class StandardPlaylist:
 
                 if len(shift_selection) > 1:
                     selection_menu.activate(default_playlist[p_track])
+                    selection_stage = 2
                 else:
                     track_menu.activate(default_playlist[p_track])
                     gui.pl_update += 1
 
                 playlist_selected = p_track
 
-            # time.sleep(0.1)
-            # if gui.win_text:
-            #     if this_line_playing and this_line_selected:
-            #         gui.win_fore = alpha_blend(colours.row_select_highlight,
-            #                                    alpha_blend(colours.row_playing_highlight,
-            #                                                colours.playlist_panel_background))
-            #     elif this_line_playing and not this_line_selected:
-            #         gui.win_fore = alpha_blend(colours.row_playing_highlight, colours.playlist_panel_background)
-            #     elif this_line_selected:
-            #         gui.win_fore = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-            #     else:
-            #         gui.win_fore = colours.playlist_panel_background
+            if line_over:
+                if mouse_up and selection_stage > 0:
+                    selection_stage -= 1
+                if mouse_up and selection_stage == 0 and len(shift_selection) > 1:
+                    playlist_hold = False
+                    shift_selection = []
+                    gui.pl_update = 1
 
             if not gui.set_mode:
 
@@ -12860,6 +13111,9 @@ class StandardPlaylist:
             w += 1
             if w > gui.playlist_view_length:
                 break
+
+        #
+
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
             1] - 55 and
@@ -13314,6 +13568,12 @@ def update_layout_do():
     gui.offset_extea = 0
     if draw_border:
         gui.offset_extea = 61
+
+    global album_v_gap
+    if gui.gallery_show_text:
+        album_v_gap = 66
+    else:
+        album_v_gap = 25
 
     gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
 
@@ -13785,7 +14045,7 @@ while running:
         SDL_Delay(30)
         # if gui.lowered:
         #     time.sleep(0.2)
-        if pctl.playing_state == 0:
+        if pctl.playing_state == 0 and len(load_orders) == 0 and gui.update == 0:
                 SDL_WaitEventTimeout(None, 1000)
 
 
@@ -13801,15 +14061,15 @@ while running:
 
     if check_file_timer.get() > 1.1:
         check_file_timer.set()
-        # if os.path.isfile(transfer_target):
-        #     r_arg_queue = pickle.load(open(transfer_target, "rb"))
-        #     os.remove(user_directory + "/transfer.p")
-        #     arg_queue = []
-        #     for item in r_arg_queue:
-        #         if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-        #             arg_queue.append(item)
-        #             # SDL_RaiseWindow(t_window)
-        #             # SDL_RestoreWindow(t_window)
+        if os.path.isfile(transfer_target):
+            r_arg_queue = pickle.load(open(transfer_target, "rb"))
+            os.remove(user_directory + "/transfer.p")
+            arg_queue = []
+            for item in r_arg_queue:
+                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+                    arg_queue.append(item)
+                    # SDL_RaiseWindow(t_window)
+                    # SDL_RestoreWindow(t_window)
 
         if len(arg_queue) > 0:
             i = 0
@@ -13922,7 +14182,8 @@ while running:
             # print(perf_timer.get())
             #lastfm.artist_info()
             #print(gui.pl_st)
-            gui.cairo_text ^= True
+            #gui.cairo_text ^= True
+            paste()
 
             #gui.set_bar ^= True
             #gui.update_layout()
@@ -14480,7 +14741,11 @@ while running:
                     and pref_box.enabled is False \
                     and track_box is False \
                     and extra_menu.active is False\
-                    and (side_panel_enable or album_mode):
+                    and (side_panel_enable or album_mode)\
+                    and not x_menu.active \
+                    and not view_menu.active \
+                    and not track_menu.active \
+                    and not tab_menu.active:
 
 
                 #update_layout = True
@@ -14713,38 +14978,39 @@ while running:
                                         album_artist_dict[c_index] = pctl.master_library[
                                             default_playlist[album_dex[album_on]]].artist
 
-                            line = album_artist_dict[c_index]
-                            line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
+                            if gui.gallery_show_text:
+                                line = album_artist_dict[c_index]
+                                line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
-                            if line2 == "":
+                                if line2 == "":
 
-                                draw_text2((x, y + album_mode_art_size + 9),
-                                           line,
-                                           colours.gallery_artist_line,
-                                           11,
-                                           album_mode_art_size - 5,
-                                           3,
-                                           default_playlist[album_dex[album_on]]
-                                           )
-                            else:
+                                    draw_text2((x, y + album_mode_art_size + 9),
+                                               line,
+                                               colours.gallery_artist_line,
+                                               11,
+                                               album_mode_art_size - 5,
+                                               3,
+                                               default_playlist[album_dex[album_on]]
+                                               )
+                                else:
 
-                                draw_text2((x, y + album_mode_art_size + 8),
-                                           line2,
-                                           albumtitle,
-                                           212,
-                                           album_mode_art_size,
-                                           3,
-                                           default_playlist[album_dex[album_on]]
-                                           )
+                                    draw_text2((x, y + album_mode_art_size + 8),
+                                               line2,
+                                               albumtitle,
+                                               212,
+                                               album_mode_art_size,
+                                               3,
+                                               default_playlist[album_dex[album_on]]
+                                               )
 
-                                draw_text2((x, y + album_mode_art_size + 10 + 14),
-                                           line,
-                                           colours.gallery_artist_line,
-                                           11,
-                                           album_mode_art_size - 5,
-                                           3,
-                                           default_playlist[album_dex[album_on]]
-                                           )
+                                    draw_text2((x, y + album_mode_art_size + 10 + 14),
+                                               line,
+                                               colours.gallery_artist_line,
+                                               11,
+                                               album_mode_art_size - 5,
+                                               3,
+                                               default_playlist[album_dex[album_on]]
+                                               )
 
                             album_on += 1
 
@@ -14807,10 +15073,15 @@ while running:
                             break
 
                         # print(order.tracks)
-                        pctl.multi_playlist[target_pl][2] += order.tracks
+                        if order.playlist_position is not None:
+                            print(order.playlist_position)
+                            #pctl.multi_playlist[target_pl][2] = order.tracks
+                            pctl.multi_playlist[target_pl][2][order.playlist_position:order.playlist_position] = order.tracks
+                        else:
+                            pctl.multi_playlist[target_pl][2] += order.tracks
 
-                        gui.update += 1
-                        gui.pl_update = 1
+                        gui.update += 2
+                        gui.pl_update = 2
                         reload()
                         del load_orders[i]
                         break
@@ -15255,15 +15526,15 @@ while running:
                                                 playing_info = trunc_line(playing_info, fonts.side_panel_line1,
                                                                           window_size[0] - gui.playlist_width - 53)
                                                 draw_text((x - 1, block1 + 2), playing_info, colours.side_bar_line1,
-                                                          fonts.side_panel_line1, max=gui.side_panel_size - 20)
+                                                          fonts.side_panel_line1, max=gui.side_panel_size - 32)
 
                                             if artist != "":
                                                 playing_info = artist
-                                                playing_info = trunc_line(playing_info, 13,
-                                                                          window_size[0] - gui.playlist_width - 54)
+                                                # playing_info = trunc_line(playing_info, 13,
+                                                #                           window_size[0] - gui.playlist_width - 54)
                                                 draw_text((x - 1, block1 + 17 + 6), playing_info,
                                                           colours.side_bar_line2,
-                                                          fonts.side_panel_line2)
+                                                          fonts.side_panel_line2, max=gui.side_panel_size - 32)
                                         else:
                                             block1 -= 14
 
@@ -15275,16 +15546,16 @@ while running:
                                                     line += " - "
                                                 line += title
                                             line = trunc_line(line, 15, window_size[0] - gui.playlist_width - 53)
-                                            draw_text((x - 1, block1), line, colours.side_bar_line1, 15)
+                                            draw_text((x - 1, block1), line, colours.side_bar_line1, 15, max=gui.side_panel_size - 32)
 
                                         if block3 == False:
 
                                             if album != "":
                                                 playing_info = album
-                                                playing_info = trunc_line(playing_info, 14,
-                                                                          window_size[0] - gui.playlist_width - 53)
+                                                # playing_info = trunc_line(playing_info, 14,
+                                                #                           window_size[0] - gui.playlist_width - 53)
                                                 draw_text((x - 1, block2), playing_info, colours.side_bar_line2,
-                                                          14)
+                                                          14, max=gui.side_panel_size - 32)
 
                                             if date != "":
                                                 playing_info = date
@@ -15297,10 +15568,10 @@ while running:
 
                                             if ext != "":
                                                 playing_info = ext  # + " | " + sample
-                                                playing_info = trunc_line(playing_info, 12,
-                                                                          window_size[0] - gui.playlist_width - 53)
+                                                # playing_info = trunc_line(playing_info, 12,
+                                                #                           window_size[0] - gui.playlist_width - 53)
                                                 draw_text((x - 1, block2 + 36), playing_info, colours.side_bar_line2,
-                                                          12)
+                                                          12, max=gui.side_panel_size - 32)
                                         else:
                                             if block5 != True:
                                                 line = ""
@@ -15311,8 +15582,8 @@ while running:
                                                 if date != "":
                                                     line += date + " | "
                                                 line += ext
-                                                line = trunc_line(line, 14, window_size[0] - gui.playlist_width - 53)
-                                                draw_text((x - 1, block2 + 32), line, colours.side_bar_line2, 14)
+                                                #line = trunc_line(line, 14, window_size[0] - gui.playlist_width - 53)
+                                                draw_text((x - 1, block2 + 32), line, colours.side_bar_line2, 14, max=gui.side_panel_size - 32)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
@@ -17026,7 +17297,7 @@ save = [pctl.master_library,
         prefs.auto_extract,
         prefs.colour_from_image,
         gui.set_bar,
-        None,
+        gui.gallery_show_text,
         None,
         None,
         None,
@@ -17046,7 +17317,7 @@ if system == 'windows':
 
     print("unloading SDL")
     IMG_Quit()
-    TTF_Quit()
+    #TTF_Quit()
     SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
     SDL_Quit()
     print("SDL unloaded")
