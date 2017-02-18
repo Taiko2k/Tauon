@@ -3,10 +3,17 @@ Changelog-------------------------------------
 
 v2.1.1
 
+ - Added play history to playlist function
+ - Added setting to hide text in gallery view
+ - Added native clipboard integration
  - Fixed delayed UI update on media key press
- - Fixed star line positioning
+ - Fixed play time line positioning
+ - Fixed single instancing when web server is disabled
+ - Fixed quick drag to playlist not working from folder title
  - Reduced idle cpu usage
- - Improved compatibility with gnome
+ - Improved compatibility with Gnome
+ - Improved selecting and dragging operations
+ - Simplified copy/cut/paste functions
  - Set web interface as disabled by default
 
 v2.1.0
