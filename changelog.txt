@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v2.1.1
 
+ - Added native clipboard integration
  - Added play history to playlist function
  - Added setting to hide text in gallery view
- - Added native clipboard integration
+ - Added cut/copy/paste keyboard shortcuts for tracks
  - Fixed delayed UI update on media key press
  - Fixed play time line positioning
  - Fixed single instancing when web server is disabled
@@ -13,8 +14,9 @@ v2.1.1
  - Reduced idle cpu usage
  - Improved compatibility with Gnome
  - Improved selecting and dragging operations
- - Simplified copy/cut/paste functions
+ - Simplified copy/paste functions
  - Set web interface as disabled by default
+ - Removed 'shift' track submenu
 
 v2.1.0
 
