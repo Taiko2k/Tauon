@@ -6443,10 +6443,15 @@ def append_current_playing(index):
 
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
-tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
-tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
-tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
-tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
+tab_menu.add_sub("...", 145)
+tab_menu.add_to_sub('Transcode All Folders', 0, convert_playlist, pass_ref=True)
+tab_menu.add_to_sub('Rescan Tags', 0, rescan_tags, pass_ref=True)
+tab_menu.add_to_sub('Re-Import Last Folder', 0, re_import, pass_ref=True)
+tab_menu.add_to_sub('Export XSPF', 0, export_xspf, pass_ref=True)
+# tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
+# tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
+# tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
+# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 #tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
 tab_menu.add('Paste Tracks', s_append, pass_ref=True)
@@ -6454,7 +6459,7 @@ tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 tab_menu.br()
 tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
-tab_menu.add_sub("Sort To New Playlist...", 130)
+tab_menu.add_sub("Sort To New Playlist...", 133)
 
 
 def new_playlist(switch=True):
@@ -6510,7 +6515,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Most Played", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Most Played", 1, gen_top_100, pass_ref=True)
 
 
 def gen_folder_top(pl):
@@ -6554,7 +6559,7 @@ def gen_folder_top(pl):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
+tab_menu.add_to_sub("Most Played Albums", 1, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -6647,7 +6652,7 @@ def gen_sort_len(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
+tab_menu.add_to_sub("Duration", 1, gen_sort_len, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
@@ -6698,14 +6703,14 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Year → Old-New", 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub("Year → Old-New", 1, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub("Year → New-Old", 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub("Year → New-Old", 1, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -6723,7 +6728,7 @@ def gen_500_random(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Shuffled Tracks", 0, gen_500_random, pass_ref=True)
+tab_menu.add_to_sub("Shuffled Tracks", 1, gen_500_random, pass_ref=True)
 
 
 def gen_folder_shuffle(index):
@@ -6750,7 +6755,7 @@ def gen_folder_shuffle(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Shuffled Folders", 0, gen_folder_shuffle, pass_ref=True)
+tab_menu.add_to_sub("Shuffled Folders", 1, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -6771,7 +6776,7 @@ def gen_best_random(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Random Played", 0, gen_best_random, pass_ref=True)
+tab_menu.add_to_sub("Random Played", 1, gen_best_random, pass_ref=True)
 
 
 def gen_reverse(index):
@@ -6785,7 +6790,7 @@ def gen_reverse(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
-tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
+tab_menu.add_to_sub("Inverted", 1, gen_reverse, pass_ref=True)
 
 
 def gen_dupe(index):
@@ -6803,7 +6808,7 @@ def gen_dupe(index):
                                       hide_title=pctl.multi_playlist[index][4],
                                       selected=pctl.multi_playlist[index][5]))
 
-tab_menu.add_to_sub("Duplicate", 0, gen_dupe, pass_ref=True)
+tab_menu.add_to_sub("Duplicate", 1, gen_dupe, pass_ref=True)
 
 
 def gen_sort_path(index):
@@ -6820,7 +6825,7 @@ def gen_sort_path(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Filepath", 0, gen_sort_path, pass_ref=True)
+tab_menu.add_to_sub("Filepath", 1, gen_sort_path, pass_ref=True)
 
 
 def gen_sort_artist(index):
@@ -6857,8 +6862,8 @@ def gen_sort_album(index):
 
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
-tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
-tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
+tab_menu.add_to_sub("Has Comment", 1, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Lyrics", 1, gen_lyrics, pass_ref=True)
 
 
 
@@ -7168,7 +7173,7 @@ def paste(playlist=None, position=None):
         clp.CloseClipboard()
         print(items)
 
-    elif system == 'linux':
+    elif system == 'linux' and shutil.which('xclip'):
 
         #clip = SDL_GetClipboardText().decode('utf-8')
         command = "xclip -o -selection clipboard"
@@ -7193,16 +7198,16 @@ def paste(playlist=None, position=None):
 
     clips = []
     cargs = []
-    print(items)
-    print(cargo)
+    # print(items)
+    # print(cargo)
     if items is not None:
         for i in range(len(cargo)):
             cargs.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
         for i in range(len(items)):
             clips.append(os.path.abspath(items[i]))
 
-    print(clips)
-    print(cargs)
+    # print(clips)
+    # print(cargs)
     if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
         print('Matches clipboard, using internal copy')
 
@@ -7216,7 +7221,7 @@ def paste(playlist=None, position=None):
         return
 
     print('Importing from clipboard')
-    print(clips)
+    # print(clips)
 
     for item in clips:
         print("hit")
@@ -7280,7 +7285,7 @@ track_menu.add_sub("Meta...", 140)
 
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
-track_menu.add('Remove', del_selected)
+#track_menu.add('Remove', del_selected)
 track_menu.add('Copy', s_copy, pass_ref=False)
 track_menu.add('Paste', menu_paste, pass_ref=True)
 track_menu.br()
@@ -13690,11 +13695,13 @@ while running:
         # key_3_press = False
         # key_4_press = False
         # key_5_press = False
+        key_c_press = False
         key_v_press = False
         key_f_press = False
         key_a_press = False
         key_w_press = False
         key_z_press = False
+        key_x_press = False
         key_r_press = False
         key_dash_press = False
         key_eq_press = False
@@ -13883,10 +13890,14 @@ while running:
                 key_f_press = True
             elif event.key.keysym.sym == SDLK_a:
                 key_a_press = True
+            elif event.key.keysym.sym == SDLK_c:
+                key_c_press = True
             elif event.key.keysym.sym == SDLK_w:
                 key_w_press = True
             elif event.key.keysym.sym == SDLK_z:
                 key_z_press = True
+            elif event.key.keysym.sym == SDLK_x:
+                key_x_press = True
             elif event.key.keysym.sym == SDLK_r:
                 key_r_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
@@ -14213,6 +14224,20 @@ while running:
         if key_a_press and key_ctrl_down:
             gui.pl_update = 1
             shift_selection = range(len(default_playlist))
+
+        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox:
+            if key_c_press and key_ctrl_down:
+                gui.pl_update = 1
+                s_copy()
+
+            if key_x_press and key_ctrl_down:
+                gui.pl_update = 1
+                s_cut()
+
+            if key_v_press and key_ctrl_down:
+                gui.pl_update = 1
+                paste()
+
 
         if key_w_press and key_ctrl_down:
             delete_playlist(pctl.playlist_active)
