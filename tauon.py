@@ -543,7 +543,7 @@ class Prefs:
         self.expose_web = False
 
         self.enable_transcode = True
-        self.show_rym = True
+        self.show_rym = False
         self.show_wiki = True
         self.prefer_bottom_title = True
         self.append_date = True
@@ -6441,9 +6441,55 @@ def append_current_playing(index):
         pctl.multi_playlist[index][2].append(pctl.track_queue[pctl.queue_step])
         gui.pl_update = 1
 
+
+def export_stats(pl):
+    playlist_time = 0
+    play_time = 0
+    for index in pctl.multi_playlist[pl][2]:
+        playlist_time += int(pctl.master_library[index].length)
+        key = pctl.master_library[index].title + pctl.master_library[index].filename
+        if key in pctl.star_library:
+            play_time += pctl.star_library[key]
+
+    stats_gen.update(pl)
+    line = 'Playlist: ' + pctl.multi_playlist[pl][0] + "\r\n"
+    line += 'Generated: ' + time.strftime("%c") + "\r\n"
+    line += '\r\nTracks in playlist: ' + str(len(pctl.multi_playlist[pl][2]))
+    line += '\r\n\r\nTotal Duration: ' + str(datetime.timedelta(seconds=int(playlist_time)))
+    line += '\r\nTotal Playtime: ' + str(datetime.timedelta(seconds=int(play_time)))
+
+    line += "\r\n\r\n-------------- Top Artists --------------------\r\n\r\n"
+
+    ls = stats_gen.artist_list
+    for i, item in enumerate(ls[:50]):
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
+
+    line += "\r\n\r\n-------------- Top Albums --------------------\r\n\r\n"
+    ls = stats_gen.album_list
+    for i, item in enumerate(ls[:50]):
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
+    line += "\r\n\r\n-------------- Top Genres --------------------\r\n\r\n"
+    ls = stats_gen.genre_list
+    for i, item in enumerate(ls[:50]):
+        line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\r\n"
+
+    line = line.encode('utf-8')
+    xport = open(user_directory + '/stats.txt', 'wb')
+    xport.write(line)
+    xport.close()
+    target = os.path.join(user_directory, "stats.txt")
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
+
+
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
 tab_menu.add_sub("...", 145)
+tab_menu.add_to_sub("Gen. Playlist Stats", 0, export_stats, pass_ref=True)
 tab_menu.add_to_sub('Transcode All Folders', 0, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub('Rescan Tags', 0, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub('Re-Import Last Folder', 0, re_import, pass_ref=True)
@@ -8092,55 +8138,28 @@ x_menu.br()
 
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
 
-def stt(sec):
+# def stt(sec):
+#     days, rem = divmod(sec, 86400)
+#     hours, rem = divmod(rem, 3600)
+#     min, sec = divmod(rem, 60)
+#     return str(days) + "d " + str(hours) + "h " + str(min) + 'm'
+
+def stt2(sec):
     days, rem = divmod(sec, 86400)
     hours, rem = divmod(rem, 3600)
     min, sec = divmod(rem, 60)
-    return str(days) + "d " + str(hours) + "h " + str(min) + 'm'
 
+    s_day = str(days) + 'd'
+    if s_day == '0d':
+        s_day = "  "
 
-def export_stats():
-    playlist_time = 0
-    play_time = 0
-    for index in pctl.multi_playlist[pctl.playlist_active][2]:
-        playlist_time += int(pctl.master_library[index].length)
-        key = pctl.master_library[index].title + pctl.master_library[index].filename
-        if key in pctl.star_library:
-            play_time += pctl.star_library[key]
+    s_hours = str(hours) + 'h'
+    if s_hours == '0h' and s_day == '  ':
+        s_hours = "  "
 
-    stats_gen.update(pctl.playlist_active)
-    line = 'Stats for playlist: ' + pctl.multi_playlist[pctl.playlist_active][0] + "\r\n"
-    line += 'Generated on ' + time.strftime("%c") + "\r\n"
-    line += '\r\nTracks in playlist: ' + str(len(pctl.multi_playlist[pctl.playlist_active][2]))
-    line += '\r\nTotal Duration: ' + str(datetime.timedelta(seconds=int(playlist_time)))
-    line += '\r\nTotal Playtime: ' + str(datetime.timedelta(seconds=int(play_time)))
+    s_min = str(min) + 'm'
 
-    line += "\r\n\r\n\r\nTop Artists ---------------------------------------\r\n\r\n"
-
-    ls = stats_gen.artist_list
-    for item in ls[:25]:
-        line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
-    line += "\r\n\r\nTop Albums ---------------------------------------\r\n\r\n"
-    ls = stats_gen.album_list
-    for item in ls[:25]:
-        line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
-    line += "\r\n\r\nTop Genres ---------------------------------------\r\n\r\n"
-    ls = stats_gen.genre_list
-    for item in ls[:25]:
-        line += stt(item[1]) + "\t-\t" + item[0] + "\r\n"
-
-    line = line.encode('utf-8')
-    xport = open(user_directory + '/stats.txt', 'wb')
-    xport.write(line)
-    xport.close()
-    target = os.path.join(user_directory, "stats.txt")
-    if system == "windows":
-        os.startfile(target)
-    elif system == 'mac':
-        subprocess.call(['open', target])
-    else:
-        subprocess.call(["xdg-open", target])
-
+    return s_day.rjust(3) + ' ' + s_hours.rjust(3) + ' ' + s_min.rjust(3)
 
 def export_database():
     xport = open(user_directory + '/DatabaseExport.csv', 'wb')
@@ -8153,6 +8172,7 @@ def export_database():
         line.append(str(track.artist))
         line.append(str(track.title))
         line.append(str(track.album))
+        line.append(str(track.album_artist))
         line.append(str(track.track_number))
         if track.is_cue == False:
             line.append('FILE')
@@ -8196,7 +8216,7 @@ def q_to_playlist():
 
 
 x_menu.add_to_sub("Export as CSV", 0, export_database)
-x_menu.add_to_sub("Playlist Stats", 0, export_stats)
+#x_menu.add_to_sub("Playlist Stats", 0, export_stats)
 x_menu.add_to_sub("Play History to Playlist", 0, q_to_playlist)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
 
@@ -8536,9 +8556,9 @@ def library_deco():
         tc = colours.menu_text_disabled
 
     if gui.set_mode:
-        return [tc, colours.menu_background, "Disable Library Bar"]
+        return [tc, colours.menu_background, "Disable Columns"]
     else:
-        return [tc, colours.menu_background, 'Enable Library Bar']
+        return [tc, colours.menu_background, 'Enable Columns']
 
 def break_deco():
     tex = colours.menu_text
@@ -8549,9 +8569,9 @@ def break_deco():
 
 
     if pctl.multi_playlist[pctl.playlist_active][4] == 0:
-        return [tex, colours.menu_background, "Disable Playlist Breaks"]
+        return [tex, colours.menu_background, "Disable Title Breaks"]
     else:
-        return [tex, colours.menu_background, 'Enable Playlist Breaks']
+        return [tex, colours.menu_background, 'Enable Title Breaks']
 
 def toggle_playlist_break():
     pctl.multi_playlist[pctl.playlist_active][4] ^= 1
