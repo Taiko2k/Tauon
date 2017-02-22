@@ -11,12 +11,14 @@ v2.1.1
  - Fixed play time line positioning
  - Fixed single instancing when web server is disabled
  - Fixed quick drag to playlist not working from folder title
+ - Fixed window title on Gnome showing as Python
+ - Added auto detect Gnone desktop environment for media keys
  - Reduced idle cpu usage
- - Improved compatibility with Gnome
  - Improved selecting and dragging operations
  - Simplified copy/paste functions
- - Set web interface as disabled by default
- - Removed 'shift' track submenu
+ - Moved 'Playlist Stats' function to tab menu
+ - Set defaults: web interface as disabled, RYM search as disabled
+ - Removed 'shift' track sub menu
 
 v2.1.0
 
