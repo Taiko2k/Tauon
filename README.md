@@ -30,11 +30,12 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 For Windows, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
  
-For Arch Linux, download pkgbuild from releases section and install. For example using yaourt, navigate terminal to download location and run:
+For Arch Linux, download pkgbuild from releases section and install. For example using yaourt (Update: There appeares to be a bug using this method in the last release of yaourt, you may need to install dependencies manually. Note that the dependency python-cairo-git is avaliable in the AUR), navigate terminal to download location and run:
 
     $ yaourt -P -i
 
-For further documentation see [usage](docs/usage.md). For detailed feature status see [features](docs/features.md).
+
+For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
 
 
 
