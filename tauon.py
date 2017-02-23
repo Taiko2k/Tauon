@@ -7231,8 +7231,12 @@ def paste(playlist=None, position=None):
 
         items = []
         for item in clip:
-            if item[0] == '/':
+            if len(item) > 0 and (item[0] == '/' or 'file://' in item):
+                item = item.lstrip("file:/")
+                if item[0] != "/":
+                    item = "/" + item
                 items.append(item)
+
             else:
                 items = None
                 break
@@ -7252,8 +7256,13 @@ def paste(playlist=None, position=None):
         for i in range(len(items)):
             clips.append(os.path.abspath(items[i]))
 
+    # print('clips')
     # print(clips)
+    # print('cargs')
     # print(cargs)
+    # print('items')
+    # print(items)
+
     if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
         print('Matches clipboard, using internal copy')
 
@@ -7270,7 +7279,8 @@ def paste(playlist=None, position=None):
     # print(clips)
 
     for item in clips:
-        print("hit")
+        print("load item")
+        print(item)
         load_order = LoadClass()
         load_order.target = item
         playlist_target = pctl.playlist_active
