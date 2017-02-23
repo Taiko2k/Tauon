@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.1.1"
+t_version = "v2.1.5"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -5974,7 +5974,7 @@ class Menu:
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
-                    colo = alpha_blend([255, 255, 255, 40], fx[1])
+                    colo = alpha_blend([255, 255, 255, 50], bg)
                     draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
                               colo, 10, bg=bg)
 
@@ -8326,7 +8326,7 @@ def random_track():
     pctl.random_mode = old
 
 
-extra_menu.add('Random Track', random_track)
+extra_menu.add('Random Track', random_track, hint='COLON')
 
 
 def radio_random():
@@ -8335,7 +8335,7 @@ def radio_random():
 
 extra_menu.add('Radio Random', radio_random, hint='/')
 
-extra_menu.add('Revert', pctl.revert)
+extra_menu.add('Revert', pctl.revert, hint='RSHIFT + /')
 
 
 def toggle_repeat():
@@ -8351,6 +8351,15 @@ def toggle_random():
 
 extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add('Clear Queue', clear_queue, queue_deco)
+
+def toggle_search():
+    global quick_search_mode
+    global input_text
+    quick_search_mode ^= True
+    search_text.text = ""
+    input_text = ""
+
+extra_menu.add('Search', toggle_search, hint='BACKSLASH')
 
 extra_menu.add("Go To Playing", pctl.show_current, hint="QUOTE")
 
@@ -8581,10 +8590,10 @@ view_menu.add("Return to Standard", view_standard, standard_view_deco)
 view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
 view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco)
 view_menu.br()
-view_menu.add("Tracks", view_tracks)
+view_menu.add("Tracks", view_tracks, hint="MB5")
 view_menu.add("Tracks + Metadata", view_standard_meta)
 view_menu.add("Tracks + Full Art", view_standard_full)
-view_menu.add("Tracks + Gallery", force_album_view)
+view_menu.add("Tracks + Gallery", force_album_view, hint="MB4")
 view_menu.add("Gallery Only", gallery_only_view)
 view_menu.add("Combined Art + Tracks", toggle_combo_view)
 view_menu.add("Showcase + Lyrics", switch_showcase)
@@ -9409,8 +9418,13 @@ def webserv():
 
         return 0
 
-    from flask import Flask, redirect, send_file, abort, request
-    from string import Template
+    try:
+        from flask import Flask, redirect, send_file, abort, request
+        from string import Template
+    except:
+        print("Failed to load Flask")
+        show_message("Webserver failed, flask not detected")
+        return 0
 
     app = Flask(__name__)
 
@@ -10513,7 +10527,7 @@ class Over:
 
     def about(self):
 
-        x = self.box_x + int(self.w * 0.3) + 80  # 110 + int((self.w - 110) / 2)
+        x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 76
 
         self.about_image.render(x - 85, y + 5)
@@ -13729,9 +13743,12 @@ while running:
         key_period_press = False
         key_comma_press = False
         key_quote_hit = False
+        key_col_hit = False
         key_return_press_w = False
         key_tab = False
         key_tilde = False
+        key_home_press = False
+        key_end_press = False
         mouse_wheel = 0
         new_playlist_cooldown = False
         input_text = ''
@@ -13956,12 +13973,18 @@ while running:
                 key_comma_press = True
             elif event.key.keysym.sym == SDLK_QUOTE:
                 key_quote_hit = True
+            elif event.key.keysym.sym == SDLK_SEMICOLON:
+                key_col_hit = True
             elif event.key.keysym.sym == SDLK_TAB:
                 key_tab = True
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
             elif event.key.keysym.sym == SDLK_BACKQUOTE:
                 key_tilde = True
+            elif event.key.keysym.sym == SDLK_HOME:
+                key_home_press = True
+            elif event.key.keysym.sym == SDLK_END:
+                key_end_press = True
 
         elif event.type == SDL_KEYUP:
             k_input = True
@@ -14390,6 +14413,30 @@ while running:
                     playlist_position = 0
                 gui.pl_update = 1
 
+        if key_home_press:
+            if key_shift_down or key_shiftr_down:
+                playlist_position = 0
+                playlist_selected = 0
+                gui.pl_update = 1
+            else:
+                if pctl.playing_time < 4:
+                    pctl.back()
+                else:
+                    pctl.new_time = 0
+                    pctl.playing_time = 0
+                    pctl.playerCommand = 'seek'
+                    pctl.playerCommandReady = True
+        if key_end_press:
+            if key_shift_down or key_shiftr_down:
+                n = len(default_playlist) - gui.playlist_view_length + 1
+                if n < 0:
+                    n = 0
+                playlist_position = n
+                playlist_selected = len(default_playlist) - 1
+                gui.pl_update = 1
+            else:
+                pctl.advance()
+
         if input.mouse_click:
             n_click_time = time.time()
             if n_click_time - click_time < 0.65:
@@ -14398,22 +14445,22 @@ while running:
 
         if quick_search_mode is False and renamebox is False:
 
-            if key_shiftr_down and key_right_press:
+            if (key_shiftr_down or key_shift_down) and key_right_press:
                 key_right_press = False
                 pctl.advance()
                 # print('hit')
-            if key_shiftr_down and key_left_press:
+            if (key_shiftr_down or key_shift_down) and key_left_press:
                 key_left_press = False
                 pctl.back()
 
-            if key_shiftr_down and key_up_press:
+            if (key_shiftr_down or key_shift_down) and key_up_press:
                 key_up_press = False
                 pctl.player_volume += 3
                 if pctl.player_volume > 100:
                     pctl.player_volume = 100
                 pctl.set_volume()
 
-            if key_shiftr_down and key_down_press:
+            if (key_shiftr_down or key_shift_down) and key_down_press:
                 key_down_press = False
                 if pctl.player_volume > 3:
                     pctl.player_volume -= 3
@@ -14423,7 +14470,7 @@ while running:
 
             if not radiobox:
                 if key_slash_press:
-                    if key_shiftr_down:
+                    if key_shiftr_down or key_shift_down:
                         pctl.revert()
                     else:
                         pctl.advance(rr=True)
@@ -14433,6 +14480,8 @@ while running:
                     pctl.show_current()
                 if key_comma_press:
                     pctl.repeat_mode ^= True
+                if key_col_hit:
+                    random_track()
 
             if key_dash_press:
                 pctl.new_time = pctl.playing_time - 15
