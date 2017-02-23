@@ -3,11 +3,14 @@ Changelog-------------------------------------
 
 v2.1.5
 
+ - Added stars playtime representation
  - Added native clipboard integration
  - Added play history to playlist function
  - Added setting to hide text in gallery view
  - Added cut/copy/paste keyboard shortcuts for tracks
  - Added menu shortcut for search
+ - Added option to show album art in bottom panel
+ - Fixed missing playback support for ALAC codec M4A files under Linux
  - Fixed delayed UI update on media key press
  - Fixed play time line positioning
  - Fixed single instancing when web server is disabled
@@ -15,6 +18,7 @@ v2.1.5
  - Fixed menu shortcut hint colour blending
  - Fixed left shift key not applying to some shortcuts
  - Fixed window title on Gnome showing as Python
+ - Fixed text slightly overlapping playtime line
  - Added auto detect Gnome desktop environment for media keys
  - Reduced idle cpu usage
  - Improved selecting and dragging operations
