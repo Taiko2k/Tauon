@@ -385,7 +385,7 @@ source = None
 album_playlist_width = 430
 
 update_title = False
-star_lines = True
+star_lines = False
 
 playlist_hold_position = 0
 playlist_hold = False
@@ -679,6 +679,8 @@ class GuiVar:
         self.playlist_box_d_click = -1
 
         self.gallery_show_text = True
+        self.bb_show_art = False
+        self.show_stars = True
 
 
 gui = GuiVar()
@@ -705,6 +707,24 @@ class Input:
 
 input = Input()
 
+def star_count(sec, dur):
+
+    stars = 0
+    if sec / dur > 0.95:
+        stars += 1
+    if sec > 60 * 15:
+        stars += 1
+    if sec > 60 * 30:
+        stars += 1
+    if sec > 60 * 60:
+        stars += 1
+    if sec > 60 * 60 * 2:
+        stars += 1
+    if sec > 60 * 60 * 5:
+        stars += 1
+    if sec > 60 * 60 * 10:
+        stars += 1
+    return stars
 
 def update_set():
 
@@ -1027,6 +1047,10 @@ try:
         gui.set_bar = save[49]
     if save[50] is not None:
         gui.gallery_show_text = save[50]
+    if save[51] is not None:
+        gui.bb_show_art = save[51]
+    if save[52] is not None:
+        gui.show_stars = save[52]
 
     state_file.close()
     del save
@@ -1078,13 +1102,13 @@ if db_version > 0:
             setattr(master_library[key], 'album_artist', "")
 
     if db_version <= 1.2:
-        print("Updating database from version 1.2 to 1.3")
+        print("Updating database to version 1.3")
         for key, value in master_library.items():
             setattr(master_library[key], 'disc_number', "")
             setattr(master_library[key], 'disc_total', "")
 
     if db_version <= 1.3:
-        print("Updating database from version 1.3 to 1.4")
+        print("Updating database to version 1.4")
         for key, value in master_library.items():
             setattr(master_library[key], 'lyrics', "")
             setattr(master_library[key], 'track_total', "")
@@ -1092,15 +1116,19 @@ if db_version > 0:
             "Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
 
     if db_version <= 1.4:
-        print("Updating database from version 1.4 to 1.5")
+        print("Updating database to version 1.5")
         for playlist in multi_playlist:
             playlist.append(pl_uid_gen())
 
     if db_version <= 1.5:
-        print("Updating database from version 1.5 to 1.6")
+        print("Updating database to version 1.6")
         for i in range(len(multi_playlist)):
             if len(multi_playlist[i]) == 7:
                 multi_playlist[i].append("")
+
+    if db_version <= 1.6:
+        print("Updating preferences to 1.7")
+        gui.show_stars = False
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -2551,6 +2579,7 @@ def player():
         # print("Load bass_wma")
         # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'basswv.dll', 0)
+        BASS_PluginLoad(b'bassalac.dll', 0)
 
         # bassenc_opus
     elif system == 'mac':
@@ -2569,6 +2598,7 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
         BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
 
     BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
     if BassInitSuccess == True:
@@ -5529,14 +5559,22 @@ def trunc_line(line, font, px, dots=True):
     if draw.text_calc(line, font) < px + 10:
         return line
 
-    while draw.text_calc(line, font) > px:
-        trunk = True
-        line = line[:-1]
-        if len(line) < 3:
-            break
-    if trunk and dots:
-        line = line.rstrip(" ") + gui.trunk_end
-    return line
+    if dots:
+        while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+            if len(line) == 0:
+                return gui.trunk_end
+            line = line[:-1]
+        return line.rstrip(" ") + gui.trunk_end
+
+    else:
+        while draw.text_calc(line, font) > px:
+            # trunk = True
+            line = line[:-1]
+            if len(line) < 2:
+                break
+        # if trunk and dots:
+        #     line = line.rstrip(" ") + gui.trunk_end
+        return line
 
 
 def trunc_line2(line, font, px):
@@ -7040,7 +7078,7 @@ def convert_folder(index):
             print(prefs.transcode_codec)
             print(pctl.master_library[item].file_ext)
             if prefs.transcode_codec == 'flac' and pctl.master_library[item].file_ext.lower() in ('mp3', 'opus',
-                                                                                                  'm4a', 'mp4', 'ogg',
+                                                                                                  'mp4', 'ogg',
                                                                                                   'aac'):
                 show_message("You're trying to convert a lossy codec to a lossless codec, I wont let you do that.")
                 return
@@ -9884,15 +9922,28 @@ if prefs.enable_web is True:
 
 # --------------------------------------------------------------
 
-def star_toggle(mode=0):
+def star_line_toggle(mode=0):
     global star_lines
 
     if mode == 1:
         return star_lines
     star_lines ^= True
+    if star_lines:
+        gui.show_stars = False
     gui.update += 1
     gui.pl_update = 1
 
+def star_toggle(mode=0):
+
+    if mode == 1:
+        return gui.show_stars
+    gui.show_stars ^= True
+    if gui.show_stars:
+        global star_lines
+        star_lines = False
+
+    gui.update += 1
+    gui.pl_update = 1
 
 def toggle_titlebar_line(mode=0):
     global update_title
@@ -9925,7 +9976,8 @@ def toggle_borderless(mode=0):
 
 
 config_items = [
-    ['Show playtime lines', star_toggle],
+    ['Show playtime as lines', star_line_toggle],
+    ['Show playtime as stars', star_toggle],
 ]
 
 
@@ -10123,6 +10175,10 @@ def toggle_sbt(mode=0):
         return prefs.prefer_bottom_title
     prefs.prefer_bottom_title ^= True
 
+def toggle_bba(mode=0):
+    if mode == 1:
+        return gui.bb_show_art
+    gui.bb_show_art ^= True
 
 def toggle_use_title(mode=0):
     if mode == 1:
@@ -10525,15 +10581,19 @@ class Over:
         self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
-        x += 290
+        x += 250
         y -= 120
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from image")
 
         y += 28
-        x -= 5
+        x += 0
         self.button(x, y, "Reset Layout", standard_size)
         x += 100
         self.button(x, y, "Next Theme", advance_theme)
+        x -= 100
+
+        y += 92
+        self.toggle_square(x, y, toggle_bba, "Show album art in bottom panel")
 
     def about(self):
 
@@ -11525,6 +11585,10 @@ class BottomBarType1:
             self.volume_bar_position[1] = window_size[1] - 27
             self.seek_bar_position[1] = window_size[1] - gui.panelBY
             self.seek_bar_size[0] = window_size[0] - 300
+            self.seek_bar_position[0] = 300
+            if gui.bb_show_art:
+                self.seek_bar_position[0] = 300 + gui.panelBY
+                self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
 
         # elif self.mode == 1:
         #     self.volume_bar_position[0] = window_size[0] - 210
@@ -11573,6 +11637,16 @@ class BottomBarType1:
                 else:
                     self.scrob_stick = l_x
                 draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2, self.seek_bar_size[1]), [255, 0, 0, 70], True)
+
+
+        # MINI ALBUM ART
+        if gui.bb_show_art:
+            rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
+            draw.rect_r(rect, [255, 255, 255, 8], True)
+            if 3 > pctl.playing_state > 0:
+                album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+
+            #draw.rect_r(rect, [255, 255, 255, 20])
 
         # SEEK BAR------------------
         if pctl.playing_time < 1:
@@ -11705,8 +11779,14 @@ class BottomBarType1:
             else:
                 line = pctl.tag_meta
 
-            line = trunc_line(line, 213, window_size[0] - 710)
-            draw_text((self.seek_bar_position[0] + 1, self.seek_bar_position[1] + 22), line, colours.bar_title_text,
+            x = self.seek_bar_position[0] + 1
+            mx = window_size[0] - 710
+            if gui.bb_show_art:
+                x += 10
+                mx -= gui.panelBY - 10
+
+            line = trunc_line(line, 213, mx)
+            draw_text((x, self.seek_bar_position[1] + 22), line, colours.bar_title_text,
                       fonts.panel_title)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10, self.seek_bar_position[1] + 20, window_size[0] - 710, 30)):
@@ -12541,11 +12621,31 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
 
-                # draw.line(width + start_x - star_x - 45 - offset_font_extra,
-                #           y + 8 + offset_y_extra,
-                #           width + start_x - 42 - offset_font_extra,
-                #           y + 8 + offset_y_extra,
-                #           alpha_mod(colours.star_line, album_fade))
+        if gui.show_stars and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+            index].length != 0:
+
+
+            stars = star_count(pctl.star_library[key], pctl.master_library[index].length)
+            starl = "★" * stars
+            star_x = draw_text((width + start_x - 42 - offset_font_extra,
+                       y, 1), starl,
+                      alpha_mod(indexc, album_fade), gui.row_font_size)
+            #star_x =
+
+
+            # if ratio > 0.55:
+            #     star_x = int(ratio * 4)
+            #     if star_x > 60:
+            #         star_x = 60
+            #     sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
+            #     if gui.playlist_row_height > 17:
+            #         sp -= 1
+            #     draw.rect_r([width + start_x - star_x - 45 - offset_font_extra,
+            #                  sp, #y + 8 + offset_y_extra,
+            #                  star_x + 3,
+            #                  1
+            #                  ], alpha_mod(colours.star_line, album_fade), True)
+
 
         draw_text((start_x,
                    y), indexLine,
@@ -13043,15 +13143,26 @@ class StandardPlaylist:
                     if item[0] == "Starline":
                         key = n_track.title + n_track.filename
                         if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
-                            total = pctl.star_library[key]
-                            ratio = total / n_track.length
-                            if ratio > 0.55:
-                                star_x = int(ratio * 4)
-                                if star_x > wid:
-                                    star_x = wid
-                                sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
-                                draw.line(run + 4, sy, run + star_x + 4, sy,
-                                          colours.star_line)
+                            if gui.show_stars:
+
+                                text = star_count(pctl.star_library[key], n_track.length) * "★"
+
+                                text = trunc_line(text, gui.row_font_size, wid, False)
+                                draw_text((run + 6, y),
+                                          text,
+                                          colour,
+                                          gui.row_font_size,
+                                          )
+                            else:
+                                total = pctl.star_library[key]
+                                ratio = total / n_track.length
+                                if ratio > 0.55:
+                                    star_x = int(ratio * 4)
+                                    if star_x > wid:
+                                        star_x = wid
+                                    sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
+                                    draw.line(run + 4, sy, run + star_x + 4, sy,
+                                              colours.star_line)
 
                     else:
                         text = ""
@@ -14247,7 +14358,7 @@ while running:
             #lastfm.artist_info()
             #print(gui.pl_st)
             #gui.cairo_text ^= True
-            paste()
+
 
             #gui.set_bar ^= True
             #gui.update_layout()
@@ -17368,7 +17479,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.6,  # Version
+        1.7,  # Version
         view_prefs,
         gui.save_size,
         gui.side_panel_size,
@@ -17402,8 +17513,8 @@ save = [pctl.master_library,
         prefs.colour_from_image,
         gui.set_bar,
         gui.gallery_show_text,
-        None,
-        None,
+        gui.bb_show_art,
+        gui.show_stars,
         None,
         None
         ]
