@@ -631,7 +631,8 @@ class GuiVar:
         self.draw_frame = False
 
         self.track_box_click = False
-        self.universal_y_text_offset = 2
+        self.universal_y_text_offset = 0
+        self.star_text_y_offset = 0
 
         self.set_bar = False
         self.set_mode = False
@@ -1129,6 +1130,9 @@ if db_version > 0:
     if db_version <= 1.6:
         print("Updating preferences to 1.7")
         gui.show_stars = False
+        # if install_mode:
+        #         shutil.copy(install_directory + "/config.txt", user_directory)
+
 
 # LOADING CONFIG
 player_config = "BASS"
@@ -1172,6 +1176,20 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 try:
                     gui.universal_y_text_offset = int(result)
+                except:
+                    print("Expected number")
+
+            if 'linux-font-star-offset=' in p and system == 'linux':
+                result = p.split('=')[1]
+                try:
+                    gui.star_text_y_offset = int(result)
+                except:
+                    print("Expected number")
+
+            if 'windows-font-star-offset=' in p and system == 'windows':
+                result = p.split('=')[1]
+                try:
+                    gui.star_text_y_offset = int(result)
                 except:
                     print("Expected number")
 
@@ -5580,26 +5598,21 @@ def trunc_line(line, font, px, dots=True):
 def trunc_line2(line, font, px):
     trunk = False
     p = draw.text_calc(line, font)
-    if p == 0:
+    if p == 0 or p < px + 15:
         return line
-    if p < px + 15:
-       return line
-
-
 
     tl = line[0:(int(px / p * len(line)) + 3)]
-    if draw.text_calc(line, font) > px:
-        line = tl
-        #print("snap " + line)
 
-    while draw.text_calc(line, font) > px:
+    if draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+        line = tl
+
+    while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
         trunk = True
         line = line[:-1]
-        if len(line) < 3:
+        if len(line) < 1:
             break
-    if trunk:
-        line += gui.trunk_end
-    return line
+
+    return line.rstrip(" ") + gui.trunk_end
 
 
 
@@ -12628,7 +12641,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             stars = star_count(pctl.star_library[key], pctl.master_library[index].length)
             starl = "★" * stars
             star_x = draw_text((width + start_x - 42 - offset_font_extra,
-                       y, 1), starl,
+                       y + gui.star_text_y_offset, 1), starl,
                       alpha_mod(indexc, album_fade), gui.row_font_size)
             #star_x =
 
@@ -13146,9 +13159,11 @@ class StandardPlaylist:
                             if gui.show_stars:
 
                                 text = star_count(pctl.star_library[key], n_track.length) * "★"
-
-                                text = trunc_line(text, gui.row_font_size, wid, False)
-                                draw_text((run + 6, y),
+                                colour = colours.index_text
+                                if this_line_playing is True:
+                                    colour = colours.index_playing
+                                text = trunc_line(text, gui.row_font_size, wid + 7, False)
+                                draw_text((run + 6, y + gui.star_text_y_offset),
                                           text,
                                           colour,
                                           gui.row_font_size,

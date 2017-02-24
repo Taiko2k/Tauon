@@ -2,18 +2,18 @@
 
 ### Codecs
 
- - Audio only: AAC, WAV
- - Audio and metadata: M4A, OGG, OPUS, WMA (windows only)
- - Audio, metadata and embedded picture: MP3, FLAC, APE*, WV*, TTA*   *Picture from APEv2 tags only
+ - Audio, metadata and embedded picture: MP3, FLAC, APE, WV, TTA
+ - Audio and metadata: M4A(AAC + ALAC), OGG(Vorbis), OPUS, WMA(windows only)
+ - Audio only: WAV
 
 
 ### UI and Layouts
 
  - Theme files for changing UI colours (not all elements customisable)
- - Tracks
+ - Track list
  - Album art
  - Album gallery
- - Basic spectrum visualization or level meter
+ - Basic spectrum visualization and level meter
  - Custom columns with sorting
  - Lyrics display
 
@@ -24,7 +24,7 @@
 ### Other file formats
 
  - XSPF (import and export) (cross-app compatibility not tested)
- - CUE sheets targeting single files (automaticly read when importing)
+ - CUE sheets targeting single files (import only) (automaticly read when importing)
 
 ### Player features
 
