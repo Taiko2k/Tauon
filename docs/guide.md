@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.1.1
+Basic usage guide. Updated for v2.1.5
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a centeral database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
@@ -71,15 +71,14 @@ Tip: End the search text with another forward slash to search just for folders w
 ### Extra Shortcuts
 
 ***Search***: Backslash \ or Ctrl + F  
+***Toggle folder break for current playlist***: F1   
 ***Cycle Theme***: F2   
 ***Toggle Auto Theme***: F3   
 ***Change Playlist***: Left and Right arrow keys  
 ***View Playlist List***: Tilde ~
 ***Seek***: + and -   
 ***Play next/previous track***: Shift + Left and Right arrow keys OR global mediakeys OR home/end keys  
-***Volume Up/Down***: Shift + Up and Down arrow keys   
-***Toggle Gallery View***: Mouse button 4   
-***Toggle folder break for current playlist***: F1   
+***Volume Up/Down***: Shift + Up and Down arrow keys    
 ***Toggle broadcast sync mode***: F6   
 ***Select TOP/END***: Home, End   
 ***Undo playlist delete***: Ctrl + Z

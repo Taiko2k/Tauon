@@ -21,7 +21,7 @@ To remove pip flask and python-xlib:
         $ sudo pip3 uninstall flask pylast click Werkzeug itsdangerous Jinja2 MarkupSafe python3-xlib
  
  
-## Dependencies
+## Dependencies for manual setup
 
  - SDL >= 2.0.5
  - SDL_Image

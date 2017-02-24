@@ -1,45 +1,59 @@
-﻿## Tauon Music Box config file
+﻿# Tauon Music Box config file
 
-## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
+# --- Playback ---------------------------------------------------------------
+# Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
+
 pause-fade-time=400
 cross-fade-time=700
+scrobble-mark=True 
 
-scrobble-mark=True
+# --- View ---------------------------------------------------------------- 
+
 scroll-gallery-row=True
 scroll-gallery-wheel=90
 
-## Windows Fonts:
-## Currently optimised for Meiryo (preferred) and Arial (fallback) only
+# --- Windows Fonts --------------------------------------------------------
+# Currently optimised for Meiryo (preferred) and Arial (fallback) only
+
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
+#font-height-offset=0
+windows-font-star-offset=-1
  
-## Linux Fonts:
+# --- Linux Fonts -----------------------------------------------------------
+
 #linux-font=Noto Sans
 #linux-font-bold=Noto Sans Bold
 #font-height-offset=0
+linux-font-star-offset=1
 
-## Media keys; 0 = off, 1 = source from dbus, 2 = source from x server
-## Note: 2 will be set to 1 if gnome desktop environment is detected
-## Note: Values greater than 0 have the same effect under Windows
+# --- Media Keys -------------------------------------------------------------
+# Media keys; 0 = off, 1 = source from dbus, 2 = source from x server
+# Note: 2 will be set to 1 if gnome desktop environment is detected
+
 mediakey=2
 
-## Output directory for encoded files. Must have user permissions. Default is encoder folder in program directory.
+# --- Encoding ------------------------------------------------------------------
+# Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
+
 #output-dir=C:\example
 
-## Icecast mounting. Codec can be MP3, OGG
-## Note: MP3 setting requires lame. On windows place 'lame.exe' in /encoder directory. On Linux install 'lame' package
-## Tip: Higher bitrates may help reduce latency
+# --- Icecast ------------------------------------------------------------------
+# Icecast mounting. Codec can be MP3 or OGG
+# Note: MP3 setting requires lame. On windows place 'lame.exe' in /encoder directory. On Linux install 'lame' package
 
 icecast-codec=OGG
 icecast-bitrate=128
 icecast-mount=localhost:8000/test
 icecast-password=hackme
 
-## External Tag editor loading. tag-editor-program is the command used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.
+# --- Tag Editor ----------------------------------------------------------------
+# External Tag editor loading. tag-editor-program is the command used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.
+# Note: Picard seems to have a problem with unicode filepaths on Windows. Works on Linux.
+
 tag-editor-name=Picard
 tag-editor-program=picard
 tag-editor-path=C:/Program Files (x86)/MusicBrainz Picard/picard.exe
-## Note: Picard seems to have a problem with unicode filepaths on Windows. Works on Linux.
 
 #tag-editor-name=AIMP
 #tag-editor-program=
