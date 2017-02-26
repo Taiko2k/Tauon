@@ -7,13 +7,21 @@ pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True 
 
+# --- Visualiser ----------------------------------------------------------
+# Base colour is the background colour when there is no sound. R,G,B int values. Must be from 0 to 255.
+# Colour multiply values produce the foreground colour. R,G,B float values. Can be 0 to 1 or greater.
+
+vis-scroll=True
+#vis-base-colour=10,10,10
+#vis-colour-multiply=2,1.2,5
+
 # --- View ---------------------------------------------------------------- 
 
 scroll-gallery-row=True
 scroll-gallery-wheel=90
 
 # --- Windows Fonts --------------------------------------------------------
-# Currently optimised for Meiryo (preferred) and Arial (fallback) only
+# Currently optimised for Meiryo (preferred) and Arial (fallback)
 
 #windows-set-font-family=Arial
 #windows-font-use-bold=True

@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v2.1.5
 
  - Added stars playtime representation
+ - Added new visualiser
  - Added native clipboard integration
  - Added play history to playlist function
  - Added setting to hide text in gallery view
@@ -20,9 +21,11 @@ v2.1.5
  - Fixed window title on Gnome showing as Python
  - Fixed text slightly overlapping playtime line
  - Added auto detect Gnome desktop environment for media keys
+ - Added label in transcode settings showing when ffmpeg is missing
  - Reduced idle cpu usage
  - Improved selecting and dragging operations
  - Improved text truncating in column mode
+ - Improved text cursor animation
  - Simplified copy/paste functions
  - Moved 'Playlist Stats' function to tab menu
  - Bound 'Random Track' to semicolon key
