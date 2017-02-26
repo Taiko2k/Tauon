@@ -285,6 +285,8 @@ class Timer:  # seconds
 
 # Setting various timers
 cursor_blink_timer = Timer()
+animate_monitor_timer = Timer()
+animate_monitor_timer.set()
 spec_decay_timer = Timer()
 min_render_timer = Timer()
 check_file_timer = Timer()
@@ -578,6 +580,10 @@ class Prefs:
         self.linux_font = "Noto Sans"
         self.linux_bold_font = "Noto Sans Bold"
 
+        self.spec2_scroll = False
+        self.spec2_base = [10, 10, 100]
+        self.spec2_multiply = [0.5, 1, 1]
+
 
 prefs = Prefs()
 
@@ -683,6 +689,23 @@ class GuiVar:
         self.bb_show_art = False
         self.show_stars = True
 
+        self.spec2_y = 22
+        self.spec2_w = 140
+        self.spec2 = [0] * self.spec2_y
+        self.spec2_phase = 0
+        self.spec2_buffers = []
+        self.spec2_tex = None
+        self.spec2_rec = SDL_Rect(1230, 4, self.spec2_w, self.spec2_y)
+        self.spec2_source = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
+        self.spec2_dest = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
+        # self.spec2_source2 = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
+        # self.spec2_dest2 = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
+        self.spec2_position = 0
+        self.spec2_timer = Timer()
+        self.spec2_timer.set()
+
+
+
 
 gui = GuiVar()
 
@@ -744,6 +767,14 @@ def update_set():
         if gui.pl_st[i][2] is False:
             gui.pl_st[i][1] = int(math.ceil((gui.pl_st[i][1] / total) * wid)) #+ 1
 
+
+def colour_slide(a, b, x, x_limit):
+
+    return (min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
+     min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
+     min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255), 255)
+
+    return [r, g, b, 255]
 
 def alpha_mod(colour, alpha):
     return [colour[0], colour[1], colour[2], alpha]
@@ -908,7 +939,7 @@ view_prefs = {
 
     'split-line': True,
     'update-title': False,
-    'star-lines': True,
+    'star-lines': False,
     'side-panel': True,
     'dim-art': False,
     'pl-follow': False,
@@ -1130,8 +1161,9 @@ if db_version > 0:
     if db_version <= 1.6:
         print("Updating preferences to 1.7")
         gui.show_stars = False
-        # if install_mode:
-        #         shutil.copy(install_directory + "/config.txt", user_directory)
+        if install_mode:
+                shutil.copy(install_directory + "/config.txt", user_directory)
+                print("Rewrote user config file")
 
 
 # LOADING CONFIG
@@ -1235,10 +1267,18 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'linux-font=' in p:
                 result = p.split('=')[1]
                 prefs.linux_font = result
-
             if 'linux-bold-font=' in p:
                 result = p.split('=')[1]
                 prefs.linux_bold_font = result
+
+            if 'vis-scroll=True' in p:
+                prefs.spec2_scroll = True
+            if 'vis-base-colour=' in p:
+                result = p.split('=')[1]
+                prefs.spec2_base = list(map(int, result.split(',')))
+            if 'vis-colour-multiply=' in p:
+                result = p.split('=')[1]
+                prefs.spec2_multiply = list(map(float, result.split(',')))
 
 else:
     scrobble_mark = True
@@ -2661,7 +2701,7 @@ def player():
         else:
             gui.turbo_next += 1
 
-            if gui.vis == 2:
+            if gui.vis == 2 or gui.vis == 3:
                 time.sleep(0.018)
             else:
                 time.sleep(0.02)
@@ -2729,6 +2769,64 @@ def player():
                     #     gui.update_spec = 0
                     gui.level_update = True
                     continue
+
+                #------------------------------------
+                if gui.vis == 3:
+
+                    if gui.lowered:
+                        continue
+
+                    if pctl.playing_time > 0.0 and pctl.playing_state == 1:
+                        if player1_status == p_playing:
+                            sp_handle = handle1
+                        else:
+                            sp_handle = handle2
+
+                        BASS_ChannelGetData(sp_handle, x, 0x80000002)
+
+                        #p_spec = []
+                        BANDS = gui.spec2_y + 5
+                        b0 = 0
+                        i = 0
+
+                        while i < BANDS:
+                            peak = 0
+                            b1 = pow(2, i * 10.0 / (BANDS - 1))
+                            if b1 > 511:
+                                b1 = 511
+                            if b1 <= b0:
+                                b1 = b0 + 1
+                            while b0 < b1 and b0 < 511:
+                                if peak < x[1 + b0]:
+                                    peak = x[1 + b0]
+                                b0 += 1
+
+                            outp = math.sqrt(peak)
+                            #print(outp)
+                            if i < len(gui.spec2):
+                                gui.spec2[i] += int(outp * 300)
+                            else:
+                                break
+                            i += 1
+
+                        gui.spec2_phase += 1
+                        if gui.spec2_phase == 2:
+                            gui.spec2_phase = 0
+                            gui.spec2_buffers.append(copy.deepcopy(gui.spec2))
+                            if len(gui.spec2_buffers) > 2:
+                                del gui.spec2_buffers[0]
+                                print("Buffer Discard")
+
+                            gui.spec2 = [0] * gui.spec2_y
+                            #gui.update_spec = 1
+
+                            #gui.level_update = True
+
+                        #gui.level_update = True
+                        continue
+
+
+                    #gui.spec = p_spec
 
                 # -----------------------------------
 
@@ -3771,6 +3869,8 @@ SDL_SetWindowIcon(t_window, icon)
 
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+
 SDL_SetRenderTarget(renderer, gui.ttext)
 # print(SDL_GetError())
 SDL_SetRenderTarget(renderer, None)
@@ -4783,9 +4883,9 @@ def draw_linked_text(location, text, colour, font):
 
 
 class TextBox:
-    blink_activate = 0
+    #blink_activate = 0
     cursor = True
-    blink_time = 0
+    #blink_time = 0
 
     def __init__(self):
 
@@ -4806,8 +4906,8 @@ class TextBox:
         if active:
             self.text += input_text
             if input_text != "":
-                cursor_blink_timer.get()
-                self.blink_time = 0
+                #cursor_blink_timer.get()
+                #self.blink_time = 0
                 self.cursor = True
             if key_backspace_press and len(self.text) > 0:
                 self.text = self.text[:-1]
@@ -4824,7 +4924,8 @@ class TextBox:
             yy = y + 3
             draw.line(xx, yy, xx, yy + 12, colour)
 
-        TextBox.blink_activate = 100
+        #TextBox.blink_activate = 100
+        animate_monitor_timer.set()
 
 
 rename_text_area = TextBox()
@@ -6113,6 +6214,9 @@ class Menu:
                     self.pos[1] -= self.break_height
                 else:
                     self.pos[1] -= self.h
+            if self.pos[1] < 30:
+                self.pos[1] = 30
+                self.pos[0] += 5
         self.active = True
 
 
@@ -8306,7 +8410,7 @@ def toggle_broadcast():
     if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
             os.path.isfile(install_directory + "/encoder/lame.exe") and not os.path.isfile(
                 install_directory + "/encoder/opusenc.exe"):
-        show_message("Missing Encoder. See readme file.")
+        show_message("Missing Encoder. See documentation.")
         return
 
     if pctl.broadcast_active is not True:
@@ -10476,6 +10580,14 @@ class Over:
 
             draw_text((x + 4, y), ">", colours.grey(200), 11)
 
+            y -= 1
+            x += 100
+            if (system == 'windows' and not os.path.isfile(install_directory + '/encoder/ffmpeg.exe')) or (
+                    system != 'windows' and shutil.which('ffmpeg') is None):
+                draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
+
+
+
     def config_b(self):
 
         global album_mode_art_size
@@ -11265,6 +11377,8 @@ class TopPanel:
             offset += 61
         if gui.turbo:
             offset += 90
+            if gui.vis == 3:
+                offset += 57
 
         # Generate title text if applicable
         if len(pctl.track_queue) > 0:
@@ -11631,6 +11745,9 @@ class BottomBarType1:
                       colours.bb_line)
             draw.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
                       window_size[1] - gui.panelBY + self.seek_bar_size[1], colours.bb_line)
+
+        # rect = [0, window_size[1] - gui.panelBY, self.seek_bar_position[0], gui.panelBY]
+        # draw.rect_r(rect, [255, 255, 255, 5], True)
 
         # Scrobble marker
 
@@ -13751,6 +13868,7 @@ def update_layout_do():
         album_v_gap = 25
 
     gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
+    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 - gui.offset_extea
 
     gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
 
@@ -14195,7 +14313,6 @@ while running:
                     update_title_do()
                     # print("restore")
 
-
             elif event.window.event == SDL_WINDOWEVENT_SHOWN:
 
                 focused = True
@@ -14212,9 +14329,21 @@ while running:
         if fields.test():
             gui.update += 1
 
-
     power += 1
-    if mouse_wheel != 0 or k_input or gui.update > 0:# or mouse_moved:
+
+    if animate_monitor_timer.get() < 1 or len(load_orders) > 0:
+
+        if cursor_blink_timer.get() > 0.65:
+            cursor_blink_timer.set()
+            TextBox.cursor ^= True
+            gui.update = 1
+        if k_input:
+            cursor_blink_timer.set()
+            TextBox.cursor = True
+        SDL_Delay(30)
+        power = 1000
+
+    if mouse_wheel != 0 or k_input or gui.update > 0: # or mouse_moved:
         power = 1000
 
     # if resize_mode or scroll_hold or album_scroll_hold:
@@ -14223,7 +14352,16 @@ while running:
     #     power += 2
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
+        power += 500
+
+    if gui.vis == 3 and pctl.playing_state == 1:
         power = 500
+        if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+            gui.spec2_timer.set()
+            gui.level_update = True
+        else:
+            SDL_Delay(6)
+
     if not running:
         break
 
@@ -14238,8 +14376,8 @@ while running:
         if pctl.playing_state == 0 and len(load_orders) == 0 and gui.update == 0:
                 SDL_WaitEventTimeout(None, 1000)
 
-
         continue
+
     else:
         power = 0
 
@@ -14372,13 +14510,9 @@ while running:
             # print(perf_timer.get())
             #lastfm.artist_info()
             #print(gui.pl_st)
-            #gui.cairo_text ^= True
-
 
             #gui.set_bar ^= True
-            #gui.update_layout()
-            #gui.pl_update = 1
-            #playlist_panel ^= True
+
 
             key_F7 = False
 
@@ -15311,7 +15445,7 @@ while running:
                             pctl.multi_playlist[target_pl][2] += order.tracks
 
                         gui.update += 2
-                        gui.pl_update = 2
+                        gui.pl_update += 2
                         reload()
                         del load_orders[i]
                         break
@@ -15603,6 +15737,8 @@ while running:
                     elif gui.vis == 1:
                         gui.vis = 2
                     elif gui.vis == 2:
+                        gui.vis = 3
+                    elif gui.vis == 3:
                         gui.vis = 0
                         gui.turbo = False
                 # --------------------------------------------
@@ -17136,6 +17272,49 @@ while running:
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
 
+        if gui.vis == 3:
+
+            if len(gui.spec2_buffers) > 0:
+
+                SDL_SetRenderTarget(renderer, gui.spec2_tex)
+                for i, value in enumerate(gui.spec2_buffers[0]):
+
+                    # draw.rect_r([gui.spec2_position, i, 1, 1], colour_slide([10, 10, 10], [255, 200, 255], value, 200), True)
+
+                    draw.rect_r([gui.spec2_position, i, 1, 1],
+                                [min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])), min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
+                                 min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
+                                 255], True)
+
+                    #print(value)
+
+                del gui.spec2_buffers[0]
+                gui.spec2_position += 1
+                if gui.spec2_position > gui.spec2_w - 1:
+                    gui.spec2_position = 0
+
+                SDL_SetRenderTarget(renderer, None)
+
+            if prefs.spec2_scroll:
+
+                gui.spec2_source.x = 0
+                gui.spec2_source.y = 0
+                gui.spec2_source.w = gui.spec2_position
+                gui.spec2_dest.x = gui.spec2_rec.x + gui.spec2_rec.w - gui.spec2_position
+                gui.spec2_dest.w = gui.spec2_position
+                SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+
+                gui.spec2_source.x = gui.spec2_position
+                gui.spec2_source.y = 0
+                gui.spec2_source.w = gui.spec2_rec.w - gui.spec2_position
+                gui.spec2_dest.x = gui.spec2_rec.x
+                gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
+                SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+
+            else:
+
+                SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
+
         if gui.vis == 2 and gui.spec is not None:
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
@@ -17398,20 +17577,6 @@ while running:
         del pctl.track_queue[0]
         pctl.queue_step -= 1
 
-    # cursor blinker
-
-    if TextBox.blink_activate > 0:
-        TextBox.blink_activate -= 1
-        TextBox.blink_time += cursor_blink_timer.hit()
-        if TextBox.blink_time > 3:
-            TextBox.blink_time = 0
-        if TextBox.blink_time > 0.6:
-            TextBox.blink_time = 0
-            gui.update += 1
-            if TextBox.cursor is True:
-                TextBox.cursor = False
-            elif TextBox.cursor is False:
-                TextBox.cursor = True
 
     if system == 'windows':
 
