@@ -7,13 +7,16 @@ pause-fade-time=400
 cross-fade-time=700
 scrobble-mark=True 
 
-# --- Visualiser ----------------------------------------------------------
-# Base colour is the background colour when there is no sound. R,G,B int values. Must be from 0 to 255.
-# Colour multiply values produce the foreground colour. R,G,B float values. Can be 0 to 1 or greater.
+# --- Spectrogram ----------------------------------------------------------
+# Base colour is the background colour (such as when there is no sound). Are R,G,B int values. Must be from 0 to 255.
+# Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
 
 vis-scroll=True
 #vis-base-colour=10,10,10
 #vis-colour-multiply=2,1.2,5
+
+# Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
+# Colours of the level meter cannot currently be configured
 
 # --- View ---------------------------------------------------------------- 
 
@@ -29,10 +32,11 @@ scroll-gallery-wheel=90
 windows-font-star-offset=-1
  
 # --- Linux Fonts -----------------------------------------------------------
+# Currently optimised for Noto
 
 #linux-font=Noto Sans
 #linux-font-bold=Noto Sans Bold
-#font-height-offset=0
+font-height-offset=0
 linux-font-star-offset=1
 
 # --- Media Keys -------------------------------------------------------------
@@ -56,7 +60,7 @@ icecast-mount=localhost:8000/test
 icecast-password=hackme
 
 # --- Tag Editor ----------------------------------------------------------------
-# External Tag editor loading. tag-editor-program is the command used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.
+# External Tag editor loading. tag-editor-program is the binary name used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.
 # Note: Picard seems to have a problem with unicode filepaths on Windows. Works on Linux.
 
 tag-editor-name=Picard
