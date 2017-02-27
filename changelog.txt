@@ -23,6 +23,7 @@ v2.1.5
  - Fixed window title on Gnome showing as Python
  - Fixed text slightly overlapping playtime line
  - Fixed radio metadata being truncated
+ - Fixed transcoding files to ogg producing corrupted output in some cases
  - Added auto detect Gnome desktop environment for media keys
  - Added label in transcode settings showing when ffmpeg is missing
  - Reduced idle cpu usage

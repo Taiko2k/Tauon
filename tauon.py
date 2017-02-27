@@ -8932,7 +8932,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
             command += '-metadata year="' + str(t.date).replace('"', "").replace("'", "") + '" '
 
     if codec != 'flac':
-        command += " -b:a " + str(bitrate) + "k "
+        command += " -b:a " + str(bitrate) + "k -vn "
 
     command += '"' + target_out + '"'
 
@@ -8955,6 +8955,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     else:
         os.rename(target_out, output + manual_name + "." + codec)
     core_use -= 1
+
 
 
 # LOADER----------------------------------------------------------------------
@@ -17008,8 +17009,8 @@ while running:
                 draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 12)
                 if pctl.playing_state != 3:
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 60], True)
-            input_text = ""
-            gui.track_box_click = False
+                input_text = ""
+                gui.track_box_click = False
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
