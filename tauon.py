@@ -304,6 +304,8 @@ quick_d_timer = Timer()
 quick_d_timer.set()
 d_click_time = Timer()
 quick_d_timer.set()
+broadcast_update_timer = Timer()
+broadcast_update_timer.set()
 
 core_timer = Timer()
 core_timer.set()
@@ -766,7 +768,6 @@ def update_set():
     for i in range(len(gui.pl_st)):
         if gui.pl_st[i][2] is False:
             gui.pl_st[i][1] = int(math.ceil((gui.pl_st[i][1] / total) * wid)) #+ 1
-
 
 def colour_slide(a, b, x, x_limit):
 
@@ -1576,6 +1577,9 @@ class PlayerCtl:
         self.broadcast_last_time = 0
         self.broadcast_line = ""
 
+        self.record_stream = False
+        self.record_title  = ""
+
         # Bass
 
         self.bass_devices = []
@@ -1822,6 +1826,7 @@ class PlayerCtl:
     def stop(self):
         self.playerCommand = 'stop'
         self.playerCommandReady = True
+        self.record_stream = False
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
@@ -2544,6 +2549,9 @@ def player():
         BASS_Encode_OGG_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
                                               ctypes.c_void_p, ctypes.c_void_p)(
             ('BASS_Encode_OGG_Start', ogg_module))
+        BASS_Encode_OGG_StartFile = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong,
+                                                  ctypes.c_void_p)(
+            ('BASS_Encode_OGG_StartFile', ogg_module))
 
     class BASS_DEVICEINFO(ctypes.Structure):
         _fields_ = [('name', ctypes.c_char_p),
@@ -2776,7 +2784,7 @@ def player():
                     if gui.lowered:
                         continue
 
-                    if pctl.playing_time > 0.0 and pctl.playing_state == 1:
+                    if pctl.playing_time > 0.0 and (pctl.playing_state == 1 or pctl.playing_state == 3):
                         if player1_status == p_playing:
                             sp_handle = handle1
                         else:
@@ -2815,7 +2823,7 @@ def player():
                             gui.spec2_buffers.append(copy.deepcopy(gui.spec2))
                             if len(gui.spec2_buffers) > 2:
                                 del gui.spec2_buffers[0]
-                                print("Buffer Discard")
+                                # print("Buffer Discard")
 
                             gui.spec2 = [0] * gui.spec2_y
                             #gui.update_spec = 1
@@ -2886,20 +2894,61 @@ def player():
                 else:
                     pctl.tag_meta = BASS_ChannelGetTags(handle1, 2)
                     if pctl.tag_meta is not None:
-                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')[5:]
+                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')
                     else:
                         pctl.tag_meta = ""
-                pctl.tag_meta = pctl.tag_meta.strip("';StreamUrl='")
-                pctl.tag_meta = pctl.tag_meta.strip("Title='")
+                #print(pctl.tag_meta)
+                pctl.tag_meta = pctl.tag_meta.replace("StreamTitle=", '')
+                pctl.tag_meta = pctl.tag_meta.replace("StreamUrl=", '')
+                pctl.tag_meta = pctl.tag_meta.replace("title=", '')
+                pctl.tag_meta = pctl.tag_meta.replace("Title=", '')
+                pctl.tag_meta = pctl.tag_meta.lstrip("\"';")
+                pctl.tag_meta = pctl.tag_meta.rstrip("\"';")
+
+                #print(pctl.tag_meta)
                 # time.sleep(0.5)
                 if BASS_ChannelIsActive(handle1) == 0:
                     pctl.playing_state = 0
                     show_message("The stream has ended or connection lost")
                     player1_status = p_stopped
                     pctl.playing_time = 0
+                    if pctl.record_stream:
+                        pctl.record_stream = False
+                        BASS_Encode_Stop(rec_handle)
+
+                if pctl.record_stream and pctl.record_title != pctl.tag_meta:
+
+                    print("Recording track split")
+                    BASS_Encode_Stop(rec_handle)
+                    title = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now()) + pctl.tag_meta
+                    line = "--quality 3"
+                    file = prefs.encoder_output + title + ".ogg"
+                    flag = 0
+                    if len(pctl.tag_meta) > 6 and ' - ' in pctl.tag_meta:
+                        fi = pctl.tag_meta.split(' - ')
+                        if len(fi) == 2:
+                            line += ' -t "' + fi[0].strip('"') + '"'
+                            line += ' -a "' + fi[1].strip('"') + '"'
+                    if system != 'windows':
+                        file = file.encode('utf-8')
+                        line = line.endode('utf-8')
+                        flag = 0
+                    else:
+                        flag = 0x80000000
+
+                    rec_handle = BASS_Encode_OGG_StartFile(handle1, line, flag, file)
+                    pctl.record_title = pctl.tag_meta
+
+                    print(file)
+                    if BASS_ErrorGetCode() != 0:
+                        show_message("There was an unknown error when splitting the track")
+
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
             pctl.broadcast_time += broadcast_timer.hit()
+            if broadcast_update_timer.get() > 1:
+                broadcast_update_timer.set()
+                gui.update += 1
 
         if player1_status == p_playing or player2_status == p_playing:
 
@@ -2992,6 +3041,50 @@ def player():
                 else:
                     pctl.playing_status = 0
 
+            if pctl.playerCommand == 'record':
+                if pctl.playing_state != 3:
+                    print("ERROR! Stream not active")
+                else:
+                    title = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now()) + pctl.tag_meta
+                    line = "--quality 3"
+                    file = prefs.encoder_output + title + ".ogg"
+                    # if system == 'windows':
+                    #     file = file.replace("/", '\\')
+                    flag = 0
+                    if len(pctl.tag_meta) > 6 and ' - ' in pctl.tag_meta:
+                        fi = pctl.tag_meta.split(' - ')
+                        if len(fi) == 2:
+                            line += ' -t "' + fi[0].strip('"') + '"'
+                            line += ' -a "' + fi[1].strip('"') + '"'
+
+                    if system != 'windows':
+                        file = file.encode('utf-8')
+                        line = line.endode('utf-8')
+                        flag = 0
+                    else:
+                        flag = 0x80000000
+
+                        #print(line)
+
+                    print(file)
+                    #print(BASS_ErrorGetCode())
+
+                    rec_handle = BASS_Encode_OGG_StartFile(handle1, line, flag, file)
+                    #file.encode('utf-8')
+
+                    #print(rec_handle)
+                    #print(BASS_ErrorGetCode())
+                    #print(BASS_ErrorGetCode())
+                    pctl.record_stream = True
+                    pctl.record_title = pctl.tag_meta
+
+                    if rec_handle != 0 and BASS_ErrorGetCode() == 0:
+                        show_message("Recording started. Outputting as ogg files in encoder directory")
+                    else:
+                        show_message("Recording Error: An unknown was encountered")
+                        pctl.record_stream = False
+
+
             if pctl.playerCommand == 'encnext':
                 print("Next Enc Rec")
 
@@ -3032,6 +3125,14 @@ def player():
                     BASS_StreamFree(handle3)
                     # BASS_StreamFree(oldhandle)
 
+            if pctl.playerCommand == 'encseek' and pctl.broadcast_active:
+
+                print("seek")
+                bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time + pctl.broadcast_time)
+                BASS_ChannelSetPosition(handle3, bytes_position, 0)
+
+                #BASS_ChannelPlay(handle1, False)
+
             if pctl.playerCommand == 'encpause' and pctl.broadcast_active:
 
                 # Pause broadcast
@@ -3055,6 +3156,7 @@ def player():
                 BASS_ChannelStop(handle3)
                 BASS_StreamFree(handle3)
                 pctl.broadcast_active = False
+
 
             if pctl.playerCommand == "encstart":
 
@@ -3244,7 +3346,7 @@ def player():
 
                 if player1_status == p_stopped and player2_status == p_stopped:
                     # print(BASS_ErrorGetCode())
-
+                    print(pctl.target_open)
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     # print(BASS_ErrorGetCode())
                     channel1 = BASS_ChannelPlay(handle1, True)
@@ -4899,7 +5001,7 @@ class TextBox:
             if 'http://' in self.text and 'http://' in clip:
                 self.text = ""
 
-            self.text += clip
+            self.text += clip.rstrip(" ").lstrip(" ")
 
     def draw(self, x, y, colour, active=True, secret=False, font=13):
 
@@ -7387,7 +7489,8 @@ def paste(playlist=None, position=None):
         items = []
         for item in clip:
             if len(item) > 0 and (item[0] == '/' or 'file://' in item):
-                item = item.lstrip("file:/")
+                if item[:6] == 'file:/':
+                    item = item[6:] # = item.lstrip("file:/")
                 if item[0] != "/":
                     item = "/" + item
                 items.append(item)
@@ -11656,9 +11759,18 @@ class TopPanel:
             x += draw.text_calc(text, 11) + 6
 
             x += 7
-            progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 90)
+            progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100)
             draw.rect((x, y + 4), (progress, 9), [30, 25, 170, 255], True)
-            draw.rect((x, y + 4), (90, 9), colours.grey(30))
+            draw.rect((x, y + 4), (100, 9), colours.grey(30))
+
+            if input.mouse_click and coll_point(mouse_position, (x, y, 90, 11)):
+                newtime = ((mouse_position[0] - x) / 100) * pctl.master_library[pctl.broadcast_index].length
+                pctl.broadcast_time = newtime
+                pctl.playerCommand = 'encseek'
+                pctl.playerCommandReady = True
+
+
+
             x += 100
 
         if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
@@ -11968,6 +12080,11 @@ class BottomBarType1:
                 text_time = "-- : --"
             draw_text((x + 17, y), text_time, colours.time_sub,
                       12)
+
+        # if pctl.record_stream or True:
+        #     x = window_size[0] - 17
+        #     draw_text((x, y), "●", [200, 80, 80, 255],
+        #               11)
         # BUTTONS
         # bottom buttons
 
@@ -11995,6 +12112,9 @@ class BottomBarType1:
                 play_colour = colours.media_buttons_active
             elif pctl.playing_state == 3:
                 play_colour = colours.media_buttons_active
+                if pctl.record_stream:
+                    play_colour = [220, 50 ,50 , 255]
+
 
             rect = (buttons_x_offset + 10, window_size[1] - self.control_line_bottom - 13, 50, 40)
             fields.add(rect)
@@ -14354,7 +14474,7 @@ while running:
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power += 500
 
-    if gui.vis == 3 and pctl.playing_state == 1:
+    if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
         power = 500
         if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
             gui.spec2_timer.set()
@@ -14365,7 +14485,7 @@ while running:
     if not running:
         break
 
-    if pctl.playing_state > 0:
+    if pctl.playing_state > 0 or pctl.broadcast_active:
         power += 400
     if power < 500:
         #time.sleep(0.003)
@@ -16823,7 +16943,7 @@ while running:
                 if coll_point(mouse_position, rect):
                     draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
                 draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [50, 50, 50, 75], True)
-                draw_text((x + 8 + 10 + 350 + 10, y + 40), "GO", colours.grey(150), 12)
+                draw_text((x + 8 + 10 + 350 + 11, y + 40), "GO", colours.grey(150), 12)
 
                 rect = (x + 307, y + 70, 50, 22)
                 fields.add(rect)
@@ -16832,7 +16952,7 @@ while running:
                     if gui.track_box_click:
                         radio_field.paste()
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + 7, rect[1] + 3), "PASTE", colours.grey(140), 12)
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "PASTE", colours.grey(140), 12)
 
                 rect = (x + 247, y + 70, 50, 22)
                 fields.add(rect)
@@ -16841,16 +16961,20 @@ while running:
                     if gui.track_box_click:
                         radio_field.text = ""
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + 7, rect[1] + 3), "CLEAR", colours.grey(140), 12)
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "CLEAR", colours.grey(140), 12)
 
                 if (key_return_press_w or (
                             gui.track_box_click and coll_point(mouse_position,
                                                                (x + 8 + 350 + 10, y + 38, 40, 22)))):
-                    if "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
+                    if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
+                        radiobox = False
+                        show_message("Sorry, youtube links not supported")
+                    elif "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
                         print("Start radio")
                         pctl.url = radio_field.text.encode('utf-8')
                         radiobox = False
                         pctl.playing_state = 0
+                        pctl.record_stream = False
                         pctl.playerCommand = "url"
                         pctl.playerCommandReady = True
                         pctl.playing_state = 3
@@ -16865,8 +16989,27 @@ while running:
                         gui.update = 1
                         show_message("That doesn't look like a valid URL, make sure is starts with 'http://'")
 
-                input_text = ""
-                gui.track_box_click = False
+                x -= 200
+                # y += 30
+                rect = (x + 247, y + 70, 50, 22)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    if pctl.playing_state == 3:
+                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
+                    if gui.track_box_click:
+                        if pctl.playing_state == 3:
+                            pctl.playerCommand = 'record'
+                            pctl.playerCommandReady = True
+                        else:
+                            radiobox = False
+                            show_message("A stream needs to be started first")
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
+                draw_text((rect[0] + 7, rect[1] + 3), "REC", colours.grey(140), 12)
+                draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 12)
+                if pctl.playing_state != 3:
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 60], True)
+            input_text = ""
+            gui.track_box_click = False
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
@@ -17314,6 +17457,9 @@ while running:
             else:
 
                 SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
+
+            if pref_box.enabled:
+                draw.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
 
         if gui.vis == 2 and gui.spec is not None:
 
