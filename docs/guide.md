@@ -1,7 +1,7 @@
 Basic usage guide. Updated for v2.1.5
 ===========
 
-Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a centeral database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
+Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
 
 For best experience you will need an organized and structured music library, with each album in its own folder. 
 
@@ -83,6 +83,16 @@ Tip: End the search text with another forward slash to search just for folders w
 ***Select TOP/END***: Home, End   
 ***Undo playlist delete***: Ctrl + Z
 
+### Inbound Streaming
+
+Compatible with Shoutcast and Icecast streams. To open a stream:
+
+1) Go to MENU -> OPEN STREAM...
+2) Type in address to stream or click paste if link is in clipboard (you can manually copy these out of m3u files) (Must start with http:// or ftp://)
+3) Click GO
+
+To record a steam, once a stream has been opened, re enter the open stream box and click REC. If this fails, try make sure the encoder directory is valid and has write permissions. Recording are encoded to OGG at about 100kbs and are automatically split when on metadata change.
+
 ### Outbound Streaming
 
 1) Install, configure (optional) and start Icecast. See config.txt for optional further setup.
@@ -97,7 +107,7 @@ Alternatively, by pressing F6 to enter 'sync' mode (experimental), the broadcast
 
 Note: The 'sync' function is experimental and unreliable. Pausing or stopping the player while in this mode will cause the stream to fail and/or generate other unexpected behavior  
 
-Tip: Higher bitrates may help reduce latency. lower bitrates will conserve bandwith at cost of audio quality.
+Tip: Higher bitrates may help reduce latency. lower bitrates will conserve bandwidth at cost of audio quality.
 
 ### Transcoding albums
 
@@ -121,7 +131,7 @@ In case of mojibake (where displayed characters from Japanese track metadata is 
 As a temporary solution Tauon Music Box offers a fix mojibake function under TRACK MENU -> META... -> FIX MOJIBAKE
 
  - 'Fix mojibake auto' should automatically correct the displayed characters in around 90% of cases.  
- - 'Fix mojibake manual' to apply manually based on preseted suggestions, can be used for extreme cases where there are multiple encodings for different fields within the same tag
+ - 'Fix mojibake manual' to apply manually based on presented suggestions, can be used for extreme cases where there are multiple encodings for different fields within the same tag
 
 Note: These functions will apply changes to all tracks in folder/album   
 
@@ -167,7 +177,7 @@ When proram is installed to program files via installer, files are kept in a ded
 
 For moving installations or upgrading portable installations:
 
-- Copy 'star.p' file from old directroy to keep track play counts.
+- Copy 'star.p' file from old directory to keep track play counts.
 - Copy 'state.p' file to keep rest of player data such as playlists.
 
 Tip: If you are moving platforms, resetting player or moved your music location and have custom playlists you wish to keep:
