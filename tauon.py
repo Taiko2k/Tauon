@@ -86,7 +86,9 @@ if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
 
-    user_directory = os.path.expanduser('~') + "/Music/TauonMusicBox"
+    user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+    print("User Directroy: ", end="")
+    print(user_directory)
     install_mode = True
 
 if install_mode:
@@ -3221,7 +3223,7 @@ def player():
 
                 if codec == "MP3":
                     if system == 'windows':
-                        line = install_directory + "/encoder/lame.exe" + " -r -s 44100 -b " + bitrate + " -"
+                        line = user_directory + "/encoder/lame.exe" + " -r -s 44100 -b " + bitrate + " -"
                     else:
                         line = "lame" + " -r -s 44100 -b " + bitrate + " -"
 
@@ -6488,13 +6490,13 @@ def convert_playlist(pl):
     global transcode_list
 
     if system == 'windows':
-        if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
+        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
         # if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
         #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
         #     return
-        if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
+        if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
             return
     else:
@@ -7269,18 +7271,18 @@ def convert_folder(index):
     global transcode_list
 
     if system == 'windows':
-        if not os.path.isfile(install_directory + '/encoder/ffmpeg.exe'):
+        if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
             # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
             #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'mp3' and not os.path.isfile(install_directory + '/encoder/lame.exe'):
+        if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
-            show_message("Error: Missing oggenc2.exe from '/encoder' directory")
-            return
+        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(user_directory + '/encoder/oggenc2.exe'):
+        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
+        #     return
     else:
         if shutil.which('ffmpeg') is None:
             show_message("Error: ffmpeg does not appear to be installed")
@@ -7866,7 +7868,7 @@ class Samples:
 
 samples = Samples()
 
-if (system == 'windows' and os.path.isfile(install_directory + '/encoder/ffmpeg.exe')) or \
+if (system == 'windows' and os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or \
         (system != 'windows' and shutil.which('ffmpeg') is not None):
     if prefs.enable_web:  # and prefs.expose_web:
         track_menu.add_to_sub("Generate Websample", 0, samples.create_sample, pass_ref=True)
@@ -8510,11 +8512,11 @@ x_menu.add_to_sub("Mark Missing as Found", 0, reset_missing_flags)
 
 
 def toggle_broadcast():
-    if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
-            os.path.isfile(install_directory + "/encoder/lame.exe") and not os.path.isfile(
-                install_directory + "/encoder/opusenc.exe"):
-        show_message("Missing Encoder. See documentation.")
-        return
+    # if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
+    #         os.path.isfile(user_directory + "/encoder/lame.exe") and not os.path.isfile(
+    #             install_directory + "/encoder/opusenc.exe"):
+    #     show_message("Missing Encoder. See documentation.")
+    #     return
 
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
@@ -8902,7 +8904,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     target_out = output + 'output' + str(track) + "." + codec
 
-    command = install_directory + "/encoder/ffmpeg "
+    command = user_directory + "/encoder/ffmpeg "
 
     if system != 'windows':
         command = "ffmpeg "
@@ -9473,7 +9475,7 @@ def worker1():
                             if os.path.isfile(full_target_out_p):
                                 os.remove(full_target_out_p)
 
-                            command = install_directory + "/encoder/ffmpeg "
+                            command = user_directory + "/encoder/ffmpeg "
 
                             if system != 'windows':
                                 command = "ffmpeg "
@@ -10705,7 +10707,7 @@ class Over:
 
             y -= 1
             x += 100
-            if (system == 'windows' and not os.path.isfile(install_directory + '/encoder/ffmpeg.exe')) or (
+            if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
                     system != 'windows' and shutil.which('ffmpeg') is None):
                 draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
