@@ -2931,7 +2931,7 @@ def player():
                             line += ' -a "' + fi[1].strip('"') + '"'
                     if system != 'windows':
                         file = file.encode('utf-8')
-                        line = line.endode('utf-8')
+                        line = line.endcde('utf-8')
                         flag = 0
                     else:
                         flag = 0x80000000
@@ -3059,7 +3059,7 @@ def player():
 
                     if system != 'windows':
                         file = file.encode('utf-8')
-                        line = line.endode('utf-8')
+                        line = line.encode('utf-8')
                         flag = 0
                     else:
                         flag = 0x80000000
@@ -3079,7 +3079,7 @@ def player():
                     pctl.record_title = pctl.tag_meta
 
                     if rec_handle != 0 and BASS_ErrorGetCode() == 0:
-                        show_message("Recording started. Outputting as ogg files in encoder directory")
+                        show_message("Recording started. Outputting as ogg to encoder directory, press F9 to show.")
                     else:
                         show_message("Recording Error: An unknown was encountered")
                         pctl.record_stream = False
@@ -17001,6 +17001,7 @@ while running:
                         if pctl.playing_state == 3:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
+                            radiobox = False
                         else:
                             radiobox = False
                             show_message("A stream needs to be started first")
