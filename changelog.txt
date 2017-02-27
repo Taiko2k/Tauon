@@ -24,6 +24,7 @@ v2.1.5
  - Fixed text slightly overlapping playtime line
  - Fixed radio metadata being truncated
  - Fixed transcoding files to ogg producing corrupted output in some cases
+ - Fixed mp3 encoding not working
  - Added auto detect Gnome desktop environment for media keys
  - Added label in transcode settings showing when ffmpeg is missing
  - Reduced idle cpu usage

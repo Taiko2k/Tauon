@@ -9516,7 +9516,9 @@ def worker1():
 
                             if prefs.transcode_codec == 'mp3':
 
-                                command = install_directory + '/encoder/lame --silent --abr ' + str(
+                                print("hit")
+
+                                command = user_directory + '/encoder/lame --silent --abr ' + str(
                                     prefs.transcode_bitrate) + ' '
 
                                 if system != 'windows':
@@ -9544,6 +9546,23 @@ def worker1():
                                                                                                                    "") + '" '
 
                                 command += full_wav_out + ' ' + full_target_out
+
+                                print(shlex.split(command))
+                                subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
+                                print('done')
+
+                                os.remove(full_wav_out_p)
+                                output_dir = prefs.encoder_output + folder_name + "/"
+
+                                out_line = os.path.splitext(pctl.master_library[item].filename)[0]
+                                if pctl.master_library[item].is_cue:
+                                    out_line = str(pctl.master_library[item].track_number) + ". "
+                                    out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
+
+                                print(output_dir)
+                                shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
+
+                                #print(command)
 
                     output_dir = prefs.encoder_output + folder_name + "/"
                     album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
