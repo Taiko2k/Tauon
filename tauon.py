@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.1.5"
+t_version = "v2.1.6"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -3936,17 +3936,18 @@ t_window = SDL_CreateWindow(window_title,
                             window_size[0], window_size[1],
                             flags)
 
-if system == 'windows':
-    sss = SDL_SysWMinfo()
-    SDL_GetWindowWMInfo(t_window, sss)
-    gui.window_id = sss.info.win.window
-
 # t_window = SDL_CreateShapedWindow(window_title,
 #                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 #                              window_size[0], window_size[1],
 #                              flags)
 
 # print(SDL_GetError())
+
+if system == 'windows':
+    sss = SDL_SysWMinfo()
+    SDL_GetWindowWMInfo(t_window, sss)
+    gui.window_id = sss.info.win.window
+
 
 try:
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
@@ -3990,11 +3991,11 @@ SDL_RenderClear(renderer)
 # SDL_SetWindowOpacity(t_window, 0.98)
 
 # m_surface = SDL_CreateRGBSurface(0, window_size[0], window_size[1], 32,0,0,0,0);
-# SDL_SetSurfaceBlendMode(m_surface, SDL_BLENDMODE_BLEND)
-#
+# #SDL_SetSurfaceBlendMode(m_surface, SDL_BLENDMODE_BLEND)
+# #
 # mode = SDL_WindowShapeMode()
 # mode.mode = ShapeModeColorKey
-#
+# #
 # mode.parameters.colorKey = SDL_Color(0, 0, 0)
 
 if default_player == 'BASS':
@@ -4174,7 +4175,7 @@ ttl = []
 
 # m_renderer = SDL_CreateSoftwareRenderer(m_surface)
 # draw.rect((0, 0), (window_size[0], window_size[1]), [255,255,255,255], True, m_renderer)
-# draw.rect((0, 0), (8, 30), [0,0,0,0], True, m_renderer)
+# draw.rect((0, 0), (8, 15), [0,0,0,0], True, m_renderer)
 #
 # SDL_SetWindowShape(t_window, m_surface, mode)
 
@@ -6348,7 +6349,7 @@ def save_embed_img():
                     return
             pic = tt.data
 
-        elif '.flac' in filepath or '.FLAC' in filepath:
+        elif '.flac' in filepath.lower() or '.ape' in filepath.lower() or '.tta' in filepath.lower() or '.wv' in filepath.lower():
 
             tt = Flac(filepath)
             tt.read(True)
@@ -7621,7 +7622,7 @@ def rename_tracks(index):
     input_text = ""
 
 
-track_menu.add_to_sub("Rename Tracks", 0, rename_tracks, pass_ref=True)
+track_menu.add_to_sub("Rename Tracks (Folder)", 0, rename_tracks, pass_ref=True)
 
 
 def reset_play_count(index):
@@ -7631,7 +7632,7 @@ def reset_play_count(index):
         del pctl.star_library[key]
 
 
-track_menu.add_to_sub("Reset Play Count", 0, reset_play_count, pass_ref=True)
+track_menu.add_to_sub("Reset Play Count (Track)", 0, reset_play_count, pass_ref=True)
 
 
 def get_like_folder(index):
@@ -7667,6 +7668,32 @@ def reload_metadata(index):
         key = pctl.master_library[track].title + pctl.master_library[track].filename
         pctl.star_library[key] = star
 
+def reload_metadata_selection():
+
+    cargo = []
+    for item in shift_selection:
+        cargo.append(default_playlist[item])
+
+    todo = []
+
+    for k in cargo:
+        if pctl.master_library[k].is_cue == False:
+            todo.append(k)
+
+    for track in todo:
+
+        print('Reloading Metadate for ' + pctl.master_library[track].filename)
+        key = pctl.master_library[track].title + pctl.master_library[track].filename
+        star = 0
+
+        if key in pctl.star_library:
+            star = pctl.star_library[key]
+            del pctl.star_library[key]
+
+        pctl.master_library[track] = tag_scan(pctl.master_library[track])
+
+        key = pctl.master_library[track].title + pctl.master_library[track].filename
+        pctl.star_library[key] = star
 
 def activate_encoding_box(index):
     global encoding_box
@@ -7678,10 +7705,14 @@ def activate_encoding_box(index):
 
 def editor(index):
     todo = []
-    for k in default_playlist:
-        if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
-            if pctl.master_library[k].is_cue == False:
-                todo.append(k)
+    if index is None:
+        for item in shift_selection:
+            todo.append(default_playlist[item])
+    else:
+        for k in default_playlist:
+            if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
+                if pctl.master_library[k].is_cue == False:
+                    todo.append(k)
 
     file_line = ""
     for track in todo:
@@ -7713,9 +7744,13 @@ def launch_editor(index):
     mini_t.daemon = True
     mini_t.start()
 
+def launch_editor_selection(index):
+    mini_t = threading.Thread(target=editor, args=[None])
+    mini_t.daemon = True
+    mini_t.start()
 
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
-track_menu.add_to_sub("Reload Metadata", 0, reload_metadata, pass_ref=True)
+track_menu.add_to_sub("Reload Metadata (Folder)", 0, reload_metadata, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
@@ -7907,6 +7942,10 @@ def cut_selection():
     sel_to_car()
     del_selected()
 
+def clip_ar_al(index):
+    line = pctl.master_library[index].artist + " - " + \
+           pctl.master_library[index].album
+    SDL_SetClipboardText(line.encode('utf-8'))
 
 # track_menu.add_to_sub('Remove Folder', 1, remove_folder, pass_ref=True)
 # track_menu.add_to_sub('Remove Track', 1, del_selected)
@@ -7920,6 +7959,20 @@ def cut_selection():
 
 selection_menu = Menu(165)
 
+selection_menu.add('Open Folder', open_folder, pass_ref=True)
+selection_menu.add('Reload Metadata', reload_metadata_selection)
+
+if prefs.tag_editor_name != "":
+
+    if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
+        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
+
+    elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
+        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
+
+selection_menu.br()
+selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
+selection_menu.br()
 #selection_menu.add('Copy Selection', sel_to_car)
 selection_menu.add('Copy', s_copy)
 selection_menu.add('Cut', s_cut)
@@ -7948,11 +8001,6 @@ def clip_aar_al(index):
                pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
 
-
-def clip_ar_al(index):
-    line = pctl.master_library[index].artist + " - " + \
-           pctl.master_library[index].album
-    SDL_SetClipboardText(line.encode('utf-8'))
 
 def ser_wiki(index):
     if len(pctl.master_library[index].artist) < 2:
@@ -8605,7 +8653,7 @@ def radio_random():
 
 extra_menu.add('Radio Random', radio_random, hint='/')
 
-extra_menu.add('Revert', pctl.revert, hint='RSHIFT + /')
+extra_menu.add('Revert', pctl.revert, hint='SHIFT + /')
 
 
 def toggle_repeat():
@@ -11426,10 +11474,12 @@ class WhiteModImageAsset:
         p_h = pointer(c_int(0))
         SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
         self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        SDL_FreeSurface(raw_image)
 
     def render(self, x, y, colour):
         if colour != self.colour:
             SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+            self.colour = colour
         self.rect.x = x
         self.rect.y = y
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
@@ -12189,6 +12239,7 @@ class BottomBarType1:
                     pctl.random_mode ^= True
                 if middle_click:
                     pctl.advance(rr=True)
+
             self.forward_button.render(240, 1 + window_size[1] - self.control_line_bottom, forward_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
@@ -15251,7 +15302,8 @@ while running:
                     and not x_menu.active \
                     and not view_menu.active \
                     and not track_menu.active \
-                    and not tab_menu.active:
+                    and not tab_menu.active \
+                    and not selection_menu:
 
 
                 #update_layout = True
