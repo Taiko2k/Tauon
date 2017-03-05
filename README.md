@@ -30,9 +30,13 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
  
-For __Arch Linux__, download pkgbuild from releases section and install. For example using yaourt (Update: There appeares to be a bug using this method in the last release of yaourt, you may need to install dependencies manually. Note that the dependency python-cairo-git is avaliable in the AUR), navigate terminal to download location and run:
+For __Arch Linux__, download pkgbuild from releases section and install.  
+Warning: The currently required package python-cairo-git may cause other packages to break. (known conflict with lollypop)
 
-    $ yaourt -P -i
+Using Yaourt, navigate terminal to download location and run:  
+Update: There appeares to be a bug using this method in the current release of yaourt, you may need to install dependencies manually, or update to the dev version of yaourt (yaourt-git). Note that the dependency python-cairo-git is avaliable in the AUR  
+
+    $ yaourt -Pi
 
 
 For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
