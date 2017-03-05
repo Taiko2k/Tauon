@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v2.1.6
+
+ - Added various functions to selection menu
+ - Fixed playback buttons not changing colour between themes
+
 v2.1.5
 
  - Added stars playtime representation
