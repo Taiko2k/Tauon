@@ -14,6 +14,9 @@
 | OPUS| Y        | Y        |         |
 | WMA | Windows  | Windows  |         |
 | WAV | Y        |          |         |
+| MPC |          |          |         |
+| AIFF|          |          |         |
+| CD  |          |          |         |
 
 
 ### UI and Layouts
