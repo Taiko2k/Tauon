@@ -15303,7 +15303,7 @@ while running:
                     and not view_menu.active \
                     and not track_menu.active \
                     and not tab_menu.active \
-                    and not selection_menu:
+                    and not selection_menu.active:
 
 
                 #update_layout = True
