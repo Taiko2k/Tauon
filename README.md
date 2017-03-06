@@ -30,14 +30,14 @@ Note: Screenshots taken under Windows 10 using Metro X theme
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
  
-For __Arch Linux__, download pkgbuild from releases section and install.  
-Warning: The currently required package python-cairo-git may cause other packages to break. (known conflict with lollypop)
+For __Arch Linux__, download pkgbuild from releases section. Navigate terminal to download location and run:  
+  
+    $ makepkg
+    $ sudo pacman -U tauon-music-box-2.1.6-1-x86_64.pkg.tar
 
-Using Yaourt, navigate terminal to download location and run:  
-Update: There appeares to be a bug using this method in the current release of yaourt, you may need to install dependencies manually, or update to the dev version of yaourt (yaourt-git). Note that the dependency python-cairo-git is avaliable in the AUR  
-
-    $ yaourt -Pi
-
+Upgrading Note: If you had previously installed v2.1.5 or v2.1.0, you can now downgrade python-cairo to the stable version (or remove it if it is not required by other packages)
+   
+    $ sudo pacman -S python-cairo
 
 For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
 

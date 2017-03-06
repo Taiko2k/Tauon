@@ -7598,7 +7598,7 @@ def del_selected():
 
 track_menu.add('Track Info...', activate_track_box, pass_ref=True)
 
-track_menu.add_sub("Meta...", 140)
+track_menu.add_sub("Meta...", 150)
 
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
@@ -7622,7 +7622,7 @@ def rename_tracks(index):
     input_text = ""
 
 
-track_menu.add_to_sub("Rename Tracks (Folder)", 0, rename_tracks, pass_ref=True)
+track_menu.add_to_sub("Rename Tracks", 0, rename_tracks, pass_ref=True)
 
 
 def reset_play_count(index):
@@ -7632,7 +7632,7 @@ def reset_play_count(index):
         del pctl.star_library[key]
 
 
-track_menu.add_to_sub("Reset Play Count (Track)", 0, reset_play_count, pass_ref=True)
+track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
 
 
 def get_like_folder(index):
@@ -7750,7 +7750,7 @@ def launch_editor_selection(index):
     mini_t.start()
 
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
-track_menu.add_to_sub("Reload Metadata (Folder)", 0, reload_metadata, pass_ref=True)
+track_menu.add_to_sub("Reload Metadata", 0, reload_metadata, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
