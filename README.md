@@ -35,9 +35,6 @@ For __Arch Linux__, download pkgbuild from releases section. Navigate terminal t
     $ makepkg
     $ sudo pacman -U tauon-music-box-2.1.6-1-x86_64.pkg.tar
 
-Upgrading Note: If you had previously installed v2.1.5 or v2.1.0, you can now downgrade python-cairo to the stable version (or remove it if it is not required by other packages)
-   
-    $ sudo pacman -S python-cairo
 
 For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
 
