@@ -1,6 +1,6 @@
 # Tauon Music Box - Tag Module
 
-# Copyright © 2015-2016, Taiko2k captain.gxj@gmail.com
+# Copyright © 2015-2016, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #

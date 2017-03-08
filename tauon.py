@@ -3,7 +3,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2017, Taiko2k captain.gxj@gmail.com
+# Copyright © 2015-2017, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -5552,8 +5552,8 @@ class AlbumArt():
             else:
                 source_image = open(source[offset][1], 'rb')
 
-            # Temporary Fix
-            quick_d_timer.set()
+            # # Temporary Fix
+            # quick_d_timer.set()
 
             # Generate
             g = io.BytesIO()
@@ -5744,8 +5744,11 @@ class AlbumArt():
             # temp fix
             global move_on_title
             global playlist_hold
+            global quick_drag
+            quick_drag = False
             move_on_title = False
             playlist_hold = False
+
 
         except:
             print("Image processing error")
@@ -11682,6 +11685,7 @@ class TopPanel:
         # Quick drag single track onto bar to create new playlist
         if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
             draw_text((x + 5, y), '+', [200, 20, 40, 255], 12)
+
             if mouse_up:
                 pl = new_playlist(False)
                 for item in shift_selection:
