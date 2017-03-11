@@ -1,8 +1,10 @@
 
 Changelog-------------------------------------
 
-v2.1.6
+v2.1.7
 
+ - Added function to fetch lyrics from LyricWiki
+ - Added menu for changing visualiser
  - Added various functions to selection menu
  - Fixed playback buttons not changing colour between themes
 
