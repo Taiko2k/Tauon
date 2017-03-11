@@ -205,6 +205,7 @@ import textwrap
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 from ctypes import *
+from PyLyrics import *
 
 fast_bin_av = True
 try:
@@ -585,8 +586,13 @@ class Prefs:
         self.linux_bold_font = "Noto Sans Bold"
 
         self.spec2_scroll = False
+
+        self.spec2_p_base = [10, 10, 100]
+        self.spec2_p_multiply = [0.5, 1, 1]
+
         self.spec2_base = [10, 10, 100]
         self.spec2_multiply = [0.5, 1, 1]
+        self.spec2_colour_setting = 'custom'
 
 
 prefs = Prefs()
@@ -1278,10 +1284,10 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 prefs.spec2_scroll = True
             if 'vis-base-colour=' in p:
                 result = p.split('=')[1]
-                prefs.spec2_base = list(map(int, result.split(',')))
+                prefs.spec2_p_base = list(map(int, result.split(',')))
             if 'vis-colour-multiply=' in p:
                 result = p.split('=')[1]
-                prefs.spec2_multiply = list(map(float, result.split(',')))
+                prefs.spec2_p_multiply = list(map(float, result.split(',')))
 
 else:
     scrobble_mark = True
@@ -2140,13 +2146,20 @@ class LastFMapi:
             print(e)
 
     def get_bio(self, artist):
-        if self.connected:
+        #if self.connected:
+        if self.network is None:
+            self.no_user_connect()
 
-            artist_object = pylast.Artist(artist, self.network)
-            bio = artist_object.get_bio_summary(language="en")
-            return bio
-        else:
-            return ""
+        artist_object = pylast.Artist(artist, self.network)
+        bio = artist_object.get_bio_summary(language="en")
+        print(artist_object.get_cover_image())
+        print("\n\n")
+        print(bio)
+        print("\n\n")
+        print(artist_object.get_bio_content())
+        return bio
+        #else:
+        #    return ""
 
     def update(self, title, artist, album):
         if self.hold:
@@ -6330,9 +6343,31 @@ class Menu:
 
 # Create empty area menu
 playlist_menu = Menu(130)
-
+showcase_menu = Menu(150)
 picture_menu = Menu(120)
 
+
+def get_lyric_wiki(track_object):
+
+    if track_object.artist == "" or track_object.title == "":
+        show_message("Insufficient metadata to get lyrics")
+
+    print("Query Lyric Wiki...")
+    try:
+        track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+    except:
+        show_message("LyricWiki does not appear to have lyrics for this song")
+
+    print("..Done")
+
+
+def get_bio(track_object):
+
+    if track_object.artist != "":
+        lastfm.get_bio(track_object.artist)
+
+showcase_menu.add('Query LyricWiki for lyrics', get_lyric_wiki, pass_ref=True)
+#showcase_menu.add('teest', get_bio, pass_ref=True)
 
 def save_embed_img():
     index = pctl.track_queue[pctl.queue_step]
@@ -8078,7 +8113,45 @@ if default_player == 'BASS':
 x_menu = Menu(175)
 view_menu = Menu(170)
 set_menu = Menu(150)
+vis_menu = Menu(140)
 
+
+
+def vis_off():
+    gui.vis = 0
+vis_menu.add("Off", vis_off)
+
+def level_on():
+    gui.vis = 1
+vis_menu.add("Level Meter", level_on)
+
+def spec_on():
+    gui.vis = 2
+vis_menu.add("Spectrum Visualizer", spec_on)
+
+def spec2_def():
+    gui.vis = 3
+    prefs.spec2_colour_setting = 'custom'
+    gui.update_layout()
+vis_menu.add("Spectrogram", spec2_def)
+
+# def spec2_1():
+#     gui.vis = 3
+#     prefs.spec2_colour_setting = 'horizon'
+#     gui.update_layout()
+# vis_menu.add("Spectrogram: Horizon", spec2_1)
+#
+# def spec2_2():
+#     gui.vis = 3
+#     prefs.spec2_colour_setting = 'plasma'
+#     gui.update_layout()
+# vis_menu.add("Spectrogram: Plasma", spec2_2)
+#
+# def spec2_3():
+#     gui.vis = 3
+#     prefs.spec2_colour_setting = 'grey'
+#     gui.update_layout()
+# vis_menu.add("Spectrogram: Grey", spec2_3)
 
 def sa_remove(h):
     if len(gui.pl_st) > 1:
@@ -13892,12 +13965,13 @@ class Showcase:
     def __init__(self):
 
         self.lastfm_artist = None
+        self.artist_mode = False
 
-    def get_artist_info(self):
-
-        track = pctl.playing_object()
-        if track is not None:
-            artist = track.artist
+    # def get_artist_info(self):
+    #
+    #     track = pctl.playing_object()
+    #     if track is not None:
+    #         artist = track.artist
 
     def render(self):
 
@@ -13913,46 +13987,56 @@ class Showcase:
         index = pctl.track_queue[pctl.queue_step]
         track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
-        if track.artist == self.lastfm_artist:
+        if self.artist_mode:
 
-            return
+            if track.artist == self.lastfm_artist:
 
-        album_art_gen.display(index, (x, y), (box, box))
-        if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
-            album_art_gen.cycle_offset(index)
-
-        if track.lyrics == "":
-
-            w = window_size[0] - (x + box) - 30
-            x = int(x + box + (window_size[0] - x - box) / 2)
-
-            y = int(window_size[1] / 2) - 60
-            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
-
-            y += 45
-            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
+                return
 
         else:
-            x += box + int(window_size[0] * 0.15) + 20
+            album_art_gen.display(index, (x, y), (box, box))
+            if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
+                album_art_gen.cycle_offset(index)
 
-            #y = 80
-            x -= 100
-            w = window_size[0] - x - 30
+            if track.lyrics == "":
 
-            if mouse_wheel != 0:
-                lyrics_ren.lyrics_position += mouse_wheel * 35
-            if key_up_press:
-                lyrics_ren.lyrics_position += 35
-            if key_down_press:
-                lyrics_ren.lyrics_position -= 35
+                w = window_size[0] - (x + box) - 30
+                x = int(x + box + (window_size[0] - x - box) / 2)
 
-            lyrics_ren.render(index,
-                              x,
-                              y + lyrics_ren.lyrics_position,
-                              w,
-                              int(window_size[1] - 100),
-                              0)
+                y = int(window_size[1] / 2) - 60
+                draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
 
+                y += 45
+                draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
+
+            else:
+                x += box + int(window_size[0] * 0.15) + 20
+
+                #y = 80
+                x -= 100
+                w = window_size[0] - x - 30
+
+
+
+                if key_up_press:
+                    lyrics_ren.lyrics_position += 35
+                if key_down_press:
+                    lyrics_ren.lyrics_position -= 35
+
+                lyrics_ren.render(index,
+                                  x,
+                                  y + lyrics_ren.lyrics_position,
+                                  w,
+                                  int(window_size[1] - 100),
+                                  0)
+
+            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                if mouse_wheel != 0:
+                    lyrics_ren.lyrics_position += mouse_wheel * 35
+                if right_click:
+                    track = pctl.playing_object()
+                    if track != None:
+                        showcase_menu.activate(track)
 
 
 showcase = Showcase()
@@ -14066,6 +14150,20 @@ def update_layout_do():
 
     gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
     gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 - gui.offset_extea
+
+    if gui.vis == 3:
+        if prefs.spec2_colour_setting == 'custom':
+            prefs.spec2_base = prefs.spec2_p_base
+            prefs.spec2_multiply = prefs.spec2_p_multiply
+        # elif prefs.spec2_colour_setting == 'horizon':
+        #     prefs.spec2_base = [10, 10, 100]
+        #     prefs.spec2_multiply = [0.5, 1, 1]
+        # elif prefs.spec2_colour_setting == 'plasma':
+        #     prefs.spec2_base = [10, 10, 10]
+        #     prefs.spec2_multiply = [2, 1.2, 5]
+        # elif prefs.spec2_colour_setting == 'grey':
+        #     prefs.spec2_base = [20, 20, 20]
+        #     prefs.spec2_multiply = [1, 1, 1]
 
     gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
 
@@ -14804,6 +14902,16 @@ while running:
 
             if view_menu.active is True and input.mouse_click:
                 view_menu.click()
+                input.mouse_click = False
+                ab_click = True
+
+            if showcase_menu.active is True and input.mouse_click:
+                showcase_menu.click()
+                input.mouse_click = False
+                ab_click = True
+
+            if vis_menu.active is True and input.mouse_click:
+                vis_menu.click()
                 input.mouse_click = False
                 ab_click = True
 
@@ -15927,6 +16035,8 @@ while running:
                             draw.rect((1, sbp), (15, sbl), [255, 255, 255, 11], True)
 
                 # Switch Vis:
+                if right_click and coll_point(mouse_position, (window_size[0] - 150 - gui.offset_extea, 0, 140, gui.panelY)):
+                    vis_menu.activate(None, (window_size[0] - 150, 30))
 
                 if input.mouse_click and coll_point(mouse_position, (window_size[0] - 130 - gui.offset_extea, 0, 120, gui.panelY)):
                     if gui.vis == 0:
@@ -17305,6 +17415,8 @@ while running:
 
         # Render Menus-------------------------------
         x_menu.render()
+        showcase_menu.render()
+        vis_menu.render()
         set_menu.render()
         picture_menu.render()
         view_menu.render()
