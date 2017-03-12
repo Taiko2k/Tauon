@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.1.6"
+t_version = "v2.1.7"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -156,30 +156,6 @@ else:
             pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
 
-# try:
-#     open(user_directory + '/lock', 'x')
-#     pass
-#
-# except:
-#     pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-#     # sys.exit()
-#     import socket
-#
-#     print('There might already be an instance...')
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     result = s.connect_ex(('127.0.0.1', server_port))
-#     s.close()
-#
-#     if result == 0:
-#         print('Socket is already open')
-#
-#         if os.path.isfile('.gitignore'):
-#             print("Dev mode, ignoring single instancing")
-#         else:
-#             sys.exit()
-#     print("alredat rnning!")
-#
-#     sys.exit()
 
 import time
 import ctypes
@@ -201,11 +177,12 @@ import re
 import zipfile
 import warnings
 import struct
-import textwrap
+import colorsys
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
+
 
 fast_bin_av = True
 try:
@@ -239,6 +216,7 @@ from tflac import Flac
 from tflac import Opus
 from tflac import Ape
 from tflac import Wav
+# from t_extra import *
 
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
@@ -415,6 +393,19 @@ side_drag = False
 clicked = False
 
 # Player Variables----------------------------------------------------------------------------
+
+format_colours = {
+    "MP3": [255, 130, 80, 255],
+    "FLAC": [156, 249, 79, 255],
+    "M4A": [81, 220, 225, 255],
+    "OGG": [244, 244, 78, 255],
+    "WMA": [213, 79, 247, 255],
+    "APE": [247, 79, 79, 255],
+    "TTA": [94, 78, 244, 255],
+    "OPUS": [247, 79, 146, 255],
+    "AAC": [79, 247, 168, 255],
+    "WV": [229, 23, 18, 255]
+}
 
 
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
@@ -720,6 +711,13 @@ class GuiVar:
 gui = GuiVar()
 
 
+class StarStore:
+
+    def __init__(self):
+
+        db = {}
+        
+
 class Fonts:
 
     def __init__(self):
@@ -775,7 +773,7 @@ def update_set():
 
     for i in range(len(gui.pl_st)):
         if gui.pl_st[i][2] is False:
-            gui.pl_st[i][1] = int(math.ceil((gui.pl_st[i][1] / total) * wid)) #+ 1
+            gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid)) #+ 1
 
 def colour_slide(a, b, x, x_limit):
 
@@ -10606,6 +10604,7 @@ class Over:
         self.current_path = os.path.expanduser('~')
         self.ext_colours = {}
         self.view_offset = 0
+        self.ext_ratio = {}
 
         self.enabled = False
         self.click = False
@@ -11013,6 +11012,45 @@ class Over:
         draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(190), 14)
 
+
+
+        # Ratio bar
+        if len(pctl.master_library) > 110:
+            x = self.box_x + 110
+            y = self.box_y + self.h - 7
+
+            full_rect = [x, y, self.w - 110 + 0, 7]
+            d = 0
+
+            for key, value in self.ext_ratio.items():
+
+                colour = [200, 200, 200 ,255]
+                if key in format_colours:
+                    colour = format_colours[key]
+
+                colour = colorsys.rgb_to_hls(colour[0] / 255, colour[1] / 255, colour[2] / 255)
+                colour = colorsys.hls_to_rgb(1 - colour[0], colour[1] * 0.8, colour[2] * 0.8)
+                colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+
+                h = int(round(value / len(pctl.master_library) * full_rect[2]))
+                block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
+
+
+                draw.rect_r(block_rect, colour, True)
+                d += h
+
+                block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
+                fields.add(block_rect)
+                if coll_point(mouse_position, block_rect):
+                    xx = block_rect[0] + int(block_rect[2] / 2)
+                    if xx < x + 30:
+                        xx = x + 30
+                    if xx > self.box_x + self.w - 30:
+                        xx = self.box_x + self.w - 30
+                    draw_text((xx, self.box_y + self.h - 35, 2), key, colours.grey_blend_bg(190), 13)
+
+        #draw.rect_r(full_rect, [0, 0, 0, 10], True)
+
     def config_v(self):
 
         w = 370
@@ -11181,7 +11219,13 @@ class Over:
         self.init2done = True
 
         # Stats
-        global pctl
+        self.ext_ratio = {}
+        for key, value in pctl.master_library.items():
+            if value.file_ext in self.ext_ratio:
+                self.ext_ratio[value.file_ext] += 1
+            else:
+                self.ext_ratio[value.file_ext] = 1
+        print(self.ext_ratio)
 
         pctl.total_playtime = sum(pctl.star_library.values())
 
@@ -16652,26 +16696,10 @@ while running:
 
                     line = pctl.master_library[r_menu_index].file_ext
                     ex_colour = [255, 255, 255, 130]
-                    if line == "MP3":
-                        ex_colour = [255, 130, 80, 255]
-                    elif line == 'FLAC':
-                        ex_colour = [156, 249, 79, 255]
-                    elif line == 'M4A':
-                        ex_colour = [81, 220, 225, 255]
-                    elif line == 'OGG':
-                        ex_colour = [244, 244, 78, 255]
-                    elif line == 'WMA':
-                        ex_colour = [213, 79, 247, 255]
-                    elif line == 'APE':
-                        ex_colour = [247, 79, 79, 255]
-                    elif line == 'TTA':
-                        ex_colour = [94, 78, 244, 255]
-                    elif line == 'OPUS':
-                        ex_colour = [247, 79, 146, 255]
-                    elif line == 'AAC':
-                        ex_colour = [79, 247, 168, 255]
-                    elif line == 'WV':
-                        ex_colour = [229, 23, 18, 255]
+
+                    if line in format_colours:
+                        ex_colour = format_colours[line]
+
                     draw.rect_r(ext_rect, ex_colour, True)
                     draw_text((x + w - 60, y + 40), line, colours.grey_blend_bg3(190), 11)
 
