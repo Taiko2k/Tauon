@@ -498,7 +498,7 @@ r_menu_index = 0
 
 # Library and loader Variables--------------------------------------------------------
 master_library = {}
-star_library = {}
+#star_library = {}
 cue_list = []
 
 LC_None = 0
@@ -715,8 +715,73 @@ class StarStore:
 
     def __init__(self):
 
-        db = {}
-        
+        self.db = {}
+
+    def key(self, index):
+
+        return pctl.master_library[index].artist, pctl.master_library[index].title, pctl.master_library[index].filename
+
+    def object_key(self, track):
+
+        return track.artist, track.title, track.filename
+
+    # Increments the play time
+    def add(self, index, value):
+
+        key = self.key(index)
+        if key in self.db:
+            self.db[key][0] += value
+        else:
+            self.db[key] = [value, ""]
+
+    # Returnes the track play time
+    def get(self, index):
+
+        key = self.key(index)
+        if key in self.db:
+            return self.db[key][0]
+        else:
+            return 0
+
+    def get_by_object(self, track):
+
+        key = self.object_key(track)
+        if key in self.db:
+            return self.db[key][0]
+        else:
+            return 0
+
+    def get_total(self):
+
+        return sum(item[0] for item in self.db.values())
+
+    def full_get(self, index):
+
+        key = self.key(index)
+        if key in self.db:
+            return self.db[key]
+        else:
+            return None
+
+    def remove(self, index):
+
+        key = self.key(index)
+        if key in self.db:
+            del self.db[key]
+
+    def insert(self, index, object):
+
+        key = self.key(index)
+        self.db[key] = object
+
+
+# key = star_store.full_get(item)
+# star_store.remove(item)
+# if key != None:
+#     star_store.insert(item, key)
+#star_store.add(pctl.track_queue[pctl.queue_step])
+star_store = StarStore()
+
 
 class Fonts:
 
@@ -1000,7 +1065,8 @@ class LoadClass:
 # STATE LOADING
 
 try:
-    star_library = pickle.load(open(user_directory + "/star.p", "rb"))
+    star_store.db = pickle.load(open(user_directory + "/star.p", "rb"))
+
 except:
     print('No existing star.p file')
 
@@ -1122,7 +1188,6 @@ def track_number_process(line):
     return line
 
 
-
 if db_version > 0:
 
     if db_version <= 0.8:
@@ -1171,6 +1236,40 @@ if db_version > 0:
         if install_mode:
                 shutil.copy(install_directory + "/config.txt", user_directory)
                 print("Rewrote user config file")
+
+    if db_version <= 1.7:
+        try:
+            print("Updating playtime database...")
+            old = star_store.db
+            #perf_timer.set()
+            old_total = sum(old.values())
+            #print(perf_timer.get())
+            print("Old total: ", end='')
+            print(old_total)
+            star_store.db = {}
+
+            new = {}
+            for track in master_library.values():
+                key = track.title + track.filename
+                if key in old:
+                    n_value = [old[key], ""]
+                    n_key = star_store.object_key(track)
+                    star_store.db[n_key] = n_value
+
+            print("New total: ", end='')
+            #perf_timer.set()
+            print(star_store.get_total())
+            #print(perf_timer.get())
+            diff = old_total - star_store.get_total()
+            print(int(diff), end='')
+            print(" Secconds could not be matched to tracks. Total playtime won't be affected")
+            star_store.db[("", "", "LOST")] = [diff, ""]
+        except:
+            print("Error upgrading database")
+            show_message("Error loading old database, did the program not exit properly after updating? Oh well.")
+
+
+
 
 
 # LOADING CONFIG
@@ -1534,7 +1633,7 @@ class PlayerCtl:
 
         self.total_playtime = 0
         self.master_library = master_library
-        self.star_library = star_library
+        #self.star_library = star_library
 
         # Misc player control
 
@@ -2159,6 +2258,35 @@ class LastFMapi:
         #else:
         #    return ""
 
+    def love(self, artist, title):
+
+        if self.connected and artist != "" and title != "":
+            track = self.network.get_track(artist, title)
+            track.love()
+
+    def unlove(self, artist, title):
+
+        if self.connected and artist != "" and title != "":
+            track = self.network.get_track(artist, title)
+            track.love()
+            track.unlove()
+
+    # The last.fm api is broken here
+
+    # def user_love_to_playlist(self, username):
+    #     if len(username) > 15:
+    #         return
+    #     if self.network is None:
+    #         self.no_user_connect()
+    #
+    #     print("Lookup last.fm user " + username)
+    #
+    #     lastfm_user = self.network.get_user(username)
+    #     loved = lastfm_user.get_loved_tracks()
+    #     print(loved)
+    #
+    #
+
     def update(self, title, artist, album):
         if self.hold:
             return 0
@@ -2193,6 +2321,59 @@ def get_backend_time(path):
 
 
 lastfm = LastFMapi()
+
+def get_love(track_object):
+
+    star = star_store.full_get(track_object.index)
+    if star is None:
+        return False
+
+    if 'L' in star[1]:
+        return True
+    else:
+        return False
+
+def get_love_index(index):
+
+    star = star_store.full_get(index)
+    if star is None:
+        return False
+
+    if 'L' in star[1]:
+        return True
+    else:
+        return False
+
+def love(set=True):
+
+    if len(pctl.track_queue) < 1:
+        return False
+
+    index = pctl.track_queue[pctl.queue_step]
+
+    loved = False
+    star = star_store.full_get(index)
+    if star is not None:
+        if 'L' in star[1]:
+            loved = True
+
+    if set is False:
+        return loved
+
+    loved ^= True
+
+    if loved:
+        star = [star[0], star[1] + "L"]
+        lastfm.love(pctl.master_library[index].artist, pctl.master_library[index].title)
+    else:
+        star = [star[0], star[1].strip("L")]
+        lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
+
+    star_store.insert(index, star)
+    gui.pl_update = 1
+
+
+
 
 
 class LastScrob:
@@ -2397,14 +2578,16 @@ def player3():
                 lfm_scrobbler.update(add_time)
 
                 # Update track play count
-                if len(pctl.track_queue) > 0:
-                    index = pctl.track_queue[pctl.queue_step]
-                    key = pctl.master_library[index].title + pctl.master_library[index].filename
-                    if key in pctl.star_library:
-                        if 3 > add_time > 0:
-                            pctl.star_library[key] += add_time
-                    else:
-                        pctl.star_library[key] = 0
+                if len(pctl.track_queue) > 0 and 3 > add_time > 0:
+
+                    star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+                    # index = pctl.track_queue[pctl.queue_step]
+                    # key = pctl.master_library[index].title + pctl.master_library[index].filename
+                    # if key in pctl.star_library:
+                    #     if 3 > add_time > 0:
+                    #         pctl.star_library[key] += add_time
+                    # else:
+                    #     pctl.star_library[key] = 0
 
             # if self.play_state == 3:   #  URL Mode
             #    # Progress main seek head
@@ -2976,14 +3159,15 @@ def player():
                 lfm_scrobbler.update(add_time)
 
 
-            if pctl.playing_state == 1 and len(pctl.track_queue) > 0:
-                index = pctl.track_queue[pctl.queue_step]
-                key = pctl.master_library[index].title + pctl.master_library[index].filename
-                if key in pctl.star_library:
-                    if 3 > add_time > 0:
-                        pctl.star_library[key] += add_time
-                else:
-                    pctl.star_library[key] = 0
+            if pctl.playing_state == 1 and len(pctl.track_queue) > 0 and 3 > add_time > 0:
+                star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+                # index = pctl.track_queue[pctl.queue_step]
+                # key = pctl.master_library[index].title + pctl.master_library[index].filename
+                # if key in pctl.star_library:
+                #     if 3 > add_time > 0:
+                #         pctl.star_library[key] += add_time
+                # else:
+                #     pctl.star_library[key] = 0
 
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
@@ -3711,13 +3895,13 @@ class GStats:
 
             for index in pctl.multi_playlist[playlist][2]:
                 artist = pctl.master_library[index].artist
-                pt = 0
-                key = pctl.master_library[index].title + pctl.master_library[index].filename
+                #pt = 0
+                #key = pctl.master_library[index].title + pctl.master_library[index].filename
                 if artist == "":
                     artist = "<Artist Unspecified>"
-                if key in pctl.star_library:
-                    pt = int(pctl.star_library[key])
-
+                # if key in pctl.star_library:
+                #     pt = int(pctl.star_library[key])
+                pt = int(star_store.get(index))
                 if pt < 30:
                     continue
 
@@ -3738,11 +3922,12 @@ class GStats:
             for index in pctl.multi_playlist[playlist][2]:
                 genre_r = pctl.master_library[index].genre
                 gn = [pctl.master_library[index].genre]
-                pt = 0
+                #pt = 0
 
-                key = pctl.master_library[index].title + pctl.master_library[index].filename
-                if key in pctl.star_library:
-                    pt = int(pctl.star_library[key])
+                #key = pctl.master_library[index].title + pctl.master_library[index].filename
+                #if key in pctl.star_library:
+                #    pt = int(pctl.star_library[key])
+                pt = int(star_store.get(index))
 
                 if ',' in genre_r:
                     [x.strip() for x in genre_r.split(',')]
@@ -3810,13 +3995,14 @@ class GStats:
 
             for index in pctl.multi_playlist[playlist][2]:
                 album = pctl.master_library[index].album
-                pt = 0
-                key = pctl.master_library[index].title + pctl.master_library[index].filename
+                #pt = 0
+                #key = pctl.master_library[index].title + pctl.master_library[index].filename
                 if album == "":
                     album = "<Album Unspecified>"
 
-                if key in pctl.star_library:
-                    pt = int(pctl.star_library[key])
+                #if key in pctl.star_library:
+                #    pt = int(pctl.star_library[key])
+                pt = int(star_store.get(index))
 
                 if pt < 30:
                     continue
@@ -5863,7 +6049,10 @@ def fix_encoding(index, mode, enc):
 
     for q in range(len(todo)):
 
-        key = pctl.master_library[todo[q]].title + pctl.master_library[todo[q]].filename
+        # key = pctl.master_library[todo[q]].title + pctl.master_library[todo[q]].filename
+        old_star = star_store.full_get(todo[q])
+        if old_star != None:
+            star_store.remove(todo[q])
 
         if enc_field == 'All' or enc_field == 'Artist':
             line = pctl.master_library[todo[q]].artist
@@ -5883,11 +6072,14 @@ def fix_encoding(index, mode, enc):
             line = line.decode(enc, 'ignore')
             pctl.master_library[todo[q]].title = line
 
-        if key in pctl.star_library:
-            newkey = pctl.master_library[todo[q]].title + pctl.master_library[todo[q]].filename
-            if newkey not in pctl.star_library:
-                pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
-                # del pctl.star_library[key]
+        if old_star != None:
+            star_store.insert(todo[q], old_star)
+
+        # if key in pctl.star_library:
+        #     newkey = pctl.master_library[todo[q]].title + pctl.master_library[todo[q]].filename
+        #     if newkey not in pctl.star_library:
+        #         pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
+        #         # del pctl.star_library[key]
 
 
 def transfer_tracks(index, mode, to):
@@ -6743,9 +6935,10 @@ def export_stats(pl):
     play_time = 0
     for index in pctl.multi_playlist[pl][2]:
         playlist_time += int(pctl.master_library[index].length)
-        key = pctl.master_library[index].title + pctl.master_library[index].filename
-        if key in pctl.star_library:
-            play_time += pctl.star_library[key]
+        # key = pctl.master_library[index].title + pctl.master_library[index].filename
+        # if key in pctl.star_library:
+        #     play_time += pctl.star_library[key]
+        play_time += star_store.get(index)
 
     stats_gen.update(pl)
     line = 'Playlist: ' + pctl.multi_playlist[pl][0] + "\r\n"
@@ -6825,22 +7018,24 @@ def new_playlist(switch=True):
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
 def best(index):
-    key = pctl.master_library[index].title + pctl.master_library[index].filename
+    #key = pctl.master_library[index].title + pctl.master_library[index].filename
     if pctl.master_library[index].length < 1:
         return 0
-    if key in pctl.star_library:
-        return int(pctl.star_library[key])  # / pctl.master_library[index].length)
-    else:
-        return 0
+    return int(star_store.get(index))
+    # if key in pctl.star_library:
+    #     return int(pctl.star_library[key])  # / pctl.master_library[index].length)
+    # else:
+    #     return 0
 
 def key_playcount(index):
-    key = pctl.master_library[index].title + pctl.master_library[index].filename
+    #key = pctl.master_library[index].title + pctl.master_library[index].filename
     if pctl.master_library[index].length < 1:
         return 0
-    if key in pctl.star_library:
-        return pctl.star_library[key] / pctl.master_library[index].length
-    else:
-        return 0
+    return star_store.get(index) / pctl.master_library[index].length
+    # if key in pctl.star_library:
+    #     return pctl.star_library[key] / pctl.master_library[index].length
+    # else:
+    #     return 0
 
 def gen_top_100(index):
 
@@ -6857,7 +7052,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Most Played", 1, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Most Played Tracks", 1, gen_top_100, pass_ref=True)
 
 
 def gen_folder_top(pl):
@@ -6878,13 +7073,14 @@ def gen_folder_top(pl):
     sets.append(copy.deepcopy(se))
 
     def best(folder):
-        print(folder)
+        #print(folder)
         total_star = 0
         for item in folder:
-            key = pctl.master_library[item].title + pctl.master_library[item].filename
-            if key in pctl.star_library:
-                total_star += int(pctl.star_library[key])
-        print(total_star)
+            # key = pctl.master_library[item].title + pctl.master_library[item].filename
+            # if key in pctl.star_library:
+            #     total_star += int(pctl.star_library[key])
+            total_star += int(star_store.get(item))
+        #print(total_star)
         return total_star
 
     sets = sorted(sets, key=best, reverse=True)
@@ -6918,6 +7114,21 @@ def gen_lyrics(pl):
     else:
         show_message("No track with lyrics found")
 
+
+def gen_love(pl):
+    playlist = []
+
+    for item in pctl.multi_playlist[pl][2]:
+        if get_love_index(item):
+            playlist.append(item)
+
+    if len(playlist) > 0:
+        #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
+        pctl.multi_playlist.append(pl_gen(title="Loved",
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+    else:
+        show_message("Nothing Found")
 
 def gen_comment(pl):
     playlist = []
@@ -7101,15 +7312,17 @@ tab_menu.add_to_sub("Shuffled Folders", 1, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
-    global pctl
 
     playlist = []
 
     for p in pctl.multi_playlist[index][2]:
-        key = pctl.master_library[p].title + pctl.master_library[p].filename
-        if key in pctl.star_library:
-            if pctl.star_library[key] > 300:
-                playlist.append(p)
+        time = star_store.get(index)
+        if time > 300:
+            playlist.append(p)
+        # key = pctl.master_library[p].title + pctl.master_library[p].filename
+        # if key in pctl.star_library:
+        #     if pctl.star_library[key] > 300:
+        #         playlist.append(p)
     random.shuffle(playlist)
     # pctl.multi_playlist.append(
     #     [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
@@ -7167,7 +7380,7 @@ def gen_sort_path(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Filepath", 1, gen_sort_path, pass_ref=True)
+# tab_menu.add_to_sub("Filepath", 1, gen_sort_path, pass_ref=True)
 
 
 def gen_sort_artist(index):
@@ -7204,6 +7417,7 @@ def gen_sort_album(index):
 
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
+tab_menu.add_to_sub("Has Love", 1, gen_love, pass_ref=True)
 tab_menu.add_to_sub("Has Comment", 1, gen_comment, pass_ref=True)
 tab_menu.add_to_sub("Has Lyrics", 1, gen_lyrics, pass_ref=True)
 
@@ -7662,10 +7876,11 @@ track_menu.add_to_sub("Rename Tracks", 0, rename_tracks, pass_ref=True)
 
 
 def reset_play_count(index):
-    global key
-    key = pctl.master_library[index].title + pctl.master_library[index].filename
-    if key in pctl.star_library:
-        del pctl.star_library[key]
+
+    star_store.remove(index)
+    # key = pctl.master_library[index].title + pctl.master_library[index].filename
+    # if key in pctl.star_library:
+    #     del pctl.star_library[key]
 
 
 track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
@@ -7692,17 +7907,20 @@ def reload_metadata(index):
     for track in todo:
 
         print('Reloading Metadate for ' + pctl.master_library[track].filename)
-        key = pctl.master_library[track].title + pctl.master_library[track].filename
-        star = 0
+        #key = pctl.master_library[track].title + pctl.master_library[track].filename
+        star = star_store.full_get(track)
+        star_store.remove(track)
 
-        if key in pctl.star_library:
-            star = pctl.star_library[key]
-            del pctl.star_library[key]
+        # if key in pctl.star_library:
+        #     star = pctl.star_library[key]
+        #     del pctl.star_library[key]
 
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        key = pctl.master_library[track].title + pctl.master_library[track].filename
-        pctl.star_library[key] = star
+        #key = pctl.master_library[track].title + pctl.master_library[track].filename
+        #pctl.star_library[key] = star
+        if star is not None and star[0] > 0:
+            star_store.insert(track, star)
 
 def reload_metadata_selection():
 
@@ -7719,17 +7937,20 @@ def reload_metadata_selection():
     for track in todo:
 
         print('Reloading Metadate for ' + pctl.master_library[track].filename)
-        key = pctl.master_library[track].title + pctl.master_library[track].filename
-        star = 0
+        #key = pctl.master_library[track].title + pctl.master_library[track].filename
+        star = star_store.full_get(track)
+        star_store.remove(track)
 
-        if key in pctl.star_library:
-            star = pctl.star_library[key]
-            del pctl.star_library[key]
+        # if key in pctl.star_library:
+        #     star = pctl.star_library[key]
+        #     del pctl.star_library[key]
 
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        key = pctl.master_library[track].title + pctl.master_library[track].filename
-        pctl.star_library[key] = star
+        #key = pctl.master_library[track].title + pctl.master_library[track].filename
+        #pctl.star_library[key] = star
+        if star is not None and star[0] > 0:
+            star_store.insert(track, star)
 
 def activate_encoding_box(index):
     global encoding_box
@@ -7873,7 +8094,9 @@ def intel_moji(index):
         print("Fix Mojibake: Detected encoding as: " + detect)
         for item in lot:
             track = pctl.master_library[item]
-            key = pctl.master_library[item].title + pctl.master_library[item].filename
+            #key = pctl.master_library[item].title + pctl.master_library[item].filename
+            key = star_store.full_get(item)
+            star_store.remove(item)
 
             track.title = recode(track.title, detect)
             track.album = recode(track.album, detect)
@@ -7883,10 +8106,13 @@ def intel_moji(index):
             track.comment = recode(track.comment, detect)
             track.lyrics = recode(track.lyrics, detect)
 
-            if key in pctl.star_library:
-                newkey = pctl.master_library[item].title + pctl.master_library[item].filename
-                if newkey not in pctl.star_library:
-                    pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
+            if key != None:
+                star_store.insert(item, key)
+
+            # if key in pctl.star_library:
+            #     newkey = pctl.master_library[item].title + pctl.master_library[item].filename
+            #     if newkey not in pctl.star_library:
+            #         pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
 
     else:
         show_message("Autodetect failed")
@@ -8197,6 +8423,12 @@ def sa_lyrics():
 def sa_star():
     gui.pl_st.append(["Starline", 80, True])
     gui.update_layout()
+def sa_love():
+    gui.pl_st.append(["❤", 25, True])
+    gui.update_layout()
+
+def key_love(index):
+    return get_love_index(index)
 
 def key_artist(index):
     return pctl.master_library[index].artist
@@ -8265,6 +8497,8 @@ def sort_ass(h, invert=False):
         key = key_bitrate
     if name == "Lyrics":
         key = key_hl
+    if name == "❤":
+        key = key_love
 
     if key is not None:
         playlist = pctl.multi_playlist[pctl.playlist_active][2]
@@ -8313,6 +8547,7 @@ set_menu.add("+ Bitrate", sa_bitrate)
 set_menu.add("+ Has Lyrics", sa_lyrics)
 set_menu.add("+ Filepath", sa_file)
 set_menu.add("+ Starline", sa_star)
+set_menu.add("+ Loved", sa_love)
 set_menu.br()
 set_menu.add("- Remove This", sa_remove, pass_ref=True)
 
@@ -8574,11 +8809,12 @@ def export_database():
         line.append(str(track.date))
         line.append(track.genre)
 
-        key = track.title + track.filename
-        if key in pctl.star_library:
-            line.append(str(int(pctl.star_library[key])))
-        else:
-            line.append('0')
+        line.append(str(int(star_store.get_by_object(track))))
+        # key = track.title + track.filename
+        # if key in pctl.star_library:
+        #     line.append(str(int(pctl.star_library[key])))
+        # else:
+        #     line.append('0')
         line.append(track.fullpath)
 
         for g in range(len(line)):
@@ -8743,6 +8979,19 @@ def toggle_random():
 
 extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add('Clear Queue', clear_queue, queue_deco)
+
+def love_deco():
+
+    if love(False):
+        return [colours.menu_text, colours.menu_background, "Un-Love Track"]
+    else:
+        if pctl.playing_state == 1 or pctl.playing_state == 2:
+            return [colours.menu_text, colours.menu_background, "Love Track"]
+        else:
+            return [colours.menu_text_disabled, colours.menu_background, "Love Track"]
+
+
+extra_menu.add('Love', love, love_deco)
 
 def toggle_search():
     global quick_search_mode
@@ -10553,7 +10802,7 @@ def toggle_use_title(mode=0):
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
-config_items.append(['Force off breaking playlist by folders', toggle_break])
+config_items.append(['Turn off playlist title breaks', toggle_break])
 
 config_items.append(['Use double digit track indices', toggle_dd])
 
@@ -10736,9 +10985,9 @@ class Over:
         draw.rect_r(rect2, colours.alpha_grey(10), True)
 
         if last_fm_user_field.text == "":
-            draw_text((rect[0] + 9, rect[1]), "Username", colours.grey_blend_bg(30), 11)
+            draw_text((rect[0] + 9, rect[1]), "Username", colours.grey_blend_bg(40), 11)
         if last_fm_pass_field.text == "":
-            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(30), 11)
+            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(40), 11)
 
         if self.lastfm_input_box == 0:
             last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), font=12)
@@ -10756,6 +11005,10 @@ class Over:
         y += 120
         self.button(x + 50, y, "Update", self.update_lfm, 65)
         self.button(x + 130, y, "Clear", self.clear_lfm, 65)
+
+        x = self.box_x + 50 + int(self.w / 2)
+        y += 85
+        draw_text((x,y, 2), "Only events that occour while last.fm is activated from MENU will be submitted", colours.grey_blend_bg(90), 11)
 
     def clear_lfm(self):
         global lfm_hash
@@ -11227,7 +11480,8 @@ class Over:
                 self.ext_ratio[value.file_ext] = 1
         print(self.ext_ratio)
 
-        pctl.total_playtime = sum(pctl.star_library.values())
+        #pctl.total_playtime = sum(pctl.star_library.values())
+        pctl.total_playtime = star_store.get_total()
 
         # Files
         if len(self.drives) < 1 and system == 'windows':
@@ -13046,11 +13300,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     0]
 
         index = default_playlist[p_track]
-        key = pctl.master_library[index].title + pctl.master_library[index].filename
+        #key = pctl.master_library[index].title + pctl.master_library[index].filename
         star_x = 0
-        if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
-            index].length != 0:
-            total = pctl.star_library[key]
+        total = star_store.get(index)
+        #if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+        #    index].length != 0:
+        if star_lines and total > 0 and pctl.master_library[index].length > 0:
+            #total = pctl.star_library[key]
             ratio = total / pctl.master_library[index].length
             if ratio > 0.55:
                 star_x = int(ratio * 4)
@@ -13065,11 +13321,12 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
 
-        if gui.show_stars and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+        # if gui.show_stars and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+        #     index].length != 0:
+        if gui.show_stars and total > 0 and pctl.master_library[
             index].length != 0:
 
-
-            stars = star_count(pctl.star_library[key], pctl.master_library[index].length)
+            stars = star_count(total, pctl.master_library[index].length)
             starl = "★" * stars
             star_x = draw_text((width + start_x - 42 - offset_font_extra,
                        y + gui.star_text_y_offset, 1), starl,
@@ -13585,11 +13842,26 @@ class StandardPlaylist:
                         wid -= 6
 
                     if item[0] == "Starline":
-                        key = n_track.title + n_track.filename
-                        if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
+                        #key = n_track.title + n_track.filename
+                        total = star_store.get_by_object(n_track)
+                        #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
+                        if total > 0 and n_track.length != 0 and wid > 0:
                             if gui.show_stars:
 
-                                text = star_count(pctl.star_library[key], n_track.length) * "★"
+                                # re = 0
+                                # if get_love(n_track):
+                                #     re = draw_text((run + 6, y + gui.star_text_y_offset),
+                                #           "❤",
+                                #           [220, 90, 90, 255],
+                                #           gui.row_font_size,
+                                #           )
+                                #     re += 4
+
+                                text = star_count(total, n_track.length) * "★"
+
+                                # if get_love(n_track):
+                                #     text = text + " ❤"
+
                                 colour = colours.index_text
                                 if this_line_playing is True:
                                     colour = colours.index_playing
@@ -13600,7 +13872,7 @@ class StandardPlaylist:
                                           gui.row_font_size,
                                           )
                             else:
-                                total = pctl.star_library[key]
+                                #total = pctl.star_library[key]
                                 ratio = total / n_track.length
                                 if ratio > 0.55:
                                     star_x = int(ratio * 4)
@@ -13676,11 +13948,21 @@ class StandardPlaylist:
                             #colour = colours.time_text
                             if this_line_playing is True:
                                 colour = colours.time_text
+                        elif item[0] == "❤":
+                            if get_love(n_track):
+                                text = "❤"
+                                colour = [220, 90, 90, 255]
+                            else:
+                                text = ""
+                            # if this_line_playing is True:
+                            #     colour = colours.artist_playing
                         elif item[0] == "P":
-                            key = n_track.title + n_track.filename
+                            #key = n_track.title + n_track.filename
                             ratio = 0
-                            if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
-                                total = pctl.star_library[key]
+                            total = star_store.get_by_object(n_track)
+                            #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0:
+                            if total > 0 and n_track.length != 0:
+                                # total = pctl.star_library[key]
                                 if n_track.length > 15:
                                     total += 2
                                 ratio = total / n_track.length
@@ -16855,12 +17137,13 @@ while running:
 
                     y += 23
 
-                    key = pctl.master_library[r_menu_index].title + pctl.master_library[r_menu_index].filename
-                    total = 0
+                    #key = pctl.master_library[r_menu_index].title + pctl.master_library[r_menu_index].filename
+                    total = star_store.get(r_menu_index)
                     ratio = 0
-                    if (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+                    #if (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+                    if total > 0 and pctl.master_library[
                         r_menu_index].length != 0:
-                        total = pctl.star_library[key]
+                        #total = pctl.star_library[key]
                         ratio = total / pctl.master_library[r_menu_index].length
 
                     draw_text((x + 8 + 10, y + 40), "Play count", colours.grey_blend_bg3(140), 12)
@@ -17087,7 +17370,10 @@ while running:
                             print('Renaming...')
 
                             playt = 0
-                            oldkey = pctl.master_library[item].title + pctl.master_library[item].filename
+                            #oldkey = pctl.master_library[item].title + pctl.master_library[item].filename
+                            star = star_store.full_get(item)
+                            star_store.remove(item)
+
                             oldpath = pctl.master_library[item].fullpath
 
                             oldsplit = os.path.split(oldpath)
@@ -17097,15 +17383,16 @@ while running:
                             pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
                             pctl.master_library[item].filename = afterline
 
-                            newkey = pctl.master_library[item].title + pctl.master_library[item].filename
+                            star_store.insert(item, star)
+                            #newkey = pctl.master_library[item].title + pctl.master_library[item].filename
 
-                            if oldkey in pctl.star_library:
-                                playt = pctl.star_library[oldkey]
-                                del pctl.star_library[oldkey]
-                            if newkey in pctl.star_library:
-                                pctl.star_library[newkey] += playt
-                            elif playt > 0:
-                                pctl.star_library[newkey] = playt
+                            # if oldkey in pctl.star_library:
+                            #     playt = pctl.star_library[oldkey]
+                            #     del pctl.star_library[oldkey]
+                            # if newkey in pctl.star_library:
+                            #     pctl.star_library[newkey] += playt
+                            # elif playt > 0:
+                            #     pctl.star_library[newkey] = playt
 
                         except:
                             total_todo -= 1
@@ -17256,6 +17543,9 @@ while running:
                     gui.search_error = False
 
                 if len(search_text.text) != 0 and search_text.text[0] == '/':
+                    # if "/love" in search_text.text:
+                    #     line = "last.fm loved tracks from user. Format: /love <username>"
+                    # else:
                     line = "Folder filter mode. Enter path segment."
                     draw_text((rect[0] + 23, window_size[1] - 84), line, colours.grey(80), 10)
                 else:
@@ -17275,12 +17565,16 @@ while running:
                     playlist = []
                     if len(search_text.text) > 0:
                         if search_text.text[0] == '/':
+
                             if search_text.text.lower() == "/random" or search_text.text.lower() == "/shuffle":
                                 gen_500_random(pctl.playlist_active)
                             elif search_text.text.lower() == "/top" or search_text.text.lower() == "/most":
                                 gen_top_100(pctl.playlist_active)
                             elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration" or search_text.text.lower() == "/len":
                                 gen_sort_len(pctl.playlist_active)
+                            # elif search_text.text[:6] == "/love " and len(search_text.text) > 8:
+                            #
+                            #     lastfm.user_love_to_playlist(search_text.text[6:])
                             else:
 
                                 if search_text.text[-1] == "/":
@@ -17973,7 +18267,8 @@ while running:
 
     if pctl.total_playtime - time_last_save > 600:
         print("Auto Save")
-        pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
+        #pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
+        pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
         time_last_save = pctl.total_playtime
 
     if min_render_timer.get() > 60:
@@ -17992,7 +18287,7 @@ pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
 print("Writing database to disk")
-pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
+pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 
 view_prefs['star-lines'] = star_lines
 view_prefs['update-title'] = update_title
@@ -18024,7 +18319,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.7,  # Version
+        1.8,  # Version
         view_prefs,
         gui.save_size,
         gui.side_panel_size,
