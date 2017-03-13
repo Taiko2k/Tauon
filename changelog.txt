@@ -4,9 +4,14 @@ Changelog-------------------------------------
 v2.1.7
 
  - Added function to fetch lyrics from LyricWiki
- - Added menu for changing visualiser
- - Added various functions to selection menu
+ - Added track love function with last.fm submission
+ - Added bar chart of codec ratios to stats tab
+ - Added right click menu for changing visualiser
+ - Added copied various functions to selection menu
+ - Fixed scroll on panels in showcase view
  - Fixed playback buttons not changing colour between themes
+ - Fixed playtime inflation when modifying metadata
+ - Fixed play count duping on tracks with same filename but different artist
 
 v2.1.5
 
