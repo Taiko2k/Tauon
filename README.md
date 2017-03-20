@@ -15,8 +15,8 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
   - Transcode folders while keeping album art. Useful for copying to DAP's with limited storage / codec support.
   - Last.fm scrobbling with love track function
   - Lyrics display with support for fetching lyrics from LyricWiki (indev)
-  - Save and load playlists in the XSPF format
-  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting
+  - Save and load playlists in the XSPF file format
+  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting (testing)
   - Outbound radio streaming to Icecast. Streams playlist in background without affecting local playback.
   
 ### Screenshot :star2:
