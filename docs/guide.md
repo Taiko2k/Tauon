@@ -60,7 +60,14 @@ Tip: End the search text with another forward slash to search just for folders w
  - Playlists can be rearranged by dragging them
  - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
  - Single tracks can be moved within a playlist by holding shift and dragging
- - To move a block of tracks; highlight, then click and drag
+ - To move a block of tracks; highlight (use shift to highlight multiple), then click and drag
+
+### Rename Folder Function (experimental)
+
+***Rename*** - Renames the folder of the track to given template format. The default template can be changed in the config.txt file.  
+***Compact*** - If the upper containing folder contains no other folders of files, this function will eleminate that folder.  
+
+Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use around files you cannot afford to lose.
 
 ### Quirks
 
