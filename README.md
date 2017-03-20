@@ -7,16 +7,18 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
 ### Features :sparkles:
 
   - Playback support for most common codecs including MP3, FLAC, OGG, OPUS, and APE
-  - Dark themed, minimal user interface
-  - Includes large album art and gallery views
   - Simple drag and drop track importing
-  - Automatic CUE sheet detection and integration
-  - Batch transcode folders of tracks to save space when copying to portable devices
-  - Quick search
-  - Playlist sorting
-  - Last.fm scrobbling
-  - Outbound streaming via Icecast
-
+  - Playlist oriented search and sorting
+  - Keep track of play counts, even when file location changes
+  - Large album art display
+  - Automatic CUE sheet detection
+  - Transcode folders while keeping album art. Useful for copying to DAP's with limited storage / codec support.
+  - Last.fm scrobbling with love track function
+  - Lyrics display with support for fetching lyrics from LyricWiki (indev)
+  - Save and load playlists in the XSPF format
+  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting
+  - Outbound radio streaming to Icecast. Streams playlist in background without affecting local playback.
+  
 ### Screenshot :star2:
 
 
