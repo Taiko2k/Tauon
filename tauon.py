@@ -179,6 +179,7 @@ import warnings
 import struct
 import colorsys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
@@ -517,6 +518,8 @@ class Prefs:
         self.cross_fade_time = 700
         self.volume_wheel_increment = 2
         self.encoder_output = user_directory + '/encoder/'
+        self.rename_folder_template = "%a - %b"
+        self.rename_tracks_template = "%n. %a - %t%x"
 
         self.enable_web = False
         self.allow_remote = True
@@ -688,6 +691,9 @@ class GuiVar:
         self.spec2_position = 0
         self.spec2_timer = Timer()
         self.spec2_timer.set()
+
+        self.rename_folder_box = False
+
 
 
 
@@ -1329,6 +1335,13 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'vis-colour-multiply=' in p:
                 result = p.split('=')[1]
                 prefs.spec2_multiply = list(map(float, result.split(',')))
+
+            if 'rename-tracks-default=' in p:
+                result = p.split('=')[1]
+                prefs.rename_tracks_templatet = result
+            if 'rename-folder-default=' in p:
+                result = p.split('=')[1]
+                prefs.rename_folder_templatet = result
 
 else:
     scrobble_mark = True
@@ -2282,18 +2295,19 @@ def love(set=True):
         star = [star[0], star[1].strip("L")]
         lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
 
+
     star_store.insert(index, star)
     gui.pl_update = 1
 
 
 class LastScrob:
-    
+
     def __init__(self):
-        
+
         self.a_index = -1
         self.a_sc = False
         self.a_pt = False
-        
+
     def update(self, add_time):
 
         if self.a_index != pctl.track_queue[pctl.queue_step]:
@@ -3414,7 +3428,7 @@ def player():
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = False
                     gui.pl_update = 1
                     gui.update += 1
-                    print("Missing File")
+                    print("Missing File: " + pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath)
                     pctl.playerCommandReady = False
                     pctl.playing_state = 0
                     pctl.advance()
@@ -3619,7 +3633,7 @@ def player():
 #     playerThread = threading.Thread(target=player3)
 #     playerThread.daemon = True
 #     playerThread.start()
-    
+
 # --------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------
 mediaKey = ''
@@ -5099,9 +5113,11 @@ search_text = TextBox()
 last_fm_user_field = TextBox()
 last_fm_pass_field = TextBox()
 rename_files = TextBox()
-rename_files.text = "%n. %a - %t%x"
+rename_files.text = prefs.rename_tracks_template
 radio_field = TextBox()
 radio_field.text = radio_field_text
+rename_folder = TextBox()
+rename_folder.text = prefs.rename_folder_template
 
 temp_dest = SDL_Rect(0, 0)
 
@@ -5839,7 +5855,7 @@ album_art_gen = AlbumArt()
 
 
 def trunc_line(line, font, px, dots=True):
-    trunk = False
+
     if draw.text_calc(line, font) < px + 10:
         return line
 
@@ -5860,6 +5876,27 @@ def trunc_line(line, font, px, dots=True):
         #     line = line.rstrip(" ") + gui.trunk_end
         return line
 
+def right_trunc(line, font, px, dots=True):
+
+    if draw.text_calc(line, font) < px + 10:
+        return line
+
+    if dots:
+        while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+            if len(line) == 0:
+                return gui.trunk_end
+            line = line[1:]
+        return gui.trunk_end + line.rstrip(" ")
+
+    else:
+        while draw.text_calc(line, font) > px:
+            # trunk = True
+            line = line[1:]
+            if len(line) < 2:
+                break
+        # if trunk and dots:
+        #     line = line.rstrip(" ") + gui.trunk_end
+        return line
 
 def trunc_line2(line, font, px):
     trunk = False
@@ -6484,6 +6521,48 @@ def paste_deco():
 
 #playlist_menu.add('Paste', append_here, paste_deco)
 
+def parse_template(string, track_object, up_ext=False):
+    set = 0
+    underscore = False
+    output = ""
+
+    while set < len(string):
+        if string[set] == "%" and set < len(string) - 1:
+            set += 1
+            if string[set] == 'n':
+                if len(str(track_object.track_number)) < 2:
+                    output += "0"
+                output += str(track_object.track_number)
+            elif string[set] == 'a':
+                output += track_object.artist
+            elif string[set] == 't':
+                output += track_object.title
+            elif string[set] == 'd':
+                output += track_object.date
+            elif string[set] == 'b':
+                output += track_object.album
+            elif string[set] == 'x':
+                if up_ext:
+                    output += track_object.file_ext.upper()
+                else:
+                    output += "." + track_object.file_ext.lower()
+            elif string[set] == 'u':
+                underscore = True
+        else:
+            output += string[set]
+        set += 1
+
+    output = output.rstrip(" -").lstrip(" -")
+
+    if underscore:
+        output = output.replace(' ', "_")
+
+    # Attempt to ensure the output text is filename safe
+    for char in output:
+        if char in '\\/:*?"<>|':
+            output = output.replace(char, '')
+
+    return output
 
 # Create playlist tab menu
 tab_menu = Menu(160)
@@ -7485,6 +7564,7 @@ def temp_copy_folder(ref):
 # Create combo album menu
 combo_menu = Menu(130)
 combo_menu.add('Open Folder', open_folder, pass_ref=True)
+
 combo_menu.add("Copy Folder", temp_copy_folder, pass_ref=True)
 combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
 
@@ -7718,15 +7798,164 @@ def rename_tracks(index):
     input_text = ""
 
 
-track_menu.add_to_sub("Rename Tracks", 0, rename_tracks, pass_ref=True)
+track_menu.add_to_sub("Rename Tracks...", 0, rename_tracks, pass_ref=True)
+
+
+def rename_parent(index, template):
+
+    #template = prefs.rename_folder_template
+    template = template.strip("/\\")
+    track = pctl.master_library[index]
+
+    old = track.parent_folder_path
+    #print(old)
+
+    new = parse_template(template, track, up_ext=True)
+    print(new)
+
+
+    if len(new) < 2:
+        show_message("The generated name is too short")
+        return
+
+    if len(old) < 5:
+        show_message("This folder path seems short, I don't wanna try rename that")
+        return
+
+    if not os.path.exists(old):
+        show_message("Rename Failed. The original folder is missing.")
+        return
+
+    protect = ("", "Documents", "Music", "Desktop", "Downloads")
+
+    for fo in protect:
+        if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
+            show_message("Woah, careful there! I don't think we should rename that folder.")
+            return
+
+    print(track.parent_folder_path)
+    re = os.path.dirname(track.parent_folder_path.rstrip("/\\"))
+    print(re)
+    new_parent_path = os.path.join(re, new)
+    print(new_parent_path)
+
+
+
+    for key, object in pctl.master_library.items():
+
+        if object.fullpath == "":
+            continue
+
+        if old == object.parent_folder_path:
+
+            new_fullpath = os.path.join(new_parent_path, object.filename)
+
+            if os.path.normpath(new_parent_path) == os.path.normpath(old):
+                show_message("The folder already has that name")
+                return
+
+            if os.path.exists(new_parent_path):
+                show_message("Rename Failed: A folder with that name already exists")
+                return
+
+            if key == pctl.track_queue[pctl.queue_step] and pctl.playing_state > 0:
+                pctl.stop()
+                time.sleep(2)
+
+            object.parent_folder_name = new
+            object.parent_folder_path = new_parent_path
+            object.fullpath = new_fullpath
+
+        # Fix any other tracks paths that contain the old path
+        if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
+                and os.path.normpath(object.fullpath)[len(old)] in ('/', '\\'):
+            object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip('\\/'))
+            object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip('\\/'))
+
+    if new_parent_path is not None:
+        try:
+            os.rename(old, new_parent_path)
+            print(new_parent_path)
+        except:
+
+            show_message("Rename Failed! You may need to re-import tracks to fix them, sorry.")
+            return
+
+    show_message("Renamed folder to: " + new)
+
+
+def rename_folders(index):
+    global track_box
+    global rename_index
+    global input_text
+
+    track_box = False
+    rename_index = index
+    gui.rename_folder_box = True
+    input_text = ""
+
+track_menu.add_to_sub("Rename Folder...", 0, rename_folders, pass_ref=True)
+
+
+def move_folder_up(index, do=False):
+
+    track = pctl.master_library[index]
+
+    parent_folder = os.path.dirname(track.parent_folder_path)
+    folder_name = track.parent_folder_name
+    move_target = track.parent_folder_path
+    upper_folder = os.path.dirname(parent_folder)
+
+    if len(os.listdir(parent_folder)) > 1:
+
+        return False
+
+    if do is False:
+        return True
+
+    if not os.path.exists(track.parent_folder_path):
+        show_message("The directory does not appear to exist")
+        return
+
+    if pctl.playing_state > 0 and track.parent_folder_path in pctl.playing_object().parent_folder_path:
+        pctl.stop()
+        time.sleep(2)
+
+    try:
+
+        # Rename the track folder to something temporary
+        os.rename(move_target, os.path.join(parent_folder, "RMTEMP000"))
+
+        # Move the temporary folder up 2 levels
+        shutil.move(os.path.join(parent_folder, "RMTEMP000"), upper_folder)
+
+        # Delete the old directory that contained the original folder
+        shutil.rmtree(parent_folder)
+
+        # Rename the moved folder back to its original name
+        os.rename(os.path.join(upper_folder, "RMTEMP000"), os.path.join(upper_folder, folder_name))
+
+    except Exception as e:
+        show_message("Error!: " + str(e))
+
+    # Fix any other tracks paths that contain the old path
+    old = track.parent_folder_path
+    new_parent_path = os.path.join(upper_folder, folder_name)
+    for key, object in pctl.master_library.items():
+
+        if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
+                and os.path.normpath(object.fullpath)[len(old)] in ('/', '\\'):
+            object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip('\\/'))
+            object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip('\\/'))
+
+            print(object.fullpath)
+            print(object.parent_folder_path)
+
 
 
 def reset_play_count(index):
 
     star_store.remove(index)
-    # key = pctl.master_library[index].title + pctl.master_library[index].filename
-    # if key in pctl.star_library:
-    #     del pctl.star_library[key]
 
 
 track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
@@ -7736,7 +7965,7 @@ def get_like_folder(index):
     tracks = []
     for k in default_playlist:
         if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
-            if pctl.master_library[k].is_cue == False:
+            if pctl.master_library[k].is_cue is False:
                 tracks.append(k)
     return tracks
 
@@ -8034,6 +8263,8 @@ def clip_ar_al(index):
 selection_menu = Menu(165)
 
 selection_menu.add('Open Folder', open_folder, pass_ref=True)
+selection_menu.add("Rename Folder...", rename_folders, pass_ref=True)
+selection_menu.br()
 selection_menu.add('Reload Metadata', reload_metadata_selection)
 
 if prefs.tag_editor_name != "":
@@ -10558,7 +10789,7 @@ class Over:
         self.toggle_square(x, y, toggle_extract, "Auto extract and delete zip archives")
 
         y = self.box_y + 220
-        draw_text((x, y - 2), "* Changes apply on restart", colours.grey(150), 11)
+        draw_text((x, y - 2), "* Applies on restart    ** Applies on track change", colours.grey(100), 11)
         self.button(x + 410, y - 4, "Open config file", open_config_file)
 
         if default_player == "BASS":
@@ -10566,7 +10797,7 @@ class Over:
             y = self.box_y + 47
             x = self.box_x + 385
 
-            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 12)
+            draw_text((x, y - 22), "Set audio output device**", [160, 160, 160, 255], 12)
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
@@ -10659,7 +10890,7 @@ class Over:
 
         y += 120
 
-        self.button(x + 50, y, "Set", self.update_lfm, 65)
+        self.button(x + 50, y, "Update", self.update_lfm, 65)
         self.button(x + 130, y, "Clear", self.clear_lfm, 65)
 
         if not prefs.auto_lfm:
@@ -11317,43 +11548,43 @@ class Over:
         y += 14
         y2 = y
 
-        if key_shift_down:
-            y += 100
-            draw_text((x + 300, y - 10), "Modify (use with caution)", [200, 200, 200, 200], 12)
-
-            box = (x + 300, y + 7, 200, 20)
-            if coll_point(mouse_position, box):
-                draw.rect_r(box, [40, 40, 40, 60], True)
-                if self.click:
-
-                    # get folders
-                    folders = []
-                    for item in os.listdir(self.current_path):
-                        folder_path = os.path.join(self.current_path, item)
-                        if os.path.isdir(folder_path):
-                            folders.append(item)
-
-                    for item in folders:
-                        folder_path = os.path.join(self.current_path, item)
-                        items_in_folder = os.listdir(folder_path)
-                        if len(items_in_folder) == 1 and os.path.isdir(os.path.join(folder_path, items_in_folder[0])):
-                            target_path = os.path.join(folder_path, items_in_folder[0])
-
-                            if item == items_in_folder[0]:
-                                print('same')
-                                os.rename(target_path, target_path + "RMTEMP")
-                                shutil.move(target_path + "RMTEMP", self.current_path)
-                                shutil.rmtree(folder_path)
-                                os.rename(folder_path + "RMTEMP", folder_path)
-                            else:
-                                print('diferent')
-                                shutil.move(target_path, self.current_path)
-                                shutil.rmtree(folder_path)
-                                os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
-
-            draw.rect_r(box, colours.alpha_grey(8), True)
-            fields.add(box)
-            draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", colours.grey_blend_bg(130), 12)
+        # if key_shift_down:
+        #     y += 100
+        #     draw_text((x + 300, y - 10), "Modify (use with caution)", [200, 200, 200, 200], 12)
+        #
+        #     box = (x + 300, y + 7, 200, 20)
+        #     if coll_point(mouse_position, box):
+        #         draw.rect_r(box, [40, 40, 40, 60], True)
+        #         if self.click:
+        #
+        #             # get folders
+        #             folders = []
+        #             for item in os.listdir(self.current_path):
+        #                 folder_path = os.path.join(self.current_path, item)
+        #                 if os.path.isdir(folder_path):
+        #                     folders.append(item)
+        #
+        #             for item in folders:
+        #                 folder_path = os.path.join(self.current_path, item)
+        #                 items_in_folder = os.listdir(folder_path)
+        #                 if len(items_in_folder) == 1 and os.path.isdir(os.path.join(folder_path, items_in_folder[0])):
+        #                     target_path = os.path.join(folder_path, items_in_folder[0])
+        #
+        #                     if item == items_in_folder[0]:
+        #                         print('same')
+        #                         os.rename(target_path, target_path + "RMTEMP")
+        #                         shutil.move(target_path + "RMTEMP", self.current_path)
+        #                         shutil.rmtree(folder_path)
+        #                         os.rename(folder_path + "RMTEMP", folder_path)
+        #                     else:
+        #                         print('diferent')
+        #                         shutil.move(target_path, self.current_path)
+        #                         shutil.rmtree(folder_path)
+        #                         os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
+        #
+        #     draw.rect_r(box, colours.alpha_grey(8), True)
+        #     fields.add(box)
+        #     draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", colours.grey_blend_bg(130), 12)
         y = y2
         y += 0
 
@@ -14206,6 +14437,7 @@ while running:
             playlist_panel ^= True
 
         if key_F7:
+
             key_F7 = False
 
 
@@ -14250,6 +14482,10 @@ while running:
             rename_playlist(pctl.playlist_active)
 
         if radiobox and input.mouse_click:
+            input.mouse_click = False
+            gui.track_box_click = True
+
+        if gui.rename_folder_box and input.mouse_click:
             input.mouse_click = False
             gui.track_box_click = True
 
@@ -14750,6 +14986,7 @@ while running:
                     and gui.message_box is False \
                     and pref_box.enabled is False \
                     and track_box is False \
+                    and not gui.rename_folder_box \
                     and extra_menu.active is False\
                     and (side_panel_enable or album_mode)\
                     and not x_menu.active \
@@ -16233,10 +16470,86 @@ while running:
                 draw.rect_r(rect, [0, 0, 0, 90], True)
                 pref_box.render()
 
+            if gui.rename_folder_box:
+
+                if gui.track_box_click:
+                    input.mouse_click = True
+                gui.track_box_click = False
+
+                w = 500
+                h = 125
+                x = int(window_size[0] / 2) - int(w / 2)
+                y = int(window_size[1] / 2) - int(h / 2)
+
+                draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+
+                if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
+                    gui.rename_folder_box = False
+
+                p = draw_text((x + 10, y + 10,), "Physically rename containing folder", colours.grey(150), 12)
+                draw_text((x + 25 + p, y + 10,), "(Experimental)", colours.grey(90), 12)
+
+                rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150))
+
+                draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
+
+                rect = (x + 8 + 300 + 10, y + 38, 80, 22)
+                fields.add(rect)
+                draw.rect_r(rect, colours.grey(20), True)
+                bg = colours.grey(20)
+                if rect_in(rect):
+                    bg = colours.grey(35)
+                    if input.mouse_click:
+                        print('click')
+                        rename_parent(rename_index, rename_folder.text)
+                        gui.rename_folder_box = False
+                        input.mouse_click = False
+
+                    draw.rect_r(rect, colours.grey(35), True)
+
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "RENAME", colours.grey(150), 12,
+                          bg=bg)
+
+                if move_folder_up(rename_index):
+
+                    rect = (x + 408, y + 38, 80, 22)
+                    fields.add(rect)
+                    draw.rect_r(rect, colours.grey(20), True)
+                    bg = colours.grey(20)
+                    if rect_in(rect):
+                        bg = colours.grey(35)
+                        if input.mouse_click:
+                            print('click')
+                            move_folder_up(rename_index, True)
+                            #gui.rename_folder_box = False
+                            input.mouse_click = False
+
+                        draw.rect_r(rect, colours.grey(35), True)
+
+                    draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "COMPACT", colours.grey(150), 12,
+                              bg=bg)
+
+                draw_text((x + 10, y + 65,), "PATH", colours.grey(100), 12)
+                line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
+                line = right_trunc(line, 12, 420)
+                draw_text((x + 60, y + 65,), line, colours.grey(150), 12)
+
+                draw_text((x + 10, y + 83), "OLD", colours.grey(100), 12)
+                line = trunc_line("/" + pctl.master_library[rename_index].parent_folder_name, 12, 420)
+                draw_text((x + 60, y + 83), line, colours.grey(150), 12)
+
+                draw_text((x + 10, y + 101), "NEW", colours.grey(100), 12)
+                line = trunc_line("/" + parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
+                draw_text((x + 60, y + 101), line, colours.grey(150), 12)
+
+
+
             if renamebox:
 
+
                 w = 420
-                h = 220
+                h = 230
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -16278,51 +16591,32 @@ while running:
                 draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(150), 12)
                 draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(150), 12)
                 draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(150), 12)
-                draw_text((x + 150, y + 82,), "%x - File Extension", colours.grey(150), 12)
+                draw_text((x + 150, y + 82,), "%d - Date/Year", colours.grey(150), 12)
                 draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(150), 12)
+                draw_text((x + 290, y + 70,), "%x - File Extension", colours.grey(150), 12)
 
                 afterline = ""
                 warn = False
                 underscore = False
 
                 for item in r_todo:
-                    afterline = ""
 
                     if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
                                     pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
                         warn = True
 
-                    set = 0
-                    while set < len(NRN):
-                        if NRN[set] == "%" and set < len(NRN) - 1:
-                            set += 1
-                            if NRN[set] == 'n':
-                                if len(str(pctl.master_library[item].track_number)) < 2:
-                                    afterline += "0"
-                                afterline += str(pctl.master_library[item].track_number)
-                            elif NRN[set] == 'a':
-                                afterline += pctl.master_library[item].artist
-                            elif NRN[set] == 't':
-                                afterline += pctl.master_library[item].title
-                            elif NRN[set] == 'b':
-                                afterline += pctl.master_library[item].album
-                            elif NRN[set] == 'x':
-                                afterline += "." + pctl.master_library[item].file_ext.lower()
-                            elif NRN[set] == 'u':
-                                underscore = True
-                        else:
-                            afterline += NRN[set]
-                        set += 1
-                    if underscore:
-                        afterline = afterline.replace(' ', "_")
+                    afterline = parse_template(NRN, pctl.master_library[item])
+
 
                     if item == rename_index:
                         break
 
-                draw_text((x + 10, y + 120,),
-                          trunc_line("BEFORE:  " + pctl.master_library[rename_index].filename, 12, 390),
-                          colours.grey(150), 12)
-                draw_text((x + 10, y + 135,), trunc_line("AFTER:     " + afterline, 12, 390), colours.grey(150), 12)
+                draw_text((x + 10, y + 120), "BEFORE", colours.grey(100), 12)
+                line = trunc_line(pctl.master_library[rename_index].filename, 12, 390)
+                draw_text((x + 67, y + 120), line, colours.grey(150), 12)
+
+                draw_text((x + 10, y + 135,), "AFTER", colours.grey(100), 12)
+                draw_text((x + 67, y + 135,), trunc_line(afterline, 12, 390), colours.grey(150), 12)
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
@@ -16339,7 +16633,7 @@ while running:
                               [200, 60, 60, 255], 12)
 
                 if input.mouse_click and coll_point(mouse_position, (x + 8 + 300 + 10, y + 38, 80, 22)):
-
+                    input.mouse_click = False
                     total_todo = len(r_todo)
 
                     for item in r_todo:
@@ -16350,33 +16644,7 @@ while running:
                             pctl.playing_state = 0
                             time.sleep(1 + (prefs.pause_fade_time / 1000))
 
-                        afterline = ""
-
-                        set = 0
-                        while set < len(NRN):
-                            if NRN[set] == "%" and set < len(NRN) - 1:
-                                set += 1
-                                if NRN[set] == 'n':
-                                    if len(str(pctl.master_library[item].track_number)) < 2:
-                                        afterline += "0"
-                                    afterline += str(pctl.master_library[item].track_number)
-                                elif NRN[set] == 'a':
-                                    afterline += pctl.master_library[item].artist
-                                elif NRN[set] == 't':
-                                    afterline += pctl.master_library[item].title
-                                elif NRN[set] == 'b':
-                                    afterline += pctl.master_library[item].album
-                                elif NRN[set] == 'x':
-                                    afterline += "." + pctl.master_library[item].file_ext.lower()
-                            else:
-                                afterline += NRN[set]
-                            set += 1
-                        if underscore:
-                            afterline = afterline.replace(' ', "_")
-
-                        for char in afterline:
-                            if char in '\\/:*?"<>|':
-                                afterline = afterline.replace(char, '')
+                        afterline = parse_template(NRN, pctl.master_library[item])
 
                         oldname = pctl.master_library[item].filename
                         oldpath = pctl.master_library[item].fullpath
@@ -16398,16 +16666,8 @@ while running:
                             pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
                             pctl.master_library[item].filename = afterline
 
-                            star_store.insert(item, star)
-                            #newkey = pctl.master_library[item].title + pctl.master_library[item].filename
-
-                            # if oldkey in pctl.star_library:
-                            #     playt = pctl.star_library[oldkey]
-                            #     del pctl.star_library[oldkey]
-                            # if newkey in pctl.star_library:
-                            #     pctl.star_library[newkey] += playt
-                            # elif playt > 0:
-                            #     pctl.star_library[newkey] = playt
+                            if star is not None:
+                                star_store.insert(item, star)
 
                         except:
                             total_todo -= 1
@@ -16415,11 +16675,14 @@ while running:
                     renamebox = False
                     print('Done')
 
+
                     if total_todo != len(r_todo):
                         show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
 
                     else:
                         show_message("Done.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
+
+
 
             if gui.message_box:
                 if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
