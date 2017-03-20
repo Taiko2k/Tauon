@@ -3843,18 +3843,30 @@ class GStats:
 
             for index in pctl.multi_playlist[playlist][2]:
                 genre_r = pctl.master_library[index].genre
-                gn = [pctl.master_library[index].genre]
 
                 pt = int(star_store.get(index))
 
+                gn = []
                 if ',' in genre_r:
-                    [x.strip() for x in genre_r.split(',')]
-                elif '/' in genre_r:
-                    [x.strip() for x in genre_r.split('/')]
+                    for g in genre_r.split(","):
+                        g = g.rstrip(" ").lstrip(" ")
+                        if len(g) > 0:
+                            gn.append(g)
                 elif ';' in genre_r:
-                    [x.strip() for x in genre_r.split(';')]
-                elif '\\' in genre_r:
-                    [x.strip() for x in genre_r.split(';')]
+                    for g in genre_r.split(";"):
+                        g = g.rstrip(" ").lstrip(" ")
+                        if len(g) > 0:
+                            gn.append(g)
+                elif '/' in genre_r:
+                    for g in genre_r.split("/"):
+                        g = g.rstrip(" ").lstrip(" ")
+                        if len(g) > 0:
+                            gn.append(g)
+                elif ' & ' in genre_r:
+                    for g in genre_r.split(" & "):
+                        g = g.rstrip(" ").lstrip(" ")
+                        if len(g) > 0:
+                            gn.append(g)
                 else:
                     gn = [genre_r]
 
@@ -4634,28 +4646,6 @@ if system == 'windows':
     def Wcolour(colour):
         return colour[0] | (colour[1] << 8) | (colour[2] << 16)
 
-    # def native_bmp_to_pil(hdc, bitmap_handle, width, height):
-    #
-    #     bmpheader = struct.pack("LHHHH", struct.calcsize("LHHHH"),
-    #                             width, height, 1, 24) #w,h, planes=1, bitcount)
-    #     c_bmpheader = ctypes.c_buffer(bmpheader)
-    #
-    #     #3 bytes per pixel, pad lines to 4 bytes
-    #     c_bits = ctypes.c_buffer(b" " * (height * ((width*3 + 3) & -4)))
-    #
-    #     res = ctypes.windll.gdi32.GetDIBits(
-    #         hdc, bitmap_handle, 0, height,
-    #         c_bits, c_bmpheader,
-    #         win32con.DIB_RGB_COLORS)
-    #     if not res:
-    #         raise IOError("native_bmp_to_pil failed: GetDIBits")
-    #
-    #     im = Image.frombuffer(
-    #         "RGB", (width, height), c_bits,
-    #         "raw", "BGR", (width*3 + 3) & -4, -1)
-    #
-    #     return im
-
     def native_bmp_to_sdl(hdc, bitmap_handle, width, height):
 
         bmpheader = struct.pack("LHHHH", struct.calcsize("LHHHH"),
@@ -5027,10 +5017,10 @@ class LyricsRenWin:
 
         draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
-if gui.win_text or gui.cairo_text:
-    lyrics_ren = LyricsRenWin()
-else:
-    lyrics_ren = LyricsRen()
+# if gui.win_text or gui.cairo_text:
+lyrics_ren = LyricsRenWin()
+# else:
+#     lyrics_ren = LyricsRen()
 
 
 def draw_linked_text(location, text, colour, font):
@@ -10497,17 +10487,6 @@ def toggle_dd(mode=0):
         gui.pl_update = 1
 
 
-# def toggle_custom_line(mode=0):
-#     global custom_line_mode
-#     global update_layout
-#
-#     if mode == 1:
-#         return custom_line_mode
-#     else:
-#         custom_line_mode ^= True
-#         update_layout = True
-
-
 def toggle_scroll(mode=0):
     global scroll_enable
     global update_layout
@@ -10531,18 +10510,6 @@ def toggle_follow(mode=0):
         return pl_follow
     else:
         pl_follow ^= True
-
-
-# def toggle_thick(mode=0):
-#     global thick_lines
-#     global update_layout
-#
-#     if mode == 1:
-#         return thick_lines
-#     else:
-#         clear_text_cache()
-#         thick_lines ^= True
-#         update_layout = True
 
 
 def toggle_append_date(mode=0):
@@ -10952,32 +10919,35 @@ class Over:
 
         if prefs.transcode_codec != 'flac':
             y += 35
-            draw_text((x, y), "Bitrate:", colours.grey_blend_bg(150), 12)
 
-            x += 60
-            rect = (x, y, 15, 15)
-            fields.add(rect)
-            draw.rect_r(rect, [255, 255, 255, 20], True)
-            if coll_point(mouse_position, rect):
-                draw.rect_r(rect, [255, 255, 255, 25], True)
-                if self.click:
-                    if prefs.transcode_bitrate > 32:
-                        prefs.transcode_bitrate -= 8
-            draw_text((x + 4, y), "<", colours.grey(200), 11)
-            x += 20
-            # draw.rect_r((x,y,40,15), [255,255,255,10], True)
-            draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", colours.grey_blend_bg(150), 11)
-            x += 40 + 15
-            rect = (x, y, 15, 15)
-            fields.add(rect)
-            draw.rect_r(rect, [255, 255, 255, 20], True)
-            if coll_point(mouse_position, rect):
-                draw.rect_r(rect, [255, 255, 255, 25], True)
-                if self.click:
-                    if prefs.transcode_bitrate < 320:
-                        prefs.transcode_bitrate += 8
+            prefs.transcode_bitrate = self.slide_control(x, y, "Bitrate", "kbs", prefs.transcode_bitrate, 32, 320, 8)
 
-            draw_text((x + 4, y), ">", colours.grey(200), 11)
+            # draw_text((x, y), "Bitrate:", colours.grey_blend_bg(150), 12)
+            #
+            # x += 60
+            # rect = (x, y, 15, 15)
+            # fields.add(rect)
+            # draw.rect_r(rect, [255, 255, 255, 20], True)
+            # if coll_point(mouse_position, rect):
+            #     draw.rect_r(rect, [255, 255, 255, 25], True)
+            #     if self.click:
+            #         if prefs.transcode_bitrate > 32:
+            #             prefs.transcode_bitrate -= 8
+            # draw_text((x + 4, y), "<", colours.grey(200), 11)
+            # x += 20
+            # # draw.rect_r((x,y,40,15), [255,255,255,10], True)
+            # draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", colours.grey_blend_bg(150), 11)
+            # x += 40 + 15
+            # rect = (x, y, 15, 15)
+            # fields.add(rect)
+            # draw.rect_r(rect, [255, 255, 255, 20], True)
+            # if coll_point(mouse_position, rect):
+            #     draw.rect_r(rect, [255, 255, 255, 25], True)
+            #     if self.click:
+            #         if prefs.transcode_bitrate < 320:
+            #             prefs.transcode_bitrate += 8
+            #
+            # draw_text((x + 4, y), ">", colours.grey(200), 11)
 
             y -= 1
             x += 100
@@ -10999,39 +10969,12 @@ class Over:
         x += 10
         y += 25
 
-        draw_text((x, y), "Gallery art size:", colours.grey(200), 11)
+        draw_text((x, y), "Gallery art size", colours.grey(180), 11)
 
         x += 110
 
-        rect = (x, y, 15, 15)
-        fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if album_mode_art_size > 101:
-                    album_mode_art_size -= 10
-                    clear_img_cache()
 
-        draw_text((x + 4, y), "<", colours.grey(200), 11)
-
-        x += 25
-
-        draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
-        draw_text((x + 4, y), str(album_mode_art_size) + "px", colours.grey(200), 11)
-
-        x += 40 + 10
-
-        rect = (x, y, 15, 15)
-        fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if album_mode_art_size < 350:
-                    album_mode_art_size += 10
-                    clear_img_cache()
-        draw_text((x + 4, y), ">", colours.grey(200), 11)
+        album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, clear_img_cache)
 
         # ---------------
 
@@ -11040,48 +10983,12 @@ class Over:
         x += 10
         y += 25
 
-        draw_text((x, y), "Playlist art size:", colours.grey(200), 11)
+        draw_text((x, y), "Playlist art size", colours.grey(180), 11)
 
         x += 110
 
-        rect = (x, y, 15, 15)
-        fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if combo_mode_art_size > 50:
-                    combo_mode_art_size -= 10
-                    clear_img_cache()
+        combo_mode_art_size = self.slide_control(x, y, None, "px", combo_mode_art_size, 50, 600, 10, clear_img_cache)
 
-        draw_text((x + 4, y), "<", colours.grey(200), 11)
-
-        x += 25
-
-        draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
-        draw_text((x + 4, y), str(combo_mode_art_size) + "px", colours.grey(200), 11)
-
-        x += 40 + 10
-
-        rect = (x, y, 15, 15)
-        fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
-        if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
-            if self.click:
-                if combo_mode_art_size < 600:
-                    combo_mode_art_size += 10
-                    clear_img_cache()
-        draw_text((x + 4, y), ">", colours.grey(200), 11)
-
-        if self.click:
-            if not gui.combo_mode:
-                gall_ren.size = album_mode_art_size
-            else:
-                gall_ren.size = combo_mode_art_size
-                combo_pl_render.prep()
-                update_layout = True
-                gui.pl_update = 1
 
         y += 35
 
@@ -11232,22 +11139,21 @@ class Over:
         y = self.box_y + 25
         x = self.box_x + self.item_x_offset + 270
 
-        # self.toggle_square(x, y, toggle_thick, "Large Rows")
-
         y += 20
 
-        self.slide_control(x, y, "Font Size:", "", self.font_size_set, 12, 17)
+        prefs.playlist_font_size = self.slide_control(x, y, "Font Size", "", prefs.playlist_font_size, 12, 17)
         y += 25
-        self.slide_control(x, y, "Row Size:", "px", self.row_size_set, 15, 45)
-        y += 30
+        prefs.playlist_row_height = self.slide_control(x, y, "Row Size", "px", prefs.playlist_row_height, 15, 45)
+        y += 25
 
-        self.button(x, y, "Small Preset", self.small_preset, 80)
-        x += 90
-        self.button(x, y, "Large Preset", self.large_preset, 80)
+        x += 65
+        self.button(x, y, "Default", self.small_preset, 124)
+        # x += 90
+        # self.button(x, y, "Large Preset", self.large_preset, 80)
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 18
+        prefs.playlist_row_height = 20
         prefs.playlist_font_size = 15
         gui.update_layout()
 
@@ -11257,57 +11163,71 @@ class Over:
         prefs.playlist_font_size = 13
         gui.update_layout()
 
-    def slide_control(self, x, y, label, units, plug, lower_limit, upper_limit):
+    def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
 
-        value = plug()
-
-        draw_text((x, y), label, colours.grey_blend_bg(150), 11)
-        x += 65
-        rect = (x, y, 15, 15)
+        if label is not None:
+            draw_text((x, y), label, colours.grey_blend_bg(150), 12)
+            x += 65
+        y += 1
+        rect = (x, y, 33, 15)
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
+        abg = colours.grey(80)
         if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
+
             if self.click:
                 if value > lower_limit:
-                    plug(value - 1)
+                    value -= step
                     gui.update_layout()
+                    if callback is not None:
+                        callback()
 
-        draw_text((x + 4, y), "<", colours.grey(180), 11)
+            if mouse_down:
+                abg = [230, 120, 20, 255]
+            else:
+                abg = [220, 150, 20, 255]
 
-        x += 25
+        dec_arrow.render(x + 1, y, abg)
 
-        draw.rect_r((x, y, 40, 15), [255, 255, 255, 10], True)
-        draw_text((x + 18, y, 2), str(value) + units, colours.grey(180), 11)
+        x += 33
 
-        x += 40 + 10
+        draw.rect_r((x, y, 58, 15), [255, 255, 255, 9], True)
+        draw_text((x + 29, y, 2), str(value) + units, colours.grey(180), 11)
 
-        rect = (x, y, 15, 15)
+        x += 58
+
+        rect = (x, y, 33, 15)
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
+        abg = colours.grey(80)
         if coll_point(mouse_position, rect):
-            draw.rect_r(rect, [255, 255, 255, 25], True)
+
             if self.click:
                 if value < upper_limit:
-                    plug(value + 1)
+                    value += step
                     gui.update_layout()
+                    if callback is not None:
+                        callback()
+            if mouse_down:
+                abg = [230, 120, 20, 255]
+            else:
+                abg = [220, 150, 20, 255]
 
-        draw_text((x + 4, y), ">", colours.grey(180), 11)
+        inc_arrow.render(x + 1, y, abg)
 
+        return value
 
-    def font_size_set(self, set=None):
+        # if mouse_wheel != 0:
+        #     print("wheel")
+        #     if mouse_wheel < 1:
+        #         if value < upper_limit:
+        #             plug(value + 1)
+        #             gui.update_layout()
+        #     else:
+        #         if value > lower_limit:
+        #             plug(value - 1)
+        #             gui.update_layout()
 
-        if set is not None:
-            prefs.playlist_font_size = set
-
-        return prefs.playlist_font_size
-
-    def row_size_set(self, set=None):
-
-        if set is not None:
-            prefs.playlist_row_height = set
-
-        return prefs.playlist_row_height
 
     def style_up(self):
         prefs.line_style += 1
@@ -11709,6 +11629,9 @@ class WhiteModImageAsset:
         self.rect.y = y
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
+
+inc_arrow = WhiteModImageAsset("/gui/inc.png")
+dec_arrow = WhiteModImageAsset("/gui/dec.png")
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
@@ -16477,7 +16400,7 @@ while running:
                 gui.track_box_click = False
 
                 w = 500
-                h = 125
+                h = 127
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -16570,7 +16493,7 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder to format:", colours.grey(150), 12)
+                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder", colours.grey(150), 12)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14, y + 40, colours.alpha_grey(150))
                 NRN = rename_files.text
@@ -16578,14 +16501,17 @@ while running:
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(50))
+                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
+                bg = colours.grey(20)
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), [50, 50, 50, 70], True)
 
-                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(150), 12)
+                if coll_point(mouse_position, rect):
+                    bg = colours.grey(35)
+                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(35), True)
+
+                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(150), 12, bg=bg)
 
                 draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(150), 12)
                 draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(150), 12)
