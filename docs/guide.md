@@ -155,8 +155,6 @@ Tip: While editing tracks externally, make sure not to change the track file nam
 
 Bug: Linking to Picard fails with Unicode paths on windows
 
-Secret function: To remove embedded album art from files (mp3 only): TRACK MENU -> TRACK INFO... -> SHIFT+2
-
 
 ### Importing/Exporting Playlists
 
