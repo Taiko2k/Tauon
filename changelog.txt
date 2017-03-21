@@ -9,9 +9,13 @@ v2.1.7
  - Added right click menu for changing visualiser
  - Added various functions to selection menu
  - Added option to automatically connect to last.fm
- - Added function to rename track folders
- - Added folder compacter function to new rename folder box
+ - Added folder rename function
+ - Added folder compacter function to folder rename box
+ - Added auto resume for functions that interrupt playback
  - Redesigned number change settings widget
+ - Moved folder clean function to folder rename box
+ - Moved 'remove embedded image from mp3' function to picture context menu
+ - Set duration field in track info box as copyable
  - Fixed scroll on panels in showcase view
  - Fixed playback buttons not changing colour between themes
  - Fixed playtime inflation when modifying metadata

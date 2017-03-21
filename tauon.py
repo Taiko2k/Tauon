@@ -1865,13 +1865,14 @@ class PlayerCtl:
 
         self.render_playlist()
 
-    def stop(self):
+    def stop(self, block=False):
         self.playerCommand = 'stop'
         self.playerCommandReady = True
         self.record_stream = False
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
+        previous_state = self.playing_state
         self.playing_time = 0
         self.playing_state = 0
         self.render_playlist()
@@ -1881,6 +1882,15 @@ class PlayerCtl:
         gui.update = True
         if update_title:
             update_title_do()  # Update title bar text
+
+        if block:
+            loop = 0
+            while self.playerCommand != "stopped":
+                time.sleep(0.03)
+                if loop > 110:
+                    break
+
+        return previous_state
 
     def pause(self):
         if self.playing_state == 3:
@@ -2150,7 +2160,7 @@ class LastFMapi:
 
             if 'retry' in str(e):
                 print("Retrying...")
-                time.sleep(3)
+                time.sleep(12)
 
                 try:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
@@ -3585,6 +3595,7 @@ def player():
                     time.sleep(prefs.pause_fade_time / 1000)
                     channel2 = BASS_ChannelStop(handle2)
                     BASS_StreamFree(handle2)
+                pctl.playerCommand = 'stopped'
             # SEEK COMMAND
             elif pctl.playerCommand == 'seek':
 
@@ -6418,7 +6429,7 @@ class Menu:
 # Create empty area menu
 playlist_menu = Menu(130)
 showcase_menu = Menu(150)
-picture_menu = Menu(120)
+
 
 
 def get_lyric_wiki(track_object):
@@ -6490,9 +6501,52 @@ def save_embed_img():
     except:
         show_message("A mysterious error occurred")
 
+picture_menu = Menu(120)
+picture_menu2 = Menu(195)
 
 picture_menu.add('Extract Image', save_embed_img)
+picture_menu2.add('Extract Image', save_embed_img)
 
+
+def remove_embed_picture(index):
+    tracks = get_like_folder(index)
+    removed = 0
+    pr = pctl.stop(True)
+    for item in tracks:
+        if "MP3" == pctl.master_library[item].file_ext:
+            tag = stagger.read_tag(pctl.master_library[item].fullpath)
+            remove = False
+            try:
+                del tag[APIC]
+                print("Delete APIC successful")
+                remove = True
+            except:
+                print("No APIC found")
+
+            try:
+                del tag[PIC]
+                print("Delete PIC successful")
+                remove = True
+            except:
+                print("No PIC found")
+
+            if remove is True:
+                tag.write()
+                removed += 1
+
+    if removed == 0:
+        show_message("Removal Failed")
+        return
+    elif removed == 1:
+        show_message("Deleted embedded picture from file")
+    else:
+        show_message("Deleted embedded picture from " + str(removed) + " files")
+
+    if pr == 1:
+        pctl.revert()
+    clear_img_cache()
+
+picture_menu2.add('Delete Embed Image | Folder', remove_embed_picture, pass_ref=True)
 
 def append_here():
     global cargo
@@ -6524,7 +6578,10 @@ def parse_template(string, track_object, up_ext=False):
                     output += "0"
                 output += str(track_object.track_number)
             elif string[set] == 'a':
-                output += track_object.artist
+                if up_ext and track_object.album_artist != "": # Context of renaming a folder
+                    output += track_object.album_artist
+                else:
+                    output += track_object.artist
             elif string[set] == 't':
                 output += track_object.title
             elif string[set] == 'd':
@@ -7829,12 +7886,13 @@ def rename_parent(index, template):
     new_parent_path = os.path.join(re, new)
     print(new_parent_path)
 
-
+    pre_state = 0
 
     for key, object in pctl.master_library.items():
 
         if object.fullpath == "":
             continue
+
 
         if old == object.parent_folder_path:
 
@@ -7849,8 +7907,8 @@ def rename_parent(index, template):
                 return
 
             if key == pctl.track_queue[pctl.queue_step] and pctl.playing_state > 0:
-                pctl.stop()
-                time.sleep(2)
+                pre_state = pctl.stop(True)
+
 
             object.parent_folder_name = new
             object.parent_folder_path = new_parent_path
@@ -7862,6 +7920,7 @@ def rename_parent(index, template):
             object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip('\\/'))
             object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip('\\/'))
 
+
     if new_parent_path is not None:
         try:
             os.rename(old, new_parent_path)
@@ -7872,6 +7931,8 @@ def rename_parent(index, template):
             return
 
     show_message("Renamed folder to: " + new)
+    if pre_state == 1:
+        pctl.revert()
 
 
 def rename_folders(index):
@@ -7907,9 +7968,9 @@ def move_folder_up(index, do=False):
         show_message("The directory does not appear to exist")
         return
 
+    pre_state = 0
     if pctl.playing_state > 0 and track.parent_folder_path in pctl.playing_object().parent_folder_path:
-        pctl.stop()
-        time.sleep(2)
+        pre_state = pctl.stop(True)
 
     try:
 
@@ -7940,6 +8001,44 @@ def move_folder_up(index, do=False):
 
             print(object.fullpath)
             print(object.parent_folder_path)
+
+    if pre_state == 1:
+        pctl.revert()
+
+
+def clean_folder(index, do=False):
+
+    track = pctl.master_library[index]
+    folder = track.parent_folder_path
+    found = 0
+    to_purge = []
+    try:
+        for item in os.listdir(folder):
+            if ('AlbumArt' == item[:8] and '.jpg' in item.lower()) \
+                    or 'desktop.ini' == item\
+                    or 'Thumbs.db' == item\
+                    or '.DS_Store' == item:
+
+                to_purge.append(item)
+                found += 1
+            elif "__MACOSX" == item and os.path.isdir(os.path.join(folder, item)):
+                found += 1
+                if do:
+                    print("Deleting Folder: " + os.path.join(folder, item))
+                    shutil.rmtree(os.path.join(folder, item))
+
+        if do:
+            for item in to_purge:
+                if os.path.isfile(os.path.join(folder, item)):
+                    print('Deleting File: ' + os.path.join(folder, item))
+                    os.remove(os.path.join(folder, item))
+            clear_img_cache()
+    except Exception as e:
+        #show_message(str(e))
+        show_message("Error deleting file(s). May not have permission or file may be set to read-only")
+        return 0
+
+    return found
 
 
 
@@ -14153,16 +14252,9 @@ while running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
-                x_menu.active = False
-                view_menu.active = False
-                extra_menu.active = False
-                tab_menu.active = False
-                picture_menu.active = False
-                track_menu.active = False
-                playlist_menu.active = False
-                combo_menu.active = False
-                playlist_panel = False
-                selection_menu.active = False
+                for instance in Menu.instances:
+                    instance.active = False
+
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
@@ -15616,7 +15708,10 @@ while running:
                                 and track_box is False:
 
                             if right_click and showc[0] is True:
-                                picture_menu.activate()
+                                if pctl.playing_object().file_ext == "MP3":
+                                    picture_menu2.activate(pctl.track_queue[pctl.queue_step])
+                                else:
+                                    picture_menu.activate()
 
                             line = ""
                             if showc[0] is True:
@@ -16070,61 +16165,6 @@ while running:
                         gui.cursor_mode = 0
                         SDL_SetCursor(cursor_standard)
 
-                if key_shift_down:
-
-                    # y += 24
-
-                    draw_text((x + 8 + 10, y + 40), "Secret Operations Menu:", colours.grey(200), 12)
-
-                    y += 24
-                    x += 15
-                    files_to_purge = []
-
-                    for item in os.listdir(pctl.master_library[r_menu_index].parent_folder_path):
-                        if 'AlbumArt' in item or 'desktop.ini' in item or 'Folder.jpg' in item:
-                            files_to_purge.append(
-                                os.path.join(pctl.master_library[r_menu_index].parent_folder_path, item))
-
-                    line = "1. Purge potentially hidden image and ini files from folder (" + str(
-                        len(files_to_purge)) + " Found)"
-                    draw_text((x + 8 + 10, y + 40), line, colours.grey(200), 12)
-
-                    if key_1_press:
-                        for item in files_to_purge:
-                            print('PHYSICALLY DELETING FILE: ' + item)
-                            try:
-                                # print(item)
-                                os.remove(item)
-                                print(" Item Removed Successfully")
-                            except:
-                                print(" Error in removing file")
-                        clear_img_cache()
-                    y += 20
-                    line = "2. Remove embedded album art from MP3 files in folder"
-                    draw_text((x + 8 + 10, y + 40), line, colours.grey(200), 12)
-
-                    if key_2_press:
-                        tracks = get_like_folder(r_menu_index)
-                        for item in tracks:
-                            if "MP3" == pctl.master_library[item].file_ext:
-                                tag = stagger.read_tag(pctl.master_library[item].fullpath)
-                                try:
-                                    del tag[APIC]
-                                    print("Delete APIC successful")
-                                    clear_img_cache()
-                                except:
-                                    print("No APIC found")
-
-                                try:
-                                    del tag[PIC]
-                                    print("Delete PIC successful")
-                                    clear_img_cache()
-                                except:
-                                    print("No PIC found")
-
-                                tag.write()
-
-                    time.sleep(0.2)
 
                 else:
                     # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
@@ -16249,7 +16289,16 @@ while running:
 
                     y += 15
 
-                    draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(140), 12)
+                    rect = [x + 17, y + 41, 60, 14]
+                    fields.add(rect)
+                    if rect_in(rect):
+                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(170), 12)
+                        if input.mouse_click:
+                            copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
+                            show_message("Duration copied to clipboard")
+                            input.mouse_click = False
+                    else:
+                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(140), 12)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
                     draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190), 12)
 
@@ -16292,7 +16341,8 @@ while running:
                             input.mouse_click = False
                     else:
                         draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(140), 12)
-                    draw_text((x + 8 + 90, y + 40), pctl.master_library[r_menu_index].genre, colours.grey_blend_bg3(190),
+                    line = trunc_line(pctl.master_library[r_menu_index].genre, 12, 290)
+                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190),
                               12)
 
                     y += 15
@@ -16453,6 +16503,25 @@ while running:
                     draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "COMPACT", colours.grey(150), 12,
                               bg=bg)
 
+                to_clean = clean_folder(rename_index)
+                if to_clean > 0:
+                    rect = (x + 408, y + 11, 80, 22)
+                    fields.add(rect)
+                    draw.rect_r(rect, colours.grey(20), True)
+                    bg = colours.grey(20)
+                    if rect_in(rect):
+                        bg = colours.grey(35)
+                        if input.mouse_click:
+                            print('click')
+                            clean_folder(rename_index, True)
+
+                            input.mouse_click = False
+
+                        draw.rect_r(rect, colours.grey(35), True)
+
+                    draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "CLEAN (" + str(to_clean) + ")", colours.grey(150), 12,
+                              bg=bg)
+
                 draw_text((x + 10, y + 65,), "PATH", colours.grey(100), 12)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420)
@@ -16561,14 +16630,12 @@ while running:
                 if input.mouse_click and coll_point(mouse_position, (x + 8 + 300 + 10, y + 38, 80, 22)):
                     input.mouse_click = False
                     total_todo = len(r_todo)
+                    pre_state = 0
 
                     for item in r_todo:
 
                         if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
-                            pctl.playerCommand = 'stop'
-                            pctl.playerCommandReady = True
-                            pctl.playing_state = 0
-                            time.sleep(1 + (prefs.pause_fade_time / 1000))
+                            pre_state = pctl.stop(True)
 
                         afterline = parse_template(NRN, pctl.master_library[item])
 
@@ -16600,6 +16667,8 @@ while running:
 
                     renamebox = False
                     print('Done')
+                    if pre_state == 1:
+                        pctl.revert()
 
 
                     if total_todo != len(r_todo):
