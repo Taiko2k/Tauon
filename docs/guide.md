@@ -11,8 +11,6 @@ I recommend the following file structure especially for large music libraries: L
 
 - Drag and drop files and folders from your file manager.
 
-Tip: After importing, right click playlist tab and select 'Sort Track Numbers' to ensure tracks are ordered correctly.
-
 Tip: Try importing all your music to a single playlist to get started
 
 Quirk: If a music file has an associated .cue file, they needed to be imported together within a folder and not individually otherwise the .cue file may not be detected.
