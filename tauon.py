@@ -4877,7 +4877,10 @@ if system == 'windows':
         #standard_font = 'Segoe UI'
         #standard_font = "Franklin Gothic Medium"
         if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
-            standard_font = 'Arial'
+            standard_font = 'Segoe UI'
+        #standard_font = 'Tahoma'
+        standard_font = 'Segoe UI'
+
 
 
     semibold_font = standard_font
@@ -4908,30 +4911,58 @@ if system == 'windows':
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
         pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
 
-    else:
+    elif standard_font == "Tahoma":
 
-        pretty_text.prime_font(standard_font, 10 + 3, 10, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 11 + 3, 11, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 12 + 3, 12, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 13 + 3, 13, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 14 + 2, 14, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 15 + 2, 15, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 16 + 2, 16, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 10 + 4, 10, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 11 + 4, 11, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 12 + 4, 12, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 13 + 4, 13, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 14 + 4, 14, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 15 + 4, 15, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 16 + 4, 16, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 17 + 4, 17, weight=standard_weight, y_offset=1)
 
-        pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
-        pretty_text.prime_font('Arial', 11 + 4, 211, weight=500, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
-        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 10 + 2, 210, weight=600, y_offset=1)
+        pretty_text.prime_font(semibold_font, 11 + 2, 211, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 2, 212, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
+        # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
+        # pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
         pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
 
-        gui.pl_title_y_offset = -2
-        gui.pl_title_font_offset = -1
+        gui.pl_title_y_offset = -3
+        gui.pl_title_font_offset = -2
+
+    else:
+
+
+        pretty_text.prime_font(standard_font, 10 + 5, 10, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 11 + 5, 11, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 12 + 5, 12, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 13 + 5, 13, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 14 + 5, 14, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 15 + 5, 15, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 16 + 5, 16, weight=standard_weight, y_offset=-1)
+        pretty_text.prime_font(standard_font, 17 + 5, 17, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(semibold_font, 10 + 5, 210, weight=600)
+        #pretty_text.prime_font('Arial', 11 + 4, 211, weight=600, y_offset=1)
+        pretty_text.prime_font(semibold_font, 11 + 3, 211, weight=600, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=0)
+        pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight)
+
+        pretty_text.prime_font(standard_font, 14 + 3, 412, weight=500, y_offset=0)
+        pretty_text.prime_font(standard_font, 15 + 4, 413, weight=500, y_offset=0)
+
+        gui.pl_title_y_offset = -1
+        gui.pl_title_font_offset = -2
 
     # pretty_text.prime_font(menu_font, 14, 412, weight=500)
     # pretty_text.prime_font(menu_font, 15, 413, weight=500)
@@ -5074,6 +5105,7 @@ class TextBox:
     def __init__(self):
 
         self.text = ""
+        self.cursor_position = 0
 
     def paste(self):
 
@@ -5085,26 +5117,79 @@ class TextBox:
 
             self.text += clip.rstrip(" ").lstrip(" ")
 
-    def draw(self, x, y, colour, active=True, secret=False, font=13):
+    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False):
 
-        if active:
-            self.text += input_text
-            if input_text != "":
-                self.cursor = True
-            if key_backspace_press and len(self.text) > 0:
-                self.text = self.text[:-1]
+        # A little bit messy.
+        # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+        # otherwise it is fixed to end
+        if click is False:
+            click = input.mouse_click
+
+
+        if width > 0:
+
+            if click and rect_in((x - 15, y, width + 16, 19)):
+                pre = 0
+                post = 0
+                if mouse_position[0] < x + 1:
+                    self.cursor_position = len(self.text)
+                else:
+                    for i in range(len(self.text)):
+                        post = draw.text_calc(self.text[0:i+1], font)
+                        if x + pre - 1 <= mouse_position[0] <= x + post + 0:
+                            self.cursor_position = len(self.text) - i
+                            break
+                        pre = post
+                    else:
+                        self.cursor_position = 0
+
+            draw_text((x, y), self.text, colour, font)
+            space = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
+
+            if TextBox.cursor:
+                draw.line(x + space, y + 2, x + space, y + 15, colour)
+
+
+            if active:
+                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
+
+            if key_backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
+
+            if key_right_press and self.cursor_position > 0:
+                self.cursor_position -= 1
+            if key_left_press and self.cursor_position < len(self.text):
+                self.cursor_position += 1
             if key_ctrl_down and key_v_press:
-                self.paste()
+                clip = SDL_GetClipboardText().decode('utf-8')
+                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+                    self.text) - self.cursor_position:]
+            if key_del:
+                self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+                    self.text) - self.cursor_position + 1:]
+                if self.cursor_position > 0:
+                    self.cursor_position -= 1
 
-        if secret:
-            space = draw_text((x, y), '●' * len(self.text), colour, font)
+
         else:
-            space = draw_text((x, y), self.text, colour, font)
+            if active:
+                self.text += input_text
+                if input_text != "":
+                    self.cursor = True
+                if key_backspace_press and len(self.text) > 0:
+                    self.text = self.text[:-1]
+                if key_ctrl_down and key_v_press:
+                    self.paste()
 
-        if active and TextBox.cursor:
-            xx = x + space + 1
-            yy = y + 3
-            draw.line(xx, yy, xx, yy + 12, colour)
+            if secret:
+                space = draw_text((x, y), '●' * len(self.text), colour, font)
+            else:
+                space = draw_text((x, y), self.text, colour, font)
+
+            if active and TextBox.cursor:
+                xx = x + space + 1
+                yy = y + 3
+                draw.line(xx, yy, xx, yy + 12, colour)
 
         animate_monitor_timer.set()
 
@@ -6334,7 +6419,7 @@ class Menu:
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
                     colo = alpha_blend([255, 255, 255, 50], bg)
                     draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
-                              colo, 10, bg=bg)
+                              colo, self.font, bg=bg)
 
                 y_run += self.h
                 # Render sub menu if active
@@ -6428,7 +6513,7 @@ class Menu:
 
 # Create empty area menu
 playlist_menu = Menu(130)
-showcase_menu = Menu(150)
+showcase_menu = Menu(170)
 
 
 
@@ -6451,8 +6536,41 @@ def get_bio(track_object):
     if track_object.artist != "":
         lastfm.get_bio(track_object.artist)
 
-showcase_menu.add('Query LyricWiki for lyrics', get_lyric_wiki, pass_ref=True)
+showcase_menu.add('Query LyricWiki For Lyrics', get_lyric_wiki, pass_ref=True)
 #showcase_menu.add('teest', get_bio, pass_ref=True)
+
+def paste_lyrics_deco():
+
+    if SDL_HasClipboardText():
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def paste_lyrics(track_object):
+
+    if SDL_HasClipboardText():
+        clip = SDL_GetClipboardText().decode('utf-8')
+        track_object.lyrics = clip
+
+showcase_menu.add('Paste Lyrics', paste_lyrics, paste_lyrics_deco, pass_ref=True)
+
+
+def clear_lyrics(track_object):
+    track_object.lyrics = ""
+
+def clear_lyrics_deco():
+
+    if pctl.playing_object().lyrics != "":
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+showcase_menu.add('Clear Lyrics', clear_lyrics, clear_lyrics_deco, pass_ref=True)
+
 
 def save_embed_img():
     index = pctl.track_queue[pctl.queue_step]
@@ -6857,10 +6975,13 @@ def drop_deco():
     return [line_colour, [0, 0, 0, 255], None]
 
 
-def sort_track_2(pl):
+def sort_track_2(pl, custom_list=None):
     current_folder = ""
     albums = []
-    playlist = pctl.multi_playlist[pl][2]
+    if custom_list is None:
+        playlist = pctl.multi_playlist[pl][2]
+    else:
+        playlist = custom_list
 
     for i in range(len(playlist)):
         if i == 0:
@@ -8012,6 +8133,8 @@ def clean_folder(index, do=False):
     folder = track.parent_folder_path
     found = 0
     to_purge = []
+    if not os.path.isdir(folder):
+        return 0
     try:
         for item in os.listdir(folder):
             if ('AlbumArt' == item[:8] and '.jpg' in item.lower()) \
@@ -8348,13 +8471,29 @@ def clip_ar_al(index):
            pctl.master_library[index].album
     SDL_SetClipboardText(line.encode('utf-8'))
 
+def clip_ar(index):
+    if pctl.master_library[index].album_artist != "":
+        line = pctl.master_library[index].album_artist
+    else:
+        line = pctl.master_library[index].artist
+    SDL_SetClipboardText(line.encode('utf-8'))
+
+def clip_title(index):
+
+    n_track = pctl.master_library[index]
+
+    if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
+        line = n_track.album_artist + " - " + n_track.album
+    else:
+        line = n_track.parent_folder_name
+
+    SDL_SetClipboardText(line.encode('utf-8'))
 
 selection_menu = Menu(165)
 
 selection_menu.add('Open Folder', open_folder, pass_ref=True)
 selection_menu.add("Rename Folder...", rename_folders, pass_ref=True)
-selection_menu.br()
-selection_menu.add('Reload Metadata', reload_metadata_selection)
+
 
 if prefs.tag_editor_name != "":
 
@@ -8365,7 +8504,11 @@ if prefs.tag_editor_name != "":
         selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
 
 selection_menu.br()
-selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
+selection_menu.add('Copy Album Title', clip_title, pass_ref=True)
+#selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
+selection_menu.add('Copy Artist', clip_ar, pass_ref=True)
+selection_menu.br()
+selection_menu.add('Reload Metadata', reload_metadata_selection)
 selection_menu.br()
 #selection_menu.add('Copy Selection', sel_to_car)
 selection_menu.add('Copy', s_copy)
@@ -10889,7 +11032,7 @@ class Over:
         if w == 0:
             w = draw.text_calc(text, 11) + 10
         rect = (x, y, w, 20)
-        draw.rect_r(rect, colours.alpha_grey(9), True)
+        draw.rect_r(rect, colours.alpha_grey(11), True)
         fields.add(rect)
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 15], True)
@@ -11348,7 +11491,7 @@ class Over:
                 self.ext_ratio[value.file_ext] += 1
             else:
                 self.ext_ratio[value.file_ext] = 1
-        print(self.ext_ratio)
+        # print(self.ext_ratio)
 
         #pctl.total_playtime = sum(pctl.star_library.values())
         pctl.total_playtime = star_store.get_total()
@@ -11946,14 +12089,7 @@ class TopPanel:
             switch_playlist(mouse_wheel * -1, True)
             gui.pl_update = 1
 
-        # Arrow keys to change playlist (should probably move this input somewhere else)
-        if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
-            gui.pl_update = 1
-            gui.update += 1
-            if key_left_press:
-                switch_playlist(-1, True)
-            if key_right_press:
-                switch_playlist(1, True)
+
 
         # ---------
         # Menu Bar
@@ -12629,11 +12765,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
     offset_font_extra = 0
     if gui.row_font_size > 14:
         offset_font_extra = 8
-    offset_y_extra = 0
-    if gui.row_font_size > 13:
-        offset_y_extra = 2
-        if gui.row_font_size > 14:
-            offset_y_extra = 3
+
+
+    # offset_y_extra = 0
+    # if gui.row_font_size > 13:
+    #     offset_y_extra = 2
+    #     if gui.row_font_size > 14:
+    #         offset_y_extra = 3
 
 
     if True or style == 1:
@@ -13241,7 +13379,9 @@ class StandardPlaylist:
 
                     else:
                         text = ""
+                        font = gui.row_font_size
                         colour = [200, 200, 200, 255]
+                        y_off = 0
                         if item[0] == "Title":
                             colour = colours.title_text
                             if n_track.title != "":
@@ -13309,6 +13449,11 @@ class StandardPlaylist:
                             if get_love(n_track):
                                 text = "❤"
                                 colour = [220, 90, 90, 255]
+                                if standard_font == "Segoe UI":
+                                    font -= 2
+                                elif standard_font == 'Noto Sans Bold':
+                                    y_off = 1
+                                    font += 1
                             else:
                                 text = ""
                             # if this_line_playing is True:
@@ -13340,10 +13485,10 @@ class StandardPlaylist:
 
                         #text = trunc_line(text, gui.row_font_size, wid)
                         text = trunc_line2(text, gui.row_font_size, wid)
-                        draw_text((run + 6, y),
+                        draw_text((run + 6, y + y_off),
                                   text,
                                   colour,
-                                  gui.row_font_size,
+                                  font,
                                   )
                     run += item[1]
 
@@ -14420,8 +14565,20 @@ while running:
         if key_F8:
             pass
 
-        if key_del:
-            del_selected()
+        # Disable keys for text cursor control
+        if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox:
+
+            if key_del:
+                del_selected()
+
+            # Arrow keys to change playlist
+            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+                gui.pl_update = 1
+                gui.update += 1
+                if key_left_press:
+                    switch_playlist(-1, True)
+                if key_right_press:
+                    switch_playlist(1, True)
 
         if key_F1:
             # Toggle force off folder break for viewed playlist
@@ -14476,7 +14633,9 @@ while running:
             gui.pl_update = 1
             shift_selection = range(len(default_playlist))
 
-        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox:
+        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
+                and not gui.rename_folder_box \
+                and not rename_playlist_box:
             if key_c_press and key_ctrl_down:
                 gui.pl_update = 1
                 s_copy()
@@ -15326,6 +15485,10 @@ while running:
                 for i, order in enumerate(load_orders):
                     if order.stage == 2:
                         target_pl = 0
+
+                        # Sort the tracks by track number
+                        sort_track_2(None, order.tracks)
+
                         for p, playlist in enumerate(pctl.multi_playlist):
                             if playlist[6] == order.playlist:
                                 target_pl = p
@@ -16110,11 +16273,11 @@ while running:
                 draw.rect((rect[0] + 15, rect[1] + 30), (220, 19), colours.alpha_grey(10), True)
                 gui.win_fore = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20, rect[1] + 30, colours.alpha_grey(150))
+                rename_text_area.draw(rect[0] + 20, rect[1] + 30, colours.alpha_grey(150), width=220)
 
                 draw_text((rect[0] + 17, rect[1] + 5), "Rename Playlist", colours.grey(180), 12)
 
-                if (key_esc_press and len(editline) == 0) or input.mouse_click or right_click:
+                if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not rect_in(rect)):
                     rename_playlist_box = False
                     if len(rename_text_area.text) > 0:
                         pctl.multi_playlist[rename_index][0] = rename_text_area.text
@@ -16174,7 +16337,7 @@ while running:
                         album_art_gen.display(r_menu_index, (x + w - 135, y + h - 135), (115, 115))
                     y -= 24
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(170), 12)
@@ -16207,7 +16370,7 @@ while running:
                         draw.rect_r(ext_rect, [218, 222, 73, 255], True)
                         draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(170), 12)
@@ -16223,7 +16386,7 @@ while running:
 
                     y += 15
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(170), 12)
@@ -16240,7 +16403,7 @@ while running:
 
                     y += 23 + 3
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 450, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(170), 12)
@@ -16272,7 +16435,7 @@ while running:
                     # -----------
                     if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
                         x += 170
-                        rect = [x + 17, y + 41, 60, 14]
+                        rect = [x + 17, y + 41, 150, 14]
                         fields.add(rect)
                         if rect_in(rect):
                             draw_text((x + 8 + 10, y + 40), "Album Artist", colours.grey_blend_bg3(170), 12)
@@ -16289,7 +16452,7 @@ while running:
 
                     y += 15
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(170), 12)
@@ -16331,7 +16494,7 @@ while running:
 
                     y += 23
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(170), 12)
@@ -16347,7 +16510,7 @@ while running:
 
                     y += 15
 
-                    rect = [x + 17, y + 41, 60, 14]
+                    rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(170), 12)
@@ -16463,14 +16626,14 @@ while running:
                 p = draw_text((x + 10, y + 10,), "Physically rename containing folder", colours.grey(150), 12)
                 draw_text((x + 25 + p, y + 10,), "(Experimental)", colours.grey(90), 12)
 
-                rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150))
+                rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
-                draw.rect_r(rect, colours.grey(20), True)
-                bg = colours.grey(20)
+                #draw.rect_r(rect, colours.grey(25), True)
+                bg = colours.grey(25)
                 if rect_in(rect):
                     bg = colours.grey(35)
                     if input.mouse_click:
@@ -16479,7 +16642,7 @@ while running:
                         gui.rename_folder_box = False
                         input.mouse_click = False
 
-                    draw.rect_r(rect, colours.grey(35), True)
+                draw.rect_r(rect, bg, True)
 
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "RENAME", colours.grey(150), 12,
                           bg=bg)
@@ -16488,8 +16651,8 @@ while running:
 
                     rect = (x + 408, y + 38, 80, 22)
                     fields.add(rect)
-                    draw.rect_r(rect, colours.grey(20), True)
-                    bg = colours.grey(20)
+                    # draw.rect_r(rect, colours.grey(20), True)
+                    bg = colours.grey(25)
                     if rect_in(rect):
                         bg = colours.grey(35)
                         if input.mouse_click:
@@ -16498,7 +16661,7 @@ while running:
                             #gui.rename_folder_box = False
                             input.mouse_click = False
 
-                        draw.rect_r(rect, colours.grey(35), True)
+                    draw.rect_r(rect,bg, True)
 
                     draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "COMPACT", colours.grey(150), 12,
                               bg=bg)
@@ -16507,8 +16670,8 @@ while running:
                 if to_clean > 0:
                     rect = (x + 408, y + 11, 80, 22)
                     fields.add(rect)
-                    draw.rect_r(rect, colours.grey(20), True)
-                    bg = colours.grey(20)
+                    # draw.rect_r(rect, colours.grey(20), True)
+                    bg = colours.grey(25)
                     if rect_in(rect):
                         bg = colours.grey(35)
                         if input.mouse_click:
@@ -16517,7 +16680,7 @@ while running:
 
                             input.mouse_click = False
 
-                        draw.rect_r(rect, colours.grey(35), True)
+                    draw.rect_r(rect, bg, True)
 
                     draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "CLEAN (" + str(to_clean) + ")", colours.grey(150), 12,
                               bg=bg)
@@ -16564,7 +16727,7 @@ while running:
 
                 draw_text((x + 10, y + 10,), "Physically rename all tracks in folder", colours.grey(150), 12)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-                rename_files.draw(x + 14, y + 40, colours.alpha_grey(150))
+                rename_files.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
                 # c_blink = 200
 
@@ -16710,7 +16873,7 @@ while running:
 
                 draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
                 #gui.win_fore = colours.sys_background_3
-                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(185))
+                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=350, click=gui.track_box_click)
 
                 draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
 

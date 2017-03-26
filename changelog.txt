@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v2.1.7
 
  - Added function to fetch lyrics from LyricWiki
+ - Added function to paste and clear lyrics
  - Added track love function with last.fm submission
  - Added bar chart of codec ratios to stats tab
  - Added right click menu for changing visualiser
@@ -12,11 +13,14 @@ v2.1.7
  - Added folder rename function
  - Added folder compacter function to folder rename box
  - Added auto resume for functions that interrupt playback
+ - Added text cursor positioning for rename input boxes
  - Redesigned number change settings widget
  - Moved folder clean function to folder rename box
  - Moved 'remove embedded image from mp3' function to picture context menu
  - Set duration field in track info box as copyable
- - Fixed scroll on panels in showcase view
+ - Set default font on windows to Segoe UI, Meiryo if available
+ - Set imported tracks to be sorted by default
+ - Fixed scroll on panels in showcase view also scrolling lyrics
  - Fixed playback buttons not changing colour between themes
  - Fixed playtime inflation when modifying metadata
  - Fixed play count duping on tracks with same filename but different artist
