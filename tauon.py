@@ -694,6 +694,8 @@ class GuiVar:
 
         self.rename_folder_box = False
 
+        self.present = False
+
 
 
 
@@ -4122,7 +4124,7 @@ gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCE
 
 
 
-gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 SDL_SetRenderTarget(renderer, gui.spec2_tex)
 SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
 SDL_RenderClear(renderer)
@@ -8814,6 +8816,7 @@ vis_menu = Menu(140)
 
 def vis_off():
     gui.vis = 0
+    gui.turbo = False
 vis_menu.add("Off", vis_off)
 
 def level_on():
@@ -10885,17 +10888,19 @@ def toggle_titlebar_line(mode=0):
 def toggle_borderless(mode=0):
     global draw_border
     global update_layout
-    update_layout = True
+    
 
     if mode == 1:
         return draw_border
 
+    update_layout = True
     draw_border ^= True
 
     if draw_border:
         SDL_SetWindowBordered(t_window, False)
     else:
         SDL_SetWindowBordered(t_window, True)
+        
         # SDL_SetWindowBordered(t_window, False)
         # SDL_SetWindowBordered(t_window, True)
 
@@ -11435,8 +11440,8 @@ class Over:
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
         y += 28
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
-        # y += 28
-        # self.toggle_square(x, y, toggle_side_panel, "Show side panel")
+        ### y += 28
+        ### self.toggle_square(x, y, toggle_side_panel, "Show side panel")
         y += 28
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 28
@@ -14261,6 +14266,7 @@ def update_layout_do():
     SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
     SDL_SetRenderTarget(renderer, gui.ttext)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+    SDL_RenderClear(renderer)
 
     gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
                               window_size[1])
@@ -14268,7 +14274,13 @@ def update_layout_do():
     SDL_SetRenderTarget(renderer, gui.main_texture)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
     SDL_SetRenderTarget(renderer, gui.main_texture)
+    SDL_RenderClear(renderer)
 
+
+SDL_SetRenderTarget(renderer, gui.spec2_tex)
+SDL_RenderClear(renderer)
+draw.rect_r((0, 0, 1000, 1000), [3, 3, 3, 255], True)
+SDL_SetRenderTarget(renderer, None)
 
 
 while running:
@@ -15335,10 +15347,18 @@ while running:
         if gui.update > 2:
             gui.update = 2
 
-        SDL_SetRenderTarget(renderer, gui.main_texture)
+        SDL_SetRenderTarget(renderer, None)
+        #SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
                                colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
+
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+        #SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
+        #                       colours.top_panel_background[2], colours.top_panel_background[3])
+        #SDL_RenderClear(renderer)
+
+
         # perf_timer.set()
 
 
@@ -17540,26 +17560,37 @@ while running:
                 # draw.rect((0, 0), window_size, colours.grey(90))
 
         gui.update -= 1
+        gui.present = True
 
+        #draw.rect_r((300, 300, 300, 300), [40, 200, 40, 20], True)
+
+        SDL_SetRenderTarget(renderer, None)
+        SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+        
 
 
         if gui.turbo:
             gui.level_update = True
 
-            SDL_SetRenderTarget(renderer, None)
-            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            #SDL_SetRenderTarget(renderer, None)
+            #SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            
+
             #SDL_SetRenderTarget(renderer, gui.main_texture)
 
         else:
             #SDL_RenderPresent(renderer)
             # print(perf_timer.get() * 1000)
 
-            SDL_SetRenderTarget(renderer, None)
-            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-            SDL_RenderPresent(renderer)
+            #SDL_SetRenderTarget(renderer, None)
+            #SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            #SDL_RenderPresent(renderer)
+            #print("old")
+            pass
 
     if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0,
                                                                        0] and gui.turbo:  # and not album_scroll_hold:
+        
         # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
         if gui.time_passed > 1:
@@ -17575,8 +17606,17 @@ while running:
 
         gui.level_update = True
 
+    
+    #draw.rect_r((int(55 * pctl.playing_time), 100, 40, 40), [255, 50, 50, 255], True)
+
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
+
+        SDL_SetRenderTarget(renderer, None)
+        if not gui.present:
+        
+            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            gui.present = True
 
         if gui.vis == 3:
 
@@ -17793,8 +17833,12 @@ while running:
                 #     gui.level_peak[0] -= 0.017
                 #     gui.level_peak[1] -= 0.017
 
-
+    #print("render")
+    #print(gui.present)
+    if gui.present:
+        SDL_SetRenderTarget(renderer, None)
         SDL_RenderPresent(renderer)
+        gui.present = False
 
     # print(pctl.playing_state)
     # -------------------------------------------------------------------------------------------
