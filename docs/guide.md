@@ -63,7 +63,8 @@ Tip: End the search text with another forward slash to search just for folders w
 ### Rename Folder Function (experimental)
 
 ***Rename*** - Renames the folder of the track to given template format. The default template can be changed in the config.txt file.  
-***Compact*** - If the upper containing folder contains no other folders of files, this function will eleminate that folder.  
+***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up and deleting the old containing folder.
+***Clean*** - Deletes certain OS related files in the folder including 'desktop.ini', 'Thumbs.db' and Windows Media Player generated thumbnail images. Will also delete Mac OS related '.DS_Store' and '__MACOSX' files/folders.
 
 Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use around files you cannot afford to lose.
 

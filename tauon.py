@@ -624,7 +624,7 @@ class GuiVar:
         self.light_mode = False
         self.draw_frame = False
 
-        self.track_box_click = False
+        self.level_2_click = False
         self.universal_y_text_offset = 0
         self.star_text_y_offset = 0
 
@@ -1718,7 +1718,15 @@ class PlayerCtl:
                     if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
                             self.multi_playlist[self.playlist_active][2]) and i > 10:
                         playlist_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
+                break
+        else:  # Search other all other playlists
+            for i, playlist in enumerate(self.multi_playlist):
+                if self.track_queue[self.queue_step] in playlist[2]:
+
+                    switch_playlist(i)
+                    self.show_current(select, playing, quiet)
                     break
+
 
             if playlist_position < 0:
                 playlist_position = 0
@@ -4587,10 +4595,11 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
 def draw_text(location, text, colour, font, max=1000, bg=None):
 
-    if text == "":
-        return 1
 
     if gui.win_text:
+
+        if text == "":
+            return 1  # im not suuure why this needs to be 1 for the highlighting to work
         if bg == None:
             bg = gui.win_fore
 
@@ -4617,6 +4626,9 @@ def draw_text(location, text, colour, font, max=1000, bg=None):
         return pretty_text.draw(location[0], location[1], text, bg, colour, font, align)
 
     elif gui.cairo_text:
+
+        if text == "":
+            return 0
         if bg == None:
             bg = gui.win_fore
         if colour[3] != 255:
@@ -4871,16 +4883,13 @@ if system == 'windows':
     if prefs.windows_font_family != None:
         standard_font = prefs.windows_font_family
     else:
-        #standard_font = 'Arial'
         standard_font = 'Meiryo'
         #standard_font = 'Koruri'
-        #standard_font = 'Segoe UI'
         #standard_font = "Franklin Gothic Medium"
         if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
-            standard_font = 'Segoe UI'
-        #standard_font = 'Tahoma'
-        standard_font = 'Segoe UI'
-
+            standard_font = 'Arial'
+        # standard_font = 'Tahoma'
+        # standard_font = 'Segoe UI'
 
 
     semibold_font = standard_font
@@ -4938,7 +4947,33 @@ if system == 'windows':
         gui.pl_title_y_offset = -3
         gui.pl_title_font_offset = -2
 
-    else:
+
+    elif standard_font == "Arial":
+
+        pretty_text.prime_font(standard_font, 10 + 3, 10, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 11 + 3, 11, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 12 + 3, 12, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 13 + 3, 13, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 14 + 2, 14, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 15 + 2, 15, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 16 + 2, 16, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
+
+        pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
+        pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
+        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
+
+        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
+        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
+
+        gui.pl_title_y_offset = -2
+        gui.pl_title_font_offset = -1
+
+    else: # Segoe UI
 
 
         pretty_text.prime_font(standard_font, 10 + 5, 10, weight=standard_weight, y_offset=0)
@@ -4958,8 +4993,8 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight)
 
-        pretty_text.prime_font(standard_font, 14 + 3, 412, weight=500, y_offset=0)
-        pretty_text.prime_font(standard_font, 15 + 4, 413, weight=500, y_offset=0)
+        pretty_text.prime_font(standard_font, 14 + 3, 412, weight=500, y_offset=-1)
+        pretty_text.prime_font(standard_font, 15 + 4, 413, weight=500, y_offset=-1)
 
         gui.pl_title_y_offset = -1
         gui.pl_title_font_offset = -2
@@ -5106,6 +5141,8 @@ class TextBox:
 
         self.text = ""
         self.cursor_position = 0
+        self.selection = 0
+        self.down_lock = False
 
     def paste(self):
 
@@ -5116,6 +5153,37 @@ class TextBox:
                 self.text = ""
 
             self.text += clip.rstrip(" ").lstrip(" ")
+
+    def set_text(self, text):
+
+        self.text = text
+        self.cursor_position = 0
+        self.selection = 0
+
+    def eliminate_selection(self):
+        if self.selection != self.cursor_position:
+            if self.selection > self.cursor_position:
+                self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
+                self.selection = self.cursor_position
+            else:
+                self.text = self.text[0: len(self.text) -  self.cursor_position] + self.text[len(self.text) - self.selection:]
+                self.cursor_position = self.selection
+
+    def get_selection(self, p=1):
+        if self.selection != self.cursor_position:
+            if p == 1:
+                if self.selection > self.cursor_position:
+                    return self.text[len(self.text) - self.selection : len(self.text) - self.cursor_position]
+
+                else:
+                    return self.text[len(self.text) -  self.cursor_position: len(self.text) - self.selection]
+            if p == 0:
+                return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+            if p == 2:
+                return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+
+        else:
+            return ""
 
     def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False):
 
@@ -5128,47 +5196,157 @@ class TextBox:
 
         if width > 0:
 
-            if click and rect_in((x - 15, y, width + 16, 19)):
+            # Add text from input
+            if active:
+                if input_text != "":
+                    self.eliminate_selection()
+                    self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
+
+            # Handle backspace
+            if key_backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                if self.selection != self.cursor_position:
+                    self.eliminate_selection()
+                else:
+                    self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
+
+            # Left and right arrow keys to move cursor
+            if key_right_press:
+                if self.cursor_position > 0:
+                    self.cursor_position -= 1
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+            if key_left_press:
+                if self.cursor_position < len(self.text):
+                    self.cursor_position += 1
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+            # Paste via ctrl-v
+            if key_ctrl_down and key_v_press:
+                clip = SDL_GetClipboardText().decode('utf-8')
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+                    self.text) - self.cursor_position:]
+
+            if key_ctrl_down and key_c_press:
+                text = self.get_selection()
+                if text != "":
+                    SDL_SetClipboardText(text.encode('utf-8'))
+
+            if key_ctrl_down and key_x_press:
+                if len(self.get_selection()) > 0:
+                    text = self.get_selection()
+                    if text != "":
+                        SDL_SetClipboardText(text.encode('utf-8'))
+                    self.eliminate_selection()
+
+
+            # Delete key to remove text in front of cursor
+            if key_del:
+                if self.selection != self.cursor_position:
+                    self.eliminate_selection()
+                else:
+                    self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+                        self.text) - self.cursor_position + 1:]
+                    if self.cursor_position > 0:
+                        self.cursor_position -= 1
+                    self.selection = self.cursor_position
+
+            if key_home_press:
+                self.cursor_position = len(self.text)
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+            if key_end_press:
+                self.cursor_position = 0
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+            if rect_in((x - 15, y, width + 16, 19)):
+                if click:
+                    pre = 0
+                    post = 0
+                    if mouse_position[0] < x + 1:
+                        self.cursor_position = len(self.text)
+                    else:
+                        for i in range(len(self.text)):
+                            post = draw.text_calc(self.text[0:i+1], font)
+                            pre_half = int((post - pre) / 2)
+
+                            if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+                                diff = post - pre
+                                if mouse_position[0] >= x + pre + int(diff / 2):
+                                    self.cursor_position = len(self.text) - i - 1
+                                else:
+                                    self.cursor_position = len(self.text) - i
+                                break
+                            pre = post
+                        else:
+                            self.cursor_position = 0
+                    self.selection = 0
+                    self.down_lock = True
+
+
+
+            if mouse_up:
+                self.down_lock = False
+            if self.down_lock:
                 pre = 0
                 post = 0
                 if mouse_position[0] < x + 1:
-                    self.cursor_position = len(self.text)
+
+                    self.selection = len(self.text)
                 else:
+
                     for i in range(len(self.text)):
-                        post = draw.text_calc(self.text[0:i+1], font)
-                        if x + pre - 1 <= mouse_position[0] <= x + post + 0:
-                            self.cursor_position = len(self.text) - i
+                        post = draw.text_calc(self.text[0:i + 1], font)
+                        pre_half = int((post - pre) / 2)
+
+                        if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+                            diff = post - pre
+
+                            if mouse_position[0] >= x + pre + int(diff / 2):
+                                self.selection = len(self.text) - i - 1
+
+                            else:
+                                self.selection = len(self.text) - i
+
                             break
                         pre = post
-                    else:
-                        self.cursor_position = 0
 
-            draw_text((x, y), self.text, colour, font)
+                    else:
+                        self.selection = 0
+
+            a = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
+            # print("")
+            # print(self.selection)
+            # print(self.cursor_position)
+
+            b = draw.text_calc(self.text[0: len(self.text) - self.selection], font)
+
+            #rint((a, b))
+            draw.rect_r([x + a, y, b - a, 18], [40, 120, 180, 255], True)
+
+            if self.selection != self.cursor_position:
+                inf_comp = 0
+                if not gui.cairo_text:
+                    inf_comp = 1
+                space = draw_text((x, y), self.get_selection(0), colour, font)
+                space += draw_text((x + space - inf_comp, y), self.get_selection(1), colour, font, bg=[40, 120, 180, 255],)
+                draw_text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
+            else:
+                draw_text((x, y), self.text, colour, font)
+
+
+
             space = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
 
-            if TextBox.cursor:
+            if TextBox.cursor and self.selection == self.cursor_position:
                 draw.line(x + space, y + 2, x + space, y + 15, colour)
 
+            if click:
+                self.selection = self.cursor_position
 
-            if active:
-                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
-
-            if key_backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
-
-            if key_right_press and self.cursor_position > 0:
-                self.cursor_position -= 1
-            if key_left_press and self.cursor_position < len(self.text):
-                self.cursor_position += 1
-            if key_ctrl_down and key_v_press:
-                clip = SDL_GetClipboardText().decode('utf-8')
-                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
-                    self.text) - self.cursor_position:]
-            if key_del:
-                self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
-                    self.text) - self.cursor_position + 1:]
-                if self.cursor_position > 0:
-                    self.cursor_position -= 1
 
 
         else:
@@ -6739,7 +6917,7 @@ def rename_playlist(index):
 
     rename_playlist_box = True
     rename_index = index
-    rename_text_area.text = ""
+    rename_text_area.set_text(pctl.multi_playlist[index][0])
 
 
 tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True, hint="Ctrl+R")
@@ -8145,6 +8323,7 @@ def clean_folder(index, do=False):
                 to_purge.append(item)
                 found += 1
             elif "__MACOSX" == item and os.path.isdir(os.path.join(folder, item)):
+                found += 1
                 found += 1
                 if do:
                     print("Deleting Folder: " + os.path.join(folder, item))
@@ -14456,7 +14635,7 @@ while running:
         if k_input:
             cursor_blink_timer.set()
             TextBox.cursor = True
-        SDL_Delay(30)
+        SDL_Delay(3)
         power = 1000
 
     if mouse_wheel != 0 or k_input or gui.update > 0: # or mouse_moved:
@@ -14580,6 +14759,30 @@ while running:
                 if key_right_press:
                     switch_playlist(1, True)
 
+            if key_home_press:
+                if key_shift_down or key_shiftr_down:
+                    playlist_position = 0
+                    playlist_selected = 0
+                    gui.pl_update = 1
+                else:
+                    if pctl.playing_time < 4:
+                        pctl.back()
+                    else:
+                        pctl.new_time = 0
+                        pctl.playing_time = 0
+                        pctl.playerCommand = 'seek'
+                        pctl.playerCommandReady = True
+            if key_end_press:
+                if key_shift_down or key_shiftr_down:
+                    n = len(default_playlist) - gui.playlist_view_length + 1
+                    if n < 0:
+                        n = 0
+                    playlist_position = n
+                    playlist_selected = len(default_playlist) - 1
+                    gui.pl_update = 1
+                else:
+                    pctl.advance()
+
         if key_F1:
             # Toggle force off folder break for viewed playlist
             pctl.multi_playlist[pctl.playlist_active][4] ^= 1
@@ -14655,13 +14858,9 @@ while running:
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.playlist_active)
 
-        if radiobox and input.mouse_click:
+        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box):
             input.mouse_click = False
-            gui.track_box_click = True
-
-        if gui.rename_folder_box and input.mouse_click:
-            input.mouse_click = False
-            gui.track_box_click = True
+            gui.level_2_click = True
 
         if track_box and input.mouse_click:
             w = 540
@@ -14670,7 +14869,7 @@ while running:
             y = int(window_size[1] / 2) - int(h / 2)
             if rect_in([x, y, w, h]):
                 input.mouse_click = False
-                gui.track_box_click = True
+                gui.level_2_click = True
 
         if pref_box.enabled:
 
@@ -14739,29 +14938,7 @@ while running:
                     playlist_position = 0
                 gui.pl_update = 1
 
-        if key_home_press:
-            if key_shift_down or key_shiftr_down:
-                playlist_position = 0
-                playlist_selected = 0
-                gui.pl_update = 1
-            else:
-                if pctl.playing_time < 4:
-                    pctl.back()
-                else:
-                    pctl.new_time = 0
-                    pctl.playing_time = 0
-                    pctl.playerCommand = 'seek'
-                    pctl.playerCommandReady = True
-        if key_end_press:
-            if key_shift_down or key_shiftr_down:
-                n = len(default_playlist) - gui.playlist_view_length + 1
-                if n < 0:
-                    n = 0
-                playlist_position = n
-                playlist_selected = len(default_playlist) - 1
-                gui.pl_update = 1
-            else:
-                pctl.advance()
+
 
         if input.mouse_click:
             n_click_time = time.time()
@@ -14769,7 +14946,7 @@ while running:
                 d_mouse_click = True
             click_time = n_click_time
 
-        if quick_search_mode is False and renamebox is False:
+        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and rename_playlist_box is False:
 
             if (key_shiftr_down or key_shift_down) and key_right_press:
                 key_right_press = False
@@ -16264,6 +16441,11 @@ while running:
                     p += 1
 
             if rename_playlist_box:
+
+                if gui.level_2_click:
+                    input.mouse_click = True
+                gui.level_2_click = False
+
                 rect = [0, 0, 250, 60]
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect[1] = int(window_size[1] / 2) - rect[3]
@@ -16295,9 +16477,9 @@ while running:
                         SDL_SetCursor(cursor_standard)
                     key_return_press = False
 
-                if gui.track_box_click:
+                if gui.level_2_click:
                     input.mouse_click = True
-                gui.track_box_click = False
+                gui.level_2_click = False
 
                 tc = pctl.master_library[r_menu_index]
 
@@ -16608,9 +16790,9 @@ while running:
 
             if gui.rename_folder_box:
 
-                if gui.track_box_click:
+                if gui.level_2_click:
                     input.mouse_click = True
-                gui.track_box_click = False
+                gui.level_2_click = False
 
                 w = 500
                 h = 127
@@ -16868,12 +17050,12 @@ while running:
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or (gui.track_box_click and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or (gui.level_2_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
                 draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
                 #gui.win_fore = colours.sys_background_3
-                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=350, click=gui.track_box_click)
+                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=350, click=gui.level_2_click)
 
                 draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
 
@@ -16888,7 +17070,7 @@ while running:
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.track_box_click:
+                    if gui.level_2_click:
                         radio_field.paste()
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "PASTE", colours.grey(140), 12)
@@ -16897,13 +17079,13 @@ while running:
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.track_box_click:
+                    if gui.level_2_click:
                         radio_field.text = ""
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "CLEAR", colours.grey(140), 12)
 
                 if (key_return_press_w or (
-                            gui.track_box_click and coll_point(mouse_position,
+                            gui.level_2_click and coll_point(mouse_position,
                                                                (x + 8 + 350 + 10, y + 38, 40, 22)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
@@ -16935,7 +17117,7 @@ while running:
                 if coll_point(mouse_position, rect):
                     if pctl.playing_state == 3:
                         draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.track_box_click:
+                    if gui.level_2_click:
                         if pctl.playing_state == 3:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
@@ -16949,7 +17131,7 @@ while running:
                 if pctl.playing_state != 3:
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 60], True)
                 input_text = ""
-                gui.track_box_click = False
+                gui.level_2_click = False
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
