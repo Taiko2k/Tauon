@@ -28,6 +28,9 @@ v2.3.0
  - Fixed dim mode not applying to playlist
  - Fixed rename tracks not showing result message
  - Fixed stats genre list not splitting multiple genres
+ - Fixed tracks not being ordered correctly in certain cases with inconsistent tagging
+ - Linux: Fixed gallery view and visualiser showing corrupted graphics with some video drivers
+ - Linux: Fixed erratic rendering when visualiser is on with some video drivers
 
 v2.1.5
 
