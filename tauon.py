@@ -1705,6 +1705,7 @@ class PlayerCtl:
 
                 if i == playlist_position - 1 and playlist_position > 1:
                     playlist_position -= 1
+
                 elif playlist_position + gui.playlist_view_length - 2 == i and i < len(
                         self.multi_playlist[self.playlist_active][2]) - 5:
                     playlist_position += 3
@@ -1728,10 +1729,13 @@ class PlayerCtl:
                     break
 
 
-            if playlist_position < 0:
-                playlist_position = 0
-            if select:
-                shift_selection = []
+        if playlist_position < 0:
+            playlist_position = 0
+        if playlist_position > len(self.multi_playlist[self.playlist_active][2]) - 1:
+            print("Run Over")
+
+        if select:
+            shift_selection = []
 
         self.render_playlist()
 
@@ -4115,11 +4119,20 @@ SDL_SetWindowIcon(t_window, icon)
 
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
-gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 
-SDL_SetRenderTarget(renderer, gui.ttext)
-# print(SDL_GetError())
+
+
+gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+SDL_SetRenderTarget(renderer, gui.spec2_tex)
+SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
+SDL_RenderClear(renderer)
 SDL_SetRenderTarget(renderer, None)
+
+gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+
+#SDL_SetRenderTarget(renderer, gui.ttext)
+# print(SDL_GetError())
+
 
 gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
 SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
@@ -5185,7 +5198,7 @@ class TextBox:
         else:
             return ""
 
-    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False):
+    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18):
 
         # A little bit messy.
         # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -5194,13 +5207,13 @@ class TextBox:
             click = input.mouse_click
 
 
-        if width > 0:
+        if width > 0 and active:
 
             # Add text from input
-            if active:
-                if input_text != "":
-                    self.eliminate_selection()
-                    self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
+
+            if input_text != "":
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
 
             # Handle backspace
             if key_backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
@@ -5208,6 +5221,8 @@ class TextBox:
                     self.eliminate_selection()
                 else:
                     self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
+            elif key_backspace_press and len(self.get_selection()) > 0:
+                self.eliminate_selection()
 
             # Left and right arrow keys to move cursor
             if key_right_press:
@@ -5325,7 +5340,7 @@ class TextBox:
             b = draw.text_calc(self.text[0: len(self.text) - self.selection], font)
 
             #rint((a, b))
-            draw.rect_r([x + a, y, b - a, 18], [40, 120, 180, 255], True)
+            draw.rect_r([x + a, y, b - a, selection_height], [40, 120, 180, 255], True)
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
@@ -7153,6 +7168,24 @@ def drop_deco():
     return [line_colour, [0, 0, 0, 255], None]
 
 
+def tryint(s):
+    try:
+        return int(s)
+    except:
+        return s
+
+def index_key(index):
+    s = str(pctl.master_library[index].track_number)
+    if pctl.master_library[index].disc_number != "":
+        if pctl.master_library[index].disc_number != "0":
+            s = str(pctl.master_library[index].disc_number) + "d" + s
+    if s == "":
+        s = pctl.master_library[index].filename
+    try:
+        return [tryint(c) for c in re.split('([0-9]+)', s)]
+    except:
+        return "a"
+
 def sort_track_2(pl, custom_list=None):
     current_folder = ""
     albums = []
@@ -7170,22 +7203,6 @@ def sort_track_2(pl, custom_list=None):
                 current_folder = pctl.master_library[playlist[i]].parent_folder_name
                 albums.append(i)
 
-    def tryint(s):
-        try:
-            return int(s)
-        except:
-            return s
-
-    def index_key(index):
-        s = str(pctl.master_library[index].track_number)
-        if pctl.master_library[index].disc_number != "":
-            s = str(pctl.master_library[index].disc_number) + "d" + s
-        if s == "":
-            s = pctl.master_library[index].filename
-        try:
-            return [tryint(c) for c in re.split('([0-9]+)', s)]
-        except:
-            return "a"
 
     i = 0
     while i < len(albums) - 1:
@@ -11264,12 +11281,12 @@ class Over:
             draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(40), 11)
 
         if self.lastfm_input_box == 0:
-            last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), font=12)
+            last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), active=True, font=12, width=210, click=self.click, selection_height=16)
         else:
             last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), False, font=12)
 
         if self.lastfm_input_box == 1:
-            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.grey_blend_bg(180), secret=True)
+            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.grey_blend_bg(180), active=True, secret=True)
         else:
             last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.grey_blend_bg(180), False, True)
 
@@ -13689,7 +13706,7 @@ class StandardPlaylist:
                             gui.playlist_width + playlist_left > mouse_position[0] > playlist_left + 15):
             playlist_menu.activate()
 
-        SDL_SetRenderTarget(renderer, None)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
 
         if mouse_down is False:
@@ -13951,7 +13968,7 @@ class ComboPlaylist:
 
 
         # Set the render target back to window and render playlist texture
-        SDL_SetRenderTarget(renderer, None)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
 
     def cache_render(self):
@@ -14237,10 +14254,20 @@ def update_layout_do():
         gui.pl_update = 1
     update_set()
 
+    SDL_DestroyTexture(gui.main_texture)
+
     gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
                               window_size[1])
     SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+    SDL_SetRenderTarget(renderer, gui.ttext)
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 
+    gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
+                              window_size[1])
+    SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_NONE)
+    SDL_SetRenderTarget(renderer, gui.main_texture)
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+    SDL_SetRenderTarget(renderer, gui.main_texture)
 
 
 
@@ -14745,13 +14772,13 @@ while running:
             pass
 
         # Disable keys for text cursor control
-        if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox:
+        if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
 
             if key_del:
                 del_selected()
 
             # Arrow keys to change playlist
-            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down:
                 gui.pl_update = 1
                 gui.update += 1
                 if key_left_press:
@@ -14782,6 +14809,23 @@ while running:
                     gui.pl_update = 1
                 else:
                     pctl.advance()
+
+        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
+                and not gui.rename_folder_box \
+                and not rename_playlist_box:
+
+            if key_c_press and key_ctrl_down:
+                gui.pl_update = 1
+                s_copy()
+
+            if key_x_press and key_ctrl_down:
+                gui.pl_update = 1
+                s_cut()
+
+            if key_v_press and key_ctrl_down:
+                gui.pl_update = 1
+                paste()
+
 
         if key_F1:
             # Toggle force off folder break for viewed playlist
@@ -14835,21 +14879,6 @@ while running:
         if key_a_press and key_ctrl_down:
             gui.pl_update = 1
             shift_selection = range(len(default_playlist))
-
-        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
-                and not gui.rename_folder_box \
-                and not rename_playlist_box:
-            if key_c_press and key_ctrl_down:
-                gui.pl_update = 1
-                s_copy()
-
-            if key_x_press and key_ctrl_down:
-                gui.pl_update = 1
-                s_cut()
-
-            if key_v_press and key_ctrl_down:
-                gui.pl_update = 1
-                paste()
 
 
         if key_w_press and key_ctrl_down:
@@ -14946,7 +14975,7 @@ while running:
                 d_mouse_click = True
             click_time = n_click_time
 
-        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and rename_playlist_box is False:
+        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and rename_playlist_box is False and not pref_box.enabled:
 
             if (key_shiftr_down or key_shift_down) and key_right_press:
                 key_right_press = False
@@ -15306,6 +15335,7 @@ while running:
         if gui.update > 2:
             gui.update = 2
 
+        SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
                                colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
@@ -17511,11 +17541,22 @@ while running:
 
         gui.update -= 1
 
+
+
         if gui.turbo:
             gui.level_update = True
+
+            SDL_SetRenderTarget(renderer, None)
+            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            #SDL_SetRenderTarget(renderer, gui.main_texture)
+
         else:
-            SDL_RenderPresent(renderer)
+            #SDL_RenderPresent(renderer)
             # print(perf_timer.get() * 1000)
+
+            SDL_SetRenderTarget(renderer, None)
+            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            SDL_RenderPresent(renderer)
 
     if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0,
                                                                        0] and gui.turbo:  # and not album_scroll_hold:
@@ -17751,6 +17792,7 @@ while running:
                 # if pctl.playing_state == 0 or pctl.playing_state == 2:
                 #     gui.level_peak[0] -= 0.017
                 #     gui.level_peak[1] -= 0.017
+
 
         SDL_RenderPresent(renderer)
 
