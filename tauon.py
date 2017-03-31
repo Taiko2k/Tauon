@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.1.7"
+t_version = "v2.3.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -112,7 +112,7 @@ config_directory = user_directory
 b_active_directory = install_directory.encode('utf-8')
 
 # -------------------------------
-if os.path.isfile('.gitignore'):
+if os.path.isfile('.gitignore') or os.path.isfile('multiinstance'):
     print("Dev mode, ignoring single instancing")
 else:
     if system == 'windows':
@@ -321,7 +321,7 @@ to_got = 0
 editline = ""
 side_panel_enable = True
 quick_drag = False
-scrobble_mark = False
+
 radiobox = False
 radio_field_text = "http://"
 renamebox = False
@@ -331,7 +331,7 @@ renamebox = False
 pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
-theme = 6
+theme = 4
 themeChange = True
 # panelY = 78
 
@@ -571,6 +571,7 @@ class Prefs:
         self.spec2_colour_setting = 'custom'
 
         self.auto_lfm = False
+        self.scrobble_mark = False
 
 
 prefs = Prefs()
@@ -793,6 +794,10 @@ class Input:
     def __init__(self):
 
         self.mouse_click = False
+
+
+
+
 
 input = Input()
 
@@ -1107,7 +1112,8 @@ try:
         gui.show_stars = save[52]
     if save[53] is not None:
         prefs.auto_lfm = save[53]
-
+    if save[54] is not None:
+        prefs.scrobble_mark = save[54]
 
     state_file.close()
     del save
@@ -1190,8 +1196,14 @@ if db_version > 0:
                 print("Rewrote user config file")
 
     if db_version <= 1.7:
+        print("Updating database to version 1.8")
+        if install_mode:
+                print(".... Overwriting user config file")
+                shutil.copy(install_directory + "/config.txt", user_directory)
+
         try:
-            print("Updating playtime database...")
+            print(".... Updating playtime database")
+
             old = star_store.db
             #perf_timer.set()
             old_total = sum(old.values())
@@ -1216,6 +1228,7 @@ if db_version > 0:
             print(int(diff), end='')
             print(" Secconds could not be matched to tracks. Total playtime won't be affected")
             star_store.db[("", "", "LOST")] = [diff, ""]
+            print("Upgrade Complete")
         except:
             print("Error upgrading database")
             show_message("Error loading old database, did the program not exit properly after updating? Oh well.")
@@ -1300,8 +1313,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 if result.isdigit() and 50 < int(result) < 3000:
                     prefs.cross_fade_time = int(result)
-            if 'scrobble-mark=True' in p:
-                scrobble_mark = True
+            # if 'scrobble-mark=True' in p:
+            #     scrobble_mark = True
 
             if 'output-dir=' in p:
 
@@ -1346,7 +1359,6 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 prefs.rename_folder_templatet = result
 
 else:
-    scrobble_mark = True
     print("Warning: Missing config file")
 
 if system == 'linux' and not os.path.isfile(install_directory + "/pyxhook.py"):
@@ -4905,6 +4917,7 @@ if system == 'windows':
             standard_font = 'Arial'
         # standard_font = 'Tahoma'
         # standard_font = 'Segoe UI'
+        # standard_font = 'Arial'
 
 
     semibold_font = standard_font
@@ -4976,7 +4989,7 @@ if system == 'windows':
 
         pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
         pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=0)
         pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
         pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
@@ -5566,6 +5579,35 @@ gall_ren = GallClass(album_mode_art_size)
 pl_thumbnail = GallClass(save_out=False)
 
 
+def img_slide_update_combo(value):
+    global combo_mode_art_size
+    combo_mode_art_size = value
+    clear_img_cache()
+
+    # Update sizes
+    if not gui.combo_mode:
+        gall_ren.size = album_mode_art_size
+    else:
+        gall_ren.size = combo_mode_art_size
+        combo_pl_render.prep()
+        update_layout = True
+        gui.pl_update = 1
+
+def img_slide_update_gall(value):
+
+    global album_mode_art_size
+    album_mode_art_size = value
+    clear_img_cache()
+
+    # Update sizes
+    if not gui.combo_mode:
+        gall_ren.size = album_mode_art_size
+    else:
+        gall_ren.size = combo_mode_art_size
+        combo_pl_render.prep()
+        update_layout = True
+        gui.pl_update = 1
+
 def clear_img_cache():
     global album_art_gen
     album_art_gen.clear_cache()
@@ -5584,6 +5626,7 @@ def clear_img_cache():
         os.makedirs(direc)
 
     gui.update += 1
+
 
 
 class ImageObject():
@@ -9684,12 +9727,12 @@ view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
 view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco)
 view_menu.br()
 view_menu.add("Tracks", view_tracks, hint="MB5")
-view_menu.add("Tracks + Metadata", view_standard_meta)
-view_menu.add("Tracks + Full Art", view_standard_full)
+view_menu.add("Tracks + Side Panel", view_standard_meta)
+#view_menu.add("Tracks + Full Art", view_standard_full)
 view_menu.add("Tracks + Gallery", force_album_view, hint="MB4")
 view_menu.add("Gallery Only", gallery_only_view)
-view_menu.add("Combined Art + Tracks", toggle_combo_view)
-view_menu.add("Showcase + Lyrics", switch_showcase)
+view_menu.add("Art + Tracks", toggle_combo_view)
+view_menu.add("Single Art + Lyrics", switch_showcase)
 # ---------------------------------------------------------------------------------------
 
 core_use = 0
@@ -10982,6 +11025,10 @@ def toggle_expose_web(mode=0):
     if prefs.expose_web:
         show_message("Warning: This setting may pose security and/or privacy risks, including ones as a result of design, and potentially ones unintentional") # especially if incomming connections are allowed through firewall")
 
+def toggle_scrobble_mark(mode=0):
+    if mode == 1:
+        return prefs.scrobble_mark
+    prefs.scrobble_mark ^= True
 
 def toggle_lfm_auto(mode=0):
     if mode == 1:
@@ -11312,6 +11359,9 @@ class Over:
         y = self.box_y + 20 + 40
 
         self.toggle_square(x, y, toggle_lfm_auto, "Auto activate")
+        y += 26
+
+        self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
 
     def clear_lfm(self):
@@ -11393,7 +11443,7 @@ class Over:
             # draw_text((x + 4, y), ">", colours.grey(200), 11)
 
             y -= 1
-            x += 100
+            x += 280
             if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
                     system != 'windows' and shutil.which('ffmpeg') is None):
                 draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
@@ -11417,7 +11467,7 @@ class Over:
         x += 110
 
 
-        album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, clear_img_cache)
+        album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, img_slide_update_gall)
 
         # ---------------
 
@@ -11430,7 +11480,7 @@ class Over:
 
         x += 110
 
-        combo_mode_art_size = self.slide_control(x, y, None, "px", combo_mode_art_size, 50, 600, 10, clear_img_cache)
+        combo_mode_art_size = self.slide_control(x, y, None, "px", combo_mode_art_size, 50, 600, 10, img_slide_update_combo)
 
 
         y += 35
@@ -11623,7 +11673,7 @@ class Over:
                     value -= step
                     gui.update_layout()
                     if callback is not None:
-                        callback()
+                        callback(value)
 
             if mouse_down:
                 abg = [230, 120, 20, 255]
@@ -11650,7 +11700,7 @@ class Over:
                     value += step
                     gui.update_layout()
                     if callback is not None:
-                        callback()
+                        callback(value)
             if mouse_down:
                 abg = [230, 120, 20, 255]
             else:
@@ -12520,7 +12570,7 @@ class BottomBarType1:
 
         # Scrobble marker
 
-        if scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
+        if prefs.scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
@@ -12573,10 +12623,14 @@ class BottomBarType1:
 
                 # pctl.playing_time = pctl.new_time
 
+
         if self.seek_down is True:
             if mouse_position[0] == 0:
                 self.seek_down = False
                 self.seek_hit = True
+
+
+
 
         if (mouse_up and coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size)
             and coll_point(click_location,
@@ -13183,6 +13237,12 @@ class StandardPlaylist:
 
                     height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
 
+                    # Draw highlight
+                    if p_track in shift_selection and len(shift_selection) > 1:
+
+                        draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                                  (highlight_right, gui.playlist_row_height), colours.row_select_highlight, True)
+
 
                     # if not side_panel_enable and not album_mode:
                     #     draw_text2((ex,
@@ -13267,11 +13327,6 @@ class StandardPlaylist:
                     #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
                     #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
 
-                    # Draw highlight
-                    if p_track in shift_selection and len(shift_selection) > 1:
-
-                        draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
-                                  (highlight_right, gui.playlist_row_height), colours.row_select_highlight, True)
 
                     # Draw blue hightlint line
                     if mouse_down and playlist_hold and coll_point(mouse_position, (
@@ -13727,7 +13782,7 @@ class ComboPlaylist:
 
         self.pl_pos_px = 0
         self.pl_album_art_size = combo_mode_art_size
-        self.v_buffer = 60
+        self.v_buffer = 58#60
         self.h_buffer = 70
 
         self.mirror_cache = []
@@ -13759,6 +13814,7 @@ class ComboPlaylist:
                     if goto and pl_entry_on > playlist_selected:
                         if len(self.mirror_cache) > 0:
                             self.pl_pos_px = self.mirror_cache[-1:][0]
+                            self.pl_pos_px -= 25
 
                         else:
                             self.pl_pos_px = 0
@@ -13868,29 +13924,46 @@ class ComboPlaylist:
                         # Draw album header
                         if break_enable:
                             x1 = 20
-                            y1 = y - 14
+                            y1 = y - 14 - 13
                             x2 = gui.playlist_width + self.pl_album_art_size + 20
                             draw.line(x1, y1, x2, y1, [50, 50, 50, 50])
 
-                            album = trunc_line(track.album, 12, window_size[0] - 120)
-                            if len(album) > 0:
-                                w = draw.text_calc(album, 12) + 10
 
-                                x3 = x2 - 95 - 5
-                                if len(track.date) < 1 or not prefs.append_date:
-                                    x3 += 50
-                                draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
-                                draw_text((x3 + 5 - w, y1 - 8), album, colours.album_text, 12)
+                            right_space = 22
+                            right_position = window_size[0] - right_space
 
-                                # Draw date in header
-                                if prefs.append_date and len(track.date) > 1 and len(track.date) < 7:
-                                    album = trunc_line(track.date, 12, window_size[0] - 120)
-                                    w = draw.text_calc(album, 12) + 10
+                            if len(track.date) > 1:
+                                album = trunc_line(track.album, 17, window_size[0] - 120)
+                                w = draw.text_calc(album, 17) + 30
+                                draw.line(right_position - w + 10, y1, right_position + 20, y1, colours.playlist_panel_background)
 
-                                    x3 = x2 - 50 - 5
-                                    draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
+                                draw_text((right_position, y1 - 20, 1), album, colours.folder_title, 17)
 
-                                    draw_text((x3 + 5 - w, y1 - 8), album, colours.album_text, 12)
+                                draw_text((right_position, y1 - 0, 1), track.date, colours.folder_title, 14)
+
+
+
+                            # album = trunc_line(track.album, 17, window_size[0] - 120)
+                            # if len(album) > 0:
+                            #     w = draw.text_calc(album, 17) + 30
+                            #
+                            #     x3 = x2 - 95 - 5
+                            #     # if len(track.date) < 1 or not prefs.append_date:
+                            #     #     x3 += 50
+                            #
+                            #
+                            #     draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
+                            #     draw_text((x3 + 5 - w, y1 - 10), album, colours.folder_title, 17)
+                            #
+                            #     # # Draw date in header
+                            #     # if prefs.append_date and len(track.date) > 1 and len(track.date) < 7:
+                            #     #     album = trunc_line(track.date, 16, window_size[0] - 120)
+                            #     #     w = draw.text_calc(album, 16) + 10
+                            #     #
+                            #     #     x3 = x2 - 50 - 5
+                            #     #     draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
+                            #     #
+                            #     #     draw_text((x3 + 5 - w, y1 - 10), album, colours.folder_title, 16)
 
                         # Draw album art
                         a_rect = (x, y, self.pl_album_art_size, self.pl_album_art_size)
@@ -14754,6 +14827,15 @@ while running:
                 i += 1
             arg_queue = []
             auto_play_import = True
+
+
+    if mouse_down and not rect_in((2, 2, window_size[0] - 4, window_size[1] - 4)):
+        if SDL_GetGlobalMouseState(None, None) == 0:
+
+            mouse_down = False
+            mouse_up = True
+            quick_drag = False
+
     if k_input:
 
         if input.mouse_click or right_click:
@@ -14882,6 +14964,7 @@ while running:
                 gui.theme_temp_current = -1
 
         if mouse4:
+            toggle_album_mode()
             toggle_album_mode()
         if mouse5:
             toggle_side_panel()
@@ -15204,6 +15287,8 @@ while running:
             theme_number = theme - 1
             try:
                 theme_files = os.listdir(install_directory + '/theme')
+                theme_files.sort()
+                print(theme_files)
 
                 for i in range(len(theme_files)):
                     # print(theme_files[i])
@@ -15919,11 +16004,13 @@ while running:
                         if not mouse_down:
                             scroll_hold = False
 
+
                         if scroll_hold and not input.mouse_click:
                             gui.pl_update = 1
                             p_y = pointer(c_int(0))
                             p_x = pointer(c_int(0))
                             SDL_GetGlobalMouseState(p_x, p_y)
+
                             sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
                             if sbp + sbl > ey:
                                 sbp = ey - sbl
@@ -16678,7 +16765,7 @@ while running:
                         else:
                             draw_text((x + 8 + 10, y + 40), "Album Artist", colours.grey_blend_bg3(140), 12)
                         draw_text((x + 8 + 90, y + 40),
-                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 135),
+                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 270),
                                   colours.grey_blend_bg3(190), 12)
                         x -= 170
 
@@ -17174,7 +17261,7 @@ while running:
                             radiobox = False
                         else:
                             radiobox = False
-                            show_message("A stream needs to be started first")
+                            show_message("A stream needs to be playing first")
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + 7, rect[1] + 3), "REC", colours.grey(140), 12)
                 draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 12)
@@ -18051,7 +18138,7 @@ save = [pctl.master_library,
         gui.bb_show_art,
         gui.show_stars,
         prefs.auto_lfm,
-        None,
+        prefs.scrobble_mark,
         None,
         None,
         None,
