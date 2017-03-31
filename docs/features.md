@@ -32,6 +32,7 @@
 ### External service integration
 
 - Last.fm scrobbling
+- Get lyrics from LyricWiki
 
 ### Other file formats
 
@@ -50,6 +51,7 @@
 - Outbound streaming with Icecast (MP3, OGG)
 - Global media keys + some local harcoded keyboard shortcuts
 - Output audio device override
+- Track love
 
 ### Editing
 
@@ -79,11 +81,10 @@
  - Extentions
  - Audiobooks
  - Tag editing
- - Various external services
  - Ratings
  - Read from archive
  - Artist/metadata scraping
- - Unknown tag metadata
+ - All tag metadata
  - A-B repreat
  - Bookmarks
  - Various playlist formats
