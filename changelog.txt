@@ -17,9 +17,12 @@ v2.3.0
  - Redesigned number change settings widget
  - Moved and updated folder clean function to folder rename box
  - Moved 'remove embedded image from mp3' function to picture context menu
+ - Moved scrobble mark setting from config file to UI settings
  - Set duration field in track info box as copyable
  - Set imported tracks to be sorted by default
+ - Changed labels in view menu, removed 'Full Art' shortcut
  - Changed 'go to playing' function to always find any available track
+ - Changed layout of album title in 'art + tracks' view
  - Fixed scroll on panels in showcase view also scrolling lyrics
  - Fixed playback buttons not changing colour between themes
  - Fixed playtime inflation when modifying metadata
@@ -29,6 +32,8 @@ v2.3.0
  - Fixed rename tracks not showing result message
  - Fixed stats genre list not splitting multiple genres
  - Fixed tracks not being ordered correctly in certain cases with inconsistent tagging
+ - Fixed mouse not releasing outside of window
+ - Removed themes 'ice' and 'orange'
  - Linux: Fixed gallery view and visualiser showing corrupted graphics with some video drivers
  - Linux: Fixed erratic rendering when visualiser is on with some video drivers
 

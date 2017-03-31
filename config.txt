@@ -5,7 +5,6 @@
 
 pause-fade-time=400
 cross-fade-time=700
-scrobble-mark=True 
 
 # --- Spectrogram ----------------------------------------------------------
 # Base colour is the background colour (such as when there is no sound). Are R,G,B int values. Must be from 0 to 255.
@@ -18,10 +17,16 @@ vis-scroll=True
 # Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
 # Colours of the level meter cannot currently be configured
 
-# --- View ---------------------------------------------------------------- 
+# --- View -----------------------------------------------------------------
 
 scroll-gallery-row=True
 scroll-gallery-wheel=90
+
+# --- Template Defaults ----------------------------------------------------
+# See rename track box for 
+
+rename-tracks-default=%n. %a - %t%x
+rename-folder-default=%a - %b
 
 # --- Windows Fonts --------------------------------------------------------
 # Currently optimised for Meiryo (preferred) and Arial (fallback)
