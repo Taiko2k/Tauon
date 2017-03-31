@@ -14,9 +14,9 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
   - Automatic CUE sheet detection
   - Transcode folders while keeping album art. Useful for copying to DAP's with limited storage / codec support.
   - Last.fm scrobbling with love track function
-  - Lyrics display with support for fetching lyrics from LyricWiki (indev)
+  - Lyrics display with support for fetching lyrics from LyricWiki
   - Save and load playlists in the XSPF file format
-  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting (testing)
+  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting
   - Outbound radio streaming to Icecast. Streams playlist in background without affecting local playback.
   
 ### Screenshot :star2:
@@ -26,7 +26,6 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
 
 <img src="https://cloud.githubusercontent.com/assets/17271572/17890552/e0c9985e-698a-11e6-8a3c-1b49570e6619.jpg" alt="Standard View" width=690px />
 
-Note: Screenshots taken under Windows 10 using Metro X theme 
 
 ### Getting Started :dizzy:
 
