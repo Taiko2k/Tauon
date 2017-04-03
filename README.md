@@ -34,7 +34,7 @@ For __Windows__, download latest installer from [releases](https://github.com/Ta
 For __Arch Linux__, download pkgbuild from releases section. Navigate terminal to download location and run:  
   
     $ makepkg
-    $ sudo pacman -U tauon-music-box-2.1.6-1-x86_64.pkg.tar
+    $ sudo pacman -U tauon-music-box-2.3.1-1-x86_64.pkg.tar
 
 
 For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
