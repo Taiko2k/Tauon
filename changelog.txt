@@ -1,6 +1,17 @@
 
 Changelog-------------------------------------
 
+v2.3.1
+
+ - Added delete folder function
+ - Changed play history playlist order. Extended history to 250
+ - Fixed rename folder function causing tracks to move in playlist
+ - Fixed show album art in bottom panel not correctly updating on toggle
+ - Fixed mouse button 4 gallery shortcut not working
+ - Fixed visualiser not activating from menu when off
+ - Removed toggle random and repeat entries from playback menu
+
+
 v2.3.0
 
  - Added function to fetch lyrics from LyricWiki

@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.3.0"
+t_version = "v2.3.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -496,7 +496,7 @@ master_count = 0
 # items_loaded = []
 load_orders = []
 
-volume = 100
+volume = 75
 
 folder_image_offsets = {}
 db_version = 0
@@ -674,7 +674,7 @@ class GuiVar:
 
         self.playlist_box_d_click = -1
 
-        self.gallery_show_text = True
+        self.gallery_show_text = False
         self.bb_show_art = False
         self.show_stars = True
 
@@ -7322,7 +7322,7 @@ def export_stats(pl):
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
 tab_menu.add_sub("...", 145)
-tab_menu.add_to_sub("Gen. Playlist Stats", 0, export_stats, pass_ref=True)
+tab_menu.add_to_sub("Playlist Stats", 0, export_stats, pass_ref=True)
 tab_menu.add_to_sub('Transcode All Folders', 0, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub('Rescan Tags', 0, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub('Re-Import Last Folder', 0, re_import, pass_ref=True)
@@ -8209,6 +8209,56 @@ def rename_tracks(index):
 track_menu.add_to_sub("Rename Tracks...", 0, rename_tracks, pass_ref=True)
 
 
+def delete_folder(index):
+
+    track = pctl.master_library[index]
+
+    old = track.parent_folder_path
+
+    if not key_shift_down and not key_shiftr_down:
+        show_message("Are you sure you want to physically delete the folder? If so, press again while holding shift.")
+        return
+
+
+    if len(old) < 5:
+        show_message("This folder path seems short, I don't wanna try delete that")
+        return
+
+    if not os.path.exists(old):
+        show_message("The folder seems to be missing")
+        return
+
+    protect = ("", "Documents", "Music", "Desktop", "Downloads")
+
+    for fo in protect:
+        if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
+            show_message("Woah, careful there! I don't think we should delete that folder.")
+            return
+
+    try:
+
+
+        if pctl.playing_state > 0 and os.path.normpath(
+                pctl.master_library[pctl.track_queue[pctl.queue_step]].parent_folder_path) == os.path.normpath(old):
+            pctl.stop(True)
+
+        shutil.rmtree(old)
+
+        for i in reversed(range(len(default_playlist))):
+
+            if old == pctl.master_library[default_playlist[i]].parent_folder_path:
+                del default_playlist[i]
+
+
+        show_message("Deleted folder: " + old)
+
+    except:
+        raise
+        show_message("Unable to comply. Check permissions.")
+
+
+
+
 def rename_parent(index, template):
 
     #template = prefs.rename_folder_template
@@ -8305,8 +8355,14 @@ def rename_folders(index):
     rename_index = index
     gui.rename_folder_box = True
     input_text = ""
+    shift_selection.clear()
 
-track_menu.add_to_sub("Rename Folder...", 0, rename_folders, pass_ref=True)
+    global quick_drag
+    global playlist_hold
+    quick_drag = False
+    playlist_hold = False
+
+track_menu.add_to_sub("Modify Folder...", 0, rename_folders, pass_ref=True)
 
 
 def move_folder_up(index, do=False):
@@ -8318,16 +8374,17 @@ def move_folder_up(index, do=False):
     move_target = track.parent_folder_path
     upper_folder = os.path.dirname(parent_folder)
 
-    if len(os.listdir(parent_folder)) > 1:
+    if not os.path.exists(track.parent_folder_path):
+        if do:
+            show_message("The directory does not appear to exist")
+        return False
 
+    if len(os.listdir(parent_folder)) > 1:
         return False
 
     if do is False:
         return True
 
-    if not os.path.exists(track.parent_folder_path):
-        show_message("The directory does not appear to exist")
-        return
 
     pre_state = 0
     if pctl.playing_state > 0 and track.parent_folder_path in pctl.playing_object().parent_folder_path:
@@ -8733,7 +8790,7 @@ def clip_title(index):
 selection_menu = Menu(165)
 
 selection_menu.add('Open Folder', open_folder, pass_ref=True)
-selection_menu.add("Rename Folder...", rename_folders, pass_ref=True)
+selection_menu.add("Modify Folder...", rename_folders, pass_ref=True)
 
 
 if prefs.tag_editor_name != "":
@@ -8864,14 +8921,17 @@ vis_menu.add("Off", vis_off)
 
 def level_on():
     gui.vis = 1
+    gui.turbo = True
 vis_menu.add("Level Meter", level_on)
 
 def spec_on():
     gui.vis = 2
+    gui.turbo = True
 vis_menu.add("Spectrum Visualizer", spec_on)
 
 def spec2_def():
     gui.vis = 3
+    gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
 vis_menu.add("Spectrogram", spec2_def)
@@ -9332,7 +9392,7 @@ def q_to_playlist():
 
     pctl.multi_playlist.append(pl_gen(title="Play History",
                                       playing=0,
-                                      playlist=copy.deepcopy(pctl.track_queue),
+                                      playlist=list(reversed(copy.deepcopy(pctl.track_queue))),
                                       position=0,
                                       hide_title=1,
                                       selected=0))
@@ -9465,14 +9525,14 @@ def toggle_repeat():
     pctl.repeat_mode ^= True
 
 
-extra_menu.add('Toggle Repeat', toggle_repeat, hint='COMMA')
+# extra_menu.add('Toggle Repeat', toggle_repeat, hint='COMMA')
 
 
 def toggle_random():
     pctl.random_mode ^= True
 
 
-extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
+# extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add('Clear Queue', clear_queue, queue_deco)
 
 def love_deco():
@@ -11134,6 +11194,7 @@ def toggle_bba(mode=0):
     if mode == 1:
         return gui.bb_show_art
     gui.bb_show_art ^= True
+    gui.update_layout()
 
 def toggle_use_title(mode=0):
     if mode == 1:
@@ -14965,7 +15026,6 @@ while running:
 
         if mouse4:
             toggle_album_mode()
-            toggle_album_mode()
         if mouse5:
             toggle_side_panel()
 
@@ -16942,8 +17002,8 @@ while running:
                 if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = draw_text((x + 10, y + 10,), "Physically rename containing folder", colours.grey(150), 12)
-                draw_text((x + 25 + p, y + 10,), "(Experimental)", colours.grey(90), 12)
+                p = draw_text((x + 10, y + 10,), "Physically modify containing folder", colours.grey(150), 12)
+                #draw_text((x + 25 + p, y + 10,), "(Experimental)", colours.grey(90), 12)
 
                 rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
 
@@ -16965,6 +17025,28 @@ while running:
 
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "RENAME", colours.grey(150), 12,
                           bg=bg)
+
+
+                rect = (x + 8 + 300 + 10, y + 11, 80, 22)
+                fields.add(rect)
+                #draw.rect_r(rect, colours.grey(25), True)
+                bg = colours.grey(25)
+                if rect_in(rect):
+                    bg = colours.grey(35)
+                    if input.mouse_click:
+                        print('click')
+                        delete_folder(rename_index)
+                        gui.rename_folder_box = False
+                        input.mouse_click = False
+
+                if not key_shift_down and not key_shiftr_down:
+                    bg = colours.grey(20)
+
+                draw.rect_r(rect, bg, True)
+
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "DELETE", colours.grey(150), 12,
+                          bg=bg)
+
 
                 if move_folder_up(rename_index):
 
@@ -18014,7 +18096,7 @@ while running:
             bottom_bar1.seek_time = pctl.playing_time
             gui.update = 1
 
-    if len(pctl.track_queue) > 100 and pctl.queue_step > 1:
+    if len(pctl.track_queue) > 250 and pctl.queue_step > 1:
         del pctl.track_queue[0]
         pctl.queue_step -= 1
 

@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.3.0
+Basic usage guide. Updated for v2.3.1
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
@@ -67,11 +67,12 @@ Tip: End the search text with another forward slash to search just for folders w
  
  Note: Not all of these dragging operations currently have an animation or indicator, but it should work if performed correctly.
 
-### Rename Folder Function (experimental)
+### Modify Folder Function
 
-Access by right clicking track; TRACK MENU -> META... -> RENAME FOLDER...  OR  right click folder title; SELECTION MENU -> RENAME FOLDER...
+Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  right click folder title; SELECTION MENU -> MODIFY FOLDER...
 
 ***Rename*** - Renames the folder of the track to given template format. The template that this defaults to can be changed in the config.txt file.  
+***Delete*** - Deletes the folder and all containing files and folders (hold shift to enable)
 ***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
 ***Clean*** - Deletes the following OS related items in the folder: 'desktop.ini', 'Thumbs.db', Windows Media Player generated thumbnail images, Mac OS related '.DS_Store' and '__MACOSX' files/folders.
 
