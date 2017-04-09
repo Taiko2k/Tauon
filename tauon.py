@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.3.1"
+t_version = "v2.3.2"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -1691,6 +1691,13 @@ class PlayerCtl:
 
     def show_current(self, select=True, playing=False, quiet=False):
 
+        # print("show------")
+        # print(select)
+        # print(playing)
+        # print(quiet)
+        # print("--------")
+
+
         # Switch to source playlist
         if self.playlist_active != self.active_playlist_playing and (
                     self.track_queue[self.queue_step] not in self.multi_playlist[self.playlist_active][2]):
@@ -1717,22 +1724,24 @@ class PlayerCtl:
                 if playing:
                     self.playlist_playing = i
 
-                if i == playlist_position - 1 and playlist_position > 1:
-                    playlist_position -= 1
+                if not (quiet and self.playing_object().length < 15):
 
-                elif playlist_position + gui.playlist_view_length - 2 == i and i < len(
-                        self.multi_playlist[self.playlist_active][2]) - 5:
-                    playlist_position += 3
-                elif i < playlist_position:
-                    playlist_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
-                        gui.playlist_view_length / 6))
-                elif abs(playlist_position - i) > gui.playlist_view_length:
-                    playlist_position = i
-                    if i > 6:
-                        playlist_position -= 5
-                    if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
-                            self.multi_playlist[self.playlist_active][2]) and i > 10:
-                        playlist_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
+                    if i == playlist_position - 1 and playlist_position > 1:
+                        playlist_position -= 1
+
+                    elif playlist_position + gui.playlist_view_length - 2 == i and i < len(
+                            self.multi_playlist[self.playlist_active][2]) - 5:
+                        playlist_position += 3
+                    elif i < playlist_position:
+                        playlist_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
+                            gui.playlist_view_length / 6))
+                    elif abs(playlist_position - i) > gui.playlist_view_length:
+                        playlist_position = i
+                        if i > 6:
+                            playlist_position -= 5
+                        if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
+                                self.multi_playlist[self.playlist_active][2]) and i > 10:
+                            playlist_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
                 break
         else:  # Search other all other playlists
             for i, playlist in enumerate(self.multi_playlist):
@@ -2847,7 +2856,7 @@ def player():
         # print(d_info.name.decode('utf-8'))
         a += 1
 
-    # BASS_SetConfig(11, )
+    #BASS_SetConfig(0, 1000)
 
     player1_status = p_stopped
     player2_status = p_stopped
@@ -4129,8 +4138,7 @@ icon = IMG_Load(b_active_directory + b"/gui/icon.png")
 
 SDL_SetWindowIcon(t_window, icon)
 
-# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,b"1")
-
+SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
@@ -4935,8 +4943,8 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 16 + 6, 16, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 17 + 6, 17, weight=standard_weight, y_offset=1)
 
-        pretty_text.prime_font(semibold_font, 10 + 4, 210, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 11 + 4, 211, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
+        pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
         pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
@@ -5640,6 +5648,7 @@ class ImageObject():
         self.source = ""
         self.offset = 0
         self.stats = True
+        self.format = ""
 
 
 class AlbumArt():
@@ -5659,7 +5668,15 @@ class AlbumArt():
             return False
         offset = self.get_offset(pctl.master_library[index].fullpath, sources)
 
-        return [sources[offset][0], len(sources), offset]
+        o_size = (0, 0)
+        format = "ERROR"
+        for item in self.image_cache:
+            if item.index == index and item.offset == offset:
+                o_size = item.original_size
+                format = item.format
+                break
+
+        return [sources[offset][0], len(sources), offset, o_size, format]
 
     def get_sources(self, index):
 
@@ -5957,6 +5974,11 @@ class AlbumArt():
             g.seek(0)
             im = Image.open(source_image)
             o_size = im.size
+
+            format = im.format
+            if im.format == "JPEG":
+                format = "JPG"
+
             # print(im.size)
             if im.mode != "RGB":
                 im = im.convert("RGB")
@@ -6125,6 +6147,7 @@ class AlbumArt():
             unit.actual_size = (dst.w, dst.h)
             unit.source = source[offset][1]
             unit.offset = offset
+            unit.format = format
 
             self.current_wu = unit
             self.image_cache.append(unit)
@@ -7221,6 +7244,7 @@ def tryint(s):
 
 def index_key(index):
     s = str(pctl.master_library[index].track_number)
+    #print(pctl.master_library[index].disc_number)
     if pctl.master_library[index].disc_number != "":
         if pctl.master_library[index].disc_number != "0":
             s = str(pctl.master_library[index].disc_number) + "d" + s
@@ -7259,14 +7283,11 @@ def sort_track_2(pl, custom_list=None):
 
 
 def sort_path_pl(pl):
-    global default_playlist
 
     def path(index):
         return pctl.master_library[index].fullpath
 
-    playlist = pctl.multi_playlist[pl][2]
-    pctl.multi_playlist[pl][2] = sorted(playlist, key=path)
-    default_playlist = pctl.multi_playlist[pl][2]
+    pctl.multi_playlist[pl][2].sort(key=path)
 
 def append_current_playing(index):
     if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
@@ -7319,11 +7340,36 @@ def export_stats(pl):
         subprocess.call(["xdg-open", target])
 
 
+# def folder_year_sort(pl):
+#
+#     playlist = pctl.multi_playlist[pl][2]
+#
+#     current_folder = ""
+#     album = []
+#
+#     for item in playlist:
+#
+#         if current_folder != pctl.master_library[playlist[i]].parent_folder_name:
+#             current_folder = pctl.master_library[playlist[i]].parent_folder_name
+#
+#             album = []
+#
+#     print("done")
+#     print(top)
+
+
+
+def standard_sort(pl):
+    sort_path_pl(pl)
+    sort_track_2(pl)
+
+
+
 tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
-tab_menu.add_sub("...", 145)
+tab_menu.add_sub("Misc...", 145)
 tab_menu.add_to_sub("Playlist Stats", 0, export_stats, pass_ref=True)
-tab_menu.add_to_sub('Transcode All Folders', 0, convert_playlist, pass_ref=True)
+tab_menu.add_to_sub('Transcode All', 0, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub('Rescan Tags', 0, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub('Re-Import Last Folder', 0, re_import, pass_ref=True)
 tab_menu.add_to_sub('Export XSPF', 0, export_xspf, pass_ref=True)
@@ -7336,9 +7382,10 @@ tab_menu.br()
 tab_menu.add('Paste Tracks', s_append, pass_ref=True)
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 tab_menu.br()
-tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
-tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
-tab_menu.add_sub("Sort To New Playlist...", 133)
+# tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
+# tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
+tab_menu.add("Standard Sort", standard_sort, pass_ref=True)
+tab_menu.add_sub("Sort...", 133)
 
 
 def new_playlist(switch=True):
@@ -13858,7 +13905,7 @@ class ComboPlaylist:
         self.mirror_cache = []
         album_dex_on = 0
         pl_entry_on = 0
-        pl_render_pos = 0
+        pl_render_pos = 30
         min = 0
         self.pl_album_art_size = combo_mode_art_size
 
@@ -13935,7 +13982,7 @@ class ComboPlaylist:
             self.pl_pos_px += abs(window_size[1] - 80)
 
         # Set some things
-        pl_render_pos = 0
+        pl_render_pos = 30
         pl_entry_on = 0
         render = False
         album_dex_on = 0
@@ -16250,20 +16297,69 @@ while running:
                                 else:
                                     picture_menu.activate()
 
-                            line = ""
-                            if showc[0] is True:
-                                line += 'A '
+                            if not key_shift_down:
+
+                                line = ""
+                                if showc[0] is True:
+                                    line += 'E '
+                                else:
+                                    line += 'F '
+
+                                line += str(showc[2] + 1) + "/" + str(showc[1])
+                                y = 36 + box - 25
+
+                                xoff = 0
+                                xoff = draw.text_calc(line, 12) + 12
+
+                                draw.rect((x + box - xoff, y), (xoff, 18),
+                                          [8, 8, 8, 255], True)
+
+                                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
                             else:
-                                line += 'E '
-                            line += str(showc[2] + 1) + "/" + str(showc[1])
 
-                            xoff = 0
-                            xoff = draw.text_calc(line, 12) + 12
+                                line = ""
+                                if showc[0] is True:
+                                    line += 'Embedded'
+                                else:
+                                    line += 'File'
 
-                            draw.rect((x + box - xoff, 36 + box - 19), (xoff, 18),
-                                      [10, 10, 10, 190], True)
-                            # [0, 0, 0, 190]
-                            draw_text((x + box - 6, 36 + box - 18, 1), line, [220, 220, 220, 220], 12, bg=[30, 30, 30, 255])
+                                #line += str(showc[2] + 1) + "/" + str(showc[1])
+                                y = 36 + box - 61
+
+                                xoff = 0
+                                xoff = draw.text_calc(line, 12) + 12
+
+                                draw.rect((x + box - xoff, y), (xoff, 18),
+                                          [8, 8, 8, 255], True)
+
+                                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+                                y += 18
+
+                                line = ""
+                                line += showc[4]
+                                line += " " +  str(showc[3][1]) + 'vr'
+                                xoff = 0
+                                xoff = draw.text_calc(line, 12) + 12
+
+                                draw.rect((x + box - xoff, y), (xoff, 18),
+                                          [8, 8, 8, 255], True)
+                                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
+                                          bg=[30, 30, 30, 255])
+
+                                y += 18
+
+                                line = ""
+                                line += str(showc[2] + 1) + "/" + str(showc[1])
+                                xoff = 0
+                                xoff = draw.text_calc(line, 12) + 12
+
+                                draw.rect((x + box - xoff, y), (xoff, 18),
+                                          [8, 8, 8, 255], True)
+                                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
+                                          bg=[30, 30, 30, 255])
+
 
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
@@ -16605,35 +16701,7 @@ while running:
                     draw_text((w - 4, ty + int(rh / 2) - 10, 1), line, [80, 80, 80, 80], 12)
 
                     gui.win_fore = colours.bottom_panel_colour
-                    # rect = (x, y + 1 + p * rh, rh-1, rh-1)
-                    # fields.add(rect)
-                    # if coll_point(mouse_position, rect):
-                    #     rect2 = (x, y + 1 + p * rh, w - 2, rh - 1)
-                    #     draw.rect_r(rect2, [40, 40, 40, 255], True)
-                    #     gui.win_fore = [40, 40, 40, 255]
-                    #     draw_text2((x + 1, y - 1 + p * rh), "X", [220, 60, 60, 255], 12, 300)
-                    #     if genre_box_click:
-                    #         delete_playlist(i)
-                    # else:
-                    #     draw_text2((x + 1, y - 1 + p * rh), "X", [70, 70, 70, 255], 12, 300)
-                    #
-                    # rect = (x + 19, y + 1 + p * rh, w - 12, rh-1)
-                    # fields.add(rect)
-                    # if coll_point(mouse_position, rect) and not tab_menu.active:
-                    #
-                    #     draw.rect_r(rect, [40, 40, 40, 255], True)
-                    #     gui.win_fore = [40, 40, 40, 255]
-                    #     if genre_box_click:
-                    #         switch_playlist(i)
-                    #         playlist_panel = False
-                    #
-                    # if tab_menu.active and tab_menu.reference == i:
-                    #     draw.rect_r(rect, [40, 40, 40, 255], True)
-                    # if right_click and coll_point(mouse_position, rect):
-                    #     tab_menu.activate(copy.deepcopy(i))
-                    #
-                    # draw_text2((x + 15, y - 1 + p * rh), item[0], [110, 110, 110, 255], 12, 300)
-                    # draw_text2((x + w - 5, y - 1 + p * rh, 1), str(len(item[2])), [80, 80, 80, 255], 12, 300)
+
 
                     p += 1
 
@@ -17092,11 +17160,11 @@ while running:
                 draw_text((x + 60, y + 65,), line, colours.grey(150), 12)
 
                 draw_text((x + 10, y + 83), "OLD", colours.grey(100), 12)
-                line = trunc_line("/" + pctl.master_library[rename_index].parent_folder_name, 12, 420)
+                line = trunc_line(pctl.master_library[rename_index].parent_folder_name, 12, 420)
                 draw_text((x + 60, y + 83), line, colours.grey(150), 12)
 
                 draw_text((x + 10, y + 101), "NEW", colours.grey(100), 12)
-                line = trunc_line("/" + parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
+                line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
                 draw_text((x + 60, y + 101), line, colours.grey(150), 12)
 
 
@@ -18152,6 +18220,8 @@ pctl.playerCommandReady = True
 
 print("Writing database to disk")
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+date = datetime.date.today()
+pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
 view_prefs['star-lines'] = star_lines
 view_prefs['update-title'] = update_title
@@ -18227,6 +18297,7 @@ save = [pctl.master_library,
         None]
 
 pickle.dump(save, open(user_directory + "/state.p", "wb"))
+
 
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
