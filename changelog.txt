@@ -1,6 +1,17 @@
 
 Changelog-------------------------------------
 
+v2.3.2
+
+ - Added additional image metadata via shift key
+ - Added monthly backups on play count database
+ - Removed transparency on image metadata
+ - Tweaked font config on Windows
+ - Tweaked some labels
+ - Fixed sorting another playlist by filepath overwriting current
+ - Fixed first title cut off in art + tracks view
+
+
 v2.3.1
 
  - Added delete folder function
