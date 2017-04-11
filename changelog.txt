@@ -6,6 +6,9 @@ v2.3.2
  - Added additional image metadata via shift key
  - Added monthly backups on play count database
  - Removed transparency on image metadata
+ - Removed themes Citrus, Smoke
+ - Removed reset play count option
+ - Removed fix mojibake manual function
  - Tweaked font config on Windows
  - Tweaked some labels
  - Fixed sorting another playlist by filepath overwriting current
