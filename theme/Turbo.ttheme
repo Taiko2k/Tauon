@@ -3,10 +3,10 @@
 
 #-Backgrounds-----
 
-30,30,30		player background (top panel)
+25,25,25		player background (top panel)
 21,21,21	  	playlist panel
 18,18,18		side panel
-30,30,30		bottom panel
+25,25,25		bottom panel
 
 #-Frame--------
 

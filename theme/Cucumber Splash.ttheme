@@ -5,7 +5,7 @@
 
 22,22,22		player background (top panel)
 30,30,30	  	playlist panel
-15,15,15		side panel
+17,17,17		side panel
 22,22,22		bottom panel
 
 #-Frame--------
@@ -18,12 +18,12 @@
 
 100,145,177		track line
 100,145,177		track time
-100,145,177		track index
+80,80,80		track index
 142,209,226		track artist
 100,145,177		album line
 
 100,145,177		track playing
-142,209,226		index playing
+200,200,200		index playing
 142,209,226		artist playing
 142,209,226		album playing
 142,209,226		time playing

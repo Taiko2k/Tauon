@@ -331,7 +331,7 @@ renamebox = False
 pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
-theme = 4
+theme = 0
 themeChange = True
 # panelY = 78
 
@@ -724,6 +724,8 @@ class StarStore:
         key = self.key(index)
         if key in self.db:
             self.db[key][0] += value
+            if value < 0 and self.db[key][0] < 0:
+                self.db[key][0] = 0
         else:
             self.db[key] = [value, ""]
 
@@ -837,72 +839,73 @@ class ColoursClass:
         self.last_album = ""
         self.link_text = [100, 200, 252, 255]
 
-        self.sep_line = self.grey(50)
-        self.bb_line = self.grey(50)
-        self.tb_line = self.grey(50)
-        self.art_box = self.grey(20)
+        self.sep_line = self.grey(21)
+        self.bb_line = self.grey(21)
+        self.tb_line = self.grey(21)
+        self.art_box = self.grey(24)
 
-        self.volume_bar_background = self.grey(19)
-        self.volume_bar_outline = self.grey(100)
-        self.volume_bar_fill = self.grey(95)
-        self.seek_bar_background = self.grey(28)
-        self.seek_bar_outline = self.grey(100)
-        self.seek_bar_fill = self.grey(110)
+        self.volume_bar_background = self.grey(30)
+        #self.volume_bar_outline = self.grey(100)
+        self.volume_bar_fill = self.grey(125)
+        self.seek_bar_background = self.grey(30)
+        #self.seek_bar_outline = self.grey(100)
+        self.seek_bar_fill = self.grey(80)
 
-        self.tab_text_active = self.grey(170)
-        self.tab_text = self.grey(140)
-        self.tab_background = self.grey(14)
-        self.tab_highlight = self.grey(18)
-        self.tab_background_active = self.grey(27)
+        self.tab_text_active = self.grey(225)
+        self.tab_text = self.grey(215)
+        self.tab_background = self.grey(25)
+        self.tab_highlight = self.grey(40)
+        self.tab_background_active = self.grey(45)
 
-        self.title_text = [0, 125, 0, 255]
-        self.index_text = self.title_text
+        self.title_text = [190, 190, 190, 255]
+        self.index_text = self.grey(70)
         self.time_text = self.index_text
-        self.artist_text = [50, 170, 5, 255]
-        self.album_text = [0, 125, 0, 255]
+        self.artist_text = [195, 255, 104, 255]
+        self.album_text = [245, 240, 90, 255]
 
-        self.index_playing = self.title_text
-        self.artist_playing = [50, 170, 5, 255]
-        self.album_playing = [0, 125, 0, 255]
-        self.title_playing = self.title_text
-        self.time_playing = self.grey(200)
+        self.index_playing = self.grey(200)
+        self.artist_playing = [195, 255, 104, 255]
+        self.album_playing = [245, 240, 90, 255]
+        self.title_playing = self.grey(210)
 
-        self.playlist_text_missing = self.grey(50)
-        self.bar_time = self.title_text
+        self.time_playing = [180, 194, 107, 255]
 
-        self.top_panel_background = self.grey(0)
-        self.side_panel_background = self.top_panel_background
-        self.playlist_panel_background = self.grey(4)
-        self.bottom_panel_colour = self.grey(8)
+        self.playlist_text_missing = self.grey(85)
+        self.bar_time = self.grey(70)
 
-        self.row_playing_highlight = self.grey(15)
-        self.row_select_highlight = self.grey(15)
+        self.top_panel_background = self.grey(15)
+        self.side_panel_background = self.grey(18)
+        self.playlist_panel_background = self.grey(21)
+        self.bottom_panel_colour = self.grey(15)
 
-        self.side_bar_line1 = self.grey(175)
-        self.side_bar_line2 = self.grey(155)
+        self.row_playing_highlight = [255,255,255,4]
+        self.row_select_highlight = [255,255,255,5]
 
-        self.mode_button_off = self.grey(20)
-        self.mode_button_over = self.grey(40)
-        self.mode_button_active = self.grey(120)
+        self.side_bar_line1 = self.grey(210)
+        self.side_bar_line2 = self.grey(200)
 
-        self.media_buttons_over = self.grey(200)
-        self.media_buttons_active = self.grey(150)
-        self.media_buttons_off = self.grey(30)
+        self.mode_button_off = self.grey(50)
+        self.mode_button_over = self.grey(200)
+        self.mode_button_active = self.grey(190)
 
-        self.star_line = [140, 140, 0, 255]
-        self.folder_title = [200, 200, 0, 255]
-        self.folder_line = [140, 140, 0, 255]
+        self.media_buttons_over = self.grey(220)
+        self.media_buttons_active = self.grey(220)
+        self.media_buttons_off = self.grey(55)
 
-        self.scroll_colour = [30, 30, 30, 255]
+        self.star_line = [100, 100, 100, 255]
+        self.folder_title = [120, 120, 120, 255]
+        self.folder_line = [40, 40, 40, 255]
+
+        self.scroll_colour = [45, 45, 45, 255]
 
         self.level_green = [0, 100, 0, 255]
         self.level_red = [175, 0, 0, 255]
         self.level_yellow = [90, 90, 20, 255]
 
-        self.vis_colour = self.title_text
+        self.vis_colour = self.grey(200)
         self.vis_bg = [0, 0, 0, 255]
 
-        self.menu_background = self.grey(8)
+        self.menu_background = self.grey(13)
         self.menu_highlight_background = None
         self.menu_text = [170, 170, 170, 255]
         self.menu_text_disabled = self.grey(50)
@@ -959,6 +962,7 @@ class ColoursClass:
 
 
 colours = ColoursClass()
+colours.post_config()
 #colours.post_config()
 
 view_prefs = {
@@ -8515,7 +8519,7 @@ def reset_play_count(index):
     star_store.remove(index)
 
 
-track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
+#track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
 
 
 def get_like_folder(index):
@@ -8744,8 +8748,8 @@ def intel_moji(index):
         show_message("Autodetect failed")
 
 
-track_menu.add_to_sub("Fix Mojibake Auto", 0, intel_moji, pass_ref=True)
-track_menu.add_to_sub("Fix Mojibake Manual...", 0, activate_encoding_box, pass_ref=True)
+track_menu.add_to_sub("Fix Mojibake", 0, intel_moji, pass_ref=True)
+#track_menu.add_to_sub("Fix Mojibake Manual...", 0, activate_encoding_box, pass_ref=True)
 
 
 class Samples:
@@ -12935,6 +12939,8 @@ class BottomBarType1:
                     play_colour = [220, 50 ,50 , 255]
 
 
+
+
             rect = (buttons_x_offset + 10, window_size[1] - self.control_line_bottom - 13, 50, 40)
             fields.add(rect)
             if coll_point(mouse_position, rect):
@@ -13258,7 +13264,7 @@ class StandardPlaylist:
         draw.rect_r(rect, colours.playlist_panel_background, True)
 
         if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + gui.playlist_top \
-                and not (playlist_panel and coll_point(mouse_position, pl_rect)):
+                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not key_shift_down:
 
             if album_mode and mouse_position[0] > gui.playlist_width + 34:
                 pass
@@ -15523,7 +15529,7 @@ while running:
                 show_message("Error loading theme file")
 
         if theme == 0:
-            print("Applying theme: Default Terminal Citrus")
+            print("Applying default theme: Mindaro")
             colours.__init__()
             colours.post_config()
 
@@ -16970,7 +16976,9 @@ while running:
                     draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date),
                               colours.grey_blend_bg3(190), 12)
 
+
                     y += 23
+
 
                     #key = pctl.master_library[r_menu_index].title + pctl.master_library[r_menu_index].filename
                     total = star_store.get(r_menu_index)
@@ -16986,11 +16994,18 @@ while running:
 
                     y += 15
 
+                    rect = [x + 17, y + 41, 150, 14]
+
+                    if rect_in(rect) and key_shift_down and mouse_wheel != 0:
+                        star_store.add(r_menu_index, 60 * mouse_wheel)
+
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
                     draw_text((x + 8 + 10, y + 40), "Play time", colours.grey_blend_bg3(140), 12)
                     draw_text((x + 8 + 90, y + 40), str(line), colours.grey_blend_bg3(190), 12)
+
+
 
                     # -------
                     if pctl.master_library[r_menu_index].lyrics != "":
