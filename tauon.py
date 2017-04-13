@@ -11525,11 +11525,11 @@ class Over:
             draw.rect_r(rect, [255, 255, 255, 15], True)
             if self.click:
                 plug()
-        draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(140), 11)
+        draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(150), 11)
 
     def toggle_square(self, x, y, function, text):
 
-        draw_text((x + 20, y - 3), text, colours.grey_blend_bg(150), 12)
+        draw_text((x + 20, y - 3), text, colours.grey_blend_bg(170), 12)
         draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
         draw.rect((x, y), (12, 12), [255, 255, 255, 16])
         if self.click and coll_point(mouse_position, (x - 20, y - 7, 180, 24)):
@@ -11908,7 +11908,7 @@ class Over:
     def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
 
         if label is not None:
-            draw_text((x, y), label, colours.grey_blend_bg(150), 12)
+            draw_text((x, y), label, colours.grey_blend_bg(170), 12)
             x += 65
         y += 1
         rect = (x, y, 33, 15)
@@ -12051,7 +12051,7 @@ class Over:
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 220], gui.win_fore), 13)
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 230], gui.win_fore), 13)
             else:
                 draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 100], gui.win_fore), 13)
 
