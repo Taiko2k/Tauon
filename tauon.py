@@ -50,7 +50,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.3.2"
+t_version = "v2.3.5"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -711,7 +711,6 @@ class StarStore:
         self.db = {}
 
     def key(self, index):
-
         return pctl.master_library[index].artist, pctl.master_library[index].title, pctl.master_library[index].filename
 
     def object_key(self, track):
@@ -851,7 +850,7 @@ class ColoursClass:
         #self.seek_bar_outline = self.grey(100)
         self.seek_bar_fill = self.grey(80)
 
-        self.tab_text_active = self.grey(225)
+        self.tab_text_active = self.grey(230)
         self.tab_text = self.grey(215)
         self.tab_background = self.grey(25)
         self.tab_highlight = self.grey(40)
@@ -905,9 +904,9 @@ class ColoursClass:
         self.vis_colour = self.grey(200)
         self.vis_bg = [0, 0, 0, 255]
 
-        self.menu_background = self.grey(13)
+        self.menu_background = self.grey(12)
         self.menu_highlight_background = None
-        self.menu_text = [170, 170, 170, 255]
+        self.menu_text = [200, 200, 200, 255]
         self.menu_text_disabled = self.grey(50)
 
         self.gallery_highlight = self.artist_playing
@@ -6636,8 +6635,8 @@ class Menu:
                     draw.rect((self.pos[0], y_run + 2), (self.w, 2),
                               [255, 255, 255, 13], True)
                     # Draw tab
-                    draw.rect((self.pos[0], y_run), (5, self.break_height),
-                              colours.grey(40), True)
+                    draw.rect((self.pos[0], y_run), (4, self.break_height),
+                              colours.grey(30), True)
                     y_run += self.break_height
                     continue
 
@@ -6676,8 +6675,8 @@ class Menu:
                             self.sub_active = self.items[i][2]
 
                 # Draw tab
-                draw.rect((self.pos[0], y_run), (5, self.h),
-                          colours.grey(40), True)
+                draw.rect((self.pos[0], y_run), (4, self.h),
+                          colours.grey(30), True)
 
                 # Render the items label
                 draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], self.font, bg=bg)
@@ -6741,6 +6740,125 @@ class Menu:
 
                         # Render the menu outline
                         # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+
+            # y_run = self.pos[1]
+            #
+            # for i in range(len(self.items)):
+            #     if self.items[i] is None:
+            #
+            #         # draw.rect((self.pos[0], y_run), (self.w, self.break_height),
+            #         #           colours.menu_background, True)
+            #         # draw.rect((self.pos[0], y_run + 2), (self.w, 2),
+            #         #           [255, 255, 255, 13], True)
+            #         # # Draw tab
+            #         # draw.rect((self.pos[0], y_run), (5, self.break_height),
+            #         #           colours.grey(40), True)
+            #         # y_run += self.break_height
+            #         continue
+            #
+            #     # # Get properties for menu item
+            #     # fx = self.items[i][3]()
+            #     # if fx[2] is not None:
+            #     #     label = fx[2]
+            #     # else:
+            #     #     label = self.items[i][0]
+            #     #
+            #     # # Draw item background, black by default
+            #     # draw.rect((self.pos[0], y_run), (self.w, self.h),
+            #     #           fx[1], True)
+            #     # bg = fx[1]
+            #     #
+            #     # # Detect if mouse is over this item
+            #     # rect = (self.pos[0], y_run, self.w, self.h - 1)
+            #     # fields.add(rect)
+            #
+            #     if coll_point(mouse_position,
+            #                   (self.pos[0], y_run, self.w, self.h - 1)):
+            #         # draw.rect((self.pos[0], y_run), (self.w, self.h),
+            #         #           colours.menu_highlight_background,
+            #         #           True)  # [15, 15, 15, 255]
+            #         # bg = alpha_blend(colours.menu_highlight_background, bg)
+            #
+            #         # Call menu items callback if clicked
+            #         if self.clicked:
+            #             if self.items[i][1] is False:
+            #                 if self.items[i][5]:
+            #                     self.items[i][2](self.reference)
+            #                 else:
+            #                     self.items[i][2]()
+            #             else:
+            #                 self.clicked = False
+            #                 self.sub_active = self.items[i][2]
+            #
+            #     # # Draw tab
+            #     draw.rect((self.pos[0], y_run), (5, self.h),
+            #               colours.grey(255), True)
+            #
+            #     # Render the items label
+            #     #draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], self.font, bg=bg)
+            #
+            #     # Render the items hint
+            #     # if len(self.items[i]) > 6 and self.items[i][6] != None:
+            #     #     colo = alpha_blend([255, 255, 255, 50], bg)
+            #     #     draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
+            #     #               colo, self.font, bg=bg)
+            #
+            #     y_run += self.h
+            #     # Render sub menu if active
+            #     if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
+            #
+            #         # sub_pos = [self.pos[0] + self.w, self.pos[1] + i * self.h]
+            #         sub_pos = [self.pos[0] + self.w, self.pos[1]]
+            #         sub_w = self.items[i][4]
+            #         #fx = self.deco()
+            #
+            #         for w in range(len(self.subs[self.sub_active])):
+            #
+            #             # # Item background
+            #             # fx = self.subs[self.sub_active][w][3]()
+            #             # draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
+            #             #
+            #             # # Detect if mouse is over this item
+            #             # rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
+            #             # fields.add(rect)
+            #             # bg = colours.menu_background
+            #             if coll_point(mouse_position,
+            #                           (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
+            #             #     draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
+            #             #               colours.menu_highlight_background,
+            #             #               True)
+            #             #     bg = alpha_blend(colours.menu_highlight_background, bg)
+            #
+            #                 # Call Callback
+            #                 if self.clicked:
+            #
+            #                     # If callback needs args
+            #                     if self.subs[self.sub_active][w][6] is not None:
+            #                         self.subs[self.sub_active][w][2](self.reference, self.subs[self.sub_active][w][6])
+            #
+            #                     # If callback just need ref
+            #                     elif self.subs[self.sub_active][w][5]:
+            #                         self.subs[self.sub_active][w][2](self.reference)
+            #
+            #                     else:
+            #                         self.subs[self.sub_active][w][2]()
+            #
+            #             # # Get properties for menu item
+            #             # fx = self.subs[self.sub_active][w][3]()
+            #             # if fx[2] is not None:
+            #             #     label = fx[2]
+            #             # else:
+            #             #     label = self.subs[self.sub_active][w][0]
+            #
+            #             # Render the items label
+            #             # draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), label, fx[0],
+            #             #           self.font, bg=bg)
+            #
+            #             # Render the menu outline
+            #             # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+
+
+
 
             if self.clicked or key_esc_press:
                 self.active = False
@@ -7009,7 +7127,7 @@ def rename_playlist(index):
     rename_text_area.set_text(pctl.multi_playlist[index][0])
 
 
-tab_menu.add('Rename Playlist', rename_playlist, pass_ref=True, hint="Ctrl+R")
+tab_menu.add('Rename', rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
 def export_xspf(pl):
@@ -7135,7 +7253,7 @@ def get_folder_tracks_local(pl_in):
     return selection
 
 
-tab_menu.add('Clear Playlist', clear_playlist, pass_ref=True)
+tab_menu.add('Clear', clear_playlist, pass_ref=True)
 
 
 def move_playlist(source, dest):
@@ -7371,28 +7489,32 @@ def standard_sort(pl):
 
 
 
-tab_menu.add('Delete Playlist', delete_playlist, pass_ref=True, hint="Ctrl+W")
+tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
-tab_menu.add_sub("Misc...", 145)
-tab_menu.add_to_sub("Playlist Stats", 0, export_stats, pass_ref=True)
-tab_menu.add_to_sub('Transcode All', 0, convert_playlist, pass_ref=True)
-tab_menu.add_to_sub('Rescan Tags', 0, rescan_tags, pass_ref=True)
-tab_menu.add_to_sub('Re-Import Last Folder', 0, re_import, pass_ref=True)
-tab_menu.add_to_sub('Export XSPF', 0, export_xspf, pass_ref=True)
+
+tab_menu.add_sub("Sort...", 133)
+tab_menu.add("Standard Sort", standard_sort, pass_ref=True)
+
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 # tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
 # tab_menu.add('Re-Import Last Folder', re_import, pass_ref=True)
 # tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 #tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
-tab_menu.add('Paste Tracks', s_append, pass_ref=True)
+tab_menu.add('Paste', s_append, pass_ref=True)
 tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
 tab_menu.br()
 # tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
-tab_menu.add("Standard Sort", standard_sort, pass_ref=True)
-tab_menu.add_sub("Sort...", 133)
 
+tab_menu.add_sub("Misc...", 145)
+
+
+tab_menu.add_to_sub("Export Playlist Stats", 1, export_stats, pass_ref=True)
+tab_menu.add_to_sub('Transcode All', 1, convert_playlist, pass_ref=True)
+tab_menu.add_to_sub('Rescan Tags', 1, rescan_tags, pass_ref=True)
+tab_menu.add_to_sub('Re-Import Last Folder', 1, re_import, pass_ref=True)
+tab_menu.add_to_sub('Export XSPF', 1, export_xspf, pass_ref=True)
 
 def new_playlist(switch=True):
     ex = 1
@@ -7449,7 +7571,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Most Played Tracks", 1, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Most Played Tracks", 0, gen_top_100, pass_ref=True)
 
 
 def gen_folder_top(pl):
@@ -7494,7 +7616,7 @@ def gen_folder_top(pl):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Most Played Albums", 1, gen_folder_top, pass_ref=True)
+tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -7602,7 +7724,7 @@ def gen_sort_len(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Duration", 1, gen_sort_len, pass_ref=True)
+tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
@@ -7653,14 +7775,14 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Year → Old-New", 1, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub("Year → Old-New", 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub("Year → New-Old", 1, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub("Year → New-Old", 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -7678,7 +7800,7 @@ def gen_500_random(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Shuffled Tracks", 1, gen_500_random, pass_ref=True)
+tab_menu.add_to_sub("Shuffled Tracks", 0, gen_500_random, pass_ref=True)
 
 
 def gen_folder_shuffle(index):
@@ -7705,7 +7827,7 @@ def gen_folder_shuffle(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Shuffled Folders", 1, gen_folder_shuffle, pass_ref=True)
+tab_menu.add_to_sub("Shuffled Folders", 0, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -7713,7 +7835,8 @@ def gen_best_random(index):
     playlist = []
 
     for p in pctl.multi_playlist[index][2]:
-        time = star_store.get(index)
+        time = star_store.get(p)
+
         if time > 300:
             playlist.append(p)
         # key = pctl.master_library[p].title + pctl.master_library[p].filename
@@ -7723,12 +7846,13 @@ def gen_best_random(index):
     random.shuffle(playlist)
     # pctl.multi_playlist.append(
     #     [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
+    if len(playlist) > 0:
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Random Played>",
-                                      playlist=copy.deepcopy(playlist),
-                                      hide_title=1))
+        pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Lucky Random>",
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=1))
 
-tab_menu.add_to_sub("Random Played", 1, gen_best_random, pass_ref=True)
+tab_menu.add_to_sub("Lucky Random", 0, gen_best_random, pass_ref=True)
 
 
 def gen_reverse(index):
@@ -7742,7 +7866,7 @@ def gen_reverse(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
-tab_menu.add_to_sub("Inverted", 1, gen_reverse, pass_ref=True)
+tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
 
 
 def gen_dupe(index):
@@ -7760,7 +7884,7 @@ def gen_dupe(index):
                                       hide_title=pctl.multi_playlist[index][4],
                                       selected=pctl.multi_playlist[index][5]))
 
-tab_menu.add_to_sub("Duplicate", 1, gen_dupe, pass_ref=True)
+tab_menu.add_to_sub("Duplicate", 0, gen_dupe, pass_ref=True)
 
 
 def gen_sort_path(index):
@@ -7814,9 +7938,9 @@ def gen_sort_album(index):
 
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
-tab_menu.add_to_sub("Has Love", 1, gen_love, pass_ref=True)
-tab_menu.add_to_sub("Has Comment", 1, gen_comment, pass_ref=True)
-tab_menu.add_to_sub("Has Lyrics", 1, gen_lyrics, pass_ref=True)
+tab_menu.add_to_sub("Has Love", 0, gen_love, pass_ref=True)
+# tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
 
 
 
@@ -11044,7 +11168,7 @@ def toggle_titlebar_line(mode=0):
 def toggle_borderless(mode=0):
     global draw_border
     global update_layout
-    
+
 
     if mode == 1:
         return draw_border
@@ -11056,7 +11180,7 @@ def toggle_borderless(mode=0):
         SDL_SetWindowBordered(t_window, False)
     else:
         SDL_SetWindowBordered(t_window, True)
-        
+
         # SDL_SetWindowBordered(t_window, False)
         # SDL_SetWindowBordered(t_window, True)
 
@@ -11324,13 +11448,13 @@ class Over:
         self.temp_lastfm_pass = ""
         self.lastfm_input_box = 0
 
-        self.tab_active = 3
+        self.tab_active = 2
         self.tabs = [
             #["Folder Import", self.files],
             ["System", self.funcs],
             ["Playlist", self.config_v],
-            ["Transcode", self.codec_config],
             ["View", self.config_b],
+            ["Transcode", self.codec_config],
             ["Last.fm", self.last_fm_box],
             ["Stats", self.stats],
             ["About", self.about]
@@ -11352,9 +11476,9 @@ class Over:
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
         # y += 25
-        self.toggle_square(x, y, toggle_wiki, "Track Menu: Search on Wikipedia*")
+        self.toggle_square(x, y, toggle_wiki, "Enable search on Wikipedia*")
         y += 25
-        self.toggle_square(x, y, toggle_rym, "Track Menu: Search on RYM*")
+        self.toggle_square(x, y, toggle_rym, "Enable search on RYM*")
         y += 35
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         y += 25
@@ -11610,14 +11734,14 @@ class Over:
         y += 28
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 28
-        self.toggle_square(x, y, toggle_galler_text, "Show gallery titles")
+        self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
         y += 28
 
 
         if default_player == 'BASS':
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
         y += 28
-        self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
+        #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
         x += 250
@@ -11626,13 +11750,13 @@ class Over:
 
         y += 28
         x += 0
-        self.button(x, y, "Reset Layout", standard_size)
-        x += 100
-        self.button(x, y, "Next Theme", advance_theme)
-        x -= 100
+        #self.button(x, y, "Reset Layout", standard_size)
+        #x += 100
+        self.button(x, y, "Next Theme (F2)", advance_theme)
+        #x -= 100
 
-        y += 92
-        self.toggle_square(x, y, toggle_bba, "Show album art in bottom panel")
+        #y += 92
+        #self.toggle_square(x, y, toggle_bba, "Show album art in bottom panel")
 
     def about(self):
 
@@ -13287,7 +13411,7 @@ class StandardPlaylist:
         draw.rect_r(rect, colours.playlist_panel_background, True)
 
         if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + gui.playlist_top \
-                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not key_shift_down:
+                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not (key_shift_down and track_box):
 
             if album_mode and mouse_position[0] > gui.playlist_width + 34:
                 pass
@@ -13471,9 +13595,9 @@ class StandardPlaylist:
                             gui.playlist_row_height - 1)) and p_track not in shift_selection:  # playlist_hold_position != p_track:
 
                         draw.rect_r(
-                            [0, -1 + gui.playlist_top + gui.playlist_row_height * w,
+                            [0, -1 + gui.playlist_top + gui.playlist_row_height * w + gui.playlist_row_height - 1,
                              gui.playlist_width + 30, 3],
-                            [35, 45, 90, 255], True)
+                            [135, 145, 190, 255], True)
 
                     w += 1
                 else:
@@ -13654,7 +13778,7 @@ class StandardPlaylist:
 
                 draw.rect_r(
                     [0, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, gui.playlist_width + 30, 3],
-                    [35, 45, 90, 255], True)
+                    [135, 145, 190, 255], True)
 
             # Shift click actions
             if input.mouse_click and line_hit and key_shift_down:
@@ -14417,6 +14541,9 @@ def update_layout_do():
         gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
         gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
         gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)
+        # To improve
+        if system == 'linux':
+            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11
 
     gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
 
@@ -17848,7 +17975,7 @@ while running:
 
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-        
+
 
 
         if gui.turbo:
@@ -17856,7 +17983,7 @@ while running:
 
             #SDL_SetRenderTarget(renderer, None)
             #SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-            
+
 
             #SDL_SetRenderTarget(renderer, gui.main_texture)
 
@@ -17872,7 +17999,7 @@ while running:
 
     if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0,
                                                                        0] and gui.turbo:  # and not album_scroll_hold:
-        
+
         # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
         if gui.time_passed > 1:
@@ -17888,7 +18015,7 @@ while running:
 
         gui.level_update = True
 
-    
+
     #draw.rect_r((int(55 * pctl.playing_time), 100, 40, 40), [255, 50, 50, 255], True)
 
     if gui.level_update is True and not resize_mode:
@@ -17896,7 +18023,7 @@ while running:
 
         SDL_SetRenderTarget(renderer, None)
         if not gui.present:
-        
+
             SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
             gui.present = True
 

@@ -1,23 +1,29 @@
 
 Changelog-------------------------------------
 
-v2.3.2
+v2.3.5
 
- - Added additional image metadata via shift key
+ - Added image metadata via shift key
  - Added monthly backuping of play count database
  - Added indicator for tab dragging
  - Added label for unloaded album art in gallery when titles set to off
- - Tweaked font config on Windows
+ - Tweaked font configuration
  - Tweaked some labels
+ - Tweaked track move indicator
  - Fixed sorting another playlist by filepath overwriting current
  - Fixed first title cut off in art + tracks view
  - Fixed codec ratio bar not correctly updating for new imports
+ - Fixed lucky random filter causing crash
  - Removed transparency on image metadata box
  - Removed themes Citrus and Smoke
  - Removed reset play count option
  - Removed fix mojibake manual function
  - Removed folder browser and importer
  - Removed global title break setting
+ - Removed reset layout button from settings
+ - Removed bottom bar album art
+ - Removed title in top panel setting
+ - Removed 'Has Comment' filter option
 
 
 v2.3.1
