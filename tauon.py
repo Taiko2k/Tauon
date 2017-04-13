@@ -5532,11 +5532,11 @@ class GallClass:
 
             if order[0] == 0:
                 # broken
-                return
+                return False
 
             if order[0] == 1:
                 # not done yet
-                return
+                return False
 
             if order[0] == 2:
                 # finish processing
@@ -5566,7 +5566,7 @@ class GallClass:
                 order[3].x = int((self.size - order[3].w) / 2) + order[3].x
                 order[3].y = int((self.size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
-                return
+                return True
 
         else:
             # Create new
@@ -5584,6 +5584,8 @@ class GallClass:
                     SDL_DestroyTexture(self.gall[key][2])
                 del self.gall[key]
                 del self.key_list[0]
+
+        return False
 
 
 gall_ren = GallClass(album_mode_art_size)
@@ -11256,7 +11258,7 @@ def toggle_use_title(mode=0):
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
-config_items.append(['Turn off playlist title breaks', toggle_break])
+# config_items.append(['Turn off playlist title breaks', toggle_break])
 
 config_items.append(['Use double digit track indices', toggle_dd])
 
@@ -11308,6 +11310,7 @@ class Over:
         self.ext_colours = {}
         self.view_offset = 0
         self.ext_ratio = {}
+        self.last_db_size = -1
 
         self.enabled = False
         self.click = False
@@ -11321,9 +11324,9 @@ class Over:
         self.temp_lastfm_pass = ""
         self.lastfm_input_box = 0
 
-        self.tab_active = 4
+        self.tab_active = 3
         self.tabs = [
-            ["Folder Import", self.files],
+            #["Folder Import", self.files],
             ["System", self.funcs],
             ["Playlist", self.config_v],
             ["Transcode", self.codec_config],
@@ -11685,6 +11688,16 @@ class Over:
             full_rect = [x, y, self.w - 110 + 0, 7]
             d = 0
 
+            # Stats
+            if self.last_db_size != len(pctl.master_library):
+                self.last_db_size = len(pctl.master_library)
+                self.ext_ratio = {}
+                for key, value in pctl.master_library.items():
+                    if value.file_ext in self.ext_ratio:
+                        self.ext_ratio[value.file_ext] += 1
+                    else:
+                        self.ext_ratio[value.file_ext] = 1
+
             for key, value in self.ext_ratio.items():
 
                 colour = [200, 200, 200 ,255]
@@ -11847,13 +11860,13 @@ class Over:
 
         self.init2done = True
 
-        # Stats
-        self.ext_ratio = {}
-        for key, value in pctl.master_library.items():
-            if value.file_ext in self.ext_ratio:
-                self.ext_ratio[value.file_ext] += 1
-            else:
-                self.ext_ratio[value.file_ext] = 1
+        # # Stats
+        # self.ext_ratio = {}
+        # for key, value in pctl.master_library.items():
+        #     if value.file_ext in self.ext_ratio:
+        #         self.ext_ratio[value.file_ext] += 1
+        #     else:
+        #         self.ext_ratio[value.file_ext] = 1
         # print(self.ext_ratio)
 
         #pctl.total_playtime = sum(pctl.star_library.values())
@@ -12371,7 +12384,7 @@ class TopPanel:
             if i == pctl.playlist_active:
                 bg = colours.tab_background_active
                 active = True
-            elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit:
+            elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit and not self.tab_hold:
                 bg = colours.tab_highlight
             elif i == pctl.active_playlist_playing:
                 bg = colours.tab_background
@@ -12410,6 +12423,16 @@ class TopPanel:
                     move_playlist(self.tab_hold_index, i)
                     self.tab_hold = False
 
+                # Drag to move playlist
+                if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
+
+                    #draw_text((x + tab_width - 13, y - 3), '⇄', [80, 160, 200, 255], 12)
+                    if self.tab_hold_index < i:
+                        draw.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                    else:
+                        draw.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
+
+
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and middle_click:
                     delete_playlist(i)
@@ -12421,7 +12444,7 @@ class TopPanel:
 
                 # Quick drop tracks (red plus sign to indicate)
                 elif quick_drag is True:
-                    draw_text((x + tab_width - 9, y), '+', [200, 20, 40, 255], 12)
+                    draw_text((x + tab_width - 11, y - 3), '+', [200, 20, 40, 255], 12)
 
                     if mouse_up:
                         quick_drag = False
@@ -12434,7 +12457,7 @@ class TopPanel:
 
         # Quick drag single track onto bar to create new playlist
         if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-            draw_text((x + 5, y), '+', [200, 20, 40, 255], 12)
+            draw_text((x + 5, y - 3), '+', [200, 20, 40, 255], 12)
 
             if mouse_up:
                 pl = new_playlist(False)
@@ -15769,7 +15792,14 @@ while running:
                                       [255, 255, 255, 11])
 
                             # Draw album art
-                            gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
+                            if gall_ren.render(default_playlist[album_dex[album_on]], (x, y)) is False and gui.gallery_show_text is False:
+
+                                draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22, 2),
+                                           pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
+                                           colours.gallery_artist_line,
+                                           13,
+                                           album_mode_art_size - 10,
+                                           )
 
                             if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
