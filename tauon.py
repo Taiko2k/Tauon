@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 
 # Tauon Music Box
 
@@ -14201,6 +14200,12 @@ class ComboPlaylist:
                                 draw_text((right_position, y1 - 20, 1), album, colours.folder_title, 17)
 
                                 draw_text((right_position, y1 - 0, 1), track.date, colours.folder_title, 14)
+                            else:
+                                album = trunc_line(track.album, 17, window_size[0] - 120)
+                                w = draw.text_calc(album, 17) + 30
+                                draw.line(right_position - w + 10, y1, right_position + 20, y1, colours.playlist_panel_background)
+
+                                draw_text((right_position, y1 - 13, 1), album, colours.folder_title, 17)
 
 
 
