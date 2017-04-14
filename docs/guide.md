@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.3.1
+Basic usage guide. Updated for v2.3.5
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
@@ -147,9 +147,6 @@ Intended to be an easy way to reduce file sizes for copying tracks to devices wi
 In case of mojibake (where displayed characters from Japanese language metadata is garbled), the ideal solution is to re-apply tags in a decent tag editor, preferably using a sane encoding (i.e UTF-8)
 
 As a temporary solution Tauon Music Box offers a fix mojibake function under TRACK MENU -> META... -> FIX MOJIBAKE
-
- - 'Fix mojibake auto' should automatically correct the displayed characters in around 90% of cases.  
- - 'Fix mojibake manual' to apply manually based on presented suggestions, can be used for rare cases where there are multiple encodings for different fields within the same tag
 
 Note: These functions will apply changes to all tracks in the folder/album   
 

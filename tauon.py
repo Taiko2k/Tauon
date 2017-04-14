@@ -7005,7 +7005,7 @@ def save_embed_img():
         show_message("A mysterious error occurred")
 
 picture_menu = Menu(120)
-picture_menu2 = Menu(195)
+picture_menu2 = Menu(200)
 
 picture_menu.add('Extract Image', save_embed_img)
 picture_menu2.add('Extract Image', save_embed_img)
@@ -7049,7 +7049,7 @@ def remove_embed_picture(index):
         pctl.revert()
     clear_img_cache()
 
-picture_menu2.add('Delete Embed Image | Folder', remove_embed_picture, pass_ref=True)
+picture_menu2.add('Delete Embedded Image | Folder', remove_embed_picture, pass_ref=True)
 
 def append_here():
     global cargo
