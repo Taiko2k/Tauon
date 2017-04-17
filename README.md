@@ -35,7 +35,7 @@ For __Arch Linux__, download pkgbuild from releases section. Use an AUR manager 
     $ sudo pacman -U tauon-music-box-2.3.5-1-x86_64.pkg.tar
 
 
-For further documentation see [guide](docs/guide.md). For detailed feature status see [features](docs/features.md).
+For further documentation see [guide](docs/guide.md).
 
 
 
