@@ -22,9 +22,7 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
 ### Screenshot :star2:
 
 
-<img src="https://cloud.githubusercontent.com/assets/17271572/21793801/736fa45a-d759-11e6-8e97-be58e2e7bcac.jpg" alt="Standard View" width=910px />
-
-<img src="https://cloud.githubusercontent.com/assets/17271572/17890552/e0c9985e-698a-11e6-8a3c-1b49570e6619.jpg" alt="Standard View" width=690px />
+<img src="https://cloud.githubusercontent.com/assets/17271572/25081441/88abb624-239e-11e7-9ba8-d51bc015b168.jpg" alt="Standard View" width=910px />
 
 
 ### Getting Started :dizzy:
