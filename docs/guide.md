@@ -1,23 +1,17 @@
 Basic usage guide. Updated for v2.3.5
 ===========
 
-Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. Before any sorting applied by the user, tracks are displayed in the order they are imported, typically representing the underlying file structure.
+Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. 
 
-For best experience you will need an organized and structured music library, with each album in its own folder. 
+For best experience you will need an organized and structured music library, ideally with each album in its own folder. 
 
-I recommend the following file structure especially for large music libraries: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE can be any sort of broad categorization you feel is best. 
+I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE can be any sort of broad categorization you feel is best. 
 
 ### Importing Music
 
  - Drag and drop files and folders from your file manager.
 
 Tip: Try importing all your music to a single playlist to get started
-
-### Playlist Scrolling
-
- - The playlist scroll bar is to the left of the playlist, hidden until moused over
- - Click above or below the scroll bar to scroll quickly in that direction
- - Right click anywhere in the scroll field to jump immediately to that location
 
 ### Updating Library
 
@@ -27,7 +21,7 @@ Tip: Try importing all your music to a single playlist to get started
 
  - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
  - With random mode on, 'Back' plays songs from playback history.
- - Right click the 'Play' button to jump to / show the playing track. Function will search playlists for a matching track with the following priority:
+ - Right click the 'Play' button to jump to / show the playing track. This function will search playlists for a matching track with the following priority:
    1) The currently viewed playlist
    2) The playlist that the playing track is playing from
    3) All other playlists starting from left to right
@@ -35,13 +29,18 @@ Tip: Try importing all your music to a single playlist to get started
 
 ### Quick Search
 
-1) Use LEFT and RIGHT keys to switch playlist containing the track you want to search for.
-2) Press the backslash key or Ctrl+F to open search box.
+1) Use LEFT and RIGHT keys to switch to the playlist containing the track you want to search for.
+2) Press the backslash key or Ctrl+F to open the search box.
 3) Type word fragments separated by spaces. 
 
  - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track. 
- - Press Shift+Enter to create a new playlist from any matching results
+ - Press Shift+Enter to create a new playlist of all matching results
 
+### Playlist Scrolling
+
+ - The playlist scroll bar is to the left of the playlist, hidden until moused over
+ - Click above or below the scroll bar to scroll quickly in that direction
+ - Right click anywhere in the scroll field to jump immediately to that location
 
 ### New Playlist from folder path fragment:
 
@@ -223,4 +222,4 @@ Note: Must be clicked for each track and will only be accessible for duration of
 
 -----------------------------
 
-You made it to the end! congrats. I hope that all made sense and you enjoy using Tauon Music Box. But whatever player you choose to use, have fun listening!
+You made it to the end! congrats. I hope that all made sense and you enjoy using Tauon Music Box. Have fun listening!
