@@ -201,7 +201,7 @@ if system == 'windows':  # Windows specific imports
 elif system == 'linux':
     os.environ["SDL_VIDEO_X11_WMCLASS"] = title
 
-#import sdl2.ext
+
 from sdl2 import *
 #from sdl2.sdlttf import *
 from sdl2.sdlimage import *
@@ -244,9 +244,8 @@ if system == 'linux':
     from gi.repository import Pango
     from gi.repository import PangoCairo
 
-
-
 # Setting various timers
+
 cursor_blink_timer = Timer()
 animate_monitor_timer = Timer()
 animate_monitor_timer.set()
@@ -272,6 +271,7 @@ broadcast_update_timer.set()
 
 core_timer = Timer()
 core_timer.set()
+
 # GUI Variables -------------------------------------------------------------------------------------------
 GUI_Mode = 1
 
@@ -310,8 +310,7 @@ fullscreen = 0
 
 volume_store = 50  # Used to save the previous volume when muted
 
-#playlist_row_height = 16  # Set by preferences
-#gui.playlist_text_offset = 0
+
 row_alt = False
 
 to_get = 0  # Used to store temporary import count display
@@ -324,7 +323,7 @@ quick_drag = False
 radiobox = False
 radio_field_text = "http://"
 renamebox = False
-#gui.compact_bar = False
+
 
 # Playlist Panel
 pl_view_offset = 0
@@ -332,13 +331,7 @@ pl_rect = (2, 12, 10, 10)
 
 theme = 0
 themeChange = True
-# panelY = 78
 
-#gui.side_panel_size = 80 + int(window_size[0] * 0.18)
-
-#gui.row_font_size = 13
-
-#playlist_width = int(window_size[0] * 0.65) + 25
 
 scroll_enable = True
 scroll_timer = Timer()
@@ -480,7 +473,7 @@ r_menu_index = 0
 
 # Library and loader Variables--------------------------------------------------------
 master_library = {}
-#star_library = {}
+
 cue_list = []
 
 LC_None = 0
@@ -490,9 +483,9 @@ LC_File = 3
 
 loaderCommand = LC_None
 loaderCommandReady = False
-# paths_to_load = []
+
 master_count = 0
-# items_loaded = []
+
 load_orders = []
 
 volume = 75
@@ -4495,6 +4488,9 @@ if system == "linux":
 
         def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False):
 
+            if len(text) == 0:
+                return 0
+
             key = (max, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
             global ttc
 
@@ -4517,6 +4513,9 @@ if system == "linux":
                 return sd[0].w
 
             w, h = self.wh(text, font)
+
+            if w < 1:
+                return 0
 
             h += 4  # Compensate for characters that drop past the baseline, pango dosent seem to allow for this
 
@@ -7245,8 +7244,8 @@ def convert_playlist(pl):
 
 def get_folder_tracks_local(pl_in):
     selection = []
-    parent = pctl.master_library[default_playlist[pl_in]].parent_folder_name
-    while pl_in < len(default_playlist) and parent == pctl.master_library[default_playlist[pl_in]].parent_folder_name:
+    parent = os.path.normpath(pctl.master_library[default_playlist[pl_in]].parent_folder_path)
+    while pl_in < len(default_playlist) and parent == os.path.normpath(pctl.master_library[default_playlist[pl_in]].parent_folder_path):
         selection.append(pl_in)
         pl_in += 1
     return selection
@@ -8428,6 +8427,9 @@ def delete_folder(index):
 
         show_message("Deleted folder: " + old)
 
+        if album_mode:
+            prep_gal()
+
     except:
         raise
         show_message("Unable to comply. Check permissions.")
@@ -8518,6 +8520,7 @@ def rename_parent(index, template):
             return
 
     show_message("Renamed folder to: " + new)
+
     if pre_state == 1:
         pctl.revert()
 
@@ -8918,12 +8921,12 @@ class Samples:
                 "Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
 
 
-samples = Samples()
-
-if (system == 'windows' and os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or \
-        (system != 'windows' and shutil.which('ffmpeg') is not None):
-    if prefs.enable_web:  # and prefs.expose_web:
-        track_menu.add_to_sub("Generate Websample", 0, samples.create_sample, pass_ref=True)
+# samples = Samples()
+#
+# if (system == 'windows' and os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or \
+#         (system != 'windows' and shutil.which('ffmpeg') is not None):
+#     if prefs.enable_web:  # and prefs.expose_web:
+#         track_menu.add_to_sub("Generate Websample", 0, samples.create_sample, pass_ref=True)
 
 
 def sel_to_car():
@@ -10811,144 +10814,211 @@ def webserv():
         return 0
 
     try:
-        from flask import Flask, redirect, send_file, abort, request
-        from string import Template
+        from flask import Flask, redirect, send_file, abort, request, jsonify, render_template
+
     except:
         print("Failed to load Flask")
-        show_message("Webserver failed, flask not detected")
+        show_message("Web server failed to start. Required dependency 'flask' was not found.")
         return 0
 
     app = Flask(__name__)
 
-    from t_templates import radio_template
-    from t_templates import remote_template
-    from t_templates import sample_template
+    @app.route('/radio/')
+    def radio():
+        print("Radio Accessed")
+        return send_file(install_directory + "/templates/radio.html" )
+
+    @app.route('/radio/radio.js')
+    def radiojs():
+        return send_file(install_directory + "/templates/radio.js")
+
+    @app.route('/radio/theme.css')
+    def radiocss():
+        return send_file(install_directory + "/templates/theme.css")
 
 
     @app.route('/remote/')
-    def remote():
-
+    def remote2():
         if not prefs.allow_remote:
             abort(403)
-            return (0)
-
-        image_line = " "
-        if pctl.playing_state > 0:
-
-            image_line = '<img src="data:image/jpeg;base64,'
-            bimage = album_art_gen.get_base64(pctl.track_queue[pctl.queue_step], (300, 300))
-            if type(bimage) is list:
-                image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
-            else:
-                image_line += bimage.decode("utf-8")
-                image_line += '" alt="No Album Art" style="float:left;" />'
-
-        randomline = "Is Off"
-        if pctl.random_mode:
-            randomline = "is On"
-
-        repeatline = "Is Off"
-        if pctl.repeat_mode:
-            repeatline = "is On"
-
-        ppline = ""
-
-        for i in range(len(pctl.multi_playlist)):
-
-            if i == pctl.playlist_active:
-                ppline += "<strong>" + pctl.multi_playlist[i][0] + "</strong> "
-            else:
-                ppline += pctl.multi_playlist[i][0] + " "
-
-        p_list = "<l>"
-        i = playlist_position
-        while i < playlist_position + 25:
-            if i > len(default_playlist) - 1:
-                break
-
-            line = "\n"
-            line += '<a href="/remote/jump'
-            line += str(default_playlist[i]) + '"'
-            line += ' STYLE="text-decoration: none; color:#8c8c8c ">'
-            if default_playlist[i] == pctl.track_queue[pctl.queue_step]:
-                line += "▶  "
-            else:
-                line += str(i + 1) + ".  "
-
-            line += pctl.master_library[default_playlist[i]].artist + " - " + pctl.master_library[
-                default_playlist[i]].title
-            line += '</a>'
-            line += "<br>"
-            p_list += line
-            i += 1
-        p_list += "</l>"
-
-        seek_line = ""
-        i = 0
-        while i < 100:
-            seek_line += '<a href="/remote/seek'
-            seek_line += str(i)
-            seek_line += '" STYLE="text-decoration: none">-</a>'
-            i += 3
-
-        return remote_template.substitute(play=get_playing_line(),
-                                          image=image_line,
-                                          isran=randomline,
-                                          isrep=repeatline,
-                                          pline=ppline,
-                                          list=p_list,
-                                          seekbar=seek_line
-                                          )
-
-    @app.route('/radio/')
-    def radio():
-
-        image_line = '<img src="data:image/jpeg;base64,'
-        bimage = album_art_gen.get_base64(pctl.broadcast_index, (300, 300))
-        if type(bimage) is list:
-            image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
-        else:
-            image_line += bimage.decode("utf-8")
-            image_line += '" alt="No Album Art" style="float:left;" />'
-
-        return radio_template.substitute(play=get_broadcast_line(), image=image_line)
-
-    @app.route('/sample/<string:key>/')
-    def sample(key):
-        if key in samples.auth:
-            index = samples.auth[key]
-        else:
-            abort(404)
             return 0
+        print("Remote Accessed")
+        return send_file(install_directory + "/templates/remote.html")
 
-        image_line = '<img src="data:image/jpeg;base64,'
-        bimage = album_art_gen.get_base64(index, (250, 250))
-        if type(bimage) is list:
-            image_line = "<br><br>&nbsp&nbsp&nbsp&nbsp&nbspNo Album Art"
+    @app.route('/remote/theme.css')
+    def remotecss():
+        return send_file(install_directory + "/templates/theme.css")
+
+
+
+    @app.route('/remote/code.js')
+    def remotejs():
+        return send_file(install_directory + "/templates/code.js")
+
+    @app.route('/remote/update', methods=['GET'])
+    def update():
+        track = pctl.playing_object()
+        if track is not None:
+            title = track.title
+            artist = track.artist
+            if pctl.playing_length > 2:
+                position = pctl.playing_time / pctl.playing_length
+            else:
+                position = 0
+
+        return jsonify(title=title, artist=artist, position=position, index=track.index, shuffle=pctl.random_mode,
+                       repeat=pctl.repeat_mode)
+
+    def get_folder_tracks_index(index):
+        selection = []
+        parent = os.path.normpath(pctl.master_library[index].parent_folder_path)
+        for item in default_playlist:
+            if parent == os.path.normpath(pctl.master_library[item].parent_folder_path):
+                selection.append(item)
+        return selection
+
+    def get_album_tracks():
+        selection = []
+        current_folder = ""
+        playing = False
+
+        for i in reversed(range(len(default_playlist))):
+            track = pctl.master_library[default_playlist[i]]
+            if i == pctl.playlist_playing:
+                playing = True
+            if i == len(default_playlist) or track.parent_folder_name != current_folder:
+                selection.append((track.index, track.artist, track.album, playing))
+                current_folder = track.parent_folder_name
+                playing = False
+
+        return list(reversed(selection))
+
+    @app.route('/remote/al', methods=['GET'])
+    def albumlist():
+        if not prefs.allow_remote:
+            abort(403)
+            return 0
+        return jsonify(tracks=get_album_tracks())
+
+    @app.route('/remote/tl', methods=['GET'])
+    def tracklist():
+        if not prefs.allow_remote:
+            abort(403)
+            return 0
+        playing = pctl.playing_object()
+        tracks = []
+        if playing is not None:
+            for item in get_folder_tracks_index(playing.index):
+                track = pctl.master_library[item]
+                tracks.append((track.index, track.artist, track.title, track.track_number))
+
+        return jsonify(tracks=tracks)
+
+    @app.route('/remote/getpic', methods=['GET'])
+    def get64Pic():
+        track = pctl.playing_object()
+
+        if track is not None:
+            try:
+                index = track.index
+                base64 = album_art_gen.get_base64(index, (300, 300)).decode()
+
+                return jsonify(index=index, image=base64, title=track.title, artist=track.artist)
+            except:
+                return jsonify(index=index, image="None", title=track.title, artist=track.artist)
         else:
-            image_line += bimage.decode("utf-8")
-            image_line += '" alt="No Album Art" style="float:left;" />'
-        play_line = "<br>&nbsp&nbsp" + pctl.master_library[index].artist + " - " + pctl.master_library[index].title
-        play_line += "<br><br>&nbsp&nbsp" + '<audio controls> <source src="' + '/scache/' + key + '.opus'
-        play_line += '" type="audio/ogg"></audio>'
-        return sample_template.substitute(play=play_line, image=image_line)
+            return None
+
+    @app.route('/radio/update_radio', methods=['GET'])
+    def update_radio():
+
+        if pctl.broadcast_active:
+            track = pctl.master_library[pctl.broadcast_index]
+            if track.length > 2:
+                position = pctl.broadcast_time / track.length
+            else:
+                position = 0
+            return jsonify(position=position, index=track.index)
+        else:
+            return jsonify(position=0, index=0)
+
+    @app.route('/radio/getpic', methods=['GET'])
+    def get64Pic_radio():
+
+        if pctl.broadcast_active:
+            index = pctl.broadcast_index
+            track = pctl.master_library[index]
+
+            try:
+                index = track.index
+                base64 = album_art_gen.get_base64(index, (300, 300)).decode()
+
+                return jsonify(index=index, image=base64, title=track.title, artist=track.artist)
+            except:
+                return jsonify(index=index, image="None", title=track.title, artist=track.artist)
+        else:
+            return jsonify(index=-1, image="None", title="", artist="- - Broadcast Offline -")
+
+    @app.route('/remote/command', methods=['POST'])
+    def get_post_javascript_data():
+        if not prefs.allow_remote:
+            abort(403)
+            return 0
+        command = request.form['cmd']
+        print(command)
+        if command == "Play/Pause":
+            if pctl.playing_state == 0 or pctl.playing_state == 2:
+                pctl.play()
+            else:
+                pctl.pause()
+        elif command == "Stop":
+            pctl.stop()
+        elif command == "Next":
+            pctl.advance()
+        elif command == "Back":
+            pctl.back()
+        elif command == "Shuffle":
+            pctl.random_mode ^= True
+        elif command == "Repeat":
+            pctl.repeat_mode ^= True
+        elif command[:5] == "Seek ":
+            value = command[5:]
+            try:
+                value = float(value)
+                if value < 0:
+                    value = 0
+                if value > 100:
+                    value = 100
+                pctl.new_time = pctl.playing_length / 100 * value
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
+                pctl.playing_time = pctl.new_time
+            except Exception as e:
+                print(e)
+
+        return command
+
 
     @app.route('/favicon.ico')
     def favicon():
         return send_file(install_directory + "/gui/v2.ico", mimetype='image/vnd.microsoft.icon')
 
-    @app.route('/scache/<string:key>')
-    def get_sample(key):
-        # if "/" in key or "\\" in key:
-        #     return 0
-        filename = samples.cache_directroy + key
-        print(key)
-        print(filename)
-        if os.path.isfile(filename):
-            return send_file(filename, mimetype='audio/ogg')
-        else:
-            abort(404)
+    @app.route('/remote/toggle-broadcast')
+    def remote_toggle_broadcast():
+        if not prefs.allow_remote:
+            abort(403)
             return 0
+        toggle_broadcast()
+        pctl.join_broadcast = False
+        return "Done"
+
+    @app.route('/remote/sync-broadcast')
+    def remote_toggle_sync():
+        if not prefs.allow_remote:
+            abort(403)
+            return 0
+        pctl.join_broadcast = True
+        return "Done"
 
     @app.route('/remote/pl-up')
     def pl_up():
@@ -10974,68 +11044,6 @@ def webserv():
             playlist_position = len(default_playlist) - 25
         return redirect(request.referrer)
 
-    @app.route('/load', methods=['POST', 'GET', 'DELETE'])
-    def ex_load():
-        global arg_queue
-        print(request.method)
-        print(request.get_data())
-        print("Load ext")
-        return "done"
-
-    @app.route('/remote/back')
-    def back():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        global pctl
-        pctl.back()
-        return redirect(request.referrer)
-
-    @app.route('/remote/jump<int:indexno>')
-    def jump(indexno):
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.jump(indexno)
-        return redirect(request.referrer)
-
-    @app.route('/remote/forward')
-    def fw():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.advance()
-        return redirect(request.referrer)
-
-    @app.route('/remote/pause')
-    def pu():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.pause()
-        return redirect(request.referrer)
-
-    @app.route('/remote/play')
-    def pl():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.play()
-
-        return redirect(request.referrer)
-
-    @app.route('/remote/stop')
-    def st():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.stop()
-        return redirect(request.referrer)
 
     @app.route('/remote/upplaylist')
     def next_playlist():
@@ -11081,39 +11089,6 @@ def webserv():
 
         return redirect(request.referrer)
 
-    @app.route('/remote/seek<int:per>')
-    def seek(per):
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-
-        global pctl
-
-        if per > 100:
-            per = 100
-
-        pctl.new_time = pctl.playing_length / 100 * per
-        pctl.playerCommand = 'seek'
-        pctl.playerCommandReady = True
-        pctl.playing_time = pctl.new_time
-
-        return redirect(request.referrer)
-
-    @app.route('/remote/random')
-    def ran():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        pctl.random_mode ^= True
-        return redirect(request.referrer)
-
-    @app.route('/remote/repeat')
-    def rep():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        pctl.repeat_mode ^= True
-        return redirect(request.referrer)
 
     if prefs.expose_web is True:
         app.run(host='0.0.0.0 ', port=server_port)
@@ -13666,10 +13641,10 @@ class StandardPlaylist:
 
             # Highlight blue if track is being broadcast
             if default_playlist[
-                p_track] == pctl.broadcast_index and pctl.broadcast_active and not pctl.join_broadcast:
+                p_track] == pctl.broadcast_index and pctl.broadcast_active:
                 draw.rect((0, gui.playlist_top + gui.playlist_row_height * w),
-                          (gui.playlist_width + 30, gui.playlist_row_height - 1), [10, 20, 180, 70], True)
-                gui.win_fore = alpha_blend([10, 20, 180, 70], gui.win_fore)
+                          (gui.playlist_width + 30, gui.playlist_row_height - 1), [40, 40, 190, 80], True)
+                gui.win_fore = alpha_blend([40, 40, 190, 80], gui.win_fore)
 
             # Add to queue on middle click
             if middle_click and line_hit:
@@ -14209,28 +14184,6 @@ class ComboPlaylist:
 
 
 
-                            # album = trunc_line(track.album, 17, window_size[0] - 120)
-                            # if len(album) > 0:
-                            #     w = draw.text_calc(album, 17) + 30
-                            #
-                            #     x3 = x2 - 95 - 5
-                            #     # if len(track.date) < 1 or not prefs.append_date:
-                            #     #     x3 += 50
-                            #
-                            #
-                            #     draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
-                            #     draw_text((x3 + 5 - w, y1 - 10), album, colours.folder_title, 17)
-                            #
-                            #     # # Draw date in header
-                            #     # if prefs.append_date and len(track.date) > 1 and len(track.date) < 7:
-                            #     #     album = trunc_line(track.date, 16, window_size[0] - 120)
-                            #     #     w = draw.text_calc(album, 16) + 10
-                            #     #
-                            #     #     x3 = x2 - 50 - 5
-                            #     #     draw.line(x3 - w, y1, x3, y1, colours.playlist_panel_background)
-                            #     #
-                            #     #     draw_text((x3 + 5 - w, y1 - 10), album, colours.folder_title, 16)
-
                         # Draw album art
                         a_rect = (x, y, self.pl_album_art_size, self.pl_album_art_size)
                         draw.rect_r(a_rect, [40, 40, 40, 50], True)
@@ -14425,6 +14378,9 @@ if system != 'windows':
             return SDL_HITTEST_RESIZE_TOP
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+            print("hit")
+            if tab_menu.active:
+                return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
         elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
@@ -18275,6 +18231,10 @@ while running:
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
             pctl.broadcast_index].title
 
+    elif pctl.join_broadcast and pctl.broadcast_active:
+        pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
+        pctl.broadcast_time = pctl.playing_time
+
     if pctl.broadcast_active and pctl.broadcast_time != pctl.broadcast_last_time:
         pctl.broadcast_last_time = pctl.broadcast_time
         gui.update += 1
@@ -18479,8 +18439,8 @@ pickle.dump(save, open(user_directory + "/state.p", "wb"))
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
 
-if os.path.exists(samples.cache_directroy):
-    shutil.rmtree(samples.cache_directroy)
+# if os.path.exists(samples.cache_directroy):
+#     shutil.rmtree(samples.cache_directroy)
 
 # r_window.destroy()
 if system == 'windows':

@@ -1,0 +1,102 @@
+
+body {
+  background-color: #111;
+}
+
+p {
+  color: #CCC;
+  font-family: sans-serif;
+}
+
+#img-holder {
+   height: 300px;
+   width: 300px;
+   background-color: #222;
+   float: left;
+   clear: left;
+}
+
+
+#control-holder {
+  float: left;
+  clear: left;
+}
+
+#seekfront {
+
+  height: 20px;
+  width: 100px;
+  background-color: rgb(50, 50, 150);
+
+}
+
+#seekback {
+
+  height: 20px;
+  width: 700px;
+  background-color: rgb(40, 40, 40);
+
+  clear: left;
+
+}
+
+#title-text {
+  clear: left;
+  padding-top: 10px;
+  font-family: sans-serif;
+  color: rgb(230, 230, 230);
+  padding-bottom: 5px;
+}
+
+#tracklist {
+  padding-top: 50px;
+  clear: left;
+  font-family: sans-serif;
+  width: 600px;
+}
+
+#albumlist {
+  padding-top: 50px;
+  position: relative;
+  font-family: sans-serif;
+  width: 600px;
+  height: 500px;
+  left: 600px;
+  overflow: scroll;
+}
+
+.buttons {
+
+  float: left;
+  height: 50px;
+  clear: left;
+}
+
+.button-active {
+  background-color: rgb(10, 10, 10);
+}
+
+.buttons ul{
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  top: 15px;
+
+
+
+}
+
+.buttons li{
+  display: inline;
+  font-family: sans-serif;
+  color: rgb(190, 190, 190);
+  background-color: rgb(10, 10, 10);
+  padding: 8px 35px;
+  cursor: pointer;
+}
+
+.buttons li:hover{
+  background-color: rgb(50, 50, 50);
+
+}
