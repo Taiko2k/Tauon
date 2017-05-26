@@ -1,6 +1,16 @@
 
 Changelog-------------------------------------
 
+v2.3.6
+
+ - Added seek bars and auto updating to web interface
+ - Lost some web interface features
+ - Removed sample re-encode function
+ - Fixed minor bug with track group selection
+ - Fixed gallery view not updating when deleting folder
+ - Fixed rare crash with track info (linux)
+ - Fixed tab menu not registering when clicked over drag area (linux)
+
 v2.3.5
 
  - Added image metadata via shift key
