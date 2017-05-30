@@ -29,12 +29,9 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
-For __Arch Linux__, download pkgbuild from releases section. Navigate terminal to download location and run:  
+For __Arch Linux__, install from the AUR:  
 
-    $ sudo pacman -S noto-fonts noto-fonts-emoji sdl2_image python-pillow python-pylast python-flask python-xlib python-gobject xclip xdg-utils python-beautifulsoup4 python-requests python-cairo
-    $ yaourt -S python-stagger python-hsaudiotag3k
-    $ makepkg
-    $ sudo pacman -U tauon-music-box-2.3.6-x86_64.pkg.tar
+    $ yaourt -S tauon-music-box
 
 
 For further documentation see [guide](docs/guide.md).
