@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.3.5"
+t_version = "v2.4.0"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -107,7 +107,7 @@ transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
 config_directory = user_directory
-
+cache_direc = os.path.join(user_directory, 'cache')
 b_active_directory = install_directory.encode('utf-8')
 
 # -------------------------------
@@ -575,12 +575,14 @@ class GuiVar:
         update_layout = True
 
     def __init__(self):
+
         self.window_id = 0
         self.update = 2  # UPDATE
         self.turbo = False
         self.turbo_next = 0
         self.pl_update = 1
         self.lowered = False
+        self.request_raise = False
         self.maximized = False
         self.message_box = False
         self.message_text = ""
@@ -1116,7 +1118,6 @@ try:
 
 except:
     print('Error loading save file')
-    cache_direc = os.path.join(user_directory, 'cache')
     if os.path.exists(cache_direc):
         print("clearing old cache")
         shutil.rmtree(cache_direc)
@@ -1636,6 +1637,15 @@ class PlayerCtl:
         self.bass_devices = []
         self.set_device = 0
 
+        self.mpris = None
+
+    def notify_update(self):
+
+        if self.mpris is not None:
+            self.mpris.update()
+
+
+
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
 
@@ -1768,6 +1778,7 @@ class PlayerCtl:
 
         self.playerCommand = 'volume'
         self.playerCommandReady = True
+        self.notify_update()
 
     def revert(self):
 
@@ -1837,6 +1848,7 @@ class PlayerCtl:
 
         if update_title:
             update_title_do()
+        self.notify_update()
 
     def jump(self, index, pl_position=None):
 
@@ -1854,6 +1866,7 @@ class PlayerCtl:
 
         if pl_position is not None:
             self.playlist_playing = pl_position
+
 
     def back(self):
 
@@ -1894,6 +1907,7 @@ class PlayerCtl:
             self.show_current()
 
         self.render_playlist()
+        self.notify_update()
 
     def stop(self, block=False):
         self.playerCommand = 'stop'
@@ -1920,6 +1934,7 @@ class PlayerCtl:
                 if loop > 110:
                     break
 
+        self.notify_update()
         return previous_state
 
     def pause(self):
@@ -1934,6 +1949,61 @@ class PlayerCtl:
         self.playerCommandReady = True
 
         self.render_playlist()
+        self.notify_update()
+
+    def pause_only(self):
+        if self.playing_state == 1:
+            self.playerCommand = 'pause'
+            self.playing_state = 2
+
+            self.playerCommandReady = True
+            self.render_playlist()
+            self.notify_update()
+
+    def play_pause(self):
+        if self.playing_state > 0:
+            self.pause()
+        else:
+            self.play()
+
+    def seek_decimal(self, decimal):
+
+        if self.playing_state == 1 or self.playing_state == 2:
+            if decimal > 1:
+                decimal = 1
+            elif decimal < 0:
+                decimal = 0
+            self.new_time = pctl.playing_length * decimal
+            # print('seek to:' + str(pctl.new_time))
+            self.playerCommand = 'seek'
+            self.playerCommandReady = True
+            self.playing_time = self.new_time
+
+            if system == 'windows' and taskbar_progress:
+                windows_progress.update(True)
+
+            if self.mpris is not None:
+                self.mpris.seek_do(self.playing_time)
+
+    def seek_time(self, new):
+
+        if new > self.playing_length + 5:
+            print("INVALID SEEK VALUE")
+            pass
+
+        if new < 0:
+            new = 0
+
+        self.new_time = new
+        self.playing_time = new
+
+        self.playerCommand = 'seek'
+        self.playerCommandReady = True
+
+        print("seek: " + str(new))
+
+        if self.mpris is not None:
+            self.mpris.seek_do(self.playing_time)
 
     def play(self):
 
@@ -1960,6 +2030,7 @@ class PlayerCtl:
                 self.play_target()
 
         self.render_playlist()
+        self.notify_update()
 
     def advance(self, rr=False, quiet=False, gapless=False):
 
@@ -2049,6 +2120,7 @@ class PlayerCtl:
         #     goto_album(self.playlist_playing)
 
         self.render_playlist()
+        self.notify_update()
 
 
 pctl = PlayerCtl()
@@ -2470,7 +2542,6 @@ def player3():
 
             if pctl.playerCommandReady:
                 if pctl.playerCommand == 'open' and pctl.target_open != '':
-                    print("open")
 
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2:
@@ -3798,10 +3869,201 @@ elif system != 'mac':
             bus_object.connect_to_signal('MediaPlayerKeyPressed',
                                          on_mediakey)
 
+            # ----------
+
+            bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+            bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon')
+
+            class Example(dbus.service.Object):
+
+                def update(self):
+
+                    changed = {}
+
+                    if pctl.playing_state == 1:
+                        if self.player_properties['PlaybackStatus'] != 'Playing':
+                            self.player_properties['PlaybackStatus'] = 'Playing'
+                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+                    elif pctl.playing_state == 0:
+                        if self.player_properties['PlaybackStatus'] != 'Stopped':
+                            self.player_properties['PlaybackStatus'] = 'Stopped'
+                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+                    elif pctl.playing_state == 2:
+                        if self.player_properties['PlaybackStatus'] != 'Paused':
+                            self.player_properties['PlaybackStatus'] = 'Paused'
+                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+
+                    if pctl.player_volume / 100 != self.player_properties['Volume']:
+                        self.player_properties['Volume'] = pctl.player_volume / 100
+                        changed['Volume'] = self.player_properties['Volume']
+
+                    if pctl.playing_object().index != self.playing_index:
+                        track = pctl.playing_object()
+                        self.playing_index = track.index
+
+                        d = {
+                            'mpris:trackid': "/org/mpris/MediaPlayer2/TrackList/" + str(pctl.playlist_playing),
+                            'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
+                            'xesam:album': track.album,
+                            'xesam:albumArtist': dbus.Array([track.album_artist]),
+                            'xesam:artist': dbus.Array([track.artist]),
+                            'xesam:title': track.title,
+
+
+                        }
+
+                        #prefs.cache_gallery = True
+                        i_path = thumb_tracks.path(track)
+                        if i_path is not None:
+                            d['mpris:artUrl'] = 'file://' + i_path
+
+                        self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
+                        changed['Metadata'] = self.player_properties['Metadata']
+
+                    if len(changed) > 0:
+                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+
+                def update_progress(self):
+                    self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
+
+                def __init__(self, object_path):
+                    dbus.service.Object.__init__(self, bus, object_path)
+
+                    self.playing_index = -1
+
+                    self.root_properties = {
+                        'CanQuit': True,
+                        #'Fullscreen'
+                        #'CanSetFullscreen'
+                        'CanRaise': True,
+                        'HasTrackList': False,
+                        'Identity': 'Tauon Music Box',
+                        'DesktopEntry': 'Tauon Music Box',
+                        #'SupportedUriSchemes': ['file']
+                        'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
+                        'SupportedMileTypes': dbus.Array([
+                             dbus.String("audio/mpeg"),
+                             dbus.String("audio/flac"),
+                             dbus.String("audio/ogg")
+                             ])
+                    }
+
+                    self.player_properties = {
+
+                        'PlaybackStatus': 'Stopped',
+                        #'LoopStatus'
+                        'Rate': 1,
+                        #'Shuffle':
+                        'Volume': pctl.player_volume / 100,
+                        'Position': 0,
+                        'MinimumRate': 1,
+                        'MaximumRate': 1,
+                        'CanGoNext': True,
+                        'CanGoPrevious': True,
+                        'CanPlay': True,
+                        'CanPause': True,
+                        'CanSeek': True,
+                        'CanControl': True
+
+                    }
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
+                def Raise(self):
+                    gui.request_raise = True
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
+                def Quit(self):
+                    exit_func()
+
+                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                in_signature='ss', out_signature='v')
+                def Get(self, interface_name, property_name):
+                    if interface_name == 'org.mpris.MediaPlayer2':
+                        #return self.GetAll(interface_name)[property_name]
+                        return self.root_properties[property_name]
+                    elif interface_name == 'org.mpris.MediaPlayer2.Player':
+                        return self.player_properties[property_name]
+
+                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                in_signature='s', out_signature='a{sv}')
+                def GetAll(self, interface_name):
+                    if interface_name == 'org.mpris.MediaPlayer2':
+                        return self.root_properties
+                    elif interface_name == 'org.mpris.MediaPlayer2.Player':
+                        return self.player_properties
+
+                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                in_signature='ssv', out_signature='')
+                def Set(self, interface_name, property_name, value):
+                    if interface_name == 'org.mpris.MediaPlayer2.Player':
+                        if property_name == "Volume":
+                            pctl.player_volume = min(max(int(value * 100), 0), 100)
+                            pctl.set_volume()
+                    if interface_name == 'org.mpris.MediaPlayer2':
+                        pass
+
+                @dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE,
+                                signature='sa{sv}as')
+                def PropertiesChanged(self, interface_name, change, inval):
+                    pass
+
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Next(self):
+                    pctl.advance()
+                    pass
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Previous(self):
+                    pctl.back()
+                    pass
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Pause(self):
+                    pctl.pause_only()
+                    pass
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def PlayPause(self):
+                    pctl.play_pause()
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Stop(self):
+                    pctl.stop()
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Play(self):
+                    pctl.play()
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Seek(self, offset):
+                    pctl.seek_time(pctl.playing_time + (offset / 1000000))
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def SetPosition(self, id, position):
+                    pctl.seek_time(position / 1000000)
+                    self.update_progress()
+                    self.Seeked(pctl.playing_time)
+
+
+                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def OpenUri(self, uri):
+                    pass
+
+                @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
+                def Seeked(self, position):
+                    pass
+
+                def seek_do(self, seconds):
+                    self.Seeked(dbus.Int64(int(seconds * 1000000)))
+
+            pctl.mpris = Example("/org/mpris/MediaPlayer2")
+
+
+
             # and we start the main loop.
             mainloop = GObject.MainLoop()
             mainloop.run()
-
 
         gnomeThread = threading.Thread(target=gnome)
         gnomeThread.daemon = True
@@ -5425,6 +5687,10 @@ rename_folder.text = prefs.rename_folder_template
 temp_dest = SDL_Rect(0, 0)
 
 
+
+
+
+
 class GallClass:
     def __init__(self, size=250, save_out=True):
         self.gall = {}
@@ -5588,6 +5854,59 @@ class GallClass:
 gall_ren = GallClass(album_mode_art_size)
 
 pl_thumbnail = GallClass(save_out=False)
+
+
+class ThumbTracks:
+    def __init__(self):
+        pass
+
+    def path(self, track):
+        image_name = track.album
+        if track.album == "":
+            image_name = "noname"
+
+        source = gall_ren.get_file_source(track.index)
+        if source is False:
+            print("NO ART")
+            return None
+
+        image_name += "-" + str(source[2])
+
+        t_path = user_directory + "/cache/" + image_name + '.jpg'
+        if os.path.isfile(t_path):
+            return t_path
+
+        #print(source[0])
+
+        if source[0] is True:
+        # print('tag')
+            source_image = io.BytesIO(album_art_gen.get_embed(track.index))
+
+        else:
+            source_image = open(source[1], 'rb')
+
+        if not os.path.isdir(cache_direc):
+            os.makedirs(cache_direc)
+
+        g = io.BytesIO()
+        g.seek(0)
+        # print('pro stage 1')
+        im = Image.open(source_image)
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+        im.thumbnail((250, 250), Image.ANTIALIAS)
+
+        im.save(t_path, 'JPEG')
+        source_image.close()
+
+        return t_path
+
+
+
+
+
+thumb_tracks = ThumbTracks()
+
 
 
 def img_slide_update_combo(value):
@@ -10998,6 +11317,14 @@ def webserv():
 
         return command
 
+    @app.route('/remote/jump<int:indexno>', methods=['GET'])
+    def jump(indexno):
+        if not prefs.allow_remote:
+            abort(403)
+            return 0
+        pctl.jump(indexno)
+        return "OK"
+
 
     @app.route('/favicon.ico')
     def favicon():
@@ -12846,13 +13173,9 @@ class BottomBarType1:
         if coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size):
             clicked = True
             if mouse_wheel != 0:
-                pctl.new_time = pctl.playing_time + (mouse_wheel * 3)
-                pctl.playing_time += mouse_wheel * 3
-                if pctl.new_time < 0:
-                    pctl.new_time = 0
-                    pctl.playing_time = 0
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
+
+                pctl.seek_time(pctl.playing_time + (mouse_wheel * 3))
+
 
                 # pctl.playing_time = pctl.new_time
 
@@ -12861,8 +13184,6 @@ class BottomBarType1:
             if mouse_position[0] == 0:
                 self.seek_down = False
                 self.seek_hit = True
-
-
 
 
         if (mouse_up and coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size)
@@ -12879,17 +13200,11 @@ class BottomBarType1:
             if bargetX < self.seek_bar_position[0]:
                 bargetX = self.seek_bar_position[0]
             bargetX -= self.seek_bar_position[0]
-            seek = bargetX / self.seek_bar_size[0] * 100
-            # print(seek)
-            if pctl.playing_state == 1 or (pctl.playing_state == 2):
-                pctl.new_time = pctl.playing_length / 100 * seek
-                # print('seek to:' + str(pctl.new_time))
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
-                pctl.playing_time = pctl.new_time
+            seek = bargetX / self.seek_bar_size[0]
 
-                if system == 'windows' and taskbar_progress:
-                    windows_progress.update(True)
+            pctl.seek_decimal(seek)
+            # print(seek)
+
             self.seek_time = pctl.playing_time
 
         if pctl.playing_length > 0:
@@ -14654,7 +14969,7 @@ while running:
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
-        # print(event.type)
+        #print(event.type)
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
@@ -14741,7 +15056,15 @@ while running:
             mouse_position[1] = event.motion.y
             mouse_moved = True
         elif event.type == SDL_MOUSEBUTTONDOWN:
+
+            # mouse_position[0] = event.motion.x
+            # mouse_position[1] = event.motion.y
+            # print(mouse_position)
+            #
+            # mouse_moved = True
+
             k_input = True
+            focused = True
             power += 5
             gui.update += 1
 
@@ -14946,7 +15269,6 @@ while running:
                     # print("restore")
 
             elif event.window.event == SDL_WINDOWEVENT_SHOWN:
-
                 focused = True
                 gui.pl_update = 1
                 gui.update += 1
@@ -14960,6 +15282,12 @@ while running:
     if mouse_moved:
         if fields.test():
             gui.update += 1
+
+    if gui.request_raise:
+        gui.request_raise = False
+        if gui.lowered:
+            SDL_RestoreWindow(t_window)
+            gui.lowered = False
 
     power += 1
 
@@ -14996,6 +15324,7 @@ while running:
 
     if not running:
         break
+
 
     if pctl.playing_state > 0 or pctl.broadcast_active:
         power += 400
@@ -18293,6 +18622,9 @@ while running:
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
         windows_progress.update()
+
+    if pctl.playing_state == 1 and pctl.mpris is not None:
+        pctl.mpris.update_progress()
 
     # GUI time ticker update
     if (pctl.playing_state == 1 or pctl.playing_state == 3) and gui.lowered is False:
