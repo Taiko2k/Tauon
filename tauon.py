@@ -3913,10 +3913,12 @@ elif system != 'mac':
                         }
 
                         #prefs.cache_gallery = True
-                        i_path = thumb_tracks.path(track)
-                        if i_path is not None:
-                            d['mpris:artUrl'] = 'file://' + i_path
-
+                        try:
+                            i_path = thumb_tracks.path(track)
+                            if i_path is not None:
+                                d['mpris:artUrl'] = 'file://' + i_path
+                        except:
+                            print("Thumbnail error")
                         self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                         changed['Metadata'] = self.player_properties['Metadata']
 
@@ -4354,7 +4356,7 @@ if gui.maximized:
     flags |= SDL_WINDOW_MAXIMIZED
 
 if draw_border:
-    flags = SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
+    flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
 
 t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -4397,29 +4399,47 @@ SDL_SetWindowIcon(t_window, icon)
 
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
-gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
+# SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
+# SDL_RenderClear(renderer)
+
+gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 SDL_SetRenderTarget(renderer, gui.spec2_tex)
 SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
 SDL_RenderClear(renderer)
+
 SDL_SetRenderTarget(renderer, None)
 
 gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+
+# SDL_SetRenderTarget(renderer, gui.ttext)
+# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+# SDL_RenderClear(renderer)
+
+SDL_SetRenderTarget(renderer, gui.main_texture)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+SDL_RenderClear(renderer)
+
+
+#SDL_RenderCopy(renderer, gui.main_texture, None, None)
+# SDL_SetRenderTarget(renderer, None)
 
 #SDL_SetRenderTarget(renderer, gui.ttext)
 # print(SDL_GetError())
 
 
 gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
-SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
+#SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
 gui.pl_update = 2
 
-SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-                       colours.top_panel_background[2], colours.top_panel_background[3])
-SDL_RenderClear(renderer)
+# SDL_SetRenderTarget(renderer, None)
+# SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
+#                        colours.top_panel_background[2], colours.top_panel_background[3])
+# SDL_RenderClear(renderer)
+# SDL_RenderPresent(renderer)
 
 # SDL_SetWindowOpacity(t_window, 0.98)
 
@@ -4430,6 +4450,12 @@ SDL_RenderClear(renderer)
 # mode.mode = ShapeModeColorKey
 # #
 # mode.parameters.colorKey = SDL_Color(0, 0, 0)
+
+
+# SDL_RenderClear(renderer)
+# SDL_SetRenderTarget(renderer, None)
+# SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+# SDL_RenderPresent(renderer)
 
 if default_player == 'BASS':
 
@@ -14741,8 +14767,7 @@ for item in r_arg_queue:
     if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tauon.exe' not in item:
         arg_queue.append(item)
 
-SDL_ShowWindow(t_window)
-SDL_RenderPresent(renderer)
+
 
 sv = SDL_version()
 SDL_GetVersion(sv)
@@ -14889,12 +14914,20 @@ def update_layout_do():
     SDL_SetRenderTarget(renderer, gui.main_texture)
     SDL_RenderClear(renderer)
 
+# I forgot what this is supposed to do
 
-SDL_SetRenderTarget(renderer, gui.spec2_tex)
+# SDL_SetRenderTarget(renderer, gui.spec2_tex)
+# SDL_RenderClear(renderer)
+# draw.rect_r((0, 0, 1000, 1000), [3, 3, 3, 255], True)
+# SDL_SetRenderTarget(renderer, None)
+
 SDL_RenderClear(renderer)
-draw.rect_r((0, 0, 1000, 1000), [3, 3, 3, 255], True)
-SDL_SetRenderTarget(renderer, None)
+SDL_RenderPresent(renderer)
 
+SDL_ShowWindow(t_window)
+#SDL_RenderPresent(renderer)
+
+#time.sleep(3)
 
 while running:
     # bm.get('main')
@@ -16222,13 +16255,14 @@ while running:
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                 albumtitle = colours.grey(150)
 
-                            if (input.mouse_click or right_click) and not focused and coll_point(mouse_position, (
+                            if (input.mouse_click or right_click) and coll_point(mouse_position, (
                                     x, y, album_mode_art_size, album_mode_art_size + 40)) and gui.panelY < mouse_position[
                                 1] < \
                                             window_size[1] - gui.panelBY and \
                                             mouse_position[1] < b_info_y:
 
                                 if input.mouse_click:
+
 
                                     if info[0] == 1 and pctl.playing_state == 2:
                                         pctl.play()
@@ -16314,38 +16348,38 @@ while running:
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
-                if b_info_bar and window_size[1] > 700:
-                    x = gui.playlist_width + 31
-                    w = window_size[0] - x
-                    b_info_y = int(window_size[1] * 0.7)
-                    b_info_y = window_size[1] - 250
-                    y = b_info_y
-                    h = window_size[1] - y - 51
-
-                    if h < 5:
-                        h = 5
-
-                    draw.rect_r((x, y, w, h), colours.top_panel_background, True)
-                    draw.rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                    draw.line(x, y, x + w, y, colours.grey(50))
-
-                    box = h - 4  # - 10
-
-                    album_art_gen.display(pctl.track_queue[pctl.queue_step],
-                                          (window_size[0] - 0 - box, y + 2), (box, box))
-
-                    draw_text((x + 11, y + 6), pctl.master_library[pctl.track_queue[pctl.queue_step]].artist,
-                              colours.grey(200), 16)
-
-                    line = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                    if pctl.master_library[pctl.track_queue[pctl.queue_step]].date != "":
-                        line += " (" + pctl.master_library[pctl.track_queue[pctl.queue_step]].date + ")"
-
-                    draw_text((x + 11, y + 29), line, colours.grey(200), 14)
-
-
-                else:
-                    b_info_y = window_size[1]
+                # if b_info_bar and window_size[1] > 700:
+                #     x = gui.playlist_width + 31
+                #     w = window_size[0] - x
+                #     b_info_y = int(window_size[1] * 0.7)
+                #     b_info_y = window_size[1] - 250
+                #     y = b_info_y
+                #     h = window_size[1] - y - 51
+                #
+                #     if h < 5:
+                #         h = 5
+                #
+                #     draw.rect_r((x, y, w, h), colours.top_panel_background, True)
+                #     draw.rect_r((x, y, w, h), [255, 255, 255, 3], True)
+                #     draw.line(x, y, x + w, y, colours.grey(50))
+                #
+                #     box = h - 4  # - 10
+                #
+                #     album_art_gen.display(pctl.track_queue[pctl.queue_step],
+                #                           (window_size[0] - 0 - box, y + 2), (box, box))
+                #
+                #     draw_text((x + 11, y + 6), pctl.master_library[pctl.track_queue[pctl.queue_step]].artist,
+                #               colours.grey(200), 16)
+                #
+                #     line = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
+                #     if pctl.master_library[pctl.track_queue[pctl.queue_step]].date != "":
+                #         line += " (" + pctl.master_library[pctl.track_queue[pctl.queue_step]].date + ")"
+                #
+                #     draw_text((x + 11, y + 29), line, colours.grey(200), 14)
+                #
+                #
+                # else:
+                #     b_info_y = window_size[1]
 
             # End of gallery view ^
             # --------------------------------------------------------------------------
