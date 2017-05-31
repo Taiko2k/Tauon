@@ -564,6 +564,7 @@ class Prefs:
 
         self.auto_lfm = False
         self.scrobble_mark = False
+        self.enable_mpris = True
 
 
 prefs = Prefs()
@@ -1353,6 +1354,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'rename-folder-default=' in p:
                 result = p.split('=')[1]
                 prefs.rename_folder_templatet = result
+            if 'disable-mpris' in p:
+                prefs.enable_mpris = False
 
 else:
     print("Warning: Missing config file")
@@ -3870,196 +3873,197 @@ elif system != 'mac':
                                          on_mediakey)
 
             # ----------
+            if prefs.enable_mpris:
 
-            bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-            bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon')
+                bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+                bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon')
 
-            class Example(dbus.service.Object):
+                class Example(dbus.service.Object):
 
-                def update(self):
+                    def update(self):
 
-                    changed = {}
+                        changed = {}
 
-                    if pctl.playing_state == 1:
-                        if self.player_properties['PlaybackStatus'] != 'Playing':
-                            self.player_properties['PlaybackStatus'] = 'Playing'
-                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
-                    elif pctl.playing_state == 0:
-                        if self.player_properties['PlaybackStatus'] != 'Stopped':
-                            self.player_properties['PlaybackStatus'] = 'Stopped'
-                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
-                    elif pctl.playing_state == 2:
-                        if self.player_properties['PlaybackStatus'] != 'Paused':
-                            self.player_properties['PlaybackStatus'] = 'Paused'
-                            changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+                        if pctl.playing_state == 1:
+                            if self.player_properties['PlaybackStatus'] != 'Playing':
+                                self.player_properties['PlaybackStatus'] = 'Playing'
+                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+                        elif pctl.playing_state == 0:
+                            if self.player_properties['PlaybackStatus'] != 'Stopped':
+                                self.player_properties['PlaybackStatus'] = 'Stopped'
+                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
+                        elif pctl.playing_state == 2:
+                            if self.player_properties['PlaybackStatus'] != 'Paused':
+                                self.player_properties['PlaybackStatus'] = 'Paused'
+                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
 
-                    if pctl.player_volume / 100 != self.player_properties['Volume']:
-                        self.player_properties['Volume'] = pctl.player_volume / 100
-                        changed['Volume'] = self.player_properties['Volume']
+                        if pctl.player_volume / 100 != self.player_properties['Volume']:
+                            self.player_properties['Volume'] = pctl.player_volume / 100
+                            changed['Volume'] = self.player_properties['Volume']
 
-                    if pctl.playing_object().index != self.playing_index:
-                        track = pctl.playing_object()
-                        self.playing_index = track.index
+                        if pctl.playing_object().index != self.playing_index:
+                            track = pctl.playing_object()
+                            self.playing_index = track.index
 
-                        d = {
-                            'mpris:trackid': "/org/mpris/MediaPlayer2/TrackList/" + str(pctl.playlist_playing),
-                            'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
-                            'xesam:album': track.album,
-                            'xesam:albumArtist': dbus.Array([track.album_artist]),
-                            'xesam:artist': dbus.Array([track.artist]),
-                            'xesam:title': track.title,
+                            d = {
+                                'mpris:trackid': "/org/mpris/MediaPlayer2/TrackList/" + str(pctl.playlist_playing),
+                                'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
+                                'xesam:album': track.album,
+                                'xesam:albumArtist': dbus.Array([track.album_artist]),
+                                'xesam:artist': dbus.Array([track.artist]),
+                                'xesam:title': track.title,
 
+
+                            }
+
+                            #prefs.cache_gallery = True
+                            try:
+                                i_path = thumb_tracks.path(track)
+                                if i_path is not None:
+                                    d['mpris:artUrl'] = 'file://' + i_path
+                            except:
+                                print("Thumbnail error")
+                            self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
+                            changed['Metadata'] = self.player_properties['Metadata']
+
+                        if len(changed) > 0:
+                            self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+
+                    def update_progress(self):
+                        self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
+
+                    def __init__(self, object_path):
+                        dbus.service.Object.__init__(self, bus, object_path)
+
+                        self.playing_index = -1
+
+                        self.root_properties = {
+                            'CanQuit': True,
+                            #'Fullscreen'
+                            #'CanSetFullscreen'
+                            'CanRaise': True,
+                            'HasTrackList': False,
+                            'Identity': 'Tauon Music Box',
+                            'DesktopEntry': 'Tauon Music Box',
+                            #'SupportedUriSchemes': ['file']
+                            'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
+                            'SupportedMileTypes': dbus.Array([
+                                 dbus.String("audio/mpeg"),
+                                 dbus.String("audio/flac"),
+                                 dbus.String("audio/ogg")
+                                 ])
+                        }
+
+                        self.player_properties = {
+
+                            'PlaybackStatus': 'Stopped',
+                            #'LoopStatus'
+                            'Rate': 1,
+                            #'Shuffle':
+                            'Volume': pctl.player_volume / 100,
+                            'Position': 0,
+                            'MinimumRate': 1,
+                            'MaximumRate': 1,
+                            'CanGoNext': True,
+                            'CanGoPrevious': True,
+                            'CanPlay': True,
+                            'CanPause': True,
+                            'CanSeek': True,
+                            'CanControl': True
 
                         }
 
-                        #prefs.cache_gallery = True
-                        try:
-                            i_path = thumb_tracks.path(track)
-                            if i_path is not None:
-                                d['mpris:artUrl'] = 'file://' + i_path
-                        except:
-                            print("Thumbnail error")
-                        self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
-                        changed['Metadata'] = self.player_properties['Metadata']
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
+                    def Raise(self):
+                        gui.request_raise = True
 
-                    if len(changed) > 0:
-                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
+                    def Quit(self):
+                        exit_func()
 
-                def update_progress(self):
-                    self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
+                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                    in_signature='ss', out_signature='v')
+                    def Get(self, interface_name, property_name):
+                        if interface_name == 'org.mpris.MediaPlayer2':
+                            #return self.GetAll(interface_name)[property_name]
+                            return self.root_properties[property_name]
+                        elif interface_name == 'org.mpris.MediaPlayer2.Player':
+                            return self.player_properties[property_name]
 
-                def __init__(self, object_path):
-                    dbus.service.Object.__init__(self, bus, object_path)
+                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                    in_signature='s', out_signature='a{sv}')
+                    def GetAll(self, interface_name):
+                        if interface_name == 'org.mpris.MediaPlayer2':
+                            return self.root_properties
+                        elif interface_name == 'org.mpris.MediaPlayer2.Player':
+                            return self.player_properties
 
-                    self.playing_index = -1
+                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
+                                    in_signature='ssv', out_signature='')
+                    def Set(self, interface_name, property_name, value):
+                        if interface_name == 'org.mpris.MediaPlayer2.Player':
+                            if property_name == "Volume":
+                                pctl.player_volume = min(max(int(value * 100), 0), 100)
+                                pctl.set_volume()
+                        if interface_name == 'org.mpris.MediaPlayer2':
+                            pass
 
-                    self.root_properties = {
-                        'CanQuit': True,
-                        #'Fullscreen'
-                        #'CanSetFullscreen'
-                        'CanRaise': True,
-                        'HasTrackList': False,
-                        'Identity': 'Tauon Music Box',
-                        'DesktopEntry': 'Tauon Music Box',
-                        #'SupportedUriSchemes': ['file']
-                        'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
-                        'SupportedMileTypes': dbus.Array([
-                             dbus.String("audio/mpeg"),
-                             dbus.String("audio/flac"),
-                             dbus.String("audio/ogg")
-                             ])
-                    }
-
-                    self.player_properties = {
-
-                        'PlaybackStatus': 'Stopped',
-                        #'LoopStatus'
-                        'Rate': 1,
-                        #'Shuffle':
-                        'Volume': pctl.player_volume / 100,
-                        'Position': 0,
-                        'MinimumRate': 1,
-                        'MaximumRate': 1,
-                        'CanGoNext': True,
-                        'CanGoPrevious': True,
-                        'CanPlay': True,
-                        'CanPause': True,
-                        'CanSeek': True,
-                        'CanControl': True
-
-                    }
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
-                def Raise(self):
-                    gui.request_raise = True
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
-                def Quit(self):
-                    exit_func()
-
-                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                in_signature='ss', out_signature='v')
-                def Get(self, interface_name, property_name):
-                    if interface_name == 'org.mpris.MediaPlayer2':
-                        #return self.GetAll(interface_name)[property_name]
-                        return self.root_properties[property_name]
-                    elif interface_name == 'org.mpris.MediaPlayer2.Player':
-                        return self.player_properties[property_name]
-
-                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                in_signature='s', out_signature='a{sv}')
-                def GetAll(self, interface_name):
-                    if interface_name == 'org.mpris.MediaPlayer2':
-                        return self.root_properties
-                    elif interface_name == 'org.mpris.MediaPlayer2.Player':
-                        return self.player_properties
-
-                @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                in_signature='ssv', out_signature='')
-                def Set(self, interface_name, property_name, value):
-                    if interface_name == 'org.mpris.MediaPlayer2.Player':
-                        if property_name == "Volume":
-                            pctl.player_volume = min(max(int(value * 100), 0), 100)
-                            pctl.set_volume()
-                    if interface_name == 'org.mpris.MediaPlayer2':
+                    @dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE,
+                                    signature='sa{sv}as')
+                    def PropertiesChanged(self, interface_name, change, inval):
                         pass
 
-                @dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE,
-                                signature='sa{sv}as')
-                def PropertiesChanged(self, interface_name, change, inval):
-                    pass
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Next(self):
+                        pctl.advance()
+                        pass
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Previous(self):
+                        pctl.back()
+                        pass
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Pause(self):
+                        pctl.pause_only()
+                        pass
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def PlayPause(self):
+                        pctl.play_pause()
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Stop(self):
+                        pctl.stop()
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Play(self):
+                        pctl.play()
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Seek(self, offset):
+                        pctl.seek_time(pctl.playing_time + (offset / 1000000))
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def SetPosition(self, id, position):
+                        pctl.seek_time(position / 1000000)
+                        self.update_progress()
+                        self.Seeked(pctl.playing_time)
 
 
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Next(self):
-                    pctl.advance()
-                    pass
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def OpenUri(self, uri):
+                        pass
 
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Previous(self):
-                    pctl.back()
-                    pass
+                    @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def Seeked(self, position):
+                        pass
 
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Pause(self):
-                    pctl.pause_only()
-                    pass
+                    def seek_do(self, seconds):
+                        self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def PlayPause(self):
-                    pctl.play_pause()
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Stop(self):
-                    pctl.stop()
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Play(self):
-                    pctl.play()
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Seek(self, offset):
-                    pctl.seek_time(pctl.playing_time + (offset / 1000000))
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def SetPosition(self, id, position):
-                    pctl.seek_time(position / 1000000)
-                    self.update_progress()
-                    self.Seeked(pctl.playing_time)
-
-
-                @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def OpenUri(self, uri):
-                    pass
-
-                @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
-                def Seeked(self, position):
-                    pass
-
-                def seek_do(self, seconds):
-                    self.Seeked(dbus.Int64(int(seconds * 1000000)))
-
-            pctl.mpris = Example("/org/mpris/MediaPlayer2")
+                pctl.mpris = Example("/org/mpris/MediaPlayer2")
 
 
 
@@ -8544,129 +8548,131 @@ def s_copy():
     for item in shift_selection:
         cargo.append(default_playlist[item])
 
-    print("COPY")
-    if len(cargo) > 0:
-        if system == 'windows':
-
-            clips = []
-            for i in range(len(cargo)):
-                clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
-            clips = set(clips)
-
-            clip_files(clips)
-
-        if system == 'linux' and shutil.which('xclip'):
-            content = 'echo "'
-            for item in cargo:
-                content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
-
-            command = content + '" | xclip -i -selection clipboard -t text/uri-list'
-            print(command)
-            subprocess.call(shlex.split(command), shell=True)
-            os.system(command)
+    # print("COPY")
+    # if len(cargo) > 0:
+    #     if system == 'windows':
+    #
+    #         clips = []
+    #         for i in range(len(cargo)):
+    #             clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
+    #         clips = set(clips)
+    #
+    #         clip_files(clips)
+    #
+    #     if system == 'linux' and shutil.which('xclip'):
+    #         if len(cargo) > 1000:
+    #             return
+    #         content = 'echo "'
+    #         for item in cargo:
+    #             content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
+    #
+    #         command = content + '" | xclip -i -selection clipboard -t text/uri-list'
+    #         print(command)
+    #         subprocess.call(shlex.split(command), shell=True)
+    #         os.system(command)
 
 def paste(playlist=None, position=None):
 
-    items = None
-    if system == 'windows':
-        clp = win32clipboard
-        clp.OpenClipboard(None)
-        rc = clp.EnumClipboardFormats(0)
-        while rc:
-            # try:
-            #     format_name = clp.GetClipboardFormatName(rc)
-            # except win32api.error:
-            #     format_name = "?"
-            # try:
-            #     print("------")
-            #     print("Format: " + str(rc))
-            #     print("Name: " +  format_name)
-            #     print("Raw: ", end="")
-            #     print(clp.GetClipboardData(rc))
-            #     print("Decode: " + clp.GetClipboardData(rc).decode('utf-8'))
-            # except:
-            #     print('error')
-            if rc == 15:
-                items = clp.GetClipboardData(rc)
+    # items = None
+    # if system == 'windows':
+    #     clp = win32clipboard
+    #     clp.OpenClipboard(None)
+    #     rc = clp.EnumClipboardFormats(0)
+    #     while rc:
+    #         # try:
+    #         #     format_name = clp.GetClipboardFormatName(rc)
+    #         # except win32api.error:
+    #         #     format_name = "?"
+    #         # try:
+    #         #     print("------")
+    #         #     print("Format: " + str(rc))
+    #         #     print("Name: " +  format_name)
+    #         #     print("Raw: ", end="")
+    #         #     print(clp.GetClipboardData(rc))
+    #         #     print("Decode: " + clp.GetClipboardData(rc).decode('utf-8'))
+    #         # except:
+    #         #     print('error')
+    #         if rc == 15:
+    #             items = clp.GetClipboardData(rc)
+    #
+    #         rc = clp.EnumClipboardFormats(rc)
+    #
+    #     clp.CloseClipboard()
+    #     print(items)
+    #
+    # elif system == 'linux' and shutil.which('xclip'):
+    #
+    #     #clip = SDL_GetClipboardText().decode('utf-8')
+    #     command = "xclip -o -selection clipboard"
+    #     p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
+    #     clip = p.communicate()[0]
+    #
+    #     print(clip)
+    #     clip = clip.decode().split('\n')
+    #
+    #     items = []
+    #     for item in clip:
+    #         if len(item) > 0 and (item[0] == '/' or 'file://' in item):
+    #             if item[:6] == 'file:/':
+    #                 item = item[6:] # = item.lstrip("file:/")
+    #             if item[0] != "/":
+    #                 item = "/" + item
+    #             items.append(item)
+    #
+    #         else:
+    #             items = None
+    #             break
+    #     print(items)
+    # else:
+    #     print("No CLIP")
+    #     return
+    #
+    #
+    # clips = []
+    # cargs = []
+    #
+    # if items is not None:
+    #     for i in range(len(cargo)):
+    #         cargs.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
+    #     for i in range(len(items)):
+    #         clips.append(os.path.abspath(items[i]))
+    #
+    # if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
+    #     print('Matches clipboard, using internal copy')
 
-            rc = clp.EnumClipboardFormats(rc)
-
-        clp.CloseClipboard()
-        print(items)
-
-    elif system == 'linux' and shutil.which('xclip'):
-
-        #clip = SDL_GetClipboardText().decode('utf-8')
-        command = "xclip -o -selection clipboard"
-        p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
-        clip = p.communicate()[0]
-
-        print(clip)
-        clip = clip.decode().split('\n')
-
-        items = []
-        for item in clip:
-            if len(item) > 0 and (item[0] == '/' or 'file://' in item):
-                if item[:6] == 'file:/':
-                    item = item[6:] # = item.lstrip("file:/")
-                if item[0] != "/":
-                    item = "/" + item
-                items.append(item)
-
-            else:
-                items = None
-                break
-        print(items)
-    else:
-        print("No CLIP")
-        return
-
-
-    clips = []
-    cargs = []
-
-    if items is not None:
-        for i in range(len(cargo)):
-            cargs.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
-        for i in range(len(items)):
-            clips.append(os.path.abspath(items[i]))
-
-    if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
-        print('Matches clipboard, using internal copy')
-
-        if playlist is None:
-            if position is None:
-                transfer(0, (2, 3))
-            else:
-                transfer(position, (2, 2))
+    if playlist is None:
+        if position is None:
+            transfer(0, (2, 3))
         else:
-            append_playlist(playlist)
-        return
+            transfer(position, (2, 2))
+    else:
+        append_playlist(playlist)
+    return
 
-    print('Importing from clipboard')
-    # print(clips)
-
-    for item in clips:
-        print("load item")
-        print(item)
-        load_order = LoadClass()
-        load_order.target = item
-        playlist_target = pctl.playlist_active
-        if playlist is not None:
-            playlist_target = playlist
-        load_order.playlist = pctl.multi_playlist[playlist_target][6]
-
-        if position is not None:
-            insert = pctl.multi_playlist[playlist_target][2].index(position)
-            old_insert = insert
-
-            while insert < len(default_playlist) and pctl.master_library[pctl.multi_playlist[playlist_target][2][insert]].parent_folder_name == \
-                    pctl.master_library[pctl.multi_playlist[playlist_target][2][old_insert]].parent_folder_name:
-                insert += 1
-
-            load_order.playlist_position = insert
-
-        load_orders.append(copy.deepcopy(load_order))
+    # print('Importing from clipboard')
+    # # print(clips)
+    #
+    # for item in clips:
+    #     print("load item")
+    #     print(item)
+    #     load_order = LoadClass()
+    #     load_order.target = item
+    #     playlist_target = pctl.playlist_active
+    #     if playlist is not None:
+    #         playlist_target = playlist
+    #     load_order.playlist = pctl.multi_playlist[playlist_target][6]
+    #
+    #     if position is not None:
+    #         insert = pctl.multi_playlist[playlist_target][2].index(position)
+    #         old_insert = insert
+    #
+    #         while insert < len(default_playlist) and pctl.master_library[pctl.multi_playlist[playlist_target][2][insert]].parent_folder_name == \
+    #                 pctl.master_library[pctl.multi_playlist[playlist_target][2][old_insert]].parent_folder_name:
+    #             insert += 1
+    #
+    #         load_order.playlist_position = insert
+    #
+    #     load_orders.append(copy.deepcopy(load_order))
 
 
 def s_cut():
@@ -14922,9 +14928,11 @@ def update_layout_do():
 # SDL_SetRenderTarget(renderer, None)
 
 SDL_RenderClear(renderer)
+
 SDL_RenderPresent(renderer)
 
 SDL_ShowWindow(t_window)
+
 #SDL_RenderPresent(renderer)
 
 #time.sleep(3)
@@ -15336,7 +15344,8 @@ while running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel != 0 or k_input or gui.update > 0: # or mouse_moved:
+
+    if mouse_wheel != 0 or k_input or gui.update > 0 or mouse_down: # or mouse_moved:
         power = 1000
 
     # if resize_mode or scroll_hold or album_scroll_hold:
@@ -15717,8 +15726,8 @@ while running:
     if mouse_down is False:
         scroll_hold = False
 
-    if focused is True:
-        mouse_down = False
+    # if focused is True:
+    #     mouse_down = False
 
     if mediaKey_pressed:
         if mediaKey == 'play':

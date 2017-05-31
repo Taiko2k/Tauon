@@ -5,6 +5,7 @@ v2.4.0
 
  - Added MPRIS interface support (Linux)
  - Fixed video corruption on start (Linux)
+ - Removed system clipboard synchronisation
 
 v2.3.6
 
