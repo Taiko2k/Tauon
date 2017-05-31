@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v2.4.0
+
+ - Added MPRIS interface support (Linux)
+
 v2.3.6
 
  - Added seek bars and auto updating to web interface
@@ -8,8 +12,8 @@ v2.3.6
  - Removed sample re-encode function
  - Fixed minor bug with track group selection
  - Fixed gallery view not updating when deleting folder
- - Fixed rare crash with track info (linux)
- - Fixed tab menu not registering when clicked over drag area (linux)
+ - Fixed rare crash with track info (Linux)
+ - Fixed tab menu not registering when clicked over drag area (Linux)
 
 v2.3.5
 
