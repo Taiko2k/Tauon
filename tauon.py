@@ -55,7 +55,6 @@ version_line = title + " " + t_version
 print(version_line)
 print('Copyright (c) 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
-server_port = 7590
 
 if sys.platform == 'win32':
     system = 'windows'
@@ -72,15 +71,13 @@ install_directory = sys.path[0].replace('\\', '/')
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 
+# Locate the folder for user data
 user_directory = install_directory
-
 install_mode = False
-
 if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/"):
-
+    
     user_directory = os.path.expanduser('~') + "/.tauonmb-user"
     install_mode = True
-
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -101,16 +98,18 @@ if install_mode:
 else:
     print("Running in portable mode")
 
-transfer_target = user_directory + "/transfer.p"
 
+transfer_target = user_directory + "/transfer.p"
 # print("Working directory: " + working_directory)
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
 config_directory = user_directory
-cache_direc = os.path.join(user_directory, 'cache')
+cache_directory = os.path.join(user_directory, 'cache')
 b_active_directory = install_directory.encode('utf-8')
 
 # -------------------------------
+# Single Instancing
+
 if os.path.isfile('.gitignore') or os.path.isfile('multiinstance'):
     print("Dev mode, ignoring single instancing")
 else:
@@ -155,6 +154,7 @@ else:
             pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
 
+# ------------------------------------
 
 import time
 import ctypes
@@ -183,7 +183,7 @@ from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
 
-
+# Load optional Cython module for faster visualiser processing
 fast_bin_av = True
 try:
     from fastbin import fast_display, fast_bin
@@ -194,7 +194,8 @@ except ImportError:
 
 locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
-if system == 'windows':  # Windows specific imports
+# Platform specific imports
+if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, win32ui, atexit, win32clipboard, pythoncom
@@ -207,7 +208,6 @@ from sdl2 import *
 from sdl2.sdlimage import *
 
 from PIL import Image
-# from PIL import ImageFilter
 
 from hsaudiotag import auto
 import stagger
@@ -226,6 +226,7 @@ default_player = 'BASS'
 gapless_type1 = False
 running = True
 
+# Check if BASS is present and fall back to Gstreamer if not
 if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so'):
     print("BASS not found")
     try:
@@ -268,11 +269,13 @@ d_click_time = Timer()
 quick_d_timer.set()
 broadcast_update_timer = Timer()
 broadcast_update_timer.set()
-
 core_timer = Timer()
 core_timer.set()
 
 # GUI Variables -------------------------------------------------------------------------------------------
+
+# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
+
 GUI_Mode = 1
 
 draw_border = False
@@ -406,7 +409,7 @@ pl_follow = False
 encoding_box = False
 encoding_box_click = False
 
-# List of encodings to show in the fix mojibake function
+# List of encodings to check for with the fix mojibake function
 encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']
 
 track_box = False
@@ -434,6 +437,9 @@ random_mode = False
 repeat_mode = False
 direct_jump = False
 
+# Functions to generate empty playlist's
+# Playlist is [Name, playing, playlist, position, hide folder title, selected, uid, last_folder]
+
 def pl_uid_gen():
     return random.randrange(100, 10000000)
 
@@ -449,7 +455,6 @@ def pl_gen(title='Default',
 
     return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), ""])
 
-# [Name, playing, playlist, position, hide folder title, selected, uid, last_folder]
 multi_playlist = [pl_gen()]
 
 default_playlist = multi_playlist[0][2]
@@ -491,10 +496,10 @@ load_orders = []
 volume = 75
 
 folder_image_offsets = {}
-db_version = 0
+db_version = 0.0
 
 meidakey = 1
-mediakeymode = 1
+media_key_mode = 0
 
 albums = []
 album_position = 0
@@ -565,6 +570,9 @@ class Prefs:
         self.auto_lfm = False
         self.scrobble_mark = False
         self.enable_mpris = True
+        
+        self.server_port = 7590
+        self.mkey = True
 
 
 prefs = Prefs()
@@ -660,7 +668,7 @@ class GuiVar:
             self.cairo_text = True
         self.win_fore = [255, 255, 255, 255]
 
-        self.trunk_end = "..."#"..." #"…"
+        self.trunk_end = "..." # "…"
         self.temp_themes = {}
         self.theme_temp_current = -1
 
@@ -682,8 +690,6 @@ class GuiVar:
         self.spec2_rec = SDL_Rect(1230, 4, self.spec2_w, self.spec2_y)
         self.spec2_source = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
         self.spec2_dest = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
-        # self.spec2_source2 = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
-        # self.spec2_dest2 = SDL_Rect(900, 4, self.spec2_w, self.spec2_y)
         self.spec2_position = 0
         self.spec2_timer = Timer()
         self.spec2_timer.set()
@@ -692,13 +698,9 @@ class GuiVar:
 
         self.present = False
 
-
-
-
-
 gui = GuiVar()
 
-
+# Functions for reading and setting play counts
 class StarStore:
 
     def __init__(self):
@@ -764,11 +766,6 @@ class StarStore:
         self.db[key] = object
 
 
-# key = star_store.full_get(item)
-# star_store.remove(item)
-# if key != None:
-#     star_store.insert(item, key)
-#star_store.add(pctl.track_queue[pctl.queue_step])
 star_store = StarStore()
 
 
@@ -790,9 +787,6 @@ class Input:
     def __init__(self):
 
         self.mouse_click = False
-
-
-
 
 
 input = Input()
@@ -957,8 +951,8 @@ class ColoursClass:
 
 colours = ColoursClass()
 colours.post_config()
-#colours.post_config()
 
+# This is legacy. New settings are added straight to the save list
 view_prefs = {
 
     'split-line': True,
@@ -968,7 +962,6 @@ view_prefs = {
     'dim-art': False,
     'pl-follow': False,
     'scroll-enable': True
-
 }
 
 
@@ -1119,11 +1112,11 @@ try:
 
 except:
     print('Error loading save file')
-    if os.path.exists(cache_direc):
+    if os.path.exists(cache_directory):
         print("clearing old cache")
-        shutil.rmtree(cache_direc)
+        shutil.rmtree(cache_directory)
         time.sleep(0.01)
-        os.makedirs(cache_direc)
+        os.makedirs(cache_directory)
 
 # temporary
 if window_size is None:
@@ -1143,6 +1136,7 @@ def track_number_process(line):
     return line
 
 
+# Upgrading from older versions
 if db_version > 0:
 
     if db_version <= 0.8:
@@ -1231,13 +1225,11 @@ if db_version > 0:
             show_message("Error loading old database, did the program not exit properly after updating? Oh well.")
 
 
+# Loading Config -----------------
 
-
-
-# LOADING CONFIG
 player_config = "BASS"
 
-main_font = 'Koruri-Regular.ttf'
+main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
 alt_font = 'DroidSansFallback.ttf'
 gui_font = 'Koruri-Semibold.ttf'
 #light_font = 'Koruri-Light.ttf'
@@ -1300,8 +1292,7 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'scroll-gallery-row=True' in p:
                 prefs.gallery_row_scroll = True
-            if 'mediakey=' in p:
-                mediakeymode = int(p.split('=')[1])
+
             if 'pause-fade-time=' in p:
                 result = p.split('=')[1]
                 if result.isdigit() and 50 < int(result) < 3000:
@@ -1354,14 +1345,14 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'rename-folder-default=' in p:
                 result = p.split('=')[1]
                 prefs.rename_folder_templatet = result
-            if 'disable-mpris' in p:
+            if 'linux-mpris-enable=False' in p:
                 prefs.enable_mpris = False
+            if 'mediakey=False' in p:
+                prefs.mkey = False
 
 else:
     print("Warning: Missing config file")
 
-if system == 'linux' and not os.path.isfile(install_directory + "/pyxhook.py"):
-    mediakeymode = 1
 
 try:
     star_lines = view_prefs['star-lines']
@@ -1411,6 +1402,7 @@ def get_len_backend(filepath):
     return get_len
 
 
+# This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
     try:
         if nt.file_ext == "FLAC":
@@ -1574,7 +1566,7 @@ def tag_scan(nt):
         print("Warning: Tag read error")
         return nt
 
-
+# Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
     # C-PC
     def __init__(self):
@@ -3820,16 +3812,20 @@ def keyboard_hook():
 
 
 if system == 'windows':
-    if mediakeymode != 0:
+    if prefs.mkey is True:
         print('Starting hook thread for Windows')
         keyboardHookThread = threading.Thread(target=keyboard_hook)
         keyboardHookThread.daemon = True
         keyboardHookThread.start()
 
 elif system != 'mac':
-    if mediakeymode == 2 and 'gnome' in os.environ.get('DESKTOP_SESSION'):
-        mediakeymode = 1
-    if mediakeymode == 1:
+
+    if prefs.mkey and 'gnome' in os.environ.get('DESKTOP_SESSION'):
+        media_key_mode = 1
+    elif prefs.mkey and os.path.isfile(install_directory + "/pyxhook.py"):
+        media_key_mode = 2
+
+    if media_key_mode == 1 or prefs.enable_mpris:
         def gnome():
 
             from gi.repository import GObject
@@ -3859,18 +3855,20 @@ elif system != 'mac':
 
             # set up the glib main loop.
             dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-            bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-            bus_object = bus.get_object('org.gnome.SettingsDaemon',
-                                        '/org/gnome/SettingsDaemon/MediaKeys')
 
-            # this is what gives us the multi media keys.
-            dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-            bus_object.GrabMediaPlayerKeys("MyMultimediaThingy", 0,
-                                           dbus_interface=dbus_interface)
+            if media_key_mode == 1:
+                bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+                bus_object = bus.get_object('org.gnome.SettingsDaemon',
+                                            '/org/gnome/SettingsDaemon/MediaKeys')
 
-            # connect_to_signal registers our callback function.
-            bus_object.connect_to_signal('MediaPlayerKeyPressed',
-                                         on_mediakey)
+                # this is what gives us the multi media keys.
+                dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
+                bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
+                                               dbus_interface=dbus_interface)
+
+                # connect_to_signal registers our callback function.
+                bus_object.connect_to_signal('MediaPlayerKeyPressed',
+                                             on_mediakey)
 
             # ----------
             if prefs.enable_mpris:
@@ -3878,7 +3876,7 @@ elif system != 'mac':
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
                 bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon')
 
-                class Example(dbus.service.Object):
+                class MPRIS(dbus.service.Object):
 
                     def update(self):
 
@@ -3916,7 +3914,6 @@ elif system != 'mac':
 
                             }
 
-                            #prefs.cache_gallery = True
                             try:
                                 i_path = thumb_tracks.path(track)
                                 if i_path is not None:
@@ -4063,21 +4060,23 @@ elif system != 'mac':
                     def seek_do(self, seconds):
                         self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
-                pctl.mpris = Example("/org/mpris/MediaPlayer2")
+                pctl.mpris = MPRIS("/org/mpris/MediaPlayer2")
 
-
-
-            # and we start the main loop.
             mainloop = GObject.MainLoop()
             mainloop.run()
 
-        gnomeThread = threading.Thread(target=gnome)
-        gnomeThread.daemon = True
-        gnomeThread.start()
+        try:
 
-    elif mediakeymode == 2:
+            gnomeThread = threading.Thread(target=gnome)
+            gnomeThread.daemon = True
+            gnomeThread.start()
+
+        except:
+            print("ERROR: Could not start Dbus thread")
+
+    if media_key_mode == 2:
+
         import pyxhook
-
 
         def kbevent(event):
             if 170 < event.ScanCode < 175:
@@ -4103,7 +4102,7 @@ elif system != 'mac':
         hookman.KeyDown = kbevent
         hookman.HookKeyboard()
         hookman.start()
-        print("Started X key hook")
+        print("Hooked to X server to get media keys")
 
 
 class GStats:
@@ -5915,8 +5914,8 @@ class ThumbTracks:
         else:
             source_image = open(source[1], 'rb')
 
-        if not os.path.isdir(cache_direc):
-            os.makedirs(cache_direc)
+        if not os.path.isdir(cache_directory):
+            os.makedirs(cache_directory)
 
         g = io.BytesIO()
         g.seek(0)
@@ -9254,7 +9253,7 @@ class Samples:
                 name = key
                 filename = samples.cache_directroy + key
                 if os.path.isfile(filename):
-                    copy_to_clipboard("http://localhost:" + str(server_port) + "/sample/" + key)
+                    copy_to_clipboard("http://localhost:" + str(prefs.server_port) + "/sample/" + key)
                     show_message("Link copied to clipboard")
                     return
 
@@ -10974,7 +10973,7 @@ def worker1():
 
                             if prefs.transcode_codec == 'mp3':
 
-                                print("hit")
+                                #print("hit")
 
                                 command = user_directory + '/encoder/lame --silent --abr ' + str(
                                     prefs.transcode_bitrate) + ' '
@@ -11450,9 +11449,9 @@ def webserv():
 
 
     if prefs.expose_web is True:
-        app.run(host='0.0.0.0 ', port=server_port)
+        app.run(host='0.0.0.0 ', port=prefs.server_port)
     else:
-        app.run(port=server_port)
+        app.run(port=prefs.server_port)
 
 
 if prefs.enable_web is True:
@@ -11800,7 +11799,7 @@ class Over:
 
         y += 35
         self.toggle_square(x, y, toggle_enable_web,
-                           "Web interface*  " + "  [:" + str(server_port) + "/remote]")
+                           "Web interface*  " + "  [:" + str(prefs.server_port) + "/remote]")
         y += 25
         self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
         y += 25
@@ -12877,17 +12876,25 @@ class TopPanel:
 
                 # Drag to move playlist
                 if mouse_up and i != self.tab_hold_index and self.tab_hold is True:
-                    move_playlist(self.tab_hold_index, i)
+
+                    if key_shift_down:
+                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
+                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.tab_hold_index])
+                        delete_playlist(self.tab_hold_index)
+                    else:
+                        move_playlist(self.tab_hold_index, i)
                     self.tab_hold = False
 
                 # Drag to move playlist
                 if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
 
-                    #draw_text((x + tab_width - 13, y - 3), '⇄', [80, 160, 200, 255], 12)
-                    if self.tab_hold_index < i:
-                        draw.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                    if key_shift_down:
+                        draw.rect_r((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255], True)
                     else:
-                        draw.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                        if self.tab_hold_index < i:
+                            draw.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                        else:
+                            draw.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
 
 
                 # Delete playlist on wheel click
@@ -14725,7 +14732,7 @@ if system != 'windows':
             return SDL_HITTEST_RESIZE_TOP
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
-            print("hit")
+
             if tab_menu.active:
                 return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
@@ -15328,6 +15335,7 @@ while running:
         gui.request_raise = False
         if gui.lowered:
             SDL_RestoreWindow(t_window)
+            SDL_RaiseWindow(t_window)
             gui.lowered = False
 
     power += 1
@@ -16264,11 +16272,10 @@ while running:
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                 albumtitle = colours.grey(150)
 
+
                             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                                     x, y, album_mode_art_size, album_mode_art_size + 40)) and gui.panelY < mouse_position[
-                                1] < \
-                                            window_size[1] - gui.panelBY and \
-                                            mouse_position[1] < b_info_y:
+                                1] < window_size[1] - gui.panelBY:
 
                                 if input.mouse_click:
 
@@ -16357,44 +16364,9 @@ while running:
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
-                # if b_info_bar and window_size[1] > 700:
-                #     x = gui.playlist_width + 31
-                #     w = window_size[0] - x
-                #     b_info_y = int(window_size[1] * 0.7)
-                #     b_info_y = window_size[1] - 250
-                #     y = b_info_y
-                #     h = window_size[1] - y - 51
-                #
-                #     if h < 5:
-                #         h = 5
-                #
-                #     draw.rect_r((x, y, w, h), colours.top_panel_background, True)
-                #     draw.rect_r((x, y, w, h), [255, 255, 255, 3], True)
-                #     draw.line(x, y, x + w, y, colours.grey(50))
-                #
-                #     box = h - 4  # - 10
-                #
-                #     album_art_gen.display(pctl.track_queue[pctl.queue_step],
-                #                           (window_size[0] - 0 - box, y + 2), (box, box))
-                #
-                #     draw_text((x + 11, y + 6), pctl.master_library[pctl.track_queue[pctl.queue_step]].artist,
-                #               colours.grey(200), 16)
-                #
-                #     line = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                #     if pctl.master_library[pctl.track_queue[pctl.queue_step]].date != "":
-                #         line += " (" + pctl.master_library[pctl.track_queue[pctl.queue_step]].date + ")"
-                #
-                #     draw_text((x + 11, y + 29), line, colours.grey(200), 14)
-                #
-                #
-                # else:
-                #     b_info_y = window_size[1]
-
-            # End of gallery view ^
+            # End of gallery view
             # --------------------------------------------------------------------------
             # Main Playlist:
-
-            # time.sleep(0.7)
 
             if len(load_orders) > 0:
                 for i, order in enumerate(load_orders):
@@ -16554,7 +16526,6 @@ while running:
 
                 # ------------------------------------------------
                 # Scroll Bar
-
 
                 # if not scroll_enable:
                 fields.add(gui.scroll_hide_box)
@@ -17064,22 +17035,7 @@ while running:
 
             # Overlay GUI ----------------------
 
-
             if playlist_panel:
-
-                # w = 540
-                # h = 240
-                #
-                # x = int(window_size[0] / 2) - int(w / 2)
-                # y = int(window_size[1] / 2) - int(h / 2)
-                #
-                # draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
-                # draw.rect((x, y), (w, h), colours.sys_background_3, True)
-                # gui.win_fore = colours.sys_background_3
-                #
-                # if genre_box_click and not rect_in([x, y, w, h]):
-                #     playlist_panel = False
-
 
                 pl_items_len = len(pctl.multi_playlist)
                 pl_max_view_len = int((window_size[1] - gui.panelY) / 16)
@@ -17154,11 +17110,8 @@ while running:
                             pctl.playlist_playing = item[2].index(pctl.track_queue[pctl.queue_step])
 
 
-
-
                     t_rect = (x + rh + 30, ty, w - rh - 30, rh - 1)
                     fields.add(t_rect)
-                    #t_rect = (x + rh + 30, ty, w - rh - 30, rh - 1)
 
                     if coll_point(mouse_position, t_rect):
                         if not tab_menu.active:
@@ -17273,7 +17226,7 @@ while running:
 
 
                 else:
-                    # draw.rect((x + w - 135 - 1, y + h - 125 - 1), (102, 102), colours.grey(30))
+
                     if comment_mode == 1:
                         album_art_gen.display(r_menu_index, (x + w - 135, y + 105), (115, 115)) # Mirror this size in auto theme #mark2233
                     else:
@@ -17469,14 +17422,11 @@ while running:
 
                     y += 23
 
-
-                    #key = pctl.master_library[r_menu_index].title + pctl.master_library[r_menu_index].filename
                     total = star_store.get(r_menu_index)
                     ratio = 0
-                    #if (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
+
                     if total > 0 and pctl.master_library[
                         r_menu_index].length != 0:
-                        #total = pctl.star_library[key]
                         ratio = total / pctl.master_library[r_menu_index].length
 
                     draw_text((x + 8 + 10, y + 40), "Play count", colours.grey_blend_bg3(140), 12)
@@ -17576,7 +17526,6 @@ while running:
                     gui.rename_folder_box = False
 
                 p = draw_text((x + 10, y + 10,), "Physically modify containing folder", colours.grey(150), 12)
-                #draw_text((x + 25 + p, y + 10,), "(Experimental)", colours.grey(90), 12)
 
                 rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
 
@@ -17584,7 +17533,6 @@ while running:
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
-                #draw.rect_r(rect, colours.grey(25), True)
                 bg = colours.grey(25)
                 if rect_in(rect):
                     bg = colours.grey(35)
@@ -17602,7 +17550,6 @@ while running:
 
                 rect = (x + 8 + 300 + 10, y + 11, 80, 22)
                 fields.add(rect)
-                #draw.rect_r(rect, colours.grey(25), True)
                 bg = colours.grey(25)
                 if rect_in(rect):
                     bg = colours.grey(35)
@@ -17672,10 +17619,7 @@ while running:
                 line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
                 draw_text((x + 60, y + 101), line, colours.grey(150), 12)
 
-
-
             if renamebox:
-
 
                 w = 420
                 h = 230
@@ -17783,7 +17727,6 @@ while running:
                             print('Renaming...')
 
                             playt = 0
-                            #oldkey = pctl.master_library[item].title + pctl.master_library[item].filename
                             star = star_store.full_get(item)
                             star_store.remove(item)
 
@@ -18829,7 +18772,7 @@ if system == 'windows':
 
 else:
     print("Skipping closing SDL cleanly")
-    if mediakeymode == 2:
+    if media_key_mode == 2:
         hookman.cancel()
 
 exit_timer = Timer()

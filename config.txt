@@ -6,6 +6,11 @@
 pause-fade-time=400
 cross-fade-time=700
 
+# --- Media Keys -------------------------------------------------------------
+
+mkey-enable=True
+linux-mpris-enable=True
+
 # --- Spectrogram ----------------------------------------------------------
 # Base colour is the background colour (such as when there is no sound). Are R,G,B int values. Must be from 0 to 255.
 # Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
@@ -43,12 +48,6 @@ windows-font-star-offset=-1
 #linux-font-bold=Noto Sans Bold
 font-height-offset=0
 linux-font-star-offset=1
-
-# --- Media Keys -------------------------------------------------------------
-# Media keys; 0 = off, 1 = source from dbus, 2 = source from x server
-# Note: 2 will be set to 1 if gnome desktop environment is detected
-
-mediakey=2
 
 # --- Encoding ------------------------------------------------------------------
 # Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
