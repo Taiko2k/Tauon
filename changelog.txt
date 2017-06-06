@@ -5,9 +5,11 @@ v2.4.0
 
  - Added MPRIS interface support (Linux)
  - Added append playlist by drag tab and hold shift
- - Simplified media key setting in config file
  - Fixed window video corruption on start (Linux)
- - Removed system clipboard synchronisation
+ - Fixed stream recording causing crash on track change (Linux)
+ - Fixed search term not found indication not deactivating correctly
+ - Simplified media key setting in config file
+ - Removed system clipboard integration
 
 v2.3.6
 
