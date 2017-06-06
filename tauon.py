@@ -245,6 +245,7 @@ if system == 'linux':
     from gi.repository import Pango
     from gi.repository import PangoCairo
 
+
 # Setting various timers
 
 cursor_blink_timer = Timer()
@@ -2824,8 +2825,11 @@ def player():
 
     BASS_DEVICE_DMIX = 0x2000
 
+    BASS_CONFIG_ASYNCFILE_BUFFER = 45
+
     if system != 'windows':
         open_flag = 0
+        BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 128000)
     else:
         open_flag = BASS_UNICODE
     open_flag |= BASS_ASYNCFILE
@@ -3101,6 +3105,7 @@ def player():
                     #     pass
                     gui.level_update = True
                     last_level = copy.deepcopy(gui.level_peak)
+                    #print("hit")
 
                     continue
 
@@ -3157,7 +3162,7 @@ def player():
                             line += ' -a "' + fi[1].strip('"') + '"'
                     if system != 'windows':
                         file = file.encode('utf-8')
-                        line = line.endcde('utf-8')
+                        line = line.encode('utf-8')
                         flag = 0
                     else:
                         flag = 0x80000000
@@ -4410,9 +4415,9 @@ gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCE
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-SDL_SetRenderTarget(renderer, gui.spec2_tex)
-SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
-SDL_RenderClear(renderer)
+# SDL_SetRenderTarget(renderer, gui.spec2_tex)
+# SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
+# SDL_RenderClear(renderer)
 
 SDL_SetRenderTarget(renderer, None)
 
@@ -8510,42 +8515,85 @@ def menu_paste(position):
     paste(None, position)
 
 
-if system == 'windows':
-    class DROPFILES(ctypes.Structure):
-        _fields_ = (('pFiles', ctypes.wintypes.DWORD),
-                    ('pt', ctypes.wintypes.POINT),
-                    ('fNC', ctypes.wintypes.BOOL),
-                    ('fWide', ctypes.wintypes.BOOL))
-
-
-    def clip_files(file_list):
-        offset = ctypes.sizeof(DROPFILES)
-        length = sum(len(p) + 1 for p in file_list) + 1
-        size = offset + length * ctypes.sizeof(ctypes.c_wchar)
-        buf = (ctypes.c_char * size)()
-        df = DROPFILES.from_buffer(buf)
-        df.pFiles, df.fWide = offset, True
-        for path in file_list:
-            array_t = ctypes.c_wchar * (len(path) + 1)
-            path_buf = array_t.from_buffer(buf, offset)
-            path_buf.value = path
-            offset += ctypes.sizeof(path_buf)
-        stg = pythoncom.STGMEDIUM()
-        stg.set(pythoncom.TYMED_HGLOBAL, buf)
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        try:
-            win32clipboard.SetClipboardData(win32clipboard.CF_HDROP,
-                                            stg.data)
-        finally:
-            win32clipboard.CloseClipboard()
+# if system == 'windows':
+#     class DROPFILES(ctypes.Structure):
+#         _fields_ = (('pFiles', ctypes.wintypes.DWORD),
+#                     ('pt', ctypes.wintypes.POINT),
+#                     ('fNC', ctypes.wintypes.BOOL),
+#                     ('fWide', ctypes.wintypes.BOOL))
+#
+#
+#     def clip_files(file_list):
+#         offset = ctypes.sizeof(DROPFILES)
+#         length = sum(len(p) + 1 for p in file_list) + 1
+#         size = offset + length * ctypes.sizeof(ctypes.c_wchar)
+#         buf = (ctypes.c_char * size)()
+#         df = DROPFILES.from_buffer(buf)
+#         df.pFiles, df.fWide = offset, True
+#         for path in file_list:
+#             array_t = ctypes.c_wchar * (len(path) + 1)
+#             path_buf = array_t.from_buffer(buf, offset)
+#             path_buf.value = path
+#             offset += ctypes.sizeof(path_buf)
+#         stg = pythoncom.STGMEDIUM()
+#         stg.set(pythoncom.TYMED_HGLOBAL, buf)
+#         win32clipboard.OpenClipboard()
+#         win32clipboard.EmptyClipboard()
+#         try:
+#             win32clipboard.SetClipboardData(win32clipboard.CF_HDROP,
+#                                             stg.data)
+#         finally:
+#             win32clipboard.CloseClipboard()
 
 def s_copy():
 
+    # Copy tracks to internal clipboard
     global cargo
     cargo = []
     for item in shift_selection:
         cargo.append(default_playlist[item])
+
+    # # Copy tracks to external clipboard
+    # if 300 > len(cargo) > 0:
+    #
+    #     clips = []
+    #     for i in range(len(cargo)):
+    #         clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
+    #     clips = set(clips)
+    #
+    #     if system == 'windows':
+    #         clip_files(clips)
+    #     elif system == 'linux':
+    #         if 'gnome' in os.environ.get('DESKTOP_SESSION'):
+    #
+    #             content = 'echo "copy\n'
+    #             for i, item in enumerate(cargo):
+    #                 content += "file://" + os.path.abspath(pctl.master_library[item].fullpath).strip("\n")
+    #                 if i == len(cargo) - 1:
+    #                     pass
+    #                 else:
+    #                     print("newline")
+    #                     content += "\n"
+    #
+    #             #content += "\0"
+    #             #content = content.encode()
+    #
+    #             command = content + '" | xclip -i -selection clipboard -t x-special/gnome-copied-files'
+    #
+    #
+    #             print('hit')
+    #         else:
+    #             content = 'echo "'
+    #             for item in cargo:
+    #                 content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
+    #
+    #             command = content + '" | xclip -i -selection clipboard -t text/uri-list'
+    #             #command = command.encode()
+    #
+    #         print(command)
+    #
+    #         subprocess.call(command, shell=True)
+    #         os.system(command)
 
     # print("COPY")
     # if len(cargo) > 0:
@@ -13111,6 +13159,7 @@ class BottomBarType1:
         self.forward_button = WhiteModImageAsset('/gui/ff.png')
         self.back_button = WhiteModImageAsset('/gui/bb.png')
 
+
         self.scrob_stick = 0
 
     # def set_mode2(self):
@@ -13149,7 +13198,9 @@ class BottomBarType1:
         global right_click
 
         draw.rect((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour, True)
+
         draw.rect(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
+
 
         right_offset = 0
         if gui.display_time_mode == 2:
@@ -14927,18 +14978,19 @@ def update_layout_do():
     SDL_SetRenderTarget(renderer, gui.main_texture)
     SDL_RenderClear(renderer)
 
-# I forgot what this is supposed to do
 
-# SDL_SetRenderTarget(renderer, gui.spec2_tex)
-# SDL_RenderClear(renderer)
-# draw.rect_r((0, 0, 1000, 1000), [3, 3, 3, 255], True)
-# SDL_SetRenderTarget(renderer, None)
 
+SDL_SetRenderTarget(renderer, None)
 SDL_RenderClear(renderer)
-
 SDL_RenderPresent(renderer)
 
 SDL_ShowWindow(t_window)
+
+# Clear spectogram texture
+SDL_SetRenderTarget(renderer, gui.spec2_tex)
+SDL_RenderClear(renderer)
+draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+SDL_SetRenderTarget(renderer, None)
 
 #SDL_RenderPresent(renderer)
 
@@ -17880,14 +17932,14 @@ while running:
 
             if quick_search_mode is True:
 
-                rect2 = [0, window_size[1] - 90, 420, 25]
+                rect2 = [0, window_size[1] - 80, 420, 25]
                 rect = [0, window_size[1] - 120, 420, 65]
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect2[0] = rect[0]
 
                 gui.win_fore = colours.sys_background_4
                 draw.rect_r(rect, colours.sys_background_4, True)
-                draw.rect_r(rect2, [255, 255, 255, 10], True)
+                #draw.rect_r(rect2, [255, 255, 255, 10], True)
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -17908,10 +17960,11 @@ while running:
 
                 if gui.search_error:
                     draw.rect_r([rect[0], rect[1], rect[2], 30], [255, 0, 0, 45], True)
-                if key_backspace_press:
-                    gui.search_error = False
+                    gui.win_fore = alpha_blend([255,0,0,25], gui.win_fore)
+                # if key_backspace_press:
+                #     gui.search_error = False
 
-                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(165))
+                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(165), font=213)
 
                 if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
                     key_return_press = False
@@ -17940,8 +17993,7 @@ while running:
                                     if search_text.text in pctl.master_library[item].parent_folder_path.lower():
                                         playlist.append(item)
                                 if len(playlist) > 0:
-                                    # title = search_text.text
-                                    # pctl.multi_playlist.append([title, 0, copy.deepcopy(playlist), 0, 0, 0])
+
                                     pctl.multi_playlist.append(pl_gen(title=title,
                                                                       playlist=copy.deepcopy(playlist)))
                                     switch_playlist(len(pctl.multi_playlist) - 1)
@@ -17957,7 +18009,6 @@ while running:
                                 if all(word in line for word in search_terms):
                                     playlist.append(item)
                             if len(playlist) > 0:
-                                #pctl.multi_playlist.append(["Search Results", 0, copy.deepcopy(playlist), 0, 0, 0])
                                 pctl.multi_playlist.append(pl_gen(title="Search Results",
                                                                   playlist=copy.deepcopy(playlist)))
                                 switch_playlist(len(pctl.multi_playlist) - 1)
@@ -17995,6 +18046,7 @@ while running:
 
                                 if gui.combo_mode:
                                     pctl.show_selected()
+                                gui.search_error = False
 
                                 break
 
@@ -18091,7 +18143,6 @@ while running:
         # Render Menus-------------------------------
         for instance in Menu.instances:
             instance.render()
-
 
         if encoding_box:
             if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
@@ -18214,8 +18265,6 @@ while running:
 
             rect = (window_size[0] - 55, window_size[1] - 35, 55 - 2, 35 - 2)
             fields.add(rect)
-            # if draw_border and coll_point(mouse_position, rect):
-            #     draw_text((window_size[0] - 15, window_size[1] - 20), "↘", [200, 200, 200, 255], 16)
 
             rect = (window_size[0] - 65, 1, 35, 28)
             draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
@@ -18242,39 +18291,22 @@ while running:
             else:
                 top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
 
-                # draw.rect((0, 0), window_size, colours.grey(90))
 
         gui.update -= 1
         gui.present = True
 
-        #draw.rect_r((300, 300, 300, 300), [40, 200, 40, 20], True)
 
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
 
 
-
         if gui.turbo:
             gui.level_update = True
 
-            #SDL_SetRenderTarget(renderer, None)
-            #SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
 
-
-            #SDL_SetRenderTarget(renderer, gui.main_texture)
-
-        else:
-            #SDL_RenderPresent(renderer)
-            # print(perf_timer.get() * 1000)
-
-            #SDL_SetRenderTarget(renderer, None)
-            #SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-            #SDL_RenderPresent(renderer)
-            #print("old")
-            pass
 
     if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0,
-                                                                       0] and gui.turbo:  # and not album_scroll_hold:
+                    0] and gui.turbo:  # and not album_scroll_hold:
 
         # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
@@ -18291,8 +18323,6 @@ while running:
 
         gui.level_update = True
 
-
-    #draw.rect_r((int(55 * pctl.playing_time), 100, 40, 40), [255, 50, 50, 255], True)
 
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
@@ -18514,18 +18544,11 @@ while running:
                     pass
                 draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
-                # if pctl.playing_state == 0 or pctl.playing_state == 2:
-                #     gui.level_peak[0] -= 0.017
-                #     gui.level_peak[1] -= 0.017
-
-    #print("render")
-    #print(gui.present)
     if gui.present:
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderPresent(renderer)
         gui.present = False
 
-    # print(pctl.playing_state)
     # -------------------------------------------------------------------------------------------
     # Broadcast control
 
@@ -18556,7 +18579,7 @@ while running:
     if pctl.broadcast_active and pctl.broadcast_time == 0:
         gui.pl_update = 1
 
-    # Playlist and pctl.track_queue
+    # Playlist and Track Queue
 
     # Trigger track advance once end of track is reached
     if pctl.playing_state == 1 and pctl.playing_time + (
@@ -18640,8 +18663,6 @@ while running:
             drag_mode = False
 
         if drag_mode:
-            # mp = win32api.GetCursorPos()
-
             p_x = pointer(c_int(0))
             p_y = pointer(c_int(0))
             SDL_GetGlobalMouseState(p_x, p_y)
@@ -18654,7 +18675,6 @@ while running:
 
     if pctl.total_playtime - time_last_save > 600:
         print("Auto Save")
-        #pickle.dump(pctl.star_library, open(user_directory + "/star.p", "wb"))
         pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
         time_last_save = pctl.total_playtime
 
@@ -18665,7 +18685,6 @@ while running:
 
     if gui.lowered:
         time.sleep(0.2)
-        #print("sleep")
 
 
 SDL_DestroyWindow(t_window)
@@ -18687,8 +18706,6 @@ view_prefs['pl-follow'] = pl_follow
 view_prefs['scroll-enable'] = scroll_enable
 view_prefs['break-enable'] = break_enable
 view_prefs['dd-index'] = dd_index
-# view_prefs['custom-line'] = custom_line_mode
-#view_prefs['thick-lines'] = thick_lines
 view_prefs['append-date'] = prefs.append_date
 
 save = [pctl.master_library,
@@ -18757,10 +18774,7 @@ pickle.dump(save, open(user_directory + "/state.p", "wb"))
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
 
-# if os.path.exists(samples.cache_directroy):
-#     shutil.rmtree(samples.cache_directroy)
 
-# r_window.destroy()
 if system == 'windows':
 
     print("unloading SDL")
