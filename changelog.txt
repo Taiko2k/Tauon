@@ -7,7 +7,10 @@ v2.4.0
  - Added append playlist by drag tab and hold shift
  - Fixed window video corruption on start (Linux)
  - Fixed stream recording causing crash on track change (Linux)
+ - Fixed comment text not being properly truncated (Linux)
  - Fixed search term not found indication not deactivating correctly
+ - Fixed search box text having bad rendering (Linux)
+ - Tweaked vertical positioning of text with large characters (Linux)
  - Simplified media key setting in config file
  - Removed system clipboard integration
 

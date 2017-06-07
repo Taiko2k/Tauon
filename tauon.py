@@ -4787,7 +4787,7 @@ if system == "linux":
             if len(text) == 0:
                 return 0
 
-            key = (max, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
+            key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
             global ttc
 
             x = location[0]
@@ -4796,7 +4796,7 @@ if system == "linux":
             if key in ttc:
                 sd = ttc[key]
                 sd[0].x = x
-                sd[0].y = y
+                sd[0].y = y - sd[2]
 
                 if align == 1:
                     sd[0].x = x - sd[0].w
@@ -4830,9 +4830,11 @@ if system == "linux":
             layout = PangoCairo.create_layout(context)
             pctx = layout.get_context()
 
+
             if max_y != None:
+                layout.set_ellipsize(Pango.EllipsizeMode.END)
                 layout.set_width(max_x * 1000)  # x1000 seems to make it work, idy why
-                #layout.set_height(max_y)  # This doesn't seem to work
+                layout.set_height(max_y * 1000)  # This doesn't seem to work
 
 
             # Antialias settings here dont any effect, fontconfg settings override it
@@ -4855,6 +4857,26 @@ if system == "linux":
 
             layout.set_font_description(Pango.FontDescription(self.f_dict[font]))
             layout.set_text(text, -1)
+
+            y_off = layout.get_baseline() / 1000
+            # if b_off < 16:
+            # print((y_off, text))
+            # print(round(y_off - 16))
+            y_off = round(y_off - 16)
+
+            if y_off > 0:
+                #y_off = 1
+                pass
+            else:
+                y_off = 0
+
+            #y_off = 0
+            y -= y_off
+
+
+            #print(layout.get_extents())
+            # print(text)
+            # print(layout.get_pixel_extents()[1].y)
 
             PangoCairo.show_layout(context, layout)
 
@@ -4879,7 +4901,7 @@ if system == "linux":
 
             SDL_RenderCopy(renderer, c, None, dst)
 
-            ttc[key] = [dst, c]
+            ttc[key] = [dst, c, y_off]
             ttl.append(key)
             if len(ttl) > 350:
                 key = ttl[0]
