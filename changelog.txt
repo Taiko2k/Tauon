@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v2.4.0
 
  - Added MPRIS interface support (Linux)
+ - Added ReplayGain support for tracks with supporting track/album metadata
  - Added append playlist by drag tab and hold shift
  - Fixed window video corruption on start (Linux)
  - Fixed stream recording causing crash on track change (Linux)
@@ -11,6 +12,7 @@ v2.4.0
  - Fixed search term not found indication not deactivating correctly
  - Fixed search box text having bad rendering (Linux)
  - Tweaked vertical positioning of text with large characters (Linux)
+ - Changed drag over indicator to bar type
  - Simplified media key setting in config file
  - Removed system clipboard integration
 

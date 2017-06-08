@@ -574,6 +574,7 @@ class Prefs:
         
         self.server_port = 7590
         self.mkey = True
+        self.replay_gain = 1  # 0=off 1=track 2=album
 
 
 prefs = Prefs()
@@ -996,6 +997,8 @@ class TrackClass:
         self.disc_number = ""
         self.disc_total = ""
         self.lyrics = ""
+        self.album_gain = None
+        self.track_gain = None
 
 
 class LoadClass:
@@ -1106,7 +1109,8 @@ try:
         prefs.auto_lfm = save[53]
     if save[54] is not None:
         prefs.scrobble_mark = save[54]
-
+    if save[55] is not None:
+        prefs.replay_gain = save[55]
     state_file.close()
     del save
 
@@ -1224,6 +1228,14 @@ if db_version > 0:
         except:
             print("Error upgrading database")
             show_message("Error loading old database, did the program not exit properly after updating? Oh well.")
+
+    if db_version <= 1.8:
+        print("Updating database to 1.9")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'track_gain', None)
+            setattr(master_library[key], 'album_gain', None)
+        show_message(
+            "Upgrade complete. Run a tag rescan if you want enable ReplayGain")
 
 
 # Loading Config -----------------
@@ -1430,6 +1442,8 @@ def tag_scan(nt):
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
             nt.comment = audio.comment
+            nt.track_gain = audio.track_gain
+            nt.album_gain = audio.album_gain
 
             return nt
 
@@ -1467,6 +1481,8 @@ def tag_scan(nt):
             nt.track_total = audio.track_total
             nt.disk_total = audio.disc_total
             nt.comment = audio.comment
+            nt.track_gain = audio.track_gain
+            nt.album_gain = audio.album_gain
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
@@ -1490,6 +1506,8 @@ def tag_scan(nt):
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
             nt.lyrics = audio.lyrics
+            nt.track_gain = audio.track_gain
+            nt.album_gain = audio.album_gain
             if nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
@@ -1543,13 +1561,23 @@ def tag_scan(nt):
                 nt.disc_number = str(tag.disc)
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
+                # if TXXX in tag:
+                #     print(tag[TXXX])
+                #     print(nt.fullpath)
+                if TXXX in tag:
+                    for item in tag[TXXX]:
+                        if hasattr(item, 'description'):
+                            if item.description == "replaygain_album_gain":
+                                nt.album_gain = float(item.value.strip(" dB"))
+                            if item.description == "replaygain_track_gain":
+                                nt.track_gain = float(item.value.strip(" dB"))
 
                 if USLT in tag:
                     lyrics = tag[USLT][0].text
                     if len(lyrics) > 30 and ".com" not in lyrics:
                         nt.lyrics = lyrics
                     elif len(lyrics) > 2:
-                        print("Tag Scen: Possible spam found in lyric field")
+                        print("Tag Scan: Possible spam found in lyric field")
                         print("     In file: " + nt.fullpath)
                         print("     Value: " + lyrics)
 
@@ -1564,6 +1592,7 @@ def tag_scan(nt):
         # print("      In file: " + nt.fullpath)
         return nt
     except:
+
         print("Warning: Tag read error")
         return nt
 
@@ -1591,6 +1620,7 @@ class PlayerCtl:
         self.playing_time = 0
         self.playlist_playing = playlist_playing  # track in playlist that is playing
         self.target_open = ""
+        self.target_object = None
         self.start_time = 0
         self.bstart_time = 0
         self.playerCommand = ""
@@ -1613,6 +1643,7 @@ class PlayerCtl:
         self.a_time = 0
         self.b_time = 0
         self.playlist_backup = []
+        self.active_replaygain = 0
 
         # Broadcasting
 
@@ -1795,6 +1826,7 @@ class PlayerCtl:
             self.playing_time = 0
 
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
+        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.playerCommand = 'open'
@@ -1816,6 +1848,7 @@ class PlayerCtl:
 
         self.playing_time = random_start
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
+        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         self.jump_time = random_start
         self.playerCommand = 'open'
@@ -1832,6 +1865,7 @@ class PlayerCtl:
         self.playing_time = 0
         # print(self.track_queue)
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
+        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         if not gapless:
             self.playerCommand = 'open'
@@ -2669,6 +2703,8 @@ def player():
         bass_module = ctypes.CDLL(install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
         enc_module = ctypes.CDLL(install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+        fx_module = ctypes.CDLL(install_directory + '/lib/libbass_fx.so', mode=ctypes.RTLD_GLOBAL)
+
         try:
             ogg_module = ctypes.CDLL(install_directory + '/lib/libbassenc_ogg.so', mode=ctypes.RTLD_GLOBAL)
         except:
@@ -2677,6 +2713,8 @@ def player():
 
     BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
                               ctypes.c_void_p)(('BASS_Init', bass_module))
+
+    BASS_FX_GetVersion = function_type(ctypes.c_ulong)(("BASS_FX_GetVersion", fx_module))
 
     BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
                                           ctypes.c_int64, ctypes.c_ulong)(('BASS_StreamCreateFile', bass_module))
@@ -2713,6 +2751,20 @@ def player():
     BASS_ChannelGetData = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong)(
         ('BASS_ChannelGetData', bass_module))
 
+
+    class BASS_BFX_VOLUME(ctypes.Structure):
+        _fields_ = [('lChannel', ctypes.c_int),
+                    ('fVolume', ctypes.c_float)
+                    ]
+
+
+    #BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_BFX_VOLUME))(
+    BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_void_p)(
+        ('BASS_FXSetParameters', bass_module))
+
+    BASS_ChannelSetFX = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int)(
+        ('BASS_ChannelSetFX', bass_module))
+
     SyncProc = function_type(None, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p)
     BASS_ChannelSetSync = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int64, SyncProc,
                                         ctypes.c_void_p)(
@@ -2739,6 +2791,7 @@ def player():
                                          DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
     BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_ChannelGetTags', bass_module))
+
 
     def py_down(buffer, length, user):
         # if url_record:
@@ -2854,26 +2907,10 @@ def player():
     if system == 'windows':
         # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassopus.dll', 0)
-        # print("Load bassopus")
-        # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bassflac.dll', 0)
-        # print("Load bassflac")
-        # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bass_ape.dll', 0)
-        # print("Load bass_ape")
-        # print(BASS_ErrorGetCode())
-        BASS_PluginLoad(b'bassenc.dll', 0)
-        # print("Load bassenc")
-        # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'bass_tta.dll', 0)
-        # print("Load bass_tta")
-        # print(BASS_ErrorGetCode())
-        BASS_PluginLoad(b'bassmix.dll', 0)
-        # print("Load bass_mix")
-        # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'basswma.dll', 0)
-        # print("Load bass_wma")
-        # print(BASS_ErrorGetCode())
         BASS_PluginLoad(b'basswv.dll', 0)
         BASS_PluginLoad(b'bassalac.dll', 0)
 
@@ -2884,7 +2921,6 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
-        BASS_PluginLoad(b + b'/lib/libbassmix.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.dylib', 0)
     else:
         b = install_directory.encode('utf-8')
@@ -2892,9 +2928,9 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
         BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbassmix.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
         BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
+
 
     BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
     if BassInitSuccess == True:
@@ -2931,6 +2967,36 @@ def player():
     x = (ctypes.c_float * 512)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
     sp_handle = 0
+
+    BASS_FX_GetVersion()
+
+    def replay_gain(stream):
+        pctl.active_replaygain = 0
+        if prefs.replay_gain > 0 and pctl.target_object.track_gain is not None or pctl.target_object.album_gain is not None:
+            gain = None
+            if prefs.replay_gain == 1 and pctl.target_object.track_gain is not None:
+                gain = pctl.target_object.track_gain
+                print("Track ReplayGain")
+            elif prefs.replay_gain == 2 and pctl.target_object.album_gain is not None:
+                gain = pctl.target_object.album_gain
+                print("Album ReplayGain")
+
+            if gain is None and prefs.replay_gain == 2:
+                print("Track ReplayGain Fallback")
+                gain = pctl.target_object.track_gain
+            if gain is None:
+                return
+
+            BASS_FX_BFX_VOLUME = 65539
+
+            volfx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 0)
+            volparam = BASS_BFX_VOLUME(0, pow(10, gain / 20))
+
+            BASS_FXSetParameters(volfx, ctypes.pointer(volparam))
+
+            print("Using ReplayGain of " + str(gain))
+            pctl.active_replaygain = gain
+
 
     while True:
 
@@ -3578,23 +3644,25 @@ def player():
 
                 if player1_status == p_stopped and player2_status == p_stopped:
                     # print(BASS_ErrorGetCode())
-                    print(pctl.target_open)
+                    # print(pctl.target_open)
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     # print(BASS_ErrorGetCode())
+
+
+                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
+                    replay_gain(handle1)
+
                     channel1 = BASS_ChannelPlay(handle1, True)
 
-                    # if pctl.broadcast_active:
-                    #     BASS_Encode_SetChannel(encoder, handle1)
-
-                    # print(BASS_ErrorGetCode())
-                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                    # print(BASS_ErrorGetCode())
                     player1_status = p_playing
+
                 elif player1_status != p_stopped and player2_status == p_stopped:
                     player1_status = p_stopping
                     BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
+                    replay_gain(handle1)
 
                     handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
+
                     channel2 = BASS_ChannelPlay(handle2, True)
 
                     BASS_ChannelSetAttribute(handle2, 2, 0)
@@ -3603,6 +3671,7 @@ def player():
                 elif player2_status != p_stopped and player1_status == p_stopped:
                     player2_status = p_stopping
                     BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
+                    replay_gain(handle1)
 
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     BASS_ChannelSetAttribute(handle1, 2, 0)
@@ -4271,89 +4340,6 @@ window_title = title
 window_title = window_title.encode('utf-8')
 
 
-# def load_font(name, size, ext=False):
-#     if ext:
-#         fontpath = name.encode('utf-8')
-#     else:
-#         b = install_directory
-#         b = b.encode('utf-8')
-#         c = name.encode('utf-8')
-#         fontpath = b + b'/gui/' + c
-#
-#     return TTF_OpenFont(fontpath, size)
-
-
-# if os.path.isfile("gui/" + gui_font) and os.path.isfile("gui/" + main_font) and os.path.isfile("gui/" + alt_font):
-#     font11c = load_font(gui_font, 11)
-#     font12c = load_font(gui_font, 12)
-#     font13c = load_font(gui_font, 13)
-#     font14c = load_font(gui_font, 14)
-#     font28c = load_font(gui_font, 28)
-#
-#     font10a = load_font(main_font, 10)
-#     font11a = load_font(main_font, 11)
-#     font12a = load_font(main_font, 12)
-#     font13a = load_font(main_font, 13)
-#     font14a = load_font(main_font, 14)
-#     font15a = load_font(main_font, 15)
-#     font16a = load_font(main_font, 16)
-#     font17a = load_font(main_font, 17)
-#     font22a = load_font(main_font, 22)
-#     font24a = load_font(main_font, 24)
-#     font28a = load_font(main_font, 28)
-#
-#     font10b = load_font(alt_font, 10)
-#     font11b = load_font(alt_font, 11)
-#     font12b = load_font(alt_font, 12)
-#     font13b = load_font(alt_font, 13)
-#     font14b = load_font(alt_font, 14)
-#     font15b = load_font(alt_font, 15)
-#     font16b = load_font(alt_font, 16)
-#     font17b = load_font(alt_font, 17)
-#     font22b = load_font(alt_font, 22)
-#     font24b = load_font(alt_font, 24)
-#     font28b = load_font(alt_font, 28)
-#
-#     font12m = font12a
-#     font13m = font13a
-#
-#     # font12d = load_font(light_font, 12)
-#     # font13d = load_font(light_font, 13)
-#     # font14d = load_font(light_font, 14)
-#     # font15d = load_font(light_font, 15)
-#     # font16d = load_font(light_font, 16)
-#     # font17d = load_font(light_font, 17)
-#
-#     font_dict = {}
-#
-#     font_dict[13] = (font13a, font13b)
-#     font_dict[11] = (font11a, font11b)
-#     font_dict[10] = (font10a, font10b)
-#     font_dict[12] = (font12a, font12b)
-#     font_dict[16] = (font16a, font16b)
-#     font_dict[14] = (font14a, font14b)
-#     font_dict[15] = (font15a, font15b)
-#     font_dict[17] = (font17a, font17b)
-#     font_dict[22] = (font22a, font22b)
-#     font_dict[24] = (font24a, font24b)
-#     font_dict[28] = (font28a, font28b)
-#
-#
-#     font_dict[211] = (font11c, font11b)
-#     font_dict[212] = (font12c, font12b)
-#     font_dict[213] = (font13c, font13b)
-#     font_dict[214] = (font14c, font14b)
-#     font_dict[228] = (font28c, font28b)
-#
-#     font_dict[412] = (font12m, font12b)
-#     font_dict[413] = (font13m, font13b)
-#     # font_dict[317] = (font17d, font17b)
-#     # font_dict[316] = (font16d, font16b)
-#     # font_dict[315] = (font15d, font15b)
-#     # font_dict[314] = (font14d, font14b)
-#     # font_dict[313] = (font13d, font13b)
-#     # font_dict[312] = (font12d, font12b)
-
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
@@ -4597,27 +4583,6 @@ class Drawing:
             else:
                 return x
 
-        # if height:
-        #     TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), None, self.text_width_p)
-        #     return self.text_width_p.contents.value
-        #
-        # else:
-        #     key = hash((text, font))
-        #     if key in self.text_calc_cache:
-        #         return self.text_calc_cache[key]
-        #
-        #     for ch in range(len(text)):
-        #         if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
-        #             if TTF_GlyphIsProvided(font_dict[font][1], ord(text[ch])):
-        #                 TTF_SizeUTF8(font_dict[font][1], text.encode('utf-8'), self.text_width_p, None)
-        #                 if cache:
-        #                     self.text_calc_cache[key] = self.text_width_p.contents.value
-        #                 return self.text_width_p.contents.value
-        #
-        #     TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), self.text_width_p, None)
-        #     if cache:
-        #         self.text_calc_cache[key] = self.text_width_p.contents.value
-        #     return self.text_width_p.contents.value
 
 
 draw = Drawing()
@@ -4652,104 +4617,6 @@ def clear_text_cache():
     ttl = []
 
 
-# def draw_text_sdl(location, text, colour, font, maxx, field=0, index=0):
-#     # draw_text(location,trunc_line(text,font,maxx),colour,font)
-#     location = list(location)
-#     location[1] += gui.universal_y_text_offset
-#
-#     if len(text) == 0:
-#         return 0
-#     key = (maxx, text, font, colour[0], colour[1], colour[2], colour[3])
-#
-#     global ttc
-#
-#     if key in ttc:
-#         sd = ttc[key]
-#         sd[0].x = location[0]
-#         sd[0].y = location[1]
-#
-#         if len(location) > 2 and location[2] == 1:
-#             sd[0].x = location[0] - sd[0].w
-#
-#         elif len(location) > 2 and location[2] == 2:
-#             sd[0].x = sd[0].x - int(sd[0].w / 2)
-#
-#         SDL_RenderCopy(renderer, sd[1], None, sd[0])
-#
-#         return sd[0].w
-#     # Render a new text texture and cache it
-#     else:
-#
-#         tex_w = pointer(c_int(0))
-#         tex_h = pointer(c_int(0))
-#         colour_sdl = SDL_Color(colour[0], colour[1], colour[2], colour[3])
-#         # text_utf = text.encode('utf-8')
-#
-#         trunc = False
-#
-#         while True:  # and (len(location) < 3 or location[2] == 0):
-#             if len(text) < 3:
-#                 break
-#             # TTF_SizeUTF8(font_dict[font][0], text.encode('utf-8'), tex_w, None)
-#             # xlen = tex_w.contents.value
-#             xlen = draw.text_calc(text, font, False)
-#
-#             if xlen <= maxx:
-#                 break
-#             text = text[:-1]
-#             trunc = True
-#
-#         if trunc:
-#             text += gui.trunk_end
-#
-#         text_utf = text.encode('utf-8')
-#
-#         back = False
-#         for ch in range(len(text)):
-#
-#             if not TTF_GlyphIsProvided(font_dict[font][0], ord(text[ch])):
-#                 if TTF_GlyphIsProvided(font_dict[font][1], ord(text[ch])):
-#                     back = True
-#                     break
-#
-#         if len(location) > 2 and location[2] == 4:
-#             font_surface = TTF_RenderUTF8_Blended_Wrapped(font_dict[font][1], text_utf, colour_sdl, location[3])
-#         else:
-#             if back:
-#                 font_surface = TTF_RenderUTF8_Blended(font_dict[font][1], text_utf, colour_sdl)
-#             else:
-#                 #black = SDL_Color(0, 0, 0, 255)
-#                 #font_surface = TTF_RenderUTF8_Shaded(font_dict[font][0], text_utf, colour_sdl, black)
-#                 font_surface = TTF_RenderUTF8_Blended(font_dict[font][0], text_utf, colour_sdl)
-#
-#         c = SDL_CreateTextureFromSurface(renderer, font_surface)
-#         SDL_SetTextureAlphaMod(c, colour[3])
-#         dst = SDL_Rect(location[0], location[1])
-#         SDL_QueryTexture(c, None, None, tex_w, tex_h)
-#         dst.w = tex_w.contents.value
-#         dst.h = tex_h.contents.value
-#
-#         # Set text alignment
-#         if len(location) > 2 and location[2] == 1:
-#             dst.x = dst.x - dst.w
-#         elif len(location) > 2 and location[2] == 2:
-#             dst.x = dst.x - int(dst.w / 2)
-#
-#         SDL_RenderCopy(renderer, c, None, dst)
-#         SDL_FreeSurface(font_surface)
-#
-#         ttc[key] = [dst, c]
-#         ttl.append(key)
-#
-#         # Delete oldest cached text if cache too big to avoid performance slowdowns
-#         if len(ttl) > 450:
-#             key = ttl[0]
-#             so = ttc[key]
-#             SDL_DestroyTexture(so[1])
-#             del ttc[key]
-#             del ttl[0]
-#
-#         return dst.w
 
 
 if system == "linux":
@@ -5918,7 +5785,9 @@ class ThumbTracks:
 
     def path(self, track):
         image_name = track.album
-        if track.album == "":
+        if image_name == "":
+            image_name = track.title
+        if image_name == "":
             image_name = "noname"
 
         source = gall_ren.get_file_source(track.index)
@@ -7113,125 +6982,6 @@ class Menu:
 
                         # Render the menu outline
                         # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
-
-            # y_run = self.pos[1]
-            #
-            # for i in range(len(self.items)):
-            #     if self.items[i] is None:
-            #
-            #         # draw.rect((self.pos[0], y_run), (self.w, self.break_height),
-            #         #           colours.menu_background, True)
-            #         # draw.rect((self.pos[0], y_run + 2), (self.w, 2),
-            #         #           [255, 255, 255, 13], True)
-            #         # # Draw tab
-            #         # draw.rect((self.pos[0], y_run), (5, self.break_height),
-            #         #           colours.grey(40), True)
-            #         # y_run += self.break_height
-            #         continue
-            #
-            #     # # Get properties for menu item
-            #     # fx = self.items[i][3]()
-            #     # if fx[2] is not None:
-            #     #     label = fx[2]
-            #     # else:
-            #     #     label = self.items[i][0]
-            #     #
-            #     # # Draw item background, black by default
-            #     # draw.rect((self.pos[0], y_run), (self.w, self.h),
-            #     #           fx[1], True)
-            #     # bg = fx[1]
-            #     #
-            #     # # Detect if mouse is over this item
-            #     # rect = (self.pos[0], y_run, self.w, self.h - 1)
-            #     # fields.add(rect)
-            #
-            #     if coll_point(mouse_position,
-            #                   (self.pos[0], y_run, self.w, self.h - 1)):
-            #         # draw.rect((self.pos[0], y_run), (self.w, self.h),
-            #         #           colours.menu_highlight_background,
-            #         #           True)  # [15, 15, 15, 255]
-            #         # bg = alpha_blend(colours.menu_highlight_background, bg)
-            #
-            #         # Call menu items callback if clicked
-            #         if self.clicked:
-            #             if self.items[i][1] is False:
-            #                 if self.items[i][5]:
-            #                     self.items[i][2](self.reference)
-            #                 else:
-            #                     self.items[i][2]()
-            #             else:
-            #                 self.clicked = False
-            #                 self.sub_active = self.items[i][2]
-            #
-            #     # # Draw tab
-            #     draw.rect((self.pos[0], y_run), (5, self.h),
-            #               colours.grey(255), True)
-            #
-            #     # Render the items label
-            #     #draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], self.font, bg=bg)
-            #
-            #     # Render the items hint
-            #     # if len(self.items[i]) > 6 and self.items[i][6] != None:
-            #     #     colo = alpha_blend([255, 255, 255, 50], bg)
-            #     #     draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
-            #     #               colo, self.font, bg=bg)
-            #
-            #     y_run += self.h
-            #     # Render sub menu if active
-            #     if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
-            #
-            #         # sub_pos = [self.pos[0] + self.w, self.pos[1] + i * self.h]
-            #         sub_pos = [self.pos[0] + self.w, self.pos[1]]
-            #         sub_w = self.items[i][4]
-            #         #fx = self.deco()
-            #
-            #         for w in range(len(self.subs[self.sub_active])):
-            #
-            #             # # Item background
-            #             # fx = self.subs[self.sub_active][w][3]()
-            #             # draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
-            #             #
-            #             # # Detect if mouse is over this item
-            #             # rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
-            #             # fields.add(rect)
-            #             # bg = colours.menu_background
-            #             if coll_point(mouse_position,
-            #                           (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
-            #             #     draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
-            #             #               colours.menu_highlight_background,
-            #             #               True)
-            #             #     bg = alpha_blend(colours.menu_highlight_background, bg)
-            #
-            #                 # Call Callback
-            #                 if self.clicked:
-            #
-            #                     # If callback needs args
-            #                     if self.subs[self.sub_active][w][6] is not None:
-            #                         self.subs[self.sub_active][w][2](self.reference, self.subs[self.sub_active][w][6])
-            #
-            #                     # If callback just need ref
-            #                     elif self.subs[self.sub_active][w][5]:
-            #                         self.subs[self.sub_active][w][2](self.reference)
-            #
-            #                     else:
-            #                         self.subs[self.sub_active][w][2]()
-            #
-            #             # # Get properties for menu item
-            #             # fx = self.subs[self.sub_active][w][3]()
-            #             # if fx[2] is not None:
-            #             #     label = fx[2]
-            #             # else:
-            #             #     label = self.subs[self.sub_active][w][0]
-            #
-            #             # Render the items label
-            #             # draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), label, fx[0],
-            #             #           self.font, bg=bg)
-            #
-            #             # Render the menu outline
-            #             # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
-
-
-
 
             if self.clicked or key_esc_press:
                 self.active = False
@@ -8851,10 +8601,7 @@ def delete_folder(index):
             prep_gal()
 
     except:
-        raise
         show_message("Unable to comply. Check permissions.")
-
-
 
 
 def rename_parent(index, template):
@@ -9287,11 +9034,6 @@ def intel_moji(index):
             if key != None:
                 star_store.insert(item, key)
 
-            # if key in pctl.star_library:
-            #     newkey = pctl.master_library[item].title + pctl.master_library[item].filename
-            #     if newkey not in pctl.star_library:
-            #         pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
-
     else:
         show_message("Autodetect failed")
 
@@ -9339,14 +9081,6 @@ class Samples:
         if not prefs.expose_web:
             show_message(
                 "Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
-
-
-# samples = Samples()
-#
-# if (system == 'windows' and os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or \
-#         (system != 'windows' and shutil.which('ffmpeg') is not None):
-#     if prefs.enable_web:  # and prefs.expose_web:
-#         track_menu.add_to_sub("Generate Websample", 0, samples.create_sample, pass_ref=True)
 
 
 def sel_to_car():
@@ -10072,24 +9806,6 @@ def clear_queue():
 # x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(160)
 
-
-# def play_pause_deco():
-#     line_colour = colours.grey(150)
-#     if pctl.playing_state == 1:
-#         return [line_colour, colours.menu_background, "Pause"]
-#     if pctl.playing_state == 2:
-#         return [line_colour, colours.menu_background, "Resume"]
-#     return [line_colour, colours.menu_background, None]
-#
-#
-# def play_pause():
-#     if pctl.playing_state == 0:
-#         pctl.play()
-#     else:
-#         pctl.pause()
-
-# x_menu.add_to_sub('Play', 1, play_pause, play_pause_deco)
-# extra_menu.add('Play', play_pause, play_pause_deco)
 
 def stop():
     pctl.stop()
@@ -11780,7 +11496,20 @@ def toggle_use_title(mode=0):
         return prefs.use_title
     prefs.use_title ^= True
 
+def switch_rg_off(mode=0):
+    if mode == 1:
+        return True if prefs.replay_gain == 0 else False
+    prefs.replay_gain = 0
 
+def switch_rg_track(mode=0):
+    if mode == 1:
+        return True if prefs.replay_gain == 1 else False
+    prefs.replay_gain = 1
+
+def switch_rg_album(mode=0):
+    if mode == 1:
+        return True if prefs.replay_gain == 2 else False
+    prefs.replay_gain = 2
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
@@ -11853,7 +11582,8 @@ class Over:
         self.tab_active = 2
         self.tabs = [
             #["Folder Import", self.files],
-            ["System", self.funcs],
+            ["Function", self.funcs],
+            ["Audio", self.audio],
             ["Playlist", self.config_v],
             ["View", self.config_b],
             ["Transcode", self.codec_config],
@@ -11861,6 +11591,55 @@ class Over:
             ["Stats", self.stats],
             ["About", self.about]
         ]
+    def audio(self):
+
+
+        if default_player == "BASS":
+
+            y = self.box_y + 35
+            x = self.box_x + 130
+
+            draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
+            draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
+
+            y = self.box_y + 70
+            x = self.box_x + 130
+
+            draw_text((x, y - 22), "ReplayGain Mode", [160, 160, 160, 255], 12)
+
+            y += 10
+            x += 10
+
+            self.toggle_square(x, y, switch_rg_off, "Off")
+            y += 25
+            self.toggle_square(x, y, switch_rg_track, "Track Gain")
+            y += 25
+            self.toggle_square(x, y, switch_rg_album, "Album Gain")
+
+            y = self.box_y + 60
+            x = self.box_x + 390
+
+            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 12)
+            # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
+
+            for item in pctl.bass_devices:
+                rect = (x, y - 1, 245, 14)
+                #draw.rect_r(rect, [0, 255, 0, 50])
+
+                if self.click and coll_point(mouse_position, rect):
+                    pctl.set_device = item[4]
+                    pctl.playerCommandReady = True
+                    pctl.playerCommand = "setdev"
+
+                line = trunc_line(item[0], 10, 245)
+                if pctl.set_device == item[4]: #item[3] > 0:
+                    draw_text((x, y), line, [140, 140, 140, 255], 10)
+                else:
+                    draw_text((x, y), line, [100, 100, 100, 255], 10)
+                y += 14
+
+            y = self.box_y + 225
+            draw_text((x + 70, y - 2), "Settings apply on track change", colours.grey(100), 11)
 
     def funcs(self):
 
@@ -11887,32 +11666,9 @@ class Over:
         self.toggle_square(x, y, toggle_extract, "Auto extract and delete zip archives")
 
         y = self.box_y + 220
-        draw_text((x, y - 2), "* Applies on restart    ** Applies on track change", colours.grey(100), 11)
+        draw_text((x, y - 2), "* Applies on restart", colours.grey(100), 11)
         self.button(x + 410, y - 4, "Open config file", open_config_file)
 
-        if default_player == "BASS":
-
-            y = self.box_y + 47
-            x = self.box_x + 385
-
-            draw_text((x, y - 22), "Set audio output device**", [160, 160, 160, 255], 12)
-            # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
-
-            for item in pctl.bass_devices:
-                rect = (x, y - 1, 245, 14)
-                #draw.rect_r(rect, [0, 255, 0, 50])
-
-                if self.click and coll_point(mouse_position, rect):
-                    pctl.set_device = item[4]
-                    pctl.playerCommandReady = True
-                    pctl.playerCommand = "setdev"
-
-                line = trunc_line(item[0], 10, 245)
-                if pctl.set_device == item[4]: #item[3] > 0:
-                    draw_text((x, y), line, [140, 140, 140, 255], 10)
-                else:
-                    draw_text((x, y), line, [100, 100, 100, 255], 10)
-                y += 14
 
 
     def button(self, x, y, text, plug, width=0):
@@ -12055,33 +11811,6 @@ class Over:
             y += 35
 
             prefs.transcode_bitrate = self.slide_control(x, y, "Bitrate", "kbs", prefs.transcode_bitrate, 32, 320, 8)
-
-            # draw_text((x, y), "Bitrate:", colours.grey_blend_bg(150), 12)
-            #
-            # x += 60
-            # rect = (x, y, 15, 15)
-            # fields.add(rect)
-            # draw.rect_r(rect, [255, 255, 255, 20], True)
-            # if coll_point(mouse_position, rect):
-            #     draw.rect_r(rect, [255, 255, 255, 25], True)
-            #     if self.click:
-            #         if prefs.transcode_bitrate > 32:
-            #             prefs.transcode_bitrate -= 8
-            # draw_text((x + 4, y), "<", colours.grey(200), 11)
-            # x += 20
-            # # draw.rect_r((x,y,40,15), [255,255,255,10], True)
-            # draw_text((x + 23, y, 2), str(prefs.transcode_bitrate) + " kbs", colours.grey_blend_bg(150), 11)
-            # x += 40 + 15
-            # rect = (x, y, 15, 15)
-            # fields.add(rect)
-            # draw.rect_r(rect, [255, 255, 255, 20], True)
-            # if coll_point(mouse_position, rect):
-            #     draw.rect_r(rect, [255, 255, 255, 25], True)
-            #     if self.click:
-            #         if prefs.transcode_bitrate < 320:
-            #             prefs.transcode_bitrate += 8
-            #
-            # draw_text((x + 4, y), ">", colours.grey(200), 11)
 
             y -= 1
             x += 280
@@ -12361,17 +12090,6 @@ class Over:
 
         return value
 
-        # if mouse_wheel != 0:
-        #     print("wheel")
-        #     if mouse_wheel < 1:
-        #         if value < upper_limit:
-        #             plug(value + 1)
-        #             gui.update_layout()
-        #     else:
-        #         if value > lower_limit:
-        #             plug(value - 1)
-        #             gui.update_layout()
-
 
     def style_up(self):
         prefs.line_style += 1
@@ -12612,43 +12330,6 @@ class Over:
         y += 14
         y2 = y
 
-        # if key_shift_down:
-        #     y += 100
-        #     draw_text((x + 300, y - 10), "Modify (use with caution)", [200, 200, 200, 200], 12)
-        #
-        #     box = (x + 300, y + 7, 200, 20)
-        #     if coll_point(mouse_position, box):
-        #         draw.rect_r(box, [40, 40, 40, 60], True)
-        #         if self.click:
-        #
-        #             # get folders
-        #             folders = []
-        #             for item in os.listdir(self.current_path):
-        #                 folder_path = os.path.join(self.current_path, item)
-        #                 if os.path.isdir(folder_path):
-        #                     folders.append(item)
-        #
-        #             for item in folders:
-        #                 folder_path = os.path.join(self.current_path, item)
-        #                 items_in_folder = os.listdir(folder_path)
-        #                 if len(items_in_folder) == 1 and os.path.isdir(os.path.join(folder_path, items_in_folder[0])):
-        #                     target_path = os.path.join(folder_path, items_in_folder[0])
-        #
-        #                     if item == items_in_folder[0]:
-        #                         print('same')
-        #                         os.rename(target_path, target_path + "RMTEMP")
-        #                         shutil.move(target_path + "RMTEMP", self.current_path)
-        #                         shutil.rmtree(folder_path)
-        #                         os.rename(folder_path + "RMTEMP", folder_path)
-        #                     else:
-        #                         print('diferent')
-        #                         shutil.move(target_path, self.current_path)
-        #                         shutil.rmtree(folder_path)
-        #                         os.rename(os.path.join(self.current_path, items_in_folder[0]), folder_path)
-        #
-        #     draw.rect_r(box, colours.alpha_grey(8), True)
-        #     fields.add(box)
-        #     draw_text((box[0] + 100, box[1] + 2, 2), "Move single folder in folders up", colours.grey_blend_bg(130), 12)
         y = y2
         y += 0
 
@@ -12978,7 +12659,8 @@ class TopPanel:
 
                 # Quick drop tracks (red plus sign to indicate)
                 elif quick_drag is True:
-                    draw_text((x + tab_width - 11, y - 3), '+', [200, 20, 40, 255], 12)
+                    #draw_text((x + tab_width - 11, y - 3), '+', [200, 20, 40, 255], 12)
+                    draw.rect_r((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
 
                     if mouse_up:
                         quick_drag = False
@@ -12991,7 +12673,8 @@ class TopPanel:
 
         # Quick drag single track onto bar to create new playlist
         if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-            draw_text((x + 5, y - 3), '+', [200, 20, 40, 255], 12)
+            #draw_text((x + 5, y - 3), '+', [200, 20, 40, 255], 12)
+            draw.rect_r((x, y, 2, gui.panelY), [80, 200, 180, 255], True)
 
             if mouse_up:
                 pl = new_playlist(False)
@@ -13348,6 +13031,7 @@ class BottomBarType1:
             pctl.player_volume = int(pctl.player_volume)
             pctl.set_volume()
 
+
         if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
                                                                                                      self.seek_bar_position + self.seek_bar_size):
 
@@ -13376,6 +13060,20 @@ class BottomBarType1:
         draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
                   (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
                   colours.volume_bar_fill, True)
+
+
+        fields.add(self.volume_bar_position + self.volume_bar_size)
+        if pctl.active_replaygain != 0 and (coll_point(mouse_position, (
+                    self.volume_bar_position[0], self.volume_bar_position[1], self.volume_bar_size[0],
+                    self.volume_bar_size[1])) or self.volume_bar_being_dragged):
+
+
+            if pctl.player_volume > 50:
+                draw_text((self.volume_bar_position[0] + 8, self.volume_bar_position[1] - 1), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
+                       11, bg=colours.volume_bar_fill)
+            else:
+                draw_text((self.volume_bar_position[0] + 85, self.volume_bar_position[1] - 1), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
+                       11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820:
             if pctl.playing_state < 3:
@@ -15858,92 +15556,6 @@ while running:
         update_layout_do()
         # update layout
         # C-UL
-
-
-        # input.mouse_click = False
-        # if not gui.maximized:
-        #     gui.save_size = copy.deepcopy(window_size)
-        #
-        # bottom_bar1.update()
-        #
-        # if gui.set_bar:
-        #     gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6
-        # else:
-        #     gui.playlist_top = gui.playlist_top_bk
-        # gui.offset_extea = 0
-        # if draw_border:
-        #     gui.offset_extea = 61
-        #
-        # gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
-        #
-        # gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
-        #
-        # if gui.combo_mode:
-        #     gui.playlist_row_height = 31
-        #     gui.playlist_text_offset = 6
-        #     playlist_x_offset = 7
-        #     gui.row_font_size = 13
-        # else:
-        #     gui.playlist_row_height = prefs.playlist_row_height
-        #     gui.playlist_text_offset = 0
-        #     playlist_x_offset = 0
-        #     gui.row_font_size = prefs.playlist_font_size #13
-        #     gui.pl_text_real_height = draw.text_calc("Testあ", gui.row_font_size, False, True)
-        #     gui.pl_title_real_height = draw.text_calc("Testあ", gui.row_font_size - 1, False, True)
-        #     gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)
-        #
-        # gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
-        #
-        # if side_panel_enable is True:
-        #
-        #     if gui.side_panel_size < 100:
-        #         gui.side_panel_size = 100
-        #     if gui.side_panel_size > window_size[1] - 77 and album_mode is not True:
-        #         gui.side_panel_size = window_size[1] - 77
-        #
-        #     if gui.side_panel_size > window_size[0] - 300 and album_mode is True:
-        #         gui.side_panel_size = window_size[0] - 300
-        #
-        #     if album_mode != True:
-        #         gui.playlist_width = window_size[0] - gui.side_panel_size - 30
-        #     else:
-        #         gui.side_panel_size = window_size[0] - gui.playlist_width - 30
-        # else:
-        #     gui.playlist_width = window_size[0] - 30
-        #     # if custom_line_mode:
-        #     #     gui.playlist_width = window_size[0] - 30
-        #
-        # # tttt
-        # if gui.combo_mode:
-        #     gui.playlist_width -= combo_pl_render.pl_album_art_size
-        #
-        # if window_size[0] < 630:
-        #     gui.compact_bar = True
-        # else:
-        #     gui.compact_bar = False
-        #
-        # gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
-        #
-        # if GUI_Mode == 2:
-        #     SDL_DestroyTexture(gui.ttext)
-        #     gui.panelBY = 30
-        #     gui.panelY = 0
-        #     gui.playlist_top = 5
-        #
-        #     gui.pl_update = 1
-        #
-        #     gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / gui.playlist_row_height) - 0) - 3
-        #
-        # if GUI_Mode == 1:
-        #     SDL_DestroyTexture(gui.ttext)
-        #     gui.pl_update = 1
-        # update_set()
-        #
-        #
-        # gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
-        #                           window_size[1])
-        # SDL_Segui.ttextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
-
         update_layout = False
 
     # -----------------------------------------------------
@@ -16110,19 +15722,12 @@ while running:
             gui.update = 2
 
         SDL_SetRenderTarget(renderer, None)
-        #SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
                                colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
-
         SDL_SetRenderTarget(renderer, gui.main_texture)
-        #SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-        #                       colours.top_panel_background[2], colours.top_panel_background[3])
-        #SDL_RenderClear(renderer)
-
 
         # perf_timer.set()
-
 
         fields.clear()
 
@@ -17032,11 +16637,6 @@ while running:
                 # Seperation Line Drawing
                 if side_panel_enable:
 
-                    # Draw Highlight when draging
-                    # if side_drag is True:
-                    #     draw.line(window_size[0] - gui.side_panel_size + 1, gui.panelY + 1, window_size[0] - gui.side_panel_size + 1,
-                    #               window_size[1] - 50, colours.grey(50))
-
                     # Draw Highlight when mouse over
                     if draw_sep_hl:
                         draw.line(window_size[0] - gui.side_panel_size + 1, gui.panelY + 1,
@@ -17048,17 +16648,7 @@ while running:
                 if side_panel_enable and gui.draw_frame:
                     draw.line(gui.playlist_width + 30, gui.panelY + 1, gui.playlist_width + 30, window_size[1] - 30,
                               colours.sep_line)
-                    # if gui.light_mode:
-                    #     rect = [gui.playlist_width + 30 + 1, gui.panelY - 2, 4, window_size[1] - 30 - gui.panelY]
-                    #     draw.rect_r(rect, colours.top_panel_background, True)
-                    #     x = 5
-                    #     draw.line(gui.playlist_width + 30 + x, gui.panelY + 1, gui.playlist_width + 30 + x, window_size[1] - 30,
-                    #               colours.sep_line)
 
-                    # draw.line(gui.playlist_width + 30, gui.panelY + 1, gui.playlist_width + 30, window_size[1] - 30, colours.sep_line)
-                    # if gui.light_mode:
-                    #     rect = [gui.playlist_width + 30, gui.panelY, 6, window_size[1] - 30]
-                    #     draw.rect_r(rect, colours.top_panel_background, True)
 
             # Title position logic
             if album_mode:
@@ -18747,7 +18337,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.8,  # Version
+        1.9,  # Version
         view_prefs,
         gui.save_size,
         gui.side_panel_size,
@@ -18785,7 +18375,7 @@ save = [pctl.master_library,
         gui.show_stars,
         prefs.auto_lfm,
         prefs.scrobble_mark,
-        None,
+        prefs.replay_gain,
         None,
         None,
         None]
