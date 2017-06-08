@@ -65,6 +65,9 @@ class Flac:
         self.bit_rate = 0
         self.length = 0
 
+        self.track_gain = None
+        self.album_gain = None
+
     def read_vorbis(self, f):
 
         block_position = 0
@@ -132,6 +135,12 @@ class Flac:
                         print("      In file: " + self.filepath)
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
+                    elif 'replaygain_track_gain' == a:
+                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_album_gain' == a:
+                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                        # print("\n-------------------------------------------\n")
+
 
         f.seek(block_position * -1, 1)
 
@@ -266,6 +275,8 @@ class Opus:
         self.disc_total = ""
         self.picture = ""
         self.lyrics = ""
+        self.track_gain = None
+        self.album_gain = None
 
         self.sample_rate = 48000  # OPUS files are always 48000
         self.bit_rate = 0
@@ -362,6 +373,10 @@ class Opus:
 
                         # To do
 
+                    elif 'replaygain_track_gain' == a:
+                        self.track_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif 'replaygain_album_gain' == a:
+                        self.album_gain = float(b.decode("utf-8").strip(" dB"))
                     elif a == "discnumber":
                         self.disc_number = b.decode("utf-8")
                     elif a == 'disctotal' or a == 'totaldiscs':
@@ -423,6 +438,8 @@ class Ape:
         self.picture = ""
         self.lyrics = ""
         self.label = ""
+        self.track_gain = None
+        self.album_gain = None
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -546,6 +563,10 @@ class Ape:
                     self.label = value
                 elif key.lower() == "lyrics":
                     self.lyrics = value
+                elif 'replaygain_track_gain' == key.lower():
+                    self.track_gain = float(value.decode("utf-8").strip(" dB"))
+                elif 'replaygain_album_gain' == key.lower():
+                    self.album_gain = float(value.decode("utf-8").strip(" dB"))
                 elif key.lower() == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture
