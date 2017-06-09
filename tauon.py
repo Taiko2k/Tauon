@@ -325,7 +325,7 @@ side_panel_enable = True
 quick_drag = False
 
 radiobox = False
-radio_field_text = "http://"
+radio_field_text = "http://0.0.0.0:8000"
 renamebox = False
 
 
@@ -574,7 +574,7 @@ class Prefs:
         
         self.server_port = 7590
         self.mkey = True
-        self.replay_gain = 1  # 0=off 1=track 2=album
+        self.replay_gain = 0  # 0=off 1=track 2=album
 
 
 prefs = Prefs()
@@ -1655,6 +1655,7 @@ class PlayerCtl:
         self.broadcast_time = 0
         self.broadcast_last_time = 0
         self.broadcast_line = ""
+        self.broadcast_clients = []
 
         self.record_stream = False
         self.record_title = ""
@@ -2806,10 +2807,15 @@ def player():
 
     down_func = DownloadProc(py_down)
 
+    EncodeClientProc = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p)
+
     # def py_cmp_func(handle, channel, buffer, length):
     #     return 0
     #
     # cmp_func = EncodeProc(py_cmp_func)
+    BASS_Encode_ServerInit = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, EncodeClientProc,
+                           ctypes.c_void_p)(('BASS_Encode_ServerInit', enc_module))
+
 
     BASS_Encode_Start = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
                                       ctypes.c_bool, ctypes.c_void_p)(('BASS_Encode_Start', enc_module))
@@ -2967,6 +2973,19 @@ def player():
     x = (ctypes.c_float * 512)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
     sp_handle = 0
+
+
+    def broadcast_connect(handle, connect, client, headers, user):
+
+        if connect is True:
+            pctl.broadcast_clients.append(client.decode())
+        else:
+            pctl.broadcast_clients.remove(client.decode())
+        print((connect, client))
+
+        return True
+
+    client_connect = EncodeClientProc(broadcast_connect)
 
     BASS_FX_GetVersion()
 
@@ -3458,10 +3477,8 @@ def player():
 
             if pctl.playerCommand == "encstart":
 
-                mount = ""
-                ice_pass = ""
-                codec = ""
-                bitrate = ""
+                port = "8000"
+                bitrate = "128"
 
                 path = config_directory + "/config.txt"
                 with open(path, encoding="utf_8") as f:
@@ -3471,19 +3488,13 @@ def player():
                             continue
                         if p[0] == " " or p[0] == "#":
                             continue
-                        if 'icecast-mount=' in p:
-                            mount = p.split('=')[1]
-                        elif 'icecast-password=' in p:
-                            ice_pass = p.split('=')[1]
-                        elif 'icecast-codec=' in p:
-                            codec = p.split('=')[1]
-                        elif 'icecast-bitrate=' in p:
+                        if 'broadcast-port=' in p:
+                            if len(p) < 40:
+                                port = p.split('=')[1]
+                        elif 'broadcast-bitrate=' in p:
                             bitrate = p.split('=')[1]
 
-                    print(mount)
-                    print(ice_pass)
-                    print(codec)
-                    print(bitrate)
+
 
                 pctl.broadcast_active = True
                 print("starting encoder")
@@ -3517,57 +3528,62 @@ def player():
                 # encoder = BASS_Encode_Start(handle3, <lame.exe> --alt-preset standard - c:\output.mp3', 0, cmp_func, 0)
                 # encoder = BASS_Encode_Start(handle3, <directory of encoder> -r -s 44100 -b 128 -", 1, 0, 0)
 
-                if codec == "MP3":
-                    if system == 'windows':
-                        line = user_directory + "/encoder/lame.exe" + " -r -s 44100 -b " + bitrate + " -"
-                    else:
-                        line = "lame" + " -r -s 44100 -b " + bitrate + " -"
+                # if codec == "MP3":
+                #     if system == 'windows':
+                #         line = user_directory + "/encoder/lame.exe" + " -r -s 44100 -b " + bitrate + " -"
+                #     else:
+                #         line = "lame" + " -r -s 44100 -b " + bitrate + " -"
+                #
+                #     line = line.encode('utf-8')
+                #
+                #     encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+                #
+                #     line = "source:" + ice_pass
+                #     line = line.encode('utf-8')
+                #
+                #     result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
+                #                          b"genre", b"", b"", int(bitrate), False)
 
-                    line = line.encode('utf-8')
+                if not has_bass_ogg:
+                    show_message("Error: Missing bass_enc_ogg module, you may be using an outdated install")
+                    pctl.broadcast_active = False
+                    BASS_ChannelStop(handle3)
+                    BASS_StreamFree(handle3)
+                    pctl.playerCommand = ""
+                    continue
 
-                    encoder = BASS_Encode_Start(mhandle, line, 1, 0, 0)
+                line = "--bitrate " + bitrate
+                line = line.encode('utf-8')
 
-                    line = "source:" + ice_pass
-                    line = line.encode('utf-8')
+                print(BASS_ErrorGetCode())
 
-                    result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"audio/mpeg", b"name", b"url",
-                                         b"genre", b"", b"", int(bitrate), False)
+                encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
 
 
-                elif codec == "OGG":
-                    if not has_bass_ogg:
-                        show_message("Error: Missing bass_enc_ogg module, you may be using an outdated install")
-                        pctl.broadcast_active = False
-                        BASS_ChannelStop(handle3)
-                        BASS_StreamFree(handle3)
-                        pctl.playerCommand = ""
-                        continue
+                result = BASS_Encode_ServerInit(encoder, port.encode(), 64000, 64000, 2, client_connect, None)
 
-                    line = "--bitrate " + bitrate
-                    line = line.encode('utf-8')
-
-                    encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
-
-                    line = "source:" + ice_pass
-                    line = line.encode('utf-8')
-
-                    result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url",
-                                         b"genre", b"", b"", int(bitrate), False)
+                #result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url", b"genre", b"", b"", int(bitrate), False)
+                #b"application/ogg", b"name", b"url", b"genre", b"", b""
 
                 if BASS_ErrorGetCode() == -1:
-                    show_message("Error: Sorry, something isn't working right, maybe an issue with icecast?")
+                    show_message("Error: Sorry, something isn't working right.")
                 channel1 = BASS_ChannelPlay(mhandle, True)
                 print(encoder)
                 print(pctl.broadcast_line)
+                print("after set title")
+                print(BASS_ErrorGetCode())
                 line = pctl.broadcast_line.encode('utf-8')
                 BASS_Encode_CastSetTitle(encoder, line, 0)
                 # Trying to send the stream title here causes the stream to fail for some reason
                 # line2 = pctl.broadcast_line.encode('utf-8')
                 # BASS_Encode_CastSetTitle(encoder, line2,0)
-                if result is True:
-                    show_message("Connection to Icecast successful")
+                print("after set title")
+                print(BASS_ErrorGetCode())
+                if result != 0:
+                    show_message("Server initiated successfully, listening on port " + port)
                 else:
-                    show_message("Error:  Failed to connect to Icecast. Make sure Icecast is running, and configuration is correct")
+                    show_message("Error: Failed to start server")
+
                     pctl.playerCommand = "encstop"
                     pctl.playerCommandReady = True
 
@@ -9042,45 +9058,45 @@ track_menu.add_to_sub("Fix Mojibake", 0, intel_moji, pass_ref=True)
 #track_menu.add_to_sub("Fix Mojibake Manual...", 0, activate_encoding_box, pass_ref=True)
 
 
-class Samples:
-    def __init__(self):
-        self.cache_directroy = os.path.join(user_directory, 'web') + "/"
-        self.auth = {}
-
-    def create_sample(self, index):
-
-        show_message("Generating link...")
-        if not os.path.exists(self.cache_directroy):
-            os.makedirs(self.cache_directroy)
-
-        agg = [index]
-        loaderThread = threading.Thread(target=self.next, args=agg)
-        loaderThread.daemon = True
-        loaderThread.start()
-
-    def next(self, index):
-
-        for key, value in self.auth.items():
-            if value == index:
-                name = key
-                filename = samples.cache_directroy + key
-                if os.path.isfile(filename):
-                    copy_to_clipboard("http://localhost:" + str(prefs.server_port) + "/sample/" + key)
-                    show_message("Link copied to clipboard")
-                    return
-
-        name = str(index) + "-" + str(random.randrange(11111, 99999))
-        filename = samples.cache_directroy + name
-        if os.path.isfile(filename):
-            os.remove(filename)
-
-        self.auth[name] = index
-        transcode_single(index, self.cache_directroy, name)
-        copy_to_clipboard("http://localhost:7590/sample/" + name)
-        show_message("Done, link copied to clipboard")
-        if not prefs.expose_web:
-            show_message(
-                "Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
+# class Samples:
+#     def __init__(self):
+#         self.cache_directroy = os.path.join(user_directory, 'web') + "/"
+#         self.auth = {}
+#
+#     def create_sample(self, index):
+#
+#         show_message("Generating link...")
+#         if not os.path.exists(self.cache_directroy):
+#             os.makedirs(self.cache_directroy)
+#
+#         agg = [index]
+#         loaderThread = threading.Thread(target=self.next, args=agg)
+#         loaderThread.daemon = True
+#         loaderThread.start()
+#
+#     def next(self, index):
+#
+#         for key, value in self.auth.items():
+#             if value == index:
+#                 name = key
+#                 filename = samples.cache_directroy + key
+#                 if os.path.isfile(filename):
+#                     copy_to_clipboard("http://localhost:" + str(prefs.server_port) + "/sample/" + key)
+#                     show_message("Link copied to clipboard")
+#                     return
+#
+#         name = str(index) + "-" + str(random.randrange(11111, 99999))
+#         filename = samples.cache_directroy + name
+#         if os.path.isfile(filename):
+#             os.remove(filename)
+#
+#         self.auth[name] = index
+#         transcode_single(index, self.cache_directroy, name)
+#         copy_to_clipboard("http://localhost:7590/sample/" + name)
+#         show_message("Done, link copied to clipboard")
+#         if not prefs.expose_web:
+#             show_message(
+#                 "Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
 
 
 def sel_to_car():
@@ -12808,7 +12824,7 @@ class TopPanel:
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
-            draw_text((x, y), text, [60, 75, 220, 255], 11)
+            draw_text((x, y), text, [70, 85, 230, 255], 11)
             x += draw.text_calc(text, 11) + 6
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
@@ -12819,7 +12835,7 @@ class TopPanel:
 
             x += 7
             progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100)
-            draw.rect((x, y + 4), (progress, 9), [30, 25, 170, 255], True)
+            draw.rect((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
             draw.rect((x, y + 4), (100, 9), colours.grey(30))
 
             if input.mouse_click and coll_point(mouse_position, (x, y, 90, 11)):
@@ -12829,8 +12845,16 @@ class TopPanel:
                 pctl.playerCommandReady = True
 
 
+            x += 110
+            draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
+            if len(pctl.broadcast_clients) > 0 and input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
+                line = " "
+                input.mouse_click = False
+                for client in pctl.broadcast_clients:
+                    line += client.split(":")[0] + "  "
+                    show_message(line)
 
-            x += 100
+
 
         if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
             draw_text2((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12,
@@ -14504,7 +14528,7 @@ if system != 'windows':
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
-            if tab_menu.active:
+            if tab_menu.active or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
         elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:

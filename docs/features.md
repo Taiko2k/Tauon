@@ -48,7 +48,7 @@
 - Sorting to new playlist
 - Web interface (basic playback control)
 - Inbound streaming (HTTP, Icecast, Shoutcast)
-- Outbound streaming with Icecast (MP3, OGG)
+- Outbound streaming
 - Global media keys + some local harcoded keyboard shortcuts
 - Output audio device override
 - Track love
@@ -64,12 +64,12 @@
 
 - Volume
 - Cross fade (only)
+- Replay gain (Track and Album gain from metadata only)
 
 ## Other common player features not implemented:
 
  - Codecs: ALAC, Musepack, TAK
- - Replay gain
- - True gapless playback
+ - Gapless playback (crossfade is used)
  - Folder tree view
  - Folder monitoring / auto update
  - Skins
@@ -82,7 +82,7 @@
  - Audiobooks
  - Tag editing
  - Ratings
- - Read from archive
+ - Read from archive (auto extract zip function exists)
  - Artist/metadata scraping
  - All tag metadata
  - A-B repreat
