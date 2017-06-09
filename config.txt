@@ -54,14 +54,10 @@ linux-font-star-offset=1
 
 #output-dir=C:\example
 
-# --- Icecast ------------------------------------------------------------------
-# Icecast mounting. Codec can be MP3 or OGG
-# Note: MP3 setting requires lame. On windows place 'lame.exe' in /encoder directory. On Linux install 'lame' package
+# --- Broadcasting ------------------------------------------------------------------
 
-icecast-codec=OGG
-icecast-bitrate=128
-icecast-mount=localhost:8000/test
-icecast-password=hackme
+broadcast-bitrate=128
+broadcast-port=8000
 
 # --- Tag Editor ----------------------------------------------------------------
 # External Tag editor loading. tag-editor-program is the binary name used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.

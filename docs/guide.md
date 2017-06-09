@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.3.5
+Basic usage guide. Updated for v2.4.0
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. 
@@ -108,16 +108,16 @@ Compatible with HTTP streams (Shoutcast, Icecast etc). To open a stream:
 
 To record a steam, once a stream has been opened, re enter the open stream box and click REC. If this fails, try make sure the encoder directory is valid and has write permissions. Recordings are encoded to OGG at about 100kbs and are automatically split when on metadata change.
 
-### Outbound Streaming
+### Outbound Streaming / Broadcasting
 
-1) Install, configure (optional) and start Icecast. See config.txt for optional further setup.
-2) From player click MENU from top bar and select 'Start Broadcast' from menu. You should now see an entry in the Icecast web interface (default http://localhost:8000). From track context menu select 'Broadcast This' to play a track immediately.
+From player click MENU from top bar and select 'Start Broadcast' from menu. You should now be able to connect a player to the target port. 
 
-Note: Broadcast will repeat from beginning of playlist once end is reached  
+From track context menu select 'Broadcast This' to play a track immediately.
+
+Note: The codec used is OGG. Bitrate can be set in 'config.txt'. Higher bitrates may help reduce latency. Lower bitrates will conserve bandwidth at cost of audio quality.
 
 Warning: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
 
-Tip: Higher bitrates may help reduce latency. lower bitrates will conserve bandwidth at cost of audio quality.
 
 ### Transcoding albums
 
@@ -184,7 +184,8 @@ Tip: Exporting then importing tracks also serves the function of reviving dead t
 User data files
 ================
 
-**state.p** - Contains playlists, track database information and some settings. Delete to reset player.  
+**state.p** - Contains playlists, track database information and some settings. Delete to reset player. 
+
 **star.p**  - Contains track play count information independent of database, tracks are uniquely identified by a matching filename, artist and track title. Can be transferred between platforms.
 
 ### Upgrading / Moving
@@ -204,19 +205,28 @@ Tip: If you are moving platforms, resetting player or moved your music location 
  4) Finally, drag and drop the old XSPF playlist back in to re-import.
 
 
+### ReplayGain
+
+Basic support for ReplayGain exists. When enabled, volume will be adjusted according to ReplayGain metadata in track tags.
+
+Only applies to local playback. If no ReplayGain metadata exists, no adjustments will be made.
+
+
 Web components
 =================================
 
 Enable in MENU -> SETTINGS... -> SYSTEM tab
-Warning: Enabling the 'allow external connections' option may pose a security risk  
+Warning: Enabling the 'allow external connections' option may pose a security risk
+
 Warning: Make sure there are no private files in the folders of your music, especially pictures that may inadvertently be sent as an album art thumbnail
 
-***localhost:7590/remote*** - Remote player control with album art and track info  
+***localhost:7590/remote*** - Remote player control with album art and track info
+
 ***localhost:7590/radio*** - Album art and track info for broadcasting
 
-Individual tracks can be made accessible from the UI (TRACK MENU-> META... -> Generate Websample)  
+Individual tracks can be made accessible from the UI (TRACK MENU-> META... -> Generate Websample)
   
-Note: Requires FFMPEG and web server enabled before menu entry will appear  
+Note: Requires FFMPEG and web server enabled before menu entry will appear
   
 Note: Must be clicked for each track and will only be accessible for duration of session as files and links are cleared on restart.
 
