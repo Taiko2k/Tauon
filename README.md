@@ -17,7 +17,7 @@ Uses BASS audio library. Target supported platforms are Windows 10 and Arch Linu
   - Lyrics display with support for fetching lyrics from LyricWiki
   - Save and load playlists in the XSPF file format
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting
-  - Outbound radio streaming to Icecast. Streams playlist in background without affecting local playback.
+  - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
 
 ### Screenshot :star2:
 
