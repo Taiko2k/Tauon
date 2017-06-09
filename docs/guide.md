@@ -71,8 +71,11 @@ Tip: End the search text with another forward slash to search just for folders w
 Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  right click folder title; SELECTION MENU -> MODIFY FOLDER...
 
 ***Rename*** - Renames the folder of the track to given template format. The template that this defaults to can be changed in the config.txt file.  
+
 ***Delete*** - Deletes the folder and all containing files and folders (hold shift to enable)
+
 ***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
+
 ***Clean*** - Deletes the following OS related items in the folder: 'desktop.ini', 'Thumbs.db', Windows Media Player generated thumbnail images, Mac OS related '.DS_Store' and '__MACOSX' files/folders.
 
 Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use this function around files or folders you cannot afford to lose.
@@ -181,6 +184,12 @@ Bug: Some tracks with strange characters in metadata may cause process to fail.
 Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
 
 
+### ReplayGain
+
+Basic support for ReplayGain exists. When enabled, volume will be adjusted according to ReplayGain metadata in track tags.
+
+Only applies to local playback. If no ReplayGain metadata exists, no adjustments will be made.
+
 User data files
 ================
 
@@ -204,12 +213,6 @@ Tip: If you are moving platforms, resetting player or moved your music location 
  3) Re-import your music from the new location to any playlist
  4) Finally, drag and drop the old XSPF playlist back in to re-import.
 
-
-### ReplayGain
-
-Basic support for ReplayGain exists. When enabled, volume will be adjusted according to ReplayGain metadata in track tags.
-
-Only applies to local playback. If no ReplayGain metadata exists, no adjustments will be made.
 
 
 Web components
