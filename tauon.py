@@ -3560,7 +3560,7 @@ def player():
                 encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
 
 
-                result = BASS_Encode_ServerInit(encoder, port.encode(), 64000, 64000, 2, client_connect, None)
+                result = BASS_Encode_ServerInit(encoder, port.encode(), 32000, 32000, 2, client_connect, None)
 
                 #result = BASS_Encode_CastInit(encoder, mount.encode('utf-8'), line, b"application/ogg", b"name", b"url", b"genre", b"", b"", int(bitrate), False)
                 #b"application/ogg", b"name", b"url", b"genre", b"", b""
@@ -9804,7 +9804,7 @@ def broadcast_deco():
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
-        return [[150, 150, 150, 255], [24, 25, 60, 255], "Stop Broadcast"]
+        return [line_colour, [24, 25, 60, 255], "Stop Broadcast"]
     return [line_colour, colours.menu_background, None]
 
 

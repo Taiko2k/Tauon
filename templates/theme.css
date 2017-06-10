@@ -8,12 +8,15 @@ p {
   font-family: sans-serif;
 }
 
+
+
 #img-holder {
    height: 300px;
    width: 300px;
    background-color: #222;
    float: left;
    clear: left;
+
 }
 
 
@@ -64,6 +67,11 @@ p {
   left: 600px;
   overflow: scroll;
 }
+
+#player {
+  padding-top: 50px;
+}
+
 
 .buttons {
 
