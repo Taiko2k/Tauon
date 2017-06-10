@@ -64,7 +64,7 @@ function getPlayingTracks(){
           }
           $(".track-entry").click( function() {
             $.get("/remote/" + this.id)
-            setTimeout(update, 100);
+            setTimeout(update, 200);
             });
       })
 

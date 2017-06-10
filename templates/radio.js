@@ -44,4 +44,13 @@ function tick(){
   else { alert("Connection lost, reload page to continue.")}
 }
 
+
+console.log(window.location.hostname + ":8000")
+var sound      = document.createElement('audio');
+sound.id       = 'audio-player';
+sound.controls = 'controls';
+sound.src      = "http://" + window.location.hostname + ":8000";
+sound.type     = 'audio/mpeg';
+document.getElementById('player').appendChild(sound);
+
 tick()

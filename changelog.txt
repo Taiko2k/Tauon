@@ -7,6 +7,7 @@ v2.4.0
  - Added ReplayGain support for tracks with supporting track/album metadata
  - Added append playlist by drag tab and hold shift
  - Added indicator when broadcasting to show number of listeners
+ - Added html audio player to radio page
  - Fixed window video corruption on start (Linux)
  - Fixed stream recording causing crash on track change (Linux)
  - Fixed comment text not being properly truncated (Linux)
