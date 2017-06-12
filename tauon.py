@@ -2120,8 +2120,9 @@ class PlayerCtl:
             # Stop at end of playlist
             if self.playlist_playing == len(self.playing_playlist()) - 1:
                 self.playing_state = 0
-                self.playerCommand = 'stop'
+                self.playerCommand = 'runstop'
                 self.playerCommandReady = True
+                gui.update += 3
             else:
                 if self.playlist_playing > len(self.playing_playlist()) - 1:
                     self.playlist_playing = 0
@@ -2151,6 +2152,7 @@ class PlayerCtl:
         #     goto_album(self.playlist_playing)
 
         self.render_playlist()
+
         self.notify_update()
 
 
@@ -2688,6 +2690,7 @@ def player():
         bass_module = ctypes.WinDLL('bass')
         enc_module = ctypes.WinDLL('bassenc')
         mix_module = ctypes.WinDLL('bassmix')
+        fx_module = ctypes.WinDLL('bass_fx')
         # opus_module = ctypes.WinDLL('bassenc_opus')
         try:
             ogg_module = ctypes.WinDLL('bassenc_ogg')
@@ -2894,20 +2897,35 @@ def player():
     open_flag |= BASS_ASYNCFILE
     # open_flag |= BASS_STREAM_DECODE
     open_flag |= BASS_SAMPLE_FLOAT
+    open_flag |= BASS_STREAM_AUTOFREE
 
-    # mixer = None
-    #
-    # global source
-    # def py_sync(handle, channel, data, user):
-    #     global source
-    #     print("SYNC")
-    #     source = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-    #     BASS_Mixer_StreamAddChannel(mixer, source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
-    #     BASS_ChannelSetPosition(mixer, 0, 0)
-    #
-    #     return 0
-    #
-    # EndSync = SyncProc(py_sync)
+    # gap1
+    class BassGapless:
+        def __init__(self):
+            self.mixer = None
+            self.source = None
+            self.gap_next = None
+
+    bass_gap = BassGapless()
+
+
+
+    #global source
+
+    def py_sync(handle, channel, data, user):
+
+        print("SYNC")
+        if bass_gap.gap_next is not None:
+
+            bass_gap.source = BASS_StreamCreateFile(False, bass_gap.gap_next, 0, 0, open_flag | BASS_STREAM_DECODE)
+            BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
+            BASS_ChannelSetPosition(bass_gap.mixer, 0, 0)
+            bass_gap.gap_next = None
+        else:
+            print("no next!")
+        return 0
+
+    EndSync = SyncProc(py_sync)
 
 
     if system == 'windows':
@@ -3589,22 +3607,62 @@ def player():
 
                 print(BASS_ErrorGetCode())
 
+            # ----------------------------------------------------------------------------
+            # STANDARD PLAYBACK
+
             # -----------------------------------------------------------------------------
             # -----------------------------------------------------------------------------
+            # gap2
             # if pctl.playerCommand == 'open' and pctl.target_open != '':
             #
-            #     if mixer is None:
-            #         mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
-            #         BASS_ChannelSetSync(mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, EndSync, 0);
+            #     pctl.playerCommand = ""
+            #     if system != 'windows':
+            #         target_file = pctl.target_open.encode('utf-8')
+            #     else:
+            #         target_file = pctl.target_open
             #
+            #     if bass_gap.mixer is None:
+            #         print(BASS_ErrorGetCode())
+            #         print("create mixer")
+            #         bass_gap.mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
             #
-            #         source = BASS_StreamCreateFile(False, pctl.target_open, 0, 0,  open_flag)
-            #         BASS_Mixer_StreamAddChannel(mixer, source, BASS_STREAM_AUTOFREE)
-            #         BASS_ChannelPlay(mixer, False)
+            #         print("set sync")
+            #         BASS_ChannelSetSync(bass_gap.mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, EndSync, 0)
+            #         print(BASS_ErrorGetCode())
+            #
+            #         print("create source")
+            #         bass_gap.source = BASS_StreamCreateFile(False, target_file, 0, 0, open_flag | BASS_STREAM_DECODE)
+            #         print(BASS_ErrorGetCode())
+            #
+            #         print("add source to mixer")
+            #         BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE)
+            #         print(BASS_ErrorGetCode())
+            #         print("play")
+            #         BASS_ChannelPlay(bass_gap.mixer, False)
+            #         print(BASS_ErrorGetCode())
             #
             #         player1_status = p_playing
             #     else:
-            #         pass
+            #         print("existing mixer")
+            #         bass_gap.gap_next = target_file
+            #
+            #     player_timer.hit()
+            #
+            #
+            # # SEEK COMMAND
+            # elif pctl.playerCommand == 'seek':
+            #     print("seek")
+            #     print("get position")
+            #     bytes_position = BASS_ChannelSeconds2Bytes(bass_gap.source, pctl.new_time + pctl.start_time)
+            #     print(BASS_ErrorGetCode())
+            #     print('set position')
+            #     BASS_ChannelSetPosition(bass_gap.source, bytes_position, 0)
+            #     print(BASS_ErrorGetCode())
+            #     print("play")
+            #     BASS_ChannelPlay(bass_gap.source, False)
+            #     print(BASS_ErrorGetCode())
+            #     pctl.playerCommand = ''
+            #
 
             # -----------------------------------------------------------------------------
 
@@ -3754,11 +3812,7 @@ def player():
                     channel2 = BASS_ChannelPlay(handle2, False)
                     BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.pause_fade_time)
 
-            # UNLOAD PLAYER COMMAND
-            elif pctl.playerCommand == 'unload':
-                BASS_Free()
-                print('BASS Unloaded')
-                break
+
 
             # CHANGE VOLUME COMMAND
             elif pctl.playerCommand == 'volume':
@@ -3768,6 +3822,11 @@ def player():
                 if player2_status == p_playing:
                     BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.change_volume_fade_time)
             # STOP COMMAND
+            elif pctl.playerCommand == 'runstop':
+                player1_status = p_stopped
+                player2_status = p_stopped
+
+
             elif pctl.playerCommand == 'stop':
                 if player1_status != p_stopped:
                     player1_status = p_stopped
@@ -3816,6 +3875,12 @@ def player():
                 BASS_StreamFree(handle2)
                 player2_status = p_stopped
                 channel2 = BASS_ChannelStop(handle2)
+
+            # UNLOAD PLAYER COMMAND
+            elif pctl.playerCommand == 'unload':
+                BASS_Free()
+                print('BASS Unloaded')
+                break
 
     pctl.playerCommand = 'done'
 
@@ -11394,7 +11459,7 @@ def toggle_expose_web(mode=0):
         return prefs.expose_web
     prefs.expose_web ^= True
     if prefs.expose_web:
-        show_message("Warning: This setting may pose security and/or privacy risks, including ones as a result of design, and potentially ones unintentional") # especially if incomming connections are allowed through firewall")
+        show_message("Warning: Enabling this setting may pose security and/or privacy risks")
 
 def toggle_scrobble_mark(mode=0):
     if mode == 1:
@@ -18219,8 +18284,7 @@ while running:
 
     # Trigger track advance once end of track is reached
     if pctl.playing_state == 1 and pctl.playing_time + (
-                prefs.cross_fade_time / 1000) + 0.5 >= pctl.playing_length and pctl.playing_time > 0.4:
-
+                prefs.cross_fade_time / 1000) + 0 >= pctl.playing_length and pctl.playing_time > 0.2:
         if pctl.playing_length == 0 and pctl.playing_time < 4:
             # If the length is unknown, allow backend some time to provide a duration
             pass
