@@ -1940,8 +1940,11 @@ class PlayerCtl:
         self.render_playlist()
         self.notify_update()
 
-    def stop(self, block=False):
+    def stop(self, block=False, run=False):
         self.playerCommand = 'stop'
+        if run:
+            self.playerCommand = 'runstop'
+
         self.playerCommandReady = True
         self.record_stream = False
         if len(self.track_queue) > 0:
@@ -3825,6 +3828,9 @@ def player():
             elif pctl.playerCommand == 'runstop':
                 player1_status = p_stopped
                 player2_status = p_stopped
+                time.sleep(1.5)
+                BASS_ChannelStop(handle1)
+                BASS_ChannelStop(handle2)
 
 
             elif pctl.playerCommand == 'stop':
@@ -4074,6 +4080,7 @@ elif system != 'mac':
                                 if i_path is not None:
                                     d['mpris:artUrl'] = 'file://' + i_path
                             except:
+
                                 print("Thumbnail error")
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
@@ -5709,6 +5716,7 @@ class GallClass:
         global album_art_gen
 
         sources = album_art_gen.get_sources(index)
+
         if len(sources) == 0:
             return False
         offset = album_art_gen.get_offset(pctl.master_library[index].fullpath, sources)
@@ -5872,11 +5880,14 @@ class ThumbTracks:
             image_name = "noname"
 
         source = gall_ren.get_file_source(track.index)
+
         if source is False:
             print("NO ART")
             return None
 
         image_name += "-" + str(source[2])
+        image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+
 
         t_path = user_directory + "/cache/" + image_name + '.jpg'
         if os.path.isfile(t_path):
@@ -5906,9 +5917,6 @@ class ThumbTracks:
         source_image.close()
 
         return t_path
-
-
-
 
 
 thumb_tracks = ThumbTracks()
@@ -18291,7 +18299,7 @@ while running:
         else:
 
             if auto_stop:
-                pctl.stop()
+                pctl.stop(run=True)
                 gui.update += 2
                 auto_stop = False
 

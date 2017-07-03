@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+
+v2.4.1
+
+ - Fixed thumbnail generator for MPRIS failing in some cases
+ - Fixed playing track not stopping if end track in playlist was missing
+ - Tweaked cross-fade to not apply to auto-stop function
+
 v2.4.0
 
  - Added MPRIS interface support (Linux)
