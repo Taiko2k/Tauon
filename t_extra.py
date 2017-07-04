@@ -33,6 +33,7 @@ class Timer:  # A seconds based timer
     def __init__(self):
         self.start = 0
         self.end = 0
+        self.set()
 
     def set(self):  # Reset
         self.start = time.time()
@@ -47,6 +48,11 @@ class Timer:  # A seconds based timer
     def get(self):  # Return time only
         self.end = time.time()
         return self.end - self.start
+
+
+# Test given proximity between two 2d points
+def point_proximity_test(a, b, p):
+    return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
 
 # Removes whatever this is from a line, I forgot

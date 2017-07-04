@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.4.0"
+t_version = "v2.4.1"
 title = 'Tauon Music Box'
 version_line = title + " " + t_version
 print(version_line)
@@ -250,28 +250,19 @@ if system == 'linux':
 
 cursor_blink_timer = Timer()
 animate_monitor_timer = Timer()
-animate_monitor_timer.set()
 spec_decay_timer = Timer()
 min_render_timer = Timer()
 check_file_timer = Timer()
-check_file_timer.set()
 vis_rate_timer = Timer()
-vis_rate_timer.set()
 vis_decay_timer = Timer()
-vis_decay_timer.set()
 scroll_timer = Timer()
-scroll_timer.set()
 radio_meta_timer = Timer()
 perf_timer = Timer()
-perf_timer.set()
 quick_d_timer = Timer()
-quick_d_timer.set()
-d_click_time = Timer()
-quick_d_timer.set()
 broadcast_update_timer = Timer()
 broadcast_update_timer.set()
 core_timer = Timer()
-core_timer.set()
+
 
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -699,6 +690,7 @@ class GuiVar:
         self.rename_folder_box = False
 
         self.present = False
+        self.drag_source_position = (0, 0)
 
 gui = GuiVar()
 
@@ -12581,6 +12573,8 @@ class TopPanel:
 
         self.exit_button = WhiteModImageAsset('/gui/ex.png')
 
+        self.adds = []
+
     def render(self):
 
         # C-TD
@@ -12607,6 +12601,7 @@ class TopPanel:
 
         x = self.start_space_left
         y = self.ty
+
 
         # Calculate position for playing text and text
         offset = 15
@@ -12658,6 +12653,75 @@ class TopPanel:
         if draw_alt:
             x = self.start_space_compact_left
 
+        x_start = x
+
+        # TAB INPUT PROCESSING
+        for i, tab in enumerate(pctl.multi_playlist):
+
+            if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                break
+
+            if draw_alt and i != pctl.playlist_active:
+                continue
+
+            tab_width = self.tab_text_spaces[i] + self.tab_extra_width
+
+            # Detect mouse over and add tab to mouse over detection
+            f_rect = [x, y + 1, tab_width - 1, self.height - 1]
+            tab_hit = coll_point(mouse_position, f_rect)
+
+            # Tab functions
+            if tab_hit:
+
+                # Click to change playlist
+                if input.mouse_click:
+                    gui.pl_update = 1
+                    self.tab_hold = True
+                    self.tab_hold_index = i
+                    switch_playlist(i)
+
+                # Drag to move playlist
+                if mouse_up and i != self.tab_hold_index and self.tab_hold is True:
+
+                    if key_shift_down:
+                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
+                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.tab_hold_index])
+                        delete_playlist(self.tab_hold_index)
+                    else:
+                        move_playlist(self.tab_hold_index, i)
+                    self.tab_hold = False
+
+                # Delete playlist on wheel click
+                elif tab_menu.active is False and middle_click:
+                    delete_playlist(i)
+                    break
+
+                # Activate menu on right click
+                elif right_click:
+                    tab_menu.activate(copy.deepcopy(i))
+
+                # Quick drop tracks (red plus sign to indicate)
+                elif quick_drag is True:
+                    if mouse_up:
+                        quick_drag = False
+                        for item in shift_selection:
+                            pctl.multi_playlist[i][2].append(default_playlist[item])
+                        if len(shift_selection) > 0:
+                            self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
+
+            x += tab_width + self.tab_spacing
+
+        x = x_start
+
+        # Need to test length again
+        self.tab_text_spaces = []
+        left_space_es = 0
+        for i, item in enumerate(pctl.multi_playlist):
+            le = draw.text_calc(pctl.multi_playlist[i][0], self.tab_text_font)
+            self.tab_text_spaces.append(le)
+            left_space_es += le + self.tab_extra_width + self.tab_spacing
+
+        # TAB DRAWING
         for i, tab in enumerate(pctl.multi_playlist):
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
@@ -12699,33 +12763,11 @@ class TopPanel:
             else:
                 fg = colours.tab_text
 
-
-
             # Draw tab text
             draw_text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
 
-            # Tab functions
+            # Drag to move playlist
             if tab_hit:
-
-                # Click to change playlist
-                if input.mouse_click:
-                    gui.pl_update = 1
-                    self.tab_hold = True
-                    self.tab_hold_index = i
-                    switch_playlist(i)
-
-                # Drag to move playlist
-                if mouse_up and i != self.tab_hold_index and self.tab_hold is True:
-
-                    if key_shift_down:
-                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
-                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.tab_hold_index])
-                        delete_playlist(self.tab_hold_index)
-                    else:
-                        move_playlist(self.tab_hold_index, i)
-                    self.tab_hold = False
-
-                # Drag to move playlist
                 if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
 
                     if key_shift_down:
@@ -12736,25 +12778,21 @@ class TopPanel:
                         else:
                             draw.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
 
-
-                # Delete playlist on wheel click
-                elif tab_menu.active is False and middle_click:
-                    delete_playlist(i)
-                    break
-
-                # Activate menu on right click
-                elif right_click:
-                    tab_menu.activate(copy.deepcopy(i))
-
-                # Quick drop tracks (red plus sign to indicate)
                 elif quick_drag is True:
-                    #draw_text((x + tab_width - 11, y - 3), '+', [200, 20, 40, 255], 12)
                     draw.rect_r((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
 
-                    if mouse_up:
-                        quick_drag = False
-                        for item in shift_selection:
-                            pctl.multi_playlist[i][2].append(default_playlist[item])
+            if len(self.adds) > 0:
+                for k in reversed(range(len(self.adds))):
+                    if pctl.multi_playlist[i][6] == self.adds[k][0]:
+                        if self.adds[k][2].get() > 0.3:
+                            del self.adds[k]
+                        else:
+                            ay = y + 4
+                            ay -= 6 * self.adds[k][2].get() / 0.3
+
+                            draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            gui.update += 1
+
 
 
 
@@ -13758,6 +13796,7 @@ class StandardPlaylist:
                         # Add folder to selection if clicked
                         if input.mouse_click:
                             quick_drag = True
+                            gui.drag_source_position = copy.deepcopy(click_location)
                             playlist_hold = True
                             selection_stage = 1
                             temp = get_folder_tracks_local(p_track)
@@ -13906,6 +13945,8 @@ class StandardPlaylist:
 
             if input.mouse_click and line_hit:
                 quick_drag = True
+                gui.drag_source_position = copy.deepcopy(click_location)
+
 
             if (input.mouse_click and key_shift_down is False and line_hit or
                         playlist_selected == p_track):
@@ -14434,6 +14475,7 @@ class ComboPlaylist:
                     line_hit = True
                     self.hit = True
                     quick_drag = True
+                    gui.drag_source_position = copy.deepcopy(click_location)
 
                 # Double click to play
                 if d_mouse_click and line_hit and pl_entry_on == playlist_selected:
@@ -14812,6 +14854,20 @@ SDL_SetRenderTarget(renderer, None)
 #SDL_RenderPresent(renderer)
 
 #time.sleep(3)
+
+class GetSDLInput:
+
+    def __init__(self):
+        self.i_y = pointer(c_int(0))
+        self.i_x = pointer(c_int(0))
+
+    def mouse(self):
+        SDL_PumpEvents()
+        SDL_GetMouseState(self.i_x, self.i_y)
+        return self.i_x.contents.value, self.i_y.contents.value
+
+
+get_sdl_input = GetSDLInput()
 
 while running:
     # bm.get('main')
@@ -15207,6 +15263,10 @@ while running:
             SDL_RaiseWindow(t_window)
             gui.lowered = False
 
+    # ----------------
+    # This section of code controls the internal processing speed or 'frame-rate'.
+    # It's a complete mess. And doesn't work the best. It's just hack on top of hack.
+
     power += 1
 
     if animate_monitor_timer.get() < 1 or len(load_orders) > 0:
@@ -15222,13 +15282,14 @@ while running:
         power = 1000
 
 
-    if mouse_wheel != 0 or k_input or gui.update > 0 or mouse_down: # or mouse_moved:
+    if mouse_wheel != 0 or k_input or gui.update > 0 or mouse_down or len(top_panel.adds) > 0: # or mouse_moved:
         power = 1000
 
     # if resize_mode or scroll_hold or album_scroll_hold:
     #     power += 3
     # if side_drag:
     #     power += 2
+
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power += 500
@@ -15265,6 +15326,9 @@ while running:
         gui.pl_update = 2
 
     new_playlist_cooldown = False
+
+    if not k_input:
+        time.sleep(0.005)
 
 
     if check_file_timer.get() > 1.1:
@@ -15538,7 +15602,7 @@ while running:
 
         if input.mouse_click:
             n_click_time = time.time()
-            if n_click_time - click_time < 0.65:
+            if n_click_time - click_time < 0.35:
                 d_mouse_click = True
             click_time = n_click_time
 
@@ -17853,122 +17917,122 @@ while running:
         for instance in Menu.instances:
             instance.render()
 
-        if encoding_box:
-            if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
-                encoding_box = False
-
-            w = 420
-            h = 200
-            x = int(window_size[0] / 2) - int(w / 2)
-            y = int(window_size[1] / 2) - int(h / 2)
-
-            if encoding_box_click and not coll_point(mouse_position, (x, y, w, h)):
-                encoding_box = False
-
-            draw.rect((x, y), (w, h), colours.sys_background_3, True)
-            draw.rect((x, y), (w, h), colours.grey(75))
-
-            draw_text((x + 105, y + 21), "Japanese text encoding correction.", colours.grey(190), 12)
-
-            y += 20
-
-            draw_text((x + 105, y + 21), "Select from list if correct shown:", colours.grey(190), 11)
-
-            y -= 20
-            x += 20
-            y += 20
-
-            if enc_field == "Artist":
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "Artist", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_field = "Artist"
-
-            y += 25
-
-            if enc_field == "Title":
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "Title", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_field = "Title"
-
-            y += 25
-
-            if enc_field == "Album":
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "Album", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_field = "Album"
-
-            y += 25
-
-            if enc_field == "All":
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "All", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_field = "All"
-
-            y += 40
-
-            if enc_setting == 1:
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "Track", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_setting = 1
-
-            y += 25
-
-            if enc_setting == 0:
-                draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
-            draw.rect((x, y), (60, 20), colours.grey(75))
-            draw_text((x + 6, y + 2), "Folder", colours.grey(200), 12)
-            if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
-                enc_setting = 0
-
-            x += 80
-            y -= 100
-            w = 295
-            h = 14
-
-            y += 15
-
-            for enco in encodings:
-
-                artist = pctl.master_library[encoding_target].artist
-                title = pctl.master_library[encoding_target].title
-                album = pctl.master_library[encoding_target].album
-
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
-
-                rect = (x, y, w, h - 1)
-                fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((x, y), (w, h), colours.grey(50), True)
-                    if encoding_box_click:
-                        fix_encoding(encoding_target, enc_setting, enco)
-                        encoding_box = False
-                if enc_field == "Artist" or enc_field == "All":
-                    artist = artist.encode("Latin-1", 'ignore')
-                    artist = artist.decode(enco, 'ignore')
-                if enc_field == "Title" or enc_field == "All":
-                    title = title.encode("Latin-1", 'ignore')
-                    title = title.decode(enco, 'ignore')
-
-                if enc_field == "Album" or enc_field == "All":
-                    album = album.encode("Latin-1", 'ignore')
-                    album = album.decode(enco, 'ignore')
-                line = artist + " - " + title + " - " + album
-                line = trunc_line(line, 11, w - 5)
-
-                draw_text((x + 5, y), line, colours.grey(150), 11)
-
-                y += h
-            draw.rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
+        # if encoding_box:
+        #     if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+        #         encoding_box = False
+        #
+        #     w = 420
+        #     h = 200
+        #     x = int(window_size[0] / 2) - int(w / 2)
+        #     y = int(window_size[1] / 2) - int(h / 2)
+        #
+        #     if encoding_box_click and not coll_point(mouse_position, (x, y, w, h)):
+        #         encoding_box = False
+        #
+        #     draw.rect((x, y), (w, h), colours.sys_background_3, True)
+        #     draw.rect((x, y), (w, h), colours.grey(75))
+        #
+        #     draw_text((x + 105, y + 21), "Japanese text encoding correction.", colours.grey(190), 12)
+        #
+        #     y += 20
+        #
+        #     draw_text((x + 105, y + 21), "Select from list if correct shown:", colours.grey(190), 11)
+        #
+        #     y -= 20
+        #     x += 20
+        #     y += 20
+        #
+        #     if enc_field == "Artist":
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "Artist", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_field = "Artist"
+        #
+        #     y += 25
+        #
+        #     if enc_field == "Title":
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "Title", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_field = "Title"
+        #
+        #     y += 25
+        #
+        #     if enc_field == "Album":
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "Album", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_field = "Album"
+        #
+        #     y += 25
+        #
+        #     if enc_field == "All":
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "All", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_field = "All"
+        #
+        #     y += 40
+        #
+        #     if enc_setting == 1:
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "Track", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_setting = 1
+        #
+        #     y += 25
+        #
+        #     if enc_setting == 0:
+        #         draw.rect((x, y), (60, 20), [80, 80, 80, 80], True)
+        #     draw.rect((x, y), (60, 20), colours.grey(75))
+        #     draw_text((x + 6, y + 2), "Folder", colours.grey(200), 12)
+        #     if coll_point(mouse_position, (x, y, 60, 20)) and encoding_box_click:
+        #         enc_setting = 0
+        #
+        #     x += 80
+        #     y -= 100
+        #     w = 295
+        #     h = 14
+        #
+        #     y += 15
+        #
+        #     for enco in encodings:
+        #
+        #         artist = pctl.master_library[encoding_target].artist
+        #         title = pctl.master_library[encoding_target].title
+        #         album = pctl.master_library[encoding_target].album
+        #
+        #         draw.rect((x, y), (w, h), colours.sys_background_3, True)
+        #
+        #         rect = (x, y, w, h - 1)
+        #         fields.add(rect)
+        #         if coll_point(mouse_position, rect):
+        #             draw.rect((x, y), (w, h), colours.grey(50), True)
+        #             if encoding_box_click:
+        #                 fix_encoding(encoding_target, enc_setting, enco)
+        #                 encoding_box = False
+        #         if enc_field == "Artist" or enc_field == "All":
+        #             artist = artist.encode("Latin-1", 'ignore')
+        #             artist = artist.decode(enco, 'ignore')
+        #         if enc_field == "Title" or enc_field == "All":
+        #             title = title.encode("Latin-1", 'ignore')
+        #             title = title.decode(enco, 'ignore')
+        #
+        #         if enc_field == "Album" or enc_field == "All":
+        #             album = album.encode("Latin-1", 'ignore')
+        #             album = album.decode(enco, 'ignore')
+        #         line = artist + " - " + title + " - " + album
+        #         line = trunc_line(line, 11, w - 5)
+        #
+        #         draw_text((x + 5, y), line, colours.grey(150), 11)
+        #
+        #         y += h
+        #     draw.rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
 
         if draw_border:
 
@@ -17999,6 +18063,21 @@ while running:
                     running = False
             else:
                 top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
+
+        # Drag icon
+        if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+            i_x, i_y = get_sdl_input.mouse()
+            gui.drag_source_position = [0, 0]
+            if window_size[1] - gui.panelBY > i_y > gui.panelY:
+                if len(shift_selection) == 1:
+                    draw.rect_r((i_x + 20, i_y + 1, 10, 10), [150, 150, 235, 240], True)
+                else:
+                    draw.rect_r((i_x + 20, i_y + 1, 10, 25), [150, 150, 235, 240], True)
+                    # draw.rect_r((i_x + 20, i_y + 1 + 7 + 1, 10, 6), [100, 100, 230, 220], True)
+                    # draw.rect_r((i_x + 20, i_y + 1 + 14 + 2, 10, 6), [100, 100, 230, 220], True)
+
+
+            gui.update += 1
 
 
         gui.update -= 1
@@ -18102,7 +18181,7 @@ while running:
                 else:
                     gui.level_update = True
 
-            if vis_rate_timer.get() > 0.016:  # Limit the change rate to 60 fps
+            if vis_rate_timer.get() > 0.018:  # Limit the change rate #to 60 fps
                 vis_rate_timer.set()
 
                 if spec_smoothing and pctl.playing_state > 0:
@@ -18253,10 +18332,14 @@ while running:
                     pass
                 draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
+
+
+
     if gui.present:
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderPresent(renderer)
         gui.present = False
+
 
     # -------------------------------------------------------------------------------------------
     # Broadcast control
@@ -18393,6 +18476,7 @@ while running:
 
     if gui.lowered:
         time.sleep(0.2)
+
 
 
 SDL_DestroyWindow(t_window)
