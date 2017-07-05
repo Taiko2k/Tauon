@@ -4457,7 +4457,8 @@ except:
 
 SDL_SetWindowMinimumSize(t_window, 450, 175)
 # get window surface and set up renderer
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+#renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 
 window_surface = SDL_GetWindowSurface(t_window)
 
@@ -8183,12 +8184,18 @@ def open_config():
 
 def open_license():
     target = os.path.join(install_directory, "license.txt")
+    if os.path.isfile(os.path.join(install_directory, "LICENSE")):
+        target = os.path.join(install_directory, "LICENSE")
+    if os.path.isfile(os.path.join(install_directory, "LICENSE.txt")):
+        target = os.path.join(install_directory, "LICENSE.txt")
+
     if system == "windows":
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
+        print(target)
 
 
 def open_config_file():
@@ -13824,15 +13831,17 @@ class StandardPlaylist:
                     #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
 
 
-                    # Draw blue hightlint line
+                    # Draw blue highlight insert line
                     if mouse_down and playlist_hold and coll_point(mouse_position, (
                             playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                             gui.playlist_row_height - 1)) and p_track not in shift_selection:  # playlist_hold_position != p_track:
 
-                        draw.rect_r(
-                            [0, -1 + gui.playlist_top + gui.playlist_row_height * w + gui.playlist_row_height - 1,
-                             gui.playlist_width + 30, 3],
-                            [135, 145, 190, 255], True)
+                        if len(shift_selection) > 1 or key_shift_down:
+
+                            draw.rect_r(
+                                [0, -1 + gui.playlist_top + gui.playlist_row_height * w + gui.playlist_row_height - 1,
+                                 gui.playlist_width + 30, 3],
+                                [135, 145, 190, 255], True)
 
                     w += 1
                 else:
@@ -13963,62 +13972,63 @@ class StandardPlaylist:
             if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
                     playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width, gui.playlist_row_height)):
 
+                if len(shift_selection) > 1 or key_shift_down:
+                    if p_track not in shift_selection: #p_track != playlist_hold_position and
 
-                if p_track not in shift_selection: #p_track != playlist_hold_position and
+                        if len(shift_selection) == 0:
 
-                    if len(shift_selection) == 0:
-
-                        ref = default_playlist[playlist_hold_position]
-                        default_playlist[playlist_hold_position] = "old"
-                        if move_on_title:
-                            default_playlist.insert(p_track, "new")
-                        else:
-                            default_playlist.insert(p_track + 1, "new")
-                        default_playlist.remove("old")
-                        playlist_selected = default_playlist.index("new")
-                        default_playlist[default_playlist.index("new")] = ref
-
-                        gui.pl_update = 1
-
-
-                    else:
-                        ref = []
-                        selection_stage = 2
-                        for item in shift_selection:
-                            ref.append(default_playlist[item])
-
-                        for item in shift_selection:
-                            default_playlist[item] = 'old'
-
-                        for item in shift_selection:
+                            ref = default_playlist[playlist_hold_position]
+                            default_playlist[playlist_hold_position] = "old"
                             if move_on_title:
                                 default_playlist.insert(p_track, "new")
                             else:
                                 default_playlist.insert(p_track + 1, "new")
+                            default_playlist.remove("old")
+                            playlist_selected = default_playlist.index("new")
+                            default_playlist[default_playlist.index("new")] = ref
 
-                        for b in reversed(range(len(default_playlist))):
-                            if default_playlist[b] == 'old':
-                                del default_playlist[b]
-                        shift_selection = []
-                        for b in range(len(default_playlist)):
-                            if default_playlist[b] == 'new':
-                                shift_selection.append(b)
-                                default_playlist[b] = ref.pop(0)
+                            gui.pl_update = 1
 
-                        playlist_selected = shift_selection[0]
-                        gui.pl_update = 1
+
+                        else:
+                            ref = []
+                            selection_stage = 2
+                            for item in shift_selection:
+                                ref.append(default_playlist[item])
+
+                            for item in shift_selection:
+                                default_playlist[item] = 'old'
+
+                            for item in shift_selection:
+                                if move_on_title:
+                                    default_playlist.insert(p_track, "new")
+                                else:
+                                    default_playlist.insert(p_track + 1, "new")
+
+                            for b in reversed(range(len(default_playlist))):
+                                if default_playlist[b] == 'old':
+                                    del default_playlist[b]
+                            shift_selection = []
+                            for b in range(len(default_playlist)):
+                                if default_playlist[b] == 'new':
+                                    shift_selection.append(b)
+                                    default_playlist[b] = ref.pop(0)
+
+                            playlist_selected = shift_selection[0]
+                            gui.pl_update = 1
 
             # Blue drop line
             if mouse_down and playlist_hold and coll_point(mouse_position, (
                     playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                     gui.playlist_row_height - 1)) and p_track not in shift_selection: #playlist_hold_position != p_track:
 
-                draw.rect_r(
-                    [0, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, gui.playlist_width + 30, 3],
-                    [135, 145, 190, 255], True)
+                if len(shift_selection) > 1 or key_shift_down:
+                    draw.rect_r(
+                        [0, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, gui.playlist_width + 30, 3],
+                        [135, 145, 190, 255], True)
 
             # Shift click actions
-            if input.mouse_click and line_hit and key_shift_down:
+            if input.mouse_click and line_hit: # and key_shift_down:
                 selection_stage = 2
                 if p_track != playlist_selected:
 
@@ -15602,7 +15612,7 @@ while running:
 
         if input.mouse_click:
             n_click_time = time.time()
-            if n_click_time - click_time < 0.35:
+            if n_click_time - click_time < 0.42:
                 d_mouse_click = True
             click_time = n_click_time
 
