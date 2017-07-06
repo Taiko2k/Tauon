@@ -9836,7 +9836,6 @@ cm_clean_db = False
 def clean_db():
     global cm_clean_db
     cm_clean_db = True
-    show_message("Working on it...")
 
 
 x_menu.add_to_sub("Find and Remove Dead Tracks", 0, clean_db)
@@ -10575,9 +10574,9 @@ def worker1():
                 split = os.path.splitext(path)
                 target_dir = split[0]
                 print(os.path.getsize(path))
-                if os.path.getsize(path) > 1e+9:
+                if os.path.getsize(path) > 2e+9:
                     print("Zip file is large!")
-                    show_message("Skipping oversize zip file (>1GB)")
+                    show_message("Skipping oversize zip file (>2GB)")
                     return 1
                 if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
                     try:
@@ -10700,6 +10699,8 @@ def worker1():
     global default_player
     global album_art_gen
     global cm_clean_db
+    global to_got
+    global to_get
 
     while True:
         time.sleep(0.15)
@@ -10708,8 +10709,13 @@ def worker1():
         if cm_clean_db is True:
             items_removed = 0
             old_db = copy.deepcopy(pctl.master_library)
+            to_got = 0
             for index, track in pctl.master_library.items():
-                time.sleep(0.0005)
+                time.sleep(0.0002)
+                to_got += 1
+                if to_got % 100 == 0:
+                    gui.update = 1
+                #print(track.title)
                 if not os.path.isfile(track.fullpath):
                     del old_db[index]
                     items_removed += 1
@@ -12919,6 +12925,10 @@ class TopPanel:
                 text = "Importing XSPF playlist. May take a while."
             elif to_got == 'ex':
                 text = "Extracting Archive..."
+        elif cm_clean_db and len(pctl.master_library) > 0:
+            per = str(int(to_got / len(pctl.master_library) * 100))
+            text = "Cleaning db...  " + per + "%"
+            bg = [100, 200, 100, 255]
         elif len(to_scan) > 0:
             text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
             bg = [100, 200, 100, 255]
@@ -13737,11 +13747,12 @@ class StandardPlaylist:
 
                     gui.win_fore = colours.playlist_panel_background
 
+
                     height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
 
                     # Draw highlight
                     if p_track in shift_selection and len(shift_selection) > 1:
-
+                        gui.win_fore = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
                         draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
                                   (highlight_right, gui.playlist_row_height), colours.row_select_highlight, True)
 
@@ -13762,6 +13773,8 @@ class StandardPlaylist:
                     draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
                               gui.playlist_width + 30,
                               gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w, colours.folder_line)
+
+                    gui.win_fore = colours.playlist_panel_background
 
                     if playlist_hold is True and coll_point(mouse_position, (
                             playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
