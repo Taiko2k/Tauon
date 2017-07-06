@@ -6,10 +6,12 @@ v2.4.1
 
  - Added cursor indicator to show when tracks are being dragged
  - Added animated indicator to show number of tracks dropped onto a tab
+ - Added progress indicator for clean database function
  - Fixed thumbnail generator for MPRIS failing in some cases (linux)
  - Fixed playing track not stopping if end track in playlist was missing
  - Fixed visual glitch when moving playlist tabs
  - Fixed show license button not working (linux)
+ - Fixed break title having bad rendering when selected while on coloured background
  - Tweaked single track drag to allow moving via shift after drag has begun
  - Tweaked double click timing to be tighter
  - Tweaked cross-fade to not apply to auto-stop function

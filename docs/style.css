@@ -1,0 +1,26 @@
+
+body {
+
+  background-color: #181818;
+  color: rgb(207, 207, 207);
+  font-family: sans-serif;
+}
+
+a {
+  color: #bda5d7;
+}
+
+ul {
+  font-size: 0.9em;
+}
+
+.main {
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 7px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  margin-top: 60px;
+  width: 900px;
+  padding: 40px;
+  background-color: rgb(37, 37, 37);
+}
