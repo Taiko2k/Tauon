@@ -2,7 +2,6 @@
 var connect_fault = 5;
 var index = -1;
 
-
 function setArt(){
 
   $.getJSON("/radio/getpic",
@@ -15,8 +14,8 @@ function setArt(){
             $("#picture").attr('src', '#')
           }
 
-
           $('#title-text').text(data.artist + " - " + data.title)
+          $('#lyrics').html(data.lyrics)
 
       });
 }

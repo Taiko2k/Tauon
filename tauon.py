@@ -566,6 +566,7 @@ class Prefs:
         self.server_port = 7590
         self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
+        self.radio_page_lyrics = False
 
 
 prefs = Prefs()
@@ -1103,6 +1104,8 @@ try:
         prefs.scrobble_mark = save[54]
     if save[55] is not None:
         prefs.replay_gain = save[55]
+    if save[56] is not None:
+        prefs.radio_page_lyrics = save[56]
     state_file.close()
     del save
 
@@ -2981,6 +2984,9 @@ def player():
     player1_status = p_stopped
     player2_status = p_stopped
 
+    handle1 = None
+    handle2 = None
+
     last_level = [0, 0]
 
     x = (ctypes.c_float * 512)()
@@ -3821,8 +3827,10 @@ def player():
                 player1_status = p_stopped
                 player2_status = p_stopped
                 time.sleep(1.5)
-                BASS_ChannelStop(handle1)
-                BASS_ChannelStop(handle2)
+                if handle1 is not None:
+                    BASS_ChannelStop(handle1)
+                if handle2 is not None:
+                    BASS_ChannelStop(handle2)
 
 
             elif pctl.playerCommand == 'stop':
@@ -6425,7 +6433,7 @@ class AlbumArt():
                 print("%")
 
                 if prcl > 45:
-                    ce = [40, 40, 40, 255]
+                    ce = alpha_blend([0, 0, 0, 180], colours.playlist_panel_background) #[40, 40, 40, 255]
                     colours.index_text = ce
                     colours.index_playing = ce
                     colours.time_text = ce
@@ -6435,13 +6443,13 @@ class AlbumArt():
                     colours.row_select_highlight = [0, 0, 0, 30]
                     colours.row_playing_highlight = [0, 0, 0, 20]
                 else:
-                    ce = [165, 165, 165, 255]
+                    ce = alpha_blend([255, 255, 255, 160], colours.playlist_panel_background) #[165, 165, 165, 255]
                     colours.index_text = ce
                     colours.index_playing = ce
                     colours.time_text = ce
                     colours.bar_time = ce
                     colours.folder_title = ce
-                    colours.star_line = [150, 150, 150, 255]
+                    colours.star_line = ce #[150, 150, 150, 255]
                     colours.row_select_highlight = [255, 255, 255, 12]
                     colours.row_playing_highlight = [255, 255, 255, 8]
 
@@ -10708,22 +10716,29 @@ def worker1():
         # Clean database
         if cm_clean_db is True:
             items_removed = 0
-            old_db = copy.deepcopy(pctl.master_library)
+            #old_db = copy.deepcopy(pctl.master_library)
             to_got = 0
-            for index, track in pctl.master_library.items():
-                time.sleep(0.0002)
+            to_get = len(pctl.master_library)
+
+            keys = set(pctl.master_library.keys())
+            for index in keys:
+                time.sleep(0.0001)
+                track = pctl.master_library[index]
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
-                #print(track.title)
                 if not os.path.isfile(track.fullpath):
-                    del old_db[index]
-                    items_removed += 1
+
                     for playlist in pctl.multi_playlist:
                         while index in playlist[2]:
                             playlist[2].remove(index)
 
-            pctl.master_library = old_db
+                    if index in pctl.track_queue:
+                        pctl.track_queue = []
+                        pctl.queue_step = []
+                    del pctl.master_library[index]
+                    items_removed += 1
+
             cm_clean_db = False
             show_message("Cleaning complete. " + str(items_removed) + " items removed from database")
             if album_mode:
@@ -11051,6 +11066,8 @@ def webserv():
         show_message("Web server failed to start. Required dependency 'flask' was not found.")
         return 0
 
+    import html
+
     app = Flask(__name__)
 
     @app.route('/radio/')
@@ -11144,6 +11161,7 @@ def webserv():
 
         return jsonify(tracks=tracks)
 
+
     @app.route('/remote/getpic', methods=['GET'])
     def get64Pic():
         track = pctl.playing_object()
@@ -11172,6 +11190,7 @@ def webserv():
         else:
             return jsonify(position=0, index=0)
 
+
     @app.route('/radio/getpic', methods=['GET'])
     def get64Pic_radio():
 
@@ -11179,15 +11198,21 @@ def webserv():
             index = pctl.broadcast_index
             track = pctl.master_library[index]
 
+
+            # Lyrics ---
+            lyrics = ""
+            if prefs.radio_page_lyrics and track.lyrics != "":
+                lyrics = html.escape(track.lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
+
             try:
                 index = track.index
                 base64 = album_art_gen.get_base64(index, (300, 300)).decode()
 
-                return jsonify(index=index, image=base64, title=track.title, artist=track.artist)
+                return jsonify(index=index, image=base64, title=track.title, artist=track.artist, lyrics=lyrics)
             except:
-                return jsonify(index=index, image="None", title=track.title, artist=track.artist)
+                return jsonify(index=index, image="None", title=track.title, artist=track.artist, lyrics=lyrics)
         else:
-            return jsonify(index=-1, image="None", title="", artist="- - Broadcast Offline -")
+            return jsonify(index=-1, image="None", title="", artist="- - Broadcast Offline -", lyrics="")
 
     @app.route('/remote/command', methods=['POST'])
     def get_post_javascript_data():
@@ -11465,6 +11490,11 @@ def toggle_allow_remote(mode=0):
     if mode == 1:
         return prefs.allow_remote ^ True
     prefs.allow_remote ^= True
+
+def toggle_radio_lyrics(mode=0):
+    if mode == 1:
+        return prefs.radio_page_lyrics
+    prefs.radio_page_lyrics ^= True
 
 
 def toggle_expose_web(mode=0):
@@ -11747,6 +11777,8 @@ class Over:
         self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
         y += 25
         self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control")
+
+        self.toggle_square(x + 10 + 200, y, toggle_radio_lyrics, "Show lyrics on radio page")
         y += 35
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
@@ -12925,8 +12957,8 @@ class TopPanel:
                 text = "Importing XSPF playlist. May take a while."
             elif to_got == 'ex':
                 text = "Extracting Archive..."
-        elif cm_clean_db and len(pctl.master_library) > 0:
-            per = str(int(to_got / len(pctl.master_library) * 100))
+        elif cm_clean_db and to_get > 0:
+            per = str(int(to_got / to_get * 100))
             text = "Cleaning db...  " + per + "%"
             bg = [100, 200, 100, 255]
         elif len(to_scan) > 0:
@@ -12957,7 +12989,8 @@ class TopPanel:
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
-            text = trunc_line(text, 11, window_size[0] - x - 150)
+            trunc = window_size[0] - x - 150
+            text = trunc_line(text, 11, trunc)
             draw_text((x, y), text, colours.grey(130), 11)
             x += draw.text_calc(text, 11) + 6
 
@@ -15511,6 +15544,7 @@ while running:
 
         if key_F7:
 
+            print(repr(pctl.playing_object().lyrics))
             key_F7 = False
 
 
@@ -15541,7 +15575,7 @@ while running:
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.playlist_active)
 
-        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box):
+        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox):
             input.mouse_click = False
             gui.level_2_click = True
 
@@ -17469,8 +17503,12 @@ while running:
 
             if renamebox:
 
+                if gui.level_2_click:
+                    input.mouse_click = True
+                gui.level_2_click = False
+
                 w = 420
-                h = 230
+                h = 210
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -17491,7 +17529,7 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder", colours.grey(150), 12)
+                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder", colours.grey(170), 12)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
@@ -17509,15 +17547,15 @@ while running:
                     bg = colours.grey(35)
                     draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(35), True)
 
-                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(150), 12, bg=bg)
+                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(160), 12, bg=bg)
 
-                draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(150), 12)
-                draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(150), 12)
-                draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(150), 12)
-                draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(150), 12)
-                draw_text((x + 150, y + 82,), "%d - Date/Year", colours.grey(150), 12)
-                draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(150), 12)
-                draw_text((x + 290, y + 70,), "%x - File Extension", colours.grey(150), 12)
+                draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(160), 12)
+                draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(160), 12)
+                draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(160), 12)
+                draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(160), 12)
+                draw_text((x + 150, y + 82,), "%d - Date/Year", colours.grey(160), 12)
+                draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(160), 12)
+                draw_text((x + 290, y + 70,), "%x - File Extension", colours.grey(160), 12)
 
                 afterline = ""
                 warn = False
@@ -17531,16 +17569,15 @@ while running:
 
                     afterline = parse_template(NRN, pctl.master_library[item])
 
-
                     if item == rename_index:
                         break
 
-                draw_text((x + 10, y + 120), "BEFORE", colours.grey(100), 12)
+                draw_text((x + 10, y + 120), "BEFORE", colours.grey(120), 12)
                 line = trunc_line(pctl.master_library[rename_index].filename, 12, 390)
-                draw_text((x + 67, y + 120), line, colours.grey(150), 12)
+                draw_text((x + 67, y + 120), line, colours.grey(170), 12)
 
-                draw_text((x + 10, y + 135,), "AFTER", colours.grey(100), 12)
-                draw_text((x + 67, y + 135,), trunc_line(afterline, 12, 390), colours.grey(150), 12)
+                draw_text((x + 10, y + 135,), "AFTER", colours.grey(120), 12)
+                draw_text((x + 67, y + 135,), trunc_line(afterline, 12, 390), colours.grey(170), 12)
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
@@ -18579,7 +18616,7 @@ save = [pctl.master_library,
         prefs.auto_lfm,
         prefs.scrobble_mark,
         prefs.replay_gain,
-        None,
+        prefs.radio_page_lyrics,
         None,
         None]
 

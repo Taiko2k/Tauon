@@ -1,6 +1,7 @@
 
 body {
   background-color: #111;
+  font-family: sans-serif;
 }
 
 p {
@@ -8,7 +9,28 @@ p {
   font-family: sans-serif;
 }
 
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  padding-left: 15px;
+  padding-top: 20px;
 
+}
+
+#main {
+  flex: auto;
+}
+
+#lyrics {
+  color: #CCC;
+  flex: auto;
+
+  max-width: 600px;
+
+  word-wrap: break-word;
+  padding-top: 0px;
+  padding-left: 35px;
+}
 
 #img-holder {
    height: 300px;
@@ -71,6 +93,7 @@ p {
 #player {
   padding-top: 50px;
 }
+
 
 
 .buttons {
