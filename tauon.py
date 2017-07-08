@@ -970,6 +970,7 @@ class TrackClass:
         self.parent_folder_name = ""
         self.file_ext = ""
         self.size = 0
+        self.modified_time = 0
 
         self.artist = ""
         self.album_artist = ""
@@ -1232,6 +1233,13 @@ if db_version > 0:
         show_message(
             "Upgrade complete. Run a tag rescan if you want enable ReplayGain")
 
+    if db_version <= 1.9:
+        print("Updating database to version 2.0")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'modified_time', 0)
+        show_message(
+            "Upgrade complete. New sorting option may require tag rescan.")
+
 
 # Loading Config -----------------
 
@@ -1413,6 +1421,7 @@ def get_len_backend(filepath):
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
     try:
+        nt.modified_time = os.path.getmtime(nt.fullpath)
         if nt.file_ext == "FLAC":
 
             # print("get opus")
@@ -7759,6 +7768,9 @@ def best(index):
     # else:
     #     return 0
 
+def key_modified(index):
+    return pctl.master_library[index].modified_time
+
 def key_playcount(index):
     #key = pctl.master_library[index].title + pctl.master_library[index].filename
     if pctl.master_library[index].length < 1:
@@ -7846,6 +7858,20 @@ def gen_lyrics(pl):
     else:
         show_message("No track with lyrics found")
 
+
+def gen_last_modified(index):
+
+    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = sorted(playlist, key=key_modified, reverse=True)
+    sort_track_2(0, playlist)
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <File modified>",
+                               playlist=copy.deepcopy(playlist),
+                               hide_title=0))
+
+
+
+tab_menu.add_to_sub("File modified", 0, gen_last_modified, pass_ref=True)
 
 def gen_love(pl):
     playlist = []
@@ -11079,6 +11105,10 @@ def webserv():
     def radiojs():
         return send_file(install_directory + "/templates/radio.js")
 
+    @app.route('/radio/jquery.js')
+    def radiojq():
+        return send_file(install_directory + "/templates/jquery.js")
+
     @app.route('/radio/theme.css')
     def radiocss():
         return send_file(install_directory + "/templates/theme.css")
@@ -11096,7 +11126,9 @@ def webserv():
     def remotecss():
         return send_file(install_directory + "/templates/theme.css")
 
-
+    @app.route('/remote/jquery.js')
+    def remotejq():
+        return send_file(install_directory + "/templates/jquery.js")
 
     @app.route('/remote/code.js')
     def remotejs():
@@ -15544,7 +15576,7 @@ while running:
 
         if key_F7:
 
-            print(repr(pctl.playing_object().lyrics))
+            print(os.path.getmtime(pctl.playing_object().fullpath))
             key_F7 = False
 
 
@@ -18577,7 +18609,7 @@ save = [pctl.master_library,
         folder_image_offsets,
         lfm_username,
         lfm_hash,
-        1.9,  # Version
+        2.0,  # Version
         view_prefs,
         gui.save_size,
         gui.side_panel_size,

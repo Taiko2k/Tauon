@@ -4,6 +4,7 @@ Changelog-------------------------------------
 
 v2.4.1
 
+ - Added 'file modified' sorting option
  - Added cursor indicator to show when tracks are being dragged
  - Added animated indicator to show number of tracks dropped onto a tab
  - Added progress indicator for clean database function
