@@ -1,11 +1,11 @@
 Basic usage guide. Updated for v2.4.0
 ===========
 
-Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not derived from a central database. 
+Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
 
-For best experience you will need an organized and structured music library, ideally with each album in its own folder. 
+For best experience you will need an organized and structured music library, ideally with each album in its own folder.
 
-I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE can be any sort of broad categorization you feel is best. 
+I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE can be any sort of broad categorization you feel is best.
 
 ### Importing Music
 
@@ -31,9 +31,9 @@ Tip: Try importing all your music to a single playlist to get started
 
 1) Use LEFT and RIGHT keys to switch to the playlist containing the track you want to search for.
 2) Press the backslash key or Ctrl+F to open the search box.
-3) Type word fragments separated by spaces. 
+3) Type word fragments separated by spaces.
 
- - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track. 
+ - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track.
  - Press Shift+Enter to create a new playlist of all matching results
 
 ### Playlist Scrolling
@@ -63,7 +63,7 @@ Tip: End the search text with another forward slash to search just for folders w
  - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
  - Single tracks can be moved within a playlist by holding shift, clicking on them and dragging while holding shift
  - To move a block of tracks; highlight (use shift to highlight multiple), then click and drag.
- 
+
  Note: Not all of these dragging operations currently have an animation or indicator, but it should work if performed correctly.
 
 ### Modify Folder Function
@@ -83,8 +83,7 @@ Warning: Although there are some checks in place it may still be possible to cau
 ### Quirks
 
  - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
- - Quirk: There is no playlist repeat function, player will stop once it reaches the end of a playlist (Broadcasting will repeat from the top however)
- - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Playtimes are periodically saved however.
+ - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Play times are periodically saved however.
 
 ### Extra Shortcuts
 
@@ -93,7 +92,7 @@ Warning: Although there are some checks in place it may still be possible to cau
 ***Cycle Theme***: F2   
 ***Toggle Auto Theme***: F3   
 ***Change Playlist***: Left and Right arrow keys  
-***View Playlist List***: Tilde ~
+***View Playlist List***: Tilde ~  
 ***Seek***: + and -   
 ***Play next/previous track***: Shift + Left and Right arrow keys OR global mediakeys OR home/end keys  
 ***Volume Up/Down***: Shift + Up and Down arrow keys    
@@ -109,15 +108,15 @@ Compatible with HTTP streams (Shoutcast, Icecast etc). To open a stream:
 2) Type in address to stream or click paste if link is in clipboard (you can manually copy these links out of m3u files if available) (Must start with http:// or ftp://)
 3) Click GO
 
-To record a steam, once a stream has been opened, re enter the open stream box and click REC. If this fails, try make sure the encoder directory is valid and has write permissions. Recordings are encoded to OGG at about 100kbs and are automatically split when on metadata change.
+To record a steam, once a stream has been opened, re enter the open stream box and click REC. Recordings are encoded using OGG codec at about 100kbs and are automatically split on metadata change.
 
 ### Outbound Streaming / Broadcasting
 
-From player click MENU from top bar and select 'Start Broadcast' from menu. You should now be able to connect a player to the target port. 
+From player click MENU from top bar and select 'Start Broadcast' from menu. You should now be able to connect a player to the target port.
 
 From track context menu select 'Broadcast This' to play a track immediately.
 
-Note: The codec used is OGG. Bitrate can be set in 'config.txt'. Higher bitrates may help reduce latency. Lower bitrates will conserve bandwidth at cost of audio quality.
+Note: The codec used is OGG. Bit-rate can be set in 'config.txt'. Higher bit-rates may help reduce latency. Lower bit-rates will conserve bandwidth at cost of audio quality.
 
 Warning: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
 
@@ -126,21 +125,20 @@ Warning: Modifying the number of tracks in playlist that appear before the broad
 
 Intended to be an easy way to reduce file sizes for copying tracks to devices with limited storage. Results will be of degraded quality and should not be used for archival.
 
-1) Ensure FFMPEG is avaliable. 
+1) Ensure FFMPEG is avaliable.
  - For windows, Download ffmpeg from https://ffmpeg.org/ and place 'ffmpeg.exe' in encoder directory. To find this folder, go to MENU -> SETTINGS... -> TRANSCODE -> OPEN OUTPUT FOLDER
  - For linux, install ffmpeg using your distro's package manager.
  - If you need MP3 output, repeat above steps for LAME (lame.exe). For windows you may find lame.exe on the internet. For linux consult your package manager.
 
 2) Optionally configure settings in MENU -> SETTINGS...-> TRANSCODE
- - 64Kbps Opus provides good sound quality with small file size, but not may players are compatible with it. As of 2017 I suggest Rocket Player or AIMP for Android.
- 96kbps OGG, or 128kbs MP3 should be good enough for most portable music listening. 
+ - 64Kbps Opus provides good sound quality with small file size, but not many players are compatible with it. As of 2017 I suggest Rocket Player or AIMP for Android.
  - 96kbps OGG, or 128kbs MP3 provide comparable quality and are more widely compatible.
  - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail.
- 
-3) Right click a track and select, TRACK MENU -> TRANSCODE FOLDER to transcode the track in the folder to which the track resides. Wait for it to finish.
- - If the yellow text in the top panel does not change for an extended duration, the transcode may have stalled. 
 
-4) See result folders in the encoder directroy. Again, to find this folder, go to MENU -> SETTINGS... -> TRANSCODE -> OPEN OUTPUT FOLDER 
+3) Right click a track and select, TRACK MENU -> TRANSCODE FOLDER to transcode the track in the folder to which the track resides. Wait for it to finish.
+ - If the yellow text in the top panel does not change for an extended duration, the transcode may have stalled. In this case you will need to restart the application as there is currently no handling on errors.
+
+4) See result folders in the encoder directory. To open this folder press F9.
 
 
 
@@ -148,7 +146,7 @@ Intended to be an easy way to reduce file sizes for copying tracks to devices wi
 
 In case of mojibake (where displayed characters from Japanese language metadata is garbled), the ideal solution is to re-apply tags in a decent tag editor, preferably using a sane encoding (i.e UTF-8)
 
-As a temporary solution Tauon Music Box offers a fix mojibake function under TRACK MENU -> META... -> FIX MOJIBAKE
+As a temporary solution a fix mojibake function is available under TRACK MENU -> META... -> FIX MOJIBAKE
 
 Note: These functions will apply changes to all tracks in the folder/album   
 
@@ -176,9 +174,9 @@ To import; drag and drop XSPF playlist file onto program window. (Any playlist f
 To export; right click playlist tab and select Export.
 
 Note: Its best to import any corresponding audio files before importing playlists.  
- 
-Note: Importing large playlists can take a long time, cleaning database beforehand (MENU->Database->Find And Remove Dead Tracks) may help speed this up.  
-  
+
+Note: It may be necessary to clean database beforehand. (MENU->Database->Find And Remove Dead Tracks)
+
 Bug: Some tracks with strange characters in metadata may cause process to fail.  
 
 Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
@@ -193,7 +191,7 @@ Only applies to local playback. If no ReplayGain metadata exists, no adjustments
 User data files
 ================
 
-**state.p** - Contains playlists, track database information and some settings. Delete to reset player. 
+**state.p** - Contains playlists, track database information and some settings. Delete to reset player.
 
 **star.p**  - Contains track play count information independent of database, tracks are uniquely identified by a matching filename, artist and track title. Can be transferred between platforms.
 
@@ -228,9 +226,9 @@ Warning: Make sure there are no private files in the folders of your music, espe
 ***localhost:7590/radio*** - Album art and track info for broadcasting
 
 Individual tracks can be made accessible from the UI (TRACK MENU-> META... -> Generate Websample)
-  
+
 Note: Requires FFMPEG and web server enabled before menu entry will appear
-  
+
 Note: Must be clicked for each track and will only be accessible for duration of session as files and links are cleared on restart.
 
 -----------------------------
