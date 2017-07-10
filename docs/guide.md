@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.4.0
+Basic usage guide. Updated for v2.4.1
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
@@ -57,14 +57,17 @@ Tip: End the search text with another forward slash to search just for folders w
 ![Screenshot - Panel](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/panel-guide.png)
 
 
-### Moving Playlists and Tracks
+### Moving Playlist Tabs
 
  - Playlist tabs can be rearranged by dragging them onto one another.
- - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
- - Single tracks can be moved within a playlist by holding shift, clicking on them and dragging while holding shift
- - To move a block of tracks; highlight (use shift to highlight multiple), then click and drag.
+ - If shift is held when dragging, the playlist will be merged and appended.
 
- Note: Not all of these dragging operations currently have an animation or indicator, but it should work if performed correctly.
+### Moving Tracks
+
+ - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
+ - Single tracks can be repositioned within a playlist by holding shift while dragging
+ - To move a block selection, click and drag.
+ - To make a selection, click the first track, then hold shift and click the last track. Alternatively just click a block title to select that block.
 
 ### Modify Folder Function
 
@@ -76,7 +79,7 @@ Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  r
 
 ***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
 
-***Clean*** - Deletes the following OS related items in the folder: 'desktop.ini', 'Thumbs.db', Windows Media Player generated thumbnail images, Mac OS related '.DS_Store' and '__MACOSX' files/folders.
+***Clean*** - Deletes the following OS related items in the folder: 'desktop.ini', 'Thumbs.db', Windows Media Player generated thumbnail images, Mac OS related '.DS_Store' and 'MACOSX' files/folders.
 
 Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use this function around files or folders you cannot afford to lose.
 
