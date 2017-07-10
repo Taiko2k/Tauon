@@ -17,6 +17,7 @@ v2.4.1
  - Fixed backend crash when attempting to play a missing track first
  - Fixed clean database function causing double memory usage
  - Fixed clicks to rename tracks box clicking through
+ - Tweaked selections to deselect when track clicked on
  - Tweaked single track drag to allow moving via shift after drag has begun
  - Tweaked double click timing to be tighter
  - Tweaked auto theme text legibility for some cases
