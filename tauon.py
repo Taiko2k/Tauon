@@ -1734,7 +1734,8 @@ class PlayerCtl:
         # print(quiet)
         # print("--------")
 
-
+        if len(self.track_queue) == 0:
+            return 0
         # Switch to source playlist
         if self.playlist_active != self.active_playlist_playing and (
                     self.track_queue[self.queue_step] not in self.multi_playlist[self.playlist_active][2]):
@@ -1742,6 +1743,7 @@ class PlayerCtl:
 
         if gui.playlist_view_length < 1:
             return 0
+
 
         global playlist_position
         global playlist_selected
@@ -2959,6 +2961,7 @@ def player():
         BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
         BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbass_tta.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
         BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
 
@@ -15022,6 +15025,7 @@ while running:
 
     if not mouse_down:
         k_input = False
+
     clicked = False
     focused = False
     mouse_moved = False
@@ -15415,6 +15419,7 @@ while running:
 
     if not k_input:
         time.sleep(0.005)
+
 
 
     if check_file_timer.get() > 1.1:
@@ -18271,7 +18276,7 @@ while running:
                 else:
                     gui.level_update = True
 
-            if vis_rate_timer.get() > 0.018:  # Limit the change rate #to 60 fps
+            if vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
                 vis_rate_timer.set()
 
                 if spec_smoothing and pctl.playing_state > 0:
