@@ -12903,6 +12903,7 @@ class TopPanel:
 
         x += self.ini_menu_space
         y += 8
+        #y += 7
 
 
         gui.win_fore = colours.top_panel_background
@@ -13753,11 +13754,13 @@ class StandardPlaylist:
 
         # Show notice if playlist empty
         if len(default_playlist) == 0:
+            colour = alpha_mod(colours.index_text, 190) #colours.playlist_text_missing
+
 
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
-                      "Playlist is empty", colours.playlist_text_missing, 13)
+                      "Playlist is empty", colour, 13)
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + 30), 2),
-                      "Drag and drop files to import", colours.playlist_text_missing, 13)
+                      "Drag and drop files to import", colour, 13)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
@@ -14018,14 +14021,9 @@ class StandardPlaylist:
                 # shift_selection = []
                 shift_selection = [p_track]
 
-
-
-            # if mouse_up and line_over and not key_shift_down and not playlist_hold:
-            #     shift_selection = []
-            #     gui.pl_update = 1
-
-
-
+            if mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
+                shift_selection = [p_track]
+                gui.pl_update = 1
 
             if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
                 playlist_hold = True
