@@ -9,8 +9,18 @@ Take special note of the bolded entires as currently the versions avaliable in m
 
 Italicized entires are included in the releasae zip package.
 
+ - Python 3 >= 3.5
  - SDL >= **2.0.5**
  - SDL_Image
+ - Python Pillow
+ - Python Stagger
+ - Python hsaudiotag
+ - Python pylast
+ - Noto Fonts and Notos Fonts Emoji (reccomended, linux only)
+ - Python flask (optional)
+ - Python gi.repository/pygobject (Linux only)
+ - Python pyCairo >= **1.10.1** (Linux only)
+ - Python Win32api  (Windows only)
  - *Bass*
  - *BassEnc*
  - *BassMix*
@@ -25,19 +35,10 @@ Italicized entires are included in the releasae zip package.
  - *Bass_tta* (optional)
  - *Bass_aac* (optional, linux only)
  - *Bassalac* (optional)
- - Python 3 >= 3.5
- - Python Win32api  (Windows only)
  - *Python pysdl2*
- - Python Pillow
- - Python Stagger
- - Python hsaudiotag
- - Python pylast
- - Python flask (optional)
- - Python gi.repository/pygobject (Linux only)
- - Python pyCairo >= **1.10.1** (Linux only)
  - *Python pyxhook* (Linux only, optional)
  - *Python pylyrics*
- - Noto Fonts and Notos Fonts Emoji (reccomended, linux only)
+
  
 ## Running Manually
 
