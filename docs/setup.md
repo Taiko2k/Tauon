@@ -5,7 +5,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
  
 ## Dependencies for manual setup
 
- - SDL >= 2.0.5
+ - SDL >= **2.0.5**
  - SDL_Image
  - Bass
  - BassEnc
@@ -27,7 +27,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
  - Python pylast
  - Python flask (optional)
  - Python gi.repository/pygobject (Linux only)
- - Python pyCairo >= 1.10.1 (Linux only)
+ - Python pyCairo >= **1.10.1** (Linux only)
  - Python pyxhook (Linux only, optional)
  - Python pylyrics
  
