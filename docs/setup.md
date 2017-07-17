@@ -51,12 +51,12 @@ Something like this:
 
 1. Download and extract the Tauon Music Box release package for linux from releases section.
 2. Install dependencies ```sudo apt-get install libsdl2-2.0-0 libsdl2-image-2.0-0 python3-pylast python3-xlib fonts-noto python3-pil python3-gi```
-2. Build and install latest pycairo.
-    1. Clone from https://github.com/pygobject/pycairo
+2. Build latest pycairo.
+    1. Download or clone from https://github.com/pygobject/pycairo
     2. Install build deps. ```sudo apt-get install python3-dev libcairo2-dev```
-    3. Install. E.g. ```sudo python3 setup.py install```
-3. Install hsaudiotag https://github.com/hsoft/hsaudiotag Download and run ```sudo python3 setup.py install``` or use pip.
-4. Install stagger https://github.com/lorentey/stagger Download and run ```sudo python3 setup.py install``` or use pip.
+    3. Build pycairo ```sudo python3 setup.py build``` and copy resulting "cairo" folder to extracted tauon-music-box folder
+3. Download or clone hsaudiotag https://github.com/hsoft/hsaudiotag and copy inner "hsaudiotag" folder to extracted tauon-music-box folder
+4. Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder
 5. Finally, run from extracted tauon-music-box directory using ```python3 tauon.py```
 
 
