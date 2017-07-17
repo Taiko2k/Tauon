@@ -50,7 +50,7 @@ Italicized entires are included in the releasae zip package.
 Something like this:
 
 1. Download and extract the Tauon Music Box release package for linux from releases section.
-2. Install dependencies ```sudo apt-get install libsdl2-2.0-0 libsdl2-image-2.0-0 python3-pylast python3-xlib fonts-noto python3-pil```
+2. Install dependencies ```sudo apt-get install libsdl2-2.0-0 libsdl2-image-2.0-0 python3-pylast python3-xlib fonts-noto python3-pil python3-gi```
 2. Build and install latest pycairo.
     1. Clone from https://github.com/pygobject/pycairo
     2. Install build deps. ```sudo apt-get install python3-dev libcairo2-dev```
