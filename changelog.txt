@@ -1,6 +1,15 @@
 
 Changelog-------------------------------------
 
+v2.4.2
+
+ - Added Shift-A search box shortcut to search for playing artist name
+ - Added keyboard navigation to gallery view (use tab to switch to)
+ - Improved transition gap timing consistency
+ - Fixed replay gain not consistency applying
+ - Fixed playback stall if stop and play clicked in quick succession
+ - Fixed crashes when using clean database function under certain circumstances
+
 
 v2.4.1
 
@@ -17,6 +26,7 @@ v2.4.1
  - Fixed backend crash when attempting to play a missing track first
  - Fixed clean database function causing double memory usage
  - Fixed clicks to rename tracks box clicking through
+ - Fixed TTA files not playing (linux)
  - Tweaked selections to deselect when track clicked on
  - Tweaked single track drag to allow moving via shift after drag has begun
  - Tweaked double click timing to be tighter

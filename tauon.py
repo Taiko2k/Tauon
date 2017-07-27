@@ -49,10 +49,9 @@ import sys
 import os
 import pickle
 
-t_version = "v2.4.1"
-title = 'Tauon Music Box'
-version_line = title + " " + t_version
-print(version_line)
+t_version = "v2.4.2"
+t_title = 'Tauon Music Box'
+print(t_title + " " + t_version)
 print('Copyright (c) 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
 
@@ -155,6 +154,7 @@ else:
             sys.exit()
 
 # ------------------------------------
+# Continue startup
 
 import time
 import ctypes
@@ -200,15 +200,12 @@ if system == 'windows':
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import win32con, win32api, win32gui, win32ui, atexit, win32clipboard, pythoncom
 elif system == 'linux':
-    os.environ["SDL_VIDEO_X11_WMCLASS"] = title
+    os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
 
 
 from sdl2 import *
-#from sdl2.sdlttf import *
 from sdl2.sdlimage import *
-
 from PIL import Image
-
 from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
@@ -220,7 +217,6 @@ from t_extra import *
 
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
-
 
 default_player = 'BASS'
 gapless_type1 = False
@@ -384,7 +380,7 @@ DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
 if system == 'windows':
     DA_Formats.add('wma')
 
-auto_stop = False
+
 
 p_stopped = 0
 p_playing = 1
@@ -692,6 +688,7 @@ class GuiVar:
 
         self.present = False
         self.drag_source_position = (0, 0)
+        self.album_tab_mode = False
 
 gui = GuiVar()
 
@@ -763,6 +760,15 @@ class StarStore:
 
 star_store = StarStore()
 
+def playtime_penalty(track_object, sec):
+
+    if key_shift_down:
+        if pctl.playing_object() is track_object:
+            print(track_object.skips)
+            print(max(0, sec - track_object.skips * 30))
+        return max(0, sec - track_object.skips * 30)
+    else:
+        return sec
 
 class Fonts:
 
@@ -1648,6 +1654,7 @@ class PlayerCtl:
         self.b_time = 0
         self.playlist_backup = []
         self.active_replaygain = 0
+        self.auto_stop = False
 
         # Broadcasting
 
@@ -1893,6 +1900,11 @@ class PlayerCtl:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
 
+
+            if self.playing_state == 1 and self.left_time > 5 and self.playing_length - self.left_time > 15 :
+                pctl.master_library[self.left_index].skips += 1
+
+
         global playlist_hold
         gui.update_spec = 0
         self.active_playlist_playing = self.playlist_active
@@ -2071,6 +2083,55 @@ class PlayerCtl:
 
         self.render_playlist()
         self.notify_update()
+
+    def test_progress(self):
+        
+        if self.playing_state == 1 and self.playing_time + (
+                    prefs.cross_fade_time / 1000) + 0 >= self.playing_length and self.playing_time > 0.2:
+            if self.playing_length == 0 and self.playing_time < 4:
+                # If the length is unknown, allow backend some time to provide a duration
+                pass
+            else:
+
+                if pctl.auto_stop:
+                    self.stop(run=True)
+                    gui.update += 2
+                    pctl.auto_stop = False
+
+                elif self.repeat_mode is True:
+
+                    self.playing_time = 0
+                    self.new_time = 0
+                    self.playerCommand = 'seek'
+                    self.playerCommandReady = True
+
+                elif self.random_mode is False and len(default_playlist) - 2 > self.playlist_playing and \
+                                self.master_library[default_playlist[self.playlist_playing]].is_cue is True \
+                        and self.master_library[default_playlist[self.playlist_playing + 1]].filename == \
+                                self.master_library[default_playlist[self.playlist_playing]].filename and int(
+                    self.master_library[default_playlist[self.playlist_playing]].track_number) == int(
+                    self.master_library[default_playlist[self.playlist_playing + 1]].track_number) - 1:
+                    print("CUE Gap-less")
+                    self.playlist_playing += 1
+                    self.queue_step += 1
+                    self.track_queue.append(default_playlist[self.playlist_playing])
+
+                    self.playing_state = 1
+                    self.playing_time = 0
+                    self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
+                    self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
+
+                    gui.update += 1
+                    gui.pl_update = 1
+
+                else:
+                    if self.playing_time < self.playing_length:
+                        self.advance(quiet=True, gapless=gapless_type1)
+                    else:
+                        self.advance(quiet=True)
+
+                    self.playing_time = 0
+
 
     def advance(self, rr=False, quiet=False, gapless=False):
 
@@ -3300,6 +3361,9 @@ def player():
         if player1_status == p_playing or player2_status == p_playing:
 
             add_time = player_timer.hit()
+            if add_time > 3:
+                add_time = 0
+
             pctl.playing_time += add_time
 
             if pctl.playing_state == 1:
@@ -3308,6 +3372,9 @@ def player():
                 pctl.total_playtime += add_time
 
                 lfm_scrobbler.update(add_time)
+
+            # Trigger track advance once end of track is reached
+            pctl.test_progress()
 
 
             if pctl.playing_state == 1 and len(pctl.track_queue) > 0 and 3 > add_time > 0:
@@ -3319,6 +3386,12 @@ def player():
                 #         pctl.star_library[key] += add_time
                 # else:
                 #     pctl.star_library[key] = 0
+
+        elif pctl.playerCommandReady is False and pctl.playing_state == 1:
+            print("Missed play command, re-starting track")
+            pctl.stop()
+            pctl.play()
+
 
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
@@ -3746,10 +3819,11 @@ def player():
                 elif player1_status != p_stopped and player2_status == p_stopped:
                     player1_status = p_stopping
                     BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
-                    replay_gain(handle1)
+
 
                     handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
 
+                    replay_gain(handle2)
                     channel2 = BASS_ChannelPlay(handle2, True)
 
                     BASS_ChannelSetAttribute(handle2, 2, 0)
@@ -3758,9 +3832,10 @@ def player():
                 elif player2_status != p_stopped and player1_status == p_stopped:
                     player2_status = p_stopping
                     BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
-                    replay_gain(handle1)
+
 
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
+                    replay_gain(handle1)
                     BASS_ChannelSetAttribute(handle1, 2, 0)
                     channel1 = BASS_ChannelPlay(handle1, True)
 
@@ -4436,7 +4511,7 @@ stats_gen = GStats()
 SDL_Init(SDL_INIT_VIDEO)
 #TTF_Init()
 
-window_title = title
+window_title = t_title
 window_title = window_title.encode('utf-8')
 
 
@@ -9688,7 +9763,7 @@ def standard_size():
     clear_img_cache()
 
 
-def goto_album(playlist_no):
+def goto_album(playlist_no, down=False):
     global album_pos_px
     global album_dex
 
@@ -9705,6 +9780,8 @@ def goto_album(playlist_no):
             row = 0
             px += album_mode_art_size + album_v_gap
 
+
+
     if album_pos_px - 20 < px < album_pos_px + window_size[1]:
         pass
     else:
@@ -9713,6 +9790,53 @@ def goto_album(playlist_no):
 
         if album_pos_px < 0 - 55:
             album_pos_px = 0 - 55
+
+    if down:
+        while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[1] - 40:
+
+            album_pos_px += 1
+
+def goto_album_align_bottom(playlist_no):
+    goto_album(playlist_no)
+
+    # global album_pos_px
+    # global album_dex
+    #
+    # px = 0
+    # row = 0
+    #
+    # for i in range(len(album_dex)):
+    #     if i == len(album_dex) - 1:
+    #         break
+    #     if album_dex[i + 1] - 1 > playlist_no - 1:
+    #         break
+    #     row += 1
+    #     if row > row_len - 1:
+    #         row = 0
+    #         px += album_mode_art_size + album_v_gap
+    #
+    #
+    # if album_pos_px < px < album_pos_px + window_size[1]:
+    #     pass
+    # else:
+    #     goto_album(playlist_no)
+    #     album_pos_px += 2000
+    #     print('git')
+    #     while not px + album_mode_art_size + album_v_gap < album_pos_px + window_size[1] - 40:
+    #        album_pos_px -= 2
+
+    # if album_pos_px - album_mode_art_size < px < album_pos_px + window_size[1]:
+    #     pass
+    # else:
+    #     album_pos_px = px - 60
+    #     album_pos_px += 10
+    #
+    #     if album_pos_px < 0 - 55:
+    #         album_pos_px = 0 - 55
+    #
+    # while album_pos_px - 20 < px < album_pos_px + window_size[1]:
+    #     album_pos_px -= 2
+
 
 
 def toggle_album_mode(force_on=False):
@@ -9814,20 +9938,14 @@ def export_database():
         line.append(str(track.album))
         line.append(str(track.album_artist))
         line.append(str(track.track_number))
-        if track.is_cue == False:
+        if track.is_cue is False:
             line.append('FILE')
         else:
             line.append('CUE')
         line.append(str(track.length))
         line.append(str(track.date))
         line.append(track.genre)
-
         line.append(str(int(star_store.get_by_object(track))))
-        # key = track.title + track.filename
-        # if key in pctl.star_library:
-        #     line.append(str(int(pctl.star_library[key])))
-        # else:
-        #     line.append('0')
         line.append(track.fullpath)
 
         for g in range(len(line)):
@@ -10760,11 +10878,12 @@ def worker1():
 
                     for playlist in pctl.multi_playlist:
                         while index in playlist[2]:
+                            album_dex.clear()
                             playlist[2].remove(index)
 
-                    if index in pctl.track_queue:
-                        pctl.track_queue = []
-                        pctl.queue_step = []
+                    while index in pctl.track_queue:
+                        pctl.track_queue.remove(index)
+                        pctl.queue_step -= 1
                     del pctl.master_library[index]
                     items_removed += 1
 
@@ -11023,16 +11142,19 @@ def get_album_info(position):
 
     album = []
     playing = 0
+    select = False
     while current < len(default_playlist) - 1:
         album.append(current)
         if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
+        if current == playlist_selected:
+            select = True
         if pctl.master_library[default_playlist[current]].parent_folder_name != pctl.master_library[
                 default_playlist[current + 1]].parent_folder_name:
             break
         else:
             current += 1
-    return playing, album
+    return playing, album, select
 
 
 def get_folder_list(index):
@@ -11045,6 +11167,29 @@ def get_folder_list(index):
             playlist.append(item)
     return list(set(playlist))
 
+
+def gal_jump_select(up=False, num=1):
+    global playlist_selected
+
+    if up is False:
+        on = playlist_selected
+
+        while num > 0:
+            while on < len(default_playlist) - 1 and pctl.master_library[
+                default_playlist[on]].parent_folder_name == pctl.master_library[
+                    default_playlist[playlist_selected]].parent_folder_name:
+                on += 1
+            playlist_selected = on
+            num -= 1
+    else:
+        on = playlist_selected
+
+        while num > 0:
+            alb = get_album_info(playlist_selected)
+            if alb[1][0] > -1:
+                on = alb[1][0] - 1
+            playlist_selected = max(get_album_info(on)[1][0], 0)
+            num -= 1
 
 def reload_albums(quiet=False):
     global album_dex
@@ -13118,7 +13263,6 @@ class BottomBarType1:
 
     def render(self):
 
-        global auto_stop
         global volume_store
         global clicked
         global right_click
@@ -13394,7 +13538,7 @@ class BottomBarType1:
             if pctl.playing_state == 1:
                 play_colour = colours.media_buttons_active
 
-            if auto_stop:
+            if pctl.auto_stop:
                 stop_colour = colours.media_buttons_active
 
             if pctl.playing_state == 2:
@@ -13443,7 +13587,7 @@ class BottomBarType1:
                 if input.mouse_click:
                     pctl.stop()
                 if right_click:
-                    auto_stop ^= True
+                    pctl.auto_stop ^= True
 
             draw.rect((x, y + 0), (13, 13), stop_colour, True)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14182,6 +14326,7 @@ class StandardPlaylist:
                     if item[0] == "Starline":
                         #key = n_track.title + n_track.filename
                         total = star_store.get_by_object(n_track)
+                        #total = playtime_penalty(n_track, total)
                         #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
                         if total > 0 and n_track.length != 0 and wid > 0:
                             if gui.show_stars:
@@ -14955,6 +15100,11 @@ class GetSDLInput:
         SDL_GetMouseState(self.i_x, self.i_y)
         return self.i_x.contents.value, self.i_y.contents.value
 
+gal_up = False
+gal_down = False
+gal_left = False
+gal_right = False
+
 
 get_sdl_input = GetSDLInput()
 
@@ -15493,8 +15643,27 @@ while running:
         if key_F8:
             pass
 
+
+
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
+
+            if album_mode and gui.album_tab_mode:
+                if key_left_press:
+                    gal_left = True
+                    key_left_press = False
+                if key_right_press:
+                    gal_right = True
+                    key_right_press = False
+                if key_up_press:
+                    gal_up = True
+                    key_up_press = False
+                if key_down_press:
+                    gal_down = True
+                    key_down_press = False
+                # if key_return_press:
+                #     gal_enter = True
+                #     key_return_press = False
 
             if key_del:
                 del_selected()
@@ -15579,7 +15748,6 @@ while running:
 
         if key_F7:
 
-            print(os.path.getmtime(pctl.playing_object().fullpath))
             key_F7 = False
 
 
@@ -16058,6 +16226,38 @@ while running:
 
             if album_mode:
 
+                if key_tab:
+                    gui.album_tab_mode ^= True
+
+                if gal_right:
+                    gal_right = False
+                    gal_jump_select(False, 1)
+                    goto_album(playlist_selected)
+                    playlist_position = playlist_selected
+                    gui.pl_update = 1
+
+                if gal_down:
+                    gal_down = False
+                    gal_jump_select(False, row_len)
+                    goto_album(playlist_selected, down=True)
+                    playlist_position = playlist_selected
+                    gui.pl_update = 1
+
+                if gal_left:
+                    gal_left = False
+                    gal_jump_select(True, 1)
+                    goto_album(playlist_selected)
+                    playlist_position = playlist_selected
+                    gui.pl_update = 1
+
+                if gal_up:
+                    gal_up = False
+                    gal_jump_select(True, row_len)
+                    goto_album(playlist_selected)
+                    playlist_position = playlist_selected
+                    gui.pl_update = 1
+
+
                 if not gui.show_playlist:
                     rect = [0, gui.panelY, window_size[0],
                             window_size[1] - gui.panelY - gui.panelBY - 0]
@@ -16175,13 +16375,21 @@ while running:
                             albumtitle = colours.side_bar_line1  # grey(220)
 
                             if info[0] == 1 and pctl.playing_state != 0:
-                                # draw.rect((x - 10, y - 9), (album_mode_art_size + 20, album_mode_art_size + 55),
-                                #           [200, 200, 200, 15], True)
-
                                 draw.rect((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           colours.gallery_highlight, True)
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
+
+                            # Draw selection
+                            if gui.album_tab_mode and info[2] is True:
+
+                                c = colours.gallery_highlight
+                                c = [c[1], c[2], c[0], c[3]]
+                                draw.rect((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                          c, True) #[150, 80, 222, 255]
+                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
+                                          colours.side_panel_background, True)
+
 
                             # Draw back colour
                             draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
@@ -16200,9 +16408,15 @@ while running:
                                            album_mode_art_size - 10,
                                            )
 
-                            if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                albumtitle = colours.grey(150)
+                            if gui.album_tab_mode:
+                                if info[2] is False and info[0] != 1:
+                                    draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    albumtitle = colours.grey(150)
+
+                            else:
+                                if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
+                                    draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    albumtitle = colours.grey(150)
 
 
                             if (input.mouse_click or right_click) and coll_point(mouse_position, (
@@ -16295,6 +16509,10 @@ while running:
                         render_pos += album_mode_art_size + album_v_gap
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
+
+                # if gui.album_tab_mode:
+                #     draw.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
+
 
             # End of gallery view
             # --------------------------------------------------------------------------
@@ -16771,7 +16989,7 @@ while running:
                                 block5 = False
                                 block6 = False
 
-                                title = ""
+                                t_title = ""
                                 album = ""
                                 artist = ""
                                 ext = ""
@@ -16780,7 +16998,7 @@ while running:
 
                                 if pctl.playing_state < 3:
 
-                                    title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
+                                    t_title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
                                     album = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
                                     artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
                                     ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
@@ -16790,7 +17008,7 @@ while running:
 
                                 else:
 
-                                    title = pctl.tag_meta
+                                    t_title = pctl.tag_meta
 
                                 if side_panel_text_align == 1:
                                     pass
@@ -16823,8 +17041,8 @@ while running:
                                             if block3 is True:
                                                 block1 -= 14
 
-                                            if title != "":
-                                                playing_info = title
+                                            if t_title != "":
+                                                playing_info = t_title
                                                 playing_info = trunc_line(playing_info, fonts.side_panel_line1,
                                                                           window_size[0] - gui.playlist_width - 53)
                                                 draw_text((x - 1, block1 + 2), playing_info, colours.side_bar_line1,
@@ -16843,10 +17061,10 @@ while running:
                                             line = ""
                                             if artist != "":
                                                 line += artist
-                                            if title != "":
+                                            if t_title != "":
                                                 if line != "":
                                                     line += " - "
-                                                line += title
+                                                line += t_title
                                             line = trunc_line(line, 15, window_size[0] - gui.playlist_width - 53)
                                             draw_text((x - 1, block1), line, colours.side_bar_line1, 15, max=gui.side_panel_size - 32)
 
@@ -17825,6 +18043,11 @@ while running:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                     draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84, 2), line, colours.grey(80), 10)
 
+                if len(pctl.track_queue) > 0:
+
+                    if input_text == 'A':
+                        search_text.text = pctl.playing_object().artist
+                        input_text = ""
 
                 if gui.search_error:
                     draw.rect_r([rect[0], rect[1], rect[2], 30], [255, 0, 0, 45], True)
@@ -17852,17 +18075,17 @@ while running:
                             else:
 
                                 if search_text.text[-1] == "/":
-                                    title = search_text.text.replace('/', "")
+                                    t_title = search_text.text.replace('/', "")
                                 else:
                                     search_text.text = search_text.text.replace('/', "")
-                                    title = search_text.text
+                                    t_title = search_text.text
                                 search_text.text = search_text.text.lower()
                                 for item in default_playlist:
                                     if search_text.text in pctl.master_library[item].parent_folder_path.lower():
                                         playlist.append(item)
                                 if len(playlist) > 0:
 
-                                    pctl.multi_playlist.append(pl_gen(title=title,
+                                    pctl.multi_playlist.append(pl_gen(title=t_title,
                                                                       playlist=copy.deepcopy(playlist)))
                                     switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -18466,54 +18689,6 @@ while running:
     if pctl.broadcast_active and pctl.broadcast_time == 0:
         gui.pl_update = 1
 
-    # Playlist and Track Queue
-
-    # Trigger track advance once end of track is reached
-    if pctl.playing_state == 1 and pctl.playing_time + (
-                prefs.cross_fade_time / 1000) + 0 >= pctl.playing_length and pctl.playing_time > 0.2:
-        if pctl.playing_length == 0 and pctl.playing_time < 4:
-            # If the length is unknown, allow backend some time to provide a duration
-            pass
-        else:
-
-            if auto_stop:
-                pctl.stop(run=True)
-                gui.update += 2
-                auto_stop = False
-
-            elif pctl.repeat_mode is True:
-
-                pctl.playing_time = 0
-                pctl.new_time = 0
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
-
-            elif pctl.random_mode is False and len(default_playlist) - 2 > pctl.playlist_playing and \
-                            pctl.master_library[default_playlist[pctl.playlist_playing]].is_cue is True \
-                    and pctl.master_library[default_playlist[pctl.playlist_playing + 1]].filename == \
-                            pctl.master_library[default_playlist[pctl.playlist_playing]].filename and int(
-                pctl.master_library[default_playlist[pctl.playlist_playing]].track_number) == int(
-                pctl.master_library[default_playlist[pctl.playlist_playing + 1]].track_number) - 1:
-                print("CUE Gap-less")
-                pctl.playlist_playing += 1
-                pctl.queue_step += 1
-                pctl.track_queue.append(default_playlist[pctl.playlist_playing])
-
-                pctl.playing_state = 1
-                pctl.playing_time = 0
-                pctl.playing_length = pctl.master_library[pctl.track_queue[pctl.queue_step]].length
-                pctl.start_time = pctl.master_library[pctl.track_queue[pctl.queue_step]].start_time
-
-                gui.update += 1
-                gui.pl_update = 1
-
-            else:
-                if pctl.playing_time < pctl.playing_length:
-                    pctl.advance(quiet=True, gapless=gapless_type1)
-                else:
-                    pctl.advance(quiet=True)
-
-                pctl.playing_time = 0
 
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
         windows_progress.update()
