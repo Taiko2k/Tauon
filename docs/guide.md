@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.4.1
+Basic usage guide. Updated for v2.4.2
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
@@ -26,6 +26,18 @@ Tip: Try importing all your music to a single playlist to get started
    2) The playlist that the playing track is playing from
    3) All other playlists starting from left to right
 
+### Playlist Scrolling
+
+ - The playlist scroll bar is to the left of the playlist, hidden until moused over
+ - Click above or below the scroll bar to scroll quickly in that direction
+ - Right click anywhere in the scroll field to jump immediately to that location
+
+### Gallery View
+
+ - To enter gallery view, click VIEW-> TRACKS + GALLERY or press mouse button 4 (if you have a 5 button mouse).
+ - Clicking an album plays it.
+ - Right clicking an album shows its position in the playlist.
+ - To select an album using the keyboard, press tab to toggle keyboard control mode.
 
 ### Quick Search
 
@@ -35,12 +47,7 @@ Tip: Try importing all your music to a single playlist to get started
 
  - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track.
  - Press Shift+Enter to create a new playlist of all matching results
-
-### Playlist Scrolling
-
- - The playlist scroll bar is to the left of the playlist, hidden until moused over
- - Click above or below the scroll bar to scroll quickly in that direction
- - Right click anywhere in the scroll field to jump immediately to that location
+ - Press Shift+A to search currently playing artist name
 
 ### New Playlist from folder path fragment:
 
@@ -83,10 +90,14 @@ Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  r
 
 Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use this function around files or folders you cannot afford to lose.
 
+### Modifying Album Art
+
+ - To quickly add album art to a folder, images from a web browser can be dragged onto the side panel canvas (http only) (not tested on Windows)
+ - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
+
 ### Quirks
 
- - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
- - Quirk: Playlists and settings are only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close) Play times are periodically saved however.
+ - Program data is only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close). Play times are periodically saved however.
 
 ### Extra Shortcuts
 
@@ -94,24 +105,25 @@ Warning: Although there are some checks in place it may still be possible to cau
 ***Toggle folder break for current playlist***: F1   
 ***Cycle Theme***: F2   
 ***Toggle Auto Theme***: F3   
+***Show encoding output folder*** F9   
 ***Change Playlist***: Left and Right arrow keys  
-***View Playlist List***: Tilde ~  
 ***Seek***: + and -   
 ***Play next/previous track***: Shift + Left and Right arrow keys OR global mediakeys OR home/end keys  
 ***Volume Up/Down***: Shift + Up and Down arrow keys    
-***Toggle broadcast sync mode***: F6   
 ***Select TOP/END***: Home, End   
-***Undo playlist delete***: Ctrl + Z
+***Toggle gallery keyboard mode***: Tab   
+***Delete current playlist***: Ctrl + W   
+***Undo playlist delete***: Ctrl + Z   
 
 ### Inbound Streaming
 
 Compatible with HTTP streams (Shoutcast, Icecast etc). To open a stream:
 
 1) Go to MENU -> OPEN STREAM...
-2) Type in address to stream or click paste if link is in clipboard (you can manually copy these links out of m3u files if available) (Must start with http:// or ftp://)
+2) Type in address to stream or click paste if link is in clipboard (you can manually copy these URLs out of m3u files if available) (Must start with http:// or ftp://)
 3) Click GO
 
-To record a steam, once a stream has been opened, re enter the open stream box and click REC. Recordings are encoded using OGG codec at about 100kbs and are automatically split on metadata change.
+To record a steam, once a stream has been opened, re enter the open stream box and click REC. Recordings are encoded using OGG codec at about 100kbs and are automatically split on metadata change. Press F9 to show output folder.
 
 ### Outbound Streaming / Broadcasting
 
@@ -121,39 +133,40 @@ From track context menu select 'Broadcast This' to play a track immediately.
 
 Note: The codec used is OGG. Bit-rate can be set in 'config.txt'. Higher bit-rates may help reduce latency. Lower bit-rates will conserve bandwidth at cost of audio quality.
 
-Warning: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
+Note: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
+
+The stream can be reached at http://localhost:8000. This can be from a web browser (tends to be a little bit unreliable, try refreshing the page if playback stalls) or from a compatible application.
 
 
 ### Transcoding albums
 
-Intended to be an easy way to reduce file sizes for copying tracks to devices with limited storage. Results will be of degraded quality and should not be used for archival.
+Intended to be an easy way to reduce file sizes for copying tracks to devices with limited storage. Results will be of degraded quality (lossy codec) and should not be used for archival.
 
 1) Ensure FFMPEG is avaliable.
- - For windows, Download ffmpeg from https://ffmpeg.org/ and place 'ffmpeg.exe' in encoder directory. To find this folder, go to MENU -> SETTINGS... -> TRANSCODE -> OPEN OUTPUT FOLDER
- - For linux, install ffmpeg using your distro's package manager.
- - If you need MP3 output, repeat above steps for LAME (lame.exe). For windows you may find lame.exe on the internet. For linux consult your package manager.
+ - For Windows, download ffmpeg from https://ffmpeg.org/ and place 'ffmpeg.exe' in encoder directory. To find this folder press F9.
+ - For Linux, install ffmpeg using your distro's package manager.
+ - If you need MP3 output, repeat above steps for LAME (lame.exe). For Windows you may find lame.exe on the internet. For Linux consult your package manager.
 
 2) Optionally configure settings in MENU -> SETTINGS...-> TRANSCODE
  - 64Kbps Opus provides good sound quality with small file size, but not many players are compatible with it. As of 2017 I suggest Rocket Player or AIMP for Android.
  - 96kbps OGG, or 128kbs MP3 provide comparable quality and are more widely compatible.
  - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail.
 
-3) Right click a track and select, TRACK MENU -> TRANSCODE FOLDER to transcode the track in the folder to which the track resides. Wait for it to finish.
- - If the yellow text in the top panel does not change for an extended duration, the transcode may have stalled. In this case you will need to restart the application as there is currently no handling on errors.
+3) Right click a track and select, TRACK MENU -> TRANSCODE FOLDER to transcode the the tracks in the folder to which the track resides. Wait for it to finish.
+ - If the yellow text in the top panel does not change for an extended amount of time, the transcode may have stalled. In this case you will need to restart the application as there is currently no handling on errors.
 
 4) See result folders in the encoder directory. To open this folder press F9.
 
 
-
 ### Japanese Mojibake
 
-In case of mojibake (where displayed characters from Japanese language metadata is garbled), the ideal solution is to re-apply tags in a decent tag editor, preferably using a sane encoding (i.e UTF-8)
+In case of mojibake (where displayed characters from Japanese language metadata is garbled), the ideal solution is to re-apply tags in a tag editor, preferably using a sane encoding (i.e UTF-8)
 
 As a temporary solution a fix mojibake function is available under TRACK MENU -> META... -> FIX MOJIBAKE
 
-Note: These functions will apply changes to all tracks in the folder/album   
+Note: This function will apply changes to all tracks in the folder/album   
 
-Note: Changes made by these functions only apply to internal database and are not written back to tags on disk
+Note: Changes made by these functions only apply to internal database and are not written back to the tags on disk
 
 Tip: To undo changes and revert to original, use TRACK MENU -> META... -> RELOAD METADATA
 
@@ -161,11 +174,11 @@ Tip: To undo changes and revert to original, use TRACK MENU -> META... -> RELOAD
 
 There is currently no built in support for tag editing.
 
-An external tag editor can be used. See config.txt for linking to an external editor from the track menu (TRACK MENU -> META... -> Edit tags with xxxx). Is configured for MusicBrainz Picard by default.
+An external tag editor can be used. See config.txt for linking to an external editor from the track menu (TRACK MENU -> META... -> Edit tags with xxxx). This is configured for MusicBrainz Picard by default.
 
-Note: While editing tracks externally, make sure not to change the track file names. You should use the rename tracks function built into Tauon Music Box under TRACK MENU -> META... -> RENAME TRACKS   
+Note: While editing tracks externally, make sure not to change the track file names. If you wish to change the filenames after you have imported them, use the rename tracks function under TRACK MENU -> META... -> RENAME TRACKS.
 
-Bug: Linking to Picard fails with Unicode paths on windows
+Bug: Linking to Picard fails with Unicode paths on windows.
 
 
 ### Importing/Exporting Playlists
@@ -178,7 +191,7 @@ To export; right click playlist tab and select Export.
 
 Note: Its best to import any corresponding audio files before importing playlists.  
 
-Note: It may be necessary to clean database beforehand. (MENU->Database->Find And Remove Dead Tracks)
+Important: It may be necessary to clean database beforehand. (MENU->Database->Find And Remove Dead Tracks)
 
 Bug: Some tracks with strange characters in metadata may cause process to fail.  
 
@@ -194,13 +207,13 @@ Only applies to local playback. If no ReplayGain metadata exists, no adjustments
 User data files
 ================
 
+When program is installed to program files via installer, files are kept in a dedicated location. C:\Users\<user>\Music\TauonMusicBox on Windows and ~/.tauonmb-user on Linux.
+
 **state.p** - Contains playlists, track database information and some settings. Delete to reset player.
 
 **star.p**  - Contains track play count information independent of database, tracks are uniquely identified by a matching filename, artist and track title. Can be transferred between platforms.
 
 ### Upgrading / Moving
-
-When program is installed to program files via installer, files are kept in a dedicated location. ~/.tauonmb-user on Linux and C:\Users\<user>\Music\TauonMusicBox on Windows.
 
 For moving installations or upgrading portable installations:
 
@@ -215,7 +228,6 @@ Tip: If you are moving platforms, resetting player or moved your music location 
  4) Finally, drag and drop the old XSPF playlist back in to re-import.
 
 
-
 Web components
 =================================
 
@@ -227,8 +239,6 @@ Warning: Make sure there are no private files in the folders of your music, espe
 ***localhost:7590/remote*** - Remote player control with album art and track info
 
 ***localhost:7590/radio*** - Album art and track info for broadcasting
-
-Individual tracks can be made accessible from the UI (TRACK MENU-> META... -> Generate Websample)
 
 Note: Requires FFMPEG and web server enabled before menu entry will appear
 
