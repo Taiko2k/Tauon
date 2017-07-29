@@ -232,6 +232,7 @@ Web components
 =================================
 
 Enable in MENU -> SETTINGS... -> SYSTEM tab
+
 Warning: Enabling the 'allow external connections' option may pose a security risk
 
 Warning: Make sure there are no private files in the folders of your music, especially pictures that may inadvertently be sent as an album art thumbnail
@@ -239,10 +240,6 @@ Warning: Make sure there are no private files in the folders of your music, espe
 ***localhost:7590/remote*** - Remote player control with album art and track info
 
 ***localhost:7590/radio*** - Album art and track info for broadcasting
-
-Note: Requires FFMPEG and web server enabled before menu entry will appear
-
-Note: Must be clicked for each track and will only be accessible for duration of session as files and links are cleared on restart.
 
 -----------------------------
 
