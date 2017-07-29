@@ -164,6 +164,7 @@ import io
 import copy
 import subprocess
 import urllib.parse
+import urllib.request
 import datetime
 import pylast
 import shutil
@@ -564,6 +565,8 @@ class Prefs:
         self.replay_gain = 0  # 0=off 1=track 2=album
         self.radio_page_lyrics = False
 
+        self.show_gimage = True
+
 
 prefs = Prefs()
 
@@ -689,6 +692,8 @@ class GuiVar:
         self.present = False
         self.drag_source_position = (0, 0)
         self.album_tab_mode = False
+        self.main_art_box = (0, 0, 10, 10)
+        self.gall_tab_enter = False
 
 gui = GuiVar()
 
@@ -1113,6 +1118,9 @@ try:
         prefs.replay_gain = save[55]
     if save[56] is not None:
         prefs.radio_page_lyrics = save[56]
+    if save[57] is not None:
+        prefs.show_gimage = save[57]
+
     state_file.close()
     del save
 
@@ -1687,6 +1695,10 @@ class PlayerCtl:
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
+
+
+    def playing_ready(self):
+        return len(self.track_queue) > 0
 
     def render_playlist(self):
 
@@ -6390,6 +6402,7 @@ class AlbumArt():
             else:
                 source_image = open(source[offset][1], 'rb')
 
+
             # # Temporary Fix
             # quick_d_timer.set()
 
@@ -9377,6 +9390,14 @@ def ser_wiki(index):
            urllib.parse.quote(pctl.master_library[index].artist)
     webbrowser.open(line, new=2, autoraise=True)
 
+def ser_gimage(index):
+    track = pctl.master_library[index]
+    line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
+    webbrowser.open(line, new=2, autoraise=True)
+
+if prefs.show_gimage:
+    track_menu.add('Search Images on Google', ser_gimage, pass_ref=True)
+
 if prefs.show_wiki:
     track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True)
 
@@ -9849,6 +9870,8 @@ def toggle_album_mode(force_on=False):
     global old_album_pos
     global album_pos_px
     global themeChange
+
+    gui.gall_tab_enter = False
 
     if prefs.colour_from_image:
         #prefs.colour_from_image = False
@@ -11130,7 +11153,11 @@ worker2Thread.start()
 
 
 def get_album_info(position):
+
+    if position > len(default_playlist) - 1:
+        position -= 1
     current = position
+
 
     while position > 0:
         if pctl.master_library[default_playlist[position]].parent_folder_name == pctl.master_library[
@@ -11154,6 +11181,8 @@ def get_album_info(position):
             break
         else:
             current += 1
+    if len(album) == 0:
+        album = [default_playlist[len(default_playlist) - 1]]
     return playing, album, select
 
 
@@ -11170,6 +11199,8 @@ def get_folder_list(index):
 
 def gal_jump_select(up=False, num=1):
     global playlist_selected
+    old_selected = playlist_selected
+    old_num = num
 
     if up is False:
         on = playlist_selected
@@ -11185,11 +11216,20 @@ def gal_jump_select(up=False, num=1):
         on = playlist_selected
 
         while num > 0:
+
             alb = get_album_info(playlist_selected)
+
+            # if len(alb[1]) == 0:
+            #     playlist_selected = len(default_playlist) - 1
+            #     return
             if alb[1][0] > -1:
                 on = alb[1][0] - 1
+
             playlist_selected = max(get_album_info(on)[1][0], 0)
             num -= 1
+
+    if old_num > 1 and (playlist_selected >= len(default_playlist) - 1 or playlist_selected == 0):
+        playlist_selected = old_selected
 
 def reload_albums(quiet=False):
     global album_dex
@@ -11711,6 +11751,10 @@ def toggle_wiki(mode=0):
         return prefs.show_wiki
     prefs.show_wiki ^= True
 
+def toggle_gimage(mode=0):
+    if mode == 1:
+        return prefs.show_gimage
+    prefs.show_gimage ^= True
 
 def toggle_cache(mode=0):
     if mode == 1:
@@ -11963,9 +12007,12 @@ class Over:
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
         # y += 25
-        self.toggle_square(x, y, toggle_wiki, "Enable search on Wikipedia*")
+        self.toggle_square(x, y, toggle_wiki, "Show search on Wikipedia*")
         y += 25
-        self.toggle_square(x, y, toggle_rym, "Enable search on RYM*")
+        self.toggle_square(x, y, toggle_rym, "Show search on RYM*")
+
+        self.toggle_square(x + 200 + 10, y, toggle_gimage, "Show search images on Google*")
+
         y += 35
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         y += 25
@@ -15183,6 +15230,57 @@ while running:
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         #print(event.type)
+        if event.type == SDL_DROPTEXT:
+
+            link = event.drop.file.decode()
+            if pctl.playing_ready and 'http' in link:
+                if system != 'windows' and sdl_version >= 204:
+                    gmp = get_global_mouse()
+                    gwp = get_window_position()
+                    i_x = gmp[0] - gwp[0]
+                    if i_x < 0:
+                        i_x = 0
+                    if i_x > window_size[0]:
+                        i_x = window_size[0]
+                    i_y = gmp[1] - gwp[1]
+                    if i_y < 0:
+                        i_y = 0
+                    if i_y > window_size[1]:
+                        i_y = window_size[1]
+                else:
+                    i_y = pointer(c_int(0))
+                    i_x = pointer(c_int(0))
+
+                    SDL_GetMouseState(i_x, i_y)
+                    i_y = i_y.contents.value
+                    i_x = i_x.contents.value
+
+                if coll_point((i_x, i_y), gui.main_art_box):
+                    try:
+                        print('drop picture')
+                        track = pctl.playing_object()
+                        target_dir = track.parent_folder_path
+                        response = urllib.request.urlopen(link)
+                        info = response.info()
+                        if info.get_content_maintype() == 'image':
+                            if info.get_content_subtype() == 'jpeg':
+                                save_target = os.path.join(target_dir, 'image.jpg')
+                                f = open(save_target, 'wb')
+                                f.write(response.read())
+                                f.close()
+                                clear_img_cache()
+                                print('save jpg')
+                            elif info.get_content_subtype() == 'png':
+                                save_target = os.path.join(target_dir, 'image.png')
+                                f = open(save_target, 'wb')
+                                f.write(response.read())
+                                f.close()
+                                clear_img_cache()
+
+                    except:
+                        show_message("Image download failed.")
+
+
         if event.type == SDL_DROPFILE:
             power += 5
             k = 0
@@ -15210,6 +15308,7 @@ while running:
 
             # print((i_x, i_y))
             playlist_target = 0
+            print(event.drop)
 
             if i_y < gui.panelY and not new_playlist_cooldown:
                 x = top_panel.start_space_left
@@ -15643,27 +15742,32 @@ while running:
         if key_F8:
             pass
 
-
-
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
 
-            if album_mode and gui.album_tab_mode:
-                if key_left_press:
-                    gal_left = True
-                    key_left_press = False
-                if key_right_press:
-                    gal_right = True
-                    key_right_press = False
-                if key_up_press:
-                    gal_up = True
-                    key_up_press = False
-                if key_down_press:
-                    gal_down = True
-                    key_down_press = False
-                # if key_return_press:
-                #     gal_enter = True
-                #     key_return_press = False
+            if key_tab:
+                gui.album_tab_mode ^= True
+                if not album_mode:
+                    toggle_album_mode()
+                    gui.gall_tab_enter = True
+                elif gui.gall_tab_enter:
+                    toggle_album_mode()
+
+            if not quick_search_mode:
+                if album_mode and gui.album_tab_mode:
+                    if key_left_press:
+                        gal_left = True
+                        key_left_press = False
+                    if key_right_press:
+                        gal_right = True
+                        key_right_press = False
+                    if key_up_press:
+                        gal_up = True
+                        key_up_press = False
+                    if key_down_press:
+                        gal_down = True
+                        key_down_press = False
+
 
             if key_del:
                 del_selected()
@@ -16225,9 +16329,6 @@ while running:
             # C-AR
 
             if album_mode:
-
-                if key_tab:
-                    gui.album_tab_mode ^= True
 
                 if gal_right:
                     gal_right = False
@@ -16864,6 +16965,7 @@ while running:
                         # if gui.light_mode:
                         #     x += 2
                         # CURRENT
+                        gui.main_art_box = (x, 38, box, box)
 
                         if input.mouse_click and (coll_point(mouse_position, (
                                 x, gui.panelY + boxx + 5, boxx, window_size[1] - boxx - 90))):
@@ -16875,11 +16977,10 @@ while running:
 
                         if len(pctl.track_queue) > 0:
 
-                            if coll_point(mouse_position, (x, 38, box, box)) and input.mouse_click is True:
+                            if coll_point(mouse_position, gui.main_art_box) and input.mouse_click is True:
                                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
-                            if coll_point(mouse_position, (
-                                    x, 38, box, box)) and right_click is True and pctl.playing_state > 0:
+                            if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0:
                                 album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
                         if 3 > pctl.playing_state > 0:
 
@@ -16894,7 +16995,9 @@ while running:
 
                         draw.rect((x, 38), (box + 1, box + 1), colours.art_box)
 
-                        rect = (x, 38, box, box)
+
+
+                        rect = gui.main_art_box
                         fields.add(rect)
 
 
@@ -18827,7 +18930,7 @@ save = [pctl.master_library,
         prefs.scrobble_mark,
         prefs.replay_gain,
         prefs.radio_page_lyrics,
-        None,
+        prefs.show_gimage,
         None]
 
 pickle.dump(save, open(user_directory + "/state.p", "wb"))

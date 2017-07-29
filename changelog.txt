@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v2.4.2
 
+ - Added menu link to search images on google
+ - Added functionality for dropping links onto album canvas to download album art
  - Added Shift-A search box shortcut to search for playing artist name
- - Added keyboard navigation to gallery view (use tab to switch to)
+ - Added keyboard navigation to gallery view (via tab key)
  - Improved transition gap timing consistency
- - Fixed replay gain not consistency applying
+ - Fixed replay gain not consistently applying
  - Fixed playback stall if stop and play clicked in quick succession
  - Fixed crashes when using clean database function under certain circumstances
 
