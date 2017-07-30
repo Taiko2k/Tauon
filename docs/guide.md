@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.4.2
+Basic usage guide. Updated for v2.5.0
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
@@ -82,7 +82,7 @@ Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  r
 
 ***Rename*** - Renames the folder of the track to given template format. The template that this defaults to can be changed in the config.txt file.  
 
-***Delete*** - Deletes the folder and all containing files and folders (hold shift to enable)
+***Delete*** - Deletes the folder and all containing files and folders. Use with caution!
 
 ***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
 
