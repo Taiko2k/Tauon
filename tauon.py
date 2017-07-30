@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.4.2"
+t_version = "v2.5.0"
 t_title = 'Tauon Music Box'
 print(t_title + " " + t_version)
 print('Copyright (c) 2015-2017 Taiko2k captain.gxj@gmail.com\n')
@@ -694,6 +694,8 @@ class GuiVar:
         self.album_tab_mode = False
         self.main_art_box = (0, 0, 10, 10)
         self.gall_tab_enter = False
+
+        self.flag_special_cursor = False
 
 gui = GuiVar()
 
@@ -2292,7 +2294,7 @@ class LastFMapi:
             else:
                 lfm_hash = pylast.md5(lfm_password)
 
-        print('Attempting to connect to last.fm network')
+        print('Attempting to connect to Last.fm network')
 
         try:
             # print(lfm_username)
@@ -4530,6 +4532,7 @@ window_title = window_title.encode('utf-8')
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
+cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
 
@@ -5653,6 +5656,18 @@ class TextBox:
                         SDL_SetClipboardText(text.encode('utf-8'))
                     self.eliminate_selection()
 
+            rect = (x - 3, y - 2, width - 3, 21)
+            # draw.rect_r(rect, [255, 50, 50, 80], True)
+            if coll_point(mouse_position, rect):
+                gui.cursor_mode = 4
+                SDL_SetCursor(cursor_text)
+            elif gui.cursor_mode == 4:
+                SDL_SetCursor(cursor_standard)
+
+            if gui.cursor_mode == 4:
+                gui.flag_special_cursor = True
+
+            fields.add(rect)
 
             # Delete key to remove text in front of cursor
             if key_del:
@@ -6983,19 +6998,68 @@ b_info_bar = False
 
 playlist_left = 20 #20
 
+class LoadImageAsset:
+    def __init__(self, local_path):
+        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        self.w = p_w.contents.value
+        self.h = p_h.contents.value
+
+    def render(self, x, y, colour=None):
+        self.rect.x = x
+        self.rect.y = y
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+
+class WhiteModImageAsset:
+    def __init__(self, local_path):
+        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+        self.colour = [255, 255, 255, 255]
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        SDL_FreeSurface(raw_image)
+        self.w = p_w.contents.value
+        self.h = p_h.contents.value
+
+    def render(self, x, y, colour):
+        if colour != self.colour:
+            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+            self.colour = colour
+        self.rect.x = x
+        self.rect.y = y
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 # Right click context menu generator
+
+class MenuIcon:
+
+    def __init__(self, asset):
+
+        self.asset = asset
+        self.colour = [170, 170, 170, 255]
+        self.base_asset = None
+        self.colour_callback = None
+        self.xoff = 0
+        self.yoff = 0
+
+
 class Menu:
     switch = 0
     count = switch + 1
     instances = []
 
-    def __init__(self, width):
+    def __init__(self, width, show_icons=False):
 
         self.active = False
         self.clicked = False
         self.pos = [0, 0]
-        self.vertical_size = 20
+        self.vertical_size = 22#20
         self.h = self.vertical_size
         self.w = width
         self.reference = 0
@@ -7005,6 +7069,8 @@ class Menu:
         self.up = False
         self.down = False
         self.font = 412
+        self.show_icons = show_icons
+        self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
 
         self.id = Menu.count
         self.break_height = 4
@@ -7024,10 +7090,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon])
 
     def br(self):
         self.items.append(None)
@@ -7050,7 +7116,7 @@ class Menu:
                 self.active = False
                 return
 
-            ytoff = 2
+            ytoff = 3
             y_run = self.pos[1]
 
             if window_size[1] < 250:
@@ -7084,7 +7150,10 @@ class Menu:
                           fx[1], True)
                 bg = fx[1]
 
+
+
                 # Detect if mouse is over this item
+                selected = False
                 rect = (self.pos[0], y_run, self.w, self.h - 1)
                 fields.add(rect)
 
@@ -7093,6 +7162,7 @@ class Menu:
                     draw.rect((self.pos[0], y_run), (self.w, self.h),
                               colours.menu_highlight_background,
                               True)  # [15, 15, 15, 255]
+                    selected = True
                     bg = alpha_blend(colours.menu_highlight_background, bg)
 
                     # Call menu items callback if clicked
@@ -7110,8 +7180,46 @@ class Menu:
                 draw.rect((self.pos[0], y_run), (4, self.h),
                           colours.grey(30), True)
 
+                # Draw Icon
+                x = 12
+                if self.items[i][1] is False and self.show_icons:
+
+                    icon = self.items[i][7]
+                    if icon is not None:
+                        if icon.base_asset is None:
+                            # Colourise mode
+
+                            colour = [50, 50, 50, 255]
+
+                            if icon.colour_callback is not None and icon.colour_callback() is not None:
+                                colour = icon.colour_callback()
+
+                            if selected:
+                                colour = icon.colour
+
+                            icon.asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff, colour)
+
+                        else:
+                            # Pre-rendered mode
+                            if selected:
+                                icon.asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff)
+                            else:
+                                icon.base_asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff)
+
+                if self.show_icons:
+                    x += 25
+
+                # Draw arrow icon for sub menu
+                if self.items[i][1] is True:
+                    colour = [50, 50, 50, 255]
+                    if selected:
+                        colour = [150, 150, 150, 255]
+                    if self.sub_active == self.items[i][2]:
+                        colour = [150, 150, 150, 255]
+                    self.sub_arrow.asset.render(self.pos[0] + self.w - 14, y_run + 6, colour)
+
                 # Render the items label
-                draw_text((self.pos[0] + 12, y_run + ytoff), label, fx[0], self.font, bg=bg)
+                draw_text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
@@ -7167,7 +7275,7 @@ class Menu:
                             label = self.subs[self.sub_active][w][0]
 
                         # Render the items label
-                        draw_text((sub_pos[0] + 7, sub_pos[1] + 2 + w * self.h), label, fx[0],
+                        draw_text((sub_pos[0] + 8, sub_pos[1] + 2 + w * self.h), label, fx[0],
                                   self.font, bg=bg)
 
                         # Render the menu outline
@@ -8293,8 +8401,7 @@ def get_broadcast_line():
         return 'No Title'
 
 
-# Create track context menu
-track_menu = Menu(175)
+
 
 
 def open_config():
@@ -8359,8 +8466,6 @@ def open_folder(index):
         else:
             subprocess.Popen(['xdg-open', line])
 
-
-track_menu.add('Open Folder', open_folder, pass_ref=True)
 
 
 def remove_folder(index):
@@ -8738,7 +8843,17 @@ def del_selected():
 
     shift_selection = [playlist_selected]
 
-track_menu.add('Track Info...', activate_track_box, pass_ref=True)
+folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
+folder_icon.colour = [244, 220, 66, 255]
+
+info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
+info_icon.colour = [61, 247, 163, 255]
+
+# Create track context menu
+track_menu = Menu(195, show_icons=True) #175
+
+track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
+track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
 
 track_menu.add_sub("Meta...", 150)
 
@@ -8773,9 +8888,9 @@ def delete_folder(index):
 
     old = track.parent_folder_path
 
-    if not key_shift_down and not key_shiftr_down:
-        show_message("Are you sure you want to physically delete the folder? If so, press again while holding shift.")
-        return
+    # if not key_shift_down and not key_shiftr_down:
+    #     show_message("Are you sure you want to physically delete the folder? If so, press again while holding shift.")
+    #     return
 
 
     if len(old) < 5:
@@ -9333,10 +9448,14 @@ def clip_title(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
-selection_menu = Menu(165)
+selection_menu = Menu(180, show_icons=True)
 
-selection_menu.add('Open Folder', open_folder, pass_ref=True)
-selection_menu.add("Modify Folder...", rename_folders, pass_ref=True)
+selection_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
+
+mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
+mod_folder_icon.colour = [229, 98, 98, 255]
+
+selection_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 
 if prefs.tag_editor_name != "":
@@ -9402,7 +9521,10 @@ if prefs.show_wiki:
     track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True)
 
 if prefs.show_rym:
-    track_menu.add('Search Artist on RYM', ser_rym, pass_ref=True)
+    son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
+    son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
+    son_icon.xoff = 1
+    track_menu.add('Search Artist on Sonemic', ser_rym, pass_ref=True, icon=son_icon)
 
 
 # track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
@@ -9455,13 +9577,15 @@ if prefs.enable_transcode or default_player == 'BASS':
     track_menu.br()
 
 if prefs.enable_transcode:
-    track_menu.add('Transcode Folder', convert_folder, pass_ref=True)
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+    transcode_icon.colour = [239, 74, 157, 255]
+    track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon)
 
 if default_player == 'BASS':
     track_menu.add('Broadcast This', broadcast_select_track, broadcast_feature_deco, pass_ref=True)
 
 # Create top menu
-x_menu = Menu(175)
+x_menu = Menu(190, show_icons=True)
 view_menu = Menu(170)
 set_menu = Menu(150)
 vis_menu = Menu(140)
@@ -9925,7 +10049,11 @@ if default_player == 'BASS':
     x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
 x_menu.br()
 
-x_menu.add("Settings...", activate_info_box)
+settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
+settings_icon.xoff = 0
+settings_icon.yoff = 2
+settings_icon.colour = [198, 237, 56, 255]
+x_menu.add("Settings...", activate_info_box, icon=settings_icon)
 x_menu.add_sub("Database...", 190)
 x_menu.br()
 
@@ -10053,12 +10181,21 @@ def broadcast_deco():
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
-        return [line_colour, [24, 25, 60, 255], "Stop Broadcast"]
+        return [line_colour, colours.menu_background, "Stop Broadcast"] # [24, 25, 60, 255]
     return [line_colour, colours.menu_background, None]
+
+def broadcast_colour():
+    if pctl.broadcast_active:
+        return [56, 189, 237, 255]
+    else:
+        return None
 
 
 if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "config.txt")):
-    x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco)
+    broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
+    broadcast_icon.colour = [56, 189, 237, 255]
+    broadcast_icon.colour_callback = broadcast_colour
+    x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
@@ -10069,7 +10206,7 @@ def clear_queue():
 #x_menu.add('Clear Queue', clear_queue, queue_deco)
 
 # x_menu.add_sub("Playback...", 120)
-extra_menu = Menu(160)
+extra_menu = Menu(175, show_icons=True)
 
 
 def stop():
@@ -10095,10 +10232,17 @@ extra_menu.add('Random Track', random_track, hint='COLON')
 def radio_random():
     pctl.advance(rr=True)
 
+radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/radiorandom.png'))
+radiorandom_icon.xoff = 1
+radiorandom_icon.yoff = 0
+radiorandom_icon.colour = [153, 229, 133, 255]
+extra_menu.add('Radio Random', radio_random, hint='/', icon=radiorandom_icon)
 
-extra_menu.add('Radio Random', radio_random, hint='/')
-
-extra_menu.add('Revert', pctl.revert, hint='SHIFT + /')
+revert_icon = MenuIcon(WhiteModImageAsset('/gui/revert.png'))
+revert_icon.xoff = 1
+revert_icon.yoff = 0
+revert_icon.colour = [229, 102, 59, 255]
+extra_menu.add('Revert', pctl.revert, hint='SHIFT + /', icon=revert_icon)
 
 
 def toggle_repeat():
@@ -10174,7 +10318,7 @@ def last_fm_menu_deco():
         line = 'Lastfm Scrobbling is Active'
         bg = [20, 60, 20, 255]
     else:
-        line = 'Engage Lastfm Scrobbling'
+        line = 'Start Lastfm Scrobbling'
         bg = colours.menu_background
     if lastfm.hold:
         line = "Scrobbling Has Stopped"
@@ -11880,20 +12024,6 @@ key_shiftr_down = False
 key_ctrl_down = False
 
 
-class LoadImageAsset:
-    def __init__(self, local_path):
-        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-
-    def render(self, x, y):
-        self.rect.x = x
-        self.rect.y = y
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
-
 
 class Over:
     def __init__(self):
@@ -12009,7 +12139,7 @@ class Over:
         # y += 25
         self.toggle_square(x, y, toggle_wiki, "Show search on Wikipedia*")
         y += 25
-        self.toggle_square(x, y, toggle_rym, "Show search on RYM*")
+        self.toggle_square(x, y, toggle_rym, "Show search on Sonemic*")
 
         self.toggle_square(x + 200 + 10, y, toggle_gimage, "Show search images on Google*")
 
@@ -12788,25 +12918,6 @@ fields = Fields()
 pref_box = Over()
 
 
-class WhiteModImageAsset:
-    def __init__(self, local_path):
-        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-        self.colour = [255, 255, 255, 255]
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-        SDL_FreeSurface(raw_image)
-
-    def render(self, x, y, colour):
-        if colour != self.colour:
-            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
-            self.colour = colour
-        self.rect.x = x
-        self.rect.y = y
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
-
 
 inc_arrow = WhiteModImageAsset("/gui/inc.png")
 dec_arrow = WhiteModImageAsset("/gui/dec.png")
@@ -13212,7 +13323,7 @@ class TopPanel:
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
-            draw_text((x, y), text, [70, 85, 230, 255], 11)
+            draw_text((x, y), text, [95, 110, 230, 255], 11) # [70, 85, 230, 255]
             x += draw.text_calc(text, 11) + 6
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
@@ -16222,6 +16333,8 @@ while running:
                                     colours.menu_background = colours.bottom_panel_colour
 
                             colours.post_config()
+                            # temp
+                            colours.menu_highlight_background = [40, 40, 40, 255]
 
                         break
                 else:
@@ -16255,6 +16368,7 @@ while running:
         # perf_timer.set()
 
         fields.clear()
+        gui.flag_special_cursor = False
 
         if GUI_Mode == 1 or GUI_Mode == 2:
 
@@ -17763,7 +17877,7 @@ while running:
                 if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = draw_text((x + 10, y + 10,), "Physically modify containing folder", colours.grey(150), 12)
+                p = draw_text((x + 10, y + 9,), "Folder Modification", colours.grey(180), 213)
 
                 rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
 
@@ -17789,20 +17903,22 @@ while running:
                 rect = (x + 8 + 300 + 10, y + 11, 80, 22)
                 fields.add(rect)
                 bg = colours.grey(25)
+                colour = colours.grey(150)
                 if rect_in(rect):
-                    bg = colours.grey(35)
+                    bg = [180, 60, 60, 255]#colours.grey(35)
+                    colour = colours.grey(30)
                     if input.mouse_click:
                         print('click')
                         delete_folder(rename_index)
                         gui.rename_folder_box = False
                         input.mouse_click = False
 
-                if not key_shift_down and not key_shiftr_down:
-                    bg = colours.grey(20)
+                # if not key_shift_down and not key_shiftr_down:
+                #     bg = colours.grey(20)
 
                 draw.rect_r(rect, bg, True)
 
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "DELETE", colours.grey(150), 12,
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "DELETE", colour, 12,
                           bg=bg)
 
 
@@ -17847,15 +17963,15 @@ while running:
                 draw_text((x + 10, y + 65,), "PATH", colours.grey(100), 12)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420)
-                draw_text((x + 60, y + 65,), line, colours.grey(150), 12)
+                draw_text((x + 60, y + 65,), line, colours.grey(160), 12)
 
                 draw_text((x + 10, y + 83), "OLD", colours.grey(100), 12)
                 line = trunc_line(pctl.master_library[rename_index].parent_folder_name, 12, 420)
-                draw_text((x + 60, y + 83), line, colours.grey(150), 12)
+                draw_text((x + 60, y + 83), line, colours.grey(160), 12)
 
                 draw_text((x + 10, y + 101), "NEW", colours.grey(100), 12)
                 line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
-                draw_text((x + 60, y + 101), line, colours.grey(150), 12)
+                draw_text((x + 60, y + 101), line, colours.grey(160), 12)
 
             if renamebox:
 
@@ -17885,7 +18001,7 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10, y + 10,), "Physically rename all tracks in folder", colours.grey(170), 12)
+                draw_text((x + 10, y + 8,), "File Renaming", colours.grey(180), 213)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
@@ -18029,7 +18145,7 @@ while running:
                 if key_esc_press or (gui.level_2_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
-                draw_text((x + 10, y + 10,), "Open HTTP Audio Stream", colours.grey(150), 12)
+                draw_text((x + 10, y + 8,), "Open HTTP Audio Stream", colours.grey(180), 213)
                 #gui.win_fore = colours.sys_background_3
                 radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=350, click=gui.level_2_click)
 
@@ -18454,6 +18570,9 @@ while running:
         #
         #         y += h
         #     draw.rect((x, y - (h * len(encodings))), (w, h * len(encodings)), colours.grey(50))
+        if gui.cursor_mode == 4 and gui.flag_special_cursor is False:
+            gui.cursor_mode = 0
+            SDL_SetCursor(cursor_standard)
 
         if draw_border:
 
