@@ -1,13 +1,17 @@
 
 Changelog-------------------------------------
 
-v2.4.2
+v2.5.0
 
+ - Added icons to various menu elements
  - Added menu link to search images on google
  - Added functionality for dropping links onto album canvas to download album art
  - Added Shift-A search box shortcut to search for playing artist name
  - Added keyboard navigation to gallery view (via tab key)
+ - Added text editing cursor to text fields
  - Improved transition gap timing consistency
+ - Changed folder delete function to no longer require shift key held down
+ - Tweaked various UI elements
  - Fixed replay gain not consistently applying
  - Fixed playback stall if stop and play clicked in quick succession
  - Fixed crashes when using clean database function under certain circumstances
