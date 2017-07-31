@@ -586,8 +586,13 @@ class GuiVar:
         self.lowered = False
         self.request_raise = False
         self.maximized = False
+
         self.message_box = False
         self.message_text = ""
+        self.message_mode = 'info'
+        self.message_subtext = ""
+
+
         self.save_size = [450, 310]
         self.show_playlist = True
         self.show_bottom_title = False
@@ -938,7 +943,8 @@ class ColoursClass:
         self.status_text_over = self.grey(185)
 
         if self.menu_highlight_background is None:
-            self.menu_highlight_background = alpha_blend((self.artist_text[0], self.artist_text[1], self.artist_text[2], 100), self.menu_background)
+            self.menu_highlight_background = [40, 40, 40, 255]
+            #self.menu_highlight_background = alpha_blend((self.artist_text[0], self.artist_text[1], self.artist_text[2], 100), self.menu_background)
 
         if gui.light_mode:
             self.sys_background = self.grey(20)
@@ -1141,9 +1147,11 @@ if window_size is None:
     gui.side_panel_size = 200
 
 
-def show_message(text):
+def show_message(text, message_mode='info', subtext=""):
     gui.message_box = True
     gui.message_text = text
+    gui.message_mode = message_mode
+    gui.message_subtext = subtext
     gui.update = 1
 
 def track_number_process(line):
@@ -2279,17 +2287,17 @@ class LastFMapi:
 
         if self.connected is True:
             if m_notify:
-                show_message("Already Connected")
+                show_message("Already connected to Last.fm")
             return True
 
         if lfm_username == "":
             # lfm_user_box = True
-            show_message("No account. See last fm tab in settings")
+            show_message("No Last.fm account information.", "warning", "See Last.fm tab in settings.")
             return False
 
         if lfm_hash == "":
             if lfm_password == "":
-                show_message("Missing Password. See last fm tab in settings")
+                show_message("Missing Password.", 'warning', "See Last.fm tab in settings.")
                 return False
             else:
                 lfm_hash = pylast.md5(lfm_password)
@@ -2306,12 +2314,12 @@ class LastFMapi:
 
             self.connected = True
             if m_notify:
-                show_message("Connected to lastfm")
+                show_message("Connection to Last.fm successful.")
             print('Connection to lastfm appears successful')
             return True
         except Exception as e:
 
-            show_message("lastfm Connection Error: " + str(e))
+            show_message("Error connecting to Last.fm network", "warning", str(e))
             print(e)
             return False
 
@@ -2336,7 +2344,7 @@ class LastFMapi:
             print('Connection appears successful')
             return True
         except Exception as e:
-            show_message("Error communicating with lastfm: " + str(e))
+            show_message("Error communicating with Last.fm network", "warning", str(e))
             print(e)
             return False
 
@@ -2388,7 +2396,7 @@ class LastFMapi:
                 except:
                     pass
 
-            show_message("Error: " + str(e))
+            show_message("Error: Could not scrobble. ", 'warning', str(e))
             print(e)
 
     def get_bio(self, artist):
@@ -2458,7 +2466,7 @@ class LastFMapi:
             print(e)
             if 'retry' in str(e):
                 return 2
-            show_message("Error: " + str(e))
+                show_message("Could not update Last.fm. ", 'warning', str(e))
             pctl.b_time -= 5000
             return 1
 
@@ -3331,7 +3339,7 @@ def player():
                 # time.sleep(0.5)
                 if BASS_ChannelIsActive(handle1) == 0:
                     pctl.playing_state = 0
-                    show_message("The stream has ended or connection lost")
+                    show_message("Stream stopped.", "info", "The stream either ended or the connection was lost")
                     player1_status = p_stopped
                     pctl.playing_time = 0
                     if pctl.record_stream:
@@ -3363,7 +3371,7 @@ def player():
 
                     print(file)
                     if BASS_ErrorGetCode() != 0:
-                        show_message("There was an unknown error when splitting the track")
+                        show_message("Recording error.", "warning", "An unknown error occurred when splitting the track")
 
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
@@ -3451,21 +3459,21 @@ def player():
                 handle1 = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
-                    show_message("Stream error: Connection timeout")
+                    show_message("Stream error.", "warning", "Connection timeout")
                 elif bass_error == 32:
-                    show_message("Stream error: No internet connection")
+                    show_message("Stream error.", "warning", "No internet connection")
                 elif bass_error == 20:
-                    show_message("Stream error: Bad URL")
+                    show_message("Stream error.", "warning", "Bad URL")
                 elif bass_error == 2:
-                    show_message("Stream error: Could not open stream")
+                    show_message("Stream error.", "warning", "Could not open stream")
                 elif bass_error == 41:
-                    show_message("Stream error: Unknown file format")
+                    show_message("Stream error.", "warning", "Unknown file format")
                 elif bass_error == 44:
-                    show_message("Stream error: Unknown/unsupported codec")
+                    show_message("Stream error.", "warning", "Unknown/unsupported codec")
                 elif bass_error == -1:
-                    show_message("Stream error: Its a mystery!!")
+                    show_message("Stream error.", "warning", "Its a mystery!!")
                 elif bass_error != 0:
-                    show_message("Stream error: Something went wrong... somewhere")
+                    show_message("Stream error.", "warning", "Something went wrong... somewhere")
                 if bass_error == 0:
                     BASS_ChannelSetAttribute(handle1, 2, current_volume)
                     BASS_ChannelPlay(handle1, True)
@@ -3514,9 +3522,9 @@ def player():
                     pctl.record_title = pctl.tag_meta
 
                     if rec_handle != 0 and BASS_ErrorGetCode() == 0:
-                        show_message("Recording started. Outputting as ogg to encoder directory, press F9 to show.")
+                        show_message("Recording started.", "done", "Outputting as ogg to encoder directory, press F9 to show.")
                     else:
-                        show_message("Recording Error: An unknown was encountered")
+                        show_message("Recording Error.", "warning", "An unknown was encountered")
                         pctl.record_stream = False
 
 
@@ -3684,7 +3692,7 @@ def player():
                 #b"application/ogg", b"name", b"url", b"genre", b"", b""
 
                 if BASS_ErrorGetCode() == -1:
-                    show_message("Error: Sorry, something isn't working right.")
+                    show_message("Server initialisation error.", "warning", "Sorry, something isn't working right.")
                 channel1 = BASS_ChannelPlay(mhandle, True)
                 print(encoder)
                 print(pctl.broadcast_line)
@@ -3696,11 +3704,11 @@ def player():
                 # line2 = pctl.broadcast_line.encode('utf-8')
                 # BASS_Encode_CastSetTitle(encoder, line2,0)
                 print("after set title")
-                print(BASS_ErrorGetCode())
+                e = BASS_ErrorGetCode()
                 if result != 0:
-                    show_message("Server initiated successfully, listening on port " + port)
+                    show_message("Server initiated successfully.", "done", "Listening on port " + port + ".")
                 else:
-                    show_message("Error: Failed to start server")
+                    show_message("Error staring broadcast.", 'warning', 'Error code ' + str(e) + ".")
 
                     pctl.playerCommand = "encstop"
                     pctl.playerCommandReady = True
@@ -6839,7 +6847,7 @@ def load_xspf(path):
                 # print(a)
 
     except:
-        show_message("Error Importing. Sorry about that.")
+        show_message("Error importing XSPF playlist.", 'warning', "Sorry about that.")
         return
 
     playlist = []
@@ -7035,6 +7043,12 @@ class WhiteModImageAsset:
         self.rect.y = y
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
+
+message_info_icon = LoadImageAsset("/gui/notice.png")
+message_warning_icon = LoadImageAsset("/gui/warning.png")
+message_tick_icon = LoadImageAsset("/gui/done.png")
+message_arrow_icon = LoadImageAsset("/gui/ext.png")
+
 # Right click context menu generator
 
 class MenuIcon:
@@ -7216,7 +7230,7 @@ class Menu:
                         colour = [150, 150, 150, 255]
                     if self.sub_active == self.items[i][2]:
                         colour = [150, 150, 150, 255]
-                    self.sub_arrow.asset.render(self.pos[0] + self.w - 14, y_run + 6, colour)
+                    self.sub_arrow.asset.render(self.pos[0] + self.w - 13, y_run + 7, colour)
 
                 # Render the items label
                 draw_text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
@@ -7326,7 +7340,7 @@ showcase_menu = Menu(170)
 def get_lyric_wiki(track_object):
 
     if track_object.artist == "" or track_object.title == "":
-        show_message("Insufficient metadata to get lyrics")
+        show_message("Insufficient metadata to get lyrics", 'warning')
 
     print("Query Lyric Wiki...")
     try:
@@ -7392,7 +7406,7 @@ def save_embed_img():
                 try:
                     tt = tag[PIC][0]
                 except:
-                    show_message("Error: No album art found / MP3")
+                    show_message("Image save error.", 'warning', "No embedded album art found in MP3 file")
                     return
             pic = tt.data
 
@@ -7401,7 +7415,7 @@ def save_embed_img():
             tt = Flac(filepath)
             tt.read(True)
             if tt.has_picture is False:
-                show_message("Error: No album art found / FLAC")
+                show_message("Image save error.", 'warning', "No embedded album art found in FLAC file")
                 return
             pic = tt.picture
 
@@ -7423,7 +7437,7 @@ def save_embed_img():
 
 
     except:
-        show_message("A mysterious error occurred")
+        show_message("Image save error.", "warning", "A mysterious error occurred")
 
 picture_menu = Menu(120)
 picture_menu2 = Menu(200)
@@ -7459,12 +7473,12 @@ def remove_embed_picture(index):
                 removed += 1
 
     if removed == 0:
-        show_message("Removal Failed")
+        show_message("Image removal failed.", "warning")
         return
     elif removed == 1:
-        show_message("Deleted embedded picture from file")
+        show_message("Deleted embedded picture from file", 'done')
     else:
-        show_message("Deleted embedded picture from " + str(removed) + " files")
+        show_message("Deleted embedded picture from " + str(removed) + " files", 'done')
 
     if pr == 1:
         pctl.revert()
@@ -7656,9 +7670,8 @@ def convert_playlist(pl):
                 folder.append(track)
                 if prefs.transcode_codec == 'flac' and pctl.master_library[track].file_ext.lower() in ('mp3', 'opus',
                                                                                                        'm4a', 'mp4',
-                                                                                                       'ogg', 'aac'):
-                    show_message(
-                        "Warning: This includes transcoding of a lossy codec to a lossless codec! Bad Bad Bad!")
+                                                                                                     'ogg', 'aac'):
+                    show_message("This includes the conversion of a lossy codec to a lossless one!")
 
         transcode_list.append(folder)
         print(1)
@@ -8055,7 +8068,7 @@ def gen_lyrics(pl):
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
-        show_message("No track with lyrics found")
+        show_message("No tracks with lyrics were found.")
 
 
 def gen_last_modified(index):
@@ -8085,7 +8098,7 @@ def gen_love(pl):
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
-        show_message("Nothing Found")
+        show_message("No loved tracks were found.")
 
 def gen_comment(pl):
     playlist = []
@@ -8114,7 +8127,7 @@ def gen_comment(pl):
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
     else:
-        show_message("Nothing Found")
+        show_message("Nothing of interest was found.")
 
 
 def gen_most_skip(pl):
@@ -8123,7 +8136,7 @@ def gen_most_skip(pl):
         if pctl.master_library[item].skips > 0:
             playlist.append(item)
     if len(playlist) == 0:
-        show_message("Nothing to show")
+        show_message("Nothing to show right now.")
         return
 
     def worst(index):
@@ -8514,7 +8527,9 @@ def convert_folder(index):
             if prefs.transcode_codec == 'flac' and pctl.master_library[item].file_ext.lower() in ('mp3', 'opus',
                                                                                                   'mp4', 'ogg',
                                                                                                   'aac'):
-                show_message("You're trying to convert a lossy codec to a lossless codec, I wont let you do that.")
+                show_message("NO! Bad user!",
+                             'warning', "Im not going to let you transcode a lossy codec to a lossless one!")
+
                 return
 
     print(folder)
@@ -8894,18 +8909,18 @@ def delete_folder(index):
 
 
     if len(old) < 5:
-        show_message("This folder path seems short, I don't wanna try delete that")
+        show_message("This folder path seems short, I don't wanna try delete that", 'warning')
         return
 
     if not os.path.exists(old):
-        show_message("The folder seems to be missing")
+        show_message("Error deleting folder. The folder seems to be missing.", 'warning', "It's gone! just gone!")
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
 
     for fo in protect:
         if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
-            show_message("Woah, careful there! I don't think we should delete that folder.")
+            show_message("Woah, careful there!", 'warning', "I don't think we should delete that folder.")
             return
 
     try:
@@ -8922,14 +8937,16 @@ def delete_folder(index):
             if old == pctl.master_library[default_playlist[i]].parent_folder_path:
                 del default_playlist[i]
 
-
-        show_message("Deleted folder: " + old)
+        if not os.path.exists(old):
+            show_message("Folder deleted.", 'done', old)
+        else:
+            show_message("Hmm, its still there", 'warning', old)
 
         if album_mode:
             prep_gal()
 
     except:
-        show_message("Unable to comply. Check permissions.")
+        show_message("Unable to comply.", 'warning', "Could not delete folder. Try check permissions.")
 
 
 def rename_parent(index, template):
@@ -8945,23 +8962,23 @@ def rename_parent(index, template):
     print(new)
 
 
-    if len(new) < 2:
-        show_message("The generated name is too short")
+    if len(new) < 1:
+        show_message("Rename error.", 'warning', "The generated name is too short")
         return
 
     if len(old) < 5:
-        show_message("This folder path seems short, I don't wanna try rename that")
+        show_message("Rename error.", 'warning', "This folder path seems short, I don't wanna try rename that")
         return
 
     if not os.path.exists(old):
-        show_message("Rename Failed. The original folder is missing.")
+        show_message("Rename Failed. The original folder is missing.", 'warning')
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
 
     for fo in protect:
         if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
-            show_message("Woah, careful there! I don't think we should rename that folder.")
+            show_message("Woah, careful there!", 'warning', "I don't think we should rename that folder.")
             return
 
     print(track.parent_folder_path)
@@ -8983,11 +9000,11 @@ def rename_parent(index, template):
             new_fullpath = os.path.join(new_parent_path, object.filename)
 
             if os.path.normpath(new_parent_path) == os.path.normpath(old):
-                show_message("The folder already has that name")
+                show_message("The folder already has that name.")
                 return
 
             if os.path.exists(new_parent_path):
-                show_message("Rename Failed: A folder with that name already exists")
+                show_message("Rename Failed.", 'warning', "A folder with that name already exists")
                 return
 
             if key == pctl.track_queue[pctl.queue_step] and pctl.playing_state > 0:
@@ -9011,10 +9028,10 @@ def rename_parent(index, template):
             print(new_parent_path)
         except:
 
-            show_message("Rename Failed! You may need to re-import tracks to fix them, sorry.")
+            show_message("Rename Failed!", 'warning' "Something went wrong, sorry.")
             return
 
-    show_message("Renamed folder to: " + new)
+    show_message("Folder rename completed.", 'done', "Renamed to: " + new)
 
     if pre_state == 1:
         pctl.revert()
@@ -9050,7 +9067,7 @@ def move_folder_up(index, do=False):
 
     if not os.path.exists(track.parent_folder_path):
         if do:
-            show_message("The directory does not appear to exist")
+            show_message("Error shifting directory", 'warning', "The directory does not appear to exist")
         return False
 
     if len(os.listdir(parent_folder)) > 1:
@@ -9079,7 +9096,7 @@ def move_folder_up(index, do=False):
         os.rename(os.path.join(upper_folder, "RMTEMP000"), os.path.join(upper_folder, folder_name))
 
     except Exception as e:
-        show_message("Error!: " + str(e))
+        show_message("System Error!", 'warning', str(e))
 
     # Fix any other tracks paths that contain the old path
     old = track.parent_folder_path
@@ -9130,7 +9147,7 @@ def clean_folder(index, do=False):
             clear_img_cache()
     except Exception as e:
         #show_message(str(e))
-        show_message("Error deleting file(s). May not have permission or file may be set to read-only")
+        show_message("Error deleting files.", 'warning', "May not have permission or file may be set to read-only")
         return 0
 
     return found
@@ -9148,6 +9165,7 @@ def reset_play_count(index):
 def get_like_folder(index):
     tracks = []
     for k in default_playlist:
+
         if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
             if pctl.master_library[k].is_cue is False:
                 tracks.append(k)
@@ -9159,6 +9177,7 @@ def reload_metadata(index):
 
     todo = []
     for k in default_playlist:
+
         if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
             if pctl.master_library[k].is_cue == False:
                 todo.append(k)
@@ -9215,9 +9234,12 @@ def activate_encoding_box(index):
 
 def editor(index):
     todo = []
+
     if index is None:
         for item in shift_selection:
             todo.append(default_playlist[item])
+        if len(todo) > 0:
+            index = todo[0]
     else:
         for k in default_playlist:
             if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
@@ -9238,7 +9260,7 @@ def editor(index):
     else:
         file_line = prefs.tag_editor_target + file_line
 
-    show_message(prefs.tag_editor_name + " launched. Once application is closed, fields will be updated")
+    show_message(prefs.tag_editor_name + " launched.", 'arrow', "Fields will be updated once application is closed.")
     gui.update = 1
 
     subprocess.run(shlex.split(file_line))
@@ -9250,6 +9272,7 @@ def editor(index):
 
 
 def launch_editor(index):
+    print(index)
     mini_t = threading.Thread(target=editor, args=[index])
     mini_t.daemon = True
     mini_t.start()
@@ -9637,7 +9660,7 @@ def sa_remove(h):
         del gui.pl_st[h]
         gui.update_layout()
     else:
-        show_message("Cannot remove the only column")
+        show_message("Cannot remove the only column.")
 
 def sa_artist():
     gui.pl_st.append(["Artist", 220, False])
@@ -10112,7 +10135,7 @@ def export_database():
         xport.write(outline)
 
     xport.close()
-    show_message("Done. Saved as 'DatabaseExport.csv'")
+    show_message("Export complete.", 'done',  "Saved as 'DatabaseExport.csv'.")
 
 
 def q_to_playlist():
@@ -10908,9 +10931,18 @@ def worker1():
                         zip_ref = zipfile.ZipFile(path, 'r')
                         zip_ref.extractall(target_dir)
                         zip_ref.close()
+                    except RuntimeError as e:
+                        to_got = b
+                        if 'encrypted' in e:
+                            show_message("Failed to extract zip archive.", 'warning',
+                                         "The archive is encrypted. You'll need to extract it manually with the password.")
+                        else:
+                            show_message("Failed to extract zip archive.", 'warning',
+                                         "Maybe archive is corrupted? Does disk have enough space and have write permission?")
+                        return 1
                     except:
                         to_got = b
-                        show_message("Failed to extract an archive. Maybe it is password protected? corrupted? does disk have write permission?")
+                        show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
                         return 1
 
                     upper = os.path.dirname(target_dir)
@@ -11055,7 +11087,7 @@ def worker1():
                     items_removed += 1
 
             cm_clean_db = False
-            show_message("Cleaning complete. " + str(items_removed) + " items removed from database")
+            show_message("Cleaning complete.", 'done', str(items_removed) + " items were removed from the database.")
             if album_mode:
                 reload_albums(True)
             if gui.combo_mode:
@@ -11239,16 +11271,16 @@ def worker1():
                 gui.update += 1
             except:
                 transcode_state = "Transcode Error"
-                show_message("Unknown error encountered")
+                show_message("Encode failed.", 'warning', "An unknown error was encountered.")
                 gui.update += 1
                 time.sleep(2)
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
-                line = "Encoding Completed. Press F9 to show output."
+                line = "Press F9 to show output."
                 if prefs.transcode_codec == 'flac':
-                    line += ". Note that any associated output picture is a thumbnail and not a lossless copy."
-                show_message(line)
+                    line = "Note that any associated output picture is a thumbnail and not an exact copy."
+                show_message("Encoding complete.", 'done', line)
 
         while len(to_scan) > 0:
             track = to_scan[0]
@@ -11421,7 +11453,7 @@ def webserv():
 
     except:
         print("Failed to load Flask")
-        show_message("Web server failed to start. Required dependency 'flask' was not found.")
+        show_message("Web server failed to start.", 'warning', "Required dependency 'flask' was not found.")
         return 0
 
     import html
@@ -11866,7 +11898,7 @@ def toggle_expose_web(mode=0):
         return prefs.expose_web
     prefs.expose_web ^= True
     if prefs.expose_web:
-        show_message("Warning: Enabling this setting may pose security and/or privacy risks")
+        show_message("Caution! External network connections will be accepted.", 'info', "Leaving this setting enabled may pose security and/or privacy risks.")
 
 def toggle_scrobble_mark(mode=0):
     if mode == 1:
@@ -11916,7 +11948,7 @@ def toggle_extract(mode=0):
         return prefs.auto_extract
     prefs.auto_extract ^= True
     if prefs.auto_extract is True:
-        show_message("Caution! This function deletes files, could result in data loss")
+        show_message("Caution! This function deletes the original archive.", 'info', "This could result in data loss if the process were to malfunction.")
 
 def switch_cue(mode=0):
     if mode == 1:
@@ -13347,12 +13379,19 @@ class TopPanel:
 
             x += 110
             draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
-            if len(pctl.broadcast_clients) > 0 and input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
-                line = " "
+            if input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
+                line = ""
                 input.mouse_click = False
                 for client in pctl.broadcast_clients:
                     line += client.split(":")[0] + "  "
-                    show_message(line)
+
+                if len(pctl.broadcast_clients) == 0:
+                    show_message("There are no connected clients")
+                elif len(pctl.broadcast_clients) == 1:
+                    show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", 'info',
+                                 line)
+                else:
+                    show_message("There are " + str(len(pctl.broadcast_clients)) + " inbound connections.", 'info', line)
 
 
 
@@ -15093,7 +15132,7 @@ print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(s
 if default_player == "GTK":
     print("Using GStreamer as fallback. Some functions disabled")
 elif default_player == "None":
-    show_message("ERROR: No backend found")
+    show_message("ERROR: No backend found", 'warning')
 
 print("Initialization Complete")
 
@@ -15389,7 +15428,7 @@ while running:
                                 clear_img_cache()
 
                     except:
-                        show_message("Image download failed.")
+                        show_message("Image download failed.", 'warning')
 
 
         if event.type == SDL_DROPFILE:
@@ -15939,7 +15978,7 @@ while running:
             gui.pl_update = 1
 
         if key_F5:
-            show_message("This function is broken, sorry")
+            show_message("This button doesn't do anything.")
             # pctl.playerCommand = 'encpause'
             # pctl.playerCommandReady = True
 
@@ -15962,7 +16001,9 @@ while running:
             playlist_panel ^= True
 
         if key_F7:
-
+            #show_message("This is a test message.", subtext='This is a very long line of subtitle some text okay!')
+            show_message("You don't even know what this button could have done.", 'warning')
+            #show_message("OK the activity has completed.")
             key_F7 = False
 
 
@@ -16340,7 +16381,7 @@ while running:
                 else:
                     theme = 0
             except:
-                show_message("Error loading theme file")
+                show_message("Error loading theme file", 'warning')
 
         if theme == 0:
             print("Applying default theme: Mindaro")
@@ -18109,10 +18150,10 @@ while running:
 
 
                     if total_todo != len(r_todo):
-                        show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
+                        show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
 
                     else:
-                        show_message("Done.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written")
+                        show_message("Rename complete.", 'done', str(total_todo) + "/" + str(len(r_todo)) + " filenames were written.")
 
 
 
@@ -18121,17 +18162,35 @@ while running:
                     gui.message_box = False
                     key_return_press = False
 
-                w = draw.text_calc(gui.message_text, 12) + 20
+                w1 = draw.text_calc(gui.message_text, 15) + 74
+                w2 = draw.text_calc(gui.message_subtext, 12) + 74
+                w = max(w1, w2)
+
                 if w < 210:
                     w = 210
-                h = 20
+
+                h = 60
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(55), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                draw_text((x + int(w / 2), y + 2, 2), gui.message_text, colours.grey(150), 12)
+                if gui.message_mode == 'info':
+                    message_info_icon.render(x + 14, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'warning':
+                    message_warning_icon.render(x + 14, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'done':
+                    message_tick_icon.render(x + 14, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'arrow':
+                    message_arrow_icon.render(x + 14, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+
+
+                if len(gui.message_subtext) > 0:
+                    draw_text((x + 62, y + 9), gui.message_text, colours.grey(150), 15)
+                    draw_text((x + 63, y + 9 + 22), gui.message_subtext, colours.grey(150), 12)
+                else:
+                    draw_text((x + 62, y + 17), gui.message_text, colours.grey(150), 15)
 
             if radiobox:
                 w = 420
@@ -18181,7 +18240,7 @@ while running:
                                                                (x + 8 + 350 + 10, y + 38, 40, 22)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
-                        show_message("Sorry, youtube links not supported")
+                        show_message("Sorry, youtube links are not supported.")
                     elif "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
                         print("Start radio")
                         pctl.url = radio_field.text.encode('utf-8')
@@ -18200,7 +18259,7 @@ while running:
                         print("Radio fail")
                         radiobox = False
                         gui.update = 1
-                        show_message("That doesn't look like a valid URL, make sure is starts with 'http://'")
+                        show_message("Could not validate URL.", 'info', "Make sure the URL starts with 'http://' or 'ftp://'.")
 
                 x -= 200
                 # y += 30
@@ -18216,7 +18275,7 @@ while running:
                             radiobox = False
                         else:
                             radiobox = False
-                            show_message("A stream needs to be playing first")
+                            show_message("A stream needs to be playing first.")
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + 7, rect[1] + 3), "REC", colours.grey(140), 12)
                 draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 12)

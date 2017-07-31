@@ -10,11 +10,13 @@ v2.5.0
  - Added keyboard navigation to gallery view (via tab key)
  - Added text editing cursor to text fields
  - Improved transition gap timing consistency
+ - Improved message box appearance and expanded various error messages
  - Changed folder delete function to no longer require shift key held down
- - Tweaked various UI elements
+ - Tweaked various UI text strings
  - Fixed replay gain not consistently applying
  - Fixed playback stall if stop and play clicked in quick succession
  - Fixed crashes when using clean database function under certain circumstances
+ - Fixed reload metadata failing when used for a selection
 
 
 v2.4.1
