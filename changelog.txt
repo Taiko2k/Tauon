@@ -4,10 +4,11 @@ Changelog-------------------------------------
 v2.5.0
 
  - Added icons to various menu elements
+ - Added function to move folders to different library locations
  - Added menu link to search images on google
  - Added functionality for dropping links onto album canvas to download album art
- - Added Shift-A search box shortcut to search for playing artist name
  - Added keyboard navigation to gallery view (via tab key)
+ - Added Shift-A search box shortcut to search for playing artist name
  - Added text editing cursor to text fields
  - Improved transition gap timing consistency
  - Improved message box appearance and expanded various error messages
@@ -17,6 +18,7 @@ v2.5.0
  - Fixed playback stall if stop and play clicked in quick succession
  - Fixed crashes when using clean database function under certain circumstances
  - Fixed reload metadata failing when used for a selection
+ - Fixed menu elements activating after click but before menu close
 
 
 v2.4.1

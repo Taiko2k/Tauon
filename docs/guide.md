@@ -90,6 +90,26 @@ Access by right clicking track; TRACK MENU -> META... -> MODIFY FOLDER...  OR  r
 
 Warning: Although there are some checks in place it may still be possible to cause bad things to happen. Best not to use this function around files or folders you cannot afford to lose.
 
+### Physical Folder Copy and Move / Library Transfer
+
+WARNING: Function is experimental. There may be bugs and and there will be cases not accounted for. Use with caution and not around data you cannot afford to lose.
+
+The purpose of this function is to facilitate and ease of moving folders between library locations.
+
+Performing this is a two step process:
+
+  1) Right click a folder title of a folder you want to copy/move and select "COPY FOLDER FROM LIBRARY" from the menu.
+  2) Find an imported track that exists form a location you wish to copy the folder to. Right click it, and click COPY TO THIS LIBRARY or hold down shift and click MOVE TO THIS LIBRARY to have the original folder deleted after rather than just copying.
+
+This function will attempt to find the upper most directory level that is used for artists. It will then create a directory for the artist and move the folder there.
+
+The resulting path structure will then be ***/folder_with_music(hopefully)/artist/original_folder_name***.
+
+WARNING: The entire source directory will be copied/moved, so make sure it only contains folders and files you want to transfer.
+
+NOTE: Did I make it clear this could be dangerous? Just.. just don't do something like copy a single track to your OS's system directory, run the program as admin and attempt to use the move function. That's just asking for trouble. I should probably put a warning in the actual program rather than here, oh well.
+
+
 ### Modifying Album Art
 
  - To quickly add album art to a folder, images from a web browser can be dragged onto the side panel canvas (http only) (not tested on Windows)
