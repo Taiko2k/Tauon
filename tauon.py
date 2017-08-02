@@ -566,7 +566,7 @@ class Prefs:
         self.radio_page_lyrics = False
 
         self.show_gimage = True
-
+        self.end_setting = "stop"
 
 prefs = Prefs()
 
@@ -1130,6 +1130,8 @@ try:
         prefs.radio_page_lyrics = save[56]
     if save[57] is not None:
         prefs.show_gimage = save[57]
+    if save[58] is not None:
+        prefs.end_setting = save[58]
 
     state_file.close()
     del save
@@ -2217,9 +2219,40 @@ class PlayerCtl:
 
             # Stop at end of playlist
             if self.playlist_playing == len(self.playing_playlist()) - 1:
-                self.playing_state = 0
-                self.playerCommand = 'runstop'
-                self.playerCommandReady = True
+                if prefs.end_setting == 'stop':
+                    self.playing_state = 0
+                    self.playerCommand = 'runstop'
+                    self.playerCommandReady = True
+                elif prefs.end_setting == 'advance':
+
+                    if pctl.active_playlist_playing < len(pctl.multi_playlist) - 1 and \
+                            len(pctl.multi_playlist[pctl.active_playlist_playing + 1][2]) > 0:
+                        pctl.active_playlist_playing += 1
+                        pctl.playlist_playing = -1
+                        pctl.advance()
+                    else:
+                        self.playing_state = 0
+                        self.playerCommand = 'runstop'
+                        self.playerCommandReady = True
+
+                elif prefs.end_setting == 'repeat':
+                    pctl.playlist_playing = -1
+                    pctl.advance()
+
+                elif prefs.end_setting == 'cycle':
+
+                    pctl.active_playlist_playing += 1
+
+                    if pctl.active_playlist_playing > len(pctl.multi_playlist) - 1:
+                        pctl.active_playlist_playing = 0
+
+                        pctl.playlist_playing = -1
+                        pctl.advance()
+                    else:
+                        self.playing_state = 0
+                        self.playerCommand = 'runstop'
+                        self.playerCommandReady = True
+
                 gui.update += 3
             else:
                 if self.playlist_playing > len(self.playing_playlist()) - 1:
@@ -12390,10 +12423,10 @@ class Over:
 
     def toggle_square(self, x, y, function, text):
 
-        draw_text((x + 20, y - 3), text, colours.grey_blend_bg(170), 12)
+        le = draw_text((x + 20, y - 3), text, colours.grey_blend_bg(170), 12)
         draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
         draw.rect((x, y), (12, 12), [255, 255, 255, 16])
-        if self.click and coll_point(mouse_position, (x - 20, y - 7, 180, 24)):
+        if self.click and coll_point(mouse_position, (x - 10, y - 7, le + 30, 24)):
             function()
         if function(1):
             draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
@@ -12697,7 +12730,7 @@ class Over:
         y2 = y
         x2 = x
         for k in config_items:
-            draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(150), 12)
+            draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(170), 12)
             draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
             draw.rect((x, y), (12, 12), [255, 255, 255, 16])
             if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
@@ -12715,7 +12748,7 @@ class Over:
         y = self.box_y + 25
         x = self.box_x + self.item_x_offset + 270
 
-        y += 20
+        #y += 20
 
         prefs.playlist_font_size = self.slide_control(x, y, "Font Size", "", prefs.playlist_font_size, 12, 17)
         y += 25
@@ -12726,6 +12759,43 @@ class Over:
         self.button(x, y, "Default", self.small_preset, 124)
         # x += 90
         # self.button(x, y, "Large Preset", self.large_preset, 80)
+
+        y += 45
+        x -= 90
+
+        draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
+
+        y += 25
+        self.toggle_square(x, y, self.set_playlist_stop, "Stop playback")
+        y += 25
+        self.toggle_square(x, y, self.set_playlist_repeat, "Repeat playlist")
+        #y += 25
+        y -= 25
+        x += 120
+        self.toggle_square(x, y, self.set_playlist_advance, "Play next playlist")
+        y += 25
+        self.toggle_square(x, y, self.set_playlist_cycle, "Cycle all playlists")
+
+    def set_playlist_cycle(self, mode=0):
+        if mode == 1:
+            return True if prefs.end_setting == "cycle" else False
+        prefs.end_setting = 'cycle'
+
+    def set_playlist_advance(self, mode=0):
+        if mode == 1:
+            return True if prefs.end_setting == "advance" else False
+        prefs.end_setting = 'advance'
+
+    def set_playlist_stop(self, mode=0):
+        if mode == 1:
+            return True if prefs.end_setting == "stop" else False
+        prefs.end_setting = 'stop'
+
+    def set_playlist_repeat(self, mode=0):
+        if mode == 1:
+            return True if prefs.end_setting == "repeat" else False
+        prefs.end_setting = 'repeat'
+
 
     def small_preset(self):
 
@@ -19373,6 +19443,11 @@ save = [pctl.master_library,
         prefs.replay_gain,
         prefs.radio_page_lyrics,
         prefs.show_gimage,
+        prefs.end_setting,
+        None,
+        None,
+        None,
+        None,
         None]
 
 pickle.dump(save, open(user_directory + "/state.p", "wb"))

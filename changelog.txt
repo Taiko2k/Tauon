@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v2.5.0
 
  - Added icons to various menu elements
+ - Added playlist repeat option
  - Added function to move folders to different library locations
  - Added menu link to search images on google
  - Added functionality for dropping links onto album canvas to download album art
