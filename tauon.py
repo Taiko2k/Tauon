@@ -701,6 +701,8 @@ class GuiVar:
         self.gall_tab_enter = False
 
         self.flag_special_cursor = False
+        self.paste_box = False
+        self.lightning_copy = False
 
 gui = GuiVar()
 
@@ -1748,6 +1750,10 @@ class PlayerCtl:
         self.render_playlist()
 
         return 0
+
+    def g(self, index):
+
+        return self.master_library[index]
 
     def playing_object(self):
         if len(self.track_queue) > 0:
@@ -7132,6 +7138,7 @@ class Menu:
 
             ytoff = 3
             y_run = self.pos[1]
+            to_call = None
 
             if window_size[1] < 250:
                 self.h = 14
@@ -7164,8 +7171,6 @@ class Menu:
                           fx[1], True)
                 bg = fx[1]
 
-
-
                 # Detect if mouse is over this item
                 selected = False
                 rect = (self.pos[0], y_run, self.w, self.h - 1)
@@ -7181,11 +7186,10 @@ class Menu:
 
                     # Call menu items callback if clicked
                     if self.clicked:
+
                         if self.items[i][1] is False:
-                            if self.items[i][5]:
-                                self.items[i][2](self.reference)
-                            else:
-                                self.items[i][2]()
+                            to_call = i
+
                         else:
                             self.clicked = False
                             self.sub_active = self.items[i][2]
@@ -7294,6 +7298,16 @@ class Menu:
 
                         # Render the menu outline
                         # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+
+
+            # Process Click Actions
+            if to_call is not None:
+
+                if self.items[to_call][5]:
+                    self.items[to_call][2](self.reference)
+                else:
+                    self.items[to_call][2]()
+
 
             if self.clicked or key_esc_press:
                 self.active = False
@@ -7493,12 +7507,30 @@ def append_here():
 
 
 def paste_deco():
+    line = "Paste"
     if len(cargo) > 0:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    if gui.lightning_copy:
+        if key_shift_down:
+            line = "Move to This Library"
+        else:
+            line = "Copy to This Library"
+
+    return [line_colour, colours.menu_background, line]
+
+def copy_deco():
+    line = "Copy"
+
+    if key_shift_down:
+        line = "Copy Folder From Library"
+    else:
+        line = "Copy"
+
+
+    return [colours.menu_text, colours.menu_background, line]
 
 
 #playlist_menu.add('Paste', append_here, paste_deco)
@@ -8653,6 +8685,10 @@ def menu_paste(position):
 def s_copy():
 
     # Copy tracks to internal clipboard
+    gui.lightning_copy = False
+    if key_shift_down:
+        gui.lightning_copy = True
+
     global cargo
     cargo = []
     for item in shift_selection:
@@ -8723,8 +8759,106 @@ def s_copy():
     #         subprocess.call(shlex.split(command), shell=True)
     #         os.system(command)
 
+move_jobs = []
+move_in_progress = False
+
+def lightning_paste():
+
+    move = True
+    if not key_shift_down:
+        move = False
+
+    move_track = pctl.g(cargo[0])
+    move_path = move_track.parent_folder_path
+
+    match_track = pctl.g(default_playlist[shift_selection[0]])
+    match_path = match_track.parent_folder_path
+
+    if pctl.playing_state > 0 and move:
+        if pctl.playing_object().parent_folder_path == move_path:
+            pctl.stop(True)
+
+    p = Path(match_path)
+    s = list(p.parts)
+    base = s[0]
+    c = base
+    del s[0]
+
+
+    for level in s:
+        upper = c
+        c = os.path.join(c, level)
+        print(c)
+
+        if match_track.artist in level:
+            print("found target artist level")
+
+            print("Upper folder is: " + upper)
+
+            if not os.path.isdir(upper):
+                show_message("The target directory is missing!", 'warning', upper)
+                return
+
+            if not os.path.isdir(move_path):
+                show_message("The source directory is missing!", 'warning', move_path)
+                return
+
+            protect = ("", "Documents", "Music", "Desktop", "Downloads")
+            for fo in protect:
+                if move_path.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
+                    show_message("Better not do anything to that folder.", 'warning', os.path.join(os.path.expanduser('~'), fo))
+                    return
+
+            artist = move_track.artist
+            if move_track.album_artist != "":
+                artist = move_track.album_artist
+
+            for c in r'[]/\;,><&*:%=+@!#^()|?^.':
+                artist = artist.replace(c, '')
+
+            if artist == "":
+                show_message("The track needs to have an artist name for this.")
+                return
+
+
+            artist_folder = os.path.join(upper, move_track.artist)
+
+            print("Target will be: " + artist_folder)
+
+            if os.path.isdir(artist_folder):
+                print("The target artist folder already exists")
+            else:
+                print("Need to make artist folder")
+                os.makedirs(artist_folder)
+
+            print("The folder to be moved is: " + move_path)
+            load_order = LoadClass()
+            load_order.target = os.path.join(artist_folder, move_track.parent_folder_name)
+            load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+
+            insert = shift_selection[0]
+            old_insert = insert
+            while insert < len(default_playlist) and pctl.master_library[pctl.multi_playlist[pctl.playlist_active][2][insert]].parent_folder_name == \
+                    pctl.master_library[pctl.multi_playlist[pctl.playlist_active][2][old_insert]].parent_folder_name:
+                insert += 1
+
+            load_order.playlist_position = insert
+
+
+
+            move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
+            break
+    else:
+        show_message("Could not find an artist folder to match level.")
+        return
+
+    cargo.clear()
+
 def paste(playlist=None, position=None):
 
+    if gui.lightning_copy:
+        lightning_paste()
+        return
     # items = None
     # if system == 'windows':
     #     clp = win32clipboard
@@ -8875,8 +9009,8 @@ track_menu.add_sub("Meta...", 150)
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
 #track_menu.add('Remove', del_selected)
-track_menu.add('Copy', s_copy, pass_ref=False)
-track_menu.add('Paste', menu_paste, pass_ref=True)
+track_menu.add('Copy', s_copy, copy_deco, pass_ref=False)
+track_menu.add('Paste', menu_paste, paste_deco, pass_ref=True)
 track_menu.br()
 
 #track_menu.add_sub("Shift...", 135)
@@ -8919,7 +9053,7 @@ def delete_folder(index):
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
 
     for fo in protect:
-        if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
+        if old.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
             show_message("Woah, careful there!", 'warning', "I don't think we should delete that folder.")
             return
 
@@ -9471,7 +9605,7 @@ def clip_title(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
-selection_menu = Menu(180, show_icons=True)
+selection_menu = Menu(190, show_icons=True)
 
 selection_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 
@@ -9489,6 +9623,10 @@ if prefs.tag_editor_name != "":
     elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
         selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
 
+def lightning_copy():
+    s_copy()
+    gui.lightning_copy = True
+
 selection_menu.br()
 selection_menu.add('Copy Album Title', clip_title, pass_ref=True)
 #selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
@@ -9497,6 +9635,7 @@ selection_menu.br()
 selection_menu.add('Reload Metadata', reload_metadata_selection)
 selection_menu.br()
 #selection_menu.add('Copy Selection', sel_to_car)
+selection_menu.add('Copy Folder From Library', lightning_copy)
 selection_menu.add('Copy', s_copy)
 selection_menu.add('Cut', s_cut)
 #selection_menu.add('Cut Selection', cut_selection)
@@ -10066,7 +10205,12 @@ def activate_radio_box():
     radiobox = True
 # x_menu.add("Go To Playing", pctl.show_current)
 
-x_menu.add("New Playlist", new_playlist)
+add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
+add_icon.xoff = 3
+add_icon.yoff = 0
+add_icon.colour = [230, 118, 195, 225]#[237, 75, 218, 255]
+
+x_menu.add("New Playlist", new_playlist, icon=add_icon)
 
 if default_player == 'BASS':
     x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
@@ -10075,7 +10219,7 @@ x_menu.br()
 settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
 settings_icon.xoff = 0
 settings_icon.yoff = 2
-settings_icon.colour = [198, 237, 56, 255]
+settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
 x_menu.add("Settings...", activate_info_box, icon=settings_icon)
 x_menu.add_sub("Database...", 190)
 x_menu.br()
@@ -10216,7 +10360,7 @@ def broadcast_colour():
 
 if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "config.txt")):
     broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
-    broadcast_icon.colour = [56, 189, 237, 255]
+    broadcast_icon.colour = [182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
     broadcast_icon.colour_callback = broadcast_colour
     x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
@@ -10338,13 +10482,13 @@ def advance_theme():
 
 def last_fm_menu_deco():
     if lastfm.connected:
-        line = 'Lastfm Scrobbling is Active'
+        line = 'Stop Last.fm Scrobbling'
         bg = [20, 60, 20, 255]
     else:
-        line = 'Start Lastfm Scrobbling'
+        line = 'Start Last.fm Scrobbling'
         bg = colours.menu_background
     if lastfm.hold:
-        line = "Scrobbling Has Stopped"
+        line = "Resume Last.fm Scrobbling"
         bg = [60, 30, 30, 255]
     return [colours.menu_text, bg, line]
 
@@ -11055,9 +11199,53 @@ def worker1():
     global cm_clean_db
     global to_got
     global to_get
+    global move_in_progress
 
     while True:
         time.sleep(0.15)
+
+        # Folder moving
+        if len(move_jobs) > 0:
+            gui.update += 1
+            move_in_progress = True
+            job = move_jobs[0]
+            del move_jobs[0]
+
+            if job[0].strip("\\/") == job[1].strip("\\/"):
+                show_message("Folder copy error.", "info", "The target and source are the same.")
+                gui.update += 1
+                move_in_progress = False
+                continue
+
+            try:
+                shutil.copytree(job[0], job[1])
+            except:
+                move_in_progress = False
+                gui.update += 1
+                show_message("The folder copy has failed!", 'warning', 'Some files may have been written.')
+                continue
+
+            if job[2] == True:
+                try:
+                    shutil.rmtree(job[0])
+                except:
+                    show_message("Something has gone horribly wrong!.", 'warning', "Could not delete " + job[0])
+                    gui.update += 1
+                    move_in_progress = False
+                    return
+
+                show_message("Folder move complete.", 'done', "Folder name: " + job[3])
+            else:
+                show_message("Folder copy complete.", 'done', "Folder name: " + job[3])
+
+
+
+            move_in_progress = False
+            load_orders.append(job[4])
+            gui.update += 1
+
+
+
 
         # Clean database
         if cm_clean_db is True:
@@ -13328,6 +13516,9 @@ class TopPanel:
                 text = "Importing XSPF playlist. May take a while."
             elif to_got == 'ex':
                 text = "Extracting Archive..."
+        elif move_in_progress:
+            text = "File copy in progress..."
+            bg = colours.status_info_text
         elif cm_clean_db and to_get > 0:
             per = str(int(to_got / to_get * 100))
             text = "Cleaning db...  " + per + "%"
@@ -18014,6 +18205,76 @@ while running:
                 line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
                 draw_text((x + 60, y + 101), line, colours.grey(160), 12)
 
+
+            # if gui.paste_box:
+            #
+            #     if gui.level_2_click:
+            #         input.mouse_click = True
+            #     gui.level_2_click = False
+            #
+            #     if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
+            #         gui.paste_box = False
+            #
+            #     w = 400
+            #     h = 150
+            #     x = int(window_size[0] / 2) - int(w / 2)
+            #     y = int(window_size[1] / 2) - int(h / 2)
+            #
+            #     draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
+            #     draw.rect((x, y), (w, h), colours.sys_background_3, True)
+            #
+            #     print("\n---------------")
+            #
+            #     source_parents = set()
+            #     for item in shift_selection:
+            #         source_parents.add(pctl.g(item).parent_folder_path)
+            #
+            #     print(source_parents)
+            #     if len(source_parents) == 1:
+            #         pass
+            #
+            #
+            #     track = pctl.g(cargo[0])
+            #     match_track = pctl.g(shift_selection[0])
+            #     source = track.parent_folder_path
+            #
+            #
+            #     p = Path(source)
+            #     s = list(p.parts)
+            #     base = s[0]
+            #     c = base
+            #     del s[0]
+            #
+            #     for level in s:
+            #
+            #         upper = c
+            #         c = os.path.join(c, level)
+            #         print(c)
+            #
+            #         if track.artist == level:
+            #             print("found exact matching artist level")
+            #
+            #         if track.artist in level:
+            #             print("found partial artist match")
+            #
+            #     c = base
+            #     for level in s:
+            #
+            #         upper = c
+            #         c = os.path.join(c, level)
+            #         print(c)
+
+
+
+
+
+
+
+
+
+
+
+
             if renamebox:
 
                 if gui.level_2_click:
@@ -18050,25 +18311,14 @@ while running:
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
-                bg = colours.grey(20)
 
-                rect = (x + 8 + 300 + 10, y + 38, 80, 22)
-                fields.add(rect)
-
-                if coll_point(mouse_position, rect):
-                    bg = colours.grey(35)
-                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(35), True)
-
-                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), "WRITE (" + str(len(r_todo)) + ")", colours.grey(160), 12, bg=bg)
-
-                draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(160), 12)
-                draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(160), 12)
-                draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(160), 12)
-                draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(160), 12)
-                draw_text((x + 150, y + 82,), "%d - Date/Year", colours.grey(160), 12)
-                draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(160), 12)
-                draw_text((x + 290, y + 70,), "%x - File Extension", colours.grey(160), 12)
+                draw_text((x + 10, y + 70,), "%n - Track Number", colours.grey(175), 12)
+                draw_text((x + 10, y + 82,), "%a - Artist Name", colours.grey(175), 12)
+                draw_text((x + 10, y + 94,), "%t - Track Title", colours.grey(175), 12)
+                draw_text((x + 150, y + 70,), "%b - Album Title", colours.grey(175), 12)
+                draw_text((x + 150, y + 82,), "%d - Date/Year", colours.grey(175), 12)
+                draw_text((x + 150, y + 94,), "%u - Use Underscores", colours.grey(175), 12)
+                draw_text((x + 290, y + 70,), "%x - File Extension", colours.grey(175), 12)
 
                 afterline = ""
                 warn = False
@@ -18094,17 +18344,31 @@ while running:
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
-                    draw_text((x + 10, y + 160,), "Warning: This will change the file extension", [200, 60, 60, 255],
-                              12)
+                    draw_text((x + 10, y + 155,), "Warning: This will change the file extension", [245, 100, 100, 255],
+                              13)
 
-                if '%t' not in NRN or '%n' not in NRN:
-                    draw_text((x + 10, y + 175,), "Warning: The filename might not be unique", [200, 60, 60, 255],
-                              12)
+                if '%t' not in NRN and '%n' not in NRN:
+                    draw_text((x + 10, y + 170,), "Warning: The filename might not be unique", [245, 100, 100, 255],
+                              13)
                 if warn:
-                    draw_text((x + 10, y + 190,), "Warning: File has incomplete metadata", [200, 60, 60, 255], 12)
+                    draw_text((x + 10, y + 185,), "Warning: File has incomplete metadata", [245, 100, 100, 255], 13)
                 if warncue:
-                    draw_text((x + 10, y + 190,), "Warning: Folder contains tracks from a CUE sheet",
-                              [200, 60, 60, 255], 12)
+                    draw_text((x + 10, y + 185,), "Error: Folder contains tracks from a CUE sheet",
+                              [245, 100, 100, 255], 13)
+
+                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
+                bg = colours.grey(20)
+                rect = (x + 8 + 300 + 10, y + 38, 80, 22)
+                fields.add(rect)
+
+                if coll_point(mouse_position, rect):
+                    bg = colours.grey(35)
+                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(35), True)
+
+                label = "WRITE (" + str(len(r_todo)) + ")"
+                if warncue:
+                    label = "ERROR"
+                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), label, colours.grey(160), 12, bg=bg)
 
                 if input.mouse_click and coll_point(mouse_position, (x + 8 + 300 + 10, y + 38, 80, 22)):
                     input.mouse_click = False
