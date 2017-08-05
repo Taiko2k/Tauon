@@ -5,7 +5,7 @@
 # Copyright © 2015-2017, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU Lesser General Public License
+# You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # --------------------------------------------------------------------
@@ -52,7 +52,7 @@ import pickle
 t_version = "v2.5.0"
 t_title = 'Tauon Music Box'
 print(t_title + " " + t_version)
-print('Copyright (c) 2015-2017 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
 
 if sys.platform == 'win32':
@@ -942,7 +942,7 @@ class ColoursClass:
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 130)
 
         self.status_text_normal = self.grey(100)
-        self.status_text_over = self.grey(185)
+        self.status_text_over = self.grey(220)
 
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
@@ -5045,6 +5045,8 @@ if system == "linux":
     cairo_text.prime_font(standard_font, 17 - 3, 217)
     cairo_text.prime_font(standard_font, 28 - 3, 228)
 
+    # standard_font = "Noto Sans Medium" #prefs.linux_bold_font
+    # cairo_text.prime_font(standard_font, 13 - 3, 313)
 
 
 def draw_text2(location, text, colour, font, maxx, field=0, index=0):
@@ -8885,6 +8887,10 @@ def lightning_paste():
         show_message("Could not find an artist folder to match level.")
         return
 
+    if album_mode:
+        prep_gal()
+        reload_albums()
+
     cargo.clear()
 
 def paste(playlist=None, position=None):
@@ -9111,6 +9117,7 @@ def delete_folder(index):
 
         if album_mode:
             prep_gal()
+            reload_albums()
 
     except:
         show_message("Unable to comply.", 'warning', "Could not delete folder. Try check permissions.")
@@ -9454,6 +9461,7 @@ track_menu.add_to_sub("Reload Metadata", 0, reload_metadata, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
+
     if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
         track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
 
@@ -9650,11 +9658,18 @@ selection_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_f
 
 if prefs.tag_editor_name != "":
 
+    edit_icon = None
+    # if prefs.tag_editor_name == "Picard":
+    #     edit_icon = MenuIcon(LoadImageAsset('/gui/pic-l.png'))
+    #     edit_icon.base_asset = LoadImageAsset('/gui/pic-d.png')
+    #     edit_icon.xoff = 1
+    #     edit_icon.yoff = -1
+
     if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
-        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
+        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
 
     elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
-        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True)
+        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
 
 def lightning_copy():
     s_copy()
@@ -10241,7 +10256,7 @@ def activate_radio_box():
 add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
 add_icon.xoff = 3
 add_icon.yoff = 0
-add_icon.colour = [230, 118, 195, 225]#[237, 75, 218, 255]
+add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
 x_menu.add("New Playlist", new_playlist, icon=add_icon)
 
@@ -10393,7 +10408,7 @@ def broadcast_colour():
 
 if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "config.txt")):
     broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
-    broadcast_icon.colour = [182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
+    broadcast_icon.colour = [171, 102, 249, 255]#[182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
     broadcast_icon.colour_callback = broadcast_colour
     x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
@@ -12087,6 +12102,9 @@ def toggle_follow(mode=0):
         return pl_follow
     else:
         pl_follow ^= True
+    if pl_follow is True:
+        if prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
+            prefs.end_setting = 'stop'
 
 
 def toggle_append_date(mode=0):
@@ -12284,7 +12302,7 @@ class Over:
         global window_size
 
         self.init2done = False
-        self.about_image = LoadImageAsset('/gui/v2-64.png')
+        self.about_image = LoadImageAsset('/gui/v3-a.png')#LoadImageAsset('/gui/v2-64.png')
 
         self.w = 650
         self.h = 250
@@ -12338,13 +12356,13 @@ class Over:
 
             draw_text((x, y - 22), "ReplayGain Mode", [160, 160, 160, 255], 12)
 
-            y += 10
+            y += 7
             x += 10
 
             self.toggle_square(x, y, switch_rg_off, "Off")
-            y += 25
+            y += 23
             self.toggle_square(x, y, switch_rg_track, "Track Gain")
-            y += 25
+            y += 23
             self.toggle_square(x, y, switch_rg_album, "Album Gain")
 
             y = self.box_y + 60
@@ -12382,19 +12400,25 @@ class Over:
                            "Web interface*  " + "  [:" + str(prefs.server_port) + "/remote]")
         y += 25
         self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
-        y += 25
+        y += 23
         self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control")
-
-        self.toggle_square(x + 10 + 200, y, toggle_radio_lyrics, "Show lyrics on radio page")
-        y += 35
+        y += 23
+        self.toggle_square(x + 10, y, toggle_radio_lyrics, "Show lyrics on radio page")
+        #y += 35
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
-        # y += 25
-        self.toggle_square(x, y, toggle_wiki, "Show search on Wikipedia*")
-        y += 25
-        self.toggle_square(x, y, toggle_rym, "Show search on Sonemic*")
 
-        self.toggle_square(x + 200 + 10, y, toggle_gimage, "Show search images on Google*")
+        y -= 23 + 23 + 25
+        x += 270
+
+        self.toggle_square(x, y, toggle_wiki, "Show search artist on Wikipedia*")
+        y += 23
+        self.toggle_square(x, y, toggle_rym, "Show search artist on Sonemic*")
+        y += 23
+        self.toggle_square(x, y, toggle_gimage, "Show search images on Google*")
+
+        x -= 270
+        y += 30
 
         y += 35
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
@@ -12426,7 +12450,7 @@ class Over:
         le = draw_text((x + 20, y - 3), text, colours.grey_blend_bg(170), 12)
         draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
         draw.rect((x, y), (12, 12), [255, 255, 255, 16])
-        if self.click and coll_point(mouse_position, (x - 10, y - 7, le + 30, 24)):
+        if self.click and coll_point(mouse_position, (x - 10, y - 3, le + 30, 22)):
             function()
         if function(1):
             draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
@@ -12630,7 +12654,9 @@ class Over:
         x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 76
 
-        self.about_image.render(x - 85, y + 5)
+        self.about_image.render(x - 105, y - 10)
+
+        x += 20
 
         draw_text((x, y), "Tauon Music Box", colours.grey(200), 16)
         y += 32
@@ -12733,12 +12759,12 @@ class Over:
             draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(170), 12)
             draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
             draw.rect((x, y), (12, 12), [255, 255, 255, 16])
-            if self.click and coll_point(mouse_position, (x - 20, y - 10, 180, 25)):
+            if self.click and coll_point(mouse_position, (x - 20, y - 5, 220, 24)):
                 k[1]()
             if k[1](1) is True:
                 draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
 
-            y += 30
+            y += 25
 
             if y - y2 > 190:
                 y = y2
@@ -12760,7 +12786,7 @@ class Over:
         # x += 90
         # self.button(x, y, "Large Preset", self.large_preset, 80)
 
-        y += 45
+        y += 50
         x -= 90
 
         draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
@@ -12780,11 +12806,15 @@ class Over:
         if mode == 1:
             return True if prefs.end_setting == "cycle" else False
         prefs.end_setting = 'cycle'
+        global pl_follow
+        pl_follow = False
 
     def set_playlist_advance(self, mode=0):
         if mode == 1:
             return True if prefs.end_setting == "advance" else False
         prefs.end_setting = 'advance'
+        global pl_follow
+        pl_follow = False
 
     def set_playlist_stop(self, mode=0):
         if mode == 1:
@@ -14358,20 +14388,21 @@ class StandardPlaylist:
         highlight_right = gui.playlist_width + 31
 
         # Show notice if playlist empty
+
         if len(default_playlist) == 0:
-            colour = alpha_mod(colours.index_text, 190) #colours.playlist_text_missing
+            colour = alpha_mod(colours.index_text, 200) #colours.playlist_text_missing
 
 
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
-                      "Playlist is empty", colour, 13)
+                      "Playlist is empty", colour, 213)
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + 30), 2),
                       "Drag and drop files to import", colour, 13)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
-
+            colour = alpha_mod(colours.index_text, 200)
             draw_text((int(gui.playlist_width / 2) + 10, int(window_size[1] * 0.18), 2), "End of Playlist",
-                      colours.playlist_text_missing, 13)
+                      colour, 213)
 
         # For every track in view
         for i in range(gui.playlist_view_length + 1):
@@ -17899,26 +17930,53 @@ while running:
                         draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(140), 12)
                         #
 
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].title, 12, w - 190)
-                              , colours.grey_blend_bg3(190), 12)
+                    draw_text((x + 8 + 90, y + 40 - 3), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190)
+                              , colours.grey_blend_bg3(190), 15)
+                    #y += 4
 
-                    ext_rect = [x + w - 78, y + 42, 12, 12]
+                    if False and key_shift_down:
 
-                    line = pctl.master_library[r_menu_index].file_ext
-                    ex_colour = [255, 255, 255, 130]
+                        ext_rect = [x + w - 74, y + 42, 12, 12]
 
-                    if line in format_colours:
-                        ex_colour = format_colours[line]
+                        line = pctl.master_library[r_menu_index].file_ext
+                        ex_colour = [255, 255, 255, 130]
 
-                    draw.rect_r(ext_rect, ex_colour, True)
-                    draw_text((x + w - 60, y + 40), line, colours.grey_blend_bg3(190), 11)
+                        if line in format_colours:
+                            ex_colour = format_colours[line]
+
+                        draw.rect_r(ext_rect, ex_colour, True)
+                        draw_text((x + w - 56, y + 40), line, colours.grey_blend_bg3(190), 212)
+
+                        if pctl.master_library[r_menu_index].is_cue:
+                            ext_rect[1] += 16
+                            draw.rect_r(ext_rect, [218, 222, 73, 255], True)
+                            draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
+
+                    else:
+
+                        ext_rect = [x + w - 38, y + 44, 38, 12]
+
+                        line = pctl.master_library[r_menu_index].file_ext
+                        ex_colour = [255, 255, 255, 130]
+
+                        if line in format_colours:
+                            ex_colour = format_colours[line]
+
+                        draw.rect_r(ext_rect, ex_colour, True)
+                        draw_text((x + w - 35, y + 42), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
+                        #draw_text((x + w - 43, y + 42, 1), line, colours.grey_blend_bg3(190), 211)
+
+                        if pctl.master_library[r_menu_index].is_cue:
+                            ext_rect[1] += 16
+                            draw.rect_r(ext_rect, [218, 222, 73, 255], True)
+                            draw_text((x + w - 35, y + 42 + 16), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
+
+
 
                     y += 15
 
-                    if pctl.master_library[r_menu_index].is_cue:
-                        ext_rect[1] += 16
-                        draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                        draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
+
+
 
                     rect = [x + 17, y + 41, 350, 14]
                     fields.add(rect)
