@@ -1,6 +1,6 @@
 # Tauon Music Box - Tag Module
 
-# Copyright © 2015-2016, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2017, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -14,17 +14,8 @@
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU Lesser General Public License for more details.
 #
-#     You should have received a copy of the GNU Lesser General Public License
+#     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-#    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-#    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-#    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-#    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-#    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-#    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE
-
 
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
@@ -594,7 +585,8 @@ class Ape:
         if start[0:3] == b'MAC':  # Ape files start with MAC
 
             version = struct.unpack("<h", start[4:6])[0]
-            if version > 3980:
+
+            if version >= 3980:
 
                 audio_info = struct.unpack("<IIIHHI", start[56:76])
                 # print(audio_info)
@@ -606,6 +598,7 @@ class Ape:
 
                 self.length = (frames * blocks) / self.sample_rate
             else:
+
                 print("WARNING: Old APE codec version; not supported")
 
         elif ".tta" in self.filepath:

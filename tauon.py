@@ -567,6 +567,7 @@ class Prefs:
 
         self.show_gimage = True
         self.end_setting = "stop"
+        self.show_gen = False
 
 prefs = Prefs()
 
@@ -577,6 +578,8 @@ class GuiVar:
         update_layout = True
 
     def __init__(self):
+
+        self.scale = 1
 
         self.window_id = 0
         self.update = 2  # UPDATE
@@ -639,8 +642,8 @@ class GuiVar:
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
-        self.panelBY = 51
-        self.panelY = 30
+        self.panelBY = 51 * self.scale
+        self.panelY = 30 * self.scale
 
         self.playlist_top = self.panelY + 8
         self.playlist_top_bk = self.playlist_top
@@ -703,6 +706,8 @@ class GuiVar:
         self.flag_special_cursor = False
         self.paste_box = False
         self.lightning_copy = False
+
+
 
 gui = GuiVar()
 
@@ -1132,6 +1137,8 @@ try:
         prefs.show_gimage = save[57]
     if save[58] is not None:
         prefs.end_setting = save[58]
+    if save[59] is not None:
+        prefs.show_gen = save[59]
 
     state_file.close()
     del save
@@ -5595,6 +5602,7 @@ def draw_linked_text(location, text, colour, font):
     return left, right - left, link_text
 
 
+
 class TextBox:
 
     cursor = True
@@ -7145,10 +7153,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test])
 
     def br(self):
         self.items.append(None)
@@ -7193,6 +7201,10 @@ class Menu:
                               colours.grey(30), True)
                     y_run += self.break_height
                     continue
+
+                if self.items[i][1] is False and self.items[i][8] is not None:
+                    if self.items[i][8](1) == False:
+                        continue
 
                 # Get properties for menu item
                 fx = self.items[i][3]()
@@ -9691,6 +9703,26 @@ selection_menu.add('Cut', s_cut)
 selection_menu.add('Remove', del_selected)
 
 
+def toggle_rym(mode=0):
+    if mode == 1:
+        return prefs.show_rym
+    prefs.show_rym ^= True
+
+def toggle_wiki(mode=0):
+    if mode == 1:
+        return prefs.show_wiki
+    prefs.show_wiki ^= True
+
+def toggle_gimage(mode=0):
+    if mode == 1:
+        return prefs.show_gimage
+    prefs.show_gimage ^= True
+
+def toggle_gen(mode=0):
+    if mode == 1:
+        return prefs.show_gen
+    prefs.show_gen ^= True
+
 def ser_rym(index):
     if len(pctl.master_library[index].artist) < 2:
         return
@@ -9712,6 +9744,14 @@ def clip_aar_al(index):
     SDL_SetClipboardText(line.encode('utf-8'))
 
 
+def ser_gen(index):
+    if len(pctl.master_library[index].title) < 1:
+        return
+
+    line = "https://genius.com/search?q=" + \
+           urllib.parse.quote(pctl.master_library[index].artist + " " + pctl.master_library[index].title)
+    webbrowser.open(line, new=2, autoraise=True)
+
 def ser_wiki(index):
     if len(pctl.master_library[index].artist) < 2:
         return
@@ -9724,17 +9764,18 @@ def ser_gimage(index):
     line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
     webbrowser.open(line, new=2, autoraise=True)
 
-if prefs.show_gimage:
-    track_menu.add('Search Images on Google', ser_gimage, pass_ref=True)
 
-if prefs.show_wiki:
-    track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True)
+track_menu.add('Search Images on Google', ser_gimage, pass_ref=True, show_test=toggle_gimage)
 
-if prefs.show_rym:
-    son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
-    son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
-    son_icon.xoff = 1
-    track_menu.add('Search Artist on Sonemic', ser_rym, pass_ref=True, icon=son_icon)
+track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True, show_test=toggle_wiki)
+
+track_menu.add('Search Track on Genius', ser_gen, pass_ref=True, show_test=toggle_gen)
+
+
+son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
+son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
+son_icon.xoff = 1
+track_menu.add('Search Artist on Sonemic', ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
 
 # track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
@@ -12155,21 +12196,8 @@ def toggle_transcode(mode=0):
     prefs.enable_transcode ^= True
 
 
-def toggle_rym(mode=0):
-    if mode == 1:
-        return prefs.show_rym
-    prefs.show_rym ^= True
 
 
-def toggle_wiki(mode=0):
-    if mode == 1:
-        return prefs.show_wiki
-    prefs.show_wiki ^= True
-
-def toggle_gimage(mode=0):
-    if mode == 1:
-        return prefs.show_gimage
-    prefs.show_gimage ^= True
 
 def toggle_cache(mode=0):
     if mode == 1:
@@ -12348,8 +12376,9 @@ class Over:
             y = self.box_y + 35
             x = self.box_x + 130
 
-            draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
-            draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
+            #draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
+            # draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
+            draw_text((x, y - 22), "Bass Audio Library", [170, 170, 170, 255], 213)
 
             y = self.box_y + 70
             x = self.box_x + 130
@@ -12397,7 +12426,36 @@ class Over:
 
         y += 35
         self.toggle_square(x, y, toggle_enable_web,
-                           "Web interface*  " + "  [:" + str(prefs.server_port) + "/remote]")
+                           "Web interface*")
+
+        if toggle_enable_web(1):
+
+            link_pa = draw_linked_text((x + 280, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
+            link_rect = [x + 280, y, link_pa[1], 18]
+            fields.add(link_rect)
+
+
+            link_pa2 = draw_linked_text((x + 280, y + 21), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
+            link_rect2 = [x + 280, y + 21, link_pa2[1], 20]
+            fields.add(link_rect2)
+
+            if coll_point(mouse_position, link_rect):
+                if gui.cursor_mode == 0 and not self.click:
+                    SDL_SetCursor(cursor_hand)
+                    gui.cursor_mode = 1
+                if self.click:
+                    webbrowser.open(link_pa[2], new=2, autoraise=True)
+
+            elif coll_point(mouse_position, link_rect2):
+                if gui.cursor_mode == 0 and not self.click:
+                    SDL_SetCursor(cursor_hand)
+                    gui.cursor_mode = 1
+                if self.click:
+                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
+            elif gui.cursor_mode == 1:
+                gui.cursor_mode = 0
+                SDL_SetCursor(cursor_standard)
+
         y += 25
         self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
         y += 23
@@ -12409,16 +12467,24 @@ class Over:
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
 
         y -= 23 + 23 + 25
-        x += 270
+        x1 = x
+        y1 = y + 100
+        x += 280
 
-        self.toggle_square(x, y, toggle_wiki, "Show search artist on Wikipedia*")
+        y += 68
+        draw_text((x, y), "Show in track menu:", colours.grey(100), 11)
         y += 23
-        self.toggle_square(x, y, toggle_rym, "Show search artist on Sonemic*")
-        y += 23
-        self.toggle_square(x, y, toggle_gimage, "Show search images on Google*")
 
-        x -= 270
-        y += 30
+        self.toggle_square(x, y, toggle_wiki, "Search artist on Wikipedia")
+        y += 23
+        self.toggle_square(x, y, toggle_rym, "Search artist on Sonemic")
+        y += 23
+        self.toggle_square(x, y, toggle_gimage, "Search images on Google")
+        y += 23
+        self.toggle_square(x, y, toggle_gen, "Search track on Genius")
+
+        x = x1
+        y = y1
 
         y += 35
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
@@ -12654,7 +12720,7 @@ class Over:
         x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 76
 
-        self.about_image.render(x - 105, y - 10)
+        self.about_image.render(x - 100, y - 10)
 
         x += 20
 
@@ -13248,20 +13314,20 @@ dec_arrow = WhiteModImageAsset("/gui/dec.png")
 class TopPanel:
     def __init__(self):
 
-        self.height = 30
+        self.height = gui.panelY
         self.ty = 0
 
-        self.start_space_left = 8
-        self.start_space_compact_left = 25
+        self.start_space_left = 8 * gui.scale
+        self.start_space_compact_left = 25 * gui.scale
 
         self.tab_text_font = fonts.tabs #211 # 211
-        self.tab_extra_width = 17
-        self.tab_text_start_space = 8
-        self.tab_text_y_offset = 8
+        self.tab_extra_width = 17 * gui.scale
+        self.tab_text_start_space = 8 * gui.scale
+        self.tab_text_y_offset = 8 * gui.scale
         self.tab_spacing = 0
 
-        self.ini_menu_space = 18
-        self.menu_space = 13
+        self.ini_menu_space = 18 * gui.scale
+        self.menu_space = 13 * gui.scale
         self.click_buffer = 4
 
         # ---
@@ -13670,6 +13736,9 @@ class TopPanel:
 
             x += 110
             draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
+
+            self.drag_zone_start_x = x + 21
+
             if input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
                 line = ""
                 input.mouse_click = False
@@ -13677,7 +13746,7 @@ class TopPanel:
                     line += client.split(":")[0] + "  "
 
                 if len(pctl.broadcast_clients) == 0:
-                    show_message("There are no connected clients")
+                    show_message("There are currently no connected clients")
                 elif len(pctl.broadcast_clients) == 1:
                     show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", 'info',
                                  line)
@@ -15366,7 +15435,7 @@ if system != 'windows':
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
-            if tab_menu.active or pctl.broadcast_active:
+            if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
         elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
@@ -16296,6 +16365,24 @@ while running:
             #show_message("This is a test message.", subtext='This is a very long line of subtitle some text okay!')
             show_message("You don't even know what this button could have done.", 'warning')
             #show_message("OK the activity has completed.")
+
+            gd = {}
+
+            for item in default_playlist:
+                genre = pctl.g(item).genre
+                if genre != "":
+                    if genre in gd:
+                        gd[genre] += 1
+                    else:
+                        gd[genre] = 1
+
+            gl = gd.items()
+            gl = list(reversed(sorted(gl, key=lambda x: x[1])))
+            print(gl)
+            print(sum(x[1] for x in gl))
+
+
+
             key_F7 = False
 
 
@@ -19035,7 +19122,7 @@ while running:
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [70, 70, 70, 100], True)
-                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [150, 150, 150, 120], True)
+                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [160, 160, 160, 160], True)
                 if input.mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
@@ -19502,7 +19589,7 @@ save = [pctl.master_library,
         prefs.radio_page_lyrics,
         prefs.show_gimage,
         prefs.end_setting,
-        None,
+        prefs.show_gen,
         None,
         None,
         None,
