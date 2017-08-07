@@ -2360,7 +2360,7 @@ class LastFMapi:
 
             self.connected = True
             if m_notify:
-                show_message("Connection to Last.fm successful.")
+                show_message("Connection to Last.fm was successful.", 'done')
             print('Connection to lastfm appears successful')
             return True
         except Exception as e:
@@ -7259,7 +7259,7 @@ class Menu:
                             if icon.colour_callback is not None and icon.colour_callback() is not None:
                                 colour = icon.colour_callback()
 
-                            if selected:
+                            elif selected:
                                 colour = icon.colour
 
                             icon.asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff, colour)
@@ -7629,7 +7629,7 @@ def parse_template(string, track_object, up_ext=False):
     return output
 
 # Create playlist tab menu
-tab_menu = Menu(160)
+tab_menu = Menu(160, show_icons=True)
 
 
 def rename_playlist(index):
@@ -8000,9 +8000,12 @@ def standard_sort(pl):
     sort_path_pl(pl)
     sort_track_2(pl)
 
+delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
+delete_icon.xoff = 3
+delete_icon.colour = [249, 70, 70, 255]
 
+tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
 
-tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W")
 tab_menu.br()
 
 tab_menu.add_sub("Sort...", 133)
@@ -9658,14 +9661,15 @@ def clip_title(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
-selection_menu = Menu(190, show_icons=True)
+selection_menu = Menu(190, show_icons=False)
+folder_menu = Menu(190, show_icons=True)
 
-selection_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
+folder_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 
 mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
 mod_folder_icon.colour = [229, 98, 98, 255]
 
-selection_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_folder_icon)
+folder_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 
 if prefs.tag_editor_name != "":
@@ -9679,29 +9683,40 @@ if prefs.tag_editor_name != "":
 
     if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
         selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
+        folder_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
+                           icon=edit_icon)
 
     elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
         selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
+        folder_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
+                           icon=edit_icon)
 
 def lightning_copy():
     s_copy()
     gui.lightning_copy = True
 
-selection_menu.br()
-selection_menu.add('Copy Album Title', clip_title, pass_ref=True)
+#selection_menu.br()
+folder_menu.add('Reload Metadata', reload_metadata_selection)
+folder_menu.br()
+
+folder_menu.add('Copy Album Title', clip_title, pass_ref=True)
 #selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
-selection_menu.add('Copy Artist', clip_ar, pass_ref=True)
-selection_menu.br()
+folder_menu.add('Copy Artist', clip_ar, pass_ref=True)
+#selection_menu.br()
 selection_menu.add('Reload Metadata', reload_metadata_selection)
+
 selection_menu.br()
+folder_menu.br()
 #selection_menu.add('Copy Selection', sel_to_car)
-selection_menu.add('Copy Folder From Library', lightning_copy)
+folder_menu.add('Copy Folder From Library', lightning_copy)
+
 selection_menu.add('Copy', s_copy)
 selection_menu.add('Cut', s_cut)
-#selection_menu.add('Cut Selection', cut_selection)
-
 selection_menu.add('Remove', del_selected)
 
+folder_menu.add('Copy', s_copy)
+folder_menu.add('Cut', s_cut)
+folder_menu.add('Remove', del_selected)
 
 def toggle_rym(mode=0):
     if mode == 1:
@@ -10572,17 +10587,31 @@ def advance_theme():
 def last_fm_menu_deco():
     if lastfm.connected:
         line = 'Stop Last.fm Scrobbling'
-        bg = [20, 60, 20, 255]
+        bg = colours.menu_background
     else:
         line = 'Start Last.fm Scrobbling'
         bg = colours.menu_background
     if lastfm.hold:
-        line = "Resume Last.fm Scrobbling"
-        bg = [60, 30, 30, 255]
+        line = "Start Last.fm Scrobbling"
+        bg = colours.menu_background
     return [colours.menu_text, bg, line]
 
 
-x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco)
+def lastfm_colour():
+    if lastfm.connected and not lastfm.hold:
+        return [250, 50, 50, 255]
+    else:
+        return None
+
+
+
+lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/as.png'))
+lastfm_icon.yoff = 1
+lastfm_icon.xoff = -1
+lastfm_icon.colour = [249, 70, 70, 255]#[250, 60, 60, 255]
+lastfm_icon.colour_callback = lastfm_colour
+
+x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon)
 
 
 def exit_func():
@@ -10764,7 +10793,7 @@ def toggle_playlist_break():
 
 view_menu.add("Return to Standard", view_standard, standard_view_deco)
 view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
-view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco)
+view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco, hint="F1")
 view_menu.br()
 view_menu.add("Tracks", view_tracks, hint="MB5")
 view_menu.add("Tracks + Side Panel", view_standard_meta)
@@ -12331,6 +12360,8 @@ class Over:
 
         self.init2done = False
         self.about_image = LoadImageAsset('/gui/v3-a.png')#LoadImageAsset('/gui/v2-64.png')
+        self.about_image2 = LoadImageAsset('/gui/v3-b.png')
+        self.about_image3 = LoadImageAsset('/gui/v3-c.png')
 
         self.w = 650
         self.h = 250
@@ -12561,9 +12592,9 @@ class Over:
             last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), False, font=12)
 
         if self.lastfm_input_box == 1:
-            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.grey_blend_bg(180), active=True, secret=True)
+            last_fm_pass_field.draw(rect2[0] + 5, rect2[1] - 1, colours.grey_blend_bg(180), active=True, secret=True)
         else:
-            last_fm_pass_field.draw(rect2[0] + 5, rect2[1], colours.grey_blend_bg(180), False, True)
+            last_fm_pass_field.draw(rect2[0] + 5, rect2[1] - 1, colours.grey_blend_bg(180), False, True)
 
         if key_return_press:
             self.update_lfm()
@@ -12720,8 +12751,14 @@ class Over:
         x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 76
 
-        self.about_image.render(x - 100, y - 10)
-
+        if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
+            self.about_image2.render(x - 100, y - 10)
+        elif pctl.playing_object() is not None and 'gaze' in pctl.playing_object().genre.lower():
+            self.about_image2.render(x - 100, y - 10)
+        elif pctl.playing_object() is not None and 'ambient' in pctl.playing_object().genre.lower():
+            self.about_image3.render(x - 100, y - 10)
+        else:
+            self.about_image.render(x - 100, y - 10)
         x += 20
 
         draw_text((x, y), "Tauon Music Box", colours.grey(200), 16)
@@ -13307,6 +13344,7 @@ pref_box = Over()
 
 inc_arrow = WhiteModImageAsset("/gui/inc.png")
 dec_arrow = WhiteModImageAsset("/gui/dec.png")
+corner_icon = WhiteModImageAsset("/gui/corner.png")
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
@@ -14573,7 +14611,7 @@ class StandardPlaylist:
 
                         # Show selection menu if right clicked after select
                         if right_click:  # and len(shift_selection) > 1:
-                            selection_menu.activate(default_playlist[p_track])
+                            folder_menu.activate(default_playlist[p_track])
                             selection_stage = 2
                             gui.pl_update = 1
 
@@ -19141,6 +19179,11 @@ while running:
                     running = False
             else:
                 top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
+
+            corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
+
+
+
 
         # Drag icon
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):

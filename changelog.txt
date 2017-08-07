@@ -17,6 +17,7 @@ v2.5.0
  - Improved message box appearance and expanded various error messages
  - Improved track menu settings to no longer require restart to change
  - Changed folder delete function to no longer require shift key held down
+ - Split selection context menu into separate selection and folder menus
  - Tweaked various UI elements
  - Tweaked window draggable area during broadcast
  - Fixed replay gain not consistently applying
@@ -24,6 +25,7 @@ v2.5.0
  - Fixed crashes when using clean database function under certain circumstances
  - Fixed reload metadata failing when used for a selection
  - Fixed menu elements activating after click but before menu close
+
 
 
 v2.4.1
