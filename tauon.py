@@ -1030,6 +1030,7 @@ class LoadClass:
         self.playlist_position = None
 
 
+url_saves = []
 # -----------------------------------------------------
 # STATE LOADING
 
@@ -1139,6 +1140,8 @@ try:
         prefs.end_setting = save[58]
     if save[59] is not None:
         prefs.show_gen = save[59]
+    if save[60] is not None:
+        url_saves = save[60]
 
     state_file.close()
     del save
@@ -1649,6 +1652,7 @@ class PlayerCtl:
         # Misc player control
 
         self.url = ""
+        self.save_urls = url_saves
         self.tag_meta = ""
         self.encoder_pause = 0
 
@@ -3364,25 +3368,27 @@ def player():
             if radio_meta_timer.get() > 3:
                 radio_meta_timer.set()
                 # print(BASS_ChannelGetTags(handle1,4 ))
-                pctl.tag_meta = BASS_ChannelGetTags(handle1, 5)
-                if pctl.tag_meta is not None:
-                    pctl.tag_meta = pctl.tag_meta.decode('utf-8')
-                else:
-                    pctl.tag_meta = BASS_ChannelGetTags(handle1, 2)
-                    if pctl.tag_meta is not None:
-                        pctl.tag_meta = pctl.tag_meta.decode('utf-8')
-                    else:
-                        pctl.tag_meta = ""
-                #print(pctl.tag_meta)
-                pctl.tag_meta = pctl.tag_meta.replace("StreamTitle=", '')
-                pctl.tag_meta = pctl.tag_meta.replace("StreamUrl=", '')
-                pctl.tag_meta = pctl.tag_meta.replace("title=", '')
-                pctl.tag_meta = pctl.tag_meta.replace("Title=", '')
-                pctl.tag_meta = pctl.tag_meta.lstrip("\"';")
-                pctl.tag_meta = pctl.tag_meta.rstrip("\"';")
 
-                #print(pctl.tag_meta)
-                # time.sleep(0.5)
+                meta = BASS_ChannelGetTags(handle1, 5)
+                if meta is not None:
+                    meta = meta.decode('utf-8')
+                else:
+                    meta = BASS_ChannelGetTags(handle1, 2)
+                    if meta is not None:
+                        meta = pctl.tag_meta.decode('utf-8', 'ignore')
+                    else:
+                        meta = ""
+
+                for tag in meta.split(";"):
+                    if '=' in tag:
+                        a, b = tag.split('=')
+                        if a == 'StreamTitle':
+                            pctl.tag_meta = b.rstrip("'").lstrip("'")
+                            break
+                else:
+                    pctl.tag_meta = ""
+
+
                 if BASS_ChannelIsActive(handle1) == 0:
                     pctl.playing_state = 0
                     show_message("Stream stopped.", "info", "The stream either ended or the connection was lost")
@@ -5622,7 +5628,10 @@ class TextBox:
             if 'http://' in self.text and 'http://' in clip:
                 self.text = ""
 
+
+
             self.text += clip.rstrip(" ").lstrip(" ")
+            self.text = self.text.strip("\n\r")
 
     def set_text(self, text):
 
@@ -7172,6 +7181,13 @@ class Menu:
         item = [title, False, func, render_func, no_exit, pass_ref, args]
         self.subs[sub].append(item)
 
+    def test_item_active(self, item):
+
+        if item[1] is False and item[8] is not None:
+            if item[8](1) is False:
+                return False
+        return True
+
     def render(self):
         if self.active:
 
@@ -7202,9 +7218,11 @@ class Menu:
                     y_run += self.break_height
                     continue
 
-                if self.items[i][1] is False and self.items[i][8] is not None:
-                    if self.items[i][8](1) == False:
-                        continue
+                if self.test_item_active(self.items[i]) is False:
+                    continue
+                # if self.items[i][1] is False and self.items[i][8] is not None:
+                #     if self.items[i][8](1) == False:
+                #         continue
 
                 # Get properties for menu item
                 fx = self.items[i][3]()
@@ -7384,6 +7402,8 @@ class Menu:
             for i in range(len(self.items)):
                 if self.items[i] is None:
                     self.pos[1] -= self.break_height
+                elif self.test_item_active(self.items[i]) is False:
+                    pass
                 else:
                     self.pos[1] -= self.h
             if self.pos[1] < 30:
@@ -18359,7 +18379,10 @@ while running:
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
+                button_fore = alpha_blend([255, 255, 255, 17], colours.sys_background_3)
+                button_back = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
+
+                if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
                     gui.rename_folder_box = False
 
                 p = draw_text((x + 10, y + 9,), "Folder Modification", colours.grey(180), 213)
@@ -18370,9 +18393,9 @@ while running:
 
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
-                bg = colours.grey(25)
+                bg = button_back
                 if rect_in(rect):
-                    bg = colours.grey(35)
+                    bg = button_fore
                     if input.mouse_click:
                         print('click')
                         rename_parent(rename_index, rename_folder.text)
@@ -18387,7 +18410,7 @@ while running:
 
                 rect = (x + 8 + 300 + 10, y + 11, 80, 22)
                 fields.add(rect)
-                bg = colours.grey(25)
+                bg = button_back
                 colour = colours.grey(150)
                 if rect_in(rect):
                     bg = [180, 60, 60, 255]#colours.grey(35)
@@ -18412,9 +18435,9 @@ while running:
                     rect = (x + 408, y + 38, 80, 22)
                     fields.add(rect)
                     # draw.rect_r(rect, colours.grey(20), True)
-                    bg = colours.grey(25)
+                    bg = button_back
                     if rect_in(rect):
-                        bg = colours.grey(35)
+                        bg = button_fore
                         if input.mouse_click:
                             print('click')
                             move_folder_up(rename_index, True)
@@ -18431,9 +18454,9 @@ while running:
                     rect = (x + 408, y + 11, 80, 22)
                     fields.add(rect)
                     # draw.rect_r(rect, colours.grey(20), True)
-                    bg = colours.grey(25)
+                    bg = button_back
                     if rect_in(rect):
-                        bg = colours.grey(35)
+                        bg = button_fore
                         if input.mouse_click:
                             print('click')
                             clean_folder(rename_index, True)
@@ -18542,7 +18565,7 @@ while running:
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
                     renamebox = False
 
                 r_todo = []
@@ -18609,14 +18632,22 @@ while running:
                     draw_text((x + 10, y + 185,), "Error: Folder contains tracks from a CUE sheet",
                               [245, 100, 100, 255], 13)
 
-                draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
+
+
+                #draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
+
                 bg = colours.grey(20)
+
                 rect = (x + 8 + 300 + 10, y + 38, 80, 22)
                 fields.add(rect)
 
                 if coll_point(mouse_position, rect):
-                    bg = colours.grey(35)
-                    draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(35), True)
+                    #bg = colours.grey(35)
+                    bg = alpha_blend([255, 255, 255, 17], colours.sys_background_3)
+                else:
+                    bg = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
+
+                draw.rect_r(rect, bg, True)
 
                 label = "WRITE (" + str(len(r_todo)) + ")"
                 if warncue:
@@ -18710,8 +18741,12 @@ while running:
                     draw_text((x + 62, y + 17), gui.message_text, colours.grey(150), 15)
 
             if radiobox:
-                w = 420
-                h = 103  # 87
+
+                s1 = 16
+                sh = s1 * len(pctl.save_urls)
+
+                w = 450
+                h = 103 + sh
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -18723,18 +18758,63 @@ while running:
 
                 draw_text((x + 10, y + 8,), "Open HTTP Audio Stream", colours.grey(180), 213)
                 #gui.win_fore = colours.sys_background_3
-                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=350, click=gui.level_2_click)
 
-                draw.rect((x + 8, y + 38), (350, 22), colours.grey(50))
+                y1 = y
+                y += 30
 
-                rect = (x + 8 + 350 + 10, y + 38, 40, 22)
+                to_del = None
+
+                for i, item in enumerate(pctl.save_urls):
+                    rect = (x + 13, y, 380, s1-1)
+                    if coll_point(mouse_position, rect):
+                        if gui.level_2_click:
+                            pass
+
+                    draw_text((x + 13, y), item, colours.grey(150), 12, 330)
+
+                    rect = (x + 17 + 330, y, 40, 14)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect):
+                        draw.rect_r(rect, [40, 40, 40, 60], True)
+                        if gui.level_2_click:
+                            to_del = i
+
+                    draw.rect_r(rect, [50, 50, 50, 75], True)
+                    draw_text((rect[0] + 20, rect[1] + -1, 2), "DEL", colours.grey(150), 11)
+
+
+                    rect = (x + 17 + 380, y, 40, 14)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect):
+                        draw.rect_r(rect, [40, 40, 40, 60], True)
+                        if gui.level_2_click:
+                            radio_field.text = item
+                            #key_return_press_w = True
+
+                    draw.rect_r(rect, [50, 50, 50, 75], True)
+                    draw_text((rect[0] + 20, rect[1] + -1, 2), "SEL", colours.grey(150), 11)
+
+
+                    y += s1
+
+                if to_del is not None:
+                    del pctl.save_urls[to_del]
+
+
+                y = y1 + sh
+
+                radio_field.draw(x + 14, y + 40, colours.grey_blend_bg3(170), width=380, click=gui.level_2_click)
+
+                draw.rect((x + 8, y + 38), (380, 22), colours.grey(50))
+
+                rect = (x + 8 + 380 + 10, y + 38, 40, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
-                    draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
-                draw.rect((x + 8 + 350 + 10, y + 38), (40, 22), [50, 50, 50, 75], True)
-                draw_text((x + 8 + 10 + 350 + 11, y + 40), "GO", colours.grey(150), 12)
+                    draw.rect((x + 8 + 380 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
+                draw.rect((x + 8 + 380 + 10, y + 38), (40, 22), [50, 50, 50, 75], True)
+                draw_text((x + 8 + 10 + 380 + 11, y + 40), "GO", colours.grey(150), 12)
 
-                rect = (x + 307, y + 70, 50, 22)
+                rect = (x + 337, y + 70, 50, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
@@ -18743,7 +18823,7 @@ while running:
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "PASTE", colours.grey(140), 12)
 
-                rect = (x + 247, y + 70, 50, 22)
+                rect = (x + 277, y + 70, 50, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
@@ -18752,16 +18832,26 @@ while running:
                 draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
                 draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "CLEAR", colours.grey(140), 12)
 
+
+                rect = (x + 217, y + 70, 50, 22)
+                fields.add(rect)
+                if coll_point(mouse_position, rect):
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
+                    if gui.level_2_click:
+                        pctl.save_urls.append(radio_field.text)
+                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
+                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "SAVE", colours.grey(140), 12)
+
                 if (key_return_press_w or (
                             gui.level_2_click and coll_point(mouse_position,
-                                                               (x + 8 + 350 + 10, y + 38, 40, 22)))):
+                                                               (x + 8 + 380 + 10, y + 38, 40, 22)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
                         show_message("Sorry, youtube links are not supported.")
                     elif "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
                         print("Start radio")
                         pctl.url = radio_field.text.encode('utf-8')
-                        radiobox = False
+                        #radiobox = False
                         pctl.playing_state = 0
                         pctl.record_stream = False
                         pctl.playerCommand = "url"
@@ -18778,9 +18868,9 @@ while running:
                         gui.update = 1
                         show_message("Could not validate URL.", 'info', "Make sure the URL starts with 'http://' or 'ftp://'.")
 
-                x -= 200
+                x -= 230
                 # y += 30
-                rect = (x + 247, y + 70, 50, 22)
+                rect = (x + 277, y + 70, 50, 22)
                 fields.add(rect)
                 if coll_point(mouse_position, rect):
                     if pctl.playing_state == 3:
@@ -18789,7 +18879,7 @@ while running:
                         if pctl.playing_state == 3:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
-                            radiobox = False
+                            #radiobox = False
                         else:
                             radiobox = False
                             show_message("A stream needs to be playing first.")
@@ -19633,7 +19723,7 @@ save = [pctl.master_library,
         prefs.show_gimage,
         prefs.end_setting,
         prefs.show_gen,
-        None,
+        pctl.save_urls,
         None,
         None,
         None]
