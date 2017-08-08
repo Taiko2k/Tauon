@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v2.5.0
 
+ - Added button for saving URL's in open stream box
  - Added icons to various menu elements
  - Added playlist repeat option
  - Added function to move folders to different library locations
@@ -25,6 +26,8 @@ v2.5.0
  - Fixed crashes when using clean database function under certain circumstances
  - Fixed reload metadata failing when used for a selection
  - Fixed menu elements activating after click but before menu close
+ - Fixed stream metadata parsing
+ - Fixed newlines being allowed in text boxes
 
 
 
