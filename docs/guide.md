@@ -5,7 +5,7 @@ Player is based around disposable playlists, and makes the assumption that folde
 
 For best experience you will need an organized and structured music library, ideally with each album in its own folder.
 
-I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE can be any sort of broad categorization you feel is best.
+I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE could be any sort of broad categorization you feel is best in order to keep like albums together.
 
 ### Importing Music
 
@@ -15,7 +15,7 @@ Tip: Try importing all your music to a single playlist to get started
 
 ### Updating Library
 
- - Clear playlist and re-import. It should be faster the 2nd time.
+ - Clear playlist and re-import. It should be faster the second time.
 
 ### Track Navigation
 
@@ -28,9 +28,9 @@ Tip: Try importing all your music to a single playlist to get started
 
 ### Playlist Scrolling
 
- - The playlist scroll bar is to the left of the playlist, hidden until moused over
- - Click above or below the scroll bar to scroll quickly in that direction
- - Right click anywhere in the scroll field to jump immediately to that location
+ - The playlist scroll bar is to the left of the playlist, hidden until moused over.
+ - Click above or below the scroll bar to scroll quickly in that direction.
+ - Right click anywhere in the scroll field to jump immediately to that location.
 
 ### Gallery View
 
@@ -41,9 +41,9 @@ Tip: Try importing all your music to a single playlist to get started
 
 ### Quick Search
 
-1) Use LEFT and RIGHT keys to switch to the playlist containing the track you want to search for.
+1) Use LEFT and RIGHT keys to switch to the playlist containing the track you wish to search for.
 2) Press the backslash key or Ctrl+F to open the search box.
-3) Type word fragments separated by spaces.
+3) Type word fragments separated by spaces. For example, to locate a track named 'Coldplay - Clocks' you could try enter the search text 'col clo'.
 
  - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track.
  - Press Shift+Enter to create a new playlist of all matching results
@@ -107,13 +107,13 @@ The resulting path structure will then be ***/folder_with_music(hopefully)/artis
 
 WARNING: The entire source directory will be copied/moved, so make sure it only contains folders and files you want to transfer.
 
-NOTE: Did I make it clear this could be dangerous? Just.. just don't do something like copy a single track to your OS's system directory, run the program as admin and attempt to use the move function. That's just asking for trouble. I should probably put a warning in the actual program rather than here, oh well.
+NOTE: Did I make it clear this could be dangerous? Just.. just don't do something like copy a single track to your OS's system directory, run the program as admin and attempt to use the move function. That's just asking for trouble.
 
 
 ### Modifying Album Art
 
- - To quickly add album art to a folder, images from a web browser can be dragged onto the side panel canvas (http only) (not tested on Windows)
- - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart
+ - To quickly add album art to a folder, images from a web browser can be dragged onto the side panel canvas. (HTTP only) (Linux only, not working on Windows)
+ - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart.
 
 ### Quirks
 
@@ -198,7 +198,7 @@ An external tag editor can be used. See config.txt for linking to an external ed
 
 Note: While editing tracks externally, make sure not to change the track file names. If you wish to change the filenames after you have imported them, use the rename tracks function under TRACK MENU -> META... -> RENAME TRACKS.
 
-Bug: Linking to Picard fails with Unicode paths on windows.
+Note: Picard has a bug that causes it to fail with Unicode paths on windows.
 
 
 ### Importing/Exporting Playlists
@@ -229,7 +229,7 @@ User data files
 
 When program is installed to program files via installer, files are kept in a dedicated location. C:\Users\<user>\Music\TauonMusicBox on Windows and ~/.tauonmb-user on Linux.
 
-**state.p** - Contains playlists, track database information and some settings. Delete to reset player.
+**state.p** - Contains playlists, track database information and settings. Delete to reset player.
 
 **star.p**  - Contains track play count information independent of database, tracks are uniquely identified by a matching filename, artist and track title. Can be transferred between platforms.
 
@@ -242,9 +242,9 @@ For moving installations or upgrading portable installations:
 
 Tip: If you are moving platforms, resetting player or moved your music location and have custom playlists you wish to keep:
 
- 1) Firstly, export the playlists using the export playlist function (TAB MENU -> ... -> EXPORT XSPF)
+ 1) Firstly, export the playlists using the export playlist function (TAB MENU -> MISC... -> EXPORT XSPF)
  2) Use the clean database function (MENU -> DATABASE... -> FIND AND REMOVE DEAD TRACKS). This may take a small while.
- 3) Re-import your music from the new location to any playlist
+ 3) Re-import your music from the new location to any playlist.
  4) Finally, drag and drop the old XSPF playlist back in to re-import.
 
 
@@ -253,9 +253,9 @@ Web components
 
 Enable in MENU -> SETTINGS... -> SYSTEM tab
 
-Warning: Enabling the 'allow external connections' option may pose a security risk
+Warning: Enabling the 'allow external connections' option may pose a security risk.
 
-Warning: Make sure there are no private files in the folders of your music, especially pictures that may inadvertently be sent as an album art thumbnail
+Warning: Make sure there are no private files in the folders of your music, especially pictures that may inadvertently be sent as an album art thumbnail.
 
 ***localhost:7590/remote*** - Remote player control with album art and track info
 
@@ -263,4 +263,4 @@ Warning: Make sure there are no private files in the folders of your music, espe
 
 -----------------------------
 
-You made it to the end! congrats. I hope that all made sense and you enjoy using Tauon Music Box. Have fun listening!
+You made it to the end. Congratulations! I hope that all made sense and you enjoy using Tauon Music Box. Have fun listening!

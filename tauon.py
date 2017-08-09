@@ -569,6 +569,7 @@ class Prefs:
         self.end_setting = "stop"
         self.show_gen = False
 
+
 prefs = Prefs()
 
 
@@ -8832,6 +8833,14 @@ def s_copy():
 move_jobs = []
 move_in_progress = False
 
+def directory_size(path):
+    total = 0
+    for dirpath, dirname, filenames in os.walk(path):
+        for file in filenames:
+            path = os.path.join(dirpath, file)
+            total += os.path.getsize(path)
+    return total
+
 def lightning_paste():
 
     move = True
@@ -8873,10 +8882,14 @@ def lightning_paste():
                 show_message("The source directory is missing!", 'warning', move_path)
                 return
 
+            if directory_size(move_path) > 1500000000:
+                show_message("Folder size safety limit reached! (1.5GB)", 'warning', move_path)
+                return
+
             protect = ("", "Documents", "Music", "Desktop", "Downloads")
             for fo in protect:
                 if move_path.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
-                    show_message("Better not do anything to that folder.", 'warning', os.path.join(os.path.expanduser('~'), fo))
+                    show_message("Better not do anything to that folder!", 'warning', os.path.join(os.path.expanduser('~'), fo))
                     return
 
             artist = move_track.artist
@@ -8919,7 +8932,7 @@ def lightning_paste():
             move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
             break
     else:
-        show_message("Could not find an artist folder to match level.")
+        show_message("Could not find a folder with the artist's name to match level at.")
         return
 
     if album_mode:
@@ -9689,8 +9702,11 @@ folder_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
 mod_folder_icon.colour = [229, 98, 98, 255]
 
+
+
 folder_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_folder_icon)
 
+folder_menu.add("Rename Tracks...", rename_tracks, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
