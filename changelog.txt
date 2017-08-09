@@ -8,7 +8,7 @@ v2.5.0
  - Added playlist repeat option
  - Added function to move folders to different library locations
  - Added menu link to search images on google
- - Added functionality for dropping links onto album canvas to download album art
+ - Added functionality for dropping links onto album canvas to download album art (linux)
  - Added keyboard navigation to gallery view (via tab key)
  - Added Shift-A search box shortcut to search for playing artist name
  - Added text editing cursor to text fields
