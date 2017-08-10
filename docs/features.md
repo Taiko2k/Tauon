@@ -37,13 +37,13 @@
 ### Other file formats
 
  - XSPF (import and export) (cross-app compatibility not tested)
- - CUE sheets targeting single files (import only) (automaticly read when importing)
+ - CUE sheets targeting single files (import only) (automatically read when importing)
 
 ### Player features
 
 - Multiple tabbed playlists
 - Quick search
-- Filter from seach to new playlist
+- Filter from search to new playlist
 - Play count
 - Sorting to new playlist
 - Web interface (basic playback control)
@@ -88,7 +88,6 @@
  - A-B repreat
  - Bookmarks
  - Various playlist formats
- - Radio station list
  - Audio CD
  - Auto DJ
  - Timer / Alarm
