@@ -643,6 +643,7 @@ class GuiVar:
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
+
         self.panelBY = 51 * self.scale
         self.panelY = 30 * self.scale
 
@@ -13428,7 +13429,7 @@ class TopPanel:
             gui.pl_update = 1
 
         # Draw the background
-        draw.rect_r((0, self.ty, window_size[0], self.height), colours.top_panel_background, True)
+        draw.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
 
         # ?
         if self.tab_hold:
@@ -15586,6 +15587,14 @@ def update_layout_do():
         gui.save_size = copy.deepcopy(window_size)
 
     bottom_bar1.update()
+
+    # if system != 'windows':
+    #     if draw_border:
+    #         gui.panelY = 30 * gui.scale + 3 * gui.scale
+    #         top_panel.ty = 3 * gui.scale
+    #     else:
+    #         gui.panelY = 30 * gui.scale
+    #         top_panel.ty = 0
 
     if gui.set_bar:
         gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6
@@ -19287,6 +19296,8 @@ while running:
                 top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
 
             corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
+
+            #draw.rect_r((0, 0, window_size[0], 5), colours.top_panel_background, True)
 
 
 

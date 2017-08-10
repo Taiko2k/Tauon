@@ -107,8 +107,6 @@ The resulting path structure will then be ***/folder_with_music(hopefully)/artis
 
 WARNING: The entire source directory will be copied/moved, so make sure it only contains folders and files you want to transfer.
 
-NOTE: Did I make it clear this could be dangerous? Just.. just don't do something like copy a single track to your OS's system directory, run the program as admin and attempt to use the move function. That's just asking for trouble.
-
 
 ### Modifying Album Art
 
