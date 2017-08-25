@@ -178,6 +178,7 @@ import zipfile
 import warnings
 import struct
 import colorsys
+import html
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -613,7 +614,14 @@ class GuiVar:
         self.spec = None
         self.s_spec = [0] * 24
         self.update_spec = 0
-        self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
+
+        #self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
+
+        self.spec_y = 5
+        self.spec_w = 80
+        self.spec_h = 20
+        self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
+
         self.bar = SDL_Rect(10, 10, 3, 10)
 
         self.combo_mode = False
@@ -708,6 +716,8 @@ class GuiVar:
         self.flag_special_cursor = False
         self.paste_box = False
         self.lightning_copy = False
+
+        self.uni_box = SDL_Rect(0, 0, 100, 100)
 
 
 
@@ -4654,6 +4664,7 @@ gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCE
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
 # SDL_SetRenderTarget(renderer, gui.spec2_tex)
 # SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
 # SDL_RenderClear(renderer)
@@ -5674,6 +5685,20 @@ class TextBox:
         if click is False:
             click = input.mouse_click
 
+        # global key_return_press
+        # global editline
+        # if editline != "" and key_return_press:
+        #     self.text += editline
+        #     editline = ""
+        #     key_return_press = False
+        #print(input_text)
+        # gui.uni_box.x = x
+        # gui.uni_box.y = y + 10
+        # gui.uni_box.w = 500
+        # gui.uni_box.h = 1000
+        #
+        # SDL_SetTextInputRect(gui.uni_box)
+
 
         if width > 0 and active:
 
@@ -5836,6 +5861,8 @@ class TextBox:
 
             space = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
 
+
+
             if TextBox.cursor and self.selection == self.cursor_position:
                 draw.line(x + space, y + 2, x + space, y + 15, colour)
 
@@ -5863,6 +5890,10 @@ class TextBox:
                 xx = x + space + 1
                 yy = y + 3
                 draw.line(xx, yy, xx, yy + 12, colour)
+
+        if active and editline != "" and editline != input_text:
+            ex = draw_text((x + space + 4, y), editline, [240, 230, 230, 255], font)
+            #draw.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
 
         animate_monitor_timer.set()
 
@@ -9778,7 +9809,7 @@ def toggle_gen(mode=0):
 def ser_rym(index):
     if len(pctl.master_library[index].artist) < 2:
         return
-    line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + pctl.master_library[index].artist
+    line = "http://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(pctl.master_library[index].artist)
     webbrowser.open(line, new=2, autoraise=True)
 
 
@@ -11799,7 +11830,7 @@ def webserv():
         show_message("Web server failed to start.", 'warning', "Required dependency 'flask' was not found.")
         return 0
 
-    import html
+
 
     app = Flask(__name__)
 
@@ -15610,7 +15641,10 @@ def update_layout_do():
     else:
         album_v_gap = 25
 
-    gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
+    #gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
+    gui.spec1_rec.x = window_size[0] - gui.offset_extea - 90
+    #gui.spec_x = window_size[0] - gui.offset_extea - 90
+
     gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 - gui.offset_extea
 
     # if gui.vis == 3:
@@ -15633,7 +15667,9 @@ def update_layout_do():
         gui.playlist_row_height = prefs.playlist_row_height #31
         gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)#6
         gui.row_font_size = prefs.playlist_font_size #13
+        gui.scroll_hide_box = (window_size[0] - 28 - 2, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
     else:
+        gui.scroll_hide_box = (1, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
         gui.playlist_row_height = prefs.playlist_row_height
         gui.playlist_text_offset = 0
         gui.row_font_size = prefs.playlist_font_size  # 13
@@ -15724,6 +15760,11 @@ SDL_ShowWindow(t_window)
 SDL_SetRenderTarget(renderer, gui.spec2_tex)
 SDL_RenderClear(renderer)
 draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+
+SDL_SetRenderTarget(renderer, gui.spec1_tex)
+SDL_RenderClear(renderer)
+draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+
 SDL_SetRenderTarget(renderer, None)
 
 #SDL_RenderPresent(renderer)
@@ -15751,7 +15792,6 @@ get_sdl_input = GetSDLInput()
 
 while running:
     # bm.get('main')
-
 
     if k_input:
         d_mouse_click = False
@@ -15902,7 +15942,7 @@ while running:
 
             # print((i_x, i_y))
             playlist_target = 0
-            print(event.drop)
+            #print(event.drop)
 
             if i_y < gui.panelY and not new_playlist_cooldown:
                 x = top_panel.start_space_left
@@ -15955,6 +15995,7 @@ while running:
             editline = event.edit.text
             editline = editline.decode("utf-8", 'ignore')
             k_input = True
+            gui.update += 1
 
         elif event.type == SDL_MOUSEMOTION:
 
@@ -15981,6 +16022,7 @@ while running:
 
                 if mouse_position[1] > 1 and mouse_position[0] > 1:
                     mouse_down = True
+
                 input.mouse_click = True
 
                 mouse_down = True
@@ -16123,7 +16165,8 @@ while running:
             power += 5
             input_text = event.text.text
             input_text = input_text.decode('utf-8')
-            # print(input_text)
+            gui.update += 1
+            print(input_text)
         elif event.type == SDL_MOUSEWHEEL:
             k_input = True
             power += 6
@@ -17482,10 +17525,12 @@ while running:
 
                         sbl = 105
 
-                        fields.add((2, sbp, 20, sbl))
-                        if coll_point(mouse_position, (0, gui.panelY, 28, ey - gui.panelY)) and not playlist_panel and (
+
+
+                        fields.add((window_size[0] - 2 - 20, sbp, 20, sbl))
+                        if coll_point(mouse_position, (window_size[0] - 28, gui.panelY, 28, ey - gui.panelY)) and not playlist_panel and (
                                     mouse_down or right_click) \
-                                and coll_point(click_location, (0, gui.panelY, 28, ey - gui.panelY)):
+                                and coll_point(click_location, (window_size[0] - 28, gui.panelY, 28, ey - gui.panelY)):
 
                             gui.pl_update = 1
                             if right_click:
@@ -17540,11 +17585,11 @@ while running:
                                 per = combo_pl_render.pl_pos_px / combo_pl_render.max_y
                                 sbp = int((ey - gui.panelY - sbl) * per) + gui.panelY + 1
 
-                        draw.rect((0, gui.panelY), (17, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
-                        draw.rect((1, sbp), (15, sbl), colours.scroll_colour, True)
+                        draw.rect((window_size[0] - 17, gui.panelY), (17, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
+                        draw.rect((window_size[0] - 1 - 15, sbp), (15, sbl), colours.scroll_colour, True)
 
-                        if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                            draw.rect((1, sbp), (15, sbl), [255, 255, 255, 11], True)
+                        if (coll_point(mouse_position, (window_size[0] - 2 - 20, sbp, 20, sbl)) and mouse_position[0] != 0) or scroll_hold:
+                            draw.rect((window_size[0] - 1 - 15, sbp), (15, sbl), [255, 255, 255, 11], True)
 
                 # Switch Vis:
                 if right_click and coll_point(mouse_position, (window_size[0] - 150 - gui.offset_extea, 0, 140, gui.panelY)):
@@ -18410,7 +18455,7 @@ while running:
                 if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = draw_text((x + 10, y + 9,), "Folder Modification", colours.grey(180), 213)
+                p = draw_text((x + 10, y + 9,), "Folder Modification", colours.grey(195), 213)
 
                 rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
 
@@ -18604,7 +18649,7 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10, y + 8,), "File Renaming", colours.grey(180), 213)
+                draw_text((x + 10, y + 8,), "File Renaming", colours.grey(195), 213)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
@@ -18965,7 +19010,7 @@ while running:
                 # if key_backspace_press:
                 #     gui.search_error = False
 
-                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(165), font=213)
+                search_text.draw(rect[0] + 8, rect[1] + 4, colours.grey(195), font=213)
 
                 if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
                     key_return_press = False
@@ -19135,11 +19180,11 @@ while running:
             album_art_gen.display(pctl.track_queue[pctl.queue_step],
                                   (0, 0), (window_size[1], window_size[1]))
 
-        # Unicode edit display---------------------
-        if len(editline) > 0:
-            ll = draw.text_calc(editline, 14)
-            draw.rect((window_size[0] - ll - 12, window_size[1] - 26), (ll + 15, 26), [0, 0, 0, 255], True)
-            draw_text((window_size[0] - ll - 5, window_size[1] - 24), editline, colours.grey(210), 14)
+        # # Unicode edit display---------------------
+        # if len(editline) > 0:
+        #     ll = draw.text_calc(editline, 14)
+        #     draw.rect((window_size[0] - ll - 12, window_size[1] - 26), (ll + 15, 26), [0, 0, 0, 255], True)
+        #     draw_text((window_size[0] - ll - 5, window_size[1] - 24), editline, colours.grey(210), 14)
 
         # Render Menus-------------------------------
         for instance in Menu.instances:
@@ -19297,6 +19342,9 @@ while running:
 
             corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
+            # draw.line(0, 0, 180, 0, colours.grey(80))
+            # draw.line(0, 0, 0, 20, colours.grey(80))
+
             #draw.rect_r((0, 0, window_size[0], 5), colours.top_panel_background, True)
 
 
@@ -19360,6 +19408,7 @@ while running:
             gui.present = True
 
         if gui.vis == 3:
+            # Scrolling spectogram
 
             if len(gui.spec2_buffers) > 0:
 
@@ -19406,6 +19455,9 @@ while running:
                 draw.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
 
         if gui.vis == 2 and gui.spec is not None:
+            # Standard spectrum visualiser
+
+
 
             if gui.update_spec == 0 and pctl.playing_state != 2:
 
@@ -19459,11 +19511,13 @@ while running:
 
             if not gui.test:
 
+                SDL_SetRenderTarget(renderer, gui.spec1_tex)
+
                 # draw.rect_r(gui.spec_rect, colours.top_panel_background, True)
-                draw.rect_r(gui.spec_rect, colours.vis_bg, True)
+                draw.rect_r((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg, True)
 
                 # xx = 0
-                gui.bar.x = gui.spec_rect[0]
+                gui.bar.x = 0
                 on = 0
 
                 SDL_SetRenderDrawColor(renderer, colours.vis_colour[0],
@@ -19487,7 +19541,7 @@ while running:
                     if item > 20:
                         item = 20
 
-                    gui.bar.y = gui.spec_rect[1] + gui.spec_rect[3] - item
+                    gui.bar.y = 0 + gui.spec_h - item
                     gui.bar.h = item
                     # yy = gui.spec_rect[1] + gui.spec_rect[3] - item
                     # draw.fast_fill_rect(xx + gui.spec_rect[0], yy, 3, item)
@@ -19496,7 +19550,16 @@ while running:
                     gui.bar.x += 4
 
                 if pref_box.enabled:
-                    draw.rect_r(gui.spec_rect, [0, 0, 0, 90], True)
+                    draw.rect_r((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90], True)
+
+                #draw.rect_r((0, 0, 2000, 2000), [222, 0, 0, 255], True)
+
+                SDL_SetRenderTarget(renderer, None)
+                SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
+
+
+
+
 
         if gui.vis == 1:
 
