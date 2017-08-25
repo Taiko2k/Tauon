@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+v2.5.1
+
+ - Moved 'art + tracks' view scroll bar to right side of window
+ - Fixed visualiser showing occasional corruption (linux)
+ - Fixed IME input not working
+ - Fixed url encoding with search on Sonemic function
+
+
 v2.5.0
 
  - Added button for saving URL's in open stream box
