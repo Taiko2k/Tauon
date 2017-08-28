@@ -7,6 +7,9 @@ v2.5.1
  - Fixed visualiser showing occasional corruption (linux)
  - Fixed IME input not working
  - Fixed url encoding with search on Sonemic function
+ - Fixed bad font rending in about box under some themes
+ - Tweaked some fonts and colours
+ - Removed reset window shortcut
 
 
 v2.5.0
