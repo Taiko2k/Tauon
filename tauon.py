@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.5.0"
+t_version = "v2.5.1"
 t_title = 'Tauon Music Box'
 print(t_title + " " + t_version)
 print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
@@ -4847,9 +4847,46 @@ class Drawing:
             else:
                 return x
 
+    def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None):
+
+        if w is None:
+            w = self.text_calc(text, font) + 18
+        if h is None:
+            h = 22
+
+        rect = (x, y, w, h)
+        fields.add(rect)
+
+        if fore_text is None:
+            fore_text = colours.grey(210)
+        if back_text is None:
+            back_text = colours.grey(190)
+        if bg is None:
+            bg = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
+        if fg is None:
+            fg = alpha_blend([255, 255, 255, 20], colours.sys_background_3)
+
+        click = False
+
+        if press is None:
+            press = input.mouse_click
+
+        if rect_in(rect):
+            draw.rect_r(rect, fg, True)
+            draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), text, fore_text, font,
+                      bg=fg)
+            if press:
+                click = True
+        else:
+            draw.rect_r(rect, bg, True)
+            draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), text, back_text, font,
+                      bg=bg)
+        return click
 
 
 draw = Drawing()
+
+
 
 text_cache = []  # location, text, dst(sdl rect), c(texture)
 calc_cache = []
@@ -5852,7 +5889,7 @@ class TextBox:
                 if not gui.cairo_text:
                     inf_comp = 1
                 space = draw_text((x, y), self.get_selection(0), colour, font)
-                space += draw_text((x + space - inf_comp, y), self.get_selection(1), colour, font, bg=[40, 120, 180, 255],)
+                space += draw_text((x + space - inf_comp, y), self.get_selection(1), [240,240,240,255], font, bg=[40, 120, 180, 255],)
                 draw_text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
             else:
                 draw_text((x, y), self.text, colour, font)
@@ -12482,7 +12519,7 @@ class Over:
             y = self.box_y + 70
             x = self.box_x + 130
 
-            draw_text((x, y - 22), "ReplayGain Mode", [160, 160, 160, 255], 12)
+            draw_text((x, y - 22), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
 
             y += 7
             x += 10
@@ -12496,7 +12533,7 @@ class Over:
             y = self.box_y + 60
             x = self.box_x + 390
 
-            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 12)
+            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 212)
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
@@ -12606,9 +12643,11 @@ class Over:
         fields.add(rect)
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 15], True)
+            draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(200), 211)
             if self.click:
                 plug()
-        draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(150), 11)
+        else:
+            draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(170), 211)
 
     def toggle_square(self, x, y, function, text):
 
@@ -12818,6 +12857,7 @@ class Over:
 
         x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 76
+        gui.win_fore = colours.sys_background
 
         if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
             self.about_image2.render(x - 100, y - 10)
@@ -12829,11 +12869,11 @@ class Over:
             self.about_image.render(x - 100, y - 10)
         x += 20
 
-        draw_text((x, y), "Tauon Music Box", colours.grey(200), 16)
+        draw_text((x, y), "Tauon Music Box", colours.grey(200), 216)
         y += 32
-        draw_text((x, y), t_version, colours.grey(200), 12)
+        draw_text((x, y + 1), t_version, colours.grey(190), 13)
         y += 20
-        draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(200), 12)
+        draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
 
         x = self.box_x + self.w - 115
         y = self.box_y + self.h - 35
@@ -13145,9 +13185,9 @@ class Over:
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 230], gui.win_fore), 13)
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
             else:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([200, 200, 200, 100], gui.win_fore), 13)
+                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
 
             current_tab += 1
 
@@ -16474,7 +16514,8 @@ while running:
             print("Join brodcast commands:" + str(pctl.join_broadcast))
 
         if key_F4:
-            standard_size()
+            #standard_size()
+            show_message("This function has been removed", 'info')
 
         if key_ctrl_down and key_z_press:
             if pctl.playlist_backup != []:
@@ -18112,7 +18153,7 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                # draw.rect((0,0),(window_size[0], window_size[1]), [0,0,0,120], True)
+
 
                 draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
@@ -18136,36 +18177,37 @@ while running:
                     rect = [x + 17, y + 41, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].title)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(140), 212)
                         #
 
                     draw_text((x + 8 + 90, y + 40 - 3), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190)
-                              , colours.grey_blend_bg3(190), 15)
+                              , colours.grey_blend_bg3(200), 15)
                     #y += 4
 
                     if False and key_shift_down:
+                        pass
 
-                        ext_rect = [x + w - 74, y + 42, 12, 12]
-
-                        line = pctl.master_library[r_menu_index].file_ext
-                        ex_colour = [255, 255, 255, 130]
-
-                        if line in format_colours:
-                            ex_colour = format_colours[line]
-
-                        draw.rect_r(ext_rect, ex_colour, True)
-                        draw_text((x + w - 56, y + 40), line, colours.grey_blend_bg3(190), 212)
-
-                        if pctl.master_library[r_menu_index].is_cue:
-                            ext_rect[1] += 16
-                            draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                            draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
+                        # ext_rect = [x + w - 74, y + 42, 12, 12]
+                        #
+                        # line = pctl.master_library[r_menu_index].file_ext
+                        # ex_colour = [255, 255, 255, 130]
+                        #
+                        # if line in format_colours:
+                        #     ex_colour = format_colours[line]
+                        #
+                        # draw.rect_r(ext_rect, ex_colour, True)
+                        # draw_text((x + w - 56, y + 40), line, colours.grey_blend_bg3(190), 212)
+                        #
+                        # if pctl.master_library[r_menu_index].is_cue:
+                        #     ext_rect[1] += 16
+                        #     draw.rect_r(ext_rect, [218, 222, 73, 255], True)
+                        #     draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
 
                     else:
 
@@ -18187,90 +18229,86 @@ while running:
                             draw_text((x + w - 35, y + 42 + 16), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
 
 
+                    y += 16
 
-                    y += 15
-
-
-
-
-                    rect = [x + 17, y + 41, 350, 14]
+                    rect = [x + 17, y + 40 + 2, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].artist)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].artist, 12, 420),
-                              colours.grey_blend_bg3(190), 12)
+                    draw_text((x + 8 + 90, y + 40 - 2), trunc_line(pctl.master_library[r_menu_index].artist, 13, 420),
+                              colours.grey_blend_bg3(200), 13)
 
-                    y += 15
+                    y += 16
 
-                    rect = [x + 17, y + 41, 350, 14]
+                    rect = [x + 17, y + 40 + 2, 350, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].album)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].album, 12, 420),
-                              colours.grey_blend_bg3(190),
-                              12)
+                    draw_text((x + 8 + 90, y + 40 - 2), trunc_line(pctl.master_library[r_menu_index].album, 13, 420),
+                              colours.grey_blend_bg3(200),
+                              13)
 
                     y += 23 + 3
 
                     rect = [x + 17, y + 41, 450, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].fullpath)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(140), 12)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 10, 425),
-                              colours.grey_blend_bg3(190), 10)
+                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(140), 212)
+                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425),
+                              colours.grey_blend_bg3(170), 210)
 
                     y += 15
                     if pctl.master_library[r_menu_index].samplerate != 0:
-                        draw_text((x + 8 + 10, y + 40), "Samplerate", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Samplerate", colours.grey_blend_bg3(140), 212)
                         line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
-                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190), 12)
+                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
 
                     y += 15
 
                     if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
-                        draw_text((x + 8 + 10, y + 40), "Bitrate", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Bitrate", colours.grey_blend_bg3(140), 212)
                         line = str(pctl.master_library[r_menu_index].bitrate)
                         if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
                         line += " kbps"
-                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190), 12)
+                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
                         x += 170
-                        rect = [x + 17, y + 41, 150, 14]
+                        rect = [x + 7, y + 41, 160, 14]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 10, y + 40), "Album Artist", colours.grey_blend_bg3(170), 12)
+                            draw_text((x + 8 + 75, y + 40, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].album_artist)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 10, y + 40), "Album Artist", colours.grey_blend_bg3(140), 12)
+                            draw_text((x + 8 + 75, y + 40, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
                         draw_text((x + 8 + 90, y + 40),
-                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 12, 270),
-                                  colours.grey_blend_bg3(190), 12)
+                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 212, 270),
+                                  colours.grey_blend_bg3(200), 12)
                         x -= 170
 
                     y += 15
@@ -18278,41 +18316,41 @@ while running:
                     rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
                             show_message("Duration copied to clipboard")
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(140), 212)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190), 12)
+                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].track_total not in ("", "0"):
                         x += 170
                         line = str(pctl.master_library[r_menu_index].track_number) + " of " + str(
                             pctl.master_library[r_menu_index].track_total)
-                        draw_text((x + 8 + 10, y + 40), "Track", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 75, y + 40, 1), "Track", colours.grey_blend_bg3(140), 212)
                         draw_text((x + 8 + 90, y + 40), line,
-                                  colours.grey_blend_bg3(190), 12)
+                                  colours.grey_blend_bg3(200), 12)
                         x -= 170
 
                     y += 15
                     #print(pctl.master_library[r_menu_index].size)
                     if pctl.master_library[r_menu_index].size != 0:
-                        draw_text((x + 8 + 10, y + 40), "File size", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "File size", colours.grey_blend_bg3(140), 212)
                         draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size),
-                                  colours.grey_blend_bg3(190), 12)
+                                  colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].disc_total not in ("", "0", 0):
                         x += 170
                         line = str(pctl.master_library[r_menu_index].disc_number) + " of " + str(
                             pctl.master_library[r_menu_index].disc_total)
-                        draw_text((x + 8 + 10, y + 40), "Disc", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 75, y + 40, 1), "Disc", colours.grey_blend_bg3(140), 212)
                         draw_text((x + 8 + 90, y + 40), line,
-                                  colours.grey_blend_bg3(190), 12)
+                                  colours.grey_blend_bg3(200), 12)
                         x -= 170
 
                     y += 23
@@ -18320,15 +18358,15 @@ while running:
                     rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].genre)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(140), 212)
                     line = trunc_line(pctl.master_library[r_menu_index].genre, 12, 290)
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(190),
+                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200),
                               12)
 
                     y += 15
@@ -18336,15 +18374,15 @@ while running:
                     rect = [x + 17, y + 41, 150, 14]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(170), 12)
+                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].date)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(140), 12)
+                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(140), 212)
                     draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date),
-                              colours.grey_blend_bg3(190), 12)
+                              colours.grey_blend_bg3(200), 12)
 
 
                     y += 23
@@ -18356,8 +18394,8 @@ while running:
                         r_menu_index].length != 0:
                         ratio = total / pctl.master_library[r_menu_index].length
 
-                    draw_text((x + 8 + 10, y + 40), "Play count", colours.grey_blend_bg3(140), 12)
-                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey_blend_bg3(190), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play count", colours.grey_blend_bg3(140), 212)
+                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey_blend_bg3(200), 12)
 
                     y += 15
 
@@ -18369,8 +18407,8 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Play time", colours.grey_blend_bg3(140), 12)
-                    draw_text((x + 8 + 90, y + 40), str(line), colours.grey_blend_bg3(190), 12)
+                    draw_text((x + 8 + 10, y + 40), "Play time", colours.grey_blend_bg3(140), 212)
+                    draw_text((x + 8 + 90, y + 40), str(line), colours.grey_blend_bg3(200), 12)
 
 
 
@@ -18381,13 +18419,13 @@ while running:
                         rect = [x + 17, y + 41, 60, 14]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(170), 12)
+                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Lyrics copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(140), 12)
+                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(140), 212)
                         x -= 170
 
                     if len(tc.comment) > 0:
@@ -18395,19 +18433,19 @@ while running:
                         rect = [x + 17, y + 41, 60, 14]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(170), 12)
+                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].comment)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(140), 12)
+                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(140), 212)
                         # draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(140), 12)
 
                         if (
                                     'http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
                                 tc.comment, 12) < 335:
-                            link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(190), 12)
+                            link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(200), 12)
                             link_rect = [x + 98 + link_pa[0], y + 38, link_pa[1], 20]
                             # draw.rect_r(link_rect, [255,0,0,30], True)
                             fields.add(link_rect)
@@ -18426,9 +18464,9 @@ while running:
                                 SDL_SetCursor(cursor_standard)
 
                         elif comment_mode == 1:
-                            draw_text((x + 18, y + 58, 4, w - 36, 90), tc.comment, colours.grey_blend_bg3(190), 12)
+                            draw_text((x + 18, y + 58, 4, w - 36, 90), tc.comment, colours.grey_blend_bg3(200), 12)
                         else:
-                            draw_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(190), 12)
+                            draw_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(200), 12)
 
             if pref_box.enabled:
                 rect = [0, 0, window_size[0], window_size[1]]
@@ -18449,176 +18487,48 @@ while running:
                 draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                button_fore = alpha_blend([255, 255, 255, 17], colours.sys_background_3)
-                button_back = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
-
                 if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
                     gui.rename_folder_box = False
 
                 p = draw_text((x + 10, y + 9,), "Folder Modification", colours.grey(195), 213)
 
-                rename_folder.draw(x + 14, y + 40, colours.alpha_grey(150), width=300)
+                rename_folder.draw(x + 14, y + 40, colours.alpha_grey(190), width=300)
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                rect = (x + 8 + 300 + 10, y + 38, 80, 22)
-                fields.add(rect)
-                bg = button_back
-                if rect_in(rect):
-                    bg = button_fore
-                    if input.mouse_click:
-                        print('click')
-                        rename_parent(rename_index, rename_folder.text)
-                        gui.rename_folder_box = False
-                        input.mouse_click = False
+                if draw.button("Rename", x + 8 + 300 + 10, y + 38, 80):
+                    rename_parent(rename_index, rename_folder.text)
+                    gui.rename_folder_box = False
+                    input.mouse_click = False
 
-                draw.rect_r(rect, bg, True)
-
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "RENAME", colours.grey(150), 12,
-                          bg=bg)
-
-
-                rect = (x + 8 + 300 + 10, y + 11, 80, 22)
-                fields.add(rect)
-                bg = button_back
-                colour = colours.grey(150)
-                if rect_in(rect):
-                    bg = [180, 60, 60, 255]#colours.grey(35)
-                    colour = colours.grey(30)
-                    if input.mouse_click:
-                        print('click')
-                        delete_folder(rename_index)
-                        gui.rename_folder_box = False
-                        input.mouse_click = False
-
-                # if not key_shift_down and not key_shiftr_down:
-                #     bg = colours.grey(20)
-
-                draw.rect_r(rect, bg, True)
-
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "DELETE", colour, 12,
-                          bg=bg)
-
+                if draw.button("Delete", x + 8 + 300 + 10, y + 11, 80, fore_text=colours.grey(255), fg=[180, 60, 60, 255]):
+                    delete_folder(rename_index)
+                    gui.rename_folder_box = False
+                    input.mouse_click = False
 
                 if move_folder_up(rename_index):
-
-                    rect = (x + 408, y + 38, 80, 22)
-                    fields.add(rect)
-                    # draw.rect_r(rect, colours.grey(20), True)
-                    bg = button_back
-                    if rect_in(rect):
-                        bg = button_fore
-                        if input.mouse_click:
-                            print('click')
-                            move_folder_up(rename_index, True)
-                            #gui.rename_folder_box = False
-                            input.mouse_click = False
-
-                    draw.rect_r(rect,bg, True)
-
-                    draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "COMPACT", colours.grey(150), 12,
-                              bg=bg)
+                    if draw.button("Compact", x + 408, y + 38, 80):
+                        move_folder_up(rename_index, True)
+                        input.mouse_click = False
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
-                    rect = (x + 408, y + 11, 80, 22)
-                    fields.add(rect)
-                    # draw.rect_r(rect, colours.grey(20), True)
-                    bg = button_back
-                    if rect_in(rect):
-                        bg = button_fore
-                        if input.mouse_click:
-                            print('click')
-                            clean_folder(rename_index, True)
+                    if draw.button("Clean (" + str(to_clean) + ")", x + 408, y + 11, 80):
+                        clean_folder(rename_index, True)
+                        input.mouse_click = False
 
-                            input.mouse_click = False
-
-                    draw.rect_r(rect, bg, True)
-
-                    draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2, 2), "CLEAN (" + str(to_clean) + ")", colours.grey(150), 12,
-                              bg=bg)
-
-                draw_text((x + 10, y + 65,), "PATH", colours.grey(100), 12)
+                draw_text((x + 10, y + 65,), "PATH", colours.grey(100), 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420)
-                draw_text((x + 60, y + 65,), line, colours.grey(160), 12)
+                draw_text((x + 60, y + 65,), line, colours.grey(150), 211)
 
-                draw_text((x + 10, y + 83), "OLD", colours.grey(100), 12)
+                draw_text((x + 10, y + 83), "OLD", colours.grey(100), 212)
                 line = trunc_line(pctl.master_library[rename_index].parent_folder_name, 12, 420)
-                draw_text((x + 60, y + 83), line, colours.grey(160), 12)
+                draw_text((x + 60, y + 83), line, colours.grey(150), 211)
 
-                draw_text((x + 10, y + 101), "NEW", colours.grey(100), 12)
+                draw_text((x + 10, y + 101), "NEW", colours.grey(100), 212)
                 line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420)
-                draw_text((x + 60, y + 101), line, colours.grey(160), 12)
-
-
-            # if gui.paste_box:
-            #
-            #     if gui.level_2_click:
-            #         input.mouse_click = True
-            #     gui.level_2_click = False
-            #
-            #     if key_esc_press or (input.mouse_click and not coll_point(mouse_position, (x, y, w, h))):
-            #         gui.paste_box = False
-            #
-            #     w = 400
-            #     h = 150
-            #     x = int(window_size[0] / 2) - int(w / 2)
-            #     y = int(window_size[1] / 2) - int(h / 2)
-            #
-            #     draw.rect((x - 2, y - 2), (w + 4, h + 4), colours.grey(50), True)
-            #     draw.rect((x, y), (w, h), colours.sys_background_3, True)
-            #
-            #     print("\n---------------")
-            #
-            #     source_parents = set()
-            #     for item in shift_selection:
-            #         source_parents.add(pctl.g(item).parent_folder_path)
-            #
-            #     print(source_parents)
-            #     if len(source_parents) == 1:
-            #         pass
-            #
-            #
-            #     track = pctl.g(cargo[0])
-            #     match_track = pctl.g(shift_selection[0])
-            #     source = track.parent_folder_path
-            #
-            #
-            #     p = Path(source)
-            #     s = list(p.parts)
-            #     base = s[0]
-            #     c = base
-            #     del s[0]
-            #
-            #     for level in s:
-            #
-            #         upper = c
-            #         c = os.path.join(c, level)
-            #         print(c)
-            #
-            #         if track.artist == level:
-            #             print("found exact matching artist level")
-            #
-            #         if track.artist in level:
-            #             print("found partial artist match")
-            #
-            #     c = base
-            #     for level in s:
-            #
-            #         upper = c
-            #         c = os.path.join(c, level)
-            #         print(c)
-
-
-
-
-
-
-
-
-
-
+                draw_text((x + 60, y + 101), line, colours.grey(150), 211)
 
 
             if renamebox:
@@ -18703,28 +18613,11 @@ while running:
                               [245, 100, 100, 255], 13)
 
 
-
-                #draw.rect((x + 8 + 300 + 10, y + 38), (80, 22), colours.grey(20), True)
-
-                bg = colours.grey(20)
-
-                rect = (x + 8 + 300 + 10, y + 38, 80, 22)
-                fields.add(rect)
-
-                if coll_point(mouse_position, rect):
-                    #bg = colours.grey(35)
-                    bg = alpha_blend([255, 255, 255, 17], colours.sys_background_3)
-                else:
-                    bg = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
-
-                draw.rect_r(rect, bg, True)
-
-                label = "WRITE (" + str(len(r_todo)) + ")"
+                label = "Write (" + str(len(r_todo)) + ")"
                 if warncue:
                     label = "ERROR"
-                draw_text((x + 8 + 10 + 300 + 40, y + 40, 2), label, colours.grey(160), 12, bg=bg)
 
-                if input.mouse_click and coll_point(mouse_position, (x + 8 + 300 + 10, y + 38, 80, 22)):
+                if draw.button(label, x + 8 + 300 + 10, y + 38, 80):
                     input.mouse_click = False
                     total_todo = len(r_todo)
                     pre_state = 0
@@ -18805,10 +18698,10 @@ while running:
 
 
                 if len(gui.message_subtext) > 0:
-                    draw_text((x + 62, y + 9), gui.message_text, colours.grey(150), 15)
-                    draw_text((x + 63, y + 9 + 22), gui.message_subtext, colours.grey(150), 12)
+                    draw_text((x + 62, y + 9), gui.message_text, colours.grey(190), 15)
+                    draw_text((x + 63, y + 9 + 22), gui.message_subtext, colours.grey(190), 12)
                 else:
-                    draw_text((x + 62, y + 17), gui.message_text, colours.grey(150), 15)
+                    draw_text((x + 62, y + 18), gui.message_text, colours.grey(190), 15)
 
             if radiobox:
 
@@ -18826,7 +18719,7 @@ while running:
                 if key_esc_press or (gui.level_2_click and not coll_point(mouse_position, (x, y, w, h))):
                     radiobox = False
 
-                draw_text((x + 10, y + 8,), "Open HTTP Audio Stream", colours.grey(180), 213)
+                draw_text((x + 10, y + 8,), "Open HTTP Audio Stream", colours.grey(200), 213)
                 #gui.win_fore = colours.sys_background_3
 
                 y1 = y
@@ -18850,7 +18743,7 @@ while running:
                             to_del = i
 
                     draw.rect_r(rect, [50, 50, 50, 75], True)
-                    draw_text((rect[0] + 20, rect[1] + -1, 2), "DEL", colours.grey(150), 11)
+                    draw_text((rect[0] + 20, rect[1] + -1, 2), "Del", colours.grey(180), 211)
 
 
                     rect = (x + 17 + 380, y, 40, 14)
@@ -18862,7 +18755,7 @@ while running:
                             #key_return_press_w = True
 
                     draw.rect_r(rect, [50, 50, 50, 75], True)
-                    draw_text((rect[0] + 20, rect[1] + -1, 2), "SEL", colours.grey(150), 11)
+                    draw_text((rect[0] + 20, rect[1] + -1, 2), "Sel", colours.grey(180), 211)
 
 
                     y += s1
@@ -18877,40 +18770,16 @@ while running:
 
                 draw.rect((x + 8, y + 38), (380, 22), colours.grey(50))
 
-                rect = (x + 8 + 380 + 10, y + 38, 40, 22)
-                fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((x + 8 + 380 + 10, y + 38), (40, 22), [40, 40, 40, 60], True)
-                draw.rect((x + 8 + 380 + 10, y + 38), (40, 22), [50, 50, 50, 75], True)
-                draw_text((x + 8 + 10 + 380 + 11, y + 40), "GO", colours.grey(150), 12)
+                draw.button("GO", x + 8 + 380 + 10, y + 38, 40)
 
-                rect = (x + 337, y + 70, 50, 22)
-                fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.level_2_click:
-                        radio_field.paste()
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "PASTE", colours.grey(140), 12)
+                if draw.button("Paste", x + 337, y + 70, 50, press=gui.level_2_click):
+                    radio_field.paste()
 
-                rect = (x + 277, y + 70, 50, 22)
-                fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.level_2_click:
-                        radio_field.text = ""
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "CLEAR", colours.grey(140), 12)
+                if draw.button("Clear", x + 277, y + 70, 50, press=gui.level_2_click):
+                    radio_field.text = ""
 
-
-                rect = (x + 217, y + 70, 50, 22)
-                fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.level_2_click:
-                        pctl.save_urls.append(radio_field.text)
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + int(rect[2] / 2), rect[1] + 3, 2), "SAVE", colours.grey(140), 12)
+                if draw.button("Save", x + 217, y + 70, 50, press=gui.level_2_click):
+                    pctl.save_urls.append(radio_field.text)
 
                 if (key_return_press_w or (
                             gui.level_2_click and coll_point(mouse_position,
@@ -18942,24 +18811,32 @@ while running:
                 # y += 30
                 rect = (x + 277, y + 70, 50, 22)
                 fields.add(rect)
-                if coll_point(mouse_position, rect):
-                    if pctl.playing_state == 3:
-                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [40, 40, 40, 60], True)
-                    if gui.level_2_click:
-                        if pctl.playing_state == 3:
+
+                if pctl.playing_state == 3:
+
+                    if coll_point(mouse_position, rect):
+                        if gui.level_2_click:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
-                            #radiobox = False
-                        else:
+                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20], colours.sys_background_3), True)
+                        draw_text((rect[0] + 7, rect[1] + 3), "Rec", colours.grey(210), 212)
+                        draw_text((rect[0] + 34, rect[1] + 2), "●", [230, 20, 20, 255], 212)
+                    else:
+                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9], colours.sys_background_3), True)
+                        draw_text((rect[0] + 7, rect[1] + 3), "Rec", colours.grey(190), 212)
+                        draw_text((rect[0] + 34, rect[1] + 2), "●", [220, 20, 20, 255], 212)
+                else:
+                    if coll_point(mouse_position, rect):
+                        if gui.level_2_click:
                             radiobox = False
                             show_message("A stream needs to be playing first.")
-                draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [50, 50, 50, 70], True)
-                draw_text((rect[0] + 7, rect[1] + 3), "REC", colours.grey(140), 12)
-                draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 12)
-                if pctl.playing_state != 3:
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), [0, 0, 0, 60], True)
-                input_text = ""
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7], colours.sys_background_3), True)
+                    draw_text((rect[0] + 7, rect[1] + 3), "Rec", colours.grey(150), 212)
+                    draw_text((rect[0] + 34, rect[1] + 2), "●", [200, 15, 15, 255], 212)
+
                 gui.level_2_click = False
+
+
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
