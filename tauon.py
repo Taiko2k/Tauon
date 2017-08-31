@@ -1753,6 +1753,7 @@ class PlayerCtl:
         global playlist_selected
         global shift_selection
 
+
         for i in range(len(self.multi_playlist[self.playlist_active][2])):
 
             if i == playlist_selected:
@@ -1786,7 +1787,7 @@ class PlayerCtl:
         else:
             return None
 
-    def show_current(self, select=True, playing=False, quiet=False):
+    def show_current(self, select=True, playing=False, quiet=False, this_only=False):
 
         # print("show------")
         # print(select)
@@ -1810,7 +1811,7 @@ class PlayerCtl:
         global shift_selection
 
         for i in range(len(self.multi_playlist[self.playlist_active][2])):
-            if len(self.track_queue) > 1 and self.multi_playlist[self.playlist_active][2][i] == self.track_queue[
+            if len(self.track_queue) > 0 and self.multi_playlist[self.playlist_active][2][i] == self.track_queue[
                 self.queue_step]:
 
                 if select:
@@ -1843,12 +1844,13 @@ class PlayerCtl:
                             playlist_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
                 break
         else:  # Search other all other playlists
-            for i, playlist in enumerate(self.multi_playlist):
-                if self.track_queue[self.queue_step] in playlist[2]:
+            if not this_only:
+                for i, playlist in enumerate(self.multi_playlist):
+                    if self.track_queue[self.queue_step] in playlist[2]:
 
-                    switch_playlist(i)
-                    self.show_current(select, playing, quiet)
-                    break
+                        switch_playlist(i)
+                        self.show_current(select, playing, quiet, this_only=True)
+                        break
 
 
         if playlist_position < 0:
@@ -5438,6 +5440,7 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 16 + 4, 216, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
 
         # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
@@ -5462,6 +5465,7 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
+        pretty_text.prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
         # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
@@ -5490,6 +5494,7 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
         pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 16 + 2, 216, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
 
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
@@ -5516,6 +5521,7 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=0)
         pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight)
+        pretty_text.prime_font(semibold_font, 16 + 4, 216, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight)
 
         pretty_text.prime_font(standard_font, 14 + 3, 412, weight=500, y_offset=-1)
@@ -9947,10 +9953,14 @@ def broadcast_select_track(index):
 if prefs.enable_transcode or default_player == 'BASS':
     track_menu.br()
 
-if prefs.enable_transcode:
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
-    transcode_icon.colour = [239, 74, 157, 255]
-    track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon)
+def toggle_transcode(mode=0):
+    if mode == 1:
+        return prefs.enable_transcode
+    prefs.enable_transcode ^= True
+
+transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+transcode_icon.colour = [239, 74, 157, 255]
+track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
 if default_player == 'BASS':
     track_menu.add('Broadcast This', broadcast_select_track, broadcast_feature_deco, pass_ref=True)
@@ -12324,13 +12334,6 @@ def toggle_lfm_auto(mode=0):
         return prefs.auto_lfm
     prefs.auto_lfm ^= True
 
-def toggle_transcode(mode=0):
-    if mode == 1:
-        return prefs.enable_transcode
-    prefs.enable_transcode ^= True
-
-
-
 
 
 def toggle_cache(mode=0):
@@ -12688,10 +12691,12 @@ class Over:
         draw.rect_r(rect, colours.alpha_grey(10), True)
         draw.rect_r(rect2, colours.alpha_grey(10), True)
 
+        bg = alpha_blend(colours.alpha_grey(10), colours.sys_background)
+
         if last_fm_user_field.text == "":
-            draw_text((rect[0] + 9, rect[1]), "Username", colours.grey_blend_bg(40), 11)
+            draw_text((rect[0] + 9, rect[1]), "Username", colours.grey_blend_bg(40), 11, bg=bg)
         if last_fm_pass_field.text == "":
-            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(40), 11)
+            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(40), 11, bg=bg)
 
         if self.lastfm_input_box == 0:
             last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), active=True, font=12, width=210, click=self.click, selection_height=16)
@@ -12755,7 +12760,7 @@ class Over:
         y = self.box_y - 5
 
         y += 30
-        self.toggle_square(x, y, toggle_transcode, "Show in track menu (Applies on restart)")
+        self.toggle_square(x, y, toggle_transcode, "Show in track menu")
         self.button(x + 370, y - 4, "Open output folder", open_encode_out)
         # y += 40
         # self.toggle_square(x, y, switch_cue, "Single Stream + CUE")
