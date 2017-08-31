@@ -12533,8 +12533,8 @@ class Over:
             y += 23
             self.toggle_square(x, y, switch_rg_album, "Album Gain")
 
-            y = self.box_y + 60
-            x = self.box_x + 390
+            y = self.box_y + 37
+            x = self.box_x + 385
 
             draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 212)
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
@@ -12556,7 +12556,7 @@ class Over:
                 y += 14
 
             y = self.box_y + 225
-            draw_text((x + 70, y - 2), "Settings apply on track change", colours.grey(100), 11)
+            draw_text((x + 75, y - 2), "Settings apply on track change", colours.grey(100), 11)
 
     def funcs(self):
 
