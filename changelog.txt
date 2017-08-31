@@ -8,6 +8,7 @@ v2.5.1
  - Fixed IME input not working
  - Fixed url encoding with search on Sonemic function
  - Fixed bad font rending in about box under some themes
+ - Fixed crash when using 'go to playing' on first played track
  - Tweaked some fonts and colours
  - Removed reset window shortcut
 
