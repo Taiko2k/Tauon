@@ -179,6 +179,7 @@ import warnings
 import struct
 import colorsys
 import html
+import csv
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -8189,7 +8190,9 @@ def gen_top_100(index):
 tab_menu.add_to_sub("Most Played Tracks", 0, gen_top_100, pass_ref=True)
 
 
-def gen_folder_top(pl):
+
+
+def gen_folder_top(pl, get_sets=False):
     if len(pctl.multi_playlist[pl][2]) < 3:
         return
 
@@ -8217,7 +8220,15 @@ def gen_folder_top(pl):
         #print(total_star)
         return total_star
 
+    if get_sets:
+        r = []
+        for item in sets:
+            r.append((item, best(item)))
+        return r
+
     sets = sorted(sets, key=best, reverse=True)
+
+
     playlist = []
 
     for se in sets:
@@ -9857,7 +9868,10 @@ def ser_rym(index):
 
 
 def copy_to_clipboard(text):
-    SDL_SetClipboardText(text.encode('utf-8'))
+    SDL_SetClipboardText(text.encode())
+
+def copy_from_clipboard():
+    return SDL_GetClipboardText().decode()
 
 
 def clip_aar_al(index):
@@ -10511,7 +10525,72 @@ def q_to_playlist():
                                       selected=0))
 
 
+
+def scan_rym():
+
+    data = copy_from_clipboard()
+
+    if data[0:9] != "RYM Album":
+        show_message("Could not find data in clipboard", 'info', 'You will need to copy the whole csv text from the RYM export data page')
+    else:
+        try:
+
+            lines = data.split("\n")
+            read = csv.DictReader(lines)
+            albums = gen_folder_top(pctl.playlist_active, True)
+            read = list(read)
+
+            found = []
+            not_found = []
+            spe1 = []
+            spe2 = []
+            spe3 = []
+
+            for album in albums:
+                tracks = album[0]
+                track = pctl.master_library[tracks[0]]
+
+                for row in read:
+                    o_name = (row[' First Name'] + " " + row['Last Name']).strip().replace("&amp;", '&')
+                    a_name = row["Title"].replace("&amp;", '&').strip()
+
+                    if o_name.lower() == track.artist.lower() and a_name.lower() in track.album.lower():
+                        found += tracks
+                        if album[1] > 60 * 60 * 1 and int(row['Rating']) < 5:
+                            spe1 += tracks
+                        elif album[1] > 60 * 60 * 2 and int(row['Rating']) < 6:
+                            spe2 += tracks
+                        elif album[1] > 60 * 60 * 4 and int(row['Rating']) < 7:
+                            spe3 += tracks
+                        break
+                else:
+                    not_found += tracks
+
+            pctl.multi_playlist.append(pl_gen(title="RYM FOUND",
+                                              playlist=copy.deepcopy(found),
+                                              hide_title=0))
+
+            pctl.multi_playlist.append(pl_gen(title="RYM NOT FOUND",
+                                              playlist=copy.deepcopy(not_found),
+                                              hide_title=0))
+            if len(spe1) > 0:
+                pctl.multi_playlist.append(pl_gen(title="UNDERRATED A",
+                                                  playlist=copy.deepcopy(spe1),
+                                                  hide_title=0))
+            if len(spe2) > 0:
+                pctl.multi_playlist.append(pl_gen(title="UNDERRATED B",
+                                                  playlist=copy.deepcopy(spe2),
+                                                  hide_title=0))
+            if len(spe3) > 0:
+                pctl.multi_playlist.append(pl_gen(title="UNDERRATED C",
+                                                  playlist=copy.deepcopy(spe3),
+                                                  hide_title=0))
+        except:
+            show_message("Sorry, something went wrong there", 'warning')
+
+
 x_menu.add_to_sub("Export as CSV", 0, export_database)
+x_menu.add_to_sub("Scan Playlist with RYM DB", 0, scan_rym)
 #x_menu.add_to_sub("Playlist Stats", 0, export_stats)
 x_menu.add_to_sub("Play History to Playlist", 0, q_to_playlist)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
@@ -16534,24 +16613,25 @@ while running:
             playlist_panel ^= True
 
         if key_F7:
-            #show_message("This is a test message.", subtext='This is a very long line of subtitle some text okay!')
+
             show_message("You don't even know what this button could have done.", 'warning')
-            #show_message("OK the activity has completed.")
 
-            gd = {}
 
-            for item in default_playlist:
-                genre = pctl.g(item).genre
-                if genre != "":
-                    if genre in gd:
-                        gd[genre] += 1
-                    else:
-                        gd[genre] = 1
 
-            gl = gd.items()
-            gl = list(reversed(sorted(gl, key=lambda x: x[1])))
-            print(gl)
-            print(sum(x[1] for x in gl))
+            # gd = {}
+            #
+            # for item in default_playlist:
+            #     genre = pctl.g(item).genre
+            #     if genre != "":
+            #         if genre in gd:
+            #             gd[genre] += 1
+            #         else:
+            #             gd[genre] = 1
+            #
+            # gl = gd.items()
+            # gl = list(reversed(sorted(gl, key=lambda x: x[1])))
+            # print(gl)
+            # print(sum(x[1] for x in gl))
 
 
 
@@ -18597,11 +18677,11 @@ while running:
                         break
 
                 draw_text((x + 10, y + 120), "BEFORE", colours.grey(120), 12)
-                line = trunc_line(pctl.master_library[rename_index].filename, 12, 390)
+                line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
                 draw_text((x + 67, y + 120), line, colours.grey(170), 12)
 
                 draw_text((x + 10, y + 135,), "AFTER", colours.grey(120), 12)
-                draw_text((x + 67, y + 135,), trunc_line(afterline, 12, 390), colours.grey(170), 12)
+                draw_text((x + 67, y + 135,), trunc_line(afterline, 12, 335), colours.grey(170), 12)
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
