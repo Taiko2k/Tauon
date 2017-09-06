@@ -145,7 +145,7 @@ To record a steam, once a stream has been opened, re enter the open stream box a
 
 ### Outbound Streaming / Broadcasting
 
-From player click MENU from top bar and select 'Start Broadcast' from menu. You should then see a blue highlight that shows the currently streaming track. From track context menu you can select 'Broadcast This' to play a track immediately.
+From player top bar click MENU and select 'Start Broadcast'. You should then see a blue highlight that shows the currently streaming track. You can right click a track and select 'Broadcast This' to stream a track immediately.
 
 The stream can be reached at http://localhost:8000. You can connect by opening the link in a media player or web browser (tends to be a little bit unreliable with some browsers, try refreshing the page if playback stalls).
 
