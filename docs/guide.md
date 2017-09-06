@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.5.0
+Basic usage guide. Updated for v2.5.1
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
@@ -145,15 +145,13 @@ To record a steam, once a stream has been opened, re enter the open stream box a
 
 ### Outbound Streaming / Broadcasting
 
-From player click MENU from top bar and select 'Start Broadcast' from menu. You should now be able to connect a player to the target port.
+From player click MENU from top bar and select 'Start Broadcast' from menu. You should then see a blue highlight that shows the currently streaming track. From track context menu you can select 'Broadcast This' to play a track immediately.
 
-From track context menu select 'Broadcast This' to play a track immediately.
+The stream can be reached at http://localhost:8000. You can connect by opening the link in a media player or web browser (tends to be a little bit unreliable with some browsers, try refreshing the page if playback stalls).
 
 Note: The codec used is OGG. Bit-rate can be set in 'config.txt'. Higher bit-rates may help reduce latency. Lower bit-rates will conserve bandwidth at cost of audio quality.
 
-Note: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position
-
-The stream can be reached at http://localhost:8000. This can be from a web browser (tends to be a little bit unreliable, try refreshing the page if playback stalls) or from a compatible application.
+Note: Modifying the number of tracks in playlist that appear before the broadcast marker will impact the broadcast position.
 
 
 ### Transcoding albums
@@ -166,7 +164,7 @@ Intended to be an easy way to reduce file sizes for copying tracks to devices wi
  - If you need MP3 output, repeat above steps for LAME (lame.exe). For Windows you may find lame.exe on the internet. For Linux consult your package manager.
 
 2) Optionally configure settings in MENU -> SETTINGS...-> TRANSCODE
- - 64Kbps Opus provides good sound quality with small file size, but not many players are compatible with it. As of 2017 I suggest Rocket Player or AIMP for Android.
+ - 64Kbps OPUS provides good sound quality with small file size, but not many players are compatible with it. (For andorid I might suggest Rocket Player or AIMP)
  - 96kbps OGG, or 128kbs MP3 provide comparable quality and are more widely compatible.
  - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail.
 
@@ -192,9 +190,11 @@ Tip: To undo changes and revert to original, use TRACK MENU -> META... -> RELOAD
 
 There is currently no built in support for tag editing.
 
-An external tag editor can be used. See config.txt for linking to an external editor from the track menu (TRACK MENU -> META... -> Edit tags with xxxx). This is configured for MusicBrainz Picard by default.
+An external tag editor can be used. This is configured for MusicBrainz Picard by default but can be changed in config.txt
 
-Note: While editing tracks externally, make sure not to change the track file names. If you wish to change the filenames after you have imported them, use the rename tracks function under TRACK MENU -> META... -> RENAME TRACKS.
+To activate use: TRACK MENU -> META... -> Edit tags with XXXX
+
+Note: While editing tracks externally, make sure not to change the file names. If you wish to change the file names after you have imported them, use the rename tracks function under TRACK MENU -> META... -> RENAME TRACKS.
 
 Note: Picard has a bug that causes it to fail with Unicode paths on windows.
 
