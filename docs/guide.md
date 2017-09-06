@@ -45,7 +45,7 @@ Tip: Try importing all your music to a single playlist to get started
 2) Press the backslash key or Ctrl+F to open the search box.
 3) Type word fragments separated by spaces. For example, to locate a track named 'Coldplay - Clocks' you could try enter the search text 'col clo'.
 
- - Use UP and DOWN keys to navigate any matching results. Press enter key to play selected track.
+ - Use UP and DOWN keys to navigate any matching results in the playlist. Press enter key to play selected track.
  - Press Shift+Enter to create a new playlist of all matching results
  - Press Shift+A to search currently playing artist name
 
