@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v2.5.2
+
+ - Added menu button to show album in gallery (before you had to play an album to jump to it)
+ - Split extract and delete zip function into two settings
+ - Fixed bug with transcode selecting all folders with same name
+
 v2.5.1
 
  - Moved 'art + tracks' view scroll bar to right side of window

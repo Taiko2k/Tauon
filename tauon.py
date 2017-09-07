@@ -540,6 +540,7 @@ class Prefs:
 
         self.use_title = False
         self.auto_extract = False
+        self.auto_del_zip = False
         self.pl_thumb = False
 
         self.windows_font_family = None
@@ -820,6 +821,7 @@ class Input:
     def __init__(self):
 
         self.mouse_click = False
+        self.level_2_enter = False
 
 
 input = Input()
@@ -1155,7 +1157,8 @@ try:
         prefs.show_gen = save[59]
     if save[60] is not None:
         url_saves = save[60]
-
+    if save[61] is not None:
+        prefs.auto_del_zip = save[61]
     state_file.close()
     del save
 
@@ -8707,9 +8710,9 @@ def convert_folder(index):
             return
 
     folder = []
-    r_folder = pctl.master_library[index].parent_folder_name
+    r_folder = pctl.master_library[index].parent_folder_path
     for item in default_playlist:
-        if r_folder == pctl.master_library[item].parent_folder_name:
+        if r_folder == pctl.master_library[item].parent_folder_path:
             folder.append(item)
             print(prefs.transcode_codec)
             print(pctl.master_library[item].file_ext)
@@ -9171,11 +9174,20 @@ folder_icon.colour = [244, 220, 66, 255]
 info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
 info_icon.colour = [61, 247, 163, 255]
 
+
+def test_show(dummy):
+    return album_mode
+
+def show_in_gal(track):
+    goto_album(playlist_selected)
+
+
 # Create track context menu
 track_menu = Menu(195, show_icons=True) #175
 
 track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
+track_menu.add('Show →', show_in_gal, pass_ref=True, show_test=test_show)
 
 track_menu.add_sub("Meta...", 150)
 
@@ -11414,11 +11426,12 @@ def worker1():
                         if not os.path.isfile(target_dir):
                             print("ERROR!")
 
-                    print("Deleting zip file: " + path)
-                    os.remove(path)
+                    if prefs.auto_del_zip:
+                        print("Deleting zip file: " + path)
+                        os.remove(path)
+
                     to_got = b
                     gets(target_dir)
-
 
             return 1
 
@@ -12426,12 +12439,21 @@ def toggle_cache(mode=0):
     else:
         prefs.cache_gallery = False
 
+
+def toggle_ex_del(mode=0):
+    if mode == 1:
+        return prefs.auto_del_zip
+    prefs.auto_del_zip ^= True
+    if prefs.auto_del_zip is True:
+        show_message("Caution! This function deletes things!", 'info', "This could result in data loss if the process were to malfunction.")
+
+
 def toggle_extract(mode=0):
     if mode == 1:
         return prefs.auto_extract
     prefs.auto_extract ^= True
-    if prefs.auto_extract is True:
-        show_message("Caution! This function deletes the original archive.", 'info', "This could result in data loss if the process were to malfunction.")
+    if prefs.auto_extract is False:
+        prefs.auto_del_zip = False
 
 def switch_cue(mode=0):
     if mode == 1:
@@ -12704,10 +12726,12 @@ class Over:
         x = x1
         y = y1
 
-        y += 35
+        y += 10
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         y += 25
-        self.toggle_square(x, y, toggle_extract, "Auto extract and delete zip archives")
+        self.toggle_square(x, y, toggle_extract, "Auto extract zip archives")
+        y += 23
+        self.toggle_square(x + 10, y, toggle_ex_del, "Delete archive after extraction")
 
         y = self.box_y + 220
         draw_text((x, y - 2), "* Applies on restart", colours.grey(100), 11)
@@ -14693,9 +14717,9 @@ class StandardPlaylist:
 
 
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
-                      "Playlist is empty", colour, 213)
+                      "Playlist is empty", colour, 213, bg=colours.playlist_panel_background)
             draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + 30), 2),
-                      "Drag and drop files to import", colour, 13)
+                      "Drag and drop files to import", colour, 13, bg=colours.playlist_panel_background)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
@@ -14956,9 +14980,9 @@ class StandardPlaylist:
                 # shift_selection = []
                 shift_selection = [p_track]
 
-            if mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
-                shift_selection = [p_track]
-                gui.pl_update = 1
+            # if mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
+            #     shift_selection = [p_track]
+            #     gui.pl_update = 1
 
             if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
                 playlist_hold = True
@@ -15969,7 +15993,6 @@ while running:
         key_comma_press = False
         key_quote_hit = False
         key_col_hit = False
-        key_return_press_w = False
         key_tab = False
         key_tilde = False
         key_home_press = False
@@ -15977,6 +16000,7 @@ while running:
         mouse_wheel = 0
         new_playlist_cooldown = False
         input_text = ''
+        input.level_2_enter = False
 
     if not mouse_down:
         k_input = False
@@ -16582,6 +16606,9 @@ while running:
                 gui.pl_update = 1
                 paste()
 
+        if key_return_press and (gui.rename_folder_box or renamebox or radiobox):
+            key_return_press = False
+            input.level_2_enter = True
 
         if key_F1:
             # Toggle force off folder break for viewed playlist
@@ -16722,10 +16749,6 @@ while running:
         if playlist_panel and input.mouse_click:
             input.mouse_click = False
             genre_box_click = True
-
-        if radiobox and key_return_press:
-            key_return_press = False
-            key_return_press_w = True
 
         if mouse_wheel != 0:
             gui.update += 1
@@ -18581,7 +18604,7 @@ while running:
 
                 draw.rect((x + 8, y + 38), (300, 22), colours.grey(50))
 
-                if draw.button("Rename", x + 8 + 300 + 10, y + 38, 80):
+                if draw.button("Rename", x + 8 + 300 + 10, y + 38, 80) or input.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
                     input.mouse_click = False
@@ -18702,7 +18725,7 @@ while running:
                 if warncue:
                     label = "ERROR"
 
-                if draw.button(label, x + 8 + 300 + 10, y + 38, 80):
+                if draw.button(label, x + 8 + 300 + 10, y + 38, 80) or input.level_2_enter:
                     input.mouse_click = False
                     total_todo = len(r_todo)
                     pre_state = 0
@@ -18837,7 +18860,7 @@ while running:
                         draw.rect_r(rect, [40, 40, 40, 60], True)
                         if gui.level_2_click:
                             radio_field.text = item
-                            #key_return_press_w = True
+
 
                     draw.rect_r(rect, [50, 50, 50, 75], True)
                     draw_text((rect[0] + 20, rect[1] + -1, 2), "Sel", colours.grey(180), 211)
@@ -18866,7 +18889,7 @@ while running:
                 if draw.button("Save", x + 217, y + 70, 50, press=gui.level_2_click):
                     pctl.save_urls.append(radio_field.text)
 
-                if (key_return_press_w or (
+                if (input.level_2_enter or (
                             gui.level_2_click and coll_point(mouse_position,
                                                                (x + 8 + 380 + 10, y + 38, 40, 22)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
@@ -19776,7 +19799,7 @@ save = [pctl.master_library,
         prefs.end_setting,
         prefs.show_gen,
         pctl.save_urls,
-        None,
+        prefs.auto_del_zip,
         None,
         None]
 
