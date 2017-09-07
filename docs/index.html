@@ -4,39 +4,118 @@
 <head>
 
 <link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css?family=Noto+Sans" rel="stylesheet">
 
 </head>
 <body>
 
- <div class="main">
-<h1>Tauon Music Box</h1>
-<p>An alternative desktop music player</p>
+<div class="top">
 
-<p>Features:</p>
+<div class="title-h">
+  <h1><img id="icon" src="tmb-icon-v3.svg"> Tauon Music Box  	&nbsp; &nbsp;</h1>
+  <p>A streamlined music player for the desktop</p>
+</div>
+
+<div class=scrn-holder>
+  <img id="scrn1" src="scrn1.jpg">
+</div>
+
+</div>
+
+<div class="extra-holder">
+<div id="vers">v2.5.1</div>
+<a href="https://github.com/Taiko2k/tauonmb"<div id="g-link">View Github page</div></a>
+</div>
+
+<div class="dl-holder">
+<a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
+<div class="divider"></div>
+<a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
+<div class="divider"></div>
+<a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
+
+<div class="space"></div>
+
+<div class="features">
+
+<div class="feature-card">
+<div class="desc"><p>A modern and streamlined player that puts you in control of your music library<p></div>
+<div class="points">
 <ul>
-<li>Playback support for <strong>MP3</strong> and <strong>FLAC</strong>, plus others.</li>
-<li>Simple drag and drop importing.</li>
-<li>Automatically handles <strong>CUE</strong> sheets.</li>
-<li>Streamlined quick searching.</li>
-<li>Transcode folders to OGG or OPUS for saving space on portable devices.</li>
-<li>Outbound radio streaming via HTTP.</li>
-<li>Inbound radio streaming with recording and splitting.</li>
-<li>Integrated gallery view.</li>
-<li><strong>MPRIS</strong> interface support.</li>
-<li>Uses the proprietary <strong>BASS</strong> audio library.</li>
-</ul>
+  <li><span class="p-text">Easy drag and drop track importing</span></li>
+  <li><span class="p-text">Assumes folders are albums</span></li>
+  <li><span class="p-text">Functions for renaming and deleting folders</span></li>
+  <li><span class="p-text">Function for renaming tracks in folders</span></li>
+  <li><span class="p-text">Open tracks in your favourite tag editor</span></li>
+  <li><span class="p-text">No hidden changes to your music library in the background</span></li>
+  </ul>
+</div>
 
-  <p>Screeshot:</p>
-  <img src="https://cloud.githubusercontent.com/assets/17271572/19633014/77ee0cfc-9a09-11e6-81b4-1b655b53e387.jpg" alt="screenshot" height="46%" width="46%">
+</div>
 
-  <p>Install on Arch Linux via the AUR: <a href="https://aur.archlinux.org/packages/tauon-music-box/">v2.5.1</a>
-   </p>
-   <p>Download for Ubuntu 17.04: <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb">v2.5.1 deb</a> (experimental)
-    </p>
+<div class="feature-card">
+<div class="desc"><p>Playlists at the forefront<p></div>
+<div class="points">
+<ul>
+  <li><span class="p-text">Quickly create, filter, combine and delete playlists</span></li>
+  <li><span class="p-text">No need to create a 'library' to get started</span></li>
+  <li><span class="p-text">Export and import playlists in the XSPF file format</span></li>
+  </ul>
+</div>
+</div>
 
-   <p>Download for Windows: <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe">v2.5.1 Installer 64bit</a>
-(Requires Visual C++ 2015 Redistributable)</p>
-  <p><a href="https://github.com/Taiko2k/tauonmb">View on GitHub</a></p>
- </div>
+<div class="feature-card">
+<div class="desc"><p>Visualise your playtimes<p></div>
+<div class="points">
+<ul>
+  <li><span class="p-text">Visually compare individual track play times</span></li>
+  <li><span class="p-text">Keep play counts when moving your library</span></li>
+  <li><span class="p-text">Scrobble and love tracks on Last.fm</span></li>
+  </ul>
+</div>
+</div>
+
+<div class="feature-card">
+<div class="desc"><p>Inbound and outbound streaming<p></div>
+<div class="points">
+<ul>
+  <li><span class="p-text">Broadcast asynchronously like a DJ <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#outbound-streaming--broadcasting><sup>How?</sup></a></span></li>
+  <li><span class="p-text">Let listeners check out album art and lyrics</span></li>
+  <li><span class="p-text">Automatic splitting when recording inbound steams</span></li>
+  </ul>
+</div>
+</div>
+
+<div class="feature-card">
+<div class="desc"><p>Shrink your library for your PMP (requires ffmpeg)<p></div>
+<div class="points">
+<ul>
+  <li><span class="p-text">Simple batch transcoding of albums to single folder <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#transcoding-albums><sup>How?</sup></a></span></li>
+  <li><span class="p-text">Select between OGG and OPUS</span></li>
+  <li><span class="p-text">Automatically includes album art thumbnail</span></li>
+  </ul>
+</div>
+</div>
+
+<div class="feature-card">
+<div class="desc"><p>And more!<p></div>
+<div class="points">
+<ul>
+  <li><span class="p-text">Supports codecs MP3, FLAC plus others
+  <li><span class="p-text">Automatic .zip extracting</span></li>
+  <li><span class="p-text">Automatic .cue handling</span></li>
+  <li><span class="p-text">Streamlined quick search</span></li>
+  <li><span class="p-text">Large album art display</span></li>
+  <li><span class="p-text">Integrated gallery view</span></li>
+  </ul>
+</div>
+</div>
+
+</div>
+
+<div class="space"></div>
+
+</div>
+
 </body>
 </html>
