@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.5.1"
+t_version = "v2.5.2"
 t_title = 'Tauon Music Box'
 print(t_title + " " + t_version)
 print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
@@ -611,6 +611,7 @@ class GuiVar:
         self.level_peak = [0, 0]
         self.level = 0
         self.time_passed = 0
+        self.level_meter_colour_mode = 0
 
         self.vis = 2  # visualiser mode setting
         self.spec = None
@@ -921,9 +922,12 @@ class ColoursClass:
 
         self.scroll_colour = [45, 45, 45, 255]
 
-        self.level_green = [0, 100, 0, 255]
-        self.level_red = [175, 0, 0, 255]
-        self.level_yellow = [90, 90, 20, 255]
+        self.level_1_bg = [0, 30, 0, 255]
+        self.level_2_bg = [30, 30, 0, 255]
+        self.level_3_bg = [30, 0, 0, 255]
+        self.level_green = [20, 120, 20, 255]
+        self.level_red = [190, 30, 30, 255]
+        self.level_yellow = [135, 135, 30, 255]
 
         self.vis_colour = self.grey(200)
         self.vis_bg = [0, 0, 0, 255]
@@ -987,6 +991,8 @@ class ColoursClass:
 
 colours = ColoursClass()
 colours.post_config()
+
+
 
 # This is legacy. New settings are added straight to the save list
 view_prefs = {
@@ -1159,6 +1165,8 @@ try:
         url_saves = save[60]
     if save[61] is not None:
         prefs.auto_del_zip = save[61]
+    if save[62] is not None:
+        gui.level_meter_colour_mode = save[62]
     state_file.close()
     del save
 
@@ -5087,32 +5095,58 @@ if system == "linux":
 
     cairo_text = CT()
 
-    #standard_font = "Koruri Regular"
-    standard_font = prefs.linux_font #"Noto Sans"
-    cairo_text.prime_font(standard_font, 10 - 2, 10)
-    cairo_text.prime_font(standard_font, 11 - 2.5, 11)
-    cairo_text.prime_font(standard_font, 12 - 3, 12)
-    cairo_text.prime_font(standard_font, 13 - 3, 13)
-    cairo_text.prime_font(standard_font, 14 - 4, 14)
-    cairo_text.prime_font(standard_font, 15 - 4, 15)
-    cairo_text.prime_font(standard_font, 16 - 4, 16)
-    cairo_text.prime_font(standard_font, 17 - 5, 17)
-    cairo_text.prime_font(standard_font, 18 - 6, 18)
+    if gui.scale == 1:
 
-    cairo_text.prime_font(standard_font, 12 - 3, 412)
-    cairo_text.prime_font(standard_font, 13 - 3, 413)
+        standard_font = prefs.linux_font #"Noto Sans"
+        cairo_text.prime_font(standard_font, 10 - 2, 10)
+        cairo_text.prime_font(standard_font, 11 - 2.5, 11)
+        cairo_text.prime_font(standard_font, 12 - 3, 12)
+        cairo_text.prime_font(standard_font, 13 - 3, 13)
+        cairo_text.prime_font(standard_font, 14 - 4, 14)
+        cairo_text.prime_font(standard_font, 15 - 4, 15)
+        cairo_text.prime_font(standard_font, 16 - 4, 16)
+        cairo_text.prime_font(standard_font, 17 - 5, 17)
+        cairo_text.prime_font(standard_font, 18 - 6, 18)
 
-    #standard_font = "Koruri Semibold"
-    standard_font = prefs.linux_bold_font #"Noto Sans Bold"
-    cairo_text.prime_font(standard_font, 10 - 3, 210)
-    cairo_text.prime_font(standard_font, 11 - 3, 211)
-    cairo_text.prime_font(standard_font, 12 - 3, 212)
-    cairo_text.prime_font(standard_font, 13 - 3, 213)
-    cairo_text.prime_font(standard_font, 14 - 3, 214)
-    cairo_text.prime_font(standard_font, 15 - 3, 215)
-    cairo_text.prime_font(standard_font, 16 - 3, 216)
-    cairo_text.prime_font(standard_font, 17 - 3, 217)
-    cairo_text.prime_font(standard_font, 28 - 3, 228)
+        cairo_text.prime_font(standard_font, 12 - 3, 412)
+        cairo_text.prime_font(standard_font, 13 - 3, 413)
+
+        standard_font = prefs.linux_bold_font #"Noto Sans Bold"
+        cairo_text.prime_font(standard_font, 10 - 3, 210)
+        cairo_text.prime_font(standard_font, 11 - 3, 211)
+        cairo_text.prime_font(standard_font, 12 - 3, 212)
+        cairo_text.prime_font(standard_font, 13 - 3, 213)
+        cairo_text.prime_font(standard_font, 14 - 3, 214)
+        cairo_text.prime_font(standard_font, 15 - 3, 215)
+        cairo_text.prime_font(standard_font, 16 - 3, 216)
+        cairo_text.prime_font(standard_font, 17 - 3, 217)
+        cairo_text.prime_font(standard_font, 28 - 3, 228)
+
+    else:
+        standard_font = prefs.linux_font  # "Noto Sans"
+        cairo_text.prime_font(standard_font, 20 - 2, 10)
+        cairo_text.prime_font(standard_font, 21 - 2.5, 11)
+        cairo_text.prime_font(standard_font, 22 - 3, 12)
+        cairo_text.prime_font(standard_font, 23 - 3, 13)
+        cairo_text.prime_font(standard_font, 24 - 4, 14)
+        cairo_text.prime_font(standard_font, 25 - 4, 15)
+        cairo_text.prime_font(standard_font, 26 - 4, 16)
+        cairo_text.prime_font(standard_font, 27 - 5, 17)
+        cairo_text.prime_font(standard_font, 28 - 6, 18)
+
+        cairo_text.prime_font(standard_font, 22 - 3, 412)
+        cairo_text.prime_font(standard_font, 23 - 3, 413)
+
+        standard_font = prefs.linux_bold_font  # "Noto Sans Bold"
+        cairo_text.prime_font(standard_font, 20 - 3, 210)
+        cairo_text.prime_font(standard_font, 21 - 3, 211)
+        cairo_text.prime_font(standard_font, 22 - 3, 212)
+        cairo_text.prime_font(standard_font, 23 - 3, 213)
+        cairo_text.prime_font(standard_font, 24 - 3, 214)
+        cairo_text.prime_font(standard_font, 25 - 3, 215)
+        cairo_text.prime_font(standard_font, 26 - 3, 216)
+        cairo_text.prime_font(standard_font, 27 - 3, 217)
+        cairo_text.prime_font(standard_font, 48 - 3, 228)
 
     # standard_font = "Noto Sans Medium" #prefs.linux_bold_font
     # cairo_text.prime_font(standard_font, 13 - 3, 313)
@@ -7211,9 +7245,9 @@ class Menu:
         self.active = False
         self.clicked = False
         self.pos = [0, 0]
-        self.vertical_size = 22#20
+        self.vertical_size = 22 * gui.scale#20
         self.h = self.vertical_size
-        self.w = width
+        self.w = width * gui.scale
         self.reference = 0
         self.items = []
         self.subs = []
@@ -7225,7 +7259,7 @@ class Menu:
         self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
 
         self.id = Menu.count
-        self.break_height = 4
+        self.break_height = 4 * gui.scale
         Menu.count += 1
 
         self.sub_number = 0
@@ -7251,7 +7285,7 @@ class Menu:
         self.items.append(None)
 
     def add_sub(self, title, width):
-        self.items.append([title, True, self.sub_number, self.deco, width])
+        self.items.append([title, True, self.sub_number, self.deco, width * gui.scale])
         self.sub_number += 1
         self.subs.append([])
 
@@ -7290,7 +7324,7 @@ class Menu:
 
                     draw.rect((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
-                    draw.rect((self.pos[0], y_run + 2), (self.w, 2),
+                    draw.rect((self.pos[0], y_run + 2), (self.w, 2 * gui.scale),
                               [255, 255, 255, 13], True)
                     # Draw tab
                     draw.rect((self.pos[0], y_run), (4, self.break_height),
@@ -7344,7 +7378,7 @@ class Menu:
                           colours.grey(30), True)
 
                 # Draw Icon
-                x = 12
+                x = 12 * gui.scale
                 if self.items[i][1] is False and self.show_icons:
 
                     icon = self.items[i][7]
@@ -7370,7 +7404,7 @@ class Menu:
                                 icon.base_asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff)
 
                 if self.show_icons:
-                    x += 25
+                    x += 25 * gui.scale
 
                 # Draw arrow icon for sub menu
                 if self.items[i][1] is True:
@@ -10005,6 +10039,11 @@ def vis_off():
 vis_menu.add("Off", vis_off)
 
 def level_on():
+    if gui.vis == 1 and gui.turbo is True:
+        gui.level_meter_colour_mode += 1
+        if gui.level_meter_colour_mode > 4:
+            gui.level_meter_colour_mode = 0
+
     gui.vis = 1
     gui.turbo = True
 vis_menu.add("Level Meter", level_on)
@@ -10783,6 +10822,14 @@ def toggle_level_meter(mode=0):
     elif gui.turbo is False:
         gui.turbo = True
         gui.vis = 2
+
+
+def level_meter_special_2():
+
+    gui.level_meter_colour_mode = 2
+
+
+
 
 def advance_theme():
     global theme
@@ -13580,6 +13627,9 @@ class TopPanel:
         self.tab_text_y_offset = 8 * gui.scale
         self.tab_spacing = 0
 
+        if gui.scale > 1:
+            self.tab_text_y_offset += 8
+
         self.ini_menu_space = 18 * gui.scale
         self.menu_space = 13 * gui.scale
         self.click_buffer = 4
@@ -13901,7 +13951,7 @@ class TopPanel:
         x += self.menu_space + word_length
         word = "VIEW"
         word_length = draw.text_calc(word, 12)
-        rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
+        rect = [x - self.click_buffer + 6, self.ty + 1, word_length - 6 + self.click_buffer * 2, self.height - 1 - 4]
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
 
@@ -14980,9 +15030,10 @@ class StandardPlaylist:
                 # shift_selection = []
                 shift_selection = [p_track]
 
-            # if mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
-            #     shift_selection = [p_track]
-            #     gui.pl_update = 1
+            if mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
+                shift_selection = [p_track]
+                playlist_selected = p_track
+                gui.pl_update = 1
 
             if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
                 playlist_hold = True
@@ -16643,7 +16694,12 @@ while running:
 
             show_message("You don't even know what this button could have done.", 'warning')
 
-
+            colours.level_1_bg = [0, 6, 30, 255]
+            colours.level_2_bg = [0, 6, 30, 255]
+            colours.level_3_bg = [0, 6, 30, 255]
+            colours.level_green = [10, 100, 255, 255]
+            colours.level_yellow = [10, 100, 255, 255]
+            colours.level_red = [110, 85, 255, 255]
 
             # gd = {}
             #
@@ -19330,7 +19386,13 @@ while running:
             # draw.line(0, 0, 180, 0, colours.grey(80))
             # draw.line(0, 0, 0, 20, colours.grey(80))
 
-            #draw.rect_r((0, 0, window_size[0], 5), colours.top_panel_background, True)
+            colour = [30, 30, 30, 255]
+            draw.rect_r((0, 0, window_size[0], 1), colour, True)
+
+            draw.rect_r((0, 0, 1, window_size[1]), colour, True)
+            draw.rect_r((0, window_size[1] - 1, window_size[0], 1), colour, True)
+            draw.rect_r((window_size[0] - 1, 0, 1, window_size[1]), colour, True)
+            #draw.rect_r((0, 1, window_size[0], 1), [255, 255, 255, 20], True)
 
 
 
@@ -19574,19 +19636,61 @@ while running:
                 if gui.level_peak[0] < 0.2:
                     met = False
 
-                if t < 7:
-                    cc = colours.level_green
-                    if met is False:
-                        cc = [0, 30, 0, 255]
-                elif t < 10:
-                    cc = colours.level_yellow
-                    if met is False:
-                        cc = [30, 30, 0, 255]
-                else:
-                    cc = colours.level_red
-                    if met is False:
-                        cc = [30, 0, 0, 255]
+                if gui.level_meter_colour_mode == 1:
 
+                    if not met:
+                        cc = [15, 10, 20, 255]
+                    else:
+                        cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        #cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 2:
+
+                    if not met:
+                        cc = [11, 11, 13, 255]
+                    else:
+                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 3:
+
+                    if not met:
+                        cc = [12, 6, 0, 255]
+                    else:
+                        # cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+                        # cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 4:
+
+                    if not met:
+                        cc = [10, 10, 10, 255]
+                        # cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.06, 0.6 + (t * 0.02))
+                        # cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+                    else:
+                        # cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        # cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+                        cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+
+                else:
+
+                    if t < 7:
+                        cc = colours.level_green
+                        if met is False:
+                            cc = colours.level_1_bg
+                    elif t < 10:
+                        cc = colours.level_yellow
+                        if met is False:
+                            cc = colours.level_2_bg
+                    else:
+                        cc = colours.level_red
+                        if met is False:
+                            cc = colours.level_3_bg
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
                 draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
@@ -19601,18 +19705,58 @@ while running:
                 if gui.level_peak[1] < 0.2:
                     met = False
 
-                if t < 7:
-                    cc = colours.level_green
-                    if met is False:
-                        cc = [0, 30, 0, 255]
-                elif t < 10:
-                    cc = colours.level_yellow
-                    if met is False:
-                        cc = [30, 40, 0, 255]
+                if gui.level_meter_colour_mode == 1:
+
+                    if not met:
+                        cc = [15, 10, 20, 255]
+                    else:
+                        cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        #cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 2:
+
+                    if not met:
+                        cc = [11, 11, 13, 255]
+                    else:
+                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 3:
+
+                    if not met:
+                        cc = [12, 6, 0, 255]
+                    else:
+                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+                        #cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+                elif gui.level_meter_colour_mode == 4:
+
+                    if not met:
+                        cc = [10, 10, 10, 255]
+                    else:
+                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+                        #cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+                        cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+                        cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
                 else:
-                    cc = colours.level_red
-                    if met is False:
-                        cc = [30, 0, 0, 255]
+
+                    if t < 7:
+                        cc = colours.level_green
+                        if met is False:
+                            cc = colours.level_1_bg
+                    elif t < 10:
+                        cc = colours.level_yellow
+                        if met is False:
+                            cc = colours.level_2_bg
+                    else:
+                        cc = colours.level_red
+                        if met is False:
+                            cc = colours.level_3_bg
 
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
@@ -19800,6 +19944,9 @@ save = [pctl.master_library,
         prefs.show_gen,
         pctl.save_urls,
         prefs.auto_del_zip,
+        gui.level_meter_colour_mode,
+        None,
+        None,
         None,
         None]
 
