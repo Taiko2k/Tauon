@@ -583,7 +583,7 @@ class GuiVar:
 
     def __init__(self):
 
-        self.scale = 2
+        self.scale = 1
 
         self.window_id = 0
         self.update = 2  # UPDATE
