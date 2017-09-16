@@ -583,7 +583,7 @@ class GuiVar:
 
     def __init__(self):
 
-        self.scale = 1
+        self.scale = 2
 
         self.window_id = 0
         self.update = 2  # UPDATE
@@ -643,6 +643,7 @@ class GuiVar:
 
         self.level_2_click = False
         self.universal_y_text_offset = 0
+
         self.star_text_y_offset = 0
 
         self.set_bar = False
@@ -658,7 +659,9 @@ class GuiVar:
         self.panelBY = 51 * self.scale
         self.panelY = 30 * self.scale
 
-        self.playlist_top = self.panelY + 8
+        self.artboxY = self.panelY + (8 * self.scale)
+
+        self.playlist_top = self.panelY + (8 * self.scale)
         self.playlist_top_bk = self.playlist_top
         self.offset_extra = 0
         self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
@@ -4639,6 +4642,7 @@ t_window = SDL_CreateWindow(window_title,
 #                              flags)
 
 # print(SDL_GetError())
+# print(SDL_GetError())
 
 if system == 'windows':
     sss = SDL_SysWMinfo()
@@ -4671,40 +4675,21 @@ SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 
-# SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
-# SDL_RenderClear(renderer)
-
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# SDL_SetRenderTarget(renderer, gui.spec2_tex)
-# SDL_SetRenderDrawColor(renderer, 3, 3, 3, 255)
-# SDL_RenderClear(renderer)
 
 SDL_SetRenderTarget(renderer, None)
 
 gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
-# SDL_SetRenderTarget(renderer, gui.ttext)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-# SDL_RenderClear(renderer)
-
 SDL_SetRenderTarget(renderer, gui.main_texture)
 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
 SDL_RenderClear(renderer)
 
-
-#SDL_RenderCopy(renderer, gui.main_texture, None, None)
-# SDL_SetRenderTarget(renderer, None)
-
-#SDL_SetRenderTarget(renderer, gui.ttext)
-# print(SDL_GetError())
-
-
 gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
-#SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
 gui.pl_update = 2
 
 # SDL_SetRenderTarget(renderer, None)
@@ -4723,11 +4708,6 @@ gui.pl_update = 2
 # #
 # mode.parameters.colorKey = SDL_Color(0, 0, 0)
 
-
-# SDL_RenderClear(renderer)
-# SDL_SetRenderTarget(renderer, None)
-# SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-# SDL_RenderPresent(renderer)
 
 if default_player == 'BASS':
 
@@ -4837,8 +4817,8 @@ class Drawing:
             SDL_SetRenderDrawColor(target, colour[0], colour[1], colour[2], colour[3])
             SDL_RenderDrawRect(target, self.sdl_rect)
 
-    def rect_r(self, rect, colour, fill=False):
-        self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill)
+    def rect_r(self, rect, colour, fill=False, target=renderer):
+        self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill, target)
 
     def line(self, x1, y1, x2, y2, colour):
 
@@ -4901,6 +4881,8 @@ class Drawing:
 draw = Drawing()
 
 
+#def track_box_entry(x, y, field_title, field_reference)
+
 
 text_cache = []  # location, text, dst(sdl rect), c(texture)
 calc_cache = []
@@ -4915,6 +4897,27 @@ ttl = []
 # SDL_SetWindowShape(t_window, m_surface, mode)
 
 
+# m_surface = SDL_CreateRGBSurface(0, 500, 500, 32,0,0,0,0)
+#
+# s_renderer = SDL_CreateSoftwareRenderer(m_surface)
+# print(SDL_GetError())
+#
+# #SDL_SetRenderTarget(renderer, m_surface)
+# draw.rect_r((0,0,100,50), (0,0,0,0), True, target=s_renderer)
+# draw.rect_r((0,50,100,50), (255,255,255,50), True, target=s_renderer)
+# draw.rect_r((0,150,100,50), (0,0,0,255), True, target=s_renderer)
+# draw.rect_r((0,200,100,50), (255,255,255,255), True, target=s_renderer)
+# draw.rect_r((0,250,100,50), (255,255,255,0), True, target=s_renderer)
+# #SDL_SetRenderTarget(renderer, None)
+#
+# mode = SDL_WindowShapeMode()
+# mode.mode = ShapeModeDefault
+# #mode.shape = m_surface
+# #mode.parameters.colorKey = SDL_Color(0, 0, 0)
+# print(SDL_GetError())
+# SDL_SetWindowShape(t_window, m_surface, mode)
+#
+# print(SDL_GetError())
 
 # Draw text function with enhanced performance via given search reference values
 def clear_text_cache():
@@ -4930,8 +4933,6 @@ def clear_text_cache():
     del ttl
     ttc = {}
     ttl = []
-
-
 
 
 if system == "linux":
@@ -4950,14 +4951,14 @@ if system == "linux":
             self.calc_last_font = 0
             self.f_dict = {}
 
-        def prime_font(self, name, size, user_handle):
+        def prime_font(self, name, size, user_handle, y_off=0):
 
-            self.f_dict[user_handle] = name + " " + str(size)
+            self.f_dict[user_handle] = (name + " " + str(size), y_off)
 
         def wh(self, text, font):
             if self.calc_last_font != font:
                 self.calc_last_font = font
-            self.layout.set_font_description(Pango.FontDescription(self.f_dict[font]))
+            self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 
             self.layout.set_text(text, -1)
 
@@ -5037,7 +5038,7 @@ if system == "linux":
                 print("Font not loaded: " + str(font))
                 return 10
 
-            layout.set_font_description(Pango.FontDescription(self.f_dict[font]))
+            layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
             layout.set_text(text, -1)
 
             y_off = layout.get_baseline() / 1000
@@ -5045,6 +5046,8 @@ if system == "linux":
             # print((y_off, text))
             # print(round(y_off - 16))
             y_off = round(y_off - 16)
+
+            y_off -= self.f_dict[font][1]
 
             if y_off > 0:
                 #y_off = 1
@@ -5054,6 +5057,9 @@ if system == "linux":
 
             #y_off = 0
             y -= y_off
+
+
+
 
 
             #print(layout.get_extents())
@@ -5124,29 +5130,29 @@ if system == "linux":
 
     else:
         standard_font = prefs.linux_font  # "Noto Sans"
-        cairo_text.prime_font(standard_font, 20 - 2, 10)
-        cairo_text.prime_font(standard_font, 21 - 2.5, 11)
-        cairo_text.prime_font(standard_font, 22 - 3, 12)
-        cairo_text.prime_font(standard_font, 23 - 3, 13)
-        cairo_text.prime_font(standard_font, 24 - 4, 14)
-        cairo_text.prime_font(standard_font, 25 - 4, 15)
-        cairo_text.prime_font(standard_font, 26 - 4, 16)
-        cairo_text.prime_font(standard_font, 27 - 5, 17)
-        cairo_text.prime_font(standard_font, 28 - 6, 18)
+        cairo_text.prime_font(standard_font, 20 - 2, 10, 28)
+        cairo_text.prime_font(standard_font, 21 - 2.5, 11, 28)
+        cairo_text.prime_font(standard_font, 22 - 3, 12, 28)
+        cairo_text.prime_font(standard_font, 23 - 3, 13, 28)
+        cairo_text.prime_font(standard_font, 24 - 4, 14, 28)
+        cairo_text.prime_font(standard_font, 25 - 4, 15, 28)
+        cairo_text.prime_font(standard_font, 26 - 4, 16, 28)
+        cairo_text.prime_font(standard_font, 27 - 5, 17, 28)
+        cairo_text.prime_font(standard_font, 28 - 6, 18, 28)
 
-        cairo_text.prime_font(standard_font, 22 - 3, 412)
-        cairo_text.prime_font(standard_font, 23 - 3, 413)
+        cairo_text.prime_font(standard_font, 22 - 3, 412, 28)
+        cairo_text.prime_font(standard_font, 23 - 3, 413, 28)
 
         standard_font = prefs.linux_bold_font  # "Noto Sans Bold"
-        cairo_text.prime_font(standard_font, 20 - 3, 210)
-        cairo_text.prime_font(standard_font, 21 - 3, 211)
-        cairo_text.prime_font(standard_font, 22 - 3, 212)
-        cairo_text.prime_font(standard_font, 23 - 3, 213)
-        cairo_text.prime_font(standard_font, 24 - 3, 214)
-        cairo_text.prime_font(standard_font, 25 - 3, 215)
-        cairo_text.prime_font(standard_font, 26 - 3, 216)
-        cairo_text.prime_font(standard_font, 27 - 3, 217)
-        cairo_text.prime_font(standard_font, 48 - 3, 228)
+        cairo_text.prime_font(standard_font, 20 - 3, 210, 28)
+        cairo_text.prime_font(standard_font, 21 - 3, 211, 28)
+        cairo_text.prime_font(standard_font, 22 - 3, 212, 28)
+        cairo_text.prime_font(standard_font, 23 - 3, 213, 28)
+        cairo_text.prime_font(standard_font, 24 - 3, 214, 28)
+        cairo_text.prime_font(standard_font, 25 - 3, 215, 28)
+        cairo_text.prime_font(standard_font, 26 - 3, 216, 28)
+        cairo_text.prime_font(standard_font, 27 - 3, 217, 28)
+        cairo_text.prime_font(standard_font, 48 - 3, 228, 28)
 
     # standard_font = "Noto Sans Medium" #prefs.linux_bold_font
     # cairo_text.prime_font(standard_font, 13 - 3, 313)
@@ -5697,6 +5703,9 @@ def draw_linked_text(location, text, colour, font):
     draw_text((x + right, y), rest, colour, font)
     if gui.win_text:
         y += 1
+    if gui.scale == 2:
+        font *= 2
+        font += 4
     draw.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
@@ -7176,7 +7185,7 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-playlist_left = 20 #20
+playlist_left = 20 * gui.scale#20
 
 class LoadImageAsset:
     def __init__(self, local_path):
@@ -7248,6 +7257,8 @@ class Menu:
         self.vertical_size = 22 * gui.scale#20
         self.h = self.vertical_size
         self.w = width * gui.scale
+        if gui.scale == 2:
+            self.w += 15
         self.reference = 0
         self.items = []
         self.subs = []
@@ -7313,9 +7324,9 @@ class Menu:
             y_run = self.pos[1]
             to_call = None
 
-            if window_size[1] < 250:
-                self.h = 14
-                ytoff = -1
+            if window_size[1] < 250 * gui.scale:
+                self.h = 14 * gui.scale
+                ytoff = -1 * gui.scale
             else:
                 self.h = self.vertical_size
 
@@ -7324,10 +7335,10 @@ class Menu:
 
                     draw.rect((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
-                    draw.rect((self.pos[0], y_run + 2), (self.w, 2 * gui.scale),
+                    draw.rect((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
                               [255, 255, 255, 13], True)
                     # Draw tab
-                    draw.rect((self.pos[0], y_run), (4, self.break_height),
+                    draw.rect((self.pos[0], y_run), (4 * gui.scale, self.break_height),
                               colours.grey(30), True)
                     y_run += self.break_height
                     continue
@@ -7374,7 +7385,7 @@ class Menu:
                             self.sub_active = self.items[i][2]
 
                 # Draw tab
-                draw.rect((self.pos[0], y_run), (4, self.h),
+                draw.rect((self.pos[0], y_run), (4 * gui.scale, self.h),
                           colours.grey(30), True)
 
                 # Draw Icon
@@ -7394,14 +7405,14 @@ class Menu:
                             elif selected:
                                 colour = icon.colour
 
-                            icon.asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff, colour)
+                            icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale, colour)
 
                         else:
                             # Pre-rendered mode
                             if selected:
-                                icon.asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff)
+                                icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
                             else:
-                                icon.base_asset.render(self.pos[0] + x + icon.xoff, y_run + 5 + icon.yoff)
+                                icon.base_asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -7509,10 +7520,10 @@ class Menu:
 
         # Reposition the menu if it would otherwise intersect with window border
         if self.pos[0] + self.w > window_size[0]:
-            self.pos[0] = self.pos[0] - self.w - 3
+            self.pos[0] = self.pos[0] - self.w - 3 * gui.scale
         if self.pos[1] + len(self.items) * self.h > window_size[1]:
             #self.pos[1] -= len(self.items) * self.h
-            self.pos[0] += 3
+            self.pos[0] += 3 * gui.scale
             for i in range(len(self.items)):
                 if self.items[i] is None:
                     self.pos[1] -= self.break_height
@@ -7520,9 +7531,9 @@ class Menu:
                     pass
                 else:
                     self.pos[1] -= self.h
-            if self.pos[1] < 30:
-                self.pos[1] = 30
-                self.pos[0] += 5
+            if self.pos[1] < 30 * gui.scale:
+                self.pos[1] = 30 * gui.scale
+                self.pos[0] += 5 * gui.scale
         self.active = True
 
 
@@ -8616,7 +8627,7 @@ def gen_sort_album(index):
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub("Has Love", 0, gen_love, pass_ref=True)
-# tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
 
 
@@ -9202,10 +9213,13 @@ def del_selected():
 
     shift_selection = [playlist_selected]
 
-folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
+if gui.scale == 2:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/2x/info.png'))
+else:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
 folder_icon.colour = [244, 220, 66, 255]
-
-info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
 info_icon.colour = [61, 247, 163, 255]
 
 
@@ -9385,7 +9399,7 @@ def rename_parent(index, template):
             show_message("Rename Failed!", 'warning' "Something went wrong, sorry.")
             return
 
-    show_message("Folder rename completed.", 'done', "Renamed to: " + new)
+    show_message("Folder renamed.", 'done', "Renamed to: " + new)
 
     if pre_state == 1:
         pctl.revert()
@@ -9957,9 +9971,12 @@ track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True, show_test=
 
 track_menu.add('Search Track on Genius', ser_gen, pass_ref=True, show_test=toggle_gen)
 
-
-son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
-son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
+if gui.scale == 2:
+    son_icon = MenuIcon(LoadImageAsset('/gui/2x/sonemic-g.png'))
+    son_icon.base_asset = LoadImageAsset('/gui/2x/sonemic-gs.png')
+else:
+    son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
+    son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
 son_icon.xoff = 1
 track_menu.add('Search Artist on Sonemic', ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
@@ -10018,7 +10035,10 @@ def toggle_transcode(mode=0):
         return prefs.enable_transcode
     prefs.enable_transcode ^= True
 
-transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+if gui.scale == 2:
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
+else:
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
 transcode_icon.colour = [239, 74, 157, 255]
 track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
@@ -12615,15 +12635,20 @@ class Over:
         global window_size
 
         self.init2done = False
-        self.about_image = LoadImageAsset('/gui/v3-a.png')#LoadImageAsset('/gui/v2-64.png')
-        self.about_image2 = LoadImageAsset('/gui/v3-b.png')
-        self.about_image3 = LoadImageAsset('/gui/v3-c.png')
+        if gui.scale == 2:
+            self.about_image = LoadImageAsset('/gui/2x/v3-a.png')
+            self.about_image2 = LoadImageAsset('/gui/2x/v3-b.png')
+            self.about_image3 = LoadImageAsset('/gui/2x/v3-c.png')
+        else:
+            self.about_image = LoadImageAsset('/gui/v3-a.png')
+            self.about_image2 = LoadImageAsset('/gui/v3-b.png')
+            self.about_image3 = LoadImageAsset('/gui/v3-c.png')
 
-        self.w = 650
-        self.h = 250
+        self.w = 650 * gui.scale
+        self.h = 250 * gui.scale
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
-        self.item_x_offset = 130
+        self.item_x_offset = 130 * gui.scale
 
         self.current_path = os.path.expanduser('~')
         self.ext_colours = {}
@@ -12660,35 +12685,35 @@ class Over:
 
         if default_player == "BASS":
 
-            y = self.box_y + 35
-            x = self.box_x + 130
+            y = self.box_y + 35 * gui.scale
+            x = self.box_x + 130 * gui.scale
 
             #draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
             # draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
-            draw_text((x, y - 22), "Bass Audio Library", [170, 170, 170, 255], 213)
+            draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [170, 170, 170, 255], 213)
 
-            y = self.box_y + 70
-            x = self.box_x + 130
+            y = self.box_y + 70 * gui.scale
+            x = self.box_x + 130 * gui.scale
 
-            draw_text((x, y - 22), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
+            draw_text((x, y - 22 * gui.scale), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
 
-            y += 7
-            x += 10
+            y += 7 * gui.scale
+            x += 10 * gui.scale
 
             self.toggle_square(x, y, switch_rg_off, "Off")
-            y += 23
+            y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_track, "Track Gain")
-            y += 23
+            y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_album, "Album Gain")
 
-            y = self.box_y + 37
-            x = self.box_x + 385
+            y = self.box_y + 37 * gui.scale
+            x = self.box_x + 385 * gui.scale
 
-            draw_text((x, y - 22), "Set audio output device", [160, 160, 160, 255], 212)
+            draw_text((x, y - 22 * gui.scale), "Set audio output device", [160, 160, 160, 255], 212)
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
-                rect = (x, y - 1, 245, 14)
+                rect = (x, y - 1 * gui.scale, 245 * gui.scale, 14)
                 #draw.rect_r(rect, [0, 255, 0, 50])
 
                 if self.click and coll_point(mouse_position, rect):
@@ -12696,34 +12721,34 @@ class Over:
                     pctl.playerCommandReady = True
                     pctl.playerCommand = "setdev"
 
-                line = trunc_line(item[0], 10, 245)
+                line = trunc_line(item[0], 10, 245 * gui.scale)
                 if pctl.set_device == item[4]: #item[3] > 0:
                     draw_text((x, y), line, [140, 140, 140, 255], 10)
                 else:
                     draw_text((x, y), line, [100, 100, 100, 255], 10)
-                y += 14
+                y += 14 * gui.scale
 
-            y = self.box_y + 225
-            draw_text((x + 75, y - 2), "Settings apply on track change", colours.grey(100), 11)
+            y = self.box_y + 225 * gui.scale
+            draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
 
     def funcs(self):
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y - 10
+        y = self.box_y - 10 * gui.scale
 
-        y += 35
+        y += 35 * gui.scale
         self.toggle_square(x, y, toggle_enable_web,
                            "Web interface*")
 
         if toggle_enable_web(1):
 
-            link_pa = draw_linked_text((x + 280, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
+            link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
             link_rect = [x + 280, y, link_pa[1], 18]
             fields.add(link_rect)
 
 
-            link_pa2 = draw_linked_text((x + 280, y + 21), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
-            link_rect2 = [x + 280, y + 21, link_pa2[1], 20]
+            link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 21 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
+            link_rect2 = [x + 280 * gui.scale, y + 21 * gui.scale, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
 
             if coll_point(mouse_position, link_rect):
@@ -12743,46 +12768,46 @@ class Over:
                 gui.cursor_mode = 0
                 SDL_SetCursor(cursor_standard)
 
-        y += 25
-        self.toggle_square(x + 10, y, toggle_expose_web, "Allow external connections*")
-        y += 23
-        self.toggle_square(x + 10, y, toggle_allow_remote, "Disable remote control")
-        y += 23
-        self.toggle_square(x + 10, y, toggle_radio_lyrics, "Show lyrics on radio page")
+        y += 25 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections*")
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Disable remote control")
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_radio_lyrics, "Show lyrics on radio page")
         #y += 35
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
 
-        y -= 23 + 23 + 25
+        y -= (23 + 23 + 25) * gui.scale
         x1 = x
-        y1 = y + 100
-        x += 280
+        y1 = y + 100 * gui.scale
+        x += 280 * gui.scale
 
-        y += 68
+        y += 68 * gui.scale
         draw_text((x, y), "Show in track menu:", colours.grey(100), 11)
-        y += 23
+        y += 23 * gui.scale
 
         self.toggle_square(x, y, toggle_wiki, "Search artist on Wikipedia")
-        y += 23
+        y += 23 * gui.scale
         self.toggle_square(x, y, toggle_rym, "Search artist on Sonemic")
-        y += 23
+        y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gimage, "Search images on Google")
-        y += 23
+        y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gen, "Search track on Genius")
 
         x = x1
         y = y1
 
-        y += 10
+        y += 10 * gui.scale
         self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, toggle_extract, "Auto extract zip archives")
-        y += 23
-        self.toggle_square(x + 10, y, toggle_ex_del, "Delete archive after extraction")
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
 
-        y = self.box_y + 220
-        draw_text((x, y - 2), "* Applies on restart", colours.grey(100), 11)
-        self.button(x + 410, y - 4, "Open config file", open_config_file)
+        y = self.box_y + 220 * gui.scale
+        draw_text((x, y - 2 * gui.scale), "* Applies on restart", colours.grey(100), 11)
+        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file)
 
 
 
@@ -12790,39 +12815,39 @@ class Over:
 
         w = width
         if w == 0:
-            w = draw.text_calc(text, 11) + 10
-        rect = (x, y, w, 20)
+            w = draw.text_calc(text, 11) + 10 * gui.scale
+        rect = (x, y, w, 20 * gui.scale)
         draw.rect_r(rect, colours.alpha_grey(11), True)
         fields.add(rect)
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 15], True)
-            draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(200), 211)
+            draw_text((x + int(w / 2), rect[1] + 2 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
             if self.click:
                 plug()
         else:
-            draw_text((x + int(w / 2), rect[1] + 2, 2), text, colours.grey_blend_bg(170), 211)
+            draw_text((x + int(w / 2), rect[1] + 2 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
 
     def toggle_square(self, x, y, function, text):
 
-        le = draw_text((x + 20, y - 3), text, colours.grey_blend_bg(170), 12)
-        draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
-        draw.rect((x, y), (12, 12), [255, 255, 255, 16])
-        if self.click and coll_point(mouse_position, (x - 10, y - 3, le + 30, 22)):
+        le = draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(170), 12)
+        draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
+        draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
+        if self.click and coll_point(mouse_position, (x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             function()
         if function(1):
-            draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
+            draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
 
     def last_fm_box(self):
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y + 20
-        draw_text((x + 20, y - 3), 'Last.fm account', colours.grey_blend_bg(140), 11)
+        y = self.box_y + 20 * gui.scale
+        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm account', colours.grey_blend_bg(140), 11)
         if lfm_username != "":
             line = "Current user: " + lfm_username
-            draw_text((x + 130, y - 3), line, colours.grey_blend_bg(70), 11)
+            draw_text((x + 130 * gui.scale, y - 3 * gui.scale), line, colours.grey_blend_bg(70), 11)
 
-        rect = [x + 20, y + 40, 210, 16]
-        rect2 = [x + 20, y + 80, 210, 16]
+        rect = [x + 20 * gui.scale, y + 40 * gui.scale, 210 * gui.scale, 16 * gui.scale]
+        rect2 = [x + 20 * gui.scale, y + 80 * gui.scale, 210 * gui.scale, 16 * gui.scale]
         if self.click:
             if coll_point(mouse_position, rect):
                 self.lastfm_input_box = 0
@@ -12844,38 +12869,38 @@ class Over:
         bg = alpha_blend(colours.alpha_grey(10), colours.sys_background)
 
         if last_fm_user_field.text == "":
-            draw_text((rect[0] + 9, rect[1]), "Username", colours.grey_blend_bg(40), 11, bg=bg)
+            draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(40), 11, bg=bg)
         if last_fm_pass_field.text == "":
-            draw_text((rect2[0] + 9, rect2[1]), "Password", colours.grey_blend_bg(40), 11, bg=bg)
+            draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(40), 11, bg=bg)
 
         if self.lastfm_input_box == 0:
-            last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), active=True, font=12, width=210, click=self.click, selection_height=16)
+            last_fm_user_field.draw(x + 25 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg(180), active=True, font=12, width=210, click=self.click, selection_height=16)
         else:
-            last_fm_user_field.draw(x + 25, y + 40, colours.grey_blend_bg(180), False, font=12)
+            last_fm_user_field.draw(x + 25 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg(180), False, font=12)
 
         if self.lastfm_input_box == 1:
-            last_fm_pass_field.draw(rect2[0] + 5, rect2[1] - 1, colours.grey_blend_bg(180), active=True, secret=True)
+            last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), active=True, secret=True)
         else:
-            last_fm_pass_field.draw(rect2[0] + 5, rect2[1] - 1, colours.grey_blend_bg(180), False, True)
+            last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), False, True)
 
         if key_return_press:
             self.update_lfm()
 
-        y += 120
+        y += 120 * gui.scale
 
-        self.button(x + 50, y, "Update", self.update_lfm, 65)
-        self.button(x + 130, y, "Clear", self.clear_lfm, 65)
+        self.button(x + 50 * gui.scale, y, "Update", self.update_lfm, 65 * gui.scale)
+        self.button(x + 130 * gui.scale, y, "Clear", self.clear_lfm, 65 * gui.scale)
 
         if not prefs.auto_lfm:
-            x = self.box_x + 50 + int(self.w / 2)
-            y += 85
+            x = self.box_x + 50 * gui.scale + int(self.w / 2)
+            y += 85 * gui.scale
             draw_text((x,y, 2), "Events will only be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
-        x = self.box_x + self.item_x_offset + 300
-        y = self.box_y + 20 + 40
+        x = self.box_x + self.item_x_offset + 300 * gui.scale
+        y = self.box_y + 20 * gui.scale + 40 * gui.scale
 
         self.toggle_square(x, y, toggle_lfm_auto, "Auto activate")
-        y += 26
+        y += 26 * gui.scale
 
         self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
@@ -12907,32 +12932,32 @@ class Over:
     def codec_config(self):
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y - 5
+        y = self.box_y - 5 * gui.scale
 
-        y += 30
+        y += 30 * gui.scale
         self.toggle_square(x, y, toggle_transcode, "Show in track menu")
-        self.button(x + 370, y - 4, "Open output folder", open_encode_out)
+        self.button(x + 370 * gui.scale, y - 4 * gui.scale, "Open output folder", open_encode_out)
         # y += 40
         # self.toggle_square(x, y, switch_cue, "Single Stream + CUE")
         # y += 25
         # self.toggle_square(x, y, switch_single, "Individual Tracks")
 
-        y += 40
+        y += 40 * gui.scale
         self.toggle_square(x, y, switch_flac, "FLAC")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, switch_opus, "OPUS")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, switch_mp3, "MP3  [slow, requires Lame]")
 
         if prefs.transcode_codec != 'flac':
-            y += 35
+            y += 35 * gui.scale
 
             prefs.transcode_bitrate = self.slide_control(x, y, "Bitrate", "kbs", prefs.transcode_bitrate, 32, 320, 8)
 
-            y -= 1
-            x += 280
+            y -= 1 * gui.scale
+            x += 280 * gui.scale
             if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
                     system != 'windows' and shutil.which('ffmpeg') is None):
                 draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
@@ -12945,15 +12970,15 @@ class Over:
         global combo_mode_art_size
         global update_layout
 
-        x = self.box_x + self.item_x_offset - 10
-        y = self.box_y - 5
+        x = self.box_x + self.item_x_offset - 10 * gui.scale
+        y = self.box_y - 5 * gui.scale
 
-        x += 10
-        y += 25
+        x += 10 * gui.scale
+        y += 25 * gui.scale
 
         draw_text((x, y), "Gallery art size", colours.grey(180), 11)
 
-        x += 110
+        x += 110 * gui.scale
 
 
         album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, img_slide_update_gall)
@@ -12961,45 +12986,45 @@ class Over:
         # ---------------
 
 
-        x = self.box_x + self.item_x_offset - 10
-        x += 10
-        y += 25
+        x = self.box_x + self.item_x_offset - 10 * gui.scale
+        x += 10 * gui.scale
+        y += 25 * gui.scale
 
         draw_text((x, y), "Playlist art size", colours.grey(180), 11)
 
-        x += 110
+        x += 110 * gui.scale
 
         combo_mode_art_size = self.slide_control(x, y, None, "px", combo_mode_art_size, 50, 600, 10, img_slide_update_combo)
 
 
-        y += 35
+        y += 35 * gui.scale
 
         x = self.box_x + self.item_x_offset
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
-        y += 28
+        y += 28 * gui.scale
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
         ### y += 28
         ### self.toggle_square(x, y, toggle_side_panel, "Show side panel")
-        y += 28
+        y += 28 * gui.scale
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        y += 28
+        y += 28 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
-        y += 28
+        y += 28 * gui.scale
 
 
         if default_player == 'BASS':
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
-        y += 28
+        y += 28 * gui.scale
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
-        x += 250
-        y -= 120
+        x += 250 * gui.scale
+        y -= 120 * gui.scale
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
 
-        y += 28
-        x += 0
+        y += 28 * gui.scale
+
         #self.button(x, y, "Reset Layout", standard_size)
         #x += 100
         self.button(x, y, "Next Theme (F2)", advance_theme)
@@ -13010,41 +13035,45 @@ class Over:
 
     def about(self):
 
-        x = self.box_x + int(self.w * 0.3) + 65  # 110 + int((self.w - 110) / 2)
-        y = self.box_y + 76
+        x = self.box_x + int(self.w * 0.3) + 65 * gui.scale  # 110 + int((self.w - 110) / 2)
+        y = self.box_y + 76 * gui.scale
         gui.win_fore = colours.sys_background
 
         if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
-            self.about_image2.render(x - 100, y - 10)
+            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
         elif pctl.playing_object() is not None and 'gaze' in pctl.playing_object().genre.lower():
-            self.about_image2.render(x - 100, y - 10)
+            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
         elif pctl.playing_object() is not None and 'ambient' in pctl.playing_object().genre.lower():
-            self.about_image3.render(x - 100, y - 10)
+            self.about_image3.render(x - 100 * gui.scale, y - 10 * gui.scale)
         else:
-            self.about_image.render(x - 100, y - 10)
-        x += 20
+            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
+        x += 20 * gui.scale
 
         draw_text((x, y), "Tauon Music Box", colours.grey(200), 216)
-        y += 32
-        draw_text((x, y + 1), t_version, colours.grey(190), 13)
-        y += 20
+        y += 32 * gui.scale
+        draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
+        y += 20 * gui.scale
         draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
 
-        x = self.box_x + self.w - 115
-        y = self.box_y + self.h - 35
+        x = self.box_x + self.w - 115 * gui.scale
+        y = self.box_y + self.h - 35 * gui.scale
 
         self.button(x, y, "License + Credits", open_license)
 
     def stats(self):
 
-        x = self.box_x + self.item_x_offset - 10
-        y = self.box_y - 10
+        x = self.box_x + self.item_x_offset - 10 * gui.scale
+        y = self.box_y - 10 * gui.scale
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in playlist", colours.grey_blend_bg(100), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(190), 12)
-        y += 20
+        x1 = x + (8 + 10 + 10) * gui.scale
+        x2 = x1 + 120 * gui.scale
+        y1 = y + 40 * gui.scale
 
-        draw_text((x + 8 + 10 + 10, y + 40), "Playlist length", colours.grey_blend_bg(100), 12)
+        draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
+        draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(190), 12)
+        y1 += 20 * gui.scale
+
+        draw_text((x1, y1), "Playlist length", colours.grey_blend_bg(100), 12)
 
         playlist_time = 0
         for item in default_playlist:
@@ -13052,23 +13081,23 @@ class Over:
 
         line = str(datetime.timedelta(seconds=int(playlist_time)))
 
-        draw_text((x + 8 + 10 + 130, y + 40), line, colours.grey_blend_bg(190), 12)
-        y += 35
-        draw_text((x + 8 + 10 + 10, y + 40), "Tracks in database", colours.grey_blend_bg(100), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(190), 12)
-        y += 20
-        draw_text((x + 8 + 10 + 10, y + 40), "Total playtime", colours.grey_blend_bg(100), 12)
-        draw_text((x + 8 + 10 + 130, y + 40), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
+        draw_text((x2, y1), line, colours.grey_blend_bg(190), 12)
+        y1 += 35 * gui.scale
+        draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
+        draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(190), 12)
+        y1 += 20 * gui.scale
+        draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
+        draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(190), 14)
 
 
 
         # Ratio bar
-        if len(pctl.master_library) > 110:
-            x = self.box_x + 110
-            y = self.box_y + self.h - 7
+        if len(pctl.master_library) > 110 * gui.scale:
+            x = self.box_x + 110 * gui.scale
+            y = self.box_y + self.h - 7 * gui.scale
 
-            full_rect = [x, y, self.w - 110 + 0, 7]
+            full_rect = [x, y, self.w - 110 * gui.scale + 0, 7 * gui.scale]
             d = 0
 
             # Stats
@@ -13102,70 +13131,69 @@ class Over:
                 fields.add(block_rect)
                 if coll_point(mouse_position, block_rect):
                     xx = block_rect[0] + int(block_rect[2] / 2)
-                    if xx < x + 30:
-                        xx = x + 30
-                    if xx > self.box_x + self.w - 30:
-                        xx = self.box_x + self.w - 30
-                    draw_text((xx, self.box_y + self.h - 35, 2), key, colours.grey_blend_bg(190), 13)
+                    if xx < x + 30 * gui.scale:
+                        xx = x + 30 * gui.scale
+                    if xx > self.box_x + self.w - 30 * gui.scale:
+                        xx = self.box_x + self.w - 30 * gui.scale
+                    draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(190), 13)
 
-        #draw.rect_r(full_rect, [0, 0, 0, 10], True)
 
     def config_v(self):
 
-        w = 370
-        h = 220
+        w = 370 * gui.scale
+        h = 220 * gui.scale
         x = self.box_x + self.item_x_offset
         y = self.box_y
 
         # x += 8
-        y += 25
+        y += 25 * gui.scale
         y2 = y
         x2 = x
         for k in config_items:
-            draw_text((x + 20, y - 3), k[0], colours.grey_blend_bg(170), 12)
-            draw.rect((x, y), (12, 12), [255, 255, 255, 13], True)
-            draw.rect((x, y), (12, 12), [255, 255, 255, 16])
+            draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(170), 12)
+            draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
+            draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
             if self.click and coll_point(mouse_position, (x - 20, y - 5, 220, 24)):
                 k[1]()
             if k[1](1) is True:
-                draw.rect((x + 3, y + 3), (6, 6), colours.toggle_box_on, True)
+                draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
 
-            y += 25
+            y += 25 * gui.scale
 
-            if y - y2 > 190:
+            if y - y2 > 190 * gui.scale:
                 y = y2
-                x += 205
+                x += 205 * gui.scale
 
 
-        y = self.box_y + 25
-        x = self.box_x + self.item_x_offset + 270
+        y = self.box_y + 25 * gui.scale
+        x = self.box_x + self.item_x_offset + 270 * gui.scale
 
         #y += 20
 
         prefs.playlist_font_size = self.slide_control(x, y, "Font Size", "", prefs.playlist_font_size, 12, 17)
-        y += 25
+        y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, "Row Size", "px", prefs.playlist_row_height, 15, 45)
-        y += 25
+        y += 25 * gui.scale
 
-        x += 65
-        self.button(x, y, "Default", self.small_preset, 124)
+        x += 65 * gui.scale
+        self.button(x, y, "Default", self.small_preset, 124 * gui.scale)
         # x += 90
         # self.button(x, y, "Large Preset", self.large_preset, 80)
 
-        y += 50
-        x -= 90
+        y += 50 * gui.scale
+        x -= 90 * gui.scale
 
         draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
 
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_stop, "Stop playback")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_repeat, "Repeat playlist")
         #y += 25
-        y -= 25
-        x += 120
+        y -= 25 * gui.scale
+        x += 120 * gui.scale
         self.toggle_square(x, y, self.set_playlist_advance, "Play next playlist")
-        y += 25
+        y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_cycle, "Cycle all playlists")
 
     def set_playlist_cycle(self, mode=0):
@@ -13195,13 +13223,13 @@ class Over:
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 20
+        prefs.playlist_row_height = 20 * gui.scale
         prefs.playlist_font_size = 15
         gui.update_layout()
 
     def large_preset(self):
 
-        prefs.playlist_row_height = 31
+        prefs.playlist_row_height = 31 * gui.scale
         prefs.playlist_font_size = 13
         gui.update_layout()
 
@@ -13209,9 +13237,9 @@ class Over:
 
         if label is not None:
             draw_text((x, y), label, colours.grey_blend_bg(170), 12)
-            x += 65
-        y += 1
-        rect = (x, y, 33, 15)
+            x += 65 * gui.scale
+        y += 1 * gui.scale
+        rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
@@ -13229,16 +13257,16 @@ class Over:
             else:
                 abg = [220, 150, 20, 255]
 
-        dec_arrow.render(x + 1, y, abg)
+        dec_arrow.render(x + 1 * gui.scale, y, abg)
 
-        x += 33
+        x += 33 * gui.scale
 
-        draw.rect_r((x, y, 58, 15), [255, 255, 255, 9], True)
-        draw_text((x + 29, y, 2), str(value) + units, colours.grey(180), 11)
+        draw.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
+        draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(180), 11)
 
-        x += 58
+        x += 58 * gui.scale
 
-        rect = (x, y, 33, 15)
+        rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
@@ -13255,7 +13283,7 @@ class Over:
             else:
                 abg = [220, 150, 20, 255]
 
-        inc_arrow.render(x + 1, y, abg)
+        inc_arrow.render(x + 1 * gui.scale, y, abg)
 
         return value
 
@@ -13273,16 +13301,6 @@ class Over:
 
         self.init2done = True
 
-        # # Stats
-        # self.ext_ratio = {}
-        # for key, value in pctl.master_library.items():
-        #     if value.file_ext in self.ext_ratio:
-        #         self.ext_ratio[value.file_ext] += 1
-        #     else:
-        #         self.ext_ratio[value.file_ext] = 1
-        # print(self.ext_ratio)
-
-        #pctl.total_playtime = sum(pctl.star_library.values())
         pctl.total_playtime = star_store.get_total()
 
         # Files
@@ -13301,9 +13319,9 @@ class Over:
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
-        draw.rect((self.box_x - 5, self.box_y - 5), (self.w + 10, self.h + 10), colours.grey(50), True)
+        draw.rect((self.box_x - 5 * gui.scale, self.box_y - 5 * gui.scale), (self.w + 10 * gui.scale, self.h + 10 * gui.scale), colours.grey(50), True)
         draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
-        draw.rect((self.box_x, self.box_y), (110, self.h), colours.sys_background_2, True)
+        draw.rect((self.box_x, self.box_y), (110 * gui.scale, self.h), colours.sys_background_2, True)
 
         # draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
@@ -13318,8 +13336,8 @@ class Over:
             if self.click and gui.message_box:
                 gui.message_box = False
 
-            box = [self.box_x, self.box_y + (current_tab * 30), 110, 30]
-            box2 = [self.box_x, self.box_y + (current_tab * 30), 110, 29]
+            box = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 30 * gui.scale]
+            box2 = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 29 * gui.scale]
             fields.add(box2)
             # draw.rect_r(box, colours.tab_background, True)
 
@@ -13340,9 +13358,9 @@ class Over:
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
+                draw_text((box[0] + 55 * gui.scale, box[1] + 6 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
             else:
-                draw_text((box[0] + 55, box[1] + 6, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
+                draw_text((box[0] + 55 * gui.scale, box[1] + 6 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
 
             current_tab += 1
 
@@ -13355,208 +13373,7 @@ class Over:
 
         gui.win_fore = colours.sys_background
 
-    def files(self):
 
-        self.lock = True
-
-        x = self.box_x + self.item_x_offset + 10
-        y = self.box_y + 30
-
-        items_in_folder = os.listdir(self.current_path)
-
-        # order folders first
-        a = []
-        b = []
-        for item in items_in_folder:
-            full_path = os.path.join(self.current_path, item)
-            if os.path.isfile(full_path):
-                b.append(item)
-            else:
-                a.append(item)
-        items_in_folder = a + b
-
-        items_len = len(items_in_folder)
-
-        ic = 0
-        ix = 0
-
-        max_view_len = 12
-
-        y += 5
-
-        self.view_offset -= self.scroll * 2
-        self.scroll = 0
-        if self.view_offset < 0:
-            self.view_offset = 0
-        if self.view_offset > items_len - max_view_len:
-            self.view_offset = items_len - max_view_len
-
-        if items_len == 0:
-            draw_text((x + 75, y + 50), "Folder is Empty", [200, 200, 200, 200], 12)
-
-        # start file list
-        while ic < items_len:
-
-            if ic < self.view_offset:
-                ic += 1
-                continue
-
-            box = [x, y + 5 + (ix * 14), 8, 8]
-
-            row = [x, y + 2 + (ix * 14), 280, 13]
-
-            # FIND PROPERTIES
-            full_path = os.path.join(self.current_path, items_in_folder[ic])
-            type = 0
-            if os.path.isfile(full_path):
-                type = 1
-            extension = os.path.splitext(items_in_folder[ic])[1][1:]
-            if extension == "":
-                extension = "file"
-
-            # COLOUR BOX
-            if extension.lower() in self.ext_colours:
-                box_colour = self.ext_colours[extension.lower()]
-            else:
-                box_colour = [100 + random.randrange(154), 100 + random.randrange(154), 100 + random.randrange(154),
-                              255]
-                self.ext_colours[extension.lower()] = box_colour
-
-            # HLT
-            fields.add(row)
-            if coll_point(mouse_position, row):
-                draw.rect_r(row, [60, 60, 60, 60], True)
-                if self.click and type == 0:
-                    newdir = full_path
-                    try:
-                        os.listdir(newdir)
-                        self.current_path = newdir
-                    except:
-                        pass
-
-            # FILE NAME
-            line = trunc_line(items_in_folder[ic], 12, 150)
-            draw_text((x + 65, y + (ix * 14)), line, [200, 200, 200, 200], 12)
-
-            # TYPE NAME + SIZE
-            if type == 0:
-                draw.rect_r(box, [200, 168, 100, 255], True)
-                draw_text((x + 14, y + (ix * 14)), "/", [200, 200, 200, 200], 12)
-            else:
-                draw_text((x + 14, y + (ix * 14)), extension[:7].upper(), [200, 200, 200, 200], 12)
-                draw.rect_r(box, box_colour, True)
-
-                file_bytes = os.path.getsize(full_path)
-                if file_bytes < 1000:
-                    line = str(file_bytes) + " B"
-                elif file_bytes < 1000000:
-                    file_kb = file_bytes / 1000
-                    line = str(int(file_kb)) + " KB"
-                else:
-                    file_mb = file_bytes / 1000000
-                    line = str(int(file_mb)) + " MB"
-                draw_text((x + row[2] - 5, y + (ix * 14), 1), line, [200, 200, 200, 200], 12)
-
-            ic += 1
-            ix += 1
-            if ic - self.view_offset > max_view_len:
-                break
-
-        # Reset xy for more drawing
-        x = self.box_x + self.item_x_offset + 10
-        y = self.box_y + 30
-
-        # UP Box
-        rect = (x, y - 20, 50, 20)
-        fields.add(rect)
-        if coll_point(mouse_position, rect):
-            draw.rect((x, y - 20), (50, 20), [40, 40, 40, 60], True)
-            if self.click:
-                self.current_path = os.path.dirname(self.current_path)
-        draw.rect((x, y - 20), (50, 20), colours.grey(50))
-
-        # Path display
-        draw_text((x + 60, y - 18), self.current_path, [200, 200, 200, 200], 12)
-
-        # windows drive picker
-        if system == 'windows':
-            drive_index = 0
-            for drive in self.drives:
-                box = (x + 100 + (20 * drive_index), y + 195, 19, 20)
-                fields.add(box)
-                if coll_point(mouse_position, box):
-                    draw.rect_r(box, [60, 60, 60, 60], True)
-                    if self.click:
-                        try:
-                            os.listdir(drive)
-                            self.current_path = drive
-                        except:
-                            pass
-                draw_text((box[0] + 3, box[1] + 2), drive, [200, 200, 200, 200], 12)
-                drive_index += 1
-
-        # Buttons
-        y += 14
-        y2 = y
-
-        y = y2
-        y += 0
-
-        draw_text((x + 300, y - 10), "Import", [200, 200, 200, 200], 12)
-
-        box = (x + 300, y + 7, 200, 20)
-        if coll_point(mouse_position, box):
-            draw.rect_r(box, colours.alpha_grey(15), True)
-            if self.click:
-                order = LoadClass()
-                order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-                order.target = copy.deepcopy(self.current_path)
-                load_orders.append(copy.deepcopy(order))
-
-        draw.rect_r(box, colours.alpha_grey(8), True)
-        fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to current playlist", colours.grey_blend_bg(130), 12)
-
-        y += 25
-
-        box = (x + 300, y + 7, 200, 20)
-        if coll_point(mouse_position, box):
-            draw.rect_r(box, colours.alpha_grey(15), True)
-            if self.click:
-                #pctl.multi_playlist.append([os.path.basename(self.current_path), 0, [], 0, 0, 0])
-                pctl.multi_playlist.append(pl_gen(title=os.path.basename(self.current_path)))
-                order = LoadClass()
-                order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-                order.target = copy.deepcopy(self.current_path)
-                load_orders.append(copy.deepcopy(order))
-
-        draw.rect_r(box, colours.alpha_grey(8), True)
-        fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "This folder to new playlist", colours.grey_blend_bg(130), 12)
-
-        y += 25
-
-        box = (x + 300, y + 7, 200, 20)
-        if coll_point(mouse_position, box):
-            draw.rect_r(box, colours.alpha_grey(15), True)
-            if self.click:
-
-                in_current = os.listdir(self.current_path)
-                for item in in_current:
-
-                    full_path = os.path.join(self.current_path, item)
-                    if os.path.isdir(full_path):
-                        #pctl.multi_playlist.append([item, 0, [], 0, 0, 0])
-                        pctl.multi_playlist.append(pl_gen(title=item))
-
-                        order = LoadClass()
-                        order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-                        order.target = copy.deepcopy(full_path)
-                        load_orders.append(copy.deepcopy(order))
-
-        draw.rect_r(box, colours.alpha_grey(8), True)
-        fields.add(box)
-        draw_text((box[0] + 100, box[1] + 2, 2), "Each sub folder as new playlist", colours.grey_blend_bg(130), 12)
 
 
 class Fields:
@@ -13604,10 +13421,14 @@ fields = Fields()
 pref_box = Over()
 
 
-
-inc_arrow = WhiteModImageAsset("/gui/inc.png")
-dec_arrow = WhiteModImageAsset("/gui/dec.png")
-corner_icon = WhiteModImageAsset("/gui/corner.png")
+if gui.scale == 2:
+    inc_arrow = WhiteModImageAsset("/gui/2x/inc.png")
+    dec_arrow = WhiteModImageAsset("/gui/2x/dec.png")
+    corner_icon = WhiteModImageAsset("/gui/2x/corner.png")
+else:
+    inc_arrow = WhiteModImageAsset("/gui/inc.png")
+    dec_arrow = WhiteModImageAsset("/gui/dec.png")
+    corner_icon = WhiteModImageAsset("/gui/corner.png")
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
@@ -13627,8 +13448,8 @@ class TopPanel:
         self.tab_text_y_offset = 8 * gui.scale
         self.tab_spacing = 0
 
-        if gui.scale > 1:
-            self.tab_text_y_offset += 8
+        # if gui.scale > 1:
+        #     self.tab_text_y_offset += 8
 
         self.ini_menu_space = 18 * gui.scale
         self.menu_space = 13 * gui.scale
@@ -13642,9 +13463,12 @@ class TopPanel:
         self.tab_hold_index = 0
         self.index_playing = -1
         self.playing_title = ""
-        self.drag_zone_start_x = 300
+        self.drag_zone_start_x = 300 * gui.scale
 
-        self.exit_button = WhiteModImageAsset('/gui/ex.png')
+        if gui.scale == 2:
+            self.exit_button = WhiteModImageAsset('/gui/2x/ex.png')
+        else:
+            self.exit_button = WhiteModImageAsset('/gui/ex.png')
 
         self.adds = []
 
@@ -14078,18 +13902,24 @@ class BottomBarType1:
         self.seek_hit = False
         self.volume_hit = False
         self.volume_bar_being_dragged = False
-        self.control_line_bottom = 35
+        self.control_line_bottom = 35 * gui.scale
         self.repeat_click_off = False
         self.random_click_off = False
 
-        self.seek_bar_position = [300, window_size[1] - gui.panelBY]
-        self.seek_bar_size = [window_size[0] - 300, 15]
-        self.volume_bar_size = [135, 14]
-        self.volume_bar_position = [0, 45]
+        self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
+        self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
+        self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
+        self.volume_bar_position = [0, 45 * gui.scale]
 
-        self.play_button = WhiteModImageAsset('/gui/play.png')
-        self.forward_button = WhiteModImageAsset('/gui/ff.png')
-        self.back_button = WhiteModImageAsset('/gui/bb.png')
+        if gui.scale == 2:
+            self.play_button = WhiteModImageAsset('/gui/2x/play.png')
+            self.forward_button = WhiteModImageAsset('/gui/2x/ff.png')
+            self.back_button = WhiteModImageAsset('/gui/2x/bb.png')
+        else:
+
+            self.play_button = WhiteModImageAsset('/gui/play.png')
+            self.forward_button = WhiteModImageAsset('/gui/ff.png')
+            self.back_button = WhiteModImageAsset('/gui/bb.png')
 
 
         self.scrob_stick = 0
@@ -14107,11 +13937,11 @@ class BottomBarType1:
     def update(self):
 
         if self.mode == 0:
-            self.volume_bar_position[0] = window_size[0] - 210
-            self.volume_bar_position[1] = window_size[1] - 27
+            self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
+            self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
             self.seek_bar_position[1] = window_size[1] - gui.panelBY
-            self.seek_bar_size[0] = window_size[0] - 300
-            self.seek_bar_position[0] = 300
+            self.seek_bar_size[0] = window_size[0] - (300 * gui.scale)
+            self.seek_bar_position[0] = 300 * gui.scale
             if gui.bb_show_art:
                 self.seek_bar_position[0] = 300 + gui.panelBY
                 self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
@@ -14135,16 +13965,18 @@ class BottomBarType1:
 
         right_offset = 0
         if gui.display_time_mode == 2:
-            right_offset = 22
+            right_offset = 22 * gui.scale
 
         # if gui.light_mode:
         #     draw.line(0, window_size[1] - gui.panelBY, window_size[0], window_size[1] - gui.panelBY, colours.art_box)
-        if gui.draw_frame:
-            draw.line(0, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY, colours.bb_line)
-            draw.line(299, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY + self.seek_bar_size[1],
-                      colours.bb_line)
-            draw.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
-                      window_size[1] - gui.panelBY + self.seek_bar_size[1], colours.bb_line)
+
+        #FRAME
+        # if gui.draw_frame:
+        #     draw.line(0, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY, colours.bb_line)
+        #     draw.line(299, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY + self.seek_bar_size[1],
+        #               colours.bb_line)
+        #     draw.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
+        #               window_size[1] - gui.panelBY + self.seek_bar_size[1], colours.bb_line)
 
         # rect = [0, window_size[1] - gui.panelBY, self.seek_bar_position[0], gui.panelBY]
         # draw.rect_r(rect, [255, 255, 255, 5], True)
@@ -14169,12 +14001,12 @@ class BottomBarType1:
                 draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2, self.seek_bar_size[1]), [255, 0, 0, 70], True)
 
 
-        # MINI ALBUM ART
-        if gui.bb_show_art:
-            rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
-            draw.rect_r(rect, [255, 255, 255, 8], True)
-            if 3 > pctl.playing_state > 0:
-                album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+        # # MINI ALBUM ART
+        # if gui.bb_show_art:
+        #     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
+        #     draw.rect_r(rect, [255, 255, 255, 8], True)
+        #     if 3 > pctl.playing_state > 0:
+        #         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
             #draw.rect_r(rect, [255, 255, 255, 20])
 
@@ -14301,7 +14133,7 @@ class BottomBarType1:
                 draw_text((self.volume_bar_position[0] + 85, self.volume_bar_position[1] - 1), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
                        11, bg=colours.volume_bar_background)
 
-        if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820:
+        if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
             if pctl.playing_state < 3:
                 title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
                 artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
@@ -14317,16 +14149,16 @@ class BottomBarType1:
                 line = pctl.tag_meta
 
             x = self.seek_bar_position[0] + 1
-            mx = window_size[0] - 710
-            if gui.bb_show_art:
-                x += 10
-                mx -= gui.panelBY - 10
+            mx = window_size[0] - 710 * gui.scale
+            # if gui.bb_show_art:
+            #     x += 10 * gui.scale
+            #     mx -= gui.panelBY - 10
 
             line = trunc_line(line, 213, mx)
-            draw_text((x, self.seek_bar_position[1] + 22), line, colours.bar_title_text,
+            draw_text((x, self.seek_bar_position[1] + 22 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
-                        self.seek_bar_position[0] - 10, self.seek_bar_position[1] + 20, window_size[0] - 710, 30)):
+                        self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
                 if pctl.playing_state == 3:
                     copy_to_clipboard(pctl.tag_meta)
                     show_message("Text copied to clipboard")
@@ -14338,10 +14170,10 @@ class BottomBarType1:
 
         # TIME----------------------
 
-        x = window_size[0] - 57
-        y = window_size[1] - 29
+        x = window_size[0] - 57 * gui.scale
+        y = window_size[1] - 29 * gui.scale
 
-        rect = (x - 8 - right_offset, y - 3, 60 + right_offset, 27)
+        rect = (x - 8 * gui.scale - right_offset, y - 3 * gui.scale, 60 * gui.scale + right_offset, 27 * gui.scale)
         # draw.rect_r(rect, [255, 0, 0, 40], True)
         if input.mouse_click and rect_in(rect):
             gui.display_time_mode += 1
@@ -14350,30 +14182,30 @@ class BottomBarType1:
 
         if gui.display_time_mode == 0:
             text_time = get_display_time(pctl.playing_time)
-            draw_text((x + 1, y), text_time, colours.time_playing,
+            draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
                       12)
         elif gui.display_time_mode == 1:
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             else:
                 text_time = get_display_time(pctl.playing_length - pctl.playing_time)
-            draw_text((x + 1, y), text_time, colours.time_playing,
+            draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
                       12)
-            draw_text((x - 5, y), '-', colours.time_playing,
+            draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
                       12)
         elif gui.display_time_mode == 2:
             x -= 4
             text_time = get_display_time(pctl.playing_time)
-            draw_text((x - 25, y), text_time, colours.time_playing,
+            draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       12)
-            draw_text((x + 10, y), "/", colours.time_sub,
+            draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
                       12)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
-            draw_text((x + 17, y), text_time, colours.time_sub,
+            draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
                       12)
 
         # if pctl.record_stream or True:
@@ -14413,7 +14245,7 @@ class BottomBarType1:
 
 
 
-            rect = (buttons_x_offset + 10, window_size[1] - self.control_line_bottom - 13, 50, 40)
+            rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 play_colour = colours.media_buttons_over
@@ -14421,14 +14253,14 @@ class BottomBarType1:
                     pctl.play()
                 if right_click:
                     pctl.show_current()
-            self.play_button.render(29, window_size[1] - self.control_line_bottom, play_colour)
+            self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
             # PAUSE---
-            x = 75 + buttons_x_offset
+            x = (75 * gui.scale) + buttons_x_offset
             y = window_size[1] - self.control_line_bottom
 
-            rect = (x - 15, y - 13, 50, 40)
+            rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 pause_colour = colours.media_buttons_over
@@ -14436,12 +14268,12 @@ class BottomBarType1:
                     pctl.pause()
 
             # draw.rect_r(rect,[255,0,0,255], True)
-            draw.rect((x, y + 0), (4, 13), pause_colour, True)
-            draw.rect((x + 10, y + 0), (4, 13), pause_colour, True)
+            draw.rect((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+            draw.rect((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
 
             # STOP---
-            x = 125 + buttons_x_offset
-            rect = (x - 14, y - 13, 50, 40)
+            x = 125 * gui.scale + buttons_x_offset
+            rect = (x - 14 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 stop_colour = colours.media_buttons_over
@@ -14450,11 +14282,11 @@ class BottomBarType1:
                 if right_click:
                     pctl.auto_stop ^= True
 
-            draw.rect((x, y + 0), (13, 13), stop_colour, True)
+            draw.rect((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
             # draw.rect_r(rect,[255,0,0,255], True)
 
             # FORWARD---
-            rect = (buttons_x_offset + 230, window_size[1] - self.control_line_bottom - 10, 50, 35)
+            rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 forward_colour = colours.media_buttons_over
@@ -14465,11 +14297,11 @@ class BottomBarType1:
                 if middle_click:
                     pctl.advance(rr=True)
 
-            self.forward_button.render(240, 1 + window_size[1] - self.control_line_bottom, forward_colour)
+            self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
             # BACK---
-            rect = (buttons_x_offset + 170, window_size[1] - self.control_line_bottom - 10, 50, 35)
+            rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 back_colour = colours.media_buttons_over
@@ -14480,37 +14312,37 @@ class BottomBarType1:
                 if middle_click:
                     pctl.revert()
 
-            self.back_button.render(180, 1 + window_size[1] - self.control_line_bottom, back_colour)
+            self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
 
             # menu button
 
-            x = window_size[0] - 252 - right_offset
-            y = window_size[1] - 26
+            x = window_size[0] - 252 * gui.scale - right_offset
+            y = window_size[1] - 26 * gui.scale
             rpbc = colours.mode_button_off
-            rect = (x - 9, y - 5, 40, 25)
+            rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 rpbc = colours.mode_button_over
                 if input.mouse_click:
-                    extra_menu.activate(position=(x - 115, y - 6))
+                    extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
             if extra_menu.active:
                 rpbc = colours.mode_button_active
 
-            draw.rect((x, y), (24, 2), rpbc, True)
-            y += 5
-            draw.rect((x, y), (24, 2), rpbc, True)
-            y += 5
-            draw.rect((x, y), (24, 2), rpbc, True)
+            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
+            y += 5 * gui.scale
+            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
+            y += 5 * gui.scale
+            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
 
-            if window_size[0] > 630 and self.mode == 0:
+            if window_size[0] > 630 * gui.scale and self.mode == 0:
 
                 # shuffle button
-                x = window_size[0] - 318 - right_offset
-                y = window_size[1] - 27
+                x = window_size[0] - 318 * gui.scale - right_offset
+                y = window_size[1] - 27 * gui.scale
 
-                rect = (x - 5, y - 5, 60, 25)
+                rect = (x - 5 * gui.scale, y - 5 * gui.scale, 60 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
 
                 rpbc = colours.mode_button_off
@@ -14533,20 +14365,20 @@ class BottomBarType1:
                 else:
                     self.random_click_off = False
 
-                y += 3
+                y += 3 * gui.scale
 
-                draw.rect((x, y), (25, 3), rpbc, True)
+                draw.rect((x, y), (25 * gui.scale, 3 * gui.scale), rpbc, True)
 
-                y += 5
-                draw.rect((x, y), (48, 3), rpbc, True)
+                y += 5 * gui.scale
+                draw.rect((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 # REPEAT
-                x = window_size[0] - 380 - right_offset
-                y = window_size[1] - 27
+                x = window_size[0] - 380 * gui.scale - right_offset
+                y = window_size[1] - 27 * gui.scale
 
                 rpbc = colours.mode_button_off
 
-                rect = (x - 6, y - 5, 61, 25)
+                rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
                 if (input.mouse_click or right_click) and coll_point(mouse_position, rect):
                     pctl.repeat_mode ^= True
@@ -14567,12 +14399,12 @@ class BottomBarType1:
                 else:
                     self.repeat_click_off = False
 
-                y += 3
-                w = 3
+                y += 3 * gui.scale
+                w = 3 * gui.scale
 
-                draw.rect((x + 25, y), (25, w), rpbc, True)
-                draw.rect((x + 4, y + 5), (46, w), rpbc, True)
-                draw.rect((x + 50 - w, y), (w, 8), rpbc, True)
+                draw.rect((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
+                draw.rect((x + 4 * gui.scale, y + 5 * gui.scale), (46 * gui.scale, w), rpbc, True)
+                draw.rect((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
 
 
 bottom_bar1 = BottomBarType1()
@@ -14619,7 +14451,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
 
         if not side_panel_enable and not gui.combo_mode:
-            width -= 10
+            width -= 10 * gui.scale
 
         if n_track.artist != "" or \
                         n_track.title != "":
@@ -14629,11 +14461,11 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             line = ""
 
             if len(indexLine) > 2:
-                indexoffset += len(indexLine) * 5 - 15
+                indexoffset += (len(indexLine) * 5 - 15) * gui.scale
 
             if n_track.artist != "":
                 line0 = n_track.artist
-                artistoffset = draw_text2((start_x + 27,
+                artistoffset = draw_text2((start_x + 27  * gui.scale,
                                            y),
                                           line0,
                                           alpha_mod(artistc, album_fade),
@@ -14660,15 +14492,15 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             #total = pctl.star_library[key]
             ratio = total / pctl.master_library[index].length
             if ratio > 0.55:
-                star_x = int(ratio * 4)
-                if star_x > 60:
-                    star_x = 60
+                star_x = int(ratio * 4 * gui.scale)
+                if star_x > 60 * gui.scale:
+                    star_x = 60 * gui.scale
                 sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
-                if gui.playlist_row_height > 17:
+                if gui.playlist_row_height > 17 * gui.scale:
                     sp -= 1
-                draw.rect_r([width + start_x - star_x - 45 - offset_font_extra,
+                draw.rect_r([width + start_x - star_x - 45 * gui.scale - offset_font_extra,
                              sp, #y + 8 + offset_y_extra,
-                             star_x + 3,
+                             star_x + 3 * gui.scale,
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
 
@@ -14679,7 +14511,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             stars = star_count(total, pctl.master_library[index].length)
             starl = "★" * stars
-            star_x = draw_text((width + start_x - 42 - offset_font_extra,
+            star_x = draw_text((width + start_x - 42 * gui.scale - offset_font_extra,
                        y + gui.star_text_y_offset, 1), starl,
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
@@ -14688,18 +14520,18 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                    y), indexLine,
                   alpha_mod(indexc, album_fade), gui.row_font_size)
 
-        draw_text2((start_x + 33 + artistoffset,
+        draw_text2((start_x + 33 * gui.scale + artistoffset,
                     y),
                    line,
                    alpha_mod(titlec, album_fade),
                    gui.row_font_size,
-                   width - 71 - artistoffset - star_x - 20,
+                   width - 71 * gui.scale - artistoffset - star_x - 20 * gui.scale,
                    2,
                    default_playlist[p_track])
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36 - offset_font_extra,
+        draw_text((width + start_x - 36 * gui.scale - offset_font_extra,
                    y, 0), line,
                   alpha_mod(timec, album_fade), gui.row_font_size)
 
@@ -14730,15 +14562,15 @@ class StandardPlaylist:
 
         # Draw the background
         SDL_SetRenderTarget(renderer, gui.ttext)
-        rect = (0, gui.panelY, gui.playlist_width + 31, window_size[1])
+        rect = (0, gui.panelY, gui.playlist_width + 31 * gui.scale, window_size[1])
         if side_panel_enable is False:
             rect = (0, gui.panelY, window_size[0], window_size[1])
         draw.rect_r(rect, colours.playlist_panel_background, True)
 
-        if mouse_wheel != 0 and window_size[1] - 50 > mouse_position[1] > 25 + gui.playlist_top \
+        if mouse_wheel != 0 and window_size[1] - 50 * gui.scale > mouse_position[1] > 25 * gui.scale + gui.playlist_top \
                 and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not (key_shift_down and track_box):
 
-            if album_mode and mouse_position[0] > gui.playlist_width + 34:
+            if album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
                 pass
             else:
                 mx = 4
@@ -14758,7 +14590,7 @@ class StandardPlaylist:
                     playlist_position = 0
 
         highlight_left = 0
-        highlight_right = gui.playlist_width + 31
+        highlight_right = gui.playlist_width + 31 * gui.scale
 
         # Show notice if playlist empty
 
@@ -14766,15 +14598,15 @@ class StandardPlaylist:
             colour = alpha_mod(colours.index_text, 200) #colours.playlist_text_missing
 
 
-            draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
+            draw_text((int(gui.playlist_width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
                       "Playlist is empty", colour, 213, bg=colours.playlist_panel_background)
-            draw_text((int(gui.playlist_width / 2) + 10, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + 30), 2),
+            draw_text((int(gui.playlist_width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + (30 * gui.scale)), 2),
                       "Drag and drop files to import", colour, 13, bg=colours.playlist_panel_background)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
             colour = alpha_mod(colours.index_text, 200)
-            draw_text((int(gui.playlist_width / 2) + 10, int(window_size[1] * 0.18), 2), "End of Playlist",
+            draw_text((int(gui.playlist_width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), "End of Playlist",
                       colour, 213)
 
         # For every track in view
@@ -15174,17 +15006,17 @@ class StandardPlaylist:
                 #     if gui.row_font_size > 14:
                 #         offset_y_extra = 3
 
-                start = playlist_left - 2
+                start = playlist_left - 2 * gui.scale
                 run = start
                 for h, item in enumerate(gui.pl_st):
 
-                    wid = item[1] - 20
+                    wid = item[1] - 20 * gui.scale
                     y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w
-                    if run > gui.playlist_width + 24:
+                    if run > gui.playlist_width + 24 * gui.scale:
                         break
 
                     if len(gui.pl_st) == h + 1:
-                        wid -= 6
+                        wid -= 6 * gui.scale
 
                     if item[0] == "Starline":
                         #key = n_track.title + n_track.filename
@@ -15211,8 +15043,8 @@ class StandardPlaylist:
                                 colour = colours.index_text
                                 if this_line_playing is True:
                                     colour = colours.index_playing
-                                text = trunc_line(text, gui.row_font_size, wid + 7, False)
-                                draw_text((run + 6, y + gui.star_text_y_offset),
+                                text = trunc_line(text, gui.row_font_size, wid + 7 * gui.scale, False)
+                                draw_text((run + 6 * gui.scale, y + gui.star_text_y_offset),
                                           text,
                                           colour,
                                           gui.row_font_size,
@@ -15221,12 +15053,13 @@ class StandardPlaylist:
                                 #total = pctl.star_library[key]
                                 ratio = total / n_track.length
                                 if ratio > 0.55:
-                                    star_x = int(ratio * 4)
+                                    star_x = int(ratio * 4 * gui.scale)
                                     if star_x > wid:
                                         star_x = wid
                                     sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
-                                    draw.line(run + 4, sy, run + star_x + 4, sy,
-                                              colours.star_line)
+                                    draw.rect_r((run + 4 * gui.scale, sy, run, 1 * gui.scale), colours.star_line)
+                                    # draw.line(run + 4, sy, run + star_x + 4, sy,
+                                    #           colours.star_line)
 
                     else:
                         text = ""
@@ -15832,19 +15665,19 @@ def update_layout_do():
         gui.playlist_top = gui.playlist_top_bk
     gui.offset_extea = 0
     if draw_border:
-        gui.offset_extea = 61
+        gui.offset_extea = 61 * gui.scale
 
     global album_v_gap
     if gui.gallery_show_text:
-        album_v_gap = 66
+        album_v_gap = 66 * gui.scale
     else:
-        album_v_gap = 25
+        album_v_gap = 25 * gui.scale
 
     #gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
-    gui.spec1_rec.x = window_size[0] - gui.offset_extea - 90
+    gui.spec1_rec.x = window_size[0] - gui.offset_extea - 90 * gui.scale
     #gui.spec_x = window_size[0] - gui.offset_extea - 90
 
-    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 - gui.offset_extea
+    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extea
 
     # if gui.vis == 3:
     #     if prefs.spec2_colour_setting == 'custom':
@@ -15860,15 +15693,15 @@ def update_layout_do():
         #     prefs.spec2_base = [20, 20, 20]
         #     prefs.spec2_multiply = [1, 1, 1]
 
-    gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
+    gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
 
     if gui.combo_mode:
         gui.playlist_row_height = prefs.playlist_row_height #31
         gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)#6
         gui.row_font_size = prefs.playlist_font_size #13
-        gui.scroll_hide_box = (window_size[0] - 28 - 2, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
+        gui.scroll_hide_box = (window_size[0] - (28 * gui.scale) - 2, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
     else:
-        gui.scroll_hide_box = (1, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
+        gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
         gui.playlist_row_height = prefs.playlist_row_height
         gui.playlist_text_offset = 0
         gui.row_font_size = prefs.playlist_font_size  # 13
@@ -15877,30 +15710,33 @@ def update_layout_do():
         gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)
         # To improve
         if system == 'linux':
-            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11
+            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 * gui.scale - 0) / 2)) - 11 #* gui.scale
 
+    if gui.scale > 1:
+        #gui.playlist_text_offset += 17
+        gui.playlist_row_height *= gui.scale
     gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
 
     if side_panel_enable is True:
 
-        if gui.side_panel_size < 100:
-            gui.side_panel_size = 100
+        if gui.side_panel_size < 100 * gui.scale:
+            gui.side_panel_size = 100 * gui.scale
 
 
-        if gui.side_panel_size > window_size[1] - 77 and album_mode is not True:
-            gui.side_panel_size = window_size[1] - 77
+        if gui.side_panel_size > window_size[1] - 77 * gui.scale and album_mode is not True:
+            gui.side_panel_size = window_size[1] - 77 * gui.scale
 
-        if gui.side_panel_size > window_size[0] - 300 and album_mode is True:
-            gui.side_panel_size = window_size[0] - 300
+        if gui.side_panel_size > window_size[0] - 300 * gui.scale and album_mode is True:
+            gui.side_panel_size = window_size[0] - 300 * gui.scale
 
 
         if album_mode != True:
-            gui.playlist_width = window_size[0] - gui.side_panel_size - 30
+            gui.playlist_width = window_size[0] - gui.side_panel_size - 30 * gui.scale
         else:
-            gui.side_panel_size = window_size[0] - gui.playlist_width - 30
+            gui.side_panel_size = window_size[0] - gui.playlist_width - 30 * gui.scale
 
     else:
-        gui.playlist_width = window_size[0] - 30
+        gui.playlist_width = window_size[0] - 30 * gui.scale
         # if custom_line_mode:
         #     gui.playlist_width = window_size[0] - 30
 
@@ -15908,7 +15744,7 @@ def update_layout_do():
     if gui.combo_mode:
         gui.playlist_width -= combo_pl_render.pl_album_art_size
 
-    if window_size[0] < 630:
+    if window_size[0] < 630 * gui.scale:
         gui.compact_bar = True
     else:
         gui.compact_bar = False
@@ -15917,9 +15753,9 @@ def update_layout_do():
 
     if GUI_Mode == 2:
         SDL_DestroyTexture(gui.ttext)
-        gui.panelBY = 30
+        gui.panelBY = 30 * gui.scale
         gui.panelY = 0
-        gui.playlist_top = 5
+        gui.playlist_top = 5 * gui.scale
 
         gui.pl_update = 1
 
@@ -17131,12 +16967,12 @@ while running:
             if mouse_down is not True:
                 side_drag = False
 
-            rect = (window_size[0] - gui.side_panel_size - 5, gui.panelY, 12, window_size[1] - 90)
+            rect = (window_size[0] - gui.side_panel_size - 5 * gui.scale, gui.panelY, 12 * gui.scale, window_size[1] - 90 * gui.scale)
             fields.add(rect)
 
             if (coll_point(mouse_position,
-                           (window_size[0] - gui.side_panel_size - 5, gui.panelY, 12,
-                            window_size[1] - 90)) or side_drag is True) \
+                           (window_size[0] - gui.side_panel_size - 5 * gui.scale, gui.panelY, 12 * gui.scale,
+                            window_size[1] - 90 * gui.scale)) or side_drag is True) \
                     and renamebox is False \
                     and radiobox is False \
                     and encoding_box is False \
@@ -17173,21 +17009,21 @@ while running:
             # side drag update
             if side_drag is True:
                 gui.side_panel_size = window_size[0] - mouse_position[0]
-                if album_mode and gui.side_panel_size < album_mode_art_size + 50:
-                    gui.side_panel_size = album_mode_art_size + 50
+                if album_mode and gui.side_panel_size < album_mode_art_size + 50 * gui.scale:
+                    gui.side_panel_size = album_mode_art_size + 50 * gui.scale
                 gui.update_layout()
                 #update_layout_do()
 
             if gui.show_playlist:
-                if gui.side_panel_size < 100:
-                    gui.side_panel_size = 100
-                if gui.side_panel_size > window_size[1] - 77 and album_mode is not True:
-                    gui.side_panel_size = window_size[1] - 77
+                if gui.side_panel_size < 100 * gui.scale:
+                    gui.side_panel_size = 100 * gui.scale
+                if gui.side_panel_size > window_size[1] - 77 * gui.scale and album_mode is not True:
+                    gui.side_panel_size = window_size[1] - 77 * gui.scale
 
                 if album_mode is True:
-                    if gui.side_panel_size > window_size[0] - 300:
-                        gui.side_panel_size = window_size[0] - 300
-                    gui.playlist_width = window_size[0] - gui.side_panel_size - 30
+                    if gui.side_panel_size > window_size[0] - 300 * gui.scale:
+                        gui.side_panel_size = window_size[0] - 300 * gui.scale
+                    gui.playlist_width = window_size[0] - gui.side_panel_size - 30 * gui.scale
 
             # ALBUM GALLERY RENDERING:
             # Gallery view
@@ -17229,11 +17065,11 @@ while running:
                             window_size[1] - gui.panelY - gui.panelBY - 0]
                     draw.rect_r(rect, colours.side_panel_background, True)
                 else:
-                    rect = [gui.playlist_width + 31, gui.panelY, window_size[0] - gui.playlist_width - 31,
+                    rect = [gui.playlist_width + 31 * gui.scale, gui.panelY, window_size[0] - gui.playlist_width - 31 * gui.scale,
                             window_size[1] - gui.panelY - gui.panelBY - 0]
                     draw.rect_r(rect, colours.side_panel_background, True)
 
-                area_x = window_size[0] - gui.playlist_width + 20
+                area_x = window_size[0] - gui.playlist_width + 20 * gui.scale
 
                 row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
 
@@ -17819,23 +17655,23 @@ while running:
                         pass
                     else:
 
-                        rect = [gui.playlist_width + 31, gui.panelY, window_size[0] - gui.playlist_width - 30,
+                        rect = [gui.playlist_width + 31  * gui.scale, gui.panelY, window_size[0] - gui.playlist_width - 30 * gui.scale,
                                 window_size[1] - gui.panelY - gui.panelBY]
                         draw.rect_r(rect, colours.side_panel_background, True)
 
                         showc = False
 
-                        boxx = window_size[0] - gui.playlist_width - 32 - 18
-                        boxy = window_size[1] - 160
+                        boxx = window_size[0] - gui.playlist_width - 50 * gui.scale
+                        boxy = window_size[1] - 160 * gui.scale
                         box = boxx
-                        x = gui.playlist_width + 40
+                        x = gui.playlist_width + 40 * gui.scale
                         # if gui.light_mode:
                         #     x += 2
                         # CURRENT
-                        gui.main_art_box = (x, 38, box, box)
+                        gui.main_art_box = (x, gui.artboxY, box, box)
 
                         if input.mouse_click and (coll_point(mouse_position, (
-                                x, gui.panelY + boxx + 5, boxx, window_size[1] - boxx - 90))):
+                                x, gui.panelY + boxx + 5 * gui.scale, boxx, window_size[1] - boxx - 90 * gui.scale))):
                             pctl.show_current()
 
                             # if album_mode:
@@ -17853,14 +17689,14 @@ while running:
 
                             if side_drag:
 
-                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38),
+                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38 * gui.scale),
                                                       (box, box), True)
                             else:
-                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38), (box, box))
+                                album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38 * gui.scale), (box, box))
 
                             showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
-                        draw.rect((x, 38), (box + 1, box + 1), colours.art_box)
+                        draw.rect((x, 38 * gui.scale), (box + 1 * gui.scale, box + 1 * gui.scale), colours.art_box)
 
 
 
@@ -17893,15 +17729,15 @@ while running:
                                     line += 'F '
 
                                 line += str(showc[2] + 1) + "/" + str(showc[1])
-                                y = 36 + box - 25
+                                y = box + 11 * gui.scale
 
                                 xoff = 0
-                                xoff = draw.text_calc(line, 12) + 12
+                                xoff = draw.text_calc(line, 12) + 12 * gui.scale
 
-                                draw.rect((x + box - xoff, y), (xoff, 18),
+                                draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
                                           [8, 8, 8, 255], True)
 
-                                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                                draw_text((x + box - 6 * gui.scale, y, 1 * gui.scale), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                             else:
 
@@ -18302,24 +18138,26 @@ while running:
 
                 tc = pctl.master_library[r_menu_index]
 
-                w = 540
-                h = 240
+                w = 540 * gui.scale
+                h = 240 * gui.scale
                 comment_mode = 0
 
                 if len(tc.comment) > 0:
-                    h += 22
-                    w += 25
-                    if draw.text_calc(tc.comment, 12) > 335:
-                        h += 80
-                        w += 30
+                    h += 22 * gui.scale
+                    w += 25 * gui.scale
+                    if draw.text_calc(tc.comment, 12) > 335 * gui.scale:
+                        h += 80 * gui.scale
+                        w += 30 * gui.scale
                         comment_mode = 1
 
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
+                x1 = x + 18 * gui.scale
+                x2 = x + 98 * gui.scale
 
 
-                draw.rect((x - 3, y - 3), (w + 6, h + 6), colours.grey(75), True)
+                draw.rect((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
                 gui.win_fore = colours.sys_background_3
 
@@ -18331,26 +18169,30 @@ while running:
 
 
                 else:
+                    art_size = 115 * gui.scale
 
                     if comment_mode == 1:
-                        album_art_gen.display(r_menu_index, (x + w - 135, y + 105), (115, 115)) # Mirror this size in auto theme #mark2233
+                        album_art_gen.display(r_menu_index, (x + w - 135 * gui.scale, y + 105 * gui.scale), (art_size, art_size)) # Mirror this size in auto theme #mark2233
                     else:
-                        album_art_gen.display(r_menu_index, (x + w - 135, y + h - 135), (115, 115))
-                    y -= 24
+                        album_art_gen.display(r_menu_index, (x + w - 135 * gui.scale, y + h - 135 * gui.scale), (art_size, art_size))
 
-                    rect = [x + 17, y + 41, 350, 14]
+                    y -= 24 * gui.scale
+                    y1 = y + (40 * gui.scale)
+
+
+                    rect = [x1, y1, 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].title)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Title", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
 
-                    draw_text((x + 8 + 90, y + 40 - 3), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190)
+                    draw_text((x2, y1 - (3 * gui.scale)), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190 * gui.scale)
                               , colours.grey_blend_bg3(200), 15)
                     #y += 4
 
@@ -18375,7 +18217,7 @@ while running:
 
                     else:
 
-                        ext_rect = [x + w - 38, y + 44, 38, 12]
+                        ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
 
                         line = pctl.master_library[r_menu_index].file_ext
                         ex_colour = [255, 255, 255, 130]
@@ -18384,172 +18226,174 @@ while running:
                             ex_colour = format_colours[line]
 
                         draw.rect_r(ext_rect, ex_colour, True)
-                        draw_text((x + w - 35, y + 42), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
+                        draw_text((x + w - 35 * gui.scale, y + 42 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
                         #draw_text((x + w - 43, y + 42, 1), line, colours.grey_blend_bg3(190), 211)
 
                         if pctl.master_library[r_menu_index].is_cue:
-                            ext_rect[1] += 16
+                            ext_rect[1] += 16 * gui.scale
                             draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                            draw_text((x + w - 35, y + 42 + 16), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
+                            draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
 
 
-                    y += 16
+                    y1 += 16 * gui.scale
 
-                    rect = [x + 17, y + 40 + 2, 350, 14]
+
+                    rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Artist", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].artist)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Artist", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x + 8 + 90, y + 40 - 2), trunc_line(pctl.master_library[r_menu_index].artist, 13, 420),
+                    draw_text((x2, y1 - (2 * gui.scale)), trunc_line(pctl.master_library[r_menu_index].artist, 13, 420 * gui.scale),
                               colours.grey_blend_bg3(200), 13)
 
-                    y += 16
+                    y1 += 16 * gui.scale
 
-                    rect = [x + 17, y + 40 + 2, 350, 14]
+                    rect = [x1, y1, 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].album)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Album", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Album", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x + 8 + 90, y + 40 - 2), trunc_line(pctl.master_library[r_menu_index].album, 13, 420),
+                    draw_text((x2, y1 - 2), trunc_line(pctl.master_library[r_menu_index].album, 13, 420 * gui.scale),
                               colours.grey_blend_bg3(200),
                               13)
 
-                    y += 23 + 3
+                    y1 += (23 + 3) * gui.scale
 
-                    rect = [x + 17, y + 41, 450, 14]
+                    rect = [x1, y1, 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].fullpath)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Path", colours.grey_blend_bg3(140), 212)
-                    draw_text((x + 8 + 90, y + 40), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425),
+                        draw_text((x1, y1), "Path", colours.grey_blend_bg3(140), 212)
+                    draw_text((x2, y1), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425 * gui.scale),
                               colours.grey_blend_bg3(170), 210)
 
-                    y += 15
-                    if pctl.master_library[r_menu_index].samplerate != 0:
-                        draw_text((x + 8 + 10, y + 40), "Samplerate", colours.grey_blend_bg3(140), 212)
-                        line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
-                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
+                    y1 += 15 * gui.scale
 
-                    y += 15
+                    if pctl.master_library[r_menu_index].samplerate != 0:
+                        draw_text((x1, y1), "Samplerate", colours.grey_blend_bg3(140), 212)
+                        line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
+                        draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
+
+                    y1 += 15 * gui.scale
 
                     if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
-                        draw_text((x + 8 + 10, y + 40), "Bitrate", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Bitrate", colours.grey_blend_bg3(140), 212)
                         line = str(pctl.master_library[r_menu_index].bitrate)
                         if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
                         line += " kbps"
-                        draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
+                        draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
-                        x += 170
-                        rect = [x + 7, y + 41, 160, 14]
+                        x += 170 * gui.scale
+                        rect = [x + 7 * gui.scale, y1, 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 75, y + 40, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
+                            draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].album_artist)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 75, y + 40, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + 8 + 90, y + 40),
-                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 212, 270),
+                            draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
+                        draw_text((x + (8 + 90)  * gui.scale, y1),
+                                  trunc_line(pctl.master_library[r_menu_index].album_artist, 212, 270 * gui.scale),
                                   colours.grey_blend_bg3(200), 12)
-                        x -= 170
+                        x -= 170 * gui.scale
 
-                    y += 15
+                    y1 += 15 * gui.scale
 
-                    rect = [x + 17, y + 41, 150, 14]
+                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
                             show_message("Duration copied to clipboard")
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Duration", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Duration", colours.grey_blend_bg3(140), 212)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200), 12)
+                    draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].track_total not in ("", "0"):
-                        x += 170
+                        x += 170 * gui.scale
                         line = str(pctl.master_library[r_menu_index].track_number) + " of " + str(
                             pctl.master_library[r_menu_index].track_total)
-                        draw_text((x + 8 + 75, y + 40, 1), "Track", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + 8 + 90, y + 40), line,
+                        draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", colours.grey_blend_bg3(140), 212)
+                        draw_text((x + (8 + 90)  * gui.scale, y1), line,
                                   colours.grey_blend_bg3(200), 12)
-                        x -= 170
+                        x -= 170 * gui.scale
 
-                    y += 15
+                    y1 += 15 * gui.scale
                     #print(pctl.master_library[r_menu_index].size)
                     if pctl.master_library[r_menu_index].size != 0:
-                        draw_text((x + 8 + 10, y + 40), "File size", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + 8 + 90, y + 40), get_filesize_string(pctl.master_library[r_menu_index].size),
+                        draw_text((x1, y1), "File size", colours.grey_blend_bg3(140), 212)
+                        draw_text((x2, y1), get_filesize_string(pctl.master_library[r_menu_index].size),
                                   colours.grey_blend_bg3(200), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].disc_total not in ("", "0", 0):
-                        x += 170
+                        x += 170 * gui.scale
                         line = str(pctl.master_library[r_menu_index].disc_number) + " of " + str(
                             pctl.master_library[r_menu_index].disc_total)
-                        draw_text((x + 8 + 75, y + 40, 1), "Disc", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + 8 + 90, y + 40), line,
+                        draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", colours.grey_blend_bg3(140), 212)
+                        draw_text((x + (8 + 90) * gui.scale, y1), line,
                                   colours.grey_blend_bg3(200), 12)
-                        x -= 170
+                        x -= 170 * gui.scale
 
-                    y += 23
+                    y1 += 23 * gui.scale
 
-                    rect = [x + 17, y + 41, 150, 14]
+                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].genre)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Genre", colours.grey_blend_bg3(140), 212)
+                        draw_text((x1, y1), "Genre", colours.grey_blend_bg3(140), 212)
                     line = trunc_line(pctl.master_library[r_menu_index].genre, 12, 290)
-                    draw_text((x + 8 + 90, y + 40), line, colours.grey_blend_bg3(200),
+                    draw_text((x2, y1), line, colours.grey_blend_bg3(200),
                               12)
 
-                    y += 15
+                    y1 += 15 * gui.scale
 
-                    rect = [x + 17, y + 41, 150, 14]
+                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
-                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(200), 212)
+                        draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].date)
                             input.mouse_click = False
                     else:
-                        draw_text((x + 8 + 10, y + 40), "Date", colours.grey_blend_bg3(140), 212)
-                    draw_text((x + 8 + 90, y + 40), str(pctl.master_library[r_menu_index].date),
+                        draw_text((x1, y1), "Date", colours.grey_blend_bg3(140), 212)
+                    draw_text((x2, y1), str(pctl.master_library[r_menu_index].date),
                               colours.grey_blend_bg3(200), 12)
 
 
-                    y += 23
+                    y1 += 23 * gui.scale
 
                     total = star_store.get(r_menu_index)
                     ratio = 0
@@ -18558,12 +18402,12 @@ while running:
                         r_menu_index].length != 0:
                         ratio = total / pctl.master_library[r_menu_index].length
 
-                    draw_text((x + 8 + 10, y + 40), "Play count", colours.grey_blend_bg3(140), 212)
-                    draw_text((x + 8 + 90, y + 40), str(int(ratio)), colours.grey_blend_bg3(200), 12)
+                    draw_text((x1, y1), "Play count", colours.grey_blend_bg3(140), 212)
+                    draw_text((x2, y1), str(int(ratio)), colours.grey_blend_bg3(200), 12)
 
-                    y += 15
+                    y1 += 15 * gui.scale
 
-                    rect = [x + 17, y + 41, 150, 14]
+                    rect = [x1, y1, 150, 14]
 
                     if rect_in(rect) and key_shift_down and mouse_wheel != 0:
                         star_store.add(r_menu_index, 60 * mouse_wheel)
@@ -18571,46 +18415,46 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x + 8 + 10, y + 40), "Play time", colours.grey_blend_bg3(140), 212)
-                    draw_text((x + 8 + 90, y + 40), str(line), colours.grey_blend_bg3(200), 12)
+                    draw_text((x1, y1), "Play time", colours.grey_blend_bg3(140), 212)
+                    draw_text((x2, y1), str(line), colours.grey_blend_bg3(200), 12)
 
 
 
                     # -------
                     if pctl.master_library[r_menu_index].lyrics != "":
 
-                        x += 170
-                        rect = [x + 17, y + 41, 60, 14]
+                        x1 += 170 * gui.scale
+                        rect = [x1, y1, 60 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(200), 212)
+                            draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Lyrics copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 10, y + 40), "Lyrics", colours.grey_blend_bg3(140), 212)
-                        x -= 170
+                            draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(140), 212)
+                        x1 -= 170 * gui.scale
 
                     if len(tc.comment) > 0:
-                        y += 20
-                        rect = [x + 17, y + 41, 60, 14]
+                        y1 += 20 * gui.scale
+                        rect = [x1, y1, 60 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if rect_in(rect):
-                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(200), 212)
+                            draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].comment)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(140), 212)
-                        # draw_text((x + 8 + 10, y + 40), "Comment", colours.grey_blend_bg3(140), 12)
+                            draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 212)
+                        # draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 12)
 
                         if (
                                     'http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
-                                tc.comment, 12) < 335:
-                            link_pa = draw_linked_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(200), 12)
-                            link_rect = [x + 98 + link_pa[0], y + 38, link_pa[1], 20]
+                                tc.comment, 12) < 335 * gui.scale:
+                            link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(200), 12)
+                            link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
                             # draw.rect_r(link_rect, [255,0,0,30], True)
                             fields.add(link_rect)
                             if coll_point(mouse_position, link_rect):
@@ -18628,9 +18472,9 @@ while running:
                                 SDL_SetCursor(cursor_standard)
 
                         elif comment_mode == 1:
-                            draw_text((x + 18, y + 58, 4, w - 36, 90), tc.comment, colours.grey_blend_bg3(200), 12)
+                            draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, colours.grey_blend_bg3(200), 12)
                         else:
-                            draw_text((x + 8 + 90, y + 40), tc.comment, colours.grey_blend_bg3(200), 12)
+                            draw_text((x2, y1), tc.comment, colours.grey_blend_bg3(200), 12)
 
             if pref_box.enabled:
                 rect = [0, 0, window_size[0], window_size[1]]
@@ -19353,33 +19197,33 @@ while running:
 
         if draw_border:
 
-            rect = (window_size[0] - 55, window_size[1] - 35, 55 - 2, 35 - 2)
+            rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53  * gui.scale, 33 * gui.scale)
             fields.add(rect)
 
-            rect = (window_size[0] - 65, 1, 35, 28)
-            draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
+            rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
+            draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [70, 70, 70, 100], True)
-                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [160, 160, 160, 160], True)
+                draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
+                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), [160, 160, 160, 160], True)
                 if input.mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     input.mouse_click = False
                     drag_mode = False
             else:
-                draw.rect((rect[0] + 11, rect[1] + 16), (14, 3), [120, 120, 120, 45], True)
+                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), [120, 120, 120, 45], True)
 
-            rect = (window_size[0] - 29, 1, 26, 28)
+            rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
             draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [80, 80, 80, 120], True)
-                top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, colours.artist_playing)
+                draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [80, 80, 80, 120], True)
+                top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
                 if input.mouse_click or ab_click:
                     running = False
             else:
-                top_panel.exit_button.render(rect[0] + 8, rect[1] + 8, [40, 40, 40, 255])
+                top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
 
             corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
@@ -19387,11 +19231,11 @@ while running:
             # draw.line(0, 0, 0, 20, colours.grey(80))
 
             colour = [30, 30, 30, 255]
-            draw.rect_r((0, 0, window_size[0], 1), colour, True)
+            draw.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
 
-            draw.rect_r((0, 0, 1, window_size[1]), colour, True)
-            draw.rect_r((0, window_size[1] - 1, window_size[0], 1), colour, True)
-            draw.rect_r((window_size[0] - 1, 0, 1, window_size[1]), colour, True)
+            draw.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
+            draw.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
+            draw.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
             #draw.rect_r((0, 1, window_size[0], 1), [255, 255, 255, 20], True)
 
 
