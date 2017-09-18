@@ -6,17 +6,18 @@ v2.5.2
  - Added 2x UI display setting for HiDPI displays
    - The user interface and assets native resolution is doubled
    - Album art's maximum resolution remains at it's native
-   - Spectrum visualiser resolution is not increased
-   - Spectogram resolution is doubled
+   - Spectrum visualiser sample resolution remains the same
+   - Spectogram sample resolution is doubled
  - Added track menu button to show album in gallery
  - Added 3 new level meter colour modes
- - Added back drawn outline in borderless mode
- - Split extract and delete zip function into two settings
+ - Added window outline in borderless mode
+ - Added option to disable deleting to zip extract function
  - Tweaked 'view' button hitbox to be smaller
  - Fixed bug with transcode selecting all folders with same name
  - Fixed rare bug with multiple tracks showing as selected on click
  - Fixed rare display corruption when showing level meter
- - Imporved volume bar sliding performance under some video driver configurations
+ - Fixed menu activation hitbox overlapping scroll bar in Art + Tracks view
+ - Improved volume bar sliding performance under some configurations
 
 
 

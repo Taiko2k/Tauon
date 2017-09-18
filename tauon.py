@@ -5977,7 +5977,8 @@ class TextBox:
 
 
             if TextBox.cursor and self.selection == self.cursor_position:
-                draw.line(x + space, y + 2, x + space, y + 15, colour)
+                #draw.line(x + space, y + 2, x + space, y + 15, colour)
+                draw.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
 
             if click:
                 self.selection = self.cursor_position
@@ -6002,7 +6003,8 @@ class TextBox:
             if active and TextBox.cursor:
                 xx = x + space + 1
                 yy = y + 3
-                draw.line(xx, yy, xx, yy + 12, colour)
+                #draw.line(xx, yy, xx, yy + 12, colour)
+                draw.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
 
         if active and editline != "" and editline != input_text:
             ex = draw_text((x + space + 4, y), editline, [240, 230, 230, 255], font)
@@ -15134,11 +15136,11 @@ class StandardPlaylist:
                                 #total = pctl.star_library[key]
                                 ratio = total / n_track.length
                                 if ratio > 0.55:
-                                    star_x = int(ratio * 4 * gui.scale)
+                                    star_x = int(ratio * (4 * gui.scale))
                                     if star_x > wid:
                                         star_x = wid
                                     sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
-                                    draw.rect_r((run + 4 * gui.scale, sy, run, 1 * gui.scale), colours.star_line)
+                                    draw.rect_r((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colours.star_line)
                                     # draw.line(run + 4, sy, run + star_x + 4, sy,
                                     #           colours.star_line)
 
@@ -15291,8 +15293,8 @@ class ComboPlaylist:
 
         self.pl_pos_px = 0
         self.pl_album_art_size = combo_mode_art_size
-        self.v_buffer = 58#60
-        self.h_buffer = 70
+        self.v_buffer = 58 * gui.scale#60
+        self.h_buffer = 70 * gui.scale
 
         self.mirror_cache = []
         self.last_dex = 0
@@ -15306,7 +15308,7 @@ class ComboPlaylist:
         self.mirror_cache = []
         album_dex_on = 0
         pl_entry_on = 0
-        pl_render_pos = 30
+        pl_render_pos = 30 * gui.scale
         min = 0
         self.pl_album_art_size = combo_mode_art_size
 
@@ -15323,7 +15325,7 @@ class ComboPlaylist:
                     if goto and pl_entry_on > playlist_selected:
                         if len(self.mirror_cache) > 0:
                             self.pl_pos_px = self.mirror_cache[-1:][0]
-                            self.pl_pos_px -= 25
+                            self.pl_pos_px -= 25 * gui.scale
 
                         else:
                             self.pl_pos_px = 0
@@ -15343,7 +15345,7 @@ class ComboPlaylist:
             pl_render_pos += prefs.playlist_row_height
             min -= prefs.playlist_row_height
 
-        self.max_y = pl_render_pos + 20
+        self.max_y = pl_render_pos + 20 * gui.scale
 
         if goto and len(self.mirror_cache) > 0:
             self.pl_pos_px = self.mirror_cache[-1:][0]
@@ -15369,7 +15371,7 @@ class ComboPlaylist:
         # Get scroll movement
 
         if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-            self.pl_pos_px -= mouse_wheel * 75
+            self.pl_pos_px -= mouse_wheel * 75 * gui.scale
             if self.pl_pos_px < 0:
                 self.pl_pos_px = 0
             elif self.pl_pos_px > self.max_y:
@@ -15378,12 +15380,12 @@ class ComboPlaylist:
                 #     self.pl_pos_px -= mouse_wheel * 10000
 
         if key_PGU:
-            self.pl_pos_px -= abs(window_size[1] - 80)
+            self.pl_pos_px -= abs(window_size[1] - 80 * gui.scale)
         if key_PGD:
-            self.pl_pos_px += abs(window_size[1] - 80)
+            self.pl_pos_px += abs(window_size[1] - 80 * gui.scale)
 
         # Set some things
-        pl_render_pos = 30
+        pl_render_pos = 30 * gui.scale
         pl_entry_on = 0
         render = False
         album_dex_on = 0
@@ -15392,7 +15394,7 @@ class ComboPlaylist:
         i = 0
         for item in self.mirror_cache:
 
-            if item > self.pl_pos_px - 2000:
+            if item > self.pl_pos_px - 2000 * gui.scale:
                 pl_render_pos = self.mirror_cache[i]
                 pl_entry_on = album_dex[i]
                 album_dex_on = i
@@ -15406,7 +15408,7 @@ class ComboPlaylist:
         while pl_render_pos < self.pl_pos_px + window_size[1] and \
                         pl_entry_on < len(default_playlist):
 
-            if not render and pl_render_pos + self.pl_album_art_size + 200 > self.pl_pos_px:
+            if not render and pl_render_pos + self.pl_album_art_size + 200 * gui.scale > self.pl_pos_px:
                 render = True
 
             index_on = default_playlist[pl_entry_on]
@@ -15428,33 +15430,47 @@ class ComboPlaylist:
 
                     if render:
                         y = pl_render_pos - self.pl_pos_px
-                        x = 20
+                        x = 20 * gui.scale
+
+
 
                         # Draw album header
                         if break_enable:
-                            x1 = 20
-                            y1 = y - 14 - 13
-                            x2 = gui.playlist_width + self.pl_album_art_size + 20
+                            x1 = 20 * gui.scale
+                            y1 = y - 1 * gui.scale
+                            x2 = gui.playlist_width + self.pl_album_art_size + 20 * gui.scale
+
+                            if gui.scale == 2 or True:
+                                y1 -= 25 * gui.scale  # hacky fix
+                                if gui.scale == 2:
+                                    draw.line(x1, y1 + 1, x2, y1 + 1, [50, 50, 50, 50])
+
                             draw.line(x1, y1, x2, y1, [50, 50, 50, 50])
 
 
-                            right_space = 22
+
+                            right_space = 22 * gui.scale
                             right_position = window_size[0] - right_space
 
                             if len(track.date) > 1:
-                                album = trunc_line(track.album, 17, window_size[0] - 120)
-                                w = draw.text_calc(album, 17) + 30
-                                draw.line(right_position - w + 10, y1, right_position + 20, y1, colours.playlist_panel_background)
+                                album = trunc_line(track.album, 17, window_size[0] - 120 * gui.scale)
+                                w = draw.text_calc(album, 17) + 30 * gui.scale
+                                draw.line(right_position - w + 10 * gui.scale, y1, right_position + 20 * gui.scale, y1, colours.playlist_panel_background)
+                                if gui.scale == 2:
+                                    draw.line(right_position - w + 10 * gui.scale, y1 + 1, right_position + 20 * gui.scale, y1 + 1,
+                                              colours.playlist_panel_background)
 
-                                draw_text((right_position, y1 - 20, 1), album, colours.folder_title, 17)
+                                draw_text((right_position, y1 - 20 * gui.scale, 1), album, colours.folder_title, 17)
 
                                 draw_text((right_position, y1 - 0, 1), track.date, colours.folder_title, 14)
                             else:
-                                album = trunc_line(track.album, 17, window_size[0] - 120)
-                                w = draw.text_calc(album, 17) + 30
-                                draw.line(right_position - w + 10, y1, right_position + 20, y1, colours.playlist_panel_background)
-
-                                draw_text((right_position, y1 - 13, 1), album, colours.folder_title, 17)
+                                album = trunc_line(track.album, 17, window_size[0] - 120 * gui.scale)
+                                w = draw.text_calc(album, 17) + 30 * gui.scale
+                                draw.line(right_position - w + 10 * gui.scale, y1, right_position + 20 * gui.scale, y1, colours.playlist_panel_background)
+                                if gui.scale == 2:
+                                    draw.line(right_position - w + 10 * gui.scale, y1 + 1, right_position + 20 * gui.scale,
+                                              y1 + 1, colours.playlist_panel_background)
+                                draw_text((right_position, y1 - 13 * gui.scale, 1), album, colours.folder_title, 17)
 
 
 
@@ -15463,19 +15479,19 @@ class ComboPlaylist:
                         draw.rect_r(a_rect, [40, 40, 40, 50], True)
                         gall_ren.render(index_on, (x, y))
 
-                        if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30 and \
-                                        mouse_position[1] < window_size[1] - gui.panelBY - 10:
-                            combo_menu.activate(index_on, (mouse_position[0] + 5, mouse_position[1] + 3))
+                        if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30 * gui.scale and \
+                                        mouse_position[1] < window_size[1] - gui.panelBY - 10 * gui.scale:
+                            combo_menu.activate(index_on, (mouse_position[0] + 5 * gui.scale, mouse_position[1] + 3 * gui.scale))
 
                     min = self.pl_album_art_size
 
             if render:
 
-                x = self.pl_album_art_size + 20
+                x = self.pl_album_art_size + 20 * gui.scale
                 y = pl_render_pos - self.pl_pos_px
 
                 rect = [x, y, gui.playlist_width, prefs.playlist_row_height]
-                s_rect = [x, y, gui.playlist_width, prefs.playlist_row_height - 1]
+                s_rect = [x, y, gui.playlist_width - 15 * gui.scale, prefs.playlist_row_height - 1]
                 fields.add(rect)
                 # draw.rect_r(rect,[255,0,0,30], True)
 
@@ -15526,7 +15542,7 @@ class ComboPlaylist:
 
 
                 # Draw track text
-                line_render(track, pl_entry_on, y + gui.playlist_text_offset, playing, 255, x + 17, gui.playlist_width - 28,
+                line_render(track, pl_entry_on, y + gui.playlist_text_offset, playing, 255, x + 17 * gui.scale, gui.playlist_width - 28 * gui.scale,
                             style=prefs.line_style)
 
                 # Right click menu
@@ -15778,9 +15794,11 @@ def update_layout_do():
 
     if gui.combo_mode:
         gui.playlist_row_height = prefs.playlist_row_height #31
-        gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)#6
-        gui.row_font_size = prefs.playlist_font_size #13
-        gui.scroll_hide_box = (window_size[0] - (28 * gui.scale) - 2, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+        gui.row_font_size = prefs.playlist_font_size
+        gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
+        gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))#6
+         #13
+        gui.scroll_hide_box = (window_size[0] - (28 * gui.scale) - 2 * gui.scale, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
     else:
         gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
         gui.playlist_row_height = prefs.playlist_row_height
@@ -15788,14 +15806,17 @@ def update_layout_do():
         gui.row_font_size = prefs.playlist_font_size  # 13
         gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
         gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
-        gui.playlist_text_offset = int((gui.playlist_row_height - gui.pl_text_real_height) / 2)
+        gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
         # To improve
-        if system == 'linux':
-            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 * gui.scale - 0) / 2)) - 11 #* gui.scale
+        if system == 'linux' and gui.scale == 1:
+            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+            #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
 
-    if gui.scale > 1:
-        #gui.playlist_text_offset += 17
-        gui.playlist_row_height *= gui.scale
+    # if gui.scale > 1:
+    #     #gui.playlist_text_offset += 17
+    #     #gui.playlist_row_height *= gui.scale
+    #     pass
+
     gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
 
     if side_panel_enable is True:
