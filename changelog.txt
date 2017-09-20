@@ -17,6 +17,7 @@ v2.5.2
  - Fixed rare bug with multiple tracks showing as selected on click
  - Fixed rare display corruption when showing level meter
  - Fixed menu activation hitbox overlapping scroll bar in Art + Tracks view
+ - Improved integration with budgie desktop (linux)
  - Improved volume bar sliding performance under some configurations
 
 

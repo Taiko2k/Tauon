@@ -1080,6 +1080,7 @@ try:
     if save[63] is not None:
         prefs.ui_scale = save[63]
         #gui.scale = prefs.ui_scale
+        #prefs.ui_scale = 1.5
         gui.__init__()
 
     master_library = save[0]
@@ -4189,8 +4190,8 @@ if system == 'windows':
         keyboardHookThread.start()
 
 elif system != 'mac':
-
-    if prefs.mkey and 'gnome' in os.environ.get('DESKTOP_SESSION'):
+    de = os.environ.get('DESKTOP_SESSION')
+    if prefs.mkey and ('gnome' in de or 'budgie-desktop' in de):
         media_key_mode = 1
     elif prefs.mkey and os.path.isfile(install_directory + "/pyxhook.py"):
         media_key_mode = 2
@@ -11540,17 +11541,21 @@ def worker1():
                     upper = os.path.dirname(target_dir)
                     cont = os.listdir(target_dir)
                     new = upper + "/temporaryfolderd"
+                    error = False
                     if len(cont) == 1 and os.path.isdir(split[0] + "/" + cont[0]):
                         print("one thing")
                         os.rename(target_dir, new)
-                        shutil.move(new + "/" + cont[0], upper)
+                        try:
+                            shutil.move(new + "/" + cont[0], upper)
+                        except:
+                            error = True
                         shutil.rmtree(new)
                         print(new)
                         target_dir = upper + "/" + cont[0]
                         if not os.path.isfile(target_dir):
                             print("ERROR!")
 
-                    if prefs.auto_del_zip:
+                    if prefs.auto_del_zip and not error:
                         print("Deleting zip file: " + path)
                         os.remove(path)
 
