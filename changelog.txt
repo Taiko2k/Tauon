@@ -3,23 +3,22 @@ Changelog-------------------------------------
 
 v2.5.2
 
- - Added 2x UI display setting for HiDPI displays
-   - The user interface and assets native resolution is doubled
-   - Album art's maximum resolution remains at it's native
-   - Spectrum visualiser sample resolution remains the same
-   - Spectogram sample resolution is doubled
  - Added track menu button to show album in gallery
- - Added 3 new level meter colour modes
+ - Added 3 new level meter colour modes (set new default to orange)
  - Added window outline in borderless mode
  - Added option to disable deleting to zip extract function
+ - Added text field menu for copy and paste, removed buttons from url entry box
  - Tweaked 'view' button hitbox to be smaller
+ - Fixed text field pasting at cursor position
  - Fixed bug with transcode selecting all folders with same name
  - Fixed rare bug with multiple tracks showing as selected on click
- - Fixed rare display corruption when showing level meter
  - Fixed menu activation hitbox overlapping scroll bar in Art + Tracks view
- - Improved integration with budgie desktop (linux)
- - Improved volume bar sliding performance under some configurations
-
+ - Fixed error messages appearing behind url box
+ - [Linux] Added 2x UI display setting for HiDPI displays
+ - [Linux] Fixed rare display corruption when showing level meter
+ - [Linux] Fixed media keys not working with new version of Gnome (3.26)
+ - [Linux] Improved integration with budgie desktop
+ - [Linux] Improved volume bar sliding performance under some configurations
 
 
 v2.5.1
