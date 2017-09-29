@@ -261,7 +261,7 @@ quick_d_timer = Timer()
 broadcast_update_timer = Timer()
 broadcast_update_timer.set()
 core_timer = Timer()
-
+gallery_select_animate_timer = Timer()
 
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -613,7 +613,7 @@ class GuiVar:
         self.level_peak = [0, 0]
         self.level = 0
         self.time_passed = 0
-        self.level_meter_colour_mode = 0
+        self.level_meter_colour_mode = 3
 
         self.vis = 2  # visualiser mode setting
         self.spec = None
@@ -733,6 +733,8 @@ class GuiVar:
         self.lightning_copy = False
 
         self.uni_box = SDL_Rect(0, 0, 100, 100)
+
+        self.gallery_animate_highlight_on = 0
 
 
 
@@ -4209,6 +4211,8 @@ elif system != 'mac':
                 global mediaKey
                 global mediaKey_pressed
 
+                print(what)
+
                 if what == 'Play':
                     mediaKey = 'play'
                     mediaKey_pressed = True
@@ -4229,7 +4233,7 @@ elif system != 'mac':
 
             if media_key_mode == 1:
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-                bus_object = bus.get_object('org.gnome.SettingsDaemon',
+                bus_object = bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
                                             '/org/gnome/SettingsDaemon/MediaKeys')
 
                 # this is what gives us the multi media keys.
@@ -5755,16 +5759,27 @@ class TextBox:
             if 'http://' in self.text and 'http://' in clip:
                 self.text = ""
 
+            clip = clip.rstrip(" ").lstrip(" ")
+            clip = clip.replace('\n', ' ').replace('\r', '')
 
+            self.eliminate_selection()
+            self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+                self.text) - self.cursor_position:]
 
-            self.text += clip.rstrip(" ").lstrip(" ")
-            self.text = self.text.strip("\n\r")
+    def copy(self):
+
+        text = self.get_selection()
+        if text != "":
+            SDL_SetClipboardText(text.encode('utf-8'))
 
     def set_text(self, text):
 
         self.text = text
         self.cursor_position = 0
         self.selection = 0
+
+    def clear(self):
+        self.text = ""
 
     def eliminate_selection(self):
         if self.selection != self.cursor_position:
@@ -5799,6 +5814,10 @@ class TextBox:
         if click is False:
             click = input.mouse_click
 
+        #
+        # if field_menu.active:
+        #     click = False
+
         # global key_return_press
         # global editline
         # if editline != "" and key_return_press:
@@ -5816,8 +5835,18 @@ class TextBox:
 
         if width > 0 and active:
 
-            # Add text from input
+            rect = (x - 3, y - 2, width - 3, 21)
 
+            # Activate Menu
+            if coll_point(mouse_position, rect):
+                if right_click or level_2_right_click:
+                    field_menu.activate(self)
+
+            if click and field_menu.active:
+                # field_menu.click()
+                click = False
+
+            # Add text from input
             if input_text != "":
                 self.eliminate_selection()
                 self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
@@ -5852,9 +5881,7 @@ class TextBox:
                     self.text) - self.cursor_position:]
 
             if key_ctrl_down and key_c_press:
-                text = self.get_selection()
-                if text != "":
-                    SDL_SetClipboardText(text.encode('utf-8'))
+                self.copy()
 
             if key_ctrl_down and key_x_press:
                 if len(self.get_selection()) > 0:
@@ -5863,9 +5890,9 @@ class TextBox:
                         SDL_SetClipboardText(text.encode('utf-8'))
                     self.eliminate_selection()
 
-            rect = (x - 3, y - 2, width - 3, 21)
+
             # draw.rect_r(rect, [255, 50, 50, 80], True)
-            if coll_point(mouse_position, rect):
+            if coll_point(mouse_position, rect) and not field_menu.active:
                 gui.cursor_mode = 4
                 SDL_SetCursor(cursor_text)
             elif gui.cursor_mode == 4:
@@ -5875,6 +5902,7 @@ class TextBox:
                 gui.flag_special_cursor = True
 
             fields.add(rect)
+
 
             # Delete key to remove text in front of cursor
             if key_del:
@@ -9262,7 +9290,9 @@ def test_show(dummy):
     return album_mode
 
 def show_in_gal(track):
-    goto_album(playlist_selected)
+    gui.gallery_animate_highlight_on = goto_album(playlist_selected)
+    gallery_select_animate_timer.set()
+
 
 
 # Create track context menu
@@ -9270,7 +9300,7 @@ track_menu = Menu(195, show_icons=True) #175
 
 track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
-track_menu.add('Show →', show_in_gal, pass_ref=True, show_test=test_show)
+track_menu.add('Show  🡲', show_in_gal, pass_ref=True, show_test=test_show)
 
 track_menu.add_sub("Meta...", 150)
 
@@ -10089,7 +10119,22 @@ x_menu = Menu(190, show_icons=True)
 view_menu = Menu(170)
 set_menu = Menu(150)
 vis_menu = Menu(140)
+field_menu = Menu(140)
 
+def field_copy(text_field):
+    text_field.copy()
+
+
+
+def field_paste(text_field):
+    text_field.paste()
+
+def field_clear(text_field):
+    text_field.clear()
+
+field_menu.add("Copy", field_copy, pass_ref=True)
+field_menu.add("Paste", field_paste, pass_ref=True)
+field_menu.add("Clear", field_clear, pass_ref=True)
 
 
 def vis_off():
@@ -10419,11 +10464,14 @@ def goto_album(playlist_no, down=False):
 
     px = 0
     row = 0
+    re = 0
 
     for i in range(len(album_dex)):
         if i == len(album_dex) - 1:
+            re = i
             break
         if album_dex[i + 1] - 1 > playlist_no - 1:
+            re = i
             break
         row += 1
         if row > row_len - 1:
@@ -10445,6 +10493,12 @@ def goto_album(playlist_no, down=False):
         while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[1] - 40:
 
             album_pos_px += 1
+
+    if len(album_dex) > 0:
+
+        return album_dex[re]
+    else:
+        return 0
 
 def goto_album_align_bottom(playlist_no):
     goto_album(playlist_no)
@@ -12820,7 +12874,7 @@ class Over:
         if toggle_enable_web(1):
 
             link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
-            link_rect = [x + 280, y, link_pa[1], 18]
+            link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
             fields.add(link_rect)
 
 
@@ -13079,8 +13133,11 @@ class Over:
         x = self.box_x + self.item_x_offset
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
-        y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_scale, "2x UI scaling")
+
+        if system == "linux":
+            y += 28 * gui.scale
+            self.toggle_square(x, y, toggle_scale, "2x UI scaling")
+
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
         ### y += 28
@@ -13115,7 +13172,7 @@ class Over:
     def about(self):
 
         x = self.box_x + int(self.w * 0.3) + 65 * gui.scale  # 110 + int((self.w - 110) / 2)
-        y = self.box_y + 76 * gui.scale
+        y = self.box_y + 81 * gui.scale
         gui.win_fore = colours.sys_background
 
         if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
@@ -13127,12 +13184,26 @@ class Over:
         else:
             self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
         x += 20 * gui.scale
+        y -= 10 * gui.scale
 
         draw_text((x, y), "Tauon Music Box", colours.grey(200), 216)
         y += 32 * gui.scale
         draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
         draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
+        y += 21 * gui.scale
+        link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
+        link_rect = [x, y, link_pa[1], 18 * gui.scale]
+        if coll_point(mouse_position, link_rect):
+            if gui.cursor_mode == 0 and not self.click:
+                SDL_SetCursor(cursor_hand)
+                gui.cursor_mode = 1
+            if self.click:
+                webbrowser.open(link_pa[2], new=2, autoraise=True)
+        elif gui.cursor_mode == 1:
+            gui.cursor_mode = 0
+            SDL_SetCursor(cursor_standard)
+        fields.add(link_rect)
 
         x = self.box_x + self.w - 115 * gui.scale
         y = self.box_y + self.h - 35 * gui.scale
@@ -15944,6 +16015,7 @@ while running:
         mouse4 = False
         mouse5 = False
         right_click = False
+        level_2_right_click = False
         input.mouse_click = False
         middle_click = False
         mouse_up = False
@@ -16697,7 +16769,15 @@ while running:
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.playlist_active)
 
-        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox):
+        # Transfer click register to menus
+        if input.mouse_click:
+            for instance in Menu.instances:
+                if instance.active:
+                    instance.click()
+                    input.mouse_click = False
+                    ab_click = True
+
+        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
 
@@ -16730,14 +16810,11 @@ while running:
                 if pref_box.lock is False:
                     pass
 
+        if right_click:
+            level_2_right_click = True
 
-        # Transfer click register to menus
-        if input.mouse_click:
-            for instance in Menu.instances:
-                if instance.active:
-                    instance.click()
-                    input.mouse_click = False
-                    ab_click = True
+        if right_click and (radiobox or renamebox or rename_playlist_box or gui.rename_folder_box):
+            right_click = False
 
 
         if encoding_box is True and input.mouse_click:
@@ -17305,6 +17382,26 @@ while running:
                                           c, True) #[150, 80, 222, 255]
                                 draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
+
+                            # Draw selection animation
+                            if gui.gallery_animate_highlight_on == album_dex[album_on] and gallery_select_animate_timer.get() < 1.5:
+
+                                t = gallery_select_animate_timer.get()
+                                c = colours.gallery_highlight
+                                if t < 0.2:
+                                    a = int(255 * (t / 0.2))
+                                elif t < 0.5:
+                                    a = 255
+                                else:
+                                    a = int(255 - 255 * (t - 0.5))
+
+
+                                c = [c[1], c[2], c[0], a]
+                                draw.rect((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
+                                          c, True) #[150, 80, 222, 255]
+                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
+                                          colours.side_panel_background, True)
+                                gui.update += 1
 
 
                             # Draw back colour
@@ -18791,40 +18888,6 @@ while running:
 
 
 
-            if gui.message_box:
-                if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
-                    gui.message_box = False
-                    key_return_press = False
-
-                w1 = draw.text_calc(gui.message_text, 15) + 74 * gui.scale
-                w2 = draw.text_calc(gui.message_subtext, 12) + 74 * gui.scale
-                w = max(w1, w2)
-
-                if w < 210 * gui.scale:
-                    w = 210 * gui.scale
-
-                h = 60 * gui.scale
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(55), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
-
-                if gui.message_mode == 'info':
-                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'warning':
-                    message_warning_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'done':
-                    message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'arrow':
-                    message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-
-
-                if len(gui.message_subtext) > 0:
-                    draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(190), 15)
-                    draw_text((x + 63, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(190), 12)
-                else:
-                    draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(190), 15)
 
             if radiobox:
 
@@ -18895,13 +18958,13 @@ while running:
 
                 draw.button("GO", x + (8 + 380 + 10) * gui.scale, y + 38 * gui.scale, 40 * gui.scale)
 
-                if draw.button("Paste", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
-                    radio_field.paste()
+                # if draw.button("Paste", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
+                #     radio_field.paste()
+                #
+                # if draw.button("Clear", x + 277 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
+                #     radio_field.text = ""
 
-                if draw.button("Clear", x + 277 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
-                    radio_field.text = ""
-
-                if draw.button("Save", x + 217 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
+                if draw.button("Save", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
                     pctl.save_urls.append(radio_field.text)
 
                 if (input.level_2_enter or (
@@ -18957,9 +19020,43 @@ while running:
                     draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
                     draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
 
+
                 gui.level_2_click = False
 
+            if gui.message_box:
+                if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                    gui.message_box = False
+                    key_return_press = False
 
+                w1 = draw.text_calc(gui.message_text, 15) + 74 * gui.scale
+                w2 = draw.text_calc(gui.message_subtext, 12) + 74 * gui.scale
+                w = max(w1, w2)
+
+                if w < 210 * gui.scale:
+                    w = 210 * gui.scale
+
+                h = 60 * gui.scale
+                x = int(window_size[0] / 2) - int(w / 2)
+                y = int(window_size[1] / 2) - int(h / 2)
+
+                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(55), True)
+                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+
+                if gui.message_mode == 'info':
+                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'warning':
+                    message_warning_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'done':
+                    message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'arrow':
+                    message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+
+
+                if len(gui.message_subtext) > 0:
+                    draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(190), 15)
+                    draw_text((x + 63, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(190), 12)
+                else:
+                    draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(190), 15)
 
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
