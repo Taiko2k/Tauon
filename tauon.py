@@ -218,6 +218,8 @@ from t_tagscan import Ape
 from t_tagscan import Wav
 from t_extra import *
 
+
+
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
@@ -4201,17 +4203,17 @@ elif system != 'mac':
     if media_key_mode == 1 or prefs.enable_mpris:
         def gnome():
 
+
             from gi.repository import GObject
             import dbus
             import dbus.service
             import dbus.mainloop.glib
 
+
             def on_mediakey(comes_from, what):
 
                 global mediaKey
                 global mediaKey_pressed
-
-                print(what)
 
                 if what == 'Play':
                     mediaKey = 'play'
@@ -4317,7 +4319,7 @@ elif system != 'mac':
                             'CanRaise': True,
                             'HasTrackList': False,
                             'Identity': 'Tauon Music Box',
-                            'DesktopEntry': 'Tauon Music Box',
+                            'DesktopEntry': 'tauonmb',
                             #'SupportedUriSchemes': ['file']
                             'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
                             'SupportedMileTypes': dbus.Array([
@@ -4635,7 +4637,9 @@ stats_gen = GStats()
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
+
 SDL_Init(SDL_INIT_VIDEO)
+
 #TTF_Init()
 
 window_title = t_title
@@ -12946,7 +12950,7 @@ class Over:
 
         w = width
         if w == 0:
-            w = draw.text_calc(text, 11) + 10 * gui.scale
+            w = draw.text_calc(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
         draw.rect_r(rect, colours.alpha_grey(11), True)
         fields.add(rect)
@@ -16006,6 +16010,7 @@ gal_right = False
 
 
 get_sdl_input = GetSDLInput()
+
 
 while running:
     # bm.get('main')

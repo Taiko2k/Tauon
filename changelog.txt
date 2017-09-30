@@ -14,7 +14,9 @@ v2.5.2
  - Fixed rare bug with multiple tracks showing as selected on click
  - Fixed menu activation hitbox overlapping scroll bar in Art + Tracks view
  - Fixed error messages appearing behind url box
- - [Linux] Added 2x UI display setting for HiDPI displays
+ - [Windows] Fixed buttons in settings having overhanging text
+ - [Linux] Added 2x UI display setting for HiDPI displays (testing)
+ - [Linux] Added symbolic icon for improved desktop integration
  - [Linux] Fixed rare display corruption when showing level meter
  - [Linux] Fixed media keys not working with new version of Gnome (3.26)
  - [Linux] Improved integration with budgie desktop
