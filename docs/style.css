@@ -113,7 +113,7 @@ kbd {
 .content-container {
   margin: auto;
 
-  max-width: 1500px;
+  max-width: 1420px;
   text-align: center;
   background-color: grey;
 }
@@ -130,36 +130,23 @@ kbd {
   float: left;
   display: inline-block;
   margin: 0px;
+  margin-left: 20px;
 
 
 }
 
-
-
 .feature-card {
   background-color: rgb(33, 33, 33);
   width: 650px;
-  margin: 20px;
+
+  margin-left: 15px;
+  margin-bottom: 15px;
   padding: 2px;
   padding-left: 15px;
 
 
 }
 
-.features {
-
-  /*background-color: rgb(168, 168, 168);*/
-  display:flex;
-  /*justify-content: center;*/
-  flex-wrap: wrap;
-  align-content: flex-start;
-  align-items: flex-start;
-  padding-left: 100px;
-  padding-right: 100px;
-  margin: 0 auto;
-  width: 1700px;
-
-}
 
 .news-block {
   color: rgb(215, 215, 215);
@@ -187,8 +174,6 @@ kbd {
   float: left;
 
 }
-
-
 
 .extra-holder {
 
@@ -221,11 +206,7 @@ margin-left: 75%;
 #deb {
   background-color: rgb(224, 140, 80);
 }
-/*.mid {
-  background-color: rgb(27, 27, 27);
-  width: auto;
-  height: auto;
-}*/
+
 #scrn1 {
   max-height: 470px;
   box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.3), 0 7px 28px 0 rgba(0, 0, 0, 0.25);
