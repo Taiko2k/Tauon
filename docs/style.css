@@ -28,6 +28,10 @@ kbd {
   height: 800px;
 }
 
+.bottom {
+  background-color: rgb(25, 25, 25);
+}
+
 .title-h {
   width: auto;
   text-align: center;
