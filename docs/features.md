@@ -17,6 +17,7 @@
 | MPC |          |          |         |
 | AIFF|          |          |         |
 | CD  |          |          |         |
+| MOD |          |          |         |
 
 
 ### UI and Layouts
@@ -28,6 +29,7 @@
  - Basic spectrum visualization and level meter
  - Custom columns with sorting
  - Lyrics display
+ - High DPI (2x)
 
 ### External service integration
 
@@ -68,20 +70,11 @@
 
 ## Other common player features not implemented:
 
- - Codecs: ALAC, Musepack, TAK
- - Gapless playback (crossfade is used)
- - Folder tree view
+ - Codecs: ALAC, Musepack, TAK, MOD
  - Folder monitoring / auto update
- - Skins
- - Customisable keyboard shortcuts
  - Global hotkeys (other than default media keys)
- - High DPI
  - Audio EQ setting
- - DSPs / Audio Plugins
- - Extentions
- - Audiobooks
  - Tag editing
- - Ratings
  - Read from archive (auto extract zip function exists)
  - Artist/metadata scraping
  - All tag metadata
@@ -91,3 +84,18 @@
  - Audio CD
  - Auto DJ
  - Timer / Alarm
+ - Genre filtering
+
+## Won't implement / Refused
+
+  - Expanded support for proprietary formats (such as WMA)
+  - Per track ratings
+  - Folder tree view
+
+## Out of scope
+
+  - Audiobooks
+  - Extensions
+  - Skins
+  - Gapless playback
+  - DSPs / Audio Plugins

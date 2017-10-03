@@ -11190,7 +11190,7 @@ view_menu.add("Tracks + Side Panel", view_standard_meta)
 view_menu.add("Tracks + Gallery", force_album_view, hint="MB4")
 view_menu.add("Gallery Only", gallery_only_view)
 view_menu.add("Art + Tracks", toggle_combo_view)
-view_menu.add("Single Art + Lyrics", switch_showcase)
+view_menu.add("Lyrics", switch_showcase)
 # ---------------------------------------------------------------------------------------
 
 core_use = 0
@@ -11740,11 +11740,13 @@ def worker1():
             if job[2] == True:
                 try:
                     shutil.rmtree(job[0])
+
                 except:
                     show_message("Something has gone horribly wrong!.", 'warning', "Could not delete " + job[0])
                     gui.update += 1
                     move_in_progress = False
                     return
+
 
                 show_message("Folder move complete.", 'done', "Folder name: " + job[3])
             else:

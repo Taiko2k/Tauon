@@ -35,3 +35,5 @@ For __Arch Linux__, install from the AUR:
 
 
 For further documentation see [guide](docs/guide.md).
+
+Feel free to submit any issues or feature requests. For casual suggestions or help you can contact me on discord https://discord.gg/dNSsxM3
