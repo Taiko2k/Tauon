@@ -16,6 +16,9 @@ h3 {
   font-size: 1em;
 }
 
+kbd {
+  background-color: rgb(59, 59, 59);
+}
 
 
 .top {
@@ -28,7 +31,7 @@ h3 {
 .title-h {
   width: auto;
   text-align: center;
-  padding-top: 60px;
+  padding-top: 50px;
 }
 
 .scrn-holder {
@@ -44,32 +47,36 @@ h3 {
   background-color: #4CAF50; /* Green */
   border: none;
   color: white;
-  padding: 10px 29px;
+  padding: 2px 15px;
 
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 18px;
-
-
+  font-size: 14px;
 }
 
 .divider{
-    width:120px;
+    width:50px;
     height:auto;
     display:inline-block;
 }
 
 .dl-holder {
-  width: 100%;
-  margin-top: 25px;
+  /*box-sizing: border-box;*/
+  width: auto;
+  margin-top: 10px;
+
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 10px;
+  padding: 4px;
+  margin-right: 0px;
+  margin-left: 300px;
+  background-color: rgb(41, 41, 41);
 }
 
 
 .space {
-  height: 80px;
+  height: 10px;
   clear: both;
 }
 
@@ -79,6 +86,7 @@ h3 {
   /*margin-top: 80px;*/
   font-size: 1.1em;
   text-align: left;
+  font-weight: bold;
 
 }
 
@@ -101,13 +109,40 @@ h3 {
   color: rgb(215, 215, 215);
 }
 
+
+.content-container {
+  margin: auto;
+
+  max-width: 1500px;
+  text-align: center;
+  background-color: grey;
+}
+
+.right-container {
+  float: left;
+  display: inline-block;
+  margin: 0px;
+
+
+}
+
+.left-container {
+  float: left;
+  display: inline-block;
+  margin: 0px;
+
+
+}
+
+
+
 .feature-card {
   background-color: rgb(33, 33, 33);
-  width: 700px;
-  margin: auto;
-  height: 220px;
-  margin-bottom: 35px;
+  width: 650px;
+  margin: 20px;
+  padding: 2px;
   padding-left: 15px;
+
 
 }
 
@@ -115,12 +150,28 @@ h3 {
 
   /*background-color: rgb(168, 168, 168);*/
   display:flex;
-  justify-content: center;
-  flex-flow: row wrap;
+  /*justify-content: center;*/
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: flex-start;
   padding-left: 100px;
   padding-right: 100px;
+  margin: 0 auto;
+  width: 1700px;
+
+}
+
+.news-block {
+  color: rgb(215, 215, 215);
+  text-align: left;
+  padding-left: 0px;
+  font-size: 0.95em;
+
+}
 
 
+.points li {
+  margin-bottom: 2px;
 }
 
 #vers {
