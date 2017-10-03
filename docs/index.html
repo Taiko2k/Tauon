@@ -27,43 +27,144 @@
 <a href="https://github.com/Taiko2k/tauonmb"<div id="g-link">View Github page</div></a>
 </div>
 
-<div class="dl-holder">
-<a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
-<div class="divider"></div>
-<a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
-<div class="divider"></div>
-<a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
 
 <div class="space"></div>
 
-<div class="features">
+<div class="content-container">
+
+  <div class="left-container">
+
+    <div class="feature-card">
+    <div class="desc"><p>Features<p></div>
+      <div class="points">
+      <ul>
+        <li><span class="p-text">Easy drag and drop track importing</span></li>
+        <li><span class="p-text">Supports <strong>MP3</strong>, <strong>FLAC</strong> and other codecs</span></li>
+        <li><span class="p-text">Automatically detects <strong>CUE</strong> sheets</span></li>
+        <li><span class="p-text">No hidden changes to your music library in the background</span></li>
+        <li><span class="p-text">Visually compare individual track play times</span></li>
+        <li><span class="p-text">Rename and delete folders straight from the UI</span></li>
+        <li><span class="p-text">Open tracks in your favourite tag editor</span></li>
+        <li><span class="p-text">Broadcast asynchronously like a DJ <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#outbound-streaming--broadcasting><sup>How?</sup></a></span></li>
+        <li><span class="p-text">Simple batch transcoding of albums to single folders <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#transcoding-albums><sup>How?</sup></a></span></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="right-container">
+
+    <div class="feature-card">
+    <div class="desc"><p>OCTOBER 3 - Issue with Arch Linux<br><p></div>
+    <div class="news-block">
+      <p>Libsdl2 v2.0.6 is causing problems starting, an update should be avaliable soon, in the mean time you can try downgrade to v2.0.5 as a workaround.
+      <br><kbd>sudo pacman -U /var/cache/pacman/pkg/sdl2-2.0.5-4-x86_64.pkg.tar.xz</kbd></p>
+
+    </div>
+  </div>
+
+
+    <div class="feature-card">
+    <div class="desc"><p>SEPTEMBER 3 - Version 2.5.1 Released<br><p></div>
+    <div class="news-block">
+      <p>Mostly bug fixes and various tweaks.
+      <br>Trying an experimental .deb release for Ubuntu. May or may not work.</p>
+
+      <div class="dl-holder">
+      <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
+      <div class="divider"></div>
+      <a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
+      <div class="divider"></div>
+      <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  <!-- <div class="feature-card">
+  <div class="desc"><p>News<p></div>
+  <div class="news-block">
+    <p>OCTOBER 3 - Something...<br> Bug fixes etc...</p>
+
+    <div class="dl-holder">
+    <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
+    <div class="divider"></div>
+    <a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
+    <div class="divider"></div>
+    <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
+
+    </div>
+  </div> -->
+
+
+
+</div>
+
+<!-- <div class="left-container">
 
 <div class="feature-card">
-<div class="desc"><p>A modern and streamlined player that puts you in control of your music library<p></div>
+<div class="desc"><p>Features<p></div>
 <div class="points">
 <ul>
   <li><span class="p-text">Easy drag and drop track importing</span></li>
-  <li><span class="p-text">Assumes folders are albums</span></li>
-  <li><span class="p-text">Functions for renaming and deleting folders</span></li>
-  <li><span class="p-text">Function for renaming tracks in folders</span></li>
-  <li><span class="p-text">Open tracks in your favourite tag editor</span></li>
+  <li><span class="p-text">Supports MP3, FLAC and other codecs</span></li>
+  <li><span class="p-text">Automatically detects CUE sheets</span></li>
   <li><span class="p-text">No hidden changes to your music library in the background</span></li>
+  <li><span class="p-text">Visually compare individual track play times</span></li>
+  <li><span class="p-text">Rename and delete folders straight from the UI</span></li>
+  <li><span class="p-text">Open tracks in your favourite tag editor</span></li>
+  <li><span class="p-text">Broadcast asynchronously like a DJ <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#outbound-streaming--broadcasting><sup>How?</sup></a></span></li>
+  <li><span class="p-text">Simple batch transcoding of albums to single folders <a href=https://github.com/Taiko2k/tauonmb/blob/master/docs/guide.md#transcoding-albums><sup>How?</sup></a></span></li>
   </ul>
 </div>
+
+</div>
+
+<div class="right-container">
 
 </div>
 
 <div class="feature-card">
-<div class="desc"><p>Playlists at the forefront<p></div>
-<div class="points">
-<ul>
-  <li><span class="p-text">Quickly create, filter, combine and delete playlists</span></li>
-  <li><span class="p-text">No need to create a 'library' to get started</span></li>
-  <li><span class="p-text">Export and import playlists in the XSPF file format</span></li>
-  </ul>
+<div class="desc"><p>News<p></div>
+<div class="news-block">
+  <p>OCTOBER 3 - Something...<br> Bug fixes etc...</p>
+
+  <div class="dl-holder">
+  <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
+  <div class="divider"></div>
+  <a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
+  <div class="divider"></div>
+  <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
+
+  </div>
 </div>
 </div>
 
+<div class="feature-card">
+<div class="desc"><p>News<p></div>
+<div class="news-block">
+  <p>SEPTEMBER 5 - Version 2.5.1 released.<br> Bug fixes etc...</p>
+
+  <div class="dl-holder">
+  <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/Tauon.Music.Box.v2.5.1-64bit-Setup.exe"><div class="button" id="exe">.exe</div></a>
+  <div class="divider"></div>
+  <a href="https://aur.archlinux.org/packages/tauon-music-box/"><div class="button" id="aur">AUR</div></a>
+  <div class="divider"></div>
+  <a href="https://github.com/Taiko2k/tauonmb/releases/download/v2.5.1/tauonmusicbox_2.5.1-1.deb"><div class="button" id="deb">.deb</div></a>
+
+  </div>
+</div>
+</div>
+
+
+</div>
+
+</div> -->
+
+<!--
 <div class="feature-card">
 <div class="desc"><p>Visualise your playtimes<p></div>
 <div class="points">
@@ -111,7 +212,7 @@
 </div>
 </div>
 
-</div>
+</div> -->
 
 <div class="space"></div>
 
