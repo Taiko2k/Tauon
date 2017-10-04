@@ -28,21 +28,23 @@ scroll-gallery-row=True
 scroll-gallery-wheel=90
 
 # --- Template Defaults ----------------------------------------------------
-# See rename track box for 
+# See rename track box for
 
 rename-tracks-default=%n. %a - %t%x
 rename-folder-default=%a - %b
 
 # --- Windows Fonts --------------------------------------------------------
 # Currently optimised for Meiryo (preferred) and Arial (fallback)
+# ! Changing fonts is not supported
 
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
 #font-height-offset=0
 windows-font-star-offset=-1
- 
+
 # --- Linux Fonts -----------------------------------------------------------
 # Currently optimised for Noto
+# ! Changing fonts is not supported
 
 #linux-font=Noto Sans
 #linux-font-bold=Noto Sans Bold
