@@ -14,6 +14,8 @@ v2.5.2
  - Fixed rare bug with multiple tracks showing as selected on click
  - Fixed menu activation hitbox overlapping scroll bar in Art + Tracks view
  - Fixed error messages appearing behind url box
+ - Fixed gallery view input visual feedback delay when selecting
+ - Fixed template settings in config file not having effect
  - [Windows] Fixed buttons in settings having overhanging text
  - [Linux] Added 2x UI display setting for HiDPI displays (testing)
  - [Linux] Added symbolic icon for improved desktop integration
