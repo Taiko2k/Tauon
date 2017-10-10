@@ -1,12 +1,17 @@
 star.p
 state.p
+star.p*
 __pycache__/
 hsaudiotag/
 stagger/
 pylast/
+PyLyrics/
+cache/
 .idea/
 pyperclip/
+sdl2/
 lib/*.dll
+lib/*.so
 *.pyd
 *.pyx
 encoder/
@@ -18,4 +23,3 @@ a.ogg
 stats.txt
 *.idl
 *.tlb
-
