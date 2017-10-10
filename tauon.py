@@ -17633,7 +17633,7 @@ while running:
 
                     if not gui.combo_mode:
                         sy = 31 * gui.scale
-                        ey = window_size[1] - (30 - 22) * gui.scale
+                        ey = window_size[1] - (30 + 22) * gui.scale
 
                         if len(default_playlist) < 50:
                             sbl = 85 * gui.scale
@@ -17709,7 +17709,7 @@ while running:
                     else:
                         # Combo mode scroll:
                         sy = 31 * gui.scale
-                        ey = window_size[1] - (30 - 22) * gui.scale
+                        ey = window_size[1] - (30 + 22) * gui.scale
 
                         sbl = 105 * gui.scale
 

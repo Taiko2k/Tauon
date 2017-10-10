@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v2.5.3
+
+ - Fixed scrollbar scrolling past bottom panel
+
 v2.5.2
 
  - Added track menu button to show album in gallery
