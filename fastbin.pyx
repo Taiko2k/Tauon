@@ -68,3 +68,4 @@ def fast_display(spec, sspec):
         i += 1
 
     return sspec
+

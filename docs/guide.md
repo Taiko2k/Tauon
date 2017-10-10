@@ -1,4 +1,4 @@
-Basic usage guide. Updated for v2.5.1
+Basic usage guide. Updated for v2.5.3
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
@@ -164,7 +164,7 @@ Intended to be an easy way to reduce file sizes for copying tracks to devices wi
  - If you need MP3 output, repeat above steps for LAME (lame.exe). For Windows you may find lame.exe on the internet. For Linux consult your package manager.
 
 2) Optionally configure settings in MENU -> SETTINGS...-> TRANSCODE
- - 64Kbps OPUS provides good sound quality with small file size, but not many players are compatible with it. (For andorid I might suggest Rocket Player or AIMP)
+ - 64Kbps OPUS provides good sound quality with small file size, but not many players are compatible with it.
  - 96kbps OGG, or 128kbs MP3 provide comparable quality and are more widely compatible.
  - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail.
 
