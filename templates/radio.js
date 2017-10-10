@@ -49,7 +49,7 @@ var sound      = document.createElement('audio');
 sound.id       = 'audio-player';
 sound.controls = 'controls';
 sound.src      = "http://" + window.location.hostname + ":8000";
-sound.type     = 'audio/mpeg';
+sound.type     = 'audio/ogg';
 document.getElementById('player').appendChild(sound);
 
 tick()
