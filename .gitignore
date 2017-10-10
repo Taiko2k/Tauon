@@ -4,6 +4,7 @@ __pycache__/
 hsaudiotag/
 stagger/
 pylast/
+.idea/
 pyperclip/
 lib/*.dll
 *.pyd
@@ -12,3 +13,9 @@ encoder/
 *.flac
 build/
 *.csv
+a.ogg
+*.bat
+stats.txt
+*.idl
+*.tlb
+
