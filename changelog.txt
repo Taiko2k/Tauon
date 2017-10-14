@@ -3,7 +3,11 @@ Changelog-------------------------------------
 
 v2.5.3
 
+ - Changed behavior of track info box lyrics button to show lyrics in lyrics view
+ - Moved 'copy lyrics' function to lyrics menu
+ - Added cursor to seek bar on wheel click
  - Fixed scrollbar scrolling past bottom panel
+ - Added transcode folder entry to folder menu
 
 v2.5.2
 

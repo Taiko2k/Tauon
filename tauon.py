@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.5.2"
+t_version = "v2.5.3"
 t_title = 'Tauon Music Box'
 print(t_title + " " + t_version)
 print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
@@ -725,6 +725,10 @@ class GuiVar:
         self.lightning_copy = False
 
         self.gallery_animate_highlight_on = 0
+
+        self.seek_cur_show = False
+        self.cur_time = "0"
+        self.force_showcase_index = -1
 
 
 
@@ -7615,6 +7619,27 @@ def paste_lyrics(track_object):
 showcase_menu.add('Paste Lyrics', paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
 
+def copy_lyrics_deco():
+
+    if gui.force_showcase_index >= 0:
+        index = gui.force_showcase_index
+        track = pctl.master_library[index]
+    else:
+        index = pctl.track_queue[pctl.queue_step]
+        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+    if len(track.lyrics) > 0:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def copy_lyrics(track_object):
+    copy_to_clipboard(track_object.lyrics)
+
+showcase_menu.add('Copy Lyrics', copy_lyrics, copy_lyrics_deco, pass_ref=True)
+
 def clear_lyrics(track_object):
     track_object.lyrics = ""
 
@@ -9904,7 +9929,21 @@ def lightning_copy():
     gui.lightning_copy = True
 
 #selection_menu.br()
+
+def toggle_transcode(mode=0):
+    if mode == 1:
+        return prefs.enable_transcode
+    prefs.enable_transcode ^= True
+
+if gui.scale == 2:
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
+else:
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+
+transcode_icon.colour = [239, 74, 157, 255]
+
 folder_menu.add('Reload Metadata', reload_metadata_selection)
+folder_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
 folder_menu.add('Copy Album Title', clip_title, pass_ref=True)
@@ -10056,16 +10095,7 @@ def broadcast_select_track(index):
 if prefs.enable_transcode or default_player == 'BASS':
     track_menu.br()
 
-def toggle_transcode(mode=0):
-    if mode == 1:
-        return prefs.enable_transcode
-    prefs.enable_transcode ^= True
 
-if gui.scale == 2:
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
-else:
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
-transcode_icon.colour = [239, 74, 157, 255]
 track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
 if default_player == 'BASS':
@@ -11048,8 +11078,9 @@ def gallery_only_view():
 def force_album_view():
     toggle_album_mode(True)
 
-def switch_showcase():
+def switch_showcase(index=-1):
 
+    gui.force_showcase_index = index
     if gui.combo_mode:
         toggle_combo_view()
     toggle_combo_view(showcase=True)
@@ -14077,15 +14108,34 @@ class BottomBarType1:
             pctl.pause()
             if pctl.playing_state == 0:
                 pctl.play()
+
+        fields.add(self.seek_bar_position + self.seek_bar_size)
         if coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size):
+
+            if middle_click and pctl.playing_state > 0:
+                gui.seek_cur_show = True
+
+
             clicked = True
             if mouse_wheel != 0:
 
                 pctl.seek_time(pctl.playing_time + (mouse_wheel * 3))
 
+        if gui.seek_cur_show:
+            gui.update += 1
 
-                # pctl.playing_time = pctl.new_time
+            # fields.add([mouse_position[0] - 1, mouse_position[1] - 1, 1, 1])
+            # draw.rect_r([mouse_position[0] - 1, mouse_position[1] - 1, 1, 1], [255,0,0,180], True)
 
+
+            bargetX = mouse_position[0]
+            if bargetX > self.seek_bar_position[0] + self.seek_bar_size[0]:
+                bargetX = self.seek_bar_position[0] + self.seek_bar_size[0]
+            if bargetX < self.seek_bar_position[0]:
+                bargetX = self.seek_bar_position[0]
+            bargetX -= self.seek_bar_position[0]
+            seek = bargetX / self.seek_bar_size[0]
+            gui.cur_time = get_display_time(pctl.playing_object().length * seek)
 
         if self.seek_down is True:
             if mouse_position[0] == 0:
@@ -14119,6 +14169,22 @@ class BottomBarType1:
                       (int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
                        self.seek_bar_size[1]),
                       colours.seek_bar_fill, True)
+
+        if gui.seek_cur_show:
+
+            if coll_point(mouse_position, [self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
+                if mouse_position[0] > self.seek_bar_position[0] - 1:
+                    cur = [mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
+                    draw.rect_r(cur, colours.grey(15), True)
+                    # draw.rect_r(cur, colours.grey(80))
+                    draw_text((mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time, colours.grey(180), 213,
+                              bg=colours.grey(15))
+
+                    draw.rect_r([mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
+                                [100, 100, 20, 255], True)
+
+            else:
+                gui.seek_cur_show = False
 
         # Volume Bar --------------------------------------------------------
 
@@ -15576,8 +15642,20 @@ class Showcase:
         if len(pctl.track_queue) < 1:
             return
 
-        index = pctl.track_queue[pctl.queue_step]
-        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+        # if draw.button("Return", 20, gui.panelY + 5, bg=colours.grey(30)):
+        #     pass
+
+        if gui.force_showcase_index >= 0:
+            if draw.button("Show playing", 25, gui.panelY + 20, bg=colours.grey(30)):
+                gui.force_showcase_index = -1
+
+
+        if gui.force_showcase_index >= 0:
+            index = gui.force_showcase_index
+            track = pctl.master_library[index]
+        else:
+            index = pctl.track_queue[pctl.queue_step]
+            track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
         if self.artist_mode:
 
@@ -18576,8 +18654,10 @@ while running:
                         if rect_in(rect):
                             draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
-                                show_message("Lyrics copied to clipboard")
-                                copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
+                                #show_message("Lyrics copied to clipboard")
+                                #copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
+                                track_box = False
+                                switch_showcase(r_menu_index)
                                 input.mouse_click = False
                         else:
                             draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(140), 212)
@@ -18675,15 +18755,15 @@ while running:
                 draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(150), 211)
+                draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(170), 211)
 
                 draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
                 line = trunc_line(pctl.master_library[rename_index].parent_folder_name, 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(150), 211)
+                draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211)
 
                 draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
                 line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(150), 211)
+                draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211)
 
 
             if renamebox:
