@@ -264,6 +264,7 @@ broadcast_update_timer = Timer()
 broadcast_update_timer.set()
 core_timer = Timer()
 gallery_select_animate_timer = Timer()
+search_clear_timer = Timer()
 
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -19075,7 +19076,8 @@ while running:
             # SEARCH
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
                 quick_search_mode = True
-                search_text.text = ""
+                if search_clear_timer.get() > 3:
+                    search_text.text = ""
                 input_text = ""
             elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
                         key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
@@ -19172,6 +19174,7 @@ while running:
                         search_text.text = ""
                         quick_search_mode = False
 
+
                 if len(input_text) > 0 or key_down_press is True or key_backspace_press:
 
                     gui.pl_update = 1
@@ -19245,6 +19248,8 @@ while running:
                     pctl.jump(default_playlist[search_index], search_index)
                     if album_mode:
                         goto_album(pctl.playlist_playing)
+                    quick_search_mode = False
+                    search_clear_timer.set()
 
             else:
 
