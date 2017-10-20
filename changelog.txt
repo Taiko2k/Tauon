@@ -9,6 +9,7 @@ v2.5.3
  - Duplicated transcode folder function to folder menu
  - Added cursor to seek bar on wheel click
  - Fixed scrollbar scrolling past bottom panel
+ - Fixed crash on start on openbox (Linux)
 
 v2.5.2
 

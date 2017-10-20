@@ -4177,6 +4177,7 @@ def keyboard_hook():
     listen()
 
 
+x_hook = False
 if system == 'windows':
     if prefs.mkey is True:
         print('Starting hook thread for Windows')
@@ -4185,46 +4186,48 @@ if system == 'windows':
         keyboardHookThread.start()
 
 elif system != 'mac':
-    de = os.environ.get('DESKTOP_SESSION')
-    if prefs.mkey and ('gnome' in de or 'budgie-desktop' in de):
-        media_key_mode = 1
-    elif prefs.mkey and os.path.isfile(install_directory + "/pyxhook.py"):
-        media_key_mode = 2
-
-    if media_key_mode == 1 or prefs.enable_mpris:
-        def gnome():
+    # de = os.environ.get('DESKTOP_SESSION')
+    # if True or (prefs.mkey and ('gnome' in de or 'budgie-desktop' in de)):
+    #     media_key_mode = 1
+    # elif prefs.mkey and os.path.isfile(install_directory + "/pyxhook.py"):
+    #     media_key_mode = 2
 
 
-            from gi.repository import GObject
-            import dbus
-            import dbus.service
-            import dbus.mainloop.glib
+    #if True: # media_key_mode == 1 or prefs.enable_mpris:
+    def gnome():
 
 
-            def on_mediakey(comes_from, what):
+        from gi.repository import GObject
+        import dbus
+        import dbus.service
+        import dbus.mainloop.glib
 
-                global mediaKey
-                global mediaKey_pressed
 
-                if what == 'Play':
-                    mediaKey = 'play'
-                    mediaKey_pressed = True
-                elif what == 'Stop':
-                    mediaKey = 'stop'
-                    mediaKey_pressed = True
-                elif what == 'Next':
-                    mediaKey = 'forward'
-                    mediaKey_pressed = True
-                elif what == 'Previous':
-                    mediaKey = 'back'
-                    mediaKey_pressed = True
-                if mediaKey_pressed:
-                    gui.update = 1
+        def on_mediakey(comes_from, what):
 
-            # set up the glib main loop.
-            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+            global mediaKey
+            global mediaKey_pressed
 
-            if media_key_mode == 1:
+            if what == 'Play':
+                mediaKey = 'play'
+                mediaKey_pressed = True
+            elif what == 'Stop':
+                mediaKey = 'stop'
+                mediaKey_pressed = True
+            elif what == 'Next':
+                mediaKey = 'forward'
+                mediaKey_pressed = True
+            elif what == 'Previous':
+                mediaKey = 'back'
+                mediaKey_pressed = True
+            if mediaKey_pressed:
+                gui.update = 1
+
+        # set up the glib main loop.
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+        if prefs.mkey:
+            try:
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
                 bus_object = bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
                                             '/org/gnome/SettingsDaemon/MediaKeys')
@@ -4237,10 +4240,14 @@ elif system != 'mac':
                 # connect_to_signal registers our callback function.
                 bus_object.connect_to_signal('MediaPlayerKeyPressed',
                                              on_mediakey)
+            except:
+                print("Could not connect to gnome media keys")
+                global x_hook
+                x_hook = True
 
-            # ----------
-            if prefs.enable_mpris:
-
+        # ----------
+        if prefs.enable_mpris:
+            try:
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
                 bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon')
 
@@ -4430,20 +4437,23 @@ elif system != 'mac':
                         self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
                 pctl.mpris = MPRIS("/org/mpris/MediaPlayer2")
+            except:
+                print("MPRIS2 CONNECT FAILED")
 
-            mainloop = GObject.MainLoop()
-            mainloop.run()
+        mainloop = GObject.MainLoop()
+        mainloop.run()
 
-        try:
+    try:
 
-            gnomeThread = threading.Thread(target=gnome)
-            gnomeThread.daemon = True
-            gnomeThread.start()
+        gnomeThread = threading.Thread(target=gnome)
+        gnomeThread.daemon = True
+        gnomeThread.start()
 
-        except:
-            print("ERROR: Could not start Dbus thread")
+    except:
+        print("ERROR: Could not start Dbus thread")
+        x_hook = True
 
-    if media_key_mode == 2:
+    if x_hook is True: #media_key_mode == 2:
 
         import pyxhook
 
