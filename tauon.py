@@ -1819,7 +1819,7 @@ class PlayerCtl:
         else:
             return None
 
-    def show_current(self, select=True, playing=False, quiet=False, this_only=False):
+    def show_current(self, select=True, playing=False, quiet=False, this_only=False, highlight=False):
 
         # print("show------")
         # print(select)
@@ -1899,7 +1899,12 @@ class PlayerCtl:
             combo_pl_render.prep(True)
 
         if album_mode and not quiet:
-            goto_album(playlist_selected)
+            if highlight:
+                gui.gallery_animate_highlight_on = goto_album(playlist_selected)
+                gallery_select_animate_timer.set()
+            else:
+                goto_album(playlist_selected)
+
         return 0
 
     def set_volume(self):
@@ -8209,6 +8214,11 @@ if gui.scale == 2:
     delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
 else:
     delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
+
+def pl_toggle_playlist_break(ref):
+    pctl.multi_playlist[ref][4] ^= 1
+    gui.pl_update = 1
+
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
@@ -8239,6 +8249,7 @@ tab_menu.add_to_sub('Transcode All', 1, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub('Rescan Tags', 1, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub('Re-Import Last Folder', 1, re_import, pass_ref=True)
 tab_menu.add_to_sub('Export XSPF', 1, export_xspf, pass_ref=True)
+tab_menu.add_to_sub("Toggle Breaks", 1, pl_toggle_playlist_break, pass_ref=True)
 
 def new_playlist(switch=True):
     ex = 1
@@ -9290,6 +9301,7 @@ def test_show(dummy):
     return album_mode
 
 def show_in_gal(track):
+    # goto_album(playlist_selected)
     gui.gallery_animate_highlight_on = goto_album(playlist_selected)
     gallery_select_animate_timer.set()
 
@@ -10493,7 +10505,6 @@ def goto_album(playlist_no, down=False):
             album_pos_px += 1
 
     if len(album_dex) > 0:
-
         return album_dex[re]
     else:
         return 0
@@ -10880,7 +10891,10 @@ def toggle_search():
 
 extra_menu.add('Search', toggle_search, hint='BACKSLASH')
 
-extra_menu.add("Go To Playing", pctl.show_current, hint="QUOTE")
+def goto_playing_extra():
+    pctl.show_current(highlight=True)
+
+extra_menu.add("Go To Playing", goto_playing_extra, hint="QUOTE")
 
 
 def toggle_auto_theme(mode=0):
@@ -11091,7 +11105,10 @@ def force_album_view():
 
 def switch_showcase(index=-1):
 
-    gui.force_showcase_index = index
+    if pctl.playing_object().index == index:
+        pass
+    else:
+        gui.force_showcase_index = index
     if gui.combo_mode:
         toggle_combo_view()
     toggle_combo_view(showcase=True)
@@ -13850,8 +13867,13 @@ class TopPanel:
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
 
-        if hit and view_menu.active:
-            view_menu.active = False
+        # if hit and view_menu.active:
+        #     view_menu.active = False
+        #     x_menu.activate(position=(x + 12, self.height))
+        #     gui.render = 1
+
+        if hit and view_box.active:
+            view_box.active = False
             x_menu.activate(position=(x + 12, self.height))
             gui.render = 1
 
@@ -13877,14 +13899,19 @@ class TopPanel:
 
         if hit and x_menu.active:
             x_menu.active = False
-            view_menu.activate(position=(x + 12, self.height))
+            #view_menu.activate(position=(x + 12, self.height))
+            view_box.activate(x - 80 * gui.scale)
             gui.render = 1
 
         if hit and input.mouse_click:
-            if view_menu.active:
-                view_menu.active = False
+            if view_box.active:
+                view_box.active = False
             else:
-                view_menu.activate(position=(x + 12, self.height))
+                view_box.activate(x - 80 * gui.scale)
+            # if view_menu.active:
+            #     view_menu.active = False
+            # else:
+            #     view_menu.activate(position=(x + 12, self.height))
 
         if view_menu.active or hit:
             bg = colours.status_text_over
@@ -14391,7 +14418,7 @@ class BottomBarType1:
                 if input.mouse_click:
                     pctl.play()
                 if right_click:
-                    pctl.show_current()
+                    pctl.show_current(highlight=True)
             self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
@@ -15405,7 +15432,7 @@ class ComboPlaylist:
         self.max_y = pl_render_pos + 20 * gui.scale
 
         if goto and len(self.mirror_cache) > 0:
-            self.pl_pos_px = self.mirror_cache[-1:][0]
+            self.pl_pos_px = self.mirror_cache[-1:][0] - 25 * gui.scale
 
     def full_render(self):
         # C-CM
@@ -15605,6 +15632,7 @@ class ComboPlaylist:
                 # Right click menu
                 if right_click and line_hit:
                     track_menu.activate(index_on)
+                    quick_drag = False
 
             # Move render position down for next track
             pl_entry_on += 1
@@ -15722,6 +15750,319 @@ class Showcase:
 
 showcase = Showcase()
 
+
+class AlbumCard:
+
+    def __init__(self):
+        self.x = 100
+        self.y = 100
+        self.w = 600
+        self.h = 250
+        self.index = 0
+        self.active = True
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        bg = colours.sys_background_2
+
+        #draw.rect_r([self.x - 2, self.y, self.w, self.h], bg, True)
+        draw.rect_r([self.x, self.y, self.w, self.h], bg, True)
+
+
+album_card = AlbumCard()
+
+class ColourPulse:
+
+    def __init__(self, hue):
+        self.timer = Timer()
+        self.in_timer = Timer()
+        self.out_timer = Timer()
+        self.out_timer.start = 0
+        self.active = False
+
+        self.hue = hue
+
+
+
+    def get(self, hit, on):
+
+        if on:
+            rgb = colorsys.hls_to_rgb(self.hue, 0.15 + 0.4, 0.7)
+            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+
+        ani_time = 0.15
+
+        if hit is True and self.active is False:
+            self.active = True
+            self.in_timer.set()
+
+            out_time = self.out_timer.get()
+            if out_time < ani_time:
+                self.in_timer.force_set(ani_time - out_time)
+
+
+        elif hit is False and self.active is True:
+            self.active = False
+            self.out_timer.set()
+
+            in_time = self.in_timer.get()
+            if in_time < ani_time:
+                self.out_timer.force_set(ani_time - in_time)
+
+
+        lumi = 0
+        sat = 0
+
+
+        in_time = self.in_timer.get()
+        out_time = self.out_timer.get()
+
+
+
+        if self.active:
+            if in_time < ani_time:
+                gui.update = 2
+                lumi = (in_time / ani_time) * 0.4
+            else:
+                lumi = 0.4
+
+            if in_time < ani_time:
+                sat = (in_time / ani_time) * 0.7
+            else:
+                sat = 0.7
+
+        else:
+            if out_time < ani_time:
+                gui.update = 2
+                lumi = 0.4 - ((out_time / ani_time) * 0.4)
+            else:
+                lumi = 0
+
+            if out_time < ani_time:
+                sat = 0.7 - ((out_time / ani_time) * 0.7)
+            else:
+                sat = 0
+
+        lumi += 0.15
+
+
+        rgb = colorsys.hls_to_rgb(self.hue, lumi, sat)
+        return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+
+class ViewBox:
+
+    def __init__(self):
+        self.x = 0
+        self.y = gui.panelY
+        self.w = 270 * gui.scale
+        self.h = 95 * gui.scale
+        self.active = False
+
+        self.border = 3 * gui.scale
+
+        if gui.scale == 1:
+            self.tracks_img = WhiteModImageAsset("/gui/tracks.png")
+            self.side_img = WhiteModImageAsset("/gui/tracks+side.png")
+            self.gallery1_img = WhiteModImageAsset("/gui/gallery1.png")
+            self.combo_img = WhiteModImageAsset("/gui/combo.png")
+            self.lyrics_img = WhiteModImageAsset("/gui/lyrics.png")
+            self.gallery2_img = WhiteModImageAsset("/gui/gallery2.png")
+            self.col_img = WhiteModImageAsset("/gui/col.png")
+        else:
+            self.tracks_img = WhiteModImageAsset("/gui/2x/tracks.png")
+            self.side_img = WhiteModImageAsset("/gui/2x/tracks+side.png")
+            self.gallery1_img = WhiteModImageAsset("/gui/2x/gallery1.png")
+            self.combo_img = WhiteModImageAsset("/gui/2x/combo.png")
+            self.lyrics_img = WhiteModImageAsset("/gui/2x/lyrics.png")
+            self.gallery2_img = WhiteModImageAsset("/gui/2x/gallery2.png")
+            self.col_img = WhiteModImageAsset("/gui/2x/col.png")
+
+        # self.tracks_colour = ColourPulse(0.0)
+        # self.side_colour = ColourPulse(0.1)
+        # self.gallery1_colour = ColourPulse(0.2)
+        # self.combo_colour = ColourPulse(0.3)
+        # self.lyrics_colour = ColourPulse(0.5)
+        # self.gallery2_colour = ColourPulse(0.7)
+
+        self.tracks_colour = ColourPulse(0.5)
+        self.side_colour = ColourPulse(0.55)
+        self.gallery1_colour = ColourPulse(0.6)
+        self.combo_colour = ColourPulse(0.75)
+        self.lyrics_colour = ColourPulse(0.7)
+        self.gallery2_colour = ColourPulse(0.65)
+
+        self.on_colour = [255, 190, 50, 255]
+        self.over_colour = [255, 190, 50, 255]
+        self.off_colour = colours.grey(40)
+
+    def activate(self, x):
+        self.x = x
+        self.active = True
+
+        self.tracks_colour.out_timer.force_set(10)
+        self.side_colour.out_timer.force_set(10)
+        self.gallery1_colour.out_timer.force_set(10)
+        self.combo_colour.out_timer.force_set(10)
+        self.lyrics_colour.out_timer.force_set(10)
+        self.gallery2_colour.out_timer.force_set(10)
+
+        self.tracks_colour.active = False
+        self.side_colour.active = False
+        self.gallery1_colour.active = False
+        self.combo_colour.active = False
+        self.lyrics_colour.active = False
+        self.gallery2_colour.active = False
+
+        gui.level_2_click = False
+
+    def button(self, x, y, asset, test, colour_get=None):
+
+        on = test()
+        rect = [x - 8 * gui.scale,
+                y - 8 * gui.scale,
+                asset.w + 16 * gui.scale,
+                asset.h + 16 * gui.scale]
+        fields.add(rect)
+
+        if on:
+            colour = self.on_colour
+
+        else:
+            colour = self.off_colour
+
+
+        fun = None
+        col = False
+        if coll_point(mouse_position, rect):
+            col = True
+            if gui.level_2_click:
+                fun = test
+            if colour_get is None:
+                colour = self.over_colour
+
+        if colour_get is not None:
+            colour = colour_get.get(col, on)
+
+        asset.render(x, y, colour)
+
+        return fun
+
+    def tracks(self, hit=False):
+
+        if hit is False:
+            return album_mode is False and \
+                   gui.combo_mode is False and \
+                   side_panel_enable is False
+        view_tracks()
+
+    def side(self, hit=False):
+
+        if hit is False:
+            return album_mode is False and \
+                   gui.combo_mode is False and \
+                   side_panel_enable is True
+        view_standard_meta()
+
+    def gallery1(self, hit=False):
+
+        if hit is False:
+            return album_mode is True and \
+                   gui.combo_mode is False and \
+                   gui.show_playlist is True
+        force_album_view()
+
+    def combo(self, hit=False):
+
+        if hit is False:
+            return album_mode is False and \
+                   gui.combo_mode is True and \
+                   gui.showcase_mode is False
+        toggle_combo_view()
+
+    def lyrics(self, hit=False):
+
+        if hit is False:
+            return album_mode is False and \
+                   gui.combo_mode is True and \
+                   gui.showcase_mode is True
+        switch_showcase()
+
+    def gallery2(self, hit=False):
+
+        if hit is False:
+            return album_mode is True and \
+                   gui.combo_mode is False and \
+                   gui.show_playlist is False
+        gallery_only_view()
+
+    def col(self, hit=False):
+
+        if hit is False:
+            return gui.set_mode
+        toggle_library_mode()
+
+    def render(self):
+
+        rect = [self.x, self.y, self.w, self.h]
+
+        if gui.level_2_click and not coll_point(mouse_position, rect):
+            self.active = False
+            return
+
+        draw.rect_r(rect, colours.menu_background, True)
+
+        draw.rect_r([self.x, self.y, self.border, self.h], colours.grey(30), True)
+        draw.rect_r([self.x, self.y + self.h, self.w, self.border], colours.grey(30), True)
+        draw.rect_r([self.x + self.w, self.y, self.border, self.h], colours.grey(30), True)
+
+        x = self.x + 20 * gui.scale
+        y = self.y + 15 * gui.scale
+
+        func = None
+
+        test = self.button(x, y, self.tracks_img, self.tracks, self.tracks_colour)
+        if test is not None:
+            func = test
+
+        x += 60 * gui.scale
+        test = self.button(x, y, self.side_img, self.side, self.side_colour)
+        if test is not None:
+            func = test
+
+        x += 65 * gui.scale
+        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour)
+        if test is not None:
+            func = test
+
+        x = self.x + 21 * gui.scale
+        y = self.y + 56 * gui.scale
+
+        test = self.button(x, y, self.combo_img, self.combo, self.combo_colour)
+        if test is not None:
+            func = test
+
+        x += 63 * gui.scale
+        test = self.button(x, y, self.lyrics_img, self.lyrics, self.lyrics_colour)
+        if test is not None:
+            func = test
+
+        x += 68 * gui.scale
+        test = self.button(x, y, self.gallery2_img, self.gallery2, self.gallery2_colour)
+        if test is not None:
+            func = test
+
+        test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col)
+        if test is not None:
+            func = test
+
+        if func is not None:
+            func(True)
+            self.active = False
+
+view_box = ViewBox()
 
 # Set SDL window drag areas
 if system != 'windows':
@@ -16771,7 +17112,7 @@ while running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox) and not gui.message_box:
+        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
 
@@ -17547,6 +17888,8 @@ while running:
                         render_pos += album_mode_art_size + album_v_gap
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
+
+                #album_card.render()
 
                 # if gui.album_tab_mode:
                 #     draw.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
@@ -18416,7 +18759,7 @@ while running:
                     y1 = y + (40 * gui.scale)
 
 
-                    rect = [x1, y1, 350 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
@@ -18432,43 +18775,22 @@ while running:
                               , colours.grey_blend_bg3(200), 15)
                     #y += 4
 
-                    if False and key_shift_down:
-                        pass
 
-                        # ext_rect = [x + w - 74, y + 42, 12, 12]
-                        #
-                        # line = pctl.master_library[r_menu_index].file_ext
-                        # ex_colour = [255, 255, 255, 130]
-                        #
-                        # if line in format_colours:
-                        #     ex_colour = format_colours[line]
-                        #
-                        # draw.rect_r(ext_rect, ex_colour, True)
-                        # draw_text((x + w - 56, y + 40), line, colours.grey_blend_bg3(190), 212)
-                        #
-                        # if pctl.master_library[r_menu_index].is_cue:
-                        #     ext_rect[1] += 16
-                        #     draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                        #     draw_text((x + w - 60, y + 41), "CUE", colours.grey_blend_bg3(190), 11)
+                    ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
 
-                    else:
+                    line = pctl.master_library[r_menu_index].file_ext
+                    ex_colour = [255, 255, 255, 130]
 
-                        ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
+                    if line in format_colours:
+                        ex_colour = format_colours[line]
 
-                        line = pctl.master_library[r_menu_index].file_ext
-                        ex_colour = [255, 255, 255, 130]
+                    draw.rect_r(ext_rect, ex_colour, True)
+                    draw_text((x + w - 35 * gui.scale, y + 42 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
 
-                        if line in format_colours:
-                            ex_colour = format_colours[line]
-
-                        draw.rect_r(ext_rect, ex_colour, True)
-                        draw_text((x + w - 35 * gui.scale, y + 42 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
-                        #draw_text((x + w - 43, y + 42, 1), line, colours.grey_blend_bg3(190), 211)
-
-                        if pctl.master_library[r_menu_index].is_cue:
-                            ext_rect[1] += 16 * gui.scale
-                            draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                            draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
+                    if pctl.master_library[r_menu_index].is_cue:
+                        ext_rect[1] += 16 * gui.scale
+                        draw.rect_r(ext_rect, [218, 222, 73, 255], True)
+                        draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
 
 
                     y1 += 16 * gui.scale
@@ -18490,7 +18812,7 @@ while running:
 
                     y1 += 16 * gui.scale
 
-                    rect = [x1, y1, 350 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
@@ -18507,7 +18829,7 @@ while running:
 
                     y1 += (23 + 3) * gui.scale
 
-                    rect = [x1, y1, 450 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1 + 2, 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
@@ -18540,7 +18862,7 @@ while running:
                     # -----------
                     if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
                         x += 170 * gui.scale
-                        rect = [x + 7 * gui.scale, y1, 160 * gui.scale, 14 * gui.scale]
+                        rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if rect_in(rect):
                             draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
@@ -18557,7 +18879,7 @@ while running:
 
                     y1 += 15 * gui.scale
 
-                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
@@ -18599,7 +18921,7 @@ while running:
 
                     y1 += 23 * gui.scale
 
-                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
@@ -18615,7 +18937,7 @@ while running:
 
                     y1 += 15 * gui.scale
 
-                    rect = [x1, y1, 150 * gui.scale, 14 * gui.scale]
+                    rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if rect_in(rect):
                         draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
@@ -18659,24 +18981,15 @@ while running:
                     # -------
                     if pctl.master_library[r_menu_index].lyrics != "":
 
-                        x1 += 170 * gui.scale
-                        rect = [x1, y1, 60 * gui.scale, 14 * gui.scale]
-                        fields.add(rect)
-                        if rect_in(rect):
-                            draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(200), 212)
-                            if input.mouse_click:
-                                #show_message("Lyrics copied to clipboard")
-                                #copy_to_clipboard(pctl.master_library[r_menu_index].lyrics)
-                                track_box = False
-                                switch_showcase(r_menu_index)
-                                input.mouse_click = False
-                        else:
-                            draw_text((x1, y1), "Lyrics", colours.grey_blend_bg3(140), 212)
-                        x1 -= 170 * gui.scale
+                        if draw.button("Lyrics", x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+                            track_box = False
+                            switch_showcase(r_menu_index)
+                            input.mouse_click = False
+
 
                     if len(tc.comment) > 0:
                         y1 += 20 * gui.scale
-                        rect = [x1, y1, 60 * gui.scale, 14 * gui.scale]
+                        rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if rect_in(rect):
                             draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
@@ -19310,6 +19623,9 @@ while running:
         # Render Menus-------------------------------
         for instance in Menu.instances:
             instance.render()
+
+        if view_box.active:
+            view_box.render()
 
         if gui.cursor_mode == 4 and gui.flag_special_cursor is False:
             gui.cursor_mode = 0
