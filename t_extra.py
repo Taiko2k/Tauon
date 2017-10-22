@@ -42,6 +42,10 @@ class Timer:  # A seconds based timer
         self.end = time.time()
         return self.end - self.start
 
+    def force_set(self, sec):
+        self.start = time.time()
+        self.start -= sec
+
 
 # Test given proximity between two 2d points
 def point_proximity_test(a, b, p):
