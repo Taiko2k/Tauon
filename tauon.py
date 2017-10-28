@@ -51,7 +51,8 @@ import pickle
 
 t_version = "v2.5.3"
 t_title = 'Tauon Music Box'
-print(t_title + " " + t_version)
+print(t_title)
+print(t_version)
 print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
 
@@ -88,7 +89,7 @@ elif system == 'windows' and ('Program Files' in install_directory or
 
 if install_mode:
     print("Running from installed location")
-    print("User files and config r/w location: " + user_directory)
+    print("User files and config location: " + user_directory)
     if not os.path.isdir(user_directory):
         print("User directory is missing... creating")
         os.makedirs(user_directory + "/encoder")
@@ -243,6 +244,9 @@ if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so
 
 if system == 'linux':
     import cairo
+    import gi
+    gi.require_version('Pango', '1.0')
+    gi.require_version('PangoCairo', '1.0')
     from gi.repository import Pango
     from gi.repository import PangoCairo
 
@@ -380,7 +384,7 @@ format_colours = {
 
 
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
-              'm4a', 'mp4', 'ogg', 'aac', 'tta', 'wv', }
+              'm4a', 'ogg', 'aac', 'tta', 'wv', }
 
 if system == 'windows':
     DA_Formats.add('wma')
@@ -3043,6 +3047,10 @@ def player():
         ('BASS_GetDeviceInfo', bass_module))
     BASS_SetDevice = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_SetDevice', bass_module))
 
+    BASS_RecordGetDeviceInfo = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_DEVICEINFO))(
+        ('BASS_RecordGetDeviceInfo', bass_module))
+
+
     BASS_DEVICE_ENABLED = 1
     BASS_DEVICE_DEFAULT = 2
     BASS_DEVICE_INIT = 4
@@ -3187,6 +3195,15 @@ def player():
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
     sp_handle = 0
 
+    # print("--------------------")
+    #
+    # while True:
+    #     if not BASS_RecordGetDeviceInfo(a, d_info):
+    #         break
+    #     name = d_info.name.decode('utf-8')
+    #     print(name)
+    #
+    # print("--------------------")
 
     def broadcast_connect(handle, connect, client, headers, user):
 
@@ -3542,6 +3559,8 @@ def player():
                 print(BASS_Init(pctl.set_device, 48000, BASS_DEVICE_DMIX, gui.window_id, 0))
                 print(BASS_SetDevice(pctl.set_device))
 
+            # if pctl.playerCommand == "monitor":
+            #     pass
 
             if pctl.playerCommand == "url":
                 if player1_status != p_stopped:
@@ -4371,10 +4390,13 @@ elif system != 'mac':
                     @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
                                     in_signature='s', out_signature='a{sv}')
                     def GetAll(self, interface_name):
+                        #print(interface_name)
                         if interface_name == 'org.mpris.MediaPlayer2':
                             return self.root_properties
                         elif interface_name == 'org.mpris.MediaPlayer2.Player':
                             return self.player_properties
+                        else:
+                            return {}
 
                     @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
                                     in_signature='ssv', out_signature='')
@@ -11064,7 +11086,7 @@ def view_standard_meta():
         toggle_side_panel()
     global update_layout
     update_layout = True
-    gui.side_panel_size = 80 + int(window_size[0] * 0.18)
+    #gui.side_panel_size = 80 + int(window_size[0] * 0.18)
 
 
 def view_standard():
@@ -15756,9 +15778,17 @@ class AlbumCard:
     def __init__(self):
         self.x = 100
         self.y = 100
-        self.w = 600
-        self.h = 250
-        self.index = 0
+        self.w = 350
+        self.h = 500
+
+        self.selected = 0
+        self.active = False
+
+    def activate(self, selected, x, y):
+
+        self.selected = selected
+        self.x = x
+        self.y = y
         self.active = True
 
     def render(self):
@@ -15768,8 +15798,24 @@ class AlbumCard:
 
         bg = colours.sys_background_2
 
+        tracks = get_album_info(self.selected)
+        print(tracks)
+
+        self.h = 25 + (16 * len(tracks[1]))
+
+        c = colours.gallery_highlight
+        c = [c[1], c[2], c[0], c[3]]
+        draw.rect((self.x - 4 * gui.scale, self.y - 4 * gui.scale), (self.w + 8 * gui.scale, self.h + 8 * gui.scale),
+                  c, True)
+
         #draw.rect_r([self.x - 2, self.y, self.w, self.h], bg, True)
         draw.rect_r([self.x, self.y, self.w, self.h], bg, True)
+
+        y = self.y + 5
+
+        for i, item in enumerate(tracks[1]):
+            line_render(pctl.master_library[default_playlist[item]], item, y + (16 * i), False, 255, self.x + 10, self.w - 20)
+
 
 
 album_card = AlbumCard()
@@ -15784,6 +15830,9 @@ class ColourPulse:
         self.active = False
 
         self.hue = hue
+
+        self.max_sat = 0.75
+        self.max_lumi = 0.45
 
 
 
@@ -15825,24 +15874,24 @@ class ColourPulse:
         if self.active:
             if in_time < ani_time:
                 gui.update = 2
-                lumi = (in_time / ani_time) * 0.4
+                lumi = (in_time / ani_time) * self.max_lumi
             else:
-                lumi = 0.4
+                lumi = self.max_lumi
 
             if in_time < ani_time:
-                sat = (in_time / ani_time) * 0.7
+                sat = (in_time / ani_time) * self.max_sat
             else:
-                sat = 0.7
+                sat = self.max_sat
 
         else:
             if out_time < ani_time:
                 gui.update = 2
-                lumi = 0.4 - ((out_time / ani_time) * 0.4)
+                lumi = self.max_lumi - ((out_time / ani_time) * self.max_lumi)
             else:
                 lumi = 0
 
             if out_time < ani_time:
-                sat = 0.7 - ((out_time / ani_time) * 0.7)
+                sat = self.max_sat - ((out_time / ani_time) * self.max_sat)
             else:
                 sat = 0
 
@@ -15893,6 +15942,7 @@ class ViewBox:
         self.combo_colour = ColourPulse(0.75)
         self.lyrics_colour = ColourPulse(0.7)
         self.gallery2_colour = ColourPulse(0.65)
+        self.col_colour = ColourPulse(0.14)
 
         self.on_colour = [255, 190, 50, 255]
         self.over_colour = [255, 190, 50, 255]
@@ -15908,6 +15958,7 @@ class ViewBox:
         self.combo_colour.out_timer.force_set(10)
         self.lyrics_colour.out_timer.force_set(10)
         self.gallery2_colour.out_timer.force_set(10)
+        self.col_colour.out_timer.force_set(10)
 
         self.tracks_colour.active = False
         self.side_colour.active = False
@@ -15915,8 +15966,10 @@ class ViewBox:
         self.combo_colour.active = False
         self.lyrics_colour.active = False
         self.gallery2_colour.active = False
+        self.col_colour.active = False
 
         gui.level_2_click = False
+        gui.update = 2
 
     def button(self, x, y, asset, test, colour_get=None):
 
@@ -16010,6 +16063,7 @@ class ViewBox:
 
         if gui.level_2_click and not coll_point(mouse_position, rect):
             self.active = False
+            gui.level_2_click = False
             return
 
         draw.rect_r(rect, colours.menu_background, True)
@@ -16054,13 +16108,15 @@ class ViewBox:
         if test is not None:
             func = test
 
-        test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col)
+        test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col, self.col_colour)
         if test is not None:
             func = test
 
         if func is not None:
             func(True)
             self.active = False
+
+        gui.level_2_click = False
 
 view_box = ViewBox()
 
@@ -16139,8 +16195,6 @@ if default_player == "GTK":
     print("Using GStreamer as fallback. Some functions disabled")
 elif default_player == "None":
     show_message("ERROR: No backend found", 'warning')
-
-print("Initialization Complete")
 
 total = 0
 if gui.set_load_old is False:
@@ -17050,12 +17104,14 @@ while running:
 
             show_message("You don't even know what this button could have done.", 'warning')
 
-            colours.level_1_bg = [0, 6, 30, 255]
-            colours.level_2_bg = [0, 6, 30, 255]
-            colours.level_3_bg = [0, 6, 30, 255]
-            colours.level_green = [10, 100, 255, 255]
-            colours.level_yellow = [10, 100, 255, 255]
-            colours.level_red = [110, 85, 255, 255]
+            # colours.level_1_bg = [0, 6, 30, 255]
+            # colours.level_2_bg = [0, 6, 30, 255]
+            # colours.level_3_bg = [0, 6, 30, 255]
+            # colours.level_green = [10, 100, 255, 255]
+            # colours.level_yellow = [10, 100, 255, 255]
+            # colours.level_red = [110, 85, 255, 255]
+            pctl.playerCommand =  'monitor'
+            pctl.playerCommandReady = True
 
             # gd = {}
             #
@@ -17317,7 +17373,7 @@ while running:
             try:
                 theme_files = os.listdir(install_directory + '/theme')
                 theme_files.sort()
-                print(theme_files)
+                #print(theme_files)
 
                 for i in range(len(theme_files)):
                     # print(theme_files[i])
@@ -17325,7 +17381,7 @@ while running:
                         colours.__init__()
                         with open(install_directory + "/theme/" + theme_files[i], encoding="utf_8") as f:
                             content = f.readlines()
-                            print("Applying theme: " + theme_files[i])
+                            print("Applying external theme: " + theme_files[i].split(".")[0])
                             for p in content:
                                 if "#" in p:
                                     continue
@@ -17504,7 +17560,9 @@ while running:
                     and not view_menu.active \
                     and not track_menu.active \
                     and not tab_menu.active \
-                    and not selection_menu.active:
+                    and not selection_menu.active\
+                    and not view_box.active \
+                    and not folder_menu.active:
 
 
                 #update_layout = True
@@ -17709,7 +17767,14 @@ while running:
                                         playlist_selected = album_dex[album_on]
                                         playlist_position = playlist_selected
                                         shift_selection = [playlist_selected]
-                                        pctl.render_playlist()
+                                        if gui.show_playlist:
+                                            pctl.render_playlist()
+                                        # else:
+                                        #     acy = y
+                                        #     #acx = x + album_mode_art_size + 15 * gui.scale
+                                        #     acx = x + album_mode_art_size + 15 * gui.scale
+                                        #     #album_card.activate(playlist_selected, acx, acy)
+
 
                                 album_on += 1
 
@@ -17889,7 +17954,8 @@ while running:
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
-                #album_card.render()
+                if gui.show_playlist is False:
+                    album_card.render()
 
                 # if gui.album_tab_mode:
                 #     draw.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
