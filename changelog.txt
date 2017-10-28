@@ -5,16 +5,19 @@ v2.5.3
 
  - Added time cursor to seek bar on wheel click
  - Replaced view menu with new view box
- - Changed track info box's lyrics label to a button that shows lyrics in lyrics view
+ - Replaced track info box's lyrics label to a button that shows lyrics in lyrics view
+ - Removed 'Return to standard' view function
  - Changed behavior of search box to close on return
  - Moved 'copy lyrics' function to lyrics menu
  - Moved 'toggle breaks' function to tab menu
  - Duplicated transcode folder function to folder menu
  - Set gallery highlight to animate on 'show playing'
+ - Removed detection of mp4 files
  - Fixed scrollbar scrolling past bottom panel
  - Fixed track box attribute hit boxes being slightly off
  - Fixed show playing in Art+Tracks view having incorrect alignment on last album
  - Fixed drag mode being activated on track menu click in Art+Track view
+ - [Linux[ Fixed some errors that were reported on console
  - [Linux] Fixed crash on start on Openbox
 
 v2.5.2
