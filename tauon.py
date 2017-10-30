@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.5.3"
+t_version = "v2.6.0"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -7683,7 +7683,15 @@ def clear_lyrics(track_object):
 
 def clear_lyrics_deco():
 
-    if pctl.playing_object().lyrics != "":
+    if gui.force_showcase_index >= 0:
+        index = gui.force_showcase_index
+        track = pctl.master_library[index]
+    else:
+        index = pctl.track_queue[pctl.queue_step]
+        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+
+    if track.lyrics != "":
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -8331,7 +8339,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Most Played Tracks", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Played Tracks", 0, gen_top_100, pass_ref=True)
 
 
 
@@ -8386,7 +8394,7 @@ def gen_folder_top(pl, get_sets=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Most Played Albums", 0, gen_folder_top, pass_ref=True)
+tab_menu.add_to_sub("Played Albums", 0, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -8509,6 +8517,49 @@ def gen_sort_len(index):
                                       hide_title=1))
 
 tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
+
+
+def gen_folder_duration(pl, get_sets=False):
+    if len(pctl.multi_playlist[pl][2]) < 3:
+        return
+
+    sets = []
+    se = []
+    last = pctl.master_library[pctl.multi_playlist[pl][2][0]].parent_folder_path
+    last_al = pctl.master_library[pctl.multi_playlist[pl][2][0]].album
+    for track in pctl.multi_playlist[pl][2]:
+        if last != pctl.master_library[track].parent_folder_path or last_al != pctl.master_library[track].album:
+            last = pctl.master_library[track].parent_folder_path
+            last_al = pctl.master_library[track].album
+            sets.append(copy.deepcopy(se))
+            se = []
+        se.append(track)
+    sets.append(copy.deepcopy(se))
+
+    def best(folder):
+        total_duration = 0
+        for item in folder:
+            total_duration += pctl.master_library[item].length
+        return total_duration
+
+    if get_sets:
+        r = []
+        for item in sets:
+            r.append((item, best(item)))
+        return r
+
+    sets = sorted(sets, key=best, reverse=True)
+    playlist = []
+
+    for se in sets:
+        playlist += se
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Longest Albums>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
+
+
+tab_menu.add_to_sub("Album Duration", 0, gen_folder_duration, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
