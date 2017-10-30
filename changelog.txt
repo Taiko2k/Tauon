@@ -1,9 +1,10 @@
 
 Changelog-------------------------------------
 
-v2.5.3
+v2.6.0
 
  - Added time cursor to seek bar on wheel click
+ - Added sorting function for album duration
  - Replaced view menu with new view box
  - Replaced track info box's lyrics label to a button that shows lyrics in lyrics view
  - Removed 'Return to standard' view function
