@@ -11,34 +11,34 @@ Designed to be simple and streamlined while puting the user in control of their 
 
 <img src="docs/scrn1.jpg" align="right" height="179px" hspace="0px" vspace="20px">
 
-  - Playes most common codecs including MP3 and FLAC
-  - Simple drag and drop track importing
-  - Fast and responsive UI
-  - Playlist oriented search and sorting
-  - Keep track of play counts, even when file location changes
-  - Automatic CUE sheet detection
+  - Plays most common codecs including MP3 and FLAC.
+  - Simple drag and drop track importing.
+  - Fast and responsive UI.
+  - Playlist oriented search and sorting.
+  - Keep track of play counts, even when file location changes.
+  - Automatic CUE sheet detection.
   - Transcode folders while keeping album art. Useful for copying to DAP's.
-  - Last.fm scrobbling
-  - Lyrics display with support for fetching lyrics from LyricWiki
-  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting
+  - Last.fm scrobbling.
+  - Lyrics display with support for fetching lyrics from LyricWiki.
+  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
   - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
 
-### What makes this project different?
+### What makes this project different? :lemon: :zap:
 
 I started this project because I was unsatisfied with existing music players, especially ones avaliable for linux. You may find this program different in the following design choices:
 
- - Focus on playlists and drag and drop functions
- - Always assumes folders are albums, organised by underlying folder structure
- - Keeps track of play counts by file name rather then the full path
- - Provides a streamlined interface out of the box, designed for dark themes
- - Doesn't modify the users library in the background
- - Seamless transition between playlist and gallery layouts
+ - Focus on playlists and drag and drop functions.
+ - Always assumes folders are albums, organised by underlying folder structure.
+ - Keeps track of play counts by file name rather than the full path.
+ - Provides a streamlined interface out of the box, designed for dark themes.
+ - Doesn't modify the users library in the background.
+ - Seamless transition between playlist and gallery layouts.
  
-However this program may not be for you if:
+#### :broken_heart: However this program may not be for you if:
 
- - Your music library is sourced from online streaming services
- - You have an unorganised library and perfer your player to organise it for you
- - You perfer a customisable user interface
+ - Your music library is sourced from online streaming services.
+ - You have an unorganised library and perfer your player to organise it for you.
+ - You perfer a customisable user interface, or one that uses the system theme.
 
 ### Getting Started :dizzy:
 
