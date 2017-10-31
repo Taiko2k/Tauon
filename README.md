@@ -23,7 +23,7 @@ Designed to be simple and streamlined while puting the user in control of their 
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
   - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
 
-### What makes this project different? :lemon: :zap:
+### What makes this player different? :lemon: :zap:
 
 I started this project because I was unsatisfied with existing music players, especially ones avaliable for linux. You may find this program different in the following design choices:
 
