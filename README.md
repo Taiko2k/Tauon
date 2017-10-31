@@ -15,7 +15,7 @@ Designed to be simple and streamlined while puting the user in control of their 
   - Simple drag and drop track importing.
   - Fast and responsive UI.
   - Playlist oriented search and sorting.
-  - Keep track of play counts, even when file location changes.
+  - Visually keep track of play time.
   - Automatic CUE sheet detection.
   - Transcode folders while keeping album art. Useful for copying to DAP's.
   - Last.fm scrobbling.
