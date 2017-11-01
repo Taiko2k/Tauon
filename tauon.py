@@ -224,7 +224,7 @@ from t_extra import *
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
-default_player = 'BASS'
+default_player = 1
 gapless_type1 = False
 running = True
 
@@ -235,12 +235,12 @@ if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so
         import gi
         gi.require_version('Gst', '1.0')
         from gi.repository import GObject, Gst
-        default_player = "GTK"
+        default_player = 2
         gapless_type1 = True
         print("Using fallback GStreamer")
     except:
         print("ERROR: gi.repository not found")
-        default_player = "None"
+        default_player = 0
 
 if system == 'linux':
     import cairo
@@ -2181,9 +2181,10 @@ class PlayerCtl:
         self.notify_update()
 
     def test_progress(self):
-        
+
         if self.playing_state == 1 and self.playing_time + (
-                    prefs.cross_fade_time / 1000) + 0 >= self.playing_length and self.playing_time > 0.2:
+                    prefs.cross_fade_time / 1000) + 0 >= self.playing_length - 2 and self.playing_time > 0.2:
+
             if self.playing_length == 0 and self.playing_time < 4:
                 # If the length is unknown, allow backend some time to provide a duration
                 pass
@@ -2201,7 +2202,7 @@ class PlayerCtl:
                     self.playerCommand = 'seek'
                     self.playerCommandReady = True
 
-                elif self.random_mode is False and len(default_playlist) - 2 > self.playlist_playing and \
+                elif self.random_mode is False and len(default_playlist) > self.playlist_playing and \
                                 self.master_library[default_playlist[self.playlist_playing]].is_cue is True \
                         and self.master_library[default_playlist[self.playlist_playing + 1]].filename == \
                                 self.master_library[default_playlist[self.playlist_playing]].filename and int(
@@ -2221,9 +2222,11 @@ class PlayerCtl:
                     gui.pl_update = 1
 
                 else:
-                    if self.playing_time < self.playing_length:
-                        self.advance(quiet=True, gapless=gapless_type1)
+                    if False: #self.playing_time < self.playing_length:
+                        print("advance gapless")
+                        self.advance(quiet=True, gapless=True)
                     else:
+                        print("advance normal")
                         self.advance(quiet=True)
 
                     self.playing_time = 0
@@ -2753,8 +2756,9 @@ def player3():
 
         def about_to_finish(self, player):
 
-            # print("End of track callback triggered")
-            if gapless_type1 and pctl.playerCommand == 'gapless':
+            print("End of track callback triggered")
+            self.play_state = 0
+            if pctl.playerCommand == 'gapless':
                 player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
                 pctl.playing_time = 0
 
@@ -2767,6 +2771,8 @@ def player3():
                 self.check_duration()
 
         def test11(self):
+
+            pctl.test_progress()
 
             if pctl.playerCommandReady:
                 if pctl.playerCommand == 'open' and pctl.target_open != '':
@@ -2810,12 +2816,12 @@ def player3():
 
                 elif pctl.playerCommand == 'volume':
                     if self.play_state == 1:
-                        print("volume")
                         self.pl.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'stop':
                     if self.play_state > 0:
                         self.pl.set_state(Gst.State.NULL)
+                    self.play_state = 0
 
                 elif pctl.playerCommand == 'seek':
                     if self.play_state > 0:
@@ -2833,7 +2839,6 @@ def player3():
                 pctl.playerCommandReady = False
 
             if self.play_state == 1:
-
                 # Progress main seek head
                 add_time = player_timer.hit()
                 pctl.playing_time += add_time
@@ -3497,6 +3502,7 @@ def player():
             if broadcast_update_timer.get() > 1:
                 broadcast_update_timer.set()
                 gui.update += 1
+
 
         if player1_status == p_playing or player2_status == p_playing:
 
@@ -4767,13 +4773,13 @@ gui.pl_update = 2
 # mode.parameters.colorKey = SDL_Color(0, 0, 0)
 
 
-if default_player == 'BASS':
+if default_player == 1:
 
     playerThread = threading.Thread(target=player)
     playerThread.daemon = True
     playerThread.start()
 
-elif default_player == 'GTK':
+elif default_player == 2:
 
     playerThread = threading.Thread(target=player3)
     playerThread.daemon = True
@@ -10188,13 +10194,13 @@ def broadcast_select_track(index):
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
                               pctl.master_library[pctl.broadcast_index].title
 
-if prefs.enable_transcode or default_player == 'BASS':
+if prefs.enable_transcode or default_player == 1:
     track_menu.br()
 
 
 track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
-if default_player == 'BASS':
+if default_player == 1:
     track_menu.add('Broadcast This', broadcast_select_track, broadcast_feature_deco, pass_ref=True)
 
 # Create top menu
@@ -10437,7 +10443,7 @@ set_menu.add("- Remove This", sa_remove, pass_ref=True)
 
 def bass_features_deco():
     line_colour = colours.menu_text
-    if default_player != 'BASS':
+    if default_player != 1:
         line_colour = colours.menu_text_disabled
     return [line_colour, colours.menu_background, None]
 
@@ -10651,7 +10657,7 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
 x_menu.add("New Playlist", new_playlist, icon=add_icon)
 
-if default_player == 'BASS':
+if default_player == 1:
     x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
 x_menu.br()
 
@@ -10851,7 +10857,7 @@ def toggle_broadcast():
 
 def broadcast_deco():
     line_colour = colours.menu_text
-    if default_player != 'BASS':
+    if default_player != 1:
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
@@ -10865,7 +10871,7 @@ def broadcast_colour():
         return None
 
 
-if default_player == 'BASS' and os.path.isfile(os.path.join(config_directory, "config.txt")):
+if default_player == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
     if gui.scale == 2:
         broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/2x/broadcast.png'))
     else:
@@ -11466,7 +11472,7 @@ def worker1():
                 return 1
 
             # Get length from backend
-            if lasttime == 0 and default_player == 'BASS':
+            if lasttime == 0 and default_player == 1:
                 lasttime = get_backend_time(filepath)
 
             LENGTH = 0
@@ -12854,7 +12860,7 @@ class Over:
     def audio(self):
 
 
-        if default_player == "BASS":
+        if default_player == 1:
 
             y = self.box_y + 35 * gui.scale
             x = self.box_x + 130 * gui.scale
@@ -12901,6 +12907,12 @@ class Over:
 
             y = self.box_y + 225 * gui.scale
             draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
+
+        elif default_player == 2:
+
+            y = self.box_y + 120 * gui.scale
+            x = self.box_x + 375 * gui.scale
+            draw_text((x, y - 22 * gui.scale, 2), "Gstreamer", [170, 170, 170, 255], 214)
 
     def funcs(self):
 
@@ -13186,7 +13198,7 @@ class Over:
         y += 28 * gui.scale
 
 
-        if default_player == 'BASS':
+        if default_player == 1:
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
         y += 28 * gui.scale
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
@@ -16242,9 +16254,9 @@ sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
 print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 # time.sleep(13)
 # C-ML
-if default_player == "GTK":
+if default_player == 2:
     print("Using GStreamer as fallback. Some functions disabled")
-elif default_player == "None":
+elif default_player == 0:
     show_message("ERROR: No backend found", 'warning')
 
 total = 0
