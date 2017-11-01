@@ -14,6 +14,7 @@ v2.6.0
  - Duplicated transcode folder function to folder menu
  - Set gallery highlight to animate on 'show playing'
  - Removed detection of mp4 files
+ - Removed optional speedup module (No noticeable difference)
  - Fixed scrollbar scrolling past bottom panel
  - Fixed track box attribute hit boxes being slightly off
  - Fixed show playing in Art+Tracks view having incorrect alignment on last album
