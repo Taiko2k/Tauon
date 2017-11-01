@@ -20,6 +20,7 @@ v2.6.0
  - Fixed drag mode being activated on track menu click in Art+Track view
  - [Linux[ Fixed some errors that were reported on console
  - [Linux] Fixed crash on start on Openbox
+ - [Linux] Fixed gstreamer mode not advancing tracks
 
 v2.5.2
 
