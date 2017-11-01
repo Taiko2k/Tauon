@@ -187,15 +187,6 @@ from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
 
-# Load optional Cython module for faster visualiser processing
-fast_bin_av = True
-try:
-    from fastbin import fast_display, fast_bin
-    print("Fastbin found")
-except ImportError:
-    fast_bin_av = False
-    print("Fastbin not found")
-
 locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
 # Platform specific imports
@@ -3294,31 +3285,28 @@ def player():
                     # BASS_DATA_FFT8192 = 0x80000005# -2147483643# 8192 FFT
                     # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
 
-                    if not fast_bin_av:
-                        p_spec = []
-                        BANDS = 24
-                        b0 = 0
-                        i = 0
+                    p_spec = []
+                    BANDS = 24
+                    b0 = 0
+                    i = 0
 
-                        while i < BANDS:
-                            peak = 0
-                            b1 = pow(2, i * 10.0 / (BANDS - 1))
-                            if b1 > 511:
-                                b1 = 511
-                            if b1 <= b0:
-                                b1 = b0 + 1
-                            while b0 < b1 and b0 < 511:
-                                if peak < x[1 + b0]:
-                                    peak = x[1 + b0]
-                                b0 += 1
+                    while i < BANDS:
+                        peak = 0
+                        b1 = pow(2, i * 10.0 / (BANDS - 1))
+                        if b1 > 511:
+                            b1 = 511
+                        if b1 <= b0:
+                            b1 = b0 + 1
+                        while b0 < b1 and b0 < 511:
+                            if peak < x[1 + b0]:
+                                peak = x[1 + b0]
+                            b0 += 1
 
-                            outp = math.sqrt(peak)
-                            # print(int(outp*20))
-                            p_spec.append(int(outp * 45))
-                            i += 1
-                        gui.spec = p_spec
-                    else:
-                        gui.spec = fast_bin(x)
+                        outp = math.sqrt(peak)
+                        # print(int(outp*20))
+                        p_spec.append(int(outp * 45))
+                        i += 1
+                    gui.spec = p_spec
 
                     # print(gui.spec)
                     if pctl.playing_time > 0.5 and pctl.playing_state == 1:
@@ -19931,35 +19919,31 @@ while running:
                 vis_rate_timer.set()
 
                 if spec_smoothing and pctl.playing_state > 0:
-                    if not fast_bin_av:
 
-                        for i in range(len(gui.spec)):
-                            if gui.spec[i] > gui.s_spec[i]:
+                    for i in range(len(gui.spec)):
+                        if gui.spec[i] > gui.s_spec[i]:
+                            gui.s_spec[i] += 1
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 4:
                                 gui.s_spec[i] += 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-                                    gui.s_spec[i] += 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-                                    gui.s_spec[i] += 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-                                    gui.s_spec[i] += 1
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+                                gui.s_spec[i] += 1
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+                                gui.s_spec[i] += 1
 
-                            elif gui.spec[i] == gui.s_spec[i]:
-                                pass
-                            elif gui.spec[i] < gui.s_spec[i] > 0:
+                        elif gui.spec[i] == gui.s_spec[i]:
+                            pass
+                        elif gui.spec[i] < gui.s_spec[i] > 0:
+                            gui.s_spec[i] -= 1
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 4:
                                 gui.s_spec[i] -= 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-                                    gui.s_spec[i] -= 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-                                    gui.s_spec[i] -= 1
-                                if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-                                    gui.s_spec[i] -= 1
-                    else:
-                        gui.s_spec = fast_display(gui.spec, gui.s_spec)
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+                                gui.s_spec[i] -= 1
+                            if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+                                gui.s_spec[i] -= 1
 
                     if pctl.playing_state == 0 and checkEqual(gui.s_spec):
                         gui.level_update = True
                         time.sleep(0.008)
-
                 else:
                     gui.s_spec = gui.spec
             else:
