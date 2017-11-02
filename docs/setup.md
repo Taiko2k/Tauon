@@ -2,10 +2,10 @@
 ## Setup release on Windows
 
 Program should work after running setup installer exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
- 
+
 ## Dependencies for manual setup
 
-Take special note of the bolded entires as currently the versions avaliable in many distros are not sufficient.
+Take special note of the entires with bolded version numbers meaning they specifically require the newer versions of those libraries.
 
 Italicized entires are included in the releasae zip package.
 
@@ -38,7 +38,7 @@ Italicized entires are included in the releasae zip package.
  - *Python pysdl2*
  - *Python pyxhook* (Linux only, optional)
  - *Python pylyrics*
-    
+
 ## Development setup on Arch Linux
 
 1. Install from AUR or install dependencies manually such as listed in the PKGBUILD.
@@ -58,6 +58,3 @@ Something like this:
 3. Download or clone hsaudiotag https://github.com/hsoft/hsaudiotag and copy inner "hsaudiotag" folder to extracted tauon-music-box folder
 4. Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder
 5. Finally, run from extracted tauon-music-box directory using ```python3 tauon.py```
-
-
-

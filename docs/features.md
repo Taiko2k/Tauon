@@ -20,17 +20,6 @@
 | MOD |          |          |         |
 
 
-### UI and Layouts
-
- - Theme files for changing UI colours (not all elements customisable)
- - Track list
- - Album art
- - Album gallery
- - Basic spectrum visualization and level meter
- - Custom columns with sorting
- - Lyrics display
- - High DPI (2x)
-
 ### External service integration
 
 - Last.fm scrobbling
@@ -68,7 +57,7 @@
 - Cross fade (only)
 - Replay gain (Track and Album gain from metadata only)
 
-## Other common player features not implemented:
+## Other common player features not featured:
 
  - Codecs: ALAC, Musepack, TAK, MOD
  - Folder monitoring / auto update
@@ -85,12 +74,8 @@
  - Auto DJ
  - Timer / Alarm
  - Genre filtering
-
-## Won't implement / Refused
-
-  - Expanded support for proprietary formats (such as WMA)
-  - Per track ratings
-  - Folder tree view
+ - Per track ratings
+ - Folder tree view
 
 ## Out of scope
 
