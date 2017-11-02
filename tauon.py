@@ -11172,7 +11172,7 @@ def force_album_view():
 
 def switch_showcase(index=-1):
 
-    if pctl.playing_object().index == index:
+    if pctl.playing_object() is None or pctl.playing_object().index == index:
         pass
     else:
         gui.force_showcase_index = index
