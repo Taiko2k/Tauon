@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v2.6.1
+
+ - Fixed tracks advancing too early (critical)
+ - Set database to save to disk after imports
+
 v2.6.0
 
  - Added time cursor to seek bar on wheel click

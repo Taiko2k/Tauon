@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.0"
+t_version = "v2.6.1"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -2174,7 +2174,7 @@ class PlayerCtl:
     def test_progress(self):
 
         if self.playing_state == 1 and self.playing_time + (
-                    prefs.cross_fade_time / 1000) + 0 >= self.playing_length - 2 and self.playing_time > 0.2:
+                    prefs.cross_fade_time / 1000) + 0 >= self.playing_length and self.playing_time > 0.2:
 
             if self.playing_length == 0 and self.playing_time < 4:
                 # If the length is unknown, allow backend some time to provide a duration
@@ -16446,6 +16446,90 @@ gal_right = False
 
 get_sdl_input = GetSDLInput()
 
+def save_state():
+
+    print("Writing database to disk.")
+
+    view_prefs['star-lines'] = star_lines
+    view_prefs['update-title'] = update_title
+    view_prefs['side-panel'] = prefs.prefer_side
+    view_prefs['dim-art'] = prefs.dim_art
+    view_prefs['level-meter'] = gui.turbo
+    view_prefs['pl-follow'] = pl_follow
+    view_prefs['scroll-enable'] = scroll_enable
+    view_prefs['break-enable'] = break_enable
+    view_prefs['dd-index'] = dd_index
+    view_prefs['append-date'] = prefs.append_date
+
+    save = [pctl.master_library,
+            master_count,
+            pctl.playlist_playing,
+            pctl.playlist_active,
+            playlist_position,
+            pctl.multi_playlist,
+            pctl.player_volume,
+            pctl.track_queue,
+            pctl.queue_step,
+            default_playlist,
+            pctl.playlist_playing,
+            cue_list,
+            radio_field.text,
+            theme,
+            folder_image_offsets,
+            lfm_username,
+            lfm_hash,
+            2.0,  # Version
+            view_prefs,
+            gui.save_size,
+            gui.side_panel_size,
+            0,  # save time (unused)
+            gui.vis,
+            playlist_selected,
+            album_mode_art_size,
+            draw_border,
+            prefs.enable_web,
+            prefs.allow_remote,
+            prefs.expose_web,
+            prefs.enable_transcode,
+            prefs.show_rym,
+            combo_mode_art_size,
+            gui.maximized,
+            prefs.prefer_bottom_title,
+            gui.display_time_mode,
+            prefs.transcode_mode,
+            prefs.transcode_codec,
+            prefs.transcode_bitrate,
+            prefs.line_style,
+            prefs.cache_gallery,
+            prefs.playlist_font_size,
+            prefs.use_title,
+            gui.pl_st,
+            gui.set_mode,
+            None,
+            prefs.playlist_row_height,
+            prefs.show_wiki,
+            prefs.auto_extract,
+            prefs.colour_from_image,
+            gui.set_bar,
+            gui.gallery_show_text,
+            gui.bb_show_art,
+            gui.show_stars,
+            prefs.auto_lfm,
+            prefs.scrobble_mark,
+            prefs.replay_gain,
+            prefs.radio_page_lyrics,
+            prefs.show_gimage,
+            prefs.end_setting,
+            prefs.show_gen,
+            pctl.save_urls,
+            prefs.auto_del_zip,
+            gui.level_meter_colour_mode,
+            prefs.ui_scale,
+            None,
+            None,
+            None]
+
+    pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
 while running:
     # bm.get('main')
@@ -17389,8 +17473,10 @@ while running:
                             to_get = 1
                     loaderCommandReady = True
                     break
-    else:
+    elif loading_in_progress is True:
         loading_in_progress = False
+        save_state()
+
 
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
@@ -20279,87 +20365,7 @@ pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
-view_prefs['star-lines'] = star_lines
-view_prefs['update-title'] = update_title
-view_prefs['side-panel'] = prefs.prefer_side
-view_prefs['dim-art'] = prefs.dim_art
-view_prefs['level-meter'] = gui.turbo
-view_prefs['pl-follow'] = pl_follow
-view_prefs['scroll-enable'] = scroll_enable
-view_prefs['break-enable'] = break_enable
-view_prefs['dd-index'] = dd_index
-view_prefs['append-date'] = prefs.append_date
-
-save = [pctl.master_library,
-        master_count,
-        pctl.playlist_playing,
-        pctl.playlist_active,
-        playlist_position,
-        pctl.multi_playlist,
-        pctl.player_volume,
-        pctl.track_queue,
-        pctl.queue_step,
-        default_playlist,
-        pctl.playlist_playing,
-        cue_list,
-        radio_field.text,
-        theme,
-        folder_image_offsets,
-        lfm_username,
-        lfm_hash,
-        2.0,  # Version
-        view_prefs,
-        gui.save_size,
-        gui.side_panel_size,
-        0,  # save time (unused)
-        gui.vis,
-        playlist_selected,
-        album_mode_art_size,
-        draw_border,
-        prefs.enable_web,
-        prefs.allow_remote,
-        prefs.expose_web,
-        prefs.enable_transcode,
-        prefs.show_rym,
-        combo_mode_art_size,
-        gui.maximized,
-        prefs.prefer_bottom_title,
-        gui.display_time_mode,
-        prefs.transcode_mode,
-        prefs.transcode_codec,
-        prefs.transcode_bitrate,
-        prefs.line_style,
-        prefs.cache_gallery,
-        prefs.playlist_font_size,
-        prefs.use_title,
-        gui.pl_st,
-        gui.set_mode,
-        None,
-        prefs.playlist_row_height,
-        prefs.show_wiki,
-        prefs.auto_extract,
-        prefs.colour_from_image,
-        gui.set_bar,
-        gui.gallery_show_text,
-        gui.bb_show_art,
-        gui.show_stars,
-        prefs.auto_lfm,
-        prefs.scrobble_mark,
-        prefs.replay_gain,
-        prefs.radio_page_lyrics,
-        prefs.show_gimage,
-        prefs.end_setting,
-        prefs.show_gen,
-        pctl.save_urls,
-        prefs.auto_del_zip,
-        gui.level_meter_colour_mode,
-        prefs.ui_scale,
-        None,
-        None,
-        None]
-
-pickle.dump(save, open(user_directory + "/state.p", "wb"))
-
+save_state()
 
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
