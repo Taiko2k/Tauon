@@ -5717,7 +5717,7 @@ class LyricsRenWin:
 
     def render(self, index, x, y, w, h, p):
 
-        if index != self.index:
+        if index != self.index or self.text != pctl.master_library[index].lyrics:
             self.index = index
             self.generate(index, w)
 
@@ -7645,8 +7645,12 @@ def paste_lyrics_deco():
 def paste_lyrics(track_object):
 
     if SDL_HasClipboardText():
-        clip = SDL_GetClipboardText().decode('utf-8')
-        track_object.lyrics = clip
+        clip = SDL_GetClipboardText()
+        #print(clip)
+        track_object.lyrics = clip.decode('utf-8')
+
+    else:
+        print('NO TEXT TO PASTE')
 
 showcase_menu.add('Paste Lyrics', paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
@@ -15769,56 +15773,55 @@ class Showcase:
             index = pctl.track_queue[pctl.queue_step]
             track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
-        if self.artist_mode:
+        # if self.artist_mode:
+        #
+        #     if track.artist == self.lastfm_artist:
+        #
+        #         return
+        #
+        # else:
+        album_art_gen.display(index, (x, y), (box, box))
+        if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
+            album_art_gen.cycle_offset(index)
 
-            if track.artist == self.lastfm_artist:
+        if track.lyrics == "":
 
-                return
+            w = window_size[0] - (x + box) - 30
+            x = int(x + box + (window_size[0] - x - box) / 2)
+
+            y = int(window_size[1] / 2) - 60
+            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
+
+            y += 45
+            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
 
         else:
-            album_art_gen.display(index, (x, y), (box, box))
-            if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
-                album_art_gen.cycle_offset(index)
+            x += box + int(window_size[0] * 0.15) + 20
 
-            if track.lyrics == "":
-
-                w = window_size[0] - (x + box) - 30
-                x = int(x + box + (window_size[0] - x - box) / 2)
-
-                y = int(window_size[1] / 2) - 60
-                draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
-
-                y += 45
-                draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
-
-            else:
-                x += box + int(window_size[0] * 0.15) + 20
-
-                #y = 80
-                x -= 100
-                w = window_size[0] - x - 30
+            #y = 80
+            x -= 100
+            w = window_size[0] - x - 30
 
 
+            if key_up_press:
+                lyrics_ren.lyrics_position += 35
+            if key_down_press:
+                lyrics_ren.lyrics_position -= 35
 
-                if key_up_press:
-                    lyrics_ren.lyrics_position += 35
-                if key_down_press:
-                    lyrics_ren.lyrics_position -= 35
+            lyrics_ren.render(index,
+                              x,
+                              y + lyrics_ren.lyrics_position,
+                              w,
+                              int(window_size[1] - 100),
+                              0)
 
-                lyrics_ren.render(index,
-                                  x,
-                                  y + lyrics_ren.lyrics_position,
-                                  w,
-                                  int(window_size[1] - 100),
-                                  0)
-
-            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-                if mouse_wheel != 0:
-                    lyrics_ren.lyrics_position += mouse_wheel * 35
-                if right_click:
-                    track = pctl.playing_object()
-                    if track != None:
-                        showcase_menu.activate(track)
+        if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+            if mouse_wheel != 0:
+                lyrics_ren.lyrics_position += mouse_wheel * 35
+            if right_click:
+                # track = pctl.playing_object()
+                if track != None:
+                    showcase_menu.activate(track)
 
 
 showcase = Showcase()
@@ -17910,7 +17913,7 @@ while running:
                                         #     acy = y
                                         #     #acx = x + album_mode_art_size + 15 * gui.scale
                                         #     acx = x + album_mode_art_size + 15 * gui.scale
-                                        #     #album_card.activate(playlist_selected, acx, acy)
+                                        #     album_card.activate(playlist_selected, acx, acy)
 
 
                                 album_on += 1

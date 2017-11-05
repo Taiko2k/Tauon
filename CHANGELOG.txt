@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v2.6.2
+
+ - Fixed lyrics only pasting to playing track
+ - Fixed lyrics not updating after pasting
+
 v2.6.1
 
  - Fixed tracks advancing too early (critical)
