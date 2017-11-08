@@ -726,9 +726,13 @@ class GuiVar:
         self.cur_time = "0"
         self.force_showcase_index = -1
 
+        self.frame_callback_list = []
+
 
 
 gui = GuiVar()
+
+
 
 # Functions for reading and setting play counts
 class StarStore:
@@ -7297,6 +7301,63 @@ else:
     message_warning_icon = LoadImageAsset("/gui/warning.png")
     message_tick_icon = LoadImageAsset("/gui/done.png")
     message_arrow_icon = LoadImageAsset("/gui/ext.png")
+
+
+class ToolTip:
+
+    def __init__(self):
+        self.text = ""
+        self.h = 20
+        self.w = 60
+        self.x = 0
+        self.y = 0
+        self.timer = Timer()
+        self.trigger = 1.1
+        self.font = 13
+        self.called = False
+        self.a = False
+
+        self.ox = 0
+
+
+    def test(self, x, y, text):
+
+        if self.text != text:
+            self.text = text
+            #self.timer.set()
+            self.a = False
+
+            self.x = x
+            self.y = y
+            self.w = draw.text_calc(text, self.font) + 10
+
+        self.called = True
+
+        if self.a is False:
+            self.timer.set()
+            gui.frame_callback_list.append(TestTimer(self.trigger))
+        self.a = True
+
+    def render(self):
+
+        if self.called is True:
+
+            if self.timer.get() > self.trigger:
+
+                draw.rect_r((self.x, self.y, self.w, self.h), colours.menu_background, True)
+                draw.rect_r((self.x, self.y, self.w, self.h), colours.grey(50))
+                draw_text((self.x + int(self.w / 2), self.y, 2), self.text, colours.grey(220), self.font)
+            else:
+                #gui.update += 1
+                pass
+        else:
+            self.timer.set()
+            self.a = False
+
+        self.called = False
+
+tool_tip = ToolTip()
+
 
 # Right click context menu generator
 
@@ -14496,6 +14557,9 @@ class BottomBarType1:
                     pctl.play()
                 if right_click:
                     pctl.show_current(highlight=True)
+                tool_tip.test(buttons_x_offset * gui.scale + 50 * gui.scale,
+                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Play")
+
             self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
 
@@ -14509,6 +14573,9 @@ class BottomBarType1:
                 pause_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.pause()
+                tool_tip.test(x + 25 * gui.scale,
+                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Pause")
+
 
             # draw.rect_r(rect,[255,0,0,255], True)
             draw.rect((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
@@ -14524,6 +14591,8 @@ class BottomBarType1:
                     pctl.stop()
                 if right_click:
                     pctl.auto_stop ^= True
+                tool_tip.test(x + gui.scale + 25 * gui.scale,
+                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Stop")
 
             draw.rect((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14539,8 +14608,10 @@ class BottomBarType1:
                     pctl.random_mode ^= True
                 if middle_click:
                     pctl.advance(rr=True)
+                tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
 
             self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
+
             # draw.rect_r(rect,[255,0,0,255], True)
 
             # BACK---
@@ -14554,6 +14625,8 @@ class BottomBarType1:
                     pctl.repeat_mode ^= True
                 if middle_click:
                     pctl.revert()
+                tool_tip.test(buttons_x_offset + 170 * gui.scale + 50 * gui.scale,
+                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Back")
 
             self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14567,6 +14640,7 @@ class BottomBarType1:
             rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
+                tool_tip.test(x + 35 * gui.scale, y - 20 * gui.scale, "Playback menu")
                 rpbc = colours.mode_button_over
                 if input.mouse_click:
                     extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
@@ -14599,6 +14673,7 @@ class BottomBarType1:
                     rpbc = colours.mode_button_active
 
                 elif coll_point(mouse_position, rect):
+                    tool_tip.test(x + 60 * gui.scale, y - 15 * gui.scale, "Shuffle")
                     if self.random_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.random_mode is True:
@@ -14633,6 +14708,7 @@ class BottomBarType1:
                     rpbc = colours.mode_button_active
 
                 elif coll_point(mouse_position, rect):
+                    tool_tip.test(x + 60 * gui.scale, y - 15 * gui.scale, "Repeat")
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.repeat_mode is True:
@@ -16025,7 +16101,7 @@ class ViewBox:
         gui.level_2_click = False
         gui.update = 2
 
-    def button(self, x, y, asset, test, colour_get=None):
+    def button(self, x, y, asset, test, colour_get=None, name="Unknown"):
 
         on = test()
         rect = [x - 8 * gui.scale,
@@ -16044,6 +16120,9 @@ class ViewBox:
         fun = None
         col = False
         if coll_point(mouse_position, rect):
+
+            tool_tip.test(x + asset.w + 10 * gui.scale, y - 15 * gui.scale, name)
+
             col = True
             if gui.level_2_click:
                 fun = test
@@ -16131,38 +16210,38 @@ class ViewBox:
 
         func = None
 
-        test = self.button(x, y, self.tracks_img, self.tracks, self.tracks_colour)
+        test = self.button(x, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only")
         if test is not None:
             func = test
 
         x += 60 * gui.scale
-        test = self.button(x, y, self.side_img, self.side, self.side_colour)
+        test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Side bar")
         if test is not None:
             func = test
 
         x += 65 * gui.scale
-        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour)
+        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Tracks + Gallery")
         if test is not None:
             func = test
 
         x = self.x + 21 * gui.scale
         y = self.y + 56 * gui.scale
 
-        test = self.button(x, y, self.combo_img, self.combo, self.combo_colour)
+        test = self.button(x, y, self.combo_img, self.combo, self.combo_colour, "Art + Tracks")
         if test is not None:
             func = test
 
         x += 63 * gui.scale
-        test = self.button(x, y, self.lyrics_img, self.lyrics, self.lyrics_colour)
+        test = self.button(x, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Art + Lyrics")
         if test is not None:
             func = test
 
         x += 68 * gui.scale
-        test = self.button(x, y, self.gallery2_img, self.gallery2, self.gallery2_colour)
+        test = self.button(x, y, self.gallery2_img, self.gallery2, self.gallery2_colour, "Gallery only")
         if test is not None:
             func = test
 
-        test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col, self.col_colour)
+        test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col, self.col_colour, "Toggle columns")
         if test is not None:
             func = test
 
@@ -16991,7 +17070,18 @@ while running:
 
     power += 1
 
-    if animate_monitor_timer.get() < 1 or len(load_orders) > 0:
+    if gui.frame_callback_list:
+        i = len(gui.frame_callback_list) - 1
+        while i >= 0:
+            #print(gui.frame_callback_list[i])
+            if gui.frame_callback_list[i].test():
+                gui.update = 1
+                power = 1000
+                #print("FRAME CALLBACK")
+                del gui.frame_callback_list[i]
+            i -= 1
+
+    if animate_monitor_timer.get() < 1 or load_orders:
 
         if cursor_blink_timer.get() > 0.65:
             cursor_blink_timer.set()
@@ -17067,7 +17157,7 @@ while running:
                     # SDL_RaiseWindow(t_window)
                     # SDL_RestoreWindow(t_window)
 
-        if len(arg_queue) > 0:
+        if arg_queue:
             i = 0
             while i < len(arg_queue):
                 load_order = LoadClass()
@@ -19832,6 +19922,8 @@ while running:
 
         if view_box.active:
             view_box.render()
+
+        tool_tip.render()
 
         if gui.cursor_mode == 4 and gui.flag_special_cursor is False:
             gui.cursor_mode = 0

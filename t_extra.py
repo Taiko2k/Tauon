@@ -22,7 +22,8 @@
 import time
 
 
-class Timer:  # A seconds based timer
+# A seconds based timer
+class Timer:
     def __init__(self):
         self.start = 0
         self.end = 0
@@ -45,6 +46,17 @@ class Timer:  # A seconds based timer
     def force_set(self, sec):
         self.start = time.time()
         self.start -= sec
+
+
+# Simple bool timer object
+class TestTimer:
+    def __init__(self, time):
+        self.timer = Timer()
+        self.time = time
+
+    def test(self):
+        return self.timer.get() > self.time
+
 
 
 # Test given proximity between two 2d points
