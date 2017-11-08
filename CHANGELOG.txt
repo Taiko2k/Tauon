@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v2.6.2
 
+ - Added tool tips to various main buttons
  - Fixed lyrics only pasting to playing track
  - Fixed lyrics not updating after pasting
 
