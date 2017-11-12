@@ -559,6 +559,7 @@ class Prefs:
         self.show_gimage = True
         self.end_setting = "stop"
         self.show_gen = False
+        self.show_lyrics_side = True
 
         self.ui_scale = 1
 
@@ -1181,10 +1182,8 @@ try:
         prefs.auto_del_zip = save[61]
     if save[62] is not None:
         gui.level_meter_colour_mode = save[62]
-
-
-
-
+    if save[63] is not None:
+        prefs.show_lyrics_side = save[63]
 
     state_file.close()
     del save
@@ -5686,6 +5685,32 @@ if system == 'windows':
 #             SDL_RenderCopy(renderer, self.texture, None, self.dst)
 
 
+class LyricsRenMini:
+
+    def __init__(self):
+
+        self.index = -1
+        self.text = ""
+
+
+        self.lyrics_position = 0
+
+    def generate(self, index, w):
+
+        self.text = pctl.master_library[index].lyrics
+        self.lyrics_position = 0
+
+    def render(self, index, x, y, w, h, p):
+
+        if index != self.index or self.text != pctl.master_library[index].lyrics:
+            self.index = index
+            self.generate(index, w)
+
+        draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 15, w, colours.side_panel_background)
+
+# if gui.win_text or gui.cairo_text:
+lyrics_ren_mini = LyricsRenMini()
+
 class LyricsRenWin:
 
     def __init__(self):
@@ -7307,8 +7332,8 @@ class ToolTip:
 
     def __init__(self):
         self.text = ""
-        self.h = 20
-        self.w = 60
+        self.h = 21 * gui.scale
+        self.w = 62 * gui.scale
         self.x = 0
         self.y = 0
         self.timer = Timer()
@@ -7668,8 +7693,7 @@ class Menu:
 
 # Create empty area menu
 playlist_menu = Menu(130)
-showcase_menu = Menu(170)
-
+showcase_menu = Menu(125)
 
 
 def get_lyric_wiki(track_object):
@@ -7691,8 +7715,8 @@ def get_bio(track_object):
     if track_object.artist != "":
         lastfm.get_bio(track_object.artist)
 
-showcase_menu.add('Query LyricWiki For Lyrics', get_lyric_wiki, pass_ref=True)
-#showcase_menu.add('teest', get_bio, pass_ref=True)
+showcase_menu.add('Search LyricWiki', get_lyric_wiki, pass_ref=True)
+
 
 def paste_lyrics_deco():
 
@@ -7737,6 +7761,8 @@ def copy_lyrics(track_object):
 
 showcase_menu.add('Copy Lyrics', copy_lyrics, copy_lyrics_deco, pass_ref=True)
 
+
+
 def clear_lyrics(track_object):
     track_object.lyrics = ""
 
@@ -7757,8 +7783,17 @@ def clear_lyrics_deco():
 
     return [line_colour, colours.menu_background, None]
 
-showcase_menu.add('Clear Lyrics', clear_lyrics, clear_lyrics_deco, pass_ref=True)
+def split_lyrics(track_object):
 
+
+    if track_object.lyrics != "":
+        track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
+    else:
+        pass
+
+
+showcase_menu.add('Clear Lyrics', clear_lyrics, clear_lyrics_deco, pass_ref=True)
+showcase_menu.add('Split Lines', split_lyrics, clear_lyrics_deco, pass_ref=True)
 
 def save_embed_img():
     index = pctl.track_queue[pctl.queue_step]
@@ -11040,6 +11075,14 @@ def toggle_auto_theme(mode=0):
     themeChange = True
 
 
+def toggle_mini_lyrics(mode=0):
+
+    if mode == 1:
+        return prefs.show_lyrics_side
+
+    prefs.show_lyrics_side ^= True
+
+
 def toggle_level_meter(mode=0):
 
     if mode == 1:
@@ -12837,6 +12880,8 @@ def switch_rg_album(mode=0):
         return True if prefs.replay_gain == 2 else False
     prefs.replay_gain = 2
 
+
+
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
 # config_items.append(['Turn off playlist title breaks', toggle_break])
@@ -13233,6 +13278,10 @@ class Over:
         y += 35 * gui.scale
 
         x = self.box_x + self.item_x_offset
+        y1 = y
+
+        draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
+        y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_borderless, "Borderless window")
 
@@ -13242,30 +13291,49 @@ class Over:
 
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
-        ### y += 28
-        ### self.toggle_square(x, y, toggle_side_panel, "Show side panel")
+
+
+        y += 28 * gui.scale
+        y += 10 * gui.scale
+        self.button(x + 80 * gui.scale, y, "Next Theme (F2)", advance_theme)
+        #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
+        # ----------
+
+        y = self.box_y - 5 * gui.scale
+        x += 270 * gui.scale
+
+        y += 28 * gui.scale
+
+
+        draw_text((x, y), "Gallery", colours.grey_blend_bg(100), 12)
+
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
+        self.toggle_square(x, y, toggle_galler_text, "Show album title in gallery")
+
+        y += 28 * gui.scale
+        y += 28 * gui.scale
+        draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
+
         y += 28 * gui.scale
 
 
         if default_player == 1:
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
-        y += 28 * gui.scale
-        #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
-        # ----------
+            y += 28 * gui.scale
 
-        x += 250 * gui.scale
-        y -= 120 * gui.scale
+
+        self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
+        y += 28 * gui.scale
+
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
 
         y += 28 * gui.scale
 
         #self.button(x, y, "Reset Layout", standard_size)
         #x += 100
-        self.button(x, y, "Next Theme (F2)", advance_theme)
+
         #x -= 100
 
         #y += 92
@@ -16253,6 +16321,72 @@ class ViewBox:
 
 view_box = ViewBox()
 
+
+class GalleryJumper:
+
+    def __init__(self):
+        self.tags = []
+        self.threshold = 8
+
+
+    def calculate(self):
+
+        #print(album_dex)
+
+        self.tags = []
+        def key(item):
+            return len(item[0])
+
+        for a, album in enumerate(album_dex):
+
+
+            a1 = a - 25
+            a2 = a + 25
+            if a1 < 0:
+                a1 = 1
+            if a2 > len(album_dex) - 1:
+                a2 = len(album_dex) - 1
+
+            source = pctl.master_library[default_playlist[album]].parent_folder_path.replace("\\", "/")
+
+            samples = album_dex[a1:a2]
+
+            commons = []
+            for q in samples:
+                target = pctl.master_library[default_playlist[q]].parent_folder_path.replace("\\", "/")
+                common_path = os.path.commonpath([source, target])
+                #if pctl.master_library[default_playlist[q]].artist.lower() not in os.path.basename(target).lower():
+                commons.append(common_path)
+
+
+            counts = {i: commons.count(i) for i in commons}
+            counts = list(counts.items())
+            counts = sorted(counts, key=key)
+            counts = list(reversed(counts))
+            for i in reversed(range(len(counts))):
+                if counts[i][1] < self.threshold:
+                    del counts[i]
+
+            #print(counts)
+
+            if len(counts) == 0:
+                continue
+
+            #print("---")
+            #print(self.tags[-1:][0][1])
+            #print(counts[0][0])
+
+            if len(self.tags) == 0 or self.tags[-1:][0][1] != os.path.basename(counts[0][0]):
+
+                #print(self.tags[-1:][0][1])
+                self.tags.append((album, os.path.basename(counts[0][0])))
+
+        print(self.tags)
+        print(len(self.tags))
+
+
+gallery_jumper = GalleryJumper()
+
 # Set SDL window drag areas
 if system != 'windows':
 
@@ -16607,7 +16741,7 @@ def save_state():
             prefs.auto_del_zip,
             gui.level_meter_colour_mode,
             prefs.ui_scale,
-            None,
+            prefs.show_lyrics_side,
             None,
             None]
 
@@ -17332,14 +17466,15 @@ while running:
 
             show_message("You don't even know what this button could have done.", 'warning')
 
+            gallery_jumper.calculate()
+
             # colours.level_1_bg = [0, 6, 30, 255]
             # colours.level_2_bg = [0, 6, 30, 255]
             # colours.level_3_bg = [0, 6, 30, 255]
             # colours.level_green = [10, 100, 255, 255]
             # colours.level_yellow = [10, 100, 255, 255]
             # colours.level_red = [110, 85, 255, 255]
-            pctl.playerCommand =  'monitor'
-            pctl.playerCommandReady = True
+
 
             # gd = {}
             #
@@ -18541,26 +18676,53 @@ while running:
                         boxy = window_size[1] - 160 * gui.scale
                         box = boxx
                         x = gui.playlist_width + 40 * gui.scale
-                        # if gui.light_mode:
-                        #     x += 2
-                        # CURRENT
                         gui.main_art_box = (x, gui.artboxY, box, box)
 
-                        if input.mouse_click and (coll_point(mouse_position, (
+                        # Input of section below album art
+                        if (coll_point(mouse_position, (
                                 x, gui.panelY + boxx + 5 * gui.scale, boxx, window_size[1] - boxx - 90 * gui.scale))):
-                            pctl.show_current()
 
-                            # if album_mode:
-                            #     goto_album(pctl.playlist_playing)
-                            gui.update += 1
+                            # Click area to jump to current track
+                            if input.mouse_click:
+                                pctl.show_current()
+                                gui.update += 1
 
+                            # Scroll area to scroll lyrics
+                            if mouse_wheel != 0:
+                                lyrics_ren_mini.lyrics_position += mouse_wheel * 21 * gui.scale
+                                if lyrics_ren_mini.lyrics_position > 0:
+                                    lyrics_ren_mini.lyrics_position = 0
+
+                                gui.update += 1
+
+                            # Right click to show lyric menu
+                            if right_click and prefs.show_lyrics_side and pctl.track_queue and 3 > pctl.playing_state > 0:
+                                gui.force_showcase_index = -1
+                                showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
+
+                        # Render lyrics if available
+                        if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and 3 > pctl.playing_state > 0:
+
+                            lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x,
+                                                   gui.main_art_box[1] + gui.main_art_box[
+                                                       3] + 10 + lyrics_ren_mini.lyrics_position,
+                                                   gui.side_panel_size - 10,
+                                                   2000, 0)
+                            draw.rect_r((gui.playlist_width + 31 * gui.scale, gui.panelY, window_size[0] - gui.playlist_width - 30 * gui.scale,
+                                         gui.main_art_box[3] + 17), colours.side_panel_background, True)
+
+                        # Input for album art
                         if len(pctl.track_queue) > 0:
 
+                            # Cycle images
                             if coll_point(mouse_position, gui.main_art_box) and input.mouse_click is True:
                                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
+                            # Open image externally
                             if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0:
                                 album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
+
+                        # Draw the album art. If side bar is being dragged set quick draw flag
                         if 3 > pctl.playing_state > 0:
 
                             if side_drag:
@@ -18579,8 +18741,7 @@ while running:
                         rect = gui.main_art_box
                         fields.add(rect)
 
-
-
+                        # Draw picture metadata
                         if showc is not False and coll_point(mouse_position, rect) \
                                 and renamebox is False \
                                 and radiobox is False \
@@ -18614,7 +18775,7 @@ while running:
 
                                 draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
-                            else:
+                            else:   # Extended metadata
 
                                 line = ""
                                 if showc[0] is True:
@@ -18658,133 +18819,136 @@ while running:
                                 draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
                                           bg=[30, 30, 30, 255])
 
-
+                        # Draw track metadata
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
-
-
-                                gui.win_fore = colours.side_panel_background
-
-                                block3 = False
-                                block4 = False
-                                block5 = False
-                                block6 = False
-
-                                t_title = ""
-                                album = ""
-                                artist = ""
-                                ext = ""
-                                date = ""
-                                #sample = ""
-
-                                if pctl.playing_state < 3:
-
-                                    t_title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
-                                    album = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                                    artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
-                                    ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
-                                    date = pctl.master_library[pctl.track_queue[pctl.queue_step]].date
-                                    genre = pctl.master_library[pctl.track_queue[pctl.queue_step]].genre
-                                    #sample = str(pctl.master_library[pctl.track_queue[pctl.queue_step]].samplerate)
-
-                                else:
-
-                                    t_title = pctl.tag_meta
-
-                                if side_panel_text_align == 1:
+                                if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
                                     pass
 
                                 else:
-                                    # -------------------------------
 
-                                    if 38 * gui.scale + box + 130 * gui.scale > window_size[1] + 52 * gui.scale:
-                                        block6 = True
-                                    if block6 != True:
-                                        if 38 * gui.scale + box + 134 * gui.scale > window_size[1] + 37 * gui.scale:
-                                            block5 = True
+                                    gui.win_fore = colours.side_panel_background
 
-                                        if 38 * gui.scale + box + 126 * gui.scale > window_size[1] + 10 * gui.scale:
-                                            block4 = True
-                                        if 38 * gui.scale + box + 126 * gui.scale > window_size[1] - 39 * gui.scale:
-                                            block3 = True
+                                    block3 = False
+                                    block4 = False
+                                    block5 = False
+                                    block6 = False
 
-                                        if 38 * gui.scale + box + 126 * gui.scale + 2 * gui.scale > window_size[1] - 70 * gui.scale:
+                                    t_title = ""
+                                    album = ""
+                                    artist = ""
+                                    ext = ""
+                                    date = ""
+                                    #sample = ""
 
-                                            block1 = 38 * gui.scale + box + 20 * gui.scale
-                                            block2 = window_size[1] - (70 - 36 - 2) * gui.scale
+                                    if pctl.playing_state < 3:
 
-                                        else:
-                                            block1 = 38 * gui.scale + box + 20 * gui.scale
-                                            block2 = 38 * gui.scale + box + 90 * gui.scale
+                                        t_title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
+                                        album = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
+                                        artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
+                                        ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
+                                        date = pctl.master_library[pctl.track_queue[pctl.queue_step]].date
+                                        genre = pctl.master_library[pctl.track_queue[pctl.queue_step]].genre
+                                        #sample = str(pctl.master_library[pctl.track_queue[pctl.queue_step]].samplerate)
 
-                                        if block4 is False:
+                                    else:
 
-                                            if block3 is True:
-                                                block1 -= 14
+                                        t_title = pctl.tag_meta
 
-                                            if t_title != "":
-                                                playing_info = t_title
-                                                playing_info = trunc_line(playing_info, fonts.side_panel_line1,
-                                                                          window_size[0] - gui.playlist_width - 53 * gui.scale)
-                                                draw_text((x - 1 * gui.scale, block1 + 2 * gui.scale), playing_info, colours.side_bar_line1,
-                                                          fonts.side_panel_line1, max=gui.side_panel_size - 32 * gui.scale)
+                                    if side_panel_text_align == 1:
+                                        pass
 
-                                            if artist != "":
-                                                playing_info = artist
-                                                # playing_info = trunc_line(playing_info, 13,
-                                                #                           window_size[0] - gui.playlist_width - 54)
-                                                draw_text((x - 1 * gui.scale, block1 + (17 + 6) * gui.scale), playing_info,
-                                                          colours.side_bar_line2,
-                                                          fonts.side_panel_line2, max=gui.side_panel_size - 32 * gui.scale)
-                                        else:
-                                            block1 -= 14 * gui.scale
+                                    else:
+                                        # -------------------------------
 
-                                            line = ""
-                                            if artist != "":
-                                                line += artist
-                                            if t_title != "":
-                                                if line != "":
-                                                    line += " - "
-                                                line += t_title
-                                            line = trunc_line(line, 15, window_size[0] - gui.playlist_width - 53 * gui.scale)
-                                            draw_text((x - 1 * gui.scale, block1), line, colours.side_bar_line1, 15, max=gui.side_panel_size - 32 * gui.scale)
+                                        if 38 * gui.scale + box + 130 * gui.scale > window_size[1] + 52 * gui.scale:
+                                            block6 = True
+                                        if block6 != True:
+                                            if 38 * gui.scale + box + 134 * gui.scale > window_size[1] + 37 * gui.scale:
+                                                block5 = True
 
-                                        if block3 == False:
+                                            if 38 * gui.scale + box + 126 * gui.scale > window_size[1] + 10 * gui.scale:
+                                                block4 = True
+                                            if 38 * gui.scale + box + 126 * gui.scale > window_size[1] - 39 * gui.scale:
+                                                block3 = True
 
-                                            if album != "":
-                                                playing_info = album
-                                                # playing_info = trunc_line(playing_info, 14,
-                                                #                           window_size[0] - gui.playlist_width - 53)
-                                                draw_text((x - 1 * gui.scale, block2), playing_info, colours.side_bar_line2,
-                                                          14, max=gui.side_panel_size - 32 * gui.scale)
+                                            if 38 * gui.scale + box + 126 * gui.scale + 2 * gui.scale > window_size[1] - 70 * gui.scale:
 
-                                            if date != "":
-                                                playing_info = date
-                                                if genre != "":
-                                                    playing_info += " | " + genre
-                                                playing_info = trunc_line(playing_info, 13,
-                                                                          window_size[0] - gui.playlist_width - 53 * gui.scale)
-                                                draw_text((x - 1 * gui.scale, block2 + 18 * gui.scale), playing_info, colours.side_bar_line2,
-                                                          13)
+                                                block1 = 38 * gui.scale + box + 20 * gui.scale
+                                                block2 = window_size[1] - (70 - 36 - 2) * gui.scale
 
-                                            if ext != "":
-                                                playing_info = ext  # + " | " + sample
-                                                # playing_info = trunc_line(playing_info, 12,
-                                                #                           window_size[0] - gui.playlist_width - 53)
-                                                draw_text((x - 1 * gui.scale, block2 + 36 * gui.scale), playing_info, colours.side_bar_line2,
-                                                          12, max=gui.side_panel_size - 32 * gui.scale)
-                                        else:
-                                            if block5 != True:
+                                            else:
+                                                block1 = 38 * gui.scale + box + 20 * gui.scale
+                                                block2 = 38 * gui.scale + box + 90 * gui.scale
+
+                                            if block4 is False:
+
+                                                if block3 is True:
+                                                    block1 -= 14
+
+                                                if t_title != "":
+                                                    playing_info = t_title
+                                                    playing_info = trunc_line(playing_info, fonts.side_panel_line1,
+                                                                              window_size[0] - gui.playlist_width - 53 * gui.scale)
+                                                    draw_text((x - 1 * gui.scale, block1 + 2 * gui.scale), playing_info, colours.side_bar_line1,
+                                                              fonts.side_panel_line1, max=gui.side_panel_size - 32 * gui.scale)
+
+                                                if artist != "":
+                                                    playing_info = artist
+                                                    # playing_info = trunc_line(playing_info, 13,
+                                                    #                           window_size[0] - gui.playlist_width - 54)
+                                                    draw_text((x - 1 * gui.scale, block1 + (17 + 6) * gui.scale), playing_info,
+                                                              colours.side_bar_line2,
+                                                              fonts.side_panel_line2, max=gui.side_panel_size - 32 * gui.scale)
+                                            else:
+                                                block1 -= 14 * gui.scale
+
                                                 line = ""
+                                                if artist != "":
+                                                    line += artist
+                                                if t_title != "":
+                                                    if line != "":
+                                                        line += " - "
+                                                    line += t_title
+                                                line = trunc_line(line, 15, window_size[0] - gui.playlist_width - 53 * gui.scale)
+                                                draw_text((x - 1 * gui.scale, block1), line, colours.side_bar_line1, 15, max=gui.side_panel_size - 32 * gui.scale)
+
+                                            if block3 == False:
+
                                                 if album != "":
-                                                    line += album
-                                                if line != "":
-                                                    line += " | "
+                                                    playing_info = album
+                                                    # playing_info = trunc_line(playing_info, 14,
+                                                    #                           window_size[0] - gui.playlist_width - 53)
+                                                    draw_text((x - 1 * gui.scale, block2), playing_info, colours.side_bar_line2,
+                                                              14, max=gui.side_panel_size - 32 * gui.scale)
+
                                                 if date != "":
-                                                    line += date + " | "
-                                                line += ext
-                                                #line = trunc_line(line, 14, window_size[0] - gui.playlist_width - 53)
-                                                draw_text((x - 1 * gui.scale, block2 + 32 * gui.scale), line, colours.side_bar_line2, 14, max=gui.side_panel_size - 32 * gui.scale)
+                                                    playing_info = date
+                                                    if genre != "":
+                                                        playing_info += " | " + genre
+                                                    playing_info = trunc_line(playing_info, 13,
+                                                                              window_size[0] - gui.playlist_width - 53 * gui.scale)
+                                                    draw_text((x - 1 * gui.scale, block2 + 18 * gui.scale), playing_info, colours.side_bar_line2,
+                                                              13)
+
+                                                if ext != "":
+                                                    playing_info = ext  # + " | " + sample
+                                                    # playing_info = trunc_line(playing_info, 12,
+                                                    #                           window_size[0] - gui.playlist_width - 53)
+                                                    draw_text((x - 1 * gui.scale, block2 + 36 * gui.scale), playing_info, colours.side_bar_line2,
+                                                              12, max=gui.side_panel_size - 32 * gui.scale)
+                                            else:
+                                                if block5 != True:
+                                                    line = ""
+                                                    if album != "":
+                                                        line += album
+                                                    if line != "":
+                                                        line += " | "
+                                                    if date != "":
+                                                        line += date + " | "
+                                                    line += ext
+                                                    #line = trunc_line(line, 14, window_size[0] - gui.playlist_width - 53)
+                                                    draw_text((x - 1 * gui.scale, block2 + 32 * gui.scale), line, colours.side_bar_line2, 14, max=gui.side_panel_size - 32 * gui.scale)
 
                 # Seperation Line Drawing
                 if side_panel_enable:

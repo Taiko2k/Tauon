@@ -59,7 +59,7 @@ class TestTimer:
 
 
 
-# Test given proximity between two 2d points
+# Test given proximity between two 2d points to given square
 def point_proximity_test(a, b, p):
     return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
@@ -108,7 +108,7 @@ def colour_value(c1):
     return c1[0] + c1[1] + c1[2]
 
 
-# Performs alpha blending of one colour onto another
+# Performs alpha blending of one colour (rgba) onto another (rgb)
 def alpha_blend(colour, base):
     alpha = colour[3] / 255
     return [int(alpha * colour[0] + (1 - alpha) * base[0]),
