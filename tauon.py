@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.1"
+t_version = "v2.6.2"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -322,7 +322,6 @@ pl_rect = (2, 12, 10, 10)
 
 theme = 0
 themeChange = True
-
 
 scroll_enable = True
 scroll_timer = Timer()
@@ -728,7 +727,8 @@ class GuiVar:
         self.force_showcase_index = -1
 
         self.frame_callback_list = []
-
+        
+        self.playlist_left = 20 * self.scale
 
 
 gui = GuiVar()
@@ -5003,16 +5003,16 @@ if system == "linux":
 
             PangoCairo.context_set_font_options(self.pctx, fo)
 
-            self.calc_last_font = 0
             self.f_dict = {}
+
+            #self.test_layout = PangoCairo.create_layout(self.context)
 
         def prime_font(self, name, size, user_handle, y_off=0):
 
             self.f_dict[user_handle] = (name + " " + str(size), y_off)
 
         def wh(self, text, font):
-            if self.calc_last_font != font:
-                self.calc_last_font = font
+
             self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 
             self.layout.set_text(text, -1)
@@ -5066,7 +5066,7 @@ if system == "linux":
 
             context = cairo.Context(surf)
             layout = PangoCairo.create_layout(context)
-            pctx = layout.get_context()
+            #pctx = layout.get_context()
 
 
             if max_y != None:
@@ -5116,6 +5116,9 @@ if system == "linux":
             y -= y_off
 
 
+            # te = layout.get_pixel_size()
+            # if te.height > 30:
+            #     print(te.height)
 
 
 
@@ -7275,8 +7278,6 @@ transfer_setting = 0
 
 b_panel_size = 300
 b_info_bar = False
-
-playlist_left = 20 * gui.scale#20
 
 class LoadImageAsset:
     def __init__(self, local_path):
@@ -14625,8 +14626,8 @@ class BottomBarType1:
                     pctl.play()
                 if right_click:
                     pctl.show_current(highlight=True)
-                tool_tip.test(buttons_x_offset * gui.scale + 50 * gui.scale,
-                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Play")
+                # tool_tip.test(buttons_x_offset * gui.scale + 50 * gui.scale,
+                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Play")
 
             self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14641,8 +14642,8 @@ class BottomBarType1:
                 pause_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.pause()
-                tool_tip.test(x + 25 * gui.scale,
-                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Pause")
+                # tool_tip.test(x + 25 * gui.scale,
+                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Pause")
 
 
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14659,8 +14660,8 @@ class BottomBarType1:
                     pctl.stop()
                 if right_click:
                     pctl.auto_stop ^= True
-                tool_tip.test(x + gui.scale + 25 * gui.scale,
-                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Stop")
+                # tool_tip.test(x + gui.scale + 25 * gui.scale,
+                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Stop")
 
             draw.rect((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14676,7 +14677,7 @@ class BottomBarType1:
                     pctl.random_mode ^= True
                 if middle_click:
                     pctl.advance(rr=True)
-                tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
+                #tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
 
             self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
 
@@ -14693,8 +14694,8 @@ class BottomBarType1:
                     pctl.repeat_mode ^= True
                 if middle_click:
                     pctl.revert()
-                tool_tip.test(buttons_x_offset + 170 * gui.scale + 50 * gui.scale,
-                              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Back")
+                #tool_tip.test(buttons_x_offset + 170 * gui.scale + 50 * gui.scale,
+                #              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Back")
 
             self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
             # draw.rect_r(rect,[255,0,0,255], True)
@@ -14708,7 +14709,8 @@ class BottomBarType1:
             rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
             fields.add(rect)
             if coll_point(mouse_position, rect):
-                tool_tip.test(x + 35 * gui.scale, y - 20 * gui.scale, "Playback menu")
+                if not extra_menu.active:
+                    tool_tip.test(x + 35 * gui.scale, y - 20 * gui.scale, "Playback menu")
                 rpbc = colours.mode_button_over
                 if input.mouse_click:
                     extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
@@ -14943,6 +14945,27 @@ class StandardPlaylist:
         global mouse_up
         global selection_stage
 
+        # if not side_panel_enable:
+        #     gui.playlist_left = 40
+        #print(gui.playlist_left)
+
+        if side_panel_enable:
+            inset_left = 0
+            inset_right = 0
+
+            highlight_left = 0
+            highlight_right = gui.playlist_width + 31 * gui.scale
+            highlight_right = gui.playlist_width + 31 * gui.scale
+
+        else:
+            inset_left = 28 * gui.scale
+            inset_right = 60 * gui.scale
+
+            inset_left = gui.scale * int(pow((window_size[0] * 0.01), 2))
+            inset_right = inset_left * 2
+
+            highlight_left = inset_left + 5 * gui.scale
+            highlight_right = gui.playlist_width + 31 * gui.scale - inset_right - 20 * gui.scale
 
         w = 0
         gui.row_extra = 0
@@ -14975,9 +14998,13 @@ class StandardPlaylist:
                     playlist_position = len(default_playlist)
                 if playlist_position < 1:
                     playlist_position = 0
+                    edge_playlist.pulse()
 
-        highlight_left = 0
-        highlight_right = gui.playlist_width + 31 * gui.scale
+
+        # if not side_panel_enable:
+        #
+        #     highlight_right = gui.playlist_width #window_size[0] - 170 * gui.scale
+        #     highlight_left = gui.playlist_left
 
         # Show notice if playlist empty
 
@@ -15036,9 +15063,11 @@ class StandardPlaylist:
                     if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
                         line += " (" + n_track.date + ")"
 
-                    ex = gui.playlist_width + playlist_left
-                    if not side_panel_enable and not album_mode:
-                        ex -= 3 * gui.scale #ex = playlist_left  + int(gui.playlist_width * 4 / 5)
+                    #ex = gui.playlist_width + gui.playlist_left - inset_left
+                    ex = highlight_right + highlight_left - 7 * gui.scale
+                    # if not side_panel_enable and not album_mode:
+                    #     ex -= 3 * gui.scale #ex = gui.playlist_left  + int(gui.playlist_width * 4 / 5)
+
 
 
                     gui.win_fore = colours.playlist_panel_background
@@ -15061,7 +15090,7 @@ class StandardPlaylist:
                     #
 
                     # else:
-                    draw_text2((ex + 3,
+                    draw_text2((ex,
                                 height, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
                                gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
@@ -15069,12 +15098,15 @@ class StandardPlaylist:
                     # draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
                     #           gui.playlist_width + 30 * gui.scale,
                     #           gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w, colours.folder_line)
-                    draw.rect_r((0, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, gui.playlist_width + 30 * gui.scale, 1 * gui.scale), colours.folder_line, True)
+
+
+                    #draw.rect_r((0, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, gui.playlist_width + 30 * gui.scale, 1 * gui.scale), colours.folder_line, True)
+                    draw.rect_r((highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_right, 1 * gui.scale), colours.folder_line, True)
 
                     gui.win_fore = colours.playlist_panel_background
 
                     if playlist_hold is True and coll_point(mouse_position, (
-                            playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
+                            gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                             gui.playlist_row_height)):
 
                         if mouse_up:  # and key_shift_down:
@@ -15082,12 +15114,12 @@ class StandardPlaylist:
 
                     # Detect folder title click
                     if (input.mouse_click or right_click) and coll_point(mouse_position, (
-                                playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
+                                highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_right,
                                 gui.playlist_row_height - 1)) and mouse_position[1] < window_size[1] - gui.panelBY:
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (
-                                    playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
+                                    gui.playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
                                     gui.playlist_row_height - 1)):
                             click_time -= 1.5
                             pctl.jump(default_playlist[p_track], p_track)
@@ -15137,13 +15169,13 @@ class StandardPlaylist:
 
                     # # Shade ever other line for folder row
                     # if True and #row_alt and w % 2 == 0:
-                    #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+                    #     draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
                     #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
 
 
                     # Draw blue highlight insert line
                     if mouse_down and playlist_hold and coll_point(mouse_position, (
-                            playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
+                            gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                             gui.playlist_row_height - 1)) and p_track not in shift_selection:  # playlist_hold_position != p_track:
 
                         if len(shift_selection) > 1 or key_shift_down:
@@ -15162,7 +15194,7 @@ class StandardPlaylist:
                     hei = spaces * prefs.playlist_row_height
 
                     pl_thumbnail.size = hei - 15
-                    pl_thumbnail.render(n_track.index, (playlist_left, y + 5))
+                    pl_thumbnail.render(n_track.index, (gui.playlist_left, y + 5))
 
 
                 if playlist_selected > p_track + 1:
@@ -15170,7 +15202,7 @@ class StandardPlaylist:
 
             # Shade ever other line if option set
             # if (row_alt or True) and w % 2 == 0:
-            #     draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+            #     draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
             #               (gui.playlist_width, gui.playlist_row_height - 1), [0, 0, 0, 20], True)
 
             # Get background colours for fonts
@@ -15179,7 +15211,7 @@ class StandardPlaylist:
             # Test if line hit
             line_over = False
             if coll_point(mouse_position, (
-                        playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
+                        highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_right,
                         gui.playlist_row_height - 1)) and mouse_position[1] < window_size[1] - gui.panelBY:
                 line_over = True
                 if (input.mouse_click or right_click or middle_click):
@@ -15196,7 +15228,7 @@ class StandardPlaylist:
             # Double click to play
             if key_shift_down is False and d_mouse_click and line_hit and p_track == playlist_selected and coll_point(
                     last_click_location, (
-                                playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
+                                gui.playlist_left + 10, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width - 10,
                                 gui.playlist_row_height - 1)):
 
                 click_time -= 1.5
@@ -15234,7 +15266,7 @@ class StandardPlaylist:
             # Highlight green if track in queue
             for item in pctl.force_queue:
                 if default_playlist[p_track] == item[0] and item[1] == p_track:
-                    # draw.rect((playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+                    # draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
                     #           (gui.playlist_width, gui.playlist_row_height - 1), [130, 220, 130, 30],
                     #           True)
                     draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
@@ -15276,7 +15308,7 @@ class StandardPlaylist:
 
             # Shift Move Selection
             if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
-                    playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width, gui.playlist_row_height)):
+                    gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width, gui.playlist_row_height)):
 
                 if len(shift_selection) > 1 or key_shift_down:
                     if p_track not in shift_selection: #p_track != playlist_hold_position and
@@ -15325,7 +15357,7 @@ class StandardPlaylist:
 
             # Blue drop line
             if mouse_down and playlist_hold and coll_point(mouse_position, (
-                    playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
+                    gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w, gui.playlist_width,
                     gui.playlist_row_height - 1)) and p_track not in shift_selection: #playlist_hold_position != p_track:
 
                 if len(shift_selection) > 1 or key_shift_down:
@@ -15358,7 +15390,7 @@ class StandardPlaylist:
                 this_line_selected = True
                 gui.win_fore = alpha_blend(colours.row_select_highlight, gui.win_fore)
 
-            if right_click and line_hit and mouse_position[0] > playlist_left + 10 \
+            if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10 \
                     and not playlist_panel:
 
                 if len(shift_selection) > 1:
@@ -15381,7 +15413,7 @@ class StandardPlaylist:
             if not gui.set_mode:
 
                 line_render(n_track, p_track, gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w,
-                            this_line_playing, album_fade, playlist_left, gui.playlist_width, prefs.line_style)
+                            this_line_playing, album_fade, gui.playlist_left + inset_left, gui.playlist_width - inset_right, prefs.line_style)
             else:
                 # NEE ---------------------------------------------------------
 
@@ -15394,7 +15426,7 @@ class StandardPlaylist:
                 #     if gui.row_font_size > 14:
                 #         offset_y_extra = 3
 
-                start = playlist_left - 2 * gui.scale
+                start = gui.playlist_left - 2 * gui.scale
                 run = start
                 for h, item in enumerate(gui.pl_st):
 
@@ -15579,7 +15611,7 @@ class StandardPlaylist:
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
             1] - 55 and
-                            gui.playlist_width + playlist_left > mouse_position[0] > playlist_left + 15):
+                            gui.playlist_width + gui.playlist_left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
 
         SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -16387,6 +16419,30 @@ class GalleryJumper:
 
 gallery_jumper = GalleryJumper()
 
+
+class EdgePulse:
+
+    def __init__(self):
+
+        self.timer = Timer()
+        self.timer.force_set(10)
+        self.ani_duration = 0.5
+
+    def render(self, x, y, w, h):
+        time = self.timer.get()
+        if time < self.ani_duration:
+            alpha = 255 - int(255 * (time / self.ani_duration))
+            draw.rect_r((x, y, w, h), [200, 120, 0, alpha], True)
+            gui.update = 2
+
+    def pulse(self):
+        self.timer.set()
+
+
+edge_playlist = EdgePulse()
+gallery_pulse_top = EdgePulse()
+
+
 # Set SDL window drag areas
 if system != 'windows':
 
@@ -16570,6 +16626,7 @@ def update_layout_do():
 
     else:
         gui.playlist_width = window_size[0] - 30 * gui.scale
+        #gui.playlist_width = window_size[0] - 80 * gui.scale
         # if custom_line_mode:
         #     gui.playlist_width = window_size[0] - 30
 
@@ -18036,6 +18093,12 @@ while running:
                     else:
                         album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
+                    if album_pos_px < -50:
+                        album_pos_px = -50
+                        gallery_pulse_top.pulse()
+
+                gallery_pulse_top.render(gui.playlist_width + 30 * gui.scale, gui.panelY + 1, window_size[0] - gui.playlist_width + 30 * gui.scale, 2)
+
                 # ----
                 rect = (
                 window_size[0] - (33 * gui.scale if not gui.maximized else 32 * gui.scale), gui.panelY, 31 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
@@ -18365,7 +18428,7 @@ while running:
 
                 # playlist hit test
                 if coll_point(mouse_position, (
-                playlist_left, gui.playlist_top, gui.playlist_width, window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
+                gui.playlist_left, gui.playlist_top, gui.playlist_width, window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
                                             input.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
                     gui.pl_update = 1
 
@@ -18658,6 +18721,9 @@ while running:
                     elif gui.vis == 3:
                         gui.vis = 0
                         gui.turbo = False
+
+
+                edge_playlist.render(0, gui.panelY + 1, gui.playlist_width + 30 * gui.scale, 2)
                 # --------------------------------------------
                 # ALBUM ART
 
@@ -18701,7 +18767,10 @@ while running:
                                 showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
 
                         # Render lyrics if available
-                        if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and 3 > pctl.playing_state > 0:
+                        if prefs.show_lyrics_side \
+                                and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
+                                and 3 > pctl.playing_state > 0 \
+                                and 38 * gui.scale + box + 133 * gui.scale < window_size[1] + 52 * gui.scale:
 
                             lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x,
                                                    gui.main_art_box[1] + gui.main_art_box[
