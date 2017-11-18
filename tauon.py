@@ -196,6 +196,14 @@ if system == 'windows':
     import win32con, win32api, win32gui, win32ui, atexit  # win32clipboard, pythoncom
 elif system == 'linux':
     os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
+    import gi
+    gi.require_version('Notify', '0.7')
+    from gi.repository import Notify
+
+    Notify.init("Hello World")
+    g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                    "Transcoding has finished.")
+
 
 
 from sdl2 import *
@@ -729,6 +737,8 @@ class GuiVar:
         self.frame_callback_list = []
         
         self.playlist_left = 20 * self.scale
+        self.image_downloading = False
+        self.tc_cancel = False
 
 
 gui = GuiVar()
@@ -6905,9 +6915,13 @@ class AlbumArt():
             playlist_hold = False
 
 
+        except OSError as error:
+            print("Image processing error: " + str(error))
+            self.current_wu = None
+            del self.source_cache[index][offset]
+            return 1
         except:
             print("Image processing error")
-            # raise
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -7888,7 +7902,7 @@ def remove_embed_picture(index):
         pctl.revert()
     clear_img_cache()
 
-picture_menu2.add('Delete Embedded Image | Folder', remove_embed_picture, pass_ref=True)
+picture_menu2.add('Delete Folder Embedded Images', remove_embed_picture, pass_ref=True)
 
 def append_here():
     global cargo
@@ -11165,7 +11179,7 @@ def switch_playlist(number, cycle=False):
     if pl_follow:
         pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
 
-    if gui.showcase_mode:
+    if gui.showcase_mode and gui.combo_mode:
         view_standard()
 
     pctl.multi_playlist[pctl.playlist_active][2] = default_playlist
@@ -12008,6 +12022,10 @@ def worker1():
                                 # transcode_single([folder_items[q], folder_name])
                                 q += 1
                             time.sleep(0.5)
+                            if gui.tc_cancel:
+                                while core_use > 0:
+                                    time.sleep(1)
+                                break
                             if q == len(folder_items) and core_use == 0:
                                 break
 
@@ -12124,10 +12142,17 @@ def worker1():
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
-                line = "Press F9 to show output."
-                if prefs.transcode_codec == 'flac':
-                    line = "Note that any associated output picture is a thumbnail and not an exact copy."
-                show_message("Encoding complete.", 'done', line)
+                if gui.tc_cancel:
+                    gui.tc_cancel = False
+                    show_message("The transcode was canceled before completion.", 'warning', "Incomplete files will remain.")
+                else:
+                    line = "Press F9 to show output."
+                    if prefs.transcode_codec == 'flac':
+                        line = "Note that any associated output picture is a thumbnail and not an exact copy."
+                    show_message("Encoding complete.", 'done', line)
+                    if system == 'linux' and not window_is_focused():
+
+                        g_tc_notify.show()
 
         while len(to_scan) > 0:
             track = to_scan[0]
@@ -14150,11 +14175,18 @@ class TopPanel:
         elif len(to_scan) > 0:
             text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
             bg = [100, 200, 100, 255]
-        elif len(transcode_list) > 0:
+        elif transcode_list:
+            if key_ctrl_down and key_c_press:
+                del transcode_list[1:]
+                gui.tc_cancel = True
+
             text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
             if len(transcode_list) > 1:
                 text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
-            bg = colours.status_info_text
+            if not gui.tc_cancel:
+                bg = colours.status_info_text
+            else:
+                text = "Stopping transcode..."
         elif pctl.join_broadcast and pctl.broadcast_active:
             text = "Streaming Synced"
             bg = [60, 75, 220, 255]  # colours.streaming_text
@@ -14163,6 +14195,7 @@ class TopPanel:
             bg = colours.streaming_text
         else:
             status = False
+
 
         if status:
             draw_text((x, y), text, bg, 11)
@@ -16443,6 +16476,35 @@ edge_playlist = EdgePulse()
 gallery_pulse_top = EdgePulse()
 
 
+def download_img(link, target_folder):
+    try:
+        response = urllib.request.urlopen(link)
+        info = response.info()
+        if info.get_content_maintype() == 'image':
+            if info.get_content_subtype() == 'jpeg':
+                save_target = os.path.join(target_dir, 'image.jpg')
+                f = open(save_target, 'wb')
+                f.write(response.read())
+                f.close()
+                clear_img_cache()
+
+            elif info.get_content_subtype() == 'png':
+                save_target = os.path.join(target_dir, 'image.png')
+                f = open(save_target, 'wb')
+                f.write(response.read())
+                f.close()
+                clear_img_cache()
+            else:
+                show_message("Image types other than PNG or JPEG are currently not supported", 'warning')
+        else:
+            show_message("The link does not appear to refer to an image file.", 'warning')
+        gui.image_downloading = False
+
+
+    except:
+        show_message("Image download failed.", 'warning')
+        gui.image_downloading = False
+
 # Set SDL window drag areas
 if system != 'windows':
 
@@ -16719,6 +16781,12 @@ gal_right = False
 
 get_sdl_input = GetSDLInput()
 
+def window_is_focused():  # thread safe?
+    if SDL_GetWindowFlags(t_window) & SDL_WINDOW_INPUT_FOCUS:
+        return True
+    return False
+
+
 def save_state():
 
     print("Writing database to disk.")
@@ -16806,6 +16874,7 @@ def save_state():
 
 while running:
     # bm.get('main')
+
 
     if k_input:
         d_mouse_click = False
@@ -16906,30 +16975,18 @@ while running:
                     i_x = i_x.contents.value
 
                 if coll_point((i_x, i_y), gui.main_art_box):
-                    try:
-                        print('drop picture')
-                        track = pctl.playing_object()
-                        target_dir = track.parent_folder_path
-                        response = urllib.request.urlopen(link)
-                        info = response.info()
-                        if info.get_content_maintype() == 'image':
-                            if info.get_content_subtype() == 'jpeg':
-                                save_target = os.path.join(target_dir, 'image.jpg')
-                                f = open(save_target, 'wb')
-                                f.write(response.read())
-                                f.close()
-                                clear_img_cache()
-                                print('save jpg')
-                            elif info.get_content_subtype() == 'png':
-                                save_target = os.path.join(target_dir, 'image.png')
-                                f = open(save_target, 'wb')
-                                f.write(response.read())
-                                f.close()
-                                clear_img_cache()
 
-                    except:
-                        show_message("Image download failed.", 'warning')
+                    print('Drop picture...')
+                    print(link)
+                    gui.image_downloading = True
+                    track = pctl.playing_object()
+                    target_dir = track.parent_folder_path
 
+                    shoot_dl = threading.Thread(target=download_img, args=(link, target_dir))
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+
+                    gui.update = True
 
         if event.type == SDL_DROPFILE:
             power += 5
@@ -18093,11 +18150,13 @@ while running:
                     else:
                         album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
-                    if album_pos_px < -50:
-                        album_pos_px = -50
+                    if album_pos_px < -55:
+                        album_pos_px = -55
                         gallery_pulse_top.pulse()
 
+
                 gallery_pulse_top.render(gui.playlist_width + 30 * gui.scale, gui.panelY + 1, window_size[0] - gui.playlist_width + 30 * gui.scale, 2)
+
 
                 # ----
                 rect = (
@@ -18788,8 +18847,13 @@ while running:
                                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
                             # Open image externally
-                            if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0:
+                            if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0 and not key_shift_down:
                                 album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
+
+                        # Draw image downloading indicator
+                        if gui.image_downloading:
+                            draw_text((x + int(box/2), 38 * gui.scale + int(box/2), 2), "Fetching image...", colours.side_bar_line1, 14)
+                            gui.update = 2
 
                         # Draw the album art. If side bar is being dragged set quick draw flag
                         if 3 > pctl.playing_state > 0:
@@ -18846,6 +18910,9 @@ while running:
 
                             else:   # Extended metadata
 
+                                if right_click:
+                                    if pctl.playing_object().file_ext == "MP3":
+                                        picture_menu2.activate(pctl.track_queue[pctl.queue_step])
                                 line = ""
                                 if showc[0] is True:
                                     line += 'Embedded'
@@ -20148,6 +20215,7 @@ while running:
             album_art_gen.display(pctl.track_queue[pctl.queue_step],
                                   (0, 0), (window_size[1], window_size[1]))
 
+        #draw.rect_r((0, gui.panelY + 1, window_size[0], 2), [200, 120, 0, 255], True)
 
         # Render Menus-------------------------------
         for instance in Menu.instances:

@@ -8,8 +8,13 @@ v2.6.2
  - Added function to split lyric sentences in lines
  - Added animation to playlist and gallrey to show when scrolling at top
  - Changed 'playlist only' view to be visually inset
+ - Improved image download function to no longer block the UI (Linux)
+ - Embedded image menu can now be forced activated by holding shift
+ - Transcode can now be canceled with Ctrl+C shortcut
+ - Transcode now sends system notification when transcode finished (Linux)
  - Fixed lyrics only pasting to playing track
  - Fixed lyrics not updating after pasting
+ - Fixed bug where sometimes switching playlist would change the current view
 
 v2.6.1
 
