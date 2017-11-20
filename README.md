@@ -23,22 +23,6 @@ Designed to be simple and streamlined while putting the user in control of their
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
   - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
 
-### What makes this player different? :lemon: :zap:
-
-I started this project because I was unsatisfied with existing music players, especially ones avaliable for linux. You may find this program different in the following design choices:
-
- - Focus on playlists and drag and drop functions.
- - Always assumes folders are albums, organised by underlying folder structure.
- - Keeps track of play counts by file name rather than the full path.
- - Provides a streamlined interface out of the box, designed for dark themes.
- - Doesn't modify the users library in the background.
- - Seamless transition between playlist and gallery layouts.
- 
-#### :broken_heart: However this program may not be for you if:
-
- - Your music library is sourced from online storage or streaming services.
- - You have an unorganised library and prefer your player to organise it for you.
- - You prefer a customisable user interface, or one that uses the system theme.
 
 ### Getting Started :dizzy:
 
