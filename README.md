@@ -1,6 +1,6 @@
 # Tauon Music Box
 
-Tauon Music Box is a desktop music player for playback of local audio files.
+A desktop music player for playback of local audio files.
 Designed to be simple and streamlined while putting the user in control of their music library.
 
 ### Features :sparkles:
@@ -22,7 +22,8 @@ Designed to be simple and streamlined while putting the user in control of their
   - Lyrics display with support for fetching lyrics from LyricWiki.
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
   - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
-
+  
+  
 
 ### Getting Started :dizzy:
 
