@@ -55,7 +55,7 @@ print(t_title)
 print(t_version)
 print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
 
-
+# Detect platform
 if sys.platform == 'win32':
     system = 'windows'
 elif sys.platform == 'darwin':
@@ -71,7 +71,7 @@ install_directory = sys.path[0].replace('\\', '/')
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 
-# Locate the folder for user data
+# Detect what folder should be used for user data
 user_directory = install_directory
 install_mode = False
 if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/"):
@@ -205,7 +205,7 @@ elif system == 'linux':
                                     "Transcoding has finished.")
 
 
-
+# Other imports
 from sdl2 import *
 from sdl2.sdlimage import *
 from PIL import Image
@@ -218,8 +218,7 @@ from t_tagscan import Ape
 from t_tagscan import Wav
 from t_extra import *
 
-
-
+# Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
@@ -367,7 +366,7 @@ clicked = False
 
 # Player Variables----------------------------------------------------------------------------
 
-format_colours = {
+format_colours = {  # These are the colours used for the label icon in UI 'info box'
     "MP3": [255, 130, 80, 255],
     "FLAC": [156, 249, 79, 255],
     "M4A": [81, 220, 225, 255],
@@ -380,12 +379,12 @@ format_colours = {
     "WV": [229, 23, 18, 255]
 }
 
-
+# These will be the extensions of files to be added when importing
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
               'm4a', 'ogg', 'aac', 'tta', 'wv', }
 
 if system == 'windows':
-    DA_Formats.add('wma')
+    DA_Formats.add('wma')  # Bass on Linux does not support WMA
 
 
 
@@ -402,7 +401,7 @@ cargo = []
 pl_follow = False
 
 # List of encodings to check for with the fix mojibake function
-encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']
+encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']  # These are the most common for Japanese
 
 track_box = False
 
@@ -426,7 +425,7 @@ loading_in_progress = False
 random_mode = False
 repeat_mode = False
 
-# Functions to generate empty playlist's
+# Functions to generate empty playlist
 # Playlist is [Name, playing, playlist, position, hide folder title, selected, uid, last_folder]
 
 def pl_uid_gen():
@@ -444,7 +443,7 @@ def pl_gen(title='Default',
 
     return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), ""])
 
-multi_playlist = [pl_gen()]
+multi_playlist = [pl_gen()] # Create default playlist
 
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
@@ -491,7 +490,7 @@ albums = []
 album_position = 0
 
 
-class Prefs:
+class Prefs:    # Used to hold any kind of settings
     def __init__(self):
         self.colour_from_image = False
         self.dim_art = False
@@ -574,7 +573,7 @@ class Prefs:
 prefs = Prefs()
 
 
-class GuiVar:
+class GuiVar:   # Use to hold any variables for use in relation to UI
     def update_layout(self):
         global update_layout
         update_layout = True
@@ -744,7 +743,6 @@ class GuiVar:
 gui = GuiVar()
 
 
-
 # Functions for reading and setting play counts
 class StarStore:
 
@@ -770,7 +768,7 @@ class StarStore:
         else:
             self.db[key] = [value, ""]
 
-    # Returnes the track play time
+    # Returns the track play time
     def get(self, index):
 
         key = self.key(index)
@@ -813,17 +811,8 @@ class StarStore:
 
 star_store = StarStore()
 
-# def playtime_penalty(track_object, sec):
-#
-#     if key_shift_down:
-#         if pctl.playing_object() is track_object:
-#             print(track_object.skips)
-#             print(max(0, sec - track_object.skips * 30))
-#         return max(0, sec - track_object.skips * 30)
-#     else:
-#         return sec
 
-class Fonts:
+class Fonts:    # Used to hold font sizes (I forget to use this)
 
     def __init__(self):
 
@@ -836,7 +825,7 @@ class Fonts:
 fonts = Fonts()
 
 
-class Input:
+class Input:    # Used to keep track of button states (or should be)
 
     def __init__(self):
 
@@ -847,7 +836,7 @@ class Input:
 input = Input()
 
 
-def update_set():
+def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
     wid = gui.playlist_width + 31 - 16
     total = 0
@@ -865,7 +854,7 @@ def update_set():
             gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid)) #+ 1
 
 
-class ColoursClass:
+class ColoursClass:     # Used to store colour values for UI elements. These are changed for themes.
     def grey(self, value):
         return [value, value, value, 255]
 
@@ -1012,7 +1001,6 @@ colours = ColoursClass()
 colours.post_config()
 
 
-
 # This is legacy. New settings are added straight to the save list
 view_prefs = {
 
@@ -1026,7 +1014,7 @@ view_prefs = {
 }
 
 
-class TrackClass:
+class TrackClass:   # This is the fundamental object/data structure of a track
     # C-TC
     def __init__(self):
         self.index = 0
@@ -1061,7 +1049,7 @@ class TrackClass:
         self.track_gain = None
 
 
-class LoadClass:
+class LoadClass:    # Object for import track jobs (passed to worker thread)
     def __init__(self):
         self.target = ""
         self.playlist = 0  # Playlist UID
@@ -1073,6 +1061,7 @@ class LoadClass:
 url_saves = []
 # -----------------------------------------------------
 # STATE LOADING
+# Loading of program data from previous run
 
 try:
     star_store.db = pickle.load(open(user_directory + "/star.p", "rb"))
@@ -1086,8 +1075,6 @@ try:
 
     if save[63] is not None:
         prefs.ui_scale = save[63]
-        #gui.scale = prefs.ui_scale
-        #prefs.ui_scale = 1.5
         gui.__init__()
 
     master_library = save[0]
@@ -1333,8 +1320,6 @@ if db_version > 0:
 
 # Loading Config -----------------
 
-player_config = "BASS"
-
 main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
 alt_font = 'DroidSansFallback.ttf'
 gui_font = 'Koruri-Semibold.ttf'
@@ -1495,17 +1480,6 @@ def get_window_position():
     i_x = pointer(c_int(0))
     SDL_GetWindowPosition(t_window, i_x, i_y)
     return i_x.contents.value, i_y.contents.value
-
-
-# def get_len_backend(filepath):
-#     global get_len
-#     global get_len_filepath
-#     get_len_filepath = filepath
-#     pctl.playerCommand = 'getlen'
-#     pctl.playerCommandReady = True
-#     while pctl.playerCommand != 'got':
-#         time.sleep(0.05)
-#     return get_len
 
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
@@ -1690,6 +1664,7 @@ def tag_scan(nt):
         print("Warning: Tag read error")
         return nt
 
+
 # Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend.
 class PlayerCtl:
     # C-PC
@@ -1767,8 +1742,6 @@ class PlayerCtl:
 
         if self.mpris is not None:
             self.mpris.update()
-
-
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -2000,10 +1973,8 @@ class PlayerCtl:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
 
-
             if self.playing_state == 1 and self.left_time > 5 and self.playing_length - self.left_time > 15 :
                 pctl.master_library[self.left_index].skips += 1
-
 
         global playlist_hold
         gui.update_spec = 0
@@ -2022,7 +1993,6 @@ class PlayerCtl:
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
-
 
         gui.update_spec = 0
         # Move up
@@ -2226,7 +2196,7 @@ class PlayerCtl:
                     gui.pl_update = 1
 
                 else:
-                    if False: #self.playing_time < self.playing_length:
+                    if False:  # self.playing_time < self.playing_length:
                         print("advance gapless")
                         self.advance(quiet=True, gapless=True)
                     else:
@@ -2287,7 +2257,7 @@ class PlayerCtl:
                 # if album_mode:
                 #     goto_album(self.playlist_playing)
 
-        # If not random, Step down 1 on the playlist
+        # If not random mode, Step down 1 on the playlist
         elif self.random_mode is False and len(self.playing_playlist()) > 0:
 
             # Stop at end of playlist
@@ -2347,7 +2317,7 @@ class PlayerCtl:
                 self.play_target(gapless=gapless)
 
         else:
-            print("ADVANCE ERROR: NO CASE!")
+            print("ADVANCE ERROR - NO CASE!")
 
         if self.playlist_active == self.active_playlist_playing:
             self.show_current(playing=True, quiet=quiet)
@@ -2361,10 +2331,6 @@ class PlayerCtl:
 
 
 pctl = PlayerCtl()
-
-
-
-# Last.FM -----------------------------------------------------------------
 
 def update_title_do():
 
@@ -2381,6 +2347,7 @@ def update_title_do():
         SDL_SetWindowTitle(t_window, line)
 
 
+# Last.FM -----------------------------------------------------------------
 class LastFMapi:
     API_SECRET = "18c471e5475e7e877b126843d447e855"
     connected = False
@@ -2394,7 +2361,6 @@ class LastFMapi:
         global lfm_password
         global lfm_username
         global lfm_hash
-
 
         if self.connected is True:
             if m_notify:
@@ -2540,8 +2506,8 @@ class LastFMapi:
             track.love()
             track.unlove()
 
-    # # The last.fm api is broken here
-    # #
+    # The last.fm api is broken here
+
     # def user_love_to_playlist(self, username):
     #     if len(username) > 15:
     #         return
@@ -2553,7 +2519,6 @@ class LastFMapi:
     #     lastfm_user = self.network.get_user(username)
     #     #loved = lastfm_user.get_loved_tracks()
     #     print(lastfm_user.get_recent_tracks())
-
 
 
     def update(self, title, artist, album):
@@ -2722,7 +2687,7 @@ class LastScrob:
 lfm_scrobbler = LastScrob()
 
 
-def player3():
+def player3():  # Gstreamer
 
     player_timer = Timer()
 
@@ -2883,7 +2848,7 @@ def player3():
     pctl.playerCommand = 'done'
 
 
-def player():
+def player():   # BASS
 
     player_timer = Timer()
     broadcast_timer = Timer()
@@ -3115,8 +3080,6 @@ def player():
             self.gap_next = None
 
     bass_gap = BassGapless()
-
-
 
     #global source
 
@@ -5523,11 +5486,11 @@ if system == 'windows':
     if prefs.windows_font_family != None:
         standard_font = prefs.windows_font_family
     else:
-        standard_font = 'Meiryo'
+        #standard_font = 'Meiryo'
         #standard_font = 'Koruri'
         #standard_font = "Franklin Gothic Medium"
-        if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
-            standard_font = 'Arial'
+        #if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
+        standard_font = 'Arial'
         # standard_font = 'Tahoma'
         # standard_font = 'Segoe UI'
         # standard_font = 'Arial'
@@ -9494,7 +9457,7 @@ track_menu = Menu(195, show_icons=True) #175
 
 track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
-track_menu.add('Show  🡲', show_in_gal, pass_ref=True, show_test=test_show)
+track_menu.add('Show  in Gallery', show_in_gal, pass_ref=True, show_test=test_show)
 
 track_menu.add_sub("Meta...", 150)
 
@@ -14396,7 +14359,6 @@ class BottomBarType1:
 
             clicked = True
             if mouse_wheel != 0:
-
                 pctl.seek_time(pctl.playing_time + (mouse_wheel * 3))
 
         if gui.seek_cur_show:
@@ -14589,30 +14551,30 @@ class BottomBarType1:
         if gui.display_time_mode == 0:
             text_time = get_display_time(pctl.playing_time)
             draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
-                      12)
+                      212)
         elif gui.display_time_mode == 1:
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             else:
                 text_time = get_display_time(pctl.playing_length - pctl.playing_time)
             draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
-                      12)
+                      212)
             draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
-                      12)
+                      212)
         elif gui.display_time_mode == 2:
             x -= 4
             text_time = get_display_time(pctl.playing_time)
             draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
-                      12)
+                      212)
             draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
-                      12)
+                      212)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
             draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
-                      12)
+                      212)
 
         # if pctl.record_stream or True:
         #     x = window_size[0] - 17
@@ -14743,7 +14705,7 @@ class BottomBarType1:
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 if not extra_menu.active:
-                    tool_tip.test(x + 35 * gui.scale, y - 20 * gui.scale, "Playback menu")
+                    tool_tip.test(x, y - 28 * gui.scale, "Playback menu")
                 rpbc = colours.mode_button_over
                 if input.mouse_click:
                     extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
@@ -14776,7 +14738,7 @@ class BottomBarType1:
                     rpbc = colours.mode_button_active
 
                 elif coll_point(mouse_position, rect):
-                    tool_tip.test(x + 60 * gui.scale, y - 15 * gui.scale, "Shuffle")
+                    tool_tip.test(x, y - 28 * gui.scale, "Shuffle")
                     if self.random_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.random_mode is True:
@@ -14811,7 +14773,7 @@ class BottomBarType1:
                     rpbc = colours.mode_button_active
 
                 elif coll_point(mouse_position, rect):
-                    tool_tip.test(x + 60 * gui.scale, y - 15 * gui.scale, "Repeat")
+                    tool_tip.test(x, y - 28 * gui.scale, "Repeat")
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.repeat_mode is True:
@@ -14861,12 +14823,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
     if gui.row_font_size > 14:
         offset_font_extra = 8
 
-
-    # offset_y_extra = 0
-    # if gui.row_font_size > 13:
-    #     offset_y_extra = 2
-    #     if gui.row_font_size > 14:
-    #         offset_y_extra = 3
+    # In windows (arial?) draws numbers too high (hack fix)
+    num_y_offset = 0
+    if system == 'windows':
+        num_y_offset = 1
 
 
     if True or style == 1:
@@ -14905,11 +14865,9 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     0]
 
         index = default_playlist[p_track]
-        #key = pctl.master_library[index].title + pctl.master_library[index].filename
         star_x = 0
         total = star_store.get(index)
-        #if star_lines and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
-        #    index].length != 0:
+
         if star_lines and total > 0 and pctl.master_library[index].length > 0:
             #total = pctl.star_library[key]
             ratio = total / pctl.master_library[index].length
@@ -14921,13 +14879,11 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 if gui.playlist_row_height > 17 * gui.scale:
                     sp -= 1
                 draw.rect_r([width + start_x - star_x - 45 * gui.scale - offset_font_extra,
-                             sp, #y + 8 + offset_y_extra,
+                             sp,
                              star_x + 3 * gui.scale,
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
 
-        # if gui.show_stars and (key in pctl.star_library) and pctl.star_library[key] != 0 and pctl.master_library[
-        #     index].length != 0:
         if gui.show_stars and total > 0 and pctl.master_library[
             index].length != 0:
 
@@ -14954,7 +14910,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         line = get_display_time(n_track.length)
 
         draw_text((width + start_x - 36 * gui.scale - offset_font_extra,
-                   y, 0), line,
+                   y + num_y_offset, 0), line,
                   alpha_mod(timec, album_fade), gui.row_font_size)
 
 
@@ -14977,10 +14933,6 @@ class StandardPlaylist:
         global mouse_down
         global mouse_up
         global selection_stage
-
-        # if not side_panel_enable:
-        #     gui.playlist_left = 40
-        #print(gui.playlist_left)
 
         if side_panel_enable:
             inset_left = 0
@@ -15010,8 +14962,10 @@ class StandardPlaylist:
             rect = (0, gui.panelY, window_size[0], window_size[1])
         draw.rect_r(rect, colours.playlist_panel_background, True)
 
-        if mouse_wheel != 0 and window_size[1] - 50 * gui.scale > mouse_position[1] > 25 * gui.scale + gui.playlist_top \
-                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not (key_shift_down and track_box):
+        if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
+            1] > gui.panelY - 2 \
+                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not (
+            key_shift_down and track_box):
 
             if album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
                 pass
@@ -15033,16 +14987,10 @@ class StandardPlaylist:
                     playlist_position = 0
                     edge_playlist.pulse()
 
-
-        # if not side_panel_enable:
-        #
-        #     highlight_right = gui.playlist_width #window_size[0] - 170 * gui.scale
-        #     highlight_left = gui.playlist_left
-
         # Show notice if playlist empty
 
         if len(default_playlist) == 0:
-            colour = alpha_mod(colours.index_text, 200) #colours.playlist_text_missing
+            colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
 
 
             draw_text((int(gui.playlist_width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
@@ -15096,17 +15044,10 @@ class StandardPlaylist:
                     if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
                         line += " (" + n_track.date + ")"
 
-                    #ex = gui.playlist_width + gui.playlist_left - inset_left
                     ex = highlight_right + highlight_left - 7 * gui.scale
-                    # if not side_panel_enable and not album_mode:
-                    #     ex -= 3 * gui.scale #ex = gui.playlist_left  + int(gui.playlist_width * 4 / 5)
-
-
 
                     gui.win_fore = colours.playlist_panel_background
-
-
-                    height =  (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
+                    height = (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
 
                     # Draw highlight
                     if p_track in shift_selection and len(shift_selection) > 1:
@@ -15115,25 +15056,13 @@ class StandardPlaylist:
                                   (highlight_right, gui.playlist_row_height), colours.row_select_highlight, True)
 
 
-                    # if not side_panel_enable and not album_mode:
-                    #     draw_text2((ex,
-                    #                 height, 1), line,
-                    #                alpha_mod(colours.folder_title, album_fade),
-                    #                gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
-                    #
-
-                    # else:
+                    # Draw folder title
                     draw_text2((ex,
                                 height, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
-                               gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width)
+                               gui.row_font_size + gui.pl_title_font_offset, gui.playlist_width - inset_left * 2)
 
-                    # draw.line(0, gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w,
-                    #           gui.playlist_width + 30 * gui.scale,
-                    #           gui.playlist_top + gui.playlist_row_height - 1 + gui.playlist_row_height * w, colours.folder_line)
-
-
-                    #draw.rect_r((0, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, gui.playlist_width + 30 * gui.scale, 1 * gui.scale), colours.folder_line, True)
+                    # Draw separation line below title
                     draw.rect_r((highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_right, 1 * gui.scale), colours.folder_line, True)
 
                     gui.win_fore = colours.playlist_panel_background
@@ -16660,6 +16589,8 @@ def update_layout_do():
         if system == 'linux' and gui.scale == 1:
             gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
             #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+        if system == 'windows':
+            gui.playlist_text_offset -= 1
 
     # if gui.scale > 1:
     #     #gui.playlist_text_offset += 17
@@ -16949,6 +16880,7 @@ while running:
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         #print(event.type)
+
         if event.type == SDL_DROPTEXT:
 
             link = event.drop.file.decode()
@@ -18826,7 +18758,7 @@ while running:
                                 showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
 
                         # Render lyrics if available
-                        if prefs.show_lyrics_side \
+                        if prefs.show_lyrics_side and pctl.track_queue \
                                 and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
                                 and 3 > pctl.playing_state > 0 \
                                 and 38 * gui.scale + box + 133 * gui.scale < window_size[1] + 52 * gui.scale:
@@ -20756,7 +20688,6 @@ SDL_DestroyWindow(t_window)
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
-print("Writing database to disk")
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
@@ -20766,18 +20697,13 @@ save_state()
 if os.path.isfile(user_directory + '/lock'):
     os.remove(user_directory + '/lock')
 
+print("unloading SDL")
+IMG_Quit()
+SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
+SDL_Quit()
+print("SDL unloaded")
 
-if system == 'windows':
-
-    print("unloading SDL")
-    IMG_Quit()
-    #TTF_Quit()
-    SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
-    SDL_Quit()
-    print("SDL unloaded")
-
-else:
-    print("Skipping closing SDL cleanly")
+if system == "linux":
     if media_key_mode == 2:
         hookman.cancel()
 
