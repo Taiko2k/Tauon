@@ -33,7 +33,6 @@
 100,100,100		fav line
 40,40,40		folder line
 120,120,120		folder title 
-#8,250,134
 
 255,255,255,4		playing highlight
 255,255,255,5		select highlight
@@ -42,8 +41,8 @@
 #-Bottom panel------
 
 55,55,55		buttons off
-200,200,200		buttons over
-220,220,220		buttons active
+235,235,235		buttons over
+225,225,225		buttons active
 
 180,194,107		playing time
 

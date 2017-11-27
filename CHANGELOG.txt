@@ -9,7 +9,7 @@ v2.6.2
  - Added animation to playlist and gallery to show when scrolling at top
  - Added side spacing to 'playlist only' view
  - Improved image download function to no longer block the UI (Linux)
- - Embedded image menu can now be forced activated by holding shift
+ - Unified image right click functions to a single menu
  - Transcode can now be canceled with Ctrl+C shortcut
  - Transcode now sends system notification when transcode has finished (Linux)
  - Removed support for fonts other than Arial (Windows)

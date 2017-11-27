@@ -290,24 +290,25 @@
   </defs>
   <sodipodi:namedview
      id="base"
-     pagecolor="#241e27"
+     pagecolor="#232323"
      bordercolor="#666666"
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.70710682"
-     inkscape:cx="400.6829"
-     inkscape:cy="613.50245"
+     inkscape:zoom="2.8284273"
+     inkscape:cx="565.48948"
+     inkscape:cy="152.97796"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="2560"
-     inkscape:window-height="1043"
+     inkscape:window-height="1042"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:measure-start="370.473,395.98"
-     inkscape:measure-end="263.902,345.977">
+     inkscape:measure-end="263.902,345.977"
+     inkscape:pagecheckerboard="false">
     <inkscape:grid
        type="xygrid"
        id="grid4585"
@@ -321,7 +322,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -1490,5 +1491,1133 @@
        cx="176.3089"
        cy="167.5899"
        r="0.71047801" />
+    <rect
+       style="fill:#8dd35f;fill-opacity:0;fill-rule:evenodd;stroke:none;stroke-width:0.4886854;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4692"
+       width="10.583333"
+       height="1.3229166"
+       x="59.53125"
+       y="218.94792" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4708"
+       width="10.583338"
+       height="1.3229166"
+       x="80.697914"
+       y="225.5625" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4710"
+       width="10.583338"
+       height="1.3229166"
+       x="80.697914"
+       y="228.20834" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4712"
+       width="10.583338"
+       height="1.3229166"
+       x="80.697914"
+       y="230.85417" />
+    <rect
+       y="237.46875"
+       x="79.375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4716"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="240.11459"
+       x="79.375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4719"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="242.76042"
+       x="79.375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4721"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.41301444;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4725"
+       width="3.96875"
+       height="6.6145802"
+       x="88.635414"
+       y="237.46875" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4727"
+       width="5.2916689"
+       height="1.3229166"
+       x="79.375"
+       y="249.375" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4729"
+       width="5.2916689"
+       height="1.3229166"
+       x="79.375"
+       y="252.02084" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4731"
+       width="5.2916689"
+       height="1.3229166"
+       x="79.375"
+       y="254.66667" />
+    <rect
+       y="249.37498"
+       x="85.989578"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4735"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4741"
+       width="2.6458333"
+       height="2.6458364"
+       x="85.989571"
+       y="253.34373" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4747"
+       width="2.6458333"
+       height="2.6458364"
+       x="89.958321"
+       y="249.37497" />
+    <rect
+       y="253.34373"
+       x="89.958321"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4749"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.45712322;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4751"
+       width="9.2604113"
+       height="1.3229166"
+       x="17.19792"
+       y="237.46873" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.45712322;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4753"
+       width="9.2604113"
+       height="1.3229166"
+       x="17.19792"
+       y="240.11458" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.45712322;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4755"
+       width="9.2604113"
+       height="1.3229166"
+       x="17.19792"
+       y="242.76041" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.45712322;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4757"
+       width="9.2604113"
+       height="1.3229166"
+       x="17.19792"
+       y="245.40623" />
+    <rect
+       y="237.46873"
+       x="27.781248"
+       height="9.260417"
+       width="3.96875"
+       id="rect4759"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4886854;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="259.95834"
+       x="84.666664"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4765"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="263.92709"
+       x="84.666672"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4767"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="281.125"
+       x="84.666664"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4769"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4771"
+       width="2.6458333"
+       height="2.6458364"
+       x="80.697922"
+       y="259.95834" />
+    <rect
+       y="282.44794"
+       x="79.374992"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4775"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4777"
+       width="2.6458333"
+       height="2.6458364"
+       x="80.697922"
+       y="263.92709" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4779"
+       width="2.6458333"
+       height="2.6458364"
+       x="79.375"
+       y="270.54166" />
+    <rect
+       y="274.51041"
+       x="79.374992"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4781"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="270.54166"
+       x="83.343742"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4783"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4785"
+       width="2.6458333"
+       height="2.6458364"
+       x="83.343742"
+       y="274.51041" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4787"
+       width="2.6458333"
+       height="2.6458364"
+       x="87.312492"
+       y="270.54166" />
+    <rect
+       y="274.51041"
+       x="87.312492"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4789"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.244343;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4791"
+       width="2.6458395"
+       height="1.3229166"
+       x="84.666656"
+       y="283.77084" />
+    <rect
+       y="286.41669"
+       x="84.666656"
+       height="1.3229166"
+       width="2.6458395"
+       id="rect4793"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.244343;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="230.85417"
+       x="119.0625"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4795"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       y="233.50002"
+       x="119.0625"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4797"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       y="236.14584"
+       x="119.0625"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4799"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4801"
+       width="7.9374971"
+       height="1.3229166"
+       x="136.26042"
+       y="230.85417"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks+side.png"
+       inkscape:export-xdpi="88.319893"
+       inkscape:export-ydpi="88.319893" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4803"
+       width="7.9374971"
+       height="1.3229166"
+       x="136.26042"
+       y="233.50002"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks+side.png"
+       inkscape:export-xdpi="88.319893"
+       inkscape:export-ydpi="88.319893" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4805"
+       width="7.9374971"
+       height="1.3229166"
+       x="136.26042"
+       y="236.14584"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks+side.png"
+       inkscape:export-xdpi="88.319893"
+       inkscape:export-ydpi="88.319893" />
+    <rect
+       y="230.85417"
+       x="145.52083"
+       height="6.6145802"
+       width="3.96875"
+       id="rect4807"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.41301444;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks+side.png"
+       inkscape:export-xdpi="88.319893"
+       inkscape:export-ydpi="88.319893" />
+    <rect
+       y="230.85419"
+       x="153.45833"
+       height="1.3229166"
+       width="6.6145854"
+       id="rect4809"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       y="233.50003"
+       x="153.45833"
+       height="1.3229166"
+       width="6.6145854"
+       id="rect4811"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       y="236.14586"
+       x="153.45833"
+       height="1.3229166"
+       width="6.6145854"
+       id="rect4813"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4815"
+       width="2.6458333"
+       height="2.6458364"
+       x="161.39583"
+       y="230.85417"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       y="234.82292"
+       x="161.39581"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4817"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       y="230.85416"
+       x="165.36456"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4819"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4821"
+       width="2.6458333"
+       height="2.6458364"
+       x="165.36456"
+       y="234.82292"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4823"
+       width="5.2916689"
+       height="1.3229166"
+       x="125.67706"
+       y="244.08333"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/combo.png"
+       inkscape:export-xdpi="87.771355"
+       inkscape:export-ydpi="87.771355" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4825"
+       width="5.2916689"
+       height="1.3229166"
+       x="125.67709"
+       y="248.05208"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/combo.png"
+       inkscape:export-xdpi="87.771355"
+       inkscape:export-ydpi="87.771355" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4827"
+       width="5.2916689"
+       height="1.3229166"
+       x="142.875"
+       y="242.76039"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/lyrics.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       y="244.08333"
+       x="121.70834"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4829"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/combo.png"
+       inkscape:export-xdpi="87.771355"
+       inkscape:export-ydpi="87.771355" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31991997;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4831"
+       width="3.9687626"
+       height="3.9687443"
+       x="137.58333"
+       y="244.08333"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/lyrics.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       y="248.05208"
+       x="121.70834"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4833"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/combo.png"
+       inkscape:export-xdpi="87.771355"
+       inkscape:export-ydpi="87.771355" />
+    <rect
+       y="241.4375"
+       x="156.10417"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4835"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4837"
+       width="2.6458333"
+       height="2.6458364"
+       x="156.10416"
+       y="245.40625"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4839"
+       width="2.6458333"
+       height="2.6458364"
+       x="160.07291"
+       y="241.4375"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       y="245.40625"
+       x="160.07291"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4841"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       y="241.4375"
+       x="164.04166"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4843"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4845"
+       width="2.6458333"
+       height="2.6458364"
+       x="164.04166"
+       y="245.40625"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery2.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       y="245.40623"
+       x="142.875"
+       height="1.3229166"
+       width="3.968744"
+       id="rect4847"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.29925725;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/lyrics.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.24434252;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4849"
+       width="2.6458292"
+       height="1.3229166"
+       x="142.875"
+       y="248.05208"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/lyrics.png"
+       inkscape:export-xdpi="88.800003"
+       inkscape:export-ydpi="88.800003" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.24434285;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4851"
+       width="2.6458361"
+       height="1.3229166"
+       x="63.5"
+       y="221.59375" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.24434285;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4853"
+       width="2.6458361"
+       height="1.3229166"
+       x="63.5"
+       y="224.23959" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.24434285;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4855"
+       width="2.6458361"
+       height="1.3229166"
+       x="63.5"
+       y="226.88544" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       y="221.59375"
+       x="71.4375"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4857"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4859"
+       width="2.6458333"
+       height="2.6458364"
+       x="71.437485"
+       y="225.5625" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4861"
+       width="2.6458333"
+       height="2.6458364"
+       x="75.406235"
+       y="221.59372" />
+    <rect
+       inkscape:export-ydpi="89.018379"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       y="225.5625"
+       x="75.406235"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4863"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4865"
+       width="2.6458333"
+       height="2.6458364"
+       x="67.46875"
+       y="221.59375"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       y="225.5625"
+       x="67.46875"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4867"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/gallery1.png"
+       inkscape:export-xdpi="89.018379"
+       inkscape:export-ydpi="89.018379" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858385;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4871"
+       width="4.4979143"
+       height="1.3229166"
+       x="85.989586"
+       y="212.33334" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858423;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4883"
+       width="4.4979253"
+       height="1.3229166"
+       x="92.074997"
+       y="212.33333" />
+    <rect
+       y="214.97917"
+       x="85.989586"
+       height="1.3229166"
+       width="4.4979143"
+       id="rect4889"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858385;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       y="214.97916"
+       x="92.074997"
+       height="1.3229166"
+       width="4.4979253"
+       id="rect4891"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858423;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858385;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4893"
+       width="4.4979143"
+       height="1.3229166"
+       x="85.989586"
+       y="217.62502" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31858423;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4895"
+       width="4.4979253"
+       height="1.3229166"
+       x="92.074997"
+       y="217.625" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4897"
+       width="10.583338"
+       height="1.3229166"
+       x="119.0625"
+       y="230.85417" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4899"
+       width="10.583338"
+       height="1.3229166"
+       x="119.0625"
+       y="233.50002" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4901"
+       width="10.583338"
+       height="1.3229166"
+       x="119.0625"
+       y="236.14584" />
+    <rect
+       inkscape:export-ydpi="76.800095"
+       inkscape:export-xdpi="76.800095"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/col.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4903"
+       width="1.3229169"
+       height="6.6145782"
+       x="175.94792"
+       y="234.82292" />
+    <rect
+       y="234.82292"
+       x="178.59377"
+       height="6.6145782"
+       width="1.3229169"
+       id="rect4905"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/col.png"
+       inkscape:export-xdpi="76.800095"
+       inkscape:export-ydpi="76.800095" />
+    <rect
+       inkscape:export-ydpi="76.800095"
+       inkscape:export-xdpi="76.800095"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/col.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4907"
+       width="1.3229169"
+       height="6.6145782"
+       x="181.23958"
+       y="234.82292" />
+    <rect
+       y="234.82292"
+       x="183.88542"
+       height="6.6145782"
+       width="1.3229169"
+       id="rect4909"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/col.png"
+       inkscape:export-xdpi="76.800095"
+       inkscape:export-ydpi="76.800095" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.36569723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4911"
+       width="7.408339"
+       height="1.0583241"
+       x="73.289574"
+       y="210.74583" />
+    <rect
+       y="212.59793"
+       x="74.083336"
+       height="1.0583241"
+       width="6.614584"
+       id="rect4915"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555128;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       y="214.44998"
+       x="73.289574"
+       height="1.0583241"
+       width="7.408339"
+       id="rect4917"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.36569723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-ydpi="88.799934" />
+    <rect
+       inkscape:export-ydpi="88.799934"
+       inkscape:export-xdpi="88.799934"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555128;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4919"
+       width="6.614584"
+       height="1.0583241"
+       x="74.083336"
+       y="216.30208" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4921"
+       width="10.583338"
+       height="1.3229166"
+       x="117.73958"
+       y="262.60416" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4923"
+       width="10.583338"
+       height="1.3229166"
+       x="117.73958"
+       y="265.25" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4925"
+       width="10.583338"
+       height="1.3229166"
+       x="117.73958"
+       y="267.89584" />
+    <rect
+       inkscape:export-ydpi="176.64021"
+       inkscape:export-xdpi="176.64021"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks+side.png"
+       y="262.60416"
+       x="134.9375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4927"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="176.64021"
+       inkscape:export-xdpi="176.64021"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks+side.png"
+       y="265.25"
+       x="134.9375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4929"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="176.64021"
+       inkscape:export-xdpi="176.64021"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks+side.png"
+       y="267.89584"
+       x="134.9375"
+       height="1.3229166"
+       width="7.9374971"
+       id="rect4931"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.4232139;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="176.64021"
+       inkscape:export-xdpi="176.64021"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks+side.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.41301444;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4933"
+       width="3.96875"
+       height="6.6145802"
+       x="144.19791"
+       y="262.60416" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4935"
+       width="6.6145854"
+       height="1.3229166"
+       x="152.13541"
+       y="262.60419" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4937"
+       width="6.6145854"
+       height="1.3229166"
+       x="152.13541"
+       y="265.25003" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633981;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4939"
+       width="6.6145854"
+       height="1.3229166"
+       x="152.13541"
+       y="267.89584" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       y="262.60416"
+       x="160.07291"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4941"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4943"
+       width="2.6458333"
+       height="2.6458364"
+       x="160.07289"
+       y="266.57291" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4945"
+       width="2.6458333"
+       height="2.6458364"
+       x="164.04164"
+       y="262.60416" />
+    <rect
+       inkscape:export-ydpi="176.29111"
+       inkscape:export-xdpi="176.29111"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery1.png"
+       y="266.57291"
+       x="164.04164"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4947"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="175.54286"
+       inkscape:export-xdpi="175.54286"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/combo.png"
+       y="275.83331"
+       x="124.35414"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4949"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="175.54286"
+       inkscape:export-xdpi="175.54286"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/combo.png"
+       y="279.80206"
+       x="124.35417"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4951"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/lyrics.png"
+       y="274.51038"
+       x="141.55208"
+       height="1.3229166"
+       width="5.2916689"
+       id="rect4953"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.34555286;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="175.54286"
+       inkscape:export-xdpi="175.54286"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/combo.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4955"
+       width="2.6458333"
+       height="2.6458364"
+       x="120.38542"
+       y="275.83331" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/lyrics.png"
+       y="275.83331"
+       x="136.26041"
+       height="3.9687443"
+       width="3.9687626"
+       id="rect4957"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.31991997;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="175.54286"
+       inkscape:export-xdpi="175.54286"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/combo.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4959"
+       width="2.6458333"
+       height="2.6458364"
+       x="120.38542"
+       y="279.80206" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4961"
+       width="2.6458333"
+       height="2.6458364"
+       x="154.78125"
+       y="273.1875" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       y="277.15625"
+       x="154.78123"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4963"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       y="273.1875"
+       x="158.74998"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4965"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4967"
+       width="2.6458333"
+       height="2.6458364"
+       x="158.74998"
+       y="277.15625" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4969"
+       width="2.6458333"
+       height="2.6458364"
+       x="162.71873"
+       y="273.1875" />
+    <rect
+       inkscape:export-ydpi="177.60001"
+       inkscape:export-xdpi="177.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/gallery2.png"
+       y="277.15625"
+       x="162.71873"
+       height="2.6458364"
+       width="2.6458333"
+       id="rect4971"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.21327992;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/lyrics.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.29925725;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4973"
+       width="3.968744"
+       height="1.3229166"
+       x="141.55208"
+       y="277.15622" />
+    <rect
+       inkscape:export-ydpi="177.59973"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/lyrics.png"
+       y="279.80206"
+       x="141.55208"
+       height="1.3229166"
+       width="2.6458292"
+       id="rect4975"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.24434252;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill" />
+    <rect
+       y="262.60416"
+       x="117.73958"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4977"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-ydpi="177.59973" />
+    <rect
+       y="265.25"
+       x="117.73958"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4979"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-ydpi="177.59973" />
+    <rect
+       y="267.89584"
+       x="117.73958"
+       height="1.3229166"
+       width="10.583338"
+       id="rect4981"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.48868552;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/tracks.png"
+       inkscape:export-xdpi="177.59973"
+       inkscape:export-ydpi="177.59973" />
+    <rect
+       y="266.57291"
+       x="174.625"
+       height="6.6145782"
+       width="1.3229169"
+       id="rect4983"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/col.png"
+       inkscape:export-xdpi="153.60001"
+       inkscape:export-ydpi="153.60001" />
+    <rect
+       inkscape:export-ydpi="153.60001"
+       inkscape:export-xdpi="153.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/col.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4985"
+       width="1.3229169"
+       height="6.6145782"
+       x="177.27084"
+       y="266.57291" />
+    <rect
+       y="266.57291"
+       x="179.91666"
+       height="6.6145782"
+       width="1.3229169"
+       id="rect4987"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/col.png"
+       inkscape:export-xdpi="153.60001"
+       inkscape:export-ydpi="153.60001" />
+    <rect
+       inkscape:export-ydpi="153.60001"
+       inkscape:export-xdpi="153.60001"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/col.png"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.38633963;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0;paint-order:stroke markers fill"
+       id="rect4989"
+       width="1.3229169"
+       height="6.6145782"
+       x="182.5625"
+       y="266.57291" />
   </g>
 </svg>

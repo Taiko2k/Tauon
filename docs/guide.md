@@ -1,11 +1,11 @@
-Basic usage guide. Updated for v2.6.0
+Basic usage manual. Updated for v2.6.2
 ===========
 
 Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
 
 For best experience you will need an organized and structured music library, ideally with each album in its own folder.
 
-I recommend the following file structure: LIBRARY/GENRE/ARTIST/ALBUM/TRACKS. Where GENRE could be any sort of broad categorization you feel is best in order to keep like albums together.
+If you have a large and varied music library I recommend keeping albums in respective folders based on genre in order to keep like albums together.
 
 ### Importing Music
 
@@ -21,8 +21,9 @@ Tip: Try importing all your music to a single playlist to get started
 
  - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
  - With random mode on, 'Back' plays songs from playback history.
- - Right click the 'Play' button to jump to / show the playing track.
-  It will always search the current playlist for a matching track and make it the playing track if found.
+ - Right click the 'Play' button to jump playlist to the playing track.
+
+  This will search the currently open playlist for a matching track and make it the playing track if found.
 
 
 ### Panel Buttons
@@ -49,16 +50,16 @@ Tip: Try importing all your music to a single playlist to get started
 2. Press the backslash key or Ctrl+F to open the search box.
 3. Type word fragments separated by spaces. For example, to locate a track named 'Coldplay - Clocks' you could try enter the search text 'col clo'.
 
- - Use UP and DOWN keys to navigate any matching results in the playlist. Press enter key to play selected track.
+ - Use UP and DOWN keys to navigate any matching results in the playlist. Press enter key to play the selected track.
  - Press Shift+Enter to create a new playlist of all matching results
  - Press Shift+A to search currently playing artist name
 
-### New Playlist from folder path fragment:
+##### New Playlist from folder path fragment:
 
 This function filters tracks to a new playlist that only contains tracks that have a given folder name fragment in their file path.
 
 1. Press the backslash key '\' or Ctrl+F to open search entry.
-2. Begin text with a forward slash '/', then type part of a folder path to search for. (Capitalization will be ignored but used for playlist title)
+2. Begin text with a forward slash '/', then type part of a folder path to filter for. (Capitalization will be ignored but used for playlist title)
 3. Press Enter to create the new playlist.
 
 __Tip__: End the search text with another forward slash to search just for folders with that name. For example, entering '/Pop' may bring up results for J-Pop and K-Pop, however '/Pop/' will only return folders with that exact name.
@@ -199,10 +200,9 @@ Playlists can be backed up, shared and imported using the XSPF playlist file for
   __Note__: Its best to import any corresponding audio files before importing playlists.  
 
 
-
 Bug: Some tracks with strange characters in metadata may cause process to fail.  
 
-Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved.
+Tip: Exporting then importing tracks also serves the function of reviving dead tracks when files have been moved. (Provided the 'clean database' function is used before re-import.)
 
 
 ### ReplayGain
@@ -212,7 +212,7 @@ Basic support for ReplayGain exists. When enabled, volume will be adjusted accor
 Only applies to local playback. If no ReplayGain metadata exists, no adjustments will be made.
 
 
-### Physical Folder Copy and Move / Library Transfer
+### Physical Folder Copy and Move / Library Transfer [Experimental]
 
 WARNING: There may be bugs and cases not accounted for. Use with caution and not around data you cannot afford to lose.
 
@@ -242,6 +242,8 @@ When program is installed to program files via installer, files are kept in a de
 
 Web components
 =================================
+
+**Note**: Currently requires active internet connection in order to fetch jquery.
 
 Enable in MENU -> SETTINGS... -> SYSTEM tab
 
