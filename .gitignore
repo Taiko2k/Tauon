@@ -9,6 +9,7 @@ PyLyrics/
 cache/
 .idea/
 pyperclip/
+playlists/
 sdl2/
 lib/*.dll
 lib/*.so

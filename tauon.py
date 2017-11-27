@@ -286,7 +286,7 @@ album_mode = False
 spec_smoothing = True
 
 auto_play_import = False
-# gui.offset_extea = 0
+# gui.offset_extra = 0
 
 old_album_pos = -55
 old_side_pos = 200
@@ -822,6 +822,11 @@ class Fonts:    # Used to hold font sizes (I forget to use this)
         self.side_panel_line1 = 214
         self.side_panel_line2 = 13
 
+        self.bottom_panel_time = 212
+
+        if system == 'windows':
+            self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
+
 fonts = Fonts()
 
 
@@ -980,20 +985,20 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
             self.menu_highlight_background = [40, 40, 40, 255]
             #self.menu_highlight_background = alpha_blend((self.artist_text[0], self.artist_text[1], self.artist_text[2], 100), self.menu_background)
 
-        if gui.light_mode:
-            self.sys_background = self.grey(20)
-            self.sys_background_2 = self.grey(25)
-            self.sys_tab_bg = self.grey(25)
-            self.sys_tab_hl = self.grey(45)
-            self.sys_background_3 = self.grey(20)
-            self.sys_background_4 = self.grey(19)
-            self.toggle_box_on = self.tab_background_active
-            self.time_sub = [0, 0, 0, 200]
-            self.gallery_artist_line = self.grey(40)
-            self.bar_title_text = self.grey(30)
-            self.status_text_normal = self.grey(70)
-            self.status_text_over = self.grey(40)
-            self.status_info_text = [40, 40, 40, 255]
+        # if gui.light_mode:  # Light mode was removed
+        #     self.sys_background = self.grey(20)
+        #     self.sys_background_2 = self.grey(25)
+        #     self.sys_tab_bg = self.grey(25)
+        #     self.sys_tab_hl = self.grey(45)
+        #     self.sys_background_3 = self.grey(20)
+        #     self.sys_background_4 = self.grey(19)
+        #     self.toggle_box_on = self.tab_background_active
+        #     self.time_sub = [0, 0, 0, 200]
+        #     self.gallery_artist_line = self.grey(40)
+        #     self.bar_title_text = self.grey(30)
+        #     self.status_text_normal = self.grey(70)
+        #     self.status_text_over = self.grey(40)
+        #     self.status_info_text = [40, 40, 40, 255]
 
 
 
@@ -1001,7 +1006,7 @@ colours = ColoursClass()
 colours.post_config()
 
 
-# This is legacy. New settings are added straight to the save list
+# This is legacy. New settings are added straight to the save list (need to overhaul)
 view_prefs = {
 
     'split-line': True,
@@ -1320,9 +1325,9 @@ if db_version > 0:
 
 # Loading Config -----------------
 
-main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
-alt_font = 'DroidSansFallback.ttf'
-gui_font = 'Koruri-Semibold.ttf'
+# main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
+# alt_font = 'DroidSansFallback.ttf'
+# gui_font = 'Koruri-Semibold.ttf'
 #light_font = 'Koruri-Light.ttf'
 
 path = config_directory + "/config.txt"
@@ -1343,15 +1348,15 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'tag-editor-name=' in p:
                 result = p.split('=')[1]
                 prefs.tag_editor_name = result
-            if 'font-regular=' in p:
-                result = p.split('=')[1]
-                main_font = result
-            if 'font-fallback=' in p:
-                result = p.split('=')[1]
-                alt_font = result
-            if 'font-bold=' in p:
-                result = p.split('=')[1]
-                gui_font = result
+            # if 'font-regular=' in p:
+            #     result = p.split('=')[1]
+            #     main_font = result
+            # if 'font-fallback=' in p:
+            #     result = p.split('=')[1]
+            #     alt_font = result
+            # if 'font-bold=' in p:
+            #     result = p.split('=')[1]
+            #     gui_font = result
             # if 'font-extra=' in p:
             #     result = p.split('=')[1]
             #     light_font = result
@@ -1692,7 +1697,7 @@ class PlayerCtl:
         self.target_open = ""
         self.target_object = None
         self.start_time = 0
-        self.bstart_time = 0
+        self.b_start_time = 0
         self.playerCommand = ""
         self.playerCommandReady = False
         self.playing_state = 0
@@ -1864,7 +1869,6 @@ class PlayerCtl:
                         switch_playlist(i)
                         self.show_current(select, playing, quiet, this_only=True)
                         break
-
 
         if playlist_position < 0:
             playlist_position = 0
@@ -2211,10 +2215,16 @@ class PlayerCtl:
         # Temporary Workaround
         quick_d_timer.set()
 
+        # Trim the history if it gets too long
+        while len(self.track_queue) > 250:
+            del self.track_queue[0]
+            self.queue_step -= 1
+
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
 
+        # Test to register skip (not currently used for anything)
         if self.playing_state == 1 and 1.2 < self.left_time < 45:
             pctl.master_library[self.left_index].skips += 1
             # print('skip registered')
@@ -3618,7 +3628,7 @@ def player():   # BASS
                         pctl.record_stream = False
 
 
-            if pctl.playerCommand == 'encnext':
+            if pctl.playerCommand == 'cast-next':
                 print("Next Enc Rec")
 
                 if system != 'windows':
@@ -3634,8 +3644,8 @@ def player():   # BASS
 
                 handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
 
-                if pctl.bstart_time > 0:
-                    bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time)
+                if pctl.b_start_time > 0:
+                    bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.b_start_time)
                     BASS_ChannelSetPosition(handle3, bytes_position, 0)
 
                 BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
@@ -3661,7 +3671,7 @@ def player():   # BASS
             if pctl.playerCommand == 'encseek' and pctl.broadcast_active:
 
                 print("seek")
-                bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time + pctl.broadcast_time)
+                bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.b_start_time + pctl.broadcast_time)
                 BASS_ChannelSetPosition(handle3, bytes_position, 0)
 
                 #BASS_ChannelPlay(handle1, False)
@@ -3896,8 +3906,8 @@ def player():   # BASS
                     BASS_StreamFree(handle3)
                     handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
 
-                    if pctl.bstart_time > 0:
-                        bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.bstart_time)
+                    if pctl.b_start_time > 0:
+                        bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.b_start_time)
                         BASS_ChannelSetPosition(handle3, bytes_position, 0)
 
                     BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
@@ -7773,6 +7783,7 @@ def split_lyrics(track_object):
 showcase_menu.add('Clear Lyrics', clear_lyrics, clear_lyrics_deco, pass_ref=True)
 showcase_menu.add('Split Lines', split_lyrics, clear_lyrics_deco, pass_ref=True)
 
+
 def save_embed_img():
     index = pctl.track_queue[pctl.queue_step]
     filepath = pctl.master_library[index].fullpath
@@ -7820,11 +7831,60 @@ def save_embed_img():
     except:
         show_message("Image save error.", "warning", "A mysterious error occurred")
 
-picture_menu = Menu(120)
-picture_menu2 = Menu(200)
+picture_menu = Menu(160)
+#picture_menu2 = Menu(200)
 
-picture_menu.add('Extract Image', save_embed_img)
-picture_menu2.add('Extract Image', save_embed_img)
+def open_image_deco():
+
+    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+
+    if info is None:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+    if pctl.playing_state > 0 and info[0] is False:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def open_image():
+
+    if pctl.playing_state > 0 and pctl.track_queue:
+        album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
+
+def extract_image_deco():
+
+    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+
+    if info is None:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+    if pctl.playing_state > 0 and info[0] is True:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+
+picture_menu.add("Open Image", open_image, open_image_deco)
+picture_menu.add('Extract Image', save_embed_img, extract_image_deco)
+#picture_menu2.add('Extract Image', save_embed_img)
+
+
+def remove_embed_deco():
+    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+
+    if info is None:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+    if pctl.playing_state > 0 and info[0] is True and pctl.playing_object().file_ext == "MP3":
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
 
 
 def remove_embed_picture(index):
@@ -7865,7 +7925,8 @@ def remove_embed_picture(index):
         pctl.revert()
     clear_img_cache()
 
-picture_menu2.add('Delete Folder Embedded Images', remove_embed_picture, pass_ref=True)
+
+picture_menu.add('Folder Purge Embedded', remove_embed_picture, remove_embed_deco, pass_ref=True)
 
 def append_here():
     global cargo
@@ -10254,8 +10315,8 @@ def broadcast_select_track(index):
         pctl.broadcast_position = default_playlist.index(pctl.broadcast_index)
         pctl.broadcast_time = 0
         pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
-        pctl.bstart_time = pctl.master_library[pctl.broadcast_index].start_time
-        pctl.playerCommand = "encnext"
+        pctl.b_start_time = pctl.master_library[pctl.broadcast_index].start_time
+        pctl.playerCommand = "cast-next"
         pctl.playerCommandReady = True
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
                               pctl.master_library[pctl.broadcast_index].title
@@ -10871,8 +10932,8 @@ def scan_rym():
 
 
 x_menu.add_to_sub("Export as CSV", 0, export_database)
-x_menu.add_to_sub("Scan Playlist with RYM DB", 0, scan_rym)
-#x_menu.add_to_sub("Playlist Stats", 0, export_stats)
+if prefs.show_rym:
+    x_menu.add_to_sub("Scan Playlist with RYM DB", 0, scan_rym)
 x_menu.add_to_sub("Play History to Playlist", 0, q_to_playlist)
 x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
 
@@ -14551,35 +14612,31 @@ class BottomBarType1:
         if gui.display_time_mode == 0:
             text_time = get_display_time(pctl.playing_time)
             draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
-                      212)
+                      fonts.bottom_panel_time)
         elif gui.display_time_mode == 1:
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             else:
                 text_time = get_display_time(pctl.playing_length - pctl.playing_time)
             draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
-                      212)
+                      fonts.bottom_panel_time)
             draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
-                      212)
+                      fonts.bottom_panel_time)
         elif gui.display_time_mode == 2:
             x -= 4
             text_time = get_display_time(pctl.playing_time)
             draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
-                      212)
+                      fonts.bottom_panel_time)
             draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
-                      212)
+                      fonts.bottom_panel_time)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
             draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
-                      212)
+                      fonts.bottom_panel_time)
 
-        # if pctl.record_stream or True:
-        #     x = window_size[0] - 17
-        #     draw_text((x, y), "●", [200, 80, 80, 255],
-        #               11)
         # BUTTONS
         # bottom buttons
 
@@ -16538,9 +16595,9 @@ def update_layout_do():
         gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
     else:
         gui.playlist_top = gui.playlist_top_bk
-    gui.offset_extea = 0
+    gui.offset_extra = 0
     if draw_border:
-        gui.offset_extea = 61 * gui.scale
+        gui.offset_extra = 61 * gui.scale
 
     global album_v_gap
     if gui.gallery_show_text:
@@ -16548,11 +16605,11 @@ def update_layout_do():
     else:
         album_v_gap = 25 * gui.scale
 
-    #gui.spec_rect[0] = window_size[0] - gui.offset_extea - 90
-    gui.spec1_rec.x = window_size[0] - gui.offset_extea - 90 * gui.scale
-    #gui.spec_x = window_size[0] - gui.offset_extea - 90
+    #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
+    gui.spec1_rec.x = window_size[0] - gui.offset_extra - 90 * gui.scale
+    #gui.spec_x = window_size[0] - gui.offset_extra - 90
 
-    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extea
+    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra
 
     # if gui.vis == 3:
     #     if prefs.spec2_colour_setting == 'custom':
@@ -18698,10 +18755,10 @@ while running:
                             draw.rect((window_size[0] - (1 - 15) * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
 
                 # Switch Vis:
-                if right_click and coll_point(mouse_position, (window_size[0] - 150 * gui.scale - gui.offset_extea, 0, 140 * gui.scale , gui.panelY)):
+                if right_click and coll_point(mouse_position, (window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
-                if input.mouse_click and coll_point(mouse_position, (window_size[0] - 130 * gui.scale  - gui.offset_extea, 0, 120 * gui.scale , gui.panelY)):
+                if input.mouse_click and coll_point(mouse_position, (window_size[0] - 130 * gui.scale  - gui.offset_extra, 0, 120 * gui.scale , gui.panelY)):
                     if gui.vis == 0:
                         gui.vis = 1
                         gui.turbo = True
@@ -18779,8 +18836,8 @@ while running:
                                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
                             # Open image externally
-                            if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0 and not key_shift_down:
-                                album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
+                            # if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0 and not key_shift_down:
+                            #     album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
 
                         # Draw image downloading indicator
                         if gui.image_downloading:
@@ -18806,6 +18863,9 @@ while running:
                         rect = gui.main_art_box
                         fields.add(rect)
 
+                        if right_click and coll_point(mouse_position, rect):
+                            picture_menu.activate()
+
                         # Draw picture metadata
                         if showc is not False and coll_point(mouse_position, rect) \
                                 and renamebox is False \
@@ -18815,11 +18875,12 @@ while running:
                                 and gui.message_box is False \
                                 and track_box is False:
 
-                            if right_click and showc[0] is True:
-                                if pctl.playing_object().file_ext == "MP3":
-                                    picture_menu2.activate(pctl.track_queue[pctl.queue_step])
-                                else:
-                                    picture_menu.activate()
+                            # if right_click and showc[0] is True:
+                            #     #if pctl.playing_object().file_ext == "MP3":
+                            #     #    picture_menu2.activate(pctl.track_queue[pctl.queue_step])
+                            #     #else:
+                            #     #print(showc)
+                            #     picture_menu.activate()
 
                             if not key_shift_down:
 
@@ -18842,9 +18903,9 @@ while running:
 
                             else:   # Extended metadata
 
-                                if right_click:
-                                    if pctl.playing_object().file_ext == "MP3":
-                                        picture_menu2.activate(pctl.track_queue[pctl.queue_step])
+                                # if right_click:
+                                #     if pctl.playing_object().file_ext == "MP3":
+                                #         picture_menu2.activate(pctl.track_queue[pctl.queue_step])
                                 line = ""
                                 if showc[0] is True:
                                     line += 'Embedded'
@@ -18917,7 +18978,6 @@ while running:
                                         ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
                                         date = pctl.master_library[pctl.track_queue[pctl.queue_step]].date
                                         genre = pctl.master_library[pctl.track_queue[pctl.queue_step]].genre
-                                        #sample = str(pctl.master_library[pctl.track_queue[pctl.queue_step]].samplerate)
 
                                     else:
 
@@ -18940,7 +19000,8 @@ while running:
                                             if 38 * gui.scale + box + 126 * gui.scale > window_size[1] - 39 * gui.scale:
                                                 block3 = True
 
-                                            if 38 * gui.scale + box + 126 * gui.scale + 2 * gui.scale > window_size[1] - 70 * gui.scale:
+                                            if 38 * gui.scale + box + 126 * gui.scale + 2 * gui.scale > window_size[1] \
+                                                    - 70 * gui.scale:
 
                                                 block1 = 38 * gui.scale + box + 20 * gui.scale
                                                 block2 = window_size[1] - (70 - 36 - 2) * gui.scale
@@ -18963,11 +19024,11 @@ while running:
 
                                                 if artist != "":
                                                     playing_info = artist
-                                                    # playing_info = trunc_line(playing_info, 13,
-                                                    #                           window_size[0] - gui.playlist_width - 54)
-                                                    draw_text((x - 1 * gui.scale, block1 + (17 + 6) * gui.scale), playing_info,
+                                                    draw_text((x - 1 * gui.scale, block1 + (17 + 6) * gui.scale),
+                                                              playing_info,
                                                               colours.side_bar_line2,
-                                                              fonts.side_panel_line2, max=gui.side_panel_size - 32 * gui.scale)
+                                                              fonts.side_panel_line2,
+                                                              max=gui.side_panel_size - 32 * gui.scale)
                                             else:
                                                 block1 -= 14 * gui.scale
 
@@ -18985,8 +19046,6 @@ while running:
 
                                                 if album != "":
                                                     playing_info = album
-                                                    # playing_info = trunc_line(playing_info, 14,
-                                                    #                           window_size[0] - gui.playlist_width - 53)
                                                     draw_text((x - 1 * gui.scale, block2), playing_info, colours.side_bar_line2,
                                                               14, max=gui.side_panel_size - 32 * gui.scale)
 
@@ -19015,8 +19074,10 @@ while running:
                                                     if date != "":
                                                         line += date + " | "
                                                     line += ext
-                                                    #line = trunc_line(line, 14, window_size[0] - gui.playlist_width - 53)
-                                                    draw_text((x - 1 * gui.scale, block2 + 32 * gui.scale), line, colours.side_bar_line2, 14, max=gui.side_panel_size - 32 * gui.scale)
+
+                                                    draw_text((x - 1 * gui.scale, block2 + 32 * gui.scale), line,
+                                                              colours.side_bar_line2, 14,
+                                                              max=gui.side_panel_size - 32 * gui.scale)
 
                 # Seperation Line Drawing
                 if side_panel_enable:
@@ -19073,8 +19134,7 @@ while running:
 
             # NEW TOP BAR
             # C-TBR
-            # if colours.tb_line != colours.playlighlist_panel_background and GUI_Mode == 1:
-            #     draw.line(0, gui.panelY, window_size[0], gui.panelY, colours.tb_line)
+
             if gui.draw_frame:
                 draw.line(0, gui.panelY, window_size[0], gui.panelY, colours.tb_line)
 
@@ -19824,25 +19884,20 @@ while running:
 
                 draw.button("GO", x + (8 + 380 + 10) * gui.scale, y + 38 * gui.scale, 40 * gui.scale)
 
-                # if draw.button("Paste", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
-                #     radio_field.paste()
-                #
-                # if draw.button("Clear", x + 277 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
-                #     radio_field.text = ""
-
                 if draw.button("Save", x + 337 * gui.scale, y + 70 * gui.scale, 50 * gui.scale, press=gui.level_2_click):
                     pctl.save_urls.append(radio_field.text)
 
                 if (input.level_2_enter or (
-                            gui.level_2_click and coll_point(mouse_position,
-                                                               (x + (8 + 380 + 10) * gui.scale, y + 38 * gui.scale, 40 * gui.scale, 22 * gui.scale)))):
+                            gui.level_2_click and
+                            coll_point(mouse_position, (x + (8 + 380 + 10) *
+                                gui.scale, y + 38 * gui.scale, 40 * gui.scale, 22 * gui.scale)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
                         show_message("Sorry, youtube links are not supported.")
-                    elif "http://" in radio_field.text or "https://" in radio_field.text or "ftp://" in radio_field.text:
+                    elif "http://" in radio_field.text or "https://" in radio_field.text \
+                            or "ftp://" in radio_field.text:
                         print("Start radio")
                         pctl.url = radio_field.text.encode('utf-8')
-                        #radiobox = False
                         pctl.playing_state = 0
                         pctl.record_stream = False
                         pctl.playerCommand = "url"
@@ -19857,7 +19912,8 @@ while running:
                         print("Radio fail")
                         radiobox = False
                         gui.update = 1
-                        show_message("Could not validate URL.", 'info', "Make sure the URL starts with 'http://' or 'ftp://'.")
+                        show_message("Could not validate URL.", 'info',
+                                     "Make sure the URL starts with 'http://' or 'ftp://'.")
 
                 x -= 230 * gui.scale
                 # y += 30
@@ -19870,11 +19926,13 @@ while running:
                         if gui.level_2_click:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
-                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20], colours.sys_background_3), True)
+                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
+                                                                                      colours.sys_background_3), True)
                         draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
                         draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
                     else:
-                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9], colours.sys_background_3), True)
+                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
+                                                                                      colours.sys_background_3), True)
                         draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
                         draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
                 else:
@@ -19882,15 +19940,16 @@ while running:
                         if gui.level_2_click:
                             radiobox = False
                             show_message("A stream needs to be playing first.")
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7], colours.sys_background_3), True)
+                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
+                                                                                  colours.sys_background_3), True)
                     draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
                     draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
-
 
                 gui.level_2_click = False
 
             if gui.message_box:
-                if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press \
+                        or key_backslash_press:
                     gui.message_box = False
                     key_return_press = False
 
@@ -19905,7 +19964,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(55), True)
+                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+                          colours.grey(55), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 if gui.message_mode == 'info':
@@ -19916,7 +19976,6 @@ while running:
                     message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
                 elif gui.message_mode == 'arrow':
                     message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-
 
                 if len(gui.message_subtext) > 0:
                     draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(190), 15)
@@ -19944,7 +20003,6 @@ while running:
 
                 gui.win_fore = colours.sys_background_4
                 draw.rect_r(rect, colours.sys_background_4, True)
-                #draw.rect_r(rect2, [255, 255, 255, 10], True)
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -19960,7 +20018,8 @@ while running:
                     draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(80), 10)
                 else:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
-                    draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line, colours.grey(80), 10)
+                    draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
+                              colours.grey(80), 10)
 
                 if len(pctl.track_queue) > 0:
 
@@ -19986,11 +20045,10 @@ while running:
                                 gen_500_random(pctl.playlist_active)
                             elif search_text.text.lower() == "/top" or search_text.text.lower() == "/most":
                                 gen_top_100(pctl.playlist_active)
-                            elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration" or search_text.text.lower() == "/len":
+                            elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration"\
+                                    or search_text.text.lower() == "/len":
                                 gen_sort_len(pctl.playlist_active)
-                            # elif search_text.text[:6] == "/love " and len(search_text.text) > 8:
-                            #
-                            #     lastfm.user_love_to_playlist(search_text.text[6:])
+
                             else:
 
                                 if search_text.text[-1] == "/":
@@ -20008,7 +20066,6 @@ while running:
                                                                       playlist=copy.deepcopy(playlist)))
                                     switch_playlist(len(pctl.multi_playlist) - 1)
 
-
                         else:
                             search_terms = search_text.text.lower().split()
                             for item in default_playlist:
@@ -20024,7 +20081,6 @@ while running:
                                 switch_playlist(len(pctl.multi_playlist) - 1)
                         search_text.text = ""
                         quick_search_mode = False
-
 
                 if len(input_text) > 0 or key_down_press is True or key_backspace_press:
 
@@ -20043,9 +20099,9 @@ while running:
 
                             search_terms = search_text.text.lower().split()
                             line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-                                   pctl.master_library[default_playlist[search_index]].artist.lower() \
-                                   + pctl.master_library[default_playlist[search_index]].album.lower() + \
-                                   pctl.master_library[default_playlist[search_index]].filename.lower()
+                                pctl.master_library[default_playlist[search_index]].artist.lower() \
+                                + pctl.master_library[default_playlist[search_index]].album.lower() + \
+                                pctl.master_library[default_playlist[search_index]].filename.lower()
 
                             if all(word in line for word in search_terms):
 
@@ -20077,9 +20133,9 @@ while running:
                             search_index = len(default_playlist) - 1
                         search_terms = search_text.text.lower().split()
                         line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-                               pctl.master_library[default_playlist[search_index]].artist.lower() \
-                               + pctl.master_library[default_playlist[search_index]].album.lower() + \
-                               pctl.master_library[default_playlist[search_index]].filename.lower()
+                            pctl.master_library[default_playlist[search_index]].artist.lower() \
+                            + pctl.master_library[default_playlist[search_index]].album.lower() + \
+                            pctl.master_library[default_playlist[search_index]].filename.lower()
 
                         if all(word in line for word in search_terms):
 
@@ -20147,8 +20203,6 @@ while running:
             album_art_gen.display(pctl.track_queue[pctl.queue_step],
                                   (0, 0), (window_size[1], window_size[1]))
 
-        #draw.rect_r((0, gui.panelY + 1, window_size[0], 2), [200, 120, 0, 255], True)
-
         # Render Menus-------------------------------
         for instance in Menu.instances:
             instance.render()
@@ -20164,7 +20218,7 @@ while running:
 
         if draw_border:
 
-            rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53  * gui.scale, 33 * gui.scale)
+            rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
             fields.add(rect)
 
             rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
@@ -20172,14 +20226,16 @@ while running:
             fields.add(rect)
             if coll_point(mouse_position, rect):
                 draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
-                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), [160, 160, 160, 160], True)
+                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                          [160, 160, 160, 160], True)
                 if input.mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
                     mouse_down = False
                     input.mouse_click = False
                     drag_mode = False
             else:
-                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), [120, 120, 120, 45], True)
+                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                          [120, 120, 120, 45], True)
 
             rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
             draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
@@ -20194,21 +20250,14 @@ while running:
 
             corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
-            # draw.line(0, 0, 180, 0, colours.grey(80))
-            # draw.line(0, 0, 0, 20, colours.grey(80))
-
             colour = [30, 30, 30, 255]
             draw.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
 
             draw.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
             draw.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
             draw.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
-            #draw.rect_r((0, 1, window_size[0], 1), [255, 255, 255, 20], True)
 
-
-
-
-        # Drag icon
+        # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = [0, 0]
@@ -20217,28 +20266,19 @@ while running:
                     draw.rect_r((i_x + 20, i_y + 1, 10, 10), [150, 150, 235, 240], True)
                 else:
                     draw.rect_r((i_x + 20, i_y + 1, 10, 25), [150, 150, 235, 240], True)
-                    # draw.rect_r((i_x + 20, i_y + 1 + 7 + 1, 10, 6), [100, 100, 230, 220], True)
-                    # draw.rect_r((i_x + 20, i_y + 1 + 14 + 2, 10, 6), [100, 100, 230, 220], True)
-
 
             gui.update += 1
-
 
         gui.update -= 1
         gui.present = True
 
-
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
-
 
         if gui.turbo:
             gui.level_update = True
 
-
-
-    if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0,
-                    0] and gui.turbo:  # and not album_scroll_hold:
+    if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
 
         # print(gui.level_peak)
         gui.time_passed = gui.level_time.hit()
@@ -20255,7 +20295,6 @@ while running:
 
         gui.level_update = True
 
-
     if gui.level_update is True and not resize_mode:
         gui.level_update = False
 
@@ -20266,21 +20305,18 @@ while running:
             gui.present = True
 
         if gui.vis == 3:
-            # Scrolling spectogram
+            # Scrolling spectrogram
 
             if len(gui.spec2_buffers) > 0:
 
                 SDL_SetRenderTarget(renderer, gui.spec2_tex)
                 for i, value in enumerate(gui.spec2_buffers[0]):
 
-                    # draw.rect_r([gui.spec2_position, i, 1, 1], colour_slide([10, 10, 10], [255, 200, 255], value, 200), True)
-
                     draw.rect_r([gui.spec2_position, i, 1, 1],
-                                [min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])), min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
+                                [min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
+                                 min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
                                  min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
                                  255], True)
-
-                    #print(value)
 
                 del gui.spec2_buffers[0]
                 gui.spec2_position += 1
@@ -20313,7 +20349,6 @@ while running:
                 draw.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
 
         if gui.vis == 2 and gui.spec is not None:
-
 
             # Standard spectrum visualiser
 
@@ -20378,14 +20413,12 @@ while running:
                                        colours.vis_colour[1], colours.vis_colour[2],
                                        colours.vis_colour[3])
 
-
                 for item in gui.s_spec:
 
                     if on > 19:
                         break
                     on += 1
 
-                    # if item > 0:
                     item -= 1
 
                     if item < 1:
@@ -20400,8 +20433,7 @@ while running:
 
                     gui.bar.y = 0 + gui.spec_h - item
                     gui.bar.h = item
-                    # yy = gui.spec_rect[1] + gui.spec_rect[3] - item
-                    # draw.fast_fill_rect(xx + gui.spec_rect[0], yy, 3, item)
+
                     SDL_RenderFillRect(renderer, gui.bar)
 
                     gui.bar.x += 4 * gui.scale
@@ -20409,32 +20441,21 @@ while running:
                 if pref_box.enabled:
                     draw.rect_r((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90], True)
 
-                #draw.rect_r((0, 0, 2000, 2000), [222, 0, 0, 255], True)
-
                 SDL_SetRenderTarget(renderer, None)
                 SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
-
-
-
-
         if gui.vis == 1:
 
-            # gui.offset_extea = 0
-            # if draw_border:
-            #     gui.offset_extea = 61
             SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 
-            x = window_size[0] - 20 * gui.scale - gui.offset_extea
+            x = window_size[0] - 20 * gui.scale - gui.offset_extra
             y = gui.level_y
             w = gui.level_w
             s = gui.level_s
 
             y = 0
 
-
             gui.spec_level_rec.x = x - 70 * gui.scale
-            #draw.rect((x - 70 * gui.scale, y - 10 * gui.scale), (79 * gui.scale, 18 * gui.scale), colours.grey(10), True)
             draw.rect((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10),
                       True)
 
@@ -20463,7 +20484,6 @@ while running:
                         cc = [15, 10, 20, 255]
                     else:
                         cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-                        #cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
                 elif gui.level_meter_colour_mode == 2:
@@ -20471,7 +20491,6 @@ while running:
                     if not met:
                         cc = [11, 11, 13, 255]
                     else:
-                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
                         cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
@@ -20480,23 +20499,16 @@ while running:
                     if not met:
                         cc = [12, 6, 0, 255]
                     else:
-                        # cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
                         cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-                        # cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
                 elif gui.level_meter_colour_mode == 4:
 
                     if not met:
                         cc = [10, 10, 10, 255]
-                        # cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.06, 0.6 + (t * 0.02))
-                        # cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
                     else:
-                        # cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-                        # cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
                         cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
 
                 else:
 
@@ -20532,7 +20544,6 @@ while running:
                         cc = [15, 10, 20, 255]
                     else:
                         cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-                        #cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
                 elif gui.level_meter_colour_mode == 2:
@@ -20540,7 +20551,6 @@ while running:
                     if not met:
                         cc = [11, 11, 13, 255]
                     else:
-                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
                         cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
@@ -20549,9 +20559,7 @@ while running:
                     if not met:
                         cc = [12, 6, 0, 255]
                     else:
-                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
                         cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-                        #cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
                 elif gui.level_meter_colour_mode == 4:
@@ -20559,8 +20567,6 @@ while running:
                     if not met:
                         cc = [10, 10, 10, 255]
                     else:
-                        #cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-                        #cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
                         cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
                         cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
@@ -20586,18 +20592,17 @@ while running:
             SDL_SetRenderTarget(renderer, None)
             SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
-
     if gui.present:
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderPresent(renderer)
         gui.present = False
 
-
     # -------------------------------------------------------------------------------------------
-    # Broadcast control
+    # Misc things to update every tick
 
+    # Broadcast control
     if pctl.broadcast_active and pctl.broadcast_time > pctl.master_library[
-        pctl.broadcast_index].length and not pctl.join_broadcast:
+            pctl.broadcast_index].length and not pctl.join_broadcast:
         pctl.broadcast_position += 1
         print('next')
         if pctl.broadcast_position > len(pctl.multi_playlist[pctl.broadcast_playlist][2]) - 1:
@@ -20607,8 +20612,8 @@ while running:
         pctl.broadcast_index = pctl.multi_playlist[pctl.broadcast_playlist][2][pctl.broadcast_position]
         pctl.broadcast_time = 0
         pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
-        pctl.bstart_time = pctl.master_library[pctl.broadcast_index].start_time
-        pctl.playerCommand = "encnext"
+        pctl.b_start_time = pctl.master_library[pctl.broadcast_index].start_time
+        pctl.playerCommand = "cast-next"
         pctl.playerCommandReady = True
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
             pctl.broadcast_index].title
@@ -20623,10 +20628,11 @@ while running:
     if pctl.broadcast_active and pctl.broadcast_time == 0:
         gui.pl_update = 1
 
-
+    # Update progress indicator on Windows task bar
     if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
         windows_progress.update()
 
+    # Update d-bus metadata on Linux
     if pctl.playing_state == 1 and pctl.mpris is not None:
         pctl.mpris.update_progress()
 
@@ -20637,21 +20643,15 @@ while running:
             bottom_bar1.seek_time = pctl.playing_time
             gui.update = 1
 
-    if len(pctl.track_queue) > 250 and pctl.queue_step > 1:
-        del pctl.track_queue[0]
-        pctl.queue_step -= 1
-
-
     if system == 'windows':
 
         if mouse_down is False:
             drag_mode = False
 
-        if input.mouse_click and mouse_down and 1 < mouse_position[1] < 30 and top_panel.drag_zone_start_x < mouse_position[
-            0] < window_size[
-            0] - 80 * gui.scale and drag_mode is False and clicked is False:
+        if input.mouse_click and mouse_down and 1 < mouse_position[1] < 30 and top_panel.drag_zone_start_x < \
+                mouse_position[0] < window_size[0] - 80 * gui.scale and drag_mode is False and clicked is False:
+            
             drag_mode = True
-
             lm = copy.deepcopy(mouse_position)
 
         if mouse_up:
@@ -20666,22 +20666,21 @@ while running:
             time.sleep(0.005)
             SDL_SetWindowPosition(t_window, mp[0] - lm[0], mp[1] - lm[1])
 
-    # auto save
-
+    # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
         print("Auto Save")
         pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
         time_last_save = pctl.total_playtime
 
+    # Always render at least one frame per minute (to avoid SDL bugs I guess)
     if min_render_timer.get() > 60:
         min_render_timer.set()
         gui.pl_update = 1
         gui.update += 1
 
+    # Save power if the window is minimized
     if gui.lowered:
         time.sleep(0.2)
-
-
 
 SDL_DestroyWindow(t_window)
 
@@ -20693,9 +20692,6 @@ date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
 save_state()
-
-if os.path.isfile(user_directory + '/lock'):
-    os.remove(user_directory + '/lock')
 
 print("unloading SDL")
 IMG_Quit()
