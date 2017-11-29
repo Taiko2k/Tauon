@@ -738,6 +738,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.playlist_left = 20 * self.scale
         self.image_downloading = False
         self.tc_cancel = False
+        self.force_search = False
 
 
 gui = GuiVar()
@@ -11199,6 +11200,9 @@ def switch_playlist(number, cycle=False):
 
     gui.pl_update = 1
     search_index = 0
+    gui.search_error = False
+    if quick_search_mode:
+        gui.force_search = True
 
     if pl_follow:
         pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
@@ -14991,7 +14995,7 @@ class StandardPlaylist:
         global mouse_up
         global selection_stage
 
-        if side_panel_enable:
+        if side_panel_enable or gui.set_mode:
             inset_left = 0
             inset_right = 0
 
@@ -20082,9 +20086,11 @@ while running:
                         search_text.text = ""
                         quick_search_mode = False
 
-                if len(input_text) > 0 or key_down_press is True or key_backspace_press:
+                if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or key_backspace_press\
+                        or gui.force_search:
 
                     gui.pl_update = 1
+                    gui.force_search = False
 
                     if key_backspace_press:
                         search_index = 0
