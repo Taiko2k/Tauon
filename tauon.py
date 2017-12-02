@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.2"
+t_version = "v2.6.3"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -6383,7 +6383,7 @@ class AlbumArt():
 
         sources = self.get_sources(index)
         if len(sources) == 0:
-            return False
+            return None
         offset = self.get_offset(pctl.master_library[index].fullpath, sources)
 
         o_size = (0, 0)
@@ -16506,7 +16506,7 @@ if system != 'windows':
         elif point.contents.y < 0 and point.contents.x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        elif point.contents.y < 0:
+        elif point.contents.y < 4 and point.contents.x < window_size[0] - 40:
             return SDL_HITTEST_RESIZE_TOP
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
@@ -16514,14 +16514,14 @@ if system != 'windows':
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
-        elif point.contents.x > window_size[0] - 40 and point.contents.y > window_size[1] - 30:
+        elif point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
         elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
             return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif point.contents.y > window_size[1] - 5:
+        elif point.contents.y > window_size[1] - 7:
             return SDL_HITTEST_RESIZE_BOTTOM
 
-        elif point.contents.x > window_size[0] - 1:
+        elif point.contents.x > window_size[0] - 4 and point.contents.y > 20:
             return SDL_HITTEST_RESIZE_RIGHT
         elif point.contents.x < 5:
             return SDL_HITTEST_RESIZE_LEFT
@@ -18849,6 +18849,7 @@ while running:
                             gui.update = 2
 
                         # Draw the album art. If side bar is being dragged set quick draw flag
+                        showc = None
                         if 3 > pctl.playing_state > 0:
 
                             if side_drag:
@@ -18871,7 +18872,7 @@ while running:
                             picture_menu.activate()
 
                         # Draw picture metadata
-                        if showc is not False and coll_point(mouse_position, rect) \
+                        if showc is not None and coll_point(mouse_position, rect) \
                                 and renamebox is False \
                                 and radiobox is False \
                                 and pref_box.enabled is False \

@@ -6,6 +6,7 @@ v2.6.3
  - Improved search to re-scan on playlist switch
  - Fixed search text entry lag when nothing was already found
  - Fixed tracks only view track highlight when column mode is on
+ - Fixed crash when right clicking empty album art
 
 v2.6.2
 
