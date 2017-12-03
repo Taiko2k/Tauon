@@ -32,7 +32,10 @@ For __Windows__, download latest installer from [releases](https://github.com/Ta
 For __Arch Linux__, install from the AUR:  
 
     $ yaourt -S tauon-music-box
+    
+For __Ubuntu__, download and install deb from [releases](https://github.com/Taiko2k/tauonmb/releases) section. (Tested on Ubuntu 17.10 and Mint 18.3)
 
+___
 
 For further documentation see [guide](docs/guide.md).
 
