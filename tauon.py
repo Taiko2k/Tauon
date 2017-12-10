@@ -6538,19 +6538,24 @@ class AlbumArt():
 
         return 0
 
-    def cycle_offset(self, index):
+    def cycle_offset(self, index, reverse=False):
 
         filepath = pctl.master_library[index].fullpath
         sources = self.get_sources(index)
         parent_folder = os.path.dirname(filepath)
         # Find cached offset
         if parent_folder in folder_image_offsets:
-            # Advance the offset by one
-            folder_image_offsets[parent_folder] += 1
-            # Reset the offset if greater then number of images available
-            if folder_image_offsets[parent_folder] > len(sources) - 1:
-                folder_image_offsets[parent_folder] = 0
+
+            if reverse:
+                folder_image_offsets[parent_folder] -= 1
+            else:
+                folder_image_offsets[parent_folder] += 1
+
+            folder_image_offsets[parent_folder] %= len(sources)
         return 0
+
+    def cycle_offset_reverse(self, index):
+        self.cycle_offset(index, True)
 
     def get_offset(self, filepath, source):
 
@@ -7833,7 +7838,6 @@ def save_embed_img():
         show_message("Image save error.", "warning", "A mysterious error occurred")
 
 picture_menu = Menu(160)
-#picture_menu2 = Menu(200)
 
 def open_image_deco():
 
@@ -7870,8 +7874,33 @@ def extract_image_deco():
 
 
 picture_menu.add("Open Image", open_image, open_image_deco)
+
+
+def cycle_image_deco():
+
+    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+
+    if pctl.playing_state != 0 and (info is not None and info[1] > 1):
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+
+def cycle_offset():
+    album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
+
+
+def cycle_offset_b():
+    album_art_gen.cycle_offset_reverse(pctl.track_queue[pctl.queue_step])
+
+
+picture_menu.add("Cycle Next", cycle_offset, cycle_image_deco)
+picture_menu.add("Cycle Previous", cycle_offset_b, cycle_image_deco)
+
+
 picture_menu.add('Extract Image', save_embed_img, extract_image_deco)
-#picture_menu2.add('Extract Image', save_embed_img)
 
 
 def remove_embed_deco():
@@ -16463,6 +16492,7 @@ class EdgePulse:
 
 
 edge_playlist = EdgePulse()
+bottom_playlist = EdgePulse()
 gallery_pulse_top = EdgePulse()
 
 
@@ -18775,7 +18805,8 @@ while running:
                         gui.turbo = False
 
 
-                edge_playlist.render(0, gui.panelY + 1, gui.playlist_width + 30 * gui.scale, 2)
+                edge_playlist.render(0, gui.panelY + 1, gui.playlist_width + 30 * gui.scale, 2 * gui.scale)
+                bottom_playlist.render(0, window_size[1] - gui.panelBY - 2 * gui.scale, gui.playlist_width + 30 * gui.scale, 2 * gui.scale)
                 # --------------------------------------------
                 # ALBUM ART
 
@@ -20091,7 +20122,11 @@ while running:
                         or gui.force_search:
 
                     gui.pl_update = 1
-                    gui.force_search = False
+
+                    if gui.force_search:
+                        search_index = 0
+
+
 
                     if key_backspace_press:
                         search_index = 0
@@ -20126,8 +20161,12 @@ while running:
 
                         else:
                             search_index = oi
-                            if len(input_text) > 0:
+                            if len(input_text) > 0 or gui.force_search:
                                 gui.search_error = True
+                            if key_down_press:
+                                bottom_playlist.pulse()
+
+                        gui.force_search = False
 
                 if key_up_press is True:
 
@@ -20156,6 +20195,8 @@ while running:
                             break
                     else:
                         search_index = oi
+
+                        edge_playlist.pulse()
 
                 if key_return_press is True and search_index > -1:
                     gui.pl_update = 1
