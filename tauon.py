@@ -1044,6 +1044,8 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.track_total = ""
         self.start_time = 0
         self.is_cue = False
+        self.is_embed_cue = False
+        self.cue_sheet = ""
         self.genre = ""
         self.found = True
         self.skips = 0
@@ -1324,6 +1326,14 @@ if db_version > 0:
             "Upgrade complete. New sorting option may require tag rescan.")
 
 
+    if db_version <= 2.0:
+        print("Updating database to version 2.1")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'is_embed_cue', False)
+            setattr(master_library[key], 'cue_sheet', "")
+        show_message(
+            "Updated to v2.6.3")
+
 # Loading Config -----------------
 
 # main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
@@ -1490,6 +1500,10 @@ def get_window_position():
 
 # This function takes a track object and scans metadata for it. (Filepath needs to be set)
 def tag_scan(nt):
+
+    if nt.is_embed_cue:
+        return nt
+
     try:
         nt.modified_time = os.path.getmtime(nt.fullpath)
         if nt.file_ext == "FLAC":
@@ -1518,6 +1532,8 @@ def tag_scan(nt):
             nt.comment = audio.comment
             nt.track_gain = audio.track_gain
             nt.album_gain = audio.album_gain
+            nt.cue_sheet = audio.cue_sheet
+
 
             return nt
 
@@ -11499,9 +11515,157 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     core_use -= 1
 
 
+# ---------------------
+added = []
+
+def cue_scan(content, tn):
+    # Get length from backend
+    # if lasttime == 0 and default_player == 1:
+    #     lasttime = get_backend_time(filepath)
+    lasttime = tn.length
+
+    content = content.replace("\r", "")
+    content = content.split("\n")
+
+    #print(content)
+
+    global master_count
+    global added
+
+    cued = []
+
+    LENGTH = 0
+    PERFORMER = ""
+    TITLE = ""
+    START = 0
+    DATE = ""
+    ALBUM = ""
+    GENRE = ""
+    MAIN_PERFORMER = ""
+
+    for LINE in content:
+        if 'TITLE "' in LINE:
+            ALBUM = LINE[7:len(LINE) - 2]
+
+        if 'PERFORMER "' in LINE:
+            while LINE[0] != "P":
+                LINE = LINE[1:]
+
+            MAIN_PERFORMER = LINE[11:len(LINE) - 2]
+
+        if 'REM DATE' in LINE:
+            DATE = LINE[9:len(LINE) - 1]
+
+        if 'REM GENRE' in LINE:
+            GENRE = LINE[10:len(LINE) - 1]
+
+        if 'TRACK ' in LINE:
+            break
+
+    for LINE in reversed(content):
+        if len(LINE) > 100:
+            return 1
+        if "INDEX 01 " in LINE:
+            temp = ""
+            pos = len(LINE)
+            pos -= 1
+            while LINE[pos] != ":":
+                pos -= 1
+                if pos < 8:
+                    break
+
+            START = int(LINE[pos - 2:pos]) + (int(LINE[pos - 5:pos - 3]) * 60)
+            LENGTH = int(lasttime) - START
+            lasttime = START
+
+        elif 'PERFORMER "' in LINE:
+            switch = 0
+            for i in range(len(LINE)):
+                if switch == 1 and LINE[i] == '"':
+                    break
+                if switch == 1:
+                    PERFORMER += LINE[i]
+                if LINE[i] == '"':
+                    switch = 1
+
+        elif 'TITLE "' in LINE:
+
+            switch = 0
+            for i in range(len(LINE)):
+                if switch == 1 and LINE[i] == '"':
+                    break
+                if switch == 1:
+                    TITLE += LINE[i]
+                if LINE[i] == '"':
+                    switch = 1
+
+        elif 'TRACK ' in LINE:
+
+            pos = 0
+            while LINE[pos] != 'K':
+                pos += 1
+                if pos > 15:
+                    return 1
+            TN = LINE[pos + 2:pos + 4]
+
+            TN = int(TN)
+
+            # try:
+            #     bitrate = audio.info.bitrate
+            # except:
+            #     bitrate = 0
+
+            if PERFORMER == "":
+                PERFORMER = MAIN_PERFORMER
+
+            nt = copy.deepcopy(tn) #TrackClass()
+
+            nt.cue_sheet = ""
+            nt.is_embed_cue = True
+
+            nt.index = master_count
+            # nt.fullpath = filepath.replace('\\', '/')
+            # nt.filename = filename
+            # nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
+            # nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
+            # nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
+
+            nt.album_artist = MAIN_PERFORMER
+            nt.artist = PERFORMER
+            nt.genre = GENRE
+            nt.title = TITLE
+            nt.length = LENGTH
+            # nt.bitrate = source_track.bitrate
+            nt.album = ALBUM
+            nt.date = DATE.replace('"', '')
+            nt.track_number = TN
+            nt.start_time = START
+            nt.is_cue = True
+            nt.size = 0  # source_track.size
+            # nt.samplerate = source_track.samplerate
+            if TN == 1:
+                nt.size = os.path.getsize(nt.fullpath)
+
+            pctl.master_library[master_count] = nt
+
+            cued.append(master_count)
+            # loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
+            #added.append(master_count)
+
+            master_count += 1
+            LENGTH = 0
+            PERFORMER = ""
+            TITLE = ""
+            START = 0
+            TN = 0
+
+    added += reversed(cued)
+
+    # cue_list.append(filepath)
+
 
 # LOADER----------------------------------------------------------------------
-added = []
+
 
 
 def worker2():
@@ -11649,6 +11813,7 @@ def worker1():
             START = 0
             DATE = ""
             ALBUM = ""
+            GENRE = ""
             MAIN_PERFORMER = ""
 
             for LINE in content:
@@ -11663,6 +11828,9 @@ def worker1():
 
                 if 'REM DATE' in LINE:
                     DATE = LINE[9:len(LINE) - 1]
+
+                if 'REM GENRE' in LINE:
+                    GENRE = LINE[10:len(LINE) - 1]
 
                 if 'TRACK ' in LINE:
                     break
@@ -11734,6 +11902,7 @@ def worker1():
                     nt.artist = PERFORMER
                     nt.title = TITLE
                     nt.length = LENGTH
+                    nt.genre = GENRE
                     nt.bitrate = source_track.bitrate
                     nt.album = ALBUM
                     nt.date = DATE.replace('"', '')
@@ -11871,9 +12040,16 @@ def worker1():
 
         nt = tag_scan(nt)
 
-        pctl.master_library[master_count] = nt
-        added.append(master_count)
-        master_count += 1
+        if nt.cue_sheet != "":
+            cue_scan(nt.cue_sheet, nt)
+            del nt
+
+        else:
+
+            pctl.master_library[master_count] = nt
+            added.append(master_count)
+            master_count += 1
+
         # bm.get("fill entry")
         if auto_play_import:
             pctl.jump(master_count - 1)
@@ -16841,7 +17017,7 @@ def save_state():
             folder_image_offsets,
             lfm_username,
             lfm_hash,
-            2.0,  # Version
+            2.1,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             gui.side_panel_size,
@@ -19413,8 +19589,11 @@ while running:
 
                     if pctl.master_library[r_menu_index].is_cue:
                         ext_rect[1] += 16 * gui.scale
-                        draw.rect_r(ext_rect, [218, 222, 73, 255], True)
-                        draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], [218, 222, 73, 255]), 211, bg=[218, 222, 73, 255])
+                        colour = [218, 222, 73, 255]
+                        if pctl.master_library[r_menu_index].is_embed_cue:
+                            colour = [252, 199, 55, 255]
+                        draw.rect_r(ext_rect, colour, True)
+                        draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
 
 
                     y1 += 16 * gui.scale

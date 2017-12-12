@@ -3,9 +3,11 @@ Changelog-------------------------------------
 
 v2.6.3
 
+ - Added support for embedded CUE sheets in Flac files (Vorbis type)
  - Added 'Cycle Previous' function to picture menu
  - Improved search to re-scan on playlist switch
  - Improved search to indicate when top/bottom of playlist reached
+ - Fixed genre field not being imported from CUE sheets
  - Fixed search text entry lag when nothing was already found
  - Fixed tracks only view track highlight when column mode is on
  - Fixed crash when right clicking empty album art
