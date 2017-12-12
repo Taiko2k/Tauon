@@ -51,6 +51,7 @@ class Flac:
         self.picture = ""
         self.disc_total = ""
         self.lyrics = ""
+        self.cue_sheet = ""
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -99,6 +100,8 @@ class Flac:
 
                     if a == "genre":
                         self.genre = b.decode("utf-8")
+                    elif a == 'cuesheet':
+                        self.cue_sheet = b.decode()
                     elif a == "date":
                         self.date = b.decode("utf-8")
                     elif a == "comment":
@@ -169,6 +172,22 @@ class Flac:
                 self.read_seek_table(f)
             if z[1] == 4:
                 self.read_vorbis(f)
+
+            if z[1] == 5:
+
+                print("Tag Scan: Flac file has native embedded CUE. Not supported")
+                print("      In file: " + self.filepath)
+                # mark = f.tell()
+                #
+                # print("Found flac cue")
+                #
+                # a = f.read(16*8)
+                # a = int.from_bytes(a, byteorder='big')
+                # print(("Catalog Number: " + str(a)))
+                #
+                #
+                # f.seek(mark)
+                # f.seek(z[2], 1)
 
             if z[1] == 6 and get_picture:
 
@@ -377,6 +396,7 @@ class Opus:
                     else:
                         print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                         print(b.decode("utf-8"))
+                        print("      In file: " + self.filepath)
 
                     break
 
