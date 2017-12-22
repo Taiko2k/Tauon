@@ -226,8 +226,9 @@ default_player = 1
 gapless_type1 = False
 running = True
 
+
 # Check if BASS is present and fall back to Gstreamer if not
-if system == 'linux' and not os.path.isfile(install_directory + '/lib/libbass.so'):
+if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-Gst' in sys.argv):
     print("BASS not found")
     try:
         import gi
@@ -267,7 +268,8 @@ broadcast_update_timer.set()
 core_timer = Timer()
 gallery_select_animate_timer = Timer()
 search_clear_timer = Timer()
-
+test_timer = Timer()
+vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
@@ -2750,21 +2752,21 @@ def player3():  # Gstreamer
                         print("Updating track duration")
                         pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
 
-        def about_to_finish(self, player):
-
-            print("End of track callback triggered")
-            self.play_state = 0
-            if pctl.playerCommand == 'gapless':
-                player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
-                pctl.playing_time = 0
-
-                time.sleep(0.05)
-                if pctl.start_time > 1:
-                    self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                        pctl.start_time * Gst.SECOND)
-
-                time.sleep(0.15)
-                self.check_duration()
+        # def about_to_finish(self, player):
+        #
+        #     print("End of track callback triggered")
+        #     self.play_state = 0
+        #     if pctl.playerCommand == 'gapless':
+        #         player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
+        #         pctl.playing_time = 0
+        #
+        #         time.sleep(0.05)
+        #         if pctl.start_time > 1:
+        #             self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+        #                                 pctl.start_time * Gst.SECOND)
+        #
+        #         time.sleep(0.15)
+        #         self.check_duration()
 
         def test11(self):
 
@@ -2793,7 +2795,7 @@ def player3():  # Gstreamer
                     time.sleep(0.15)
                     self.check_duration()
 
-                    self.pl.connect("about-to-finish", self.about_to_finish)
+                    # self.pl.connect("about-to-finish", self.about_to_finish)
 
                     player_timer.hit()
 
@@ -2845,13 +2847,6 @@ def player3():  # Gstreamer
                 if len(pctl.track_queue) > 0 and 3 > add_time > 0:
 
                     star_store.add(pctl.track_queue[pctl.queue_step], add_time)
-                    # index = pctl.track_queue[pctl.queue_step]
-                    # key = pctl.master_library[index].title + pctl.master_library[index].filename
-                    # if key in pctl.star_library:
-                    #     if 3 > add_time > 0:
-                    #         pctl.star_library[key] += add_time
-                    # else:
-                    #     pctl.star_library[key] = 0
 
             # if self.play_state == 3:   #  URL Mode
             #    # Progress main seek head
@@ -15838,7 +15833,7 @@ class StandardPlaylist:
 
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
-            1] - 55 and
+            1] - 55 and not playlist_panel and
                             gui.playlist_width + gui.playlist_left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
 
@@ -16712,7 +16707,7 @@ if system != 'windows':
         elif point.contents.y < 0 and point.contents.x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        elif point.contents.y < 4 and point.contents.x < window_size[0] - 40:
+        elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40:
             return SDL_HITTEST_RESIZE_TOP
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
@@ -17070,6 +17065,9 @@ def save_state():
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
+#SDL_StartTextInput()
+#SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
+
 while running:
     # bm.get('main')
 
@@ -17264,6 +17262,7 @@ while running:
             break
         elif event.type == SDL_TEXTEDITING:
             power += 5
+            print("edit text")
             editline = event.edit.text
             editline = editline.decode("utf-8", 'ignore')
             k_input = True
@@ -17438,7 +17437,8 @@ while running:
             input_text = event.text.text
             input_text = input_text.decode('utf-8')
             gui.update += 1
-            print(input_text)
+            # print(input_text)
+
         elif event.type == SDL_MOUSEWHEEL:
             k_input = True
             power += 6
@@ -17557,9 +17557,11 @@ while running:
         power = 500
         if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
             gui.spec2_timer.set()
+            #gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
             gui.level_update = True
+            vis_update = True
         else:
-            SDL_Delay(6)
+            SDL_Delay(5)
 
     if not running:
         break
@@ -19399,7 +19401,7 @@ while running:
                     x_rect = (x, ty, rh - 1, rh - 1)
                     fields.add(x_rect)
 
-                    if coll_point(mouse_position, x_rect):
+                    if coll_point(mouse_position, x_rect) and not tab_menu.active:
                         draw_text2((x + int(rh / 2), ty + int(rh / 2) - 10 * gui.scale, 2), "✖", [225, 50, 50, 255], 15, 300 * gui.scale)
                         if genre_box_click:
                             delete_playlist(i)
@@ -19433,7 +19435,7 @@ while running:
                     t_rect = (x + rh + 30 * gui.scale, ty, w - rh - 30 * gui.scale, rh - 1 * gui.scale)
                     fields.add(t_rect)
 
-                    if coll_point(mouse_position, t_rect):
+                    if coll_point(mouse_position, t_rect) and not tab_menu.active:
                         if not tab_menu.active:
                             draw.rect_r(t_rect, [30, 30, 30, 255], True)
                         gui.win_fore = [30, 30, 30, 255]
@@ -19570,7 +19572,6 @@ while running:
                     else:
                         draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
-
                     draw_text((x2, y1 - (3 * gui.scale)), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190 * gui.scale)
                               , colours.grey_blend_bg3(200), 15)
                     #y += 4
@@ -20534,7 +20535,17 @@ while running:
         if gui.vis == 3:
             # Scrolling spectrogram
 
-            if len(gui.spec2_buffers) > 0:
+            # if not vis_update:
+            #     print("No UPDATE " + str(random.randint(1,50)))
+            if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+                #gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
+                gui.spec2_timer.set()
+                vis_update = True
+
+
+            if len(gui.spec2_buffers) > 0 and vis_update:
+                vis_update = False
+                #print(test_timer.hit())
 
                 SDL_SetRenderTarget(renderer, gui.spec2_tex)
                 for i, value in enumerate(gui.spec2_buffers[0]):
@@ -20546,11 +20557,20 @@ while running:
                                  255], True)
 
                 del gui.spec2_buffers[0]
+
+
                 gui.spec2_position += 1
+
                 if gui.spec2_position > gui.spec2_w - 1:
                     gui.spec2_position = 0
 
+
                 SDL_SetRenderTarget(renderer, None)
+
+
+            #
+            # else:
+            #     print("animation stall" + str(random.randint(1, 10)))
 
             if prefs.spec2_scroll:
 
