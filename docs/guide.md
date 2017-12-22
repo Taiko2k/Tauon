@@ -1,17 +1,25 @@
-Basic usage manual. Updated for v2.6.2
+Tauon Music Box -  Manual
 ===========
 
-Player is based around disposable playlists, and makes the assumption that folders are albums. Searching, sorting and filtering is applied to individual playlists and not from the whole database.
+#### Updated for version 2.6.2
 
-For best experience you will need an organized and structured music library, ideally with each album in its own folder.
+### Preface
 
-If you have a large and varied music library I recommend keeping albums in respective folders based on genre in order to keep like albums together.
+Player is based around disposable playlists and the assumption that folders are albums.
+
+While playlists can be used as traditional 'playlists'. They are also intended to function as a kind of 'workspace' or to keep different 'libraries' separate.
+
+Thus, searching and sorting is applied to individual playlists and not from the whole database.
+
+For best experience you should have an organized and structured music library, ideally with each album in its own folder.
+
+If you have a large and varied music library, I recommend keeping albums in respective folders based on genre in order to keep like albums together.
 
 ### Importing Music
 
  - Drag and drop files and folders from your file manager.
 
-Tip: Try importing all your music to a single playlist to get started
+  Tip: Try importing all your music to a single playlist to get started
 
 ### Updating Library
 

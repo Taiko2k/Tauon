@@ -34,8 +34,8 @@ rename-tracks-default=%n. %a - %t%x
 rename-folder-default=%a - %b
 
 # --- Windows Fonts --------------------------------------------------------
-# Currently optimised for Meiryo (preferred) and Arial (fallback)
-# ! Changing fonts is not supported
+# Currently optimised for Arial
+# ! Changing fonts is not fully supported
 
 #windows-set-font-family=Arial
 #windows-font-use-bold=True
@@ -44,7 +44,7 @@ windows-font-star-offset=-1
 
 # --- Linux Fonts -----------------------------------------------------------
 # Currently optimised for Noto
-# ! Changing fonts is not supported
+# ! Changing fonts is not fully supported
 
 #linux-font=Noto Sans
 #linux-font-bold=Noto Sans Bold
