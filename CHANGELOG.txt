@@ -4,14 +4,18 @@ Changelog-------------------------------------
 v2.6.3
 
  - Added support for embedded CUE sheets in Flac files (Vorbis type)
- - Added 'Cycle Previous' function to picture menu
+ - Added 'Next' and 'Previous' function to picture menu
+ - Added config file option for logarithmic volume control
+ - Added function to sort albums by year per artist
  - Improved search to re-scan on playlist switch
  - Improved search to indicate when top/bottom of playlist reached
+ - Tweaked search box appearance
  - Fixed genre field not being imported from CUE sheets
  - Fixed search text entry lag when nothing was already found
  - Fixed tracks only view track highlight when column mode is on
  - Fixed crash when right clicking empty album art
  - Fixed playlist panel context menu not taking mouse focus
+ - Fixed 'fix mojibake' not immediately updating playlist
 
 v2.6.2
 
