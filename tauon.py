@@ -569,6 +569,8 @@ class Prefs:    # Used to hold any kind of settings
         self.show_gen = False
         self.show_lyrics_side = True
 
+        self.log_vol = False
+
         self.ui_scale = 1
 
 
@@ -1352,6 +1354,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 continue
             if p[0] == " " or p[0] == "#":
                 continue
+            if 'log-volume-scale=True' in p:
+                prefs.log_vol = True
             if 'tag-editor-path=' in p:
                 result = p.split('=')[1]
                 prefs.tag_editor_path = result
@@ -1653,6 +1657,8 @@ def tag_scan(nt):
                 nt.disc_number = str(tag.disc)
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
+                nt.genre = tag.genre
+                nt.date = tag.date
                 # if TXXX in tag:
                 #     print(tag[TXXX])
                 #     print(nt.fullpath)
@@ -2358,8 +2364,11 @@ class PlayerCtl:
 
         self.notify_update()
 
-
 pctl = PlayerCtl()
+
+
+def get_object(index):
+    return pctl.master_library[index]
 
 def update_title_do():
 
@@ -3176,6 +3185,8 @@ def player():   # BASS
         a += 1
 
     #BASS_SetConfig(0, 1000)
+    if prefs.log_vol:
+        BASS_SetConfig(7, True)
 
     player1_status = p_stopped
     player2_status = p_stopped
@@ -7907,8 +7918,8 @@ def cycle_offset_b():
     album_art_gen.cycle_offset_reverse(pctl.track_queue[pctl.queue_step])
 
 
-picture_menu.add("Cycle Next", cycle_offset, cycle_image_deco)
-picture_menu.add("Cycle Previous", cycle_offset_b, cycle_image_deco)
+picture_menu.add("Next", cycle_offset, cycle_image_deco)
+picture_menu.add("Previous", cycle_offset_b, cycle_image_deco)
 
 
 picture_menu.add('Extract Image', save_embed_img, extract_image_deco)
@@ -8414,6 +8425,66 @@ def standard_sort(pl):
     sort_path_pl(pl)
     sort_track_2(pl)
 
+
+
+def year_s(plt):
+
+    sorted_temp = sorted(plt, key=lambda x: x[1])
+    temp = []
+
+    for album in sorted_temp:
+        temp += album[0]
+    return temp
+
+
+def year_sort(pl):
+
+    playlist = pctl.multi_playlist[pl][2]
+    plt = []
+    pl2 = []
+    artist = ""
+
+    p = 0
+    while p < len(playlist):
+        if get_object(playlist[p]).artist != artist:
+            artist = get_object(playlist[p]).artist
+            pl2 += year_s(plt)
+            plt = []
+
+        if p > len(playlist) - 2:
+            break
+
+        album = []
+        on = get_object(playlist[p]).parent_folder_path
+        album.append(playlist[p])
+        t = 1
+
+        while t + p < len(playlist) - 1 and get_object(playlist[p + t]).parent_folder_path == on:
+                album.append(playlist[p + t])
+                t += 1
+
+        date = get_object(playlist[p]).date
+
+        # If date is xx-xx-yyyy format, just grab the year from the end
+        # so that the M and D don't interfere with the sorter
+        if len(date) > 4 and date[-4:].isnumeric():
+            date = date[-4:]
+
+        # If we don't have a date, see if we can grab one from the folder name
+        # following the format: (XXXX)
+        if date == "":
+            pfn = get_object(playlist[p]).parent_folder_name
+            if len(pfn) > 6 and pfn[-1] == ")" and pfn[-6] == "(":
+                date = pfn[-5:-1]
+
+        plt.append((album, date, artist + " " + get_object(playlist[p]).album))
+        p += len(album)
+        # print(album)
+
+    # We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
+    pctl.multi_playlist[pl][2][:] = pl2[:]
+
+
 if gui.scale == 2:
     delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
 else:
@@ -8430,8 +8501,9 @@ tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delet
 
 tab_menu.br()
 
-tab_menu.add_sub("Sort...", 133)
-tab_menu.add("Standard Sort", standard_sort, pass_ref=True)
+tab_menu.add_sub("Generate / Sort...", 133)
+tab_menu.add("Sort Filepath", standard_sort, pass_ref=True)
+tab_menu.add("Sort Year per Artist", year_sort, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 # tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
@@ -9986,6 +10058,9 @@ def recode(text, enc):
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
 
 def intel_moji(index):
+
+    gui.pl_update += 1
+    gui.update += 1
 
     track = pctl.master_library[index]
 
@@ -12463,7 +12538,6 @@ def get_album_info(position):
 
 
 def get_folder_list(index):
-    global pctl
     playlist = []
 
     for item in default_playlist:
@@ -12471,6 +12545,8 @@ def get_folder_list(index):
                         pctl.master_library[item].album == pctl.master_library[index].album:
             playlist.append(item)
     return list(set(playlist))
+
+
 
 
 def gal_jump_select(up=False, num=1):
@@ -18846,6 +18922,10 @@ while running:
 
                                 if playlist_position < 0:
                                     playlist_position = 0
+
+                                # if playlist_position == len(default_playlist):
+                                #     print("END")
+
                             elif mouse_position[1] < sbp:
                                 playlist_position -= 2
                             elif mouse_position[1] > sbp + sbl:
@@ -20212,10 +20292,12 @@ while running:
 
             if quick_search_mode is True:
 
-                rect2 = [0, window_size[1] - 80 * gui.scale, 420 * gui.scale, 25 * gui.scale]
-                rect = [0, window_size[1] - 120 * gui.scale, 420 * gui.scale, 65 * gui.scale]
+                rect2 = [0, window_size[1] - 85 * gui.scale, 420 * gui.scale, 25 * gui.scale]
+                rect = [0, window_size[1] - 125 * gui.scale, 420 * gui.scale, 65 * gui.scale]
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect2[0] = rect[0]
+
+                draw.rect_r((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), [200,90,2,255], True)
 
                 gui.win_fore = colours.sys_background_4
                 draw.rect_r(rect, colours.sys_background_4, True)
@@ -20231,11 +20313,11 @@ while running:
                     #     line = "last.fm loved tracks from user. Format: /love <username>"
                     # else:
                     line = "Folder filter mode. Enter path segment."
-                    draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(80), 10)
+                    draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(100), 11)
                 else:
                     line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                     draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
-                              colours.grey(80), 10)
+                              colours.grey(100), 11)
 
                 if len(pctl.track_queue) > 0:
 
@@ -20244,12 +20326,12 @@ while running:
                         input_text = ""
 
                 if gui.search_error:
-                    draw.rect_r([rect[0], rect[1], rect[2], 30 * gui.scale], [255, 0, 0, 45], True)
-                    gui.win_fore = alpha_blend([255,0,0,25], gui.win_fore)
+                    draw.rect_r([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255], True)
+                    gui.win_fore = [180, 40, 40, 255] #alpha_blend([255,0,0,25], gui.win_fore)
                 # if key_backspace_press:
                 #     gui.search_error = False
 
-                search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 4 * gui.scale, colours.grey(195), font=213)
+                search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 4 * gui.scale, colours.grey(230), font=213)
 
                 if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
                     key_return_press = False
