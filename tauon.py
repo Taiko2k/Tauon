@@ -1836,6 +1836,8 @@ class PlayerCtl:
         # print(select)
         # print(playing)
         # print(quiet)
+        # print(this_only)
+        # print(highlight)
         # print("--------")
 
         if len(self.track_queue) == 0:
@@ -1856,6 +1858,13 @@ class PlayerCtl:
         for i in range(len(self.multi_playlist[self.playlist_active][2])):
             if len(self.track_queue) > 0 and self.multi_playlist[self.playlist_active][2][i] == self.track_queue[
                 self.queue_step]:
+
+                if self.playlist_active == self.active_playlist_playing and self.track_queue[self.queue_step] == \
+                        self.multi_playlist[self.playlist_active][2][self.playlist_playing] and \
+                        i != self.playlist_playing:
+                    #continue
+                    i = self.playlist_playing
+
 
                 if select:
                     playlist_selected = i
@@ -3456,6 +3465,7 @@ def player():   # BASS
                 else:
                     pctl.tag_meta = ""
 
+                # print(pctl.tag_meta)
 
                 if BASS_ChannelIsActive(handle1) == 0:
                     pctl.playing_state = 0
@@ -19245,7 +19255,8 @@ while running:
                         # Draw track metadata
                         if pctl.playing_state > 0:
                             if len(pctl.track_queue) > 0:
-                                if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
+                                if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
+                                        and pctl.playing_state != 3:
                                     pass
 
                                 else:
