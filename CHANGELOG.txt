@@ -7,9 +7,11 @@ v2.6.3
  - Added 'Next' and 'Previous' function to picture menu
  - Added config file option for logarithmic volume control
  - Added function to sort albums by year per artist
+ - Added feedback animation for when dropping files on tabs
  - Improved search to re-scan on playlist switch
  - Improved search to indicate when top or bottom of playlist is reached
  - Tweaked search box appearance
+ - Tweaked alignment of 3 digit track indices
  - Fixed genre field not being imported from CUE sheets
  - Fixed search text entry lag when nothing was already found
  - Fixed tracks only view track highlight not matching width when column mode is on
@@ -18,6 +20,7 @@ v2.6.3
  - Fixed 'fix mojibake' not immediately updating playlist
  - Fixed radio metadata not showing if the previous track had lyrics
  - Fixed show playing jumping to wrong track when playlist has duplicates
+ - [Linux] Fixed application preventing monitor sleep
 
 v2.6.2
 

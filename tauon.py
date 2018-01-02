@@ -276,6 +276,8 @@ vis_update = False
 
 GUI_Mode = 1
 
+worker_save_state = False
+
 draw_border = False
 resize_mode = False
 
@@ -656,7 +658,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
-
         self.panelBY = 51 * self.scale
         self.panelY = 30 * self.scale
 
@@ -743,6 +744,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.image_downloading = False
         self.tc_cancel = False
         self.force_search = False
+
+        self.pl_pulse = False
 
 
 gui = GuiVar()
@@ -4678,6 +4681,7 @@ stats_gen = GStats()
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
+SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 
 SDL_Init(SDL_INIT_VIDEO)
 
@@ -14322,6 +14326,11 @@ class TopPanel:
             # Draw tab text
             draw_text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
 
+            # Drop pulse
+            if gui.pl_pulse and playlist_target == i:
+                    if tab_pulse.render(x, y + self.height - 2, tab_width, 2, r=200, g=130) is False:
+                        gui.pl_pulse = False
+
             # Drag to move playlist
             if tab_hit:
                 if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
@@ -14413,15 +14422,10 @@ class TopPanel:
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
 
-        # if hit and view_menu.active:
-        #     view_menu.active = False
-        #     x_menu.activate(position=(x + 12, self.height))
-        #     gui.render = 1
-
         if hit and view_box.active:
             view_box.active = False
             x_menu.activate(position=(x + 12, self.height))
-            gui.render = 1
+            gui.update += 1
 
         if hit and input.mouse_click:
             if x_menu.active:
@@ -14447,7 +14451,7 @@ class TopPanel:
             x_menu.active = False
             #view_menu.activate(position=(x + 12, self.height))
             view_box.activate(x - 80 * gui.scale)
-            gui.render = 1
+            gui.update += 1
 
         if hit and input.mouse_click:
             if view_box.active:
@@ -15241,9 +15245,17 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
 
-        draw_text((start_x,
-                   y), indexLine,
-                  alpha_mod(indexc, album_fade), gui.row_font_size)
+        if len(indexLine) > 2:
+
+            draw_text((start_x + 5 * gui.scale,
+                       y, 2), indexLine,
+                      alpha_mod(indexc, album_fade), gui.row_font_size)
+
+        else:
+
+            draw_text((start_x,
+                       y), indexLine,
+                      alpha_mod(indexc, album_fade), gui.row_font_size)
 
         draw_text2((start_x + 33 * gui.scale + artistoffset,
                     y),
@@ -16737,12 +16749,15 @@ class EdgePulse:
         self.timer.force_set(10)
         self.ani_duration = 0.5
 
-    def render(self, x, y, w, h):
+    def render(self, x, y, w, h, r=200, g=120, b=0):
         time = self.timer.get()
         if time < self.ani_duration:
             alpha = 255 - int(255 * (time / self.ani_duration))
-            draw.rect_r((x, y, w, h), [200, 120, 0, alpha], True)
+            draw.rect_r((x, y, w, h), [r, g, b, alpha], True)
             gui.update = 2
+            return True
+        else:
+            return False
 
     def pulse(self):
         self.timer.set()
@@ -16751,6 +16766,8 @@ class EdgePulse:
 edge_playlist = EdgePulse()
 bottom_playlist = EdgePulse()
 gallery_pulse_top = EdgePulse()
+tab_pulse = EdgePulse()
+
 
 
 def download_img(link, target_folder):
@@ -17151,12 +17168,13 @@ def save_state():
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
-#SDL_StartTextInput()
-#SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
+# SDL_StartTextInput()
+# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
+# SDL_EventState(SDL_SYSWMEVENT, 1)
+
 
 while running:
     # bm.get('main')
-
 
     if k_input:
         d_mouse_click = False
@@ -17222,7 +17240,6 @@ while running:
 
     if not mouse_down:
         k_input = False
-    #k_input = False
 
     clicked = False
     focused = False
@@ -17231,6 +17248,9 @@ while running:
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         #print(event.type)
+
+        # if event.type == SDL_SYSWMEVENT:
+        #      print(event.syswm.msg.contents) # Not implemented
 
         if event.type == SDL_DROPTEXT:
 
@@ -17307,6 +17327,9 @@ while running:
 
                     if x < i_x < x + wid:
                         playlist_target = w
+                        tab_pulse.pulse()
+                        gui.update += 1
+                        gui.pl_pulse = True
 
                         print("Direct drop")
                         break
@@ -18104,7 +18127,8 @@ while running:
                     break
     elif loading_in_progress is True:
         loading_in_progress = False
-        save_state()
+        #save_state()
+        worker_save_state = True
 
 
     if loaderCommand == LC_Done:
@@ -18119,6 +18143,10 @@ while running:
         # update layout
         # C-UL
         update_layout = False
+
+    if worker_save_state and not gui.pl_pulse:
+        save_state()
+        worker_save_state = False
 
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
@@ -19938,7 +19966,7 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
+                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
