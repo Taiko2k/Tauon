@@ -1833,7 +1833,7 @@ class PlayerCtl:
         else:
             return None
 
-    def show_current(self, select=True, playing=False, quiet=False, this_only=False, highlight=False):
+    def show_current(self, select=True, playing=False, quiet=False, this_only=False, highlight=False, index=None):
 
         # print("show------")
         # print(select)
@@ -1845,9 +1845,14 @@ class PlayerCtl:
 
         if len(self.track_queue) == 0:
             return 0
+
+        track_index = self.track_queue[self.queue_step]
+        if index is not None:
+            track_index = index
+
         # Switch to source playlist
         if self.playlist_active != self.active_playlist_playing and (
-                    self.track_queue[self.queue_step] not in self.multi_playlist[self.playlist_active][2]):
+                    track_index not in self.multi_playlist[self.playlist_active][2]):
             switch_playlist(self.active_playlist_playing)
 
         if gui.playlist_view_length < 1:
@@ -1859,10 +1864,9 @@ class PlayerCtl:
         global shift_selection
 
         for i in range(len(self.multi_playlist[self.playlist_active][2])):
-            if len(self.track_queue) > 0 and self.multi_playlist[self.playlist_active][2][i] == self.track_queue[
-                self.queue_step]:
+            if len(self.track_queue) > 0 and self.multi_playlist[self.playlist_active][2][i] == track_index:
 
-                if self.playlist_active == self.active_playlist_playing and self.track_queue[self.queue_step] == \
+                if self.playlist_active == self.active_playlist_playing and track_index == \
                         self.multi_playlist[self.playlist_active][2][self.playlist_playing] and \
                         i != self.playlist_playing:
                     #continue
@@ -1901,7 +1905,7 @@ class PlayerCtl:
         else:  # Search other all other playlists
             if not this_only:
                 for i, playlist in enumerate(self.multi_playlist):
-                    if self.track_queue[self.queue_step] in playlist[2]:
+                    if track_index in playlist[2]:
 
                         switch_playlist(i)
                         self.show_current(select, playing, quiet, this_only=True)
@@ -18062,7 +18066,11 @@ while running:
                 if key_period_press:
                     pctl.random_mode ^= True
                 if key_quote_hit:
-                    pctl.show_current()
+                    if key_ctrl_down:
+                        if pctl.queue_step > 1:
+                            pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
+                    else:
+                        pctl.show_current()
                 if key_comma_press:
                     pctl.repeat_mode ^= True
                 if key_col_hit:
@@ -20354,9 +20362,12 @@ while running:
                     line = "Folder filter mode. Enter path segment."
                     draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(100), 11)
                 else:
-                    line = "Search. Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
+                    line = "Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                     draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
                               colours.grey(100), 11)
+
+                    # draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
+                    #           colours.grey(90), 214)
 
                 if len(pctl.track_queue) > 0:
 
