@@ -29,9 +29,12 @@ Designed to be simple and streamlined while putting the user in control of their
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
+For __Ubuntu 17.10__, download and install latest deb package from [releases](https://github.com/Taiko2k/tauonmb/releases) section. (Experimental)
+
 For __Arch Linux__, install from the AUR:  
 
     $ yaourt -S tauon-music-box
+
 
 ___
 
