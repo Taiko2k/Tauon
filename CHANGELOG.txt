@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+v2.6.4
+
+ - Fixed stream recording incorrectly giving an error message
+ - Fixed folder mover not using album-artist as title
+ - Fixed crash when left clicking empty album art
+ - Fixed case in track info box where comment text would overlap thumbnail
+ - Fixed file not being importable after linked cue file
+
 v2.6.3
 
  - Added support for embedded CUE sheets in Flac files (Vorbis type)

@@ -1103,7 +1103,7 @@ try:
     playing_in_queue = save[8]
     default_playlist = save[9]
     playlist_playing = save[10]
-    cue_list = save[11]
+    # cue_list = save[11]
     radio_field_text = save[12]
     theme = save[13]
     folder_image_offsets = save[14]
@@ -3486,6 +3486,7 @@ def player():   # BASS
                 if pctl.record_stream and pctl.record_title != pctl.tag_meta:
 
                     print("Recording track split")
+                    BASS_ErrorGetCode()
                     BASS_Encode_Stop(rec_handle)
                     title = '{:%Y-%m-%d %H-%M-%S} - '.format(datetime.datetime.now()) + pctl.tag_meta
                     line = "--quality 3"
@@ -6582,6 +6583,8 @@ class AlbumArt():
 
         filepath = pctl.master_library[index].fullpath
         sources = self.get_sources(index)
+        if len(sources) == 0:
+            return 0
         parent_folder = os.path.dirname(filepath)
         # Find cached offset
         if parent_folder in folder_image_offsets:
@@ -9412,10 +9415,21 @@ def lightning_paste():
     for level in s:
         upper = c
         c = os.path.join(c, level)
-        print(c)
 
-        if match_track.artist in level:
+        t_artist = match_track.artist
+        ta_artist = match_track.album_artist
+
+        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
+            t_artist = t_artist.replace(c, '')
+
+        for g in r'[]/\;,><&*:%=+@!#^()|?^.':
+            ta_artist = ta_artist.replace(c, '')
+
+        if (len(t_artist) > 0 and t_artist in level) or \
+                (len(ta_artist) > 0 and ta_artist in level):
+
             print("found target artist level")
+            print(t_artist)
 
             print("Upper folder is: " + upper)
 
@@ -9449,7 +9463,8 @@ def lightning_paste():
                 return
 
 
-            artist_folder = os.path.join(upper, move_track.artist)
+
+            artist_folder = os.path.join(upper, artist)
 
             print("Target will be: " + artist_folder)
 
@@ -12456,6 +12471,7 @@ def worker1():
                 transcode_state = ""
                 gui.update += 1
             except:
+
                 transcode_state = "Transcode Error"
                 show_message("Encode failed.", 'warning', "An unknown error was encountered.")
                 gui.update += 1
@@ -17113,7 +17129,7 @@ def save_state():
             pctl.queue_step,
             default_playlist,
             pctl.playlist_playing,
-            cue_list,
+            None, # Was cue list
             radio_field.text,
             theme,
             folder_image_offsets,
@@ -18154,6 +18170,7 @@ while running:
 
     if worker_save_state and not gui.pl_pulse:
         save_state()
+        cue_list.clear()
         worker_save_state = False
 
     # -----------------------------------------------------
@@ -19653,7 +19670,7 @@ while running:
                 if len(tc.comment) > 0:
                     h += 22 * gui.scale
                     w += 25 * gui.scale
-                    if draw.text_calc(tc.comment, 12) > 335 * gui.scale:
+                    if draw.text_calc(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
                         h += 80 * gui.scale
                         w += 30 * gui.scale
                         comment_mode = 1
@@ -19663,6 +19680,7 @@ while running:
 
                 x1 = x + 18 * gui.scale
                 x2 = x + 98 * gui.scale
+
 
 
                 draw.rect((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
@@ -19921,6 +19939,7 @@ while running:
                     if len(tc.comment) > 0:
                         y1 += 20 * gui.scale
                         rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
+                        #draw.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
                         fields.add(rect)
                         if rect_in(rect):
                             draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
@@ -19932,12 +19951,23 @@ while running:
                             draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 212)
                         # draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 12)
 
-                        if (
-                                    'http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
+                        if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
                                 tc.comment, 12) < 335 * gui.scale:
+
+                            # line1, line2 = tc.comment.split("\n")
+                            #
+                            # if len(line2) > 0:
+                            #
+                            #     link_pa = draw_linked_text((x2, y1 + 13 * gui.scale), line1, colours.grey_blend_bg3(200), 12)
+                            #     link_rect2 = [x + 98 * gui.scale + link_pa[0], y1 + 13 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
+
                             link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(200), 12)
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
+
                             # draw.rect_r(link_rect, [255,0,0,30], True)
+                            print("THIS 1")
+                            print(link_pa)
+                            print(tc.comment)
                             fields.add(link_rect)
                             if coll_point(mouse_position, link_rect):
                                 if gui.cursor_mode == 0 and not input.mouse_click:
