@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.3"
+t_version = "v2.6.4"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -157,6 +157,8 @@ else:
 # ------------------------------------
 # Continue startup
 
+last_fm_enable = False
+
 import time
 import ctypes
 import random
@@ -167,7 +169,11 @@ import subprocess
 import urllib.parse
 import urllib.request
 import datetime
-import pylast
+try:
+    import pylast
+    last_fm_enable = True
+except:
+    print("PyLast moduel not found, last fm will be disabled.")
 import shutil
 import shlex
 import math
@@ -1933,11 +1939,12 @@ class PlayerCtl:
 
         return 0
 
-    def set_volume(self):
+    def set_volume(self, notify=True):
 
         self.playerCommand = 'volume'
         self.playerCommandReady = True
-        self.notify_update()
+        if notify:
+            self.notify_update()
 
     def revert(self):
 
@@ -2415,6 +2422,9 @@ class LastFMapi:
         global lfm_password
         global lfm_username
         global lfm_hash
+
+        if not last_fm_enable:
+            return False
 
         if self.connected is True:
             if m_notify:
@@ -3210,7 +3220,7 @@ def player():   # BASS
     handle1 = None
     handle2 = None
 
-    last_level = [0, 0]
+    # last_level = [0, 0]
 
     x = (ctypes.c_float * 512)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
@@ -3278,7 +3288,9 @@ def player():   # BASS
             if gui.vis == 2 or gui.vis == 3:
                 time.sleep(0.018)
             else:
+                # time.sleep(0.02)
                 time.sleep(0.02)
+
 
             if gui.turbo_next < 6 and pctl.playerCommandReady is not True:
 
@@ -3342,7 +3354,7 @@ def player():   # BASS
                     continue
 
                 #------------------------------------
-                if gui.vis == 3:
+                elif gui.vis == 3:
 
                     if gui.lowered:
                         continue
@@ -3401,18 +3413,18 @@ def player():   # BASS
 
                 # -----------------------------------
 
-                if gui.vis == 1:
+                elif gui.vis == 1:
 
                     if player1_status == p_playing:
                         gui.level = BASS_ChannelGetLevel(handle1)
                     elif player2_status == p_playing:
                         gui.level = BASS_ChannelGetLevel(handle2)
 
-                    ppp = (bin(gui.level)[2:].zfill(32))
-                    ppp1 = ppp[:16]
-                    ppp2 = ppp[16:]
-                    ppp1 = int(ppp1, 2)
-                    ppp2 = int(ppp2, 2)
+                    ppp2 = gui.level & 0x0000FFFF
+                    ppp1 = (gui.level & 0xFFFF0000) >> 16
+
+                    # print((ppp1, ppp2, " t: " + str(test_timer.hit())))
+
                     ppp1 = (ppp1 / 32768) * 11.1
                     ppp2 = (ppp2 / 32768) * 11.1
 
@@ -3426,18 +3438,23 @@ def player():   # BASS
                         gui.level_peak[0] -= 0.35
                         if gui.level_peak[0] < 0:
                             gui.level_peak[0] = 0
+                        #gui.time_passed -= 0.020
                         gui.time_passed -= 0.020
 
                     if ppp1 > gui.level_peak[0]:
                         gui.level_peak[0] = ppp1
                     if ppp2 > gui.level_peak[1]:
                         gui.level_peak[1] = ppp2
+
+                    # gui.level_peak[1] += random.randint(-100, 100) * 0.01
+                    # gui.level_peak[0] += random.randint(-100, 100) * 0.01
                     #
                     # if int(gui.level_peak[0]) != int(last_level[0]) or int(gui.level_peak[1]) != int(last_level[1]):
                     #     #gui.level_update = True
                     #     pass
                     gui.level_update = True
-                    last_level = copy.deepcopy(gui.level_peak)
+
+                    # last_level = copy.deepcopy(gui.level_peak)
                     #print("hit")
 
                     continue
@@ -4753,7 +4770,7 @@ SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 
-gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
@@ -4763,7 +4780,7 @@ gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_T
 
 SDL_SetRenderTarget(renderer, None)
 
-gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
 
 SDL_SetRenderTarget(renderer, gui.main_texture)
 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
@@ -11328,7 +11345,8 @@ lastfm_icon.yoff = 1
 lastfm_icon.colour = [249, 70, 70, 255]#[250, 60, 60, 255]
 lastfm_icon.colour_callback = lastfm_colour
 
-x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon)
+if last_fm_enable:
+    x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon)
 
 
 def exit_func():
@@ -14803,6 +14821,7 @@ class BottomBarType1:
 
         # Volume Bar --------------------------------------------------------
 
+
         if input.mouse_click and coll_point(mouse_position, (
             self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
             self.volume_bar_size[1])) or \
@@ -14810,7 +14829,8 @@ class BottomBarType1:
             clicked = True
 
             if input.mouse_click is True or self.volume_bar_being_dragged is True:
-                gui.update += 1
+                gui.update = 2
+
 
                 self.volume_bar_being_dragged = True
                 volgetX = mouse_position[0]
@@ -14821,16 +14841,22 @@ class BottomBarType1:
                 volgetX -= self.volume_bar_position[0] - right_offset
                 pctl.player_volume = volgetX / self.volume_bar_size[0] * 100
 
-
+                # gui.side_panel_size += 1
+                # gui.update_layout()
 
                 # time.sleep(0.018)
-                time.sleep(0.014)
+                #time.sleep(0.014)
+                time.sleep(0.02)
+                #SDL_Delay(50)
 
                 if mouse_down is False:
                     self.volume_bar_being_dragged = False
+                    pctl.player_volume = int(pctl.player_volume)
+                    pctl.set_volume(True)
 
-            pctl.player_volume = int(pctl.player_volume)
-            pctl.set_volume()
+            if mouse_down:
+                pctl.player_volume = int(pctl.player_volume)
+                pctl.set_volume(False)
 
 
         if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
@@ -17680,7 +17706,7 @@ while running:
 
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
-        power += 500
+        power = 500
 
     if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
         power = 500
@@ -18363,6 +18389,7 @@ while running:
             rect = (window_size[0] - gui.side_panel_size - 5 * gui.scale, gui.panelY, 12 * gui.scale, window_size[1] - 90 * gui.scale)
             fields.add(rect)
 
+
             if (coll_point(mouse_position,
                            (window_size[0] - gui.side_panel_size - 5 * gui.scale, gui.panelY, 12 * gui.scale,
                             window_size[1] - 90 * gui.scale)) or side_drag is True) \
@@ -18385,6 +18412,7 @@ while running:
 
 
                 #update_layout = True
+
 
                 if side_drag != True:
                     draw_sep_hl = True
@@ -20662,6 +20690,8 @@ while running:
         gui.update -= 1
         gui.present = True
 
+
+
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
 
@@ -21001,9 +21031,11 @@ while running:
             SDL_SetRenderTarget(renderer, None)
             SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
+
     if gui.present:
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderPresent(renderer)
+
         gui.present = False
 
     # -------------------------------------------------------------------------------------------
