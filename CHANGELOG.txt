@@ -3,11 +3,13 @@ Changelog-------------------------------------
 
 v2.6.4
 
+ - Added right click menu for canceling imports and transcodes
  - Fixed stream recording incorrectly giving an error message
  - Fixed folder mover not using album-artist as title
  - Fixed crash when left clicking empty album art
  - Fixed case in track info box where comment text would overlap thumbnail
  - Fixed file not being importable after linked cue file
+ - Fixed default row size setting mismatch
  - Allowed last.fm module to be optional
  - [Linux] Fixed dragging volume bar causing unstable rendering
 

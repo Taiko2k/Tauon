@@ -536,7 +536,7 @@ class Prefs:    # Used to hold any kind of settings
         self.gallery_scroll_wheel_px = 90
 
         self.playlist_font_size = 15
-        self.playlist_row_height = 19
+        self.playlist_row_height = 20
 
         self.tag_editor_name = ""
         self.tag_editor_target = ""
@@ -749,6 +749,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.playlist_left = 20 * self.scale
         self.image_downloading = False
         self.tc_cancel = False
+        self.im_cancel = False
         self.force_search = False
 
         self.pl_pulse = False
@@ -7748,7 +7749,19 @@ class Menu:
 # Create empty area menu
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
+cancel_menu = Menu(100)
 
+
+def cancel_import():
+
+    if transcode_list:
+        del transcode_list[1:]
+        gui.tc_cancel = True
+    if loading_in_progress:
+        gui.im_cancel = True
+
+
+cancel_menu.add("Cancel", cancel_import)
 
 def get_lyric_wiki(track_object):
 
@@ -12184,11 +12197,15 @@ def worker1():
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])):
                 pre_get(os.path.join(direc, items_in_dir[q]))
+            if gui.im_cancel:
+                return
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
                 if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
                     to_get += 1
                     gui.update += 1
+            if gui.im_cancel:
+                return
 
 
     def gets(direc):
@@ -12200,6 +12217,8 @@ def worker1():
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])):
                 gets(os.path.join(direc, items_in_dir[q]))
+            if gui.im_cancel:
+                return
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
@@ -12208,6 +12227,8 @@ def worker1():
 
                 elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", 'cue'}:
                     add_from_cue(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
+            if gui.im_cancel:
+                return
 
     def cache_paths():
         dic = {}
@@ -12529,6 +12550,17 @@ def worker1():
                     elif loaderCommand == LC_File:
                         loaded_pathes_cache = cache_paths()
                         add_file(order.target)
+
+                    if gui.im_cancel:
+                        gui.im_cancel = False
+                        to_get = 0
+                        to_got = 0
+                        load_orders.clear()
+                        added = []
+                        loaderCommand = LC_Done
+                        loaderCommandReady = False
+                        break
+
 
                     loaderCommand = LC_Done
                     # print('ADDED: ' + str(added))
@@ -14513,7 +14545,7 @@ class TopPanel:
         status = True
 
         if loading_in_progress:
-            text = "Importing...  " + str(to_got) + "/" + str(to_get)
+
             bg = colours.status_info_text
             if to_got == 'xspf':
                 text = "Importing XSPF playlist"
@@ -14521,6 +14553,10 @@ class TopPanel:
                 text = "Importing XSPF playlist. May take a while."
             elif to_got == 'ex':
                 text = "Extracting Archive..."
+            else:
+                text = "Importing...  " + str(to_got) + "/" + str(to_get)
+                if right_click and coll_point(mouse_position, [x, y, 180 * gui.scale, 18 * gui.scale]):
+                    cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
         elif move_in_progress:
             text = "File copy in progress..."
             bg = colours.status_info_text
@@ -14532,9 +14568,11 @@ class TopPanel:
             text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
             bg = [100, 200, 100, 255]
         elif transcode_list:
-            if key_ctrl_down and key_c_press:
-                del transcode_list[1:]
-                gui.tc_cancel = True
+            # if key_ctrl_down and key_c_press:
+            #     del transcode_list[1:]
+            #     gui.tc_cancel = True
+            if right_click and coll_point(mouse_position, [x, y, 180 * gui.scale, 18 * gui.scale]):
+                cancel_menu.activate()
 
             text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
             if len(transcode_list) > 1:
@@ -14554,8 +14592,8 @@ class TopPanel:
 
 
         if status:
-            draw_text((x, y), text, bg, 11)
-            x += draw.text_calc(text, 11)
+            x += draw_text((x, y), text, bg, 11)
+            # x += draw.text_calc(text, 11)
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
@@ -19992,10 +20030,6 @@ while running:
                             link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(200), 12)
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
-                            # draw.rect_r(link_rect, [255,0,0,30], True)
-                            print("THIS 1")
-                            print(link_pa)
-                            print(tc.comment)
                             fields.add(link_rect)
                             if coll_point(mouse_position, link_rect):
                                 if gui.cursor_mode == 0 and not input.mouse_click:
