@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v2.6.4
 
  - Added right click menu for canceling imports and transcodes
+ - Improved quick playing artist search function, moved shortcut to F4
  - Fixed stream recording incorrectly giving an error message
  - Fixed folder mover not using album-artist as title
  - Fixed crash when left clicking empty album art
