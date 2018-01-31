@@ -13162,7 +13162,7 @@ def toggle_enable_web(mode=0):
 
 def toggle_allow_remote(mode=0):
     if mode == 1:
-        return prefs.allow_remote ^ True
+        return prefs.allow_remote #^ True
     prefs.allow_remote ^= True
 
 def toggle_radio_lyrics(mode=0):
@@ -13466,7 +13466,7 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections*")
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Disable remote control")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_radio_lyrics, "Show lyrics on radio page")
         #y += 35
@@ -16851,6 +16851,7 @@ edge_playlist = EdgePulse()
 bottom_playlist = EdgePulse()
 gallery_pulse_top = EdgePulse()
 tab_pulse = EdgePulse()
+lyric_side_top_pulse = EdgePulse()
 
 
 
@@ -17957,7 +17958,12 @@ while running:
 
         if key_F4:
             #standard_size()
-            show_message("This function has been removed", 'info')
+            if len(pctl.track_queue) > 0:
+                quick_search_mode = True
+                search_text.text = ""
+                input_text = pctl.playing_object().artist
+
+            #show_message("This function has been removed", 'info')
 
         if key_ctrl_down and key_z_press:
             if pctl.playlist_backup != []:
@@ -19224,10 +19230,12 @@ while running:
                                 gui.update += 1
 
                             # Scroll area to scroll lyrics
-                            if mouse_wheel != 0:
+                            if mouse_wheel != 0 and prefs.show_lyrics_side and pctl.track_queue and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
                                 lyrics_ren_mini.lyrics_position += mouse_wheel * 21 * gui.scale
                                 if lyrics_ren_mini.lyrics_position > 0:
                                     lyrics_ren_mini.lyrics_position = 0
+                                    lyric_side_top_pulse.pulse()
+
 
                                 gui.update += 1
 
@@ -19249,6 +19257,8 @@ while running:
                                                    2000, 0)
                             draw.rect_r((gui.playlist_width + 31 * gui.scale, gui.panelY, window_size[0] - gui.playlist_width - 30 * gui.scale,
                                          gui.main_art_box[3] + 17), colours.side_panel_background, True)
+
+                        lyric_side_top_pulse.render(x, gui.main_art_box[1] + gui.main_art_box[3] + 5, window_size[0] - gui.playlist_width - 30 * gui.scale, 2)
 
                         # Input for album art
                         if len(pctl.track_queue) > 0:
@@ -20461,11 +20471,11 @@ while running:
                     # draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
                     #           colours.grey(90), 214)
 
-                if len(pctl.track_queue) > 0:
+                # if len(pctl.track_queue) > 0:
 
-                    if input_text == 'A':
-                        search_text.text = pctl.playing_object().artist
-                        input_text = ""
+                    # if input_text == 'A':
+                    #     search_text.text = pctl.playing_object().artist
+                    #     input_text = ""
 
                 if gui.search_error:
                     draw.rect_r([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255], True)
