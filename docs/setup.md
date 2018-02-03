@@ -41,7 +41,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
   - Python gi.repository/pygobject (Linux only)
   - Python pyCairo >= **1.10.1** (Linux only) https://github.com/pygobject/pycairo (refer to Ubuntu instructions below if you need to compile from source)
 
-3) Run using with python using ```python3 tauon.py```
+4) Run using with python using ```python3 tauon.py```
  
 
 
