@@ -5,7 +5,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
 
 ## Guide for manual setup on Linux (Generic)
 
-1) For convenience download and extract release zip package for Linux from the releases section, (i.e Tauon.Music.Box.v2.X.X.Linux.Bass.64bit.zip) which includes the follow dependencies not included in the git repo:
+1) For convenience download and extract release zip package for Linux from the releases section, (i.e Tauon.Music.Box.v2.X.X.Linux.Bass.64bit.zip) which includes the following dependencies not included in the git repo:
 
  - *Bass*
  - *BassEnc*
