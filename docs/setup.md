@@ -33,7 +33,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
   - SDL >= **2.0.5**
   - SDL_Image
   - Python Pillow
-  - Python Stagger https://github.com/hsoft/hsaudiotag (Download or clone hsaudiotag https://github.com/hsoft/hsaudiotag and copy inner "hsaudiotag" folder to extracted tauon-music-box folder)
+  - Python Stagger (Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder)
   - Python hsaudiotag https://github.com/hsoft/hsaudiotag (Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder)
   - Python pylast (optional starting Tauon Music Box v2.6.4)
   - Noto Fonts and Notos Fonts Emoji (Linux only)
