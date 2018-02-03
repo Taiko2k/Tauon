@@ -31,6 +31,11 @@ For __Windows__, download latest installer from [releases](https://github.com/Ta
 
 For __Ubuntu 17.10__, download and install latest deb package from [releases](https://github.com/Taiko2k/tauonmb/releases) section. (Experimental)
 
+For __Ubuntu 16.04__, download and install deb package [tauonmusicbox_2.6.4.-1_16.04.deb](https://github.com/Taiko2k/tauonmb/releases/download/v2.6.3/tauonmusicbox_2.6.4.-1_16.04.deb). (Experimental). You can install deb files using the command line:
+
+    $ sudo dpkg -i tauonmusicbox_2.6.4.-1_16.04.deb
+    $ sudo apt-get install -f
+
 For __Arch Linux__, install from the AUR:  
 
     $ yaourt -S tauon-music-box
