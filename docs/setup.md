@@ -16,7 +16,7 @@ Italicized entires are included in the releasae zip package.
  - Python Stagger
  - Python hsaudiotag
  - Python pylast
- - Noto Fonts and Notos Fonts Emoji (reccomended, linux only)
+ - Noto Fonts and Notos Fonts Emoji (Linux only)
  - Python flask (optional)
  - Python gi.repository/pygobject (Linux only)
  - Python pyCairo >= **1.10.1** (Linux only)
