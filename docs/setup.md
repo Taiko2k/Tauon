@@ -3,25 +3,10 @@
 
 Program should work after running setup installer exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
 
-## Dependencies for manual setup
+## Setup for manual setup on Linux (Generic)
 
-Take special note of the entires with bolded version numbers meaning they specifically require the newer versions of those libraries.
+1) For convenience download and extract release zip package for Linux from the releases section, (i.e Tauon.Music.Box.v2.X.X.Linux.Bass.64bit.zip) which includes the follow dependencies not included in the git repo:
 
- - Python 3 >= 3.5
- - SDL >= **2.0.5**
- - SDL_Image
- - Python Pillow
- - Python Stagger
- - Python hsaudiotag
- - Python pylast
- - Noto Fonts and Notos Fonts Emoji (Linux only)
- - Python flask (optional)
- - Python gi.repository/pygobject (Linux only)
- - Python pyCairo >= **1.10.1** (Linux only)
- - Python Win32api  (Windows only)
- 
- The following additional dependencies are included in the releasae zip package for linux (see releases).
- 
  - *Bass*
  - *BassEnc*
  - *BassMix*
@@ -39,6 +24,28 @@ Take special note of the entires with bolded version numbers meaning they specif
  - *Python pysdl2*
  - *Python pyxhook* (Linux only, optional)
  - *Python pylyrics*
+ 
+ 2) (Optional) Overwrite extracted folder with contents of git repo to get latest dev version (may be unstable)
+
+ 3) Install the following main required dependencies. Take special note of the entires with bolded version numbers meaning they specifically require the newer versions of those libraries. You may have to compile them manually if your distro does not provide them.
+
+Note python dependencies
+
+ - Python 3 >= 3.5
+ - SDL >= **2.0.5**
+ - SDL_Image
+ - Python Pillow
+ - Python Stagger https://github.com/hsoft/hsaudiotag (Download or clone hsaudiotag https://github.com/hsoft/hsaudiotag and copy inner "hsaudiotag" folder to extracted tauon-music-box folder)
+ - Python hsaudiotag https://github.com/hsoft/hsaudiotag (Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder)
+ - Python pylast (optional starting Tauon Music Box v2.6.4)
+ - Noto Fonts and Notos Fonts Emoji (Linux only)
+ - Python flask (optional)
+ - Python gi.repository/pygobject (Linux only)
+ - Python pyCairo >= **1.10.1** (Linux only) https://github.com/pygobject/pycairo (refer to Ubuntu instructions below if you need to compile from source)
+
+3) Run using with python using ```python3 tauon.py```
+ 
+
 
 ## Development setup on Arch Linux
 
