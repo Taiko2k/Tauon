@@ -7,8 +7,6 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
 
 Take special note of the entires with bolded version numbers meaning they specifically require the newer versions of those libraries.
 
-Italicized entires are included in the releasae zip package.
-
  - Python 3 >= 3.5
  - SDL >= **2.0.5**
  - SDL_Image
@@ -21,6 +19,9 @@ Italicized entires are included in the releasae zip package.
  - Python gi.repository/pygobject (Linux only)
  - Python pyCairo >= **1.10.1** (Linux only)
  - Python Win32api  (Windows only)
+ 
+ The following additional dependencies are included in the releasae zip package for linux (see releases).
+ 
  - *Bass*
  - *BassEnc*
  - *BassMix*
