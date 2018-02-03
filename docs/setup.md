@@ -27,7 +27,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
  
  2) (Optional) Overwrite extracted folder with contents of git repo to get latest dev version (may be unstable)
 
- 3) Install the following main required dependencies. Take special note of the entires with bolded version numbers meaning they specifically require the newer versions of those libraries. You may have to compile them manually if your distro does not provide them. Note python dependencies
+ 3) Install the following main required dependencies. Take special note of the entires with bolded version numbers meaning newer versions of those libraries are specifically required. You may have to compile them manually if your distro does not provide them.
 
   - Python 3 >= 3.5
   - SDL >= **2.0.5**
