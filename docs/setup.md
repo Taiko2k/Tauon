@@ -25,7 +25,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
  - *Python pyxhook* (Linux only, optional)
  - *Python pylyrics*
  
- 2) (Optional) Overwrite extracted folder with contents of git repo to get latest dev version (may be unstable)
+ 2) (Optional) Overwrite extracted folder with contents of this git repo to get latest dev version (may be unstable)
 
  3) Install the following main required dependencies. Take special note of the entires with bolded version numbers meaning newer versions of those libraries are specifically required. You may have to compile them manually if your distro does not provide them.
 
