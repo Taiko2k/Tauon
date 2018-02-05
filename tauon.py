@@ -2259,7 +2259,7 @@ class PlayerCtl:
                     self.playing_time = 0
 
 
-    def advance(self, rr=False, quiet=False, gapless=False):
+    def advance(self, rr=False, quiet=False, gapless=False, inplace=False):
 
         # Temporary Workaround
         quick_d_timer.set()
@@ -2283,6 +2283,9 @@ class PlayerCtl:
 
         gui.update_spec = 0
 
+        old = self.queue_step
+
+        # Force queue (middle click on track)
         if len(self.force_queue) > 0:
 
             target_index = self.force_queue[0][0]
@@ -2315,6 +2318,11 @@ class PlayerCtl:
                 self.play_target()
                 # if album_mode:
                 #     goto_album(self.playlist_playing)
+
+            if inplace and self.queue_step > 1:
+                del self.track_queue[old]
+                self.queue_step -= 1
+
 
         # If not random mode, Step down 1 on the playlist
         elif self.random_mode is False and len(self.playing_playlist()) > 0:
@@ -2383,6 +2391,8 @@ class PlayerCtl:
 
         # if album_mode:
         #     goto_album(self.playlist_playing)
+
+
 
         self.render_playlist()
 
@@ -3944,12 +3954,13 @@ def player():   # BASS
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = True
                 else:
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = False
+                    old_index = pctl.master_library[pctl.track_queue[pctl.queue_step]].index
                     gui.pl_update = 1
                     gui.update += 1
                     print("Missing File: " + pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath)
                     pctl.playerCommandReady = False
                     pctl.playing_state = 0
-                    pctl.advance()
+                    pctl.advance(inplace=True)
                     continue
 
                 if pctl.join_broadcast and pctl.broadcast_active:
@@ -9520,6 +9531,7 @@ def lightning_paste():
 
 
             move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
+
             break
     else:
         show_message("Could not find a folder with the artist's name to match level at.")
@@ -9534,7 +9546,11 @@ def lightning_paste():
 def paste(playlist=None, position=None):
 
     if gui.lightning_copy:
-        lightning_paste()
+        try:
+            lightning_paste()
+        except OSError as e:
+            show_message("An error was encountered", 'warning', str(e))
+
         return
     # items = None
     # if system == 'windows':
@@ -9748,6 +9764,10 @@ def delete_folder(index):
         if old.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
             show_message("Woah, careful there!", 'warning', "I don't think we should delete that folder.")
             return
+
+    if directory_size(old) > 1500000000:
+        show_message("Folder size safety limit reached! (1.5GB)", 'warning', old)
+        return
 
     try:
 
@@ -14862,7 +14882,7 @@ class BottomBarType1:
 
         if input.mouse_click and coll_point(mouse_position, (
             self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
-            self.volume_bar_size[1])) or \
+            self.volume_bar_size[1] + 4)) or \
                         self.volume_bar_being_dragged is True:
             clicked = True
 
