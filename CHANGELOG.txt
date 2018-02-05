@@ -5,6 +5,9 @@ v2.6.4
 
  - Added right click menu for canceling imports and transcodes
  - Improved quick playing artist search function, moved shortcut to F4
+ - Improved error handling for folder mover function
+ - Added size limit for folder delete function
+ - Fixed not being able to step further back in random mode if previous track were missing
  - Fixed stream recording incorrectly giving an error message
  - Fixed folder mover not using album-artist as title
  - Fixed crash when left clicking empty album art
