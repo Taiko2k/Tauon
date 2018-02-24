@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v2.6.5
+
+ - Added background fade effect for opening settings box
+ - [Windows] Fixed non ascii device names causing playback to fail
+
+
 v2.6.4
 
  - Added right click menu for canceling imports and transcodes
@@ -14,6 +20,7 @@ v2.6.4
  - Fixed case in track info box where comment text would overlap thumbnail
  - Fixed file not being importable after linked cue file
  - Fixed default row size setting mismatch
+ - Fixed track info box WAV tag having bad rendering
  - Allowed last.fm module to be optional
  - [Linux] Fixed dragging volume bar causing unstable rendering
 

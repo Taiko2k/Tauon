@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.4"
+t_version = "v2.6.5"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -3208,7 +3208,7 @@ def player():   # BASS
     while True:
         if not BASS_GetDeviceInfo(a, d_info):
             break
-        name = d_info.name.decode('utf-8')
+        name = d_info.name.decode('utf-8', 'ignore')
         flags = d_info.flags
         enabled = BASS_DEVICE_ENABLED & flags
         default = BASS_DEVICE_DEFAULT & flags
@@ -3954,7 +3954,6 @@ def player():   # BASS
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = True
                 else:
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].found = False
-                    old_index = pctl.master_library[pctl.track_queue[pctl.queue_step]].index
                     gui.pl_update = 1
                     gui.update += 1
                     print("Missing File: " + pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath)
@@ -10965,6 +10964,7 @@ def toggle_album_mode(force_on=False):
 
 
 def activate_info_box():
+    fader.rise()
     pref_box.enabled = True
 
 
@@ -14069,6 +14069,7 @@ class Over:
 
         if key_esc_press:
             self.enabled = False
+            fader.fall()
 
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
@@ -16845,6 +16846,45 @@ class GalleryJumper:
 gallery_jumper = GalleryJumper()
 
 
+class Fader:
+
+    def __init__(self):
+
+        self.timer = Timer()
+        self.timer.force_set(10)
+        self.ani_duration = 0.3
+        self.state = 0
+        self.a = 0
+
+    def render(self):
+
+        if self.state == 0:
+            t = self.timer.hit()
+            self.a -= t / self.ani_duration
+            self.a = max(0, self.a)
+        if self.state == 1:
+            t = self.timer.hit()
+            self.a += t / self.ani_duration
+            self.a = min(1, self.a)
+
+        rect = [0, 0, window_size[0], window_size[1]]
+        draw.rect_r(rect, [0, 0, 0, int(110 * self.a)], True)
+
+        if not (self.a == 0 or self.a == 1):
+            gui.update += 1
+
+    def rise(self):
+
+        self.state = 1
+        self.timer.hit()
+
+    def fall(self):
+
+        self.state = 0
+        self.timer.hit()
+
+fader = Fader()
+
 class EdgePulse:
 
     def __init__(self):
@@ -18093,8 +18133,10 @@ while running:
             else:
                 if input.mouse_click:
                     pref_box.enabled = False
+                    fader.fall()
                 if right_click:
                     pref_box.enabled = False
+                    fader.fall()
                 if pref_box.lock is False:
                     pass
 
@@ -19821,7 +19863,7 @@ while running:
                     ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
 
                     line = pctl.master_library[r_menu_index].file_ext
-                    ex_colour = [255, 255, 255, 130]
+                    ex_colour = [130, 130, 130, 255]
 
                     if line in format_colours:
                         ex_colour = format_colours[line]
@@ -20080,9 +20122,10 @@ while running:
                         else:
                             draw_text((x2, y1), tc.comment, colours.grey_blend_bg3(200), 12)
 
+            fader.render()
             if pref_box.enabled:
-                rect = [0, 0, window_size[0], window_size[1]]
-                draw.rect_r(rect, [0, 0, 0, 90], True)
+                # rect = [0, 0, window_size[0], window_size[1]]
+                # draw.rect_r(rect, [0, 0, 0, 90], True)
                 pref_box.render()
 
             if gui.rename_folder_box:
@@ -20730,14 +20773,15 @@ while running:
             else:
                 top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
 
-            corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
+            if not fullscreen:
 
-            colour = [30, 30, 30, 255]
-            draw.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
+                corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
-            draw.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
-            draw.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
-            draw.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
+                colour = [30, 30, 30, 255]
+                draw.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
+                draw.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
+                draw.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
+                draw.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
 
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
