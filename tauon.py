@@ -3286,7 +3286,7 @@ def player():   # BASS
             BASS_FXSetParameters(volfx, ctypes.pointer(volparam))
 
             print("Using ReplayGain of " + str(gain))
-            pctl.active_replaygain = gain
+            pctl.active_replaygain = round(gain, 2)
 
 
     while True:
