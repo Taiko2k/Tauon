@@ -1,9 +1,17 @@
 
 Changelog-------------------------------------
 
-v2.6.5
+v2.7.0
 
+ - Removed gallery only layout
+ - Removed album art plus tracks layout
+ - Removed 'scan rym db' function
+ - Combined main and view menu
+ - Changed lyrics showcase button to function as a toggle
+ - Changed view buttons to not close on click
+ - Added 'return' button to lyrics showcase view
  - Added background fade effect for opening settings box
+ - Fixed replay-gain db indicator not being truncated
  - [Windows] Fixed non ascii device names causing playback to fail
 
 
