@@ -536,7 +536,7 @@ class Prefs:    # Used to hold any kind of settings
         self.gallery_scroll_wheel_px = 90
 
         self.playlist_font_size = 15
-        self.playlist_row_height = 20
+        self.playlist_row_height = 22
 
         self.tag_editor_name = ""
         self.tag_editor_target = ""
@@ -580,6 +580,7 @@ class Prefs:    # Used to hold any kind of settings
         self.log_vol = False
 
         self.ui_scale = 1
+        self.last_device = ""
 
 
 prefs = Prefs()
@@ -596,7 +597,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.window_id = 0
         self.update = 2  # UPDATE
-        self.turbo = False
+        self.turbo = True
         self.turbo_next = 0
         self.pl_update = 1
         self.lowered = False
@@ -755,6 +756,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.pl_pulse = False
 
         self.view_name = "S"
+        self.restart_album_mode = False
 
 gui = GuiVar()
 
@@ -1202,14 +1204,19 @@ try:
         prefs.auto_del_zip = save[61]
     if save[62] is not None:
         gui.level_meter_colour_mode = save[62]
-    if save[63] is not None:
-        prefs.show_lyrics_side = save[63]
-
+    if save[64] is not None:
+        prefs.show_lyrics_side = save[64]
+    if save[65] is not None:
+        prefs.last_device = save[65]
+    if save[66] is not None:
+        gui.restart_album_mode = save[66]
+    if save[67] is not None:
+        album_playlist_width = save[67]
     state_file.close()
     del save
 
-
 except:
+
     print('Error loading save file')
     if os.path.exists(cache_directory):
         print("clearing old cache")
@@ -3197,14 +3204,16 @@ def player():   # BASS
         BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
 
 
-    BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
-    if BassInitSuccess == True:
-        print("Bass library initialised")
 
+    bass_ready = False
+
+
+    BASS_CONFIG_DEV_DEFAULT = 36
+    BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, True)
 
     a = 1
-    if system == "linux":
-        a = 2
+    # if system == "linux":
+    #     a = 1
     d_info = BASS_DEVICEINFO()
     while True:
         if not BASS_GetDeviceInfo(a, d_info):
@@ -3215,6 +3224,14 @@ def player():   # BASS
         default = BASS_DEVICE_DEFAULT & flags
         current = BASS_DEVICE_INIT & flags
 
+        #print("--- " + prefs.last_device)
+
+        if name != "" and name == prefs.last_device:
+            BassInitSuccess = BASS_Init(a, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
+            pctl.set_device = a
+            print("Set output device as: " + name)
+            bass_ready = True
+
         # print((name, enabled, default, current))
         if current > 0:
             pctl.set_device = a
@@ -3222,7 +3239,12 @@ def player():   # BASS
         # print(d_info.name.decode('utf-8'))
         a += 1
 
-    #BASS_SetConfig(0, 1000)
+    if not bass_ready:
+        BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
+        print("Using defualt sound device")
+    if BassInitSuccess == True:
+        print("Bass library initialised")
+
     if prefs.log_vol:
         BASS_SetConfig(7, True)
 
@@ -13431,6 +13453,10 @@ class Over:
                     pctl.playerCommandReady = True
                     pctl.playerCommand = "setdev"
 
+                    prefs.last_device = item[0]
+                    print("---set setting: "+ prefs.last_device)
+
+
                 line = trunc_line(item[0], 10, 245 * gui.scale)
                 if pctl.set_device == item[4]: #item[3] > 0:
                     draw_text((x, y), line, [140, 140, 140, 255], 10)
@@ -13722,7 +13748,7 @@ class Over:
 
         if system == "linux":
             y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_scale, "2x UI scaling")
+            self.toggle_square(x, y, toggle_scale, "2x UI scaling (broken)")
 
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
@@ -17522,6 +17548,10 @@ def save_state():
     view_prefs['dd-index'] = dd_index
     view_prefs['append-date'] = prefs.append_date
 
+    if album_mode:
+        global album_playlist_width
+        album_playlist_width = gui.playlist_width
+
     save = [pctl.master_library,
             master_count,
             pctl.playlist_playing,
@@ -17587,8 +17617,14 @@ def save_state():
             gui.level_meter_colour_mode,
             prefs.ui_scale,
             prefs.show_lyrics_side,
+            prefs.last_device,
+            album_mode,
+            album_playlist_width,
             None,
-            None]
+            None
+            ]
+
+    #print(prefs.last_device + "-----")
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
@@ -17596,6 +17632,8 @@ def save_state():
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 # SDL_EventState(SDL_SYSWMEVENT, 1)
 
+if gui.restart_album_mode:
+    toggle_album_mode(True)
 
 while running:
     # bm.get('main')
