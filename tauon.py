@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.6.5"
+t_version = "v2.7.0"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -581,6 +581,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.ui_scale = 1
         self.last_device = ""
+
+        self.transcode_opus_as = False
 
 
 prefs = Prefs()
@@ -1212,6 +1214,10 @@ try:
         gui.restart_album_mode = save[66]
     if save[67] is not None:
         album_playlist_width = save[67]
+    if save[68] is not None:
+        prefs.transcode_opus_as = save[68]
+
+
     state_file.close()
     del save
 
@@ -3627,9 +3633,18 @@ def player():   # BASS
 
             elif pctl.playerCommand == "setdev":
 
+                BASS_Free()
+                player1_status = p_stopped
+                player2_status = p_stopped
+                pctl.playing_state = 0
                 print("Changeing output device")
                 print(BASS_Init(pctl.set_device, 48000, BASS_DEVICE_DMIX, gui.window_id, 0))
-                print(BASS_SetDevice(pctl.set_device))
+                result = BASS_SetDevice(pctl.set_device)
+                print(result)
+                if result is False:
+                    show_message("Device init failed. Try again maybe?", 'warning')
+                else:
+                    show_message("Set device", 'done', prefs.last_device)
 
             # if pctl.playerCommand == "monitor":
             #     pass
@@ -11683,6 +11698,8 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
                     startupinfo=startupinfo)
 
     print("done")
+    if codec == "opus" and prefs.transcode_opus_as:
+        codec = 'ogg'
 
     print(target_out)
     if manual_name is None:
@@ -12547,7 +12564,8 @@ def worker1():
                                 #print(command)
 
                     output_dir = prefs.encoder_output + folder_name + "/"
-                    album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
+                    #album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
+                    album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
 
                 del transcode_list[0]
                 transcode_state = ""
@@ -13296,6 +13314,14 @@ def switch_opus(mode=0):
             return False
     prefs.transcode_codec = 'opus'
 
+def switch_opus_ogg(mode=0):
+    if mode == 1:
+        if prefs.transcode_opus_as:
+            return True
+        else:
+            return False
+    prefs.transcode_opus_as ^= True
+
 
 def switch_flac(mode=0):
     if mode == 1:
@@ -13450,12 +13476,9 @@ class Over:
 
                 if self.click and coll_point(mouse_position, rect):
                     pctl.set_device = item[4]
+                    prefs.last_device = item[0]
                     pctl.playerCommandReady = True
                     pctl.playerCommand = "setdev"
-
-                    prefs.last_device = item[0]
-                    print("---set setting: "+ prefs.last_device)
-
 
                 line = trunc_line(item[0], 10, 245 * gui.scale)
                 if pctl.set_device == item[4]: #item[3] > 0:
@@ -13685,6 +13708,8 @@ class Over:
         self.toggle_square(x, y, switch_flac, "FLAC")
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_opus, "OPUS")
+        if  prefs.transcode_codec == 'opus':
+            self.toggle_square(x + 250 * gui.scale, y, switch_opus_ogg, "Save opus as .ogg extension")
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
@@ -17620,7 +17645,7 @@ def save_state():
             prefs.last_device,
             album_mode,
             album_playlist_width,
-            None,
+            prefs.transcode_opus_as,
             None
             ]
 
