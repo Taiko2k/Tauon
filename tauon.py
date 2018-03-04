@@ -13511,7 +13511,6 @@ class Over:
             link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
             fields.add(link_rect)
 
-
             link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 21 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
             link_rect2 = [x + 280 * gui.scale, y + 21 * gui.scale, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
