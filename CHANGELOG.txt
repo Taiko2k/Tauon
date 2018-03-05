@@ -6,19 +6,22 @@ v2.7.0
  - Added transcode option 'Save opus as ogg file extension' (for Android compatibility)
  - Added 'return' button to lyrics showcase view
  - Added background fade effect for opening settings box
+ - Added new error icon to some error messages
  - Removed 'gallery only' view layout
  - Removed 'album art plus tracks' view layout
  - Removed 'scan rym db' function
  - Combined main and view menu
  - Changed lyrics showcase button to function as a toggle
  - Changed view buttons to not close on click
- - Changed transcode image thumbnail names to "cover.jpg" only (for improved app compatibility)
+ - Changed transcode image thumbnail names to "cover.jpg" only (for improved compatibility)
  - Set new defaults: visualiser enabled, row size larger
  - Improved error feedback for changing output devices
  - Fixed replay-gain db indicator not being truncated
  - Fixed bug with side panel lyric setting
  - Fixed output sound device not being remembered on restart
  - Fixed gallery setting not being remembered on restart
+ - Fixed remove embed function causing crash
+ - Fixed showcase view not showing radio metadata, not showing title when missing metadata
  - [Windows] Fixed non ascii device names causing playback to fail
 
 
