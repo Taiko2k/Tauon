@@ -3637,12 +3637,13 @@ def player():   # BASS
                 player1_status = p_stopped
                 player2_status = p_stopped
                 pctl.playing_state = 0
-                print("Changeing output device")
+                pctl.playing_time = 0
+                print("Changing output device")
                 print(BASS_Init(pctl.set_device, 48000, BASS_DEVICE_DMIX, gui.window_id, 0))
                 result = BASS_SetDevice(pctl.set_device)
                 print(result)
                 if result is False:
-                    show_message("Device init failed. Try again maybe?", 'warning')
+                    show_message("Device init failed. Try again maybe?", 'error')
                 else:
                     show_message("Set device", 'done', prefs.last_device)
 
@@ -7424,11 +7425,13 @@ if gui.scale == 2:
     message_warning_icon = LoadImageAsset("/gui/2x/warning.png")
     message_tick_icon = LoadImageAsset("/gui/2x/done.png")
     message_arrow_icon = LoadImageAsset("/gui/2x/ext.png")
+    message_error_icon = LoadImageAsset("/gui/2x/error.png")
 else:
     message_info_icon = LoadImageAsset("/gui/notice.png")
     message_warning_icon = LoadImageAsset("/gui/warning.png")
     message_tick_icon = LoadImageAsset("/gui/done.png")
     message_arrow_icon = LoadImageAsset("/gui/ext.png")
+    message_error_icon = LoadImageAsset("/gui/error.png")
 
 
 class ToolTip:
@@ -7956,7 +7959,7 @@ def save_embed_img():
 
 
     except:
-        show_message("Image save error.", "warning", "A mysterious error occurred")
+        show_message("Image save error.", "error", "A mysterious error occurred")
 
 picture_menu = Menu(160)
 
@@ -8065,7 +8068,7 @@ def remove_embed_picture(index):
                 removed += 1
 
     if removed == 0:
-        show_message("Image removal failed.", "warning")
+        show_message("Image removal failed.", "error")
         return
     elif removed == 1:
         show_message("Deleted embedded picture from file", 'done')
@@ -9586,7 +9589,7 @@ def paste(playlist=None, position=None):
         try:
             lightning_paste()
         except OSError as e:
-            show_message("An error was encountered", 'warning', str(e))
+            show_message("An error was encountered", 'error', str(e))
 
         return
     # items = None
@@ -9792,7 +9795,7 @@ def delete_folder(index):
         return
 
     if not os.path.exists(old):
-        show_message("Error deleting folder. The folder seems to be missing.", 'warning', "It's gone! just gone!")
+        show_message("Error deleting folder. The folder seems to be missing.", 'error', "It's gone! just gone!")
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
@@ -9823,14 +9826,14 @@ def delete_folder(index):
         if not os.path.exists(old):
             show_message("Folder deleted.", 'done', old)
         else:
-            show_message("Hmm, its still there", 'warning', old)
+            show_message("Hmm, its still there", 'error', old)
 
         if album_mode:
             prep_gal()
             reload_albums()
 
     except:
-        show_message("Unable to comply.", 'warning', "Could not delete folder. Try check permissions.")
+        show_message("Unable to comply.", 'error', "Could not delete folder. Try check permissions.")
 
 
 def rename_parent(index, template):
@@ -9912,7 +9915,7 @@ def rename_parent(index, template):
             print(new_parent_path)
         except:
 
-            show_message("Rename Failed!", 'warning' "Something went wrong, sorry.")
+            show_message("Rename Failed!", 'error' "Something went wrong, sorry.")
             return
 
     show_message("Folder renamed.", 'done', "Renamed to: " + new)
@@ -9980,7 +9983,7 @@ def move_folder_up(index, do=False):
         os.rename(os.path.join(upper_folder, "RMTEMP000"), os.path.join(upper_folder, folder_name))
 
     except Exception as e:
-        show_message("System Error!", 'warning', str(e))
+        show_message("System Error!", 'error', str(e))
 
     # Fix any other tracks paths that contain the old path
     old = track.parent_folder_path
@@ -10048,6 +10051,7 @@ def reset_play_count(index):
 
 def get_like_folder(index):
     tracks = []
+
     for k in default_playlist:
 
         if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
@@ -12336,7 +12340,7 @@ def worker1():
                     shutil.rmtree(job[0])
 
                 except:
-                    show_message("Something has gone horribly wrong!.", 'warning', "Could not delete " + job[0])
+                    show_message("Something has gone horribly wrong!.", 'error', "Could not delete " + job[0])
                     gui.update += 1
                     move_in_progress = False
                     return
@@ -12573,7 +12577,7 @@ def worker1():
             except:
 
                 transcode_state = "Transcode Error"
-                show_message("Encode failed.", 'warning', "An unknown error was encountered.")
+                show_message("Encode failed.", 'error', "An unknown error was encountered.")
                 gui.update += 1
                 time.sleep(2)
                 del transcode_list[0]
@@ -14345,8 +14349,13 @@ class TopPanel:
 
         right_space_es = p_text_len + offset
 
-        if loading_in_progress or len(transcode_list) > 0 or pctl.broadcast_active:
+        if pctl.broadcast_active:
             left_space_es += 300
+
+        elif loading_in_progress or len(transcode_list) > 0:
+            left_space_es += 180
+
+
 
         if window_size[0] - right_space_es - left_space_es < 190:
             draw_alt = True
@@ -15034,18 +15043,19 @@ class BottomBarType1:
                        11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
+            line = ""
             if pctl.playing_state < 3:
                 title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
                 artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
 
-                line = ""
+
                 if artist != "":
                     line += artist
                 if title != "":
                     if line != "":
                         line += "  -  "
                     line += title
-            else:
+            elif not gui.combo_mode:
                 line = pctl.tag_meta
 
             x = self.seek_bar_position[0] + 1
@@ -16429,78 +16439,98 @@ class Showcase:
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10
 
-        if len(pctl.track_queue) < 1:
-            return
-
-        # if draw.button("Return", 20, gui.panelY + 5, bg=colours.grey(30)):
-        #     pass
-
-        if gui.force_showcase_index >= 0:
-            if draw.button("Show playing", 25, gui.panelY + 20, bg=colours.grey(30)):
-                gui.force_showcase_index = -1
-
-
-        if gui.force_showcase_index >= 0:
-            index = gui.force_showcase_index
-            track = pctl.master_library[index]
-        else:
-            index = pctl.track_queue[pctl.queue_step]
-            track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
-
         if draw.button("Return", 25, window_size[1] - gui.panelBY - 40, bg=colours.grey(30)):
             switch_showcase()
             if view_box.was_album:
                 force_album_view()
 
-        # if self.artist_mode:
-        #
-        #     if track.artist == self.lastfm_artist:
-        #
-        #         return
-        #
-        # else:
-        album_art_gen.display(index, (x, y), (box, box))
-        if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
-            album_art_gen.cycle_offset(index)
-
-        if track.lyrics == "":
+        if pctl.playing_state == 3:
 
             w = window_size[0] - (x + box) - 30
-            x = int(x + box + (window_size[0] - x - box) / 2)
+            x = int((window_size[0]) / 2)
 
             y = int(window_size[1] / 2) - 60
-            draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
+            draw_text2((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
 
-            y += 45
-            draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
 
         else:
-            x += box + int(window_size[0] * 0.15) + 20
 
-            #y = 80
-            x -= 100
-            w = window_size[0] - x - 30
+            if len(pctl.track_queue) < 1:
+                return
+
+            # if draw.button("Return", 20, gui.panelY + 5, bg=colours.grey(30)):
+            #     pass
+
+            if gui.force_showcase_index >= 0:
+                if draw.button("Show playing", 25, gui.panelY + 20, bg=colours.grey(30)):
+                    gui.force_showcase_index = -1
 
 
-            if key_up_press:
-                lyrics_ren.lyrics_position += 35
-            if key_down_press:
-                lyrics_ren.lyrics_position -= 35
+            if gui.force_showcase_index >= 0:
+                index = gui.force_showcase_index
+                track = pctl.master_library[index]
+            else:
+                index = pctl.track_queue[pctl.queue_step]
+                track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
-            lyrics_ren.render(index,
-                              x,
-                              y + lyrics_ren.lyrics_position,
-                              w,
-                              int(window_size[1] - 100),
-                              0)
 
-        if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-            if mouse_wheel != 0:
-                lyrics_ren.lyrics_position += mouse_wheel * 35
-            if right_click:
-                # track = pctl.playing_object()
-                if track != None:
-                    showcase_menu.activate(track)
+
+            # if self.artist_mode:
+            #
+            #     if track.artist == self.lastfm_artist:
+            #
+            #         return
+            #
+            # else:
+            album_art_gen.display(index, (x, y), (box, box))
+            if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
+                album_art_gen.cycle_offset(index)
+
+            if track.lyrics == "":
+
+                w = window_size[0] - (x + box) - 30
+                # x = int(x + box + (window_size[0] - x - box) / 2)
+                x = int((window_size[0]) / 2)
+                y = int(window_size[1] / 2) - 60
+
+                if track.artist == "" and track.title == "":
+
+                    draw_text2((x, y, 2), track.filename, colours.side_bar_line1, 216, w)
+
+                else:
+
+                    draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
+
+                    y += 45
+                    draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
+
+            else:
+                x += box + int(window_size[0] * 0.15) + 20
+
+                #y = 80
+                x -= 100
+                w = window_size[0] - x - 30
+
+
+                if key_up_press:
+                    lyrics_ren.lyrics_position += 35
+                if key_down_press:
+                    lyrics_ren.lyrics_position -= 35
+
+                lyrics_ren.render(index,
+                                  x,
+                                  y + lyrics_ren.lyrics_position,
+                                  w,
+                                  int(window_size[1] - 100),
+                                  0)
+
+            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                if mouse_wheel != 0:
+                    lyrics_ren.lyrics_position += mouse_wheel * 35
+                if right_click:
+                    # track = pctl.playing_object()
+                    if track != None:
+                        showcase_menu.activate(track)
 
 
 showcase = Showcase()
@@ -17347,7 +17377,7 @@ print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(s
 if default_player == 2:
     print("Using GStreamer as fallback. Some functions disabled")
 elif default_player == 0:
-    show_message("ERROR: No backend found", 'warning')
+    show_message("ERROR: No backend found", 'error')
 
 total = 0
 if gui.set_load_old is False:
@@ -18379,7 +18409,7 @@ while running:
 
         if key_F7:
 
-            show_message("You don't even know what this button could have done.", 'warning')
+            show_message("Test error message", 'error', "Just a test, no need to worry.")
 
             gallery_jumper.calculate()
 
@@ -19700,7 +19730,7 @@ while running:
                         fields.add(rect)
 
                         if right_click and coll_point(mouse_position, rect):
-                            picture_menu.activate()
+                            picture_menu.activate(in_reference=pctl.playing_object().index)
 
                         # Draw picture metadata
                         if showc is not None and coll_point(mouse_position, rect) \
@@ -20825,6 +20855,8 @@ while running:
                     message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
                 elif gui.message_mode == 'arrow':
                     message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                elif gui.message_mode == 'error':
+                    message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
 
                 if len(gui.message_subtext) > 0:
                     draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(190), 15)
