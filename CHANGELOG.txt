@@ -22,6 +22,7 @@ v2.7.0
  - Fixed gallery setting not being remembered on restart
  - Fixed remove embed function causing crash
  - Fixed showcase view not showing radio metadata, not showing title when missing metadata
+ - Fixed cursor flicker on column drag
  - [Windows] Fixed non ascii device names causing playback to fail
 
 
