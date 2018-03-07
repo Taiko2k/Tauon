@@ -16443,6 +16443,7 @@ class Showcase:
             switch_showcase()
             if view_box.was_album:
                 force_album_view()
+            return 0
 
         if pctl.playing_state == 3:
 
@@ -16474,14 +16475,6 @@ class Showcase:
                 track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
 
-
-            # if self.artist_mode:
-            #
-            #     if track.artist == self.lastfm_artist:
-            #
-            #         return
-            #
-            # else:
             album_art_gen.display(index, (x, y), (box, box))
             if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
                 album_art_gen.cycle_offset(index)
@@ -16489,8 +16482,8 @@ class Showcase:
             if track.lyrics == "":
 
                 w = window_size[0] - (x + box) - 30
-                # x = int(x + box + (window_size[0] - x - box) / 2)
-                x = int((window_size[0]) / 2)
+                x = int(x + box + (window_size[0] - x - box) / 2)
+                #x = int((window_size[0]) / 2)
                 y = int(window_size[1] / 2) - 60
 
                 if track.artist == "" and track.title == "":
@@ -16536,53 +16529,6 @@ class Showcase:
 showcase = Showcase()
 
 
-class AlbumCard:
-
-    def __init__(self):
-        self.x = 100
-        self.y = 100
-        self.w = 350
-        self.h = 500
-
-        self.selected = 0
-        self.active = False
-
-    def activate(self, selected, x, y):
-
-        self.selected = selected
-        self.x = x
-        self.y = y
-        self.active = True
-
-    def render(self):
-
-        if not self.active:
-            return
-
-        bg = colours.sys_background_2
-
-        tracks = get_album_info(self.selected)
-        print(tracks)
-
-        self.h = 25 + (16 * len(tracks[1]))
-
-        c = colours.gallery_highlight
-        c = [c[1], c[2], c[0], c[3]]
-        draw.rect((self.x - 4 * gui.scale, self.y - 4 * gui.scale), (self.w + 8 * gui.scale, self.h + 8 * gui.scale),
-                  c, True)
-
-        #draw.rect_r([self.x - 2, self.y, self.w, self.h], bg, True)
-        draw.rect_r([self.x, self.y, self.w, self.h], bg, True)
-
-        y = self.y + 5
-
-        for i, item in enumerate(tracks[1]):
-            line_render(pctl.master_library[default_playlist[item]], item, y + (16 * i), False, 255, self.x + 10, self.w - 20)
-
-
-
-album_card = AlbumCard()
-
 class ColourPulse:
 
     def __init__(self, hue):
@@ -16596,8 +16542,6 @@ class ColourPulse:
 
         self.max_sat = 0.75
         self.max_lumi = 0.45
-
-
 
     def get(self, hit, on):
 
@@ -16624,15 +16568,11 @@ class ColourPulse:
             if in_time < ani_time:
                 self.out_timer.force_set(ani_time - in_time)
 
-
         lumi = 0
         sat = 0
 
-
         in_time = self.in_timer.get()
         out_time = self.out_timer.get()
-
-
 
         if self.active:
             if in_time < ani_time:
@@ -16664,227 +16604,6 @@ class ColourPulse:
         rgb = colorsys.hls_to_rgb(self.hue, lumi, sat)
         return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
 
-# class ViewBox:
-#
-#     def __init__(self):
-#         self.x = 0
-#         self.y = gui.panelY
-#         self.w = 270 * gui.scale
-#         self.h = 95 * gui.scale
-#         self.active = False
-#
-#         self.border = 3 * gui.scale
-#
-#         if gui.scale == 1:
-#             self.tracks_img = WhiteModImageAsset("/gui/tracks.png")
-#             self.side_img = WhiteModImageAsset("/gui/tracks+side.png")
-#             self.gallery1_img = WhiteModImageAsset("/gui/gallery1.png")
-#             self.combo_img = WhiteModImageAsset("/gui/combo.png")
-#             self.lyrics_img = WhiteModImageAsset("/gui/lyrics.png")
-#             self.gallery2_img = WhiteModImageAsset("/gui/gallery2.png")
-#             self.col_img = WhiteModImageAsset("/gui/col.png")
-#         else:
-#             self.tracks_img = WhiteModImageAsset("/gui/2x/tracks.png")
-#             self.side_img = WhiteModImageAsset("/gui/2x/tracks+side.png")
-#             self.gallery1_img = WhiteModImageAsset("/gui/2x/gallery1.png")
-#             self.combo_img = WhiteModImageAsset("/gui/2x/combo.png")
-#             self.lyrics_img = WhiteModImageAsset("/gui/2x/lyrics.png")
-#             self.gallery2_img = WhiteModImageAsset("/gui/2x/gallery2.png")
-#             self.col_img = WhiteModImageAsset("/gui/2x/col.png")
-#
-#         # self.tracks_colour = ColourPulse(0.0)
-#         # self.side_colour = ColourPulse(0.1)
-#         # self.gallery1_colour = ColourPulse(0.2)
-#         # self.combo_colour = ColourPulse(0.3)
-#         # self.lyrics_colour = ColourPulse(0.5)
-#         # self.gallery2_colour = ColourPulse(0.7)
-#
-#         self.tracks_colour = ColourPulse(0.5)
-#         self.side_colour = ColourPulse(0.55)
-#         self.gallery1_colour = ColourPulse(0.6)
-#         self.combo_colour = ColourPulse(0.75)
-#         self.lyrics_colour = ColourPulse(0.7)
-#         self.gallery2_colour = ColourPulse(0.65)
-#         self.col_colour = ColourPulse(0.14)
-#
-#         self.on_colour = [255, 190, 50, 255]
-#         self.over_colour = [255, 190, 50, 255]
-#         self.off_colour = colours.grey(40)
-#
-#     def activate(self, x):
-#         self.x = x
-#         self.active = True
-#
-#         self.tracks_colour.out_timer.force_set(10)
-#         self.side_colour.out_timer.force_set(10)
-#         self.gallery1_colour.out_timer.force_set(10)
-#         self.combo_colour.out_timer.force_set(10)
-#         self.lyrics_colour.out_timer.force_set(10)
-#         self.gallery2_colour.out_timer.force_set(10)
-#         self.col_colour.out_timer.force_set(10)
-#
-#         self.tracks_colour.active = False
-#         self.side_colour.active = False
-#         self.gallery1_colour.active = False
-#         self.combo_colour.active = False
-#         self.lyrics_colour.active = False
-#         self.gallery2_colour.active = False
-#         self.col_colour.active = False
-#
-#         gui.level_2_click = False
-#         gui.update = 2
-#
-#     def button(self, x, y, asset, test, colour_get=None, name="Unknown"):
-#
-#         on = test()
-#         rect = [x - 8 * gui.scale,
-#                 y - 8 * gui.scale,
-#                 asset.w + 16 * gui.scale,
-#                 asset.h + 16 * gui.scale]
-#         fields.add(rect)
-#
-#         if on:
-#             colour = self.on_colour
-#
-#         else:
-#             colour = self.off_colour
-#
-#
-#         fun = None
-#         col = False
-#         if coll_point(mouse_position, rect):
-#
-#             tool_tip.test(x + asset.w + 10 * gui.scale, y - 15 * gui.scale, name)
-#
-#             col = True
-#             if gui.level_2_click:
-#                 fun = test
-#             if colour_get is None:
-#                 colour = self.over_colour
-#
-#         if colour_get is not None:
-#             colour = colour_get.get(col, on)
-#
-#         asset.render(x, y, colour)
-#
-#         return fun
-#
-#     def tracks(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is False and \
-#                    gui.combo_mode is False and \
-#                    side_panel_enable is False
-#         view_tracks()
-#
-#     def side(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is False and \
-#                    gui.combo_mode is False and \
-#                    side_panel_enable is True
-#         view_standard_meta()
-#
-#     def gallery1(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is True and \
-#                    gui.combo_mode is False and \
-#                    gui.show_playlist is True
-#         force_album_view()
-#
-#     def combo(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is False and \
-#                    gui.combo_mode is True and \
-#                    gui.showcase_mode is False
-#         toggle_combo_view()
-#
-#     def lyrics(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is False and \
-#                    gui.combo_mode is True and \
-#                    gui.showcase_mode is True
-#         switch_showcase()
-#
-#     def gallery2(self, hit=False):
-#
-#         if hit is False:
-#             return album_mode is True and \
-#                    gui.combo_mode is False and \
-#                    gui.show_playlist is False
-#         gallery_only_view()
-#
-#     def col(self, hit=False):
-#
-#         if hit is False:
-#             return gui.set_mode
-#         toggle_library_mode()
-#
-#     def render(self):
-#
-#         rect = [self.x, self.y, self.w, self.h]
-#
-#         if gui.level_2_click and not coll_point(mouse_position, rect):
-#             self.active = False
-#             gui.level_2_click = False
-#             return
-#
-#         draw.rect_r(rect, colours.menu_background, True)
-#
-#         draw.rect_r([self.x, self.y, self.border, self.h], colours.grey(30), True)
-#         draw.rect_r([self.x, self.y + self.h, self.w, self.border], colours.grey(30), True)
-#         draw.rect_r([self.x + self.w, self.y, self.border, self.h], colours.grey(30), True)
-#
-#         x = self.x + 20 * gui.scale
-#         y = self.y + 15 * gui.scale
-#
-#         func = None
-#
-#         test = self.button(x, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only")
-#         if test is not None:
-#             func = test
-#
-#         x += 60 * gui.scale
-#         test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Side bar")
-#         if test is not None:
-#             func = test
-#
-#         x += 65 * gui.scale
-#         test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Tracks + Gallery")
-#         if test is not None:
-#             func = test
-#
-#         x = self.x + 21 * gui.scale
-#         y = self.y + 56 * gui.scale
-#
-#         test = self.button(x, y, self.combo_img, self.combo, self.combo_colour, "Art + Tracks")
-#         if test is not None:
-#             func = test
-#
-#         x += 63 * gui.scale
-#         test = self.button(x, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Art + Lyrics")
-#         if test is not None:
-#             func = test
-#
-#         x += 68 * gui.scale
-#         test = self.button(x, y, self.gallery2_img, self.gallery2, self.gallery2_colour, "Gallery only")
-#         if test is not None:
-#             func = test
-#
-#         test = self.button(x + 70 * gui.scale, y - 23 * gui.scale, self.col_img, self.col, self.col_colour, "Toggle columns")
-#         if test is not None:
-#             func = test
-#
-#         if func is not None:
-#             func(True)
-#             self.active = False
-#
-#         gui.level_2_click = False
-#
-# view_box = ViewBox()
 class ViewBox:
 
     def __init__(self):
@@ -16912,13 +16631,6 @@ class ViewBox:
             self.lyrics_img = WhiteModImageAsset("/gui/2x/lyrics.png")
             self.gallery2_img = WhiteModImageAsset("/gui/2x/gallery2.png")
             self.col_img = WhiteModImageAsset("/gui/2x/col.png")
-
-        # self.tracks_colour = ColourPulse(0.0)
-        # self.side_colour = ColourPulse(0.1)
-        # self.gallery1_colour = ColourPulse(0.2)
-        # self.combo_colour = ColourPulse(0.3)
-        # self.lyrics_colour = ColourPulse(0.5)
-        # self.gallery2_colour = ColourPulse(0.7)
 
         self.tracks_colour = ColourPulse(0.5)
         self.side_colour = ColourPulse(0.55)
@@ -17019,13 +16731,6 @@ class ViewBox:
             return album_mode is True and gui.show_playlist is True
         force_album_view()
 
-    # def combo(self, hit=False):
-    #
-    #     if hit is False:
-    #         return album_mode is False and \
-    #                gui.combo_mode is True and \
-    #                gui.showcase_mode is False
-    #     toggle_combo_view()
 
     def lyrics(self, hit=False):
 
@@ -17068,20 +16773,7 @@ class ViewBox:
         if x_menu.clicked:
             gui.level_2_click = True
 
-        # if gui.level_2_click and not coll_point(mouse_position, rect):
-        #     self.active = False
-        #     gui.level_2_click = False
-        #     return
 
-
-        # draw.rect_r(rect, colours.menu_background, True)
-        #
-        # draw.rect_r([self.x, self.y, self.border, self.h], colours.grey(30), True)
-        # draw.rect_r([self.x, self.y + self.h, self.w, self.border], colours.grey(30), True)
-        # draw.rect_r([self.x + self.w, self.y, self.border, self.h], colours.grey(30), True)
-        #
-        # x = self.x + 20 * gui.scale
-        # y = self.y + 15 * gui.scale
         x = self.x - 40
 
         vr = [x, gui.panelY, 52, 220]
@@ -17115,14 +16807,6 @@ class ViewBox:
         if test is not None:
             func = test
 
-        # test = self.button(x, y, self.combo_img, self.combo, self.combo_colour, "Art + Tracks")
-        # if test is not None:
-        #     func = test
-
-        # x += 68 * gui.scale
-        # test = self.button(x, y, self.gallery2_img, self.gallery2, self.gallery2_colour, "Gallery only")
-        # if test is not None:
-        #     func = test
 
         y += 40 * gui.scale
 
@@ -17138,6 +16822,7 @@ class ViewBox:
         gui.level_2_click = False
 
 view_box = ViewBox()
+
 
 class GalleryJumper:
 
@@ -18411,7 +18096,7 @@ while running:
 
             show_message("Test error message", 'error', "Just a test, no need to worry.")
 
-            gallery_jumper.calculate()
+            # gallery_jumper.calculate()
 
             # colours.level_1_bg = [0, 6, 30, 255]
             # colours.level_2_bg = [0, 6, 30, 255]
@@ -18435,8 +18120,6 @@ while running:
             # gl = list(reversed(sorted(gl, key=lambda x: x[1])))
             # print(gl)
             # print(sum(x[1] for x in gl))
-
-
 
             key_F7 = False
 
@@ -18847,7 +18530,6 @@ while running:
         SDL_RenderClear(renderer)
         SDL_SetRenderTarget(renderer, gui.main_texture)
 
-
         # perf_timer.set()
 
         fields.clear()
@@ -18887,9 +18569,7 @@ while running:
                     and not view_box.active \
                     and not folder_menu.active:
 
-
                 #update_layout = True
-
 
                 if side_drag != True:
                     draw_sep_hl = True
@@ -18901,7 +18581,7 @@ while running:
                     gui.cursor_mode = 2
                     SDL_SetCursor(cursor_shift)
 
-            elif not side_drag and gui.cursor_mode == 2:
+            elif not side_drag and gui.cursor_mode == 2 and not mouse_down:
                 SDL_SetCursor(cursor_standard)
                 gui.cursor_mode = 0
 
@@ -18999,9 +18679,7 @@ while running:
                         album_pos_px = -55
                         gallery_pulse_top.pulse()
 
-
                 gallery_pulse_top.render(gui.playlist_width + 30 * gui.scale, gui.panelY + 1, window_size[0] - gui.playlist_width + 30 * gui.scale, 2)
-
 
                 # ----
                 rect = (
@@ -19286,8 +18964,8 @@ while running:
 
                 draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
-                if gui.show_playlist is False:
-                    album_card.render()
+                # if gui.show_playlist is False:
+                #     album_card.render()
 
                 # if gui.album_tab_mode:
                 #     draw.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
@@ -19413,7 +19091,7 @@ while running:
                             gui.cursor_mode = 2
                             SDL_SetCursor(cursor_shift)
                     else:
-                        if gui.cursor_mode == 2 and mouse_position[1] < 50:
+                        if gui.cursor_mode == 2 and mouse_position[1] < 50 and not mouse_down:
                             SDL_SetCursor(cursor_standard)
                             gui.cursor_mode = 0
 
