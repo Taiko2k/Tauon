@@ -17388,7 +17388,7 @@ while running:
         mouse_up = False
         key_return_press = False
         key_ralt = False
-        # key_space_press = False
+        key_space_press = False
         key_down_press = False
         key_up_press = False
         key_right_press = False
@@ -17630,8 +17630,8 @@ while running:
             gui.update += 2
             if event.key.keysym.sym == SDLK_RETURN and len(editline) == 0:
                 key_return_press = True
-            # elif event.key.keysym.sym == SDLK_SPACE:
-            #     key_space_press = True
+            elif event.key.keysym.sym == SDLK_SPACE:
+                key_space_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
@@ -18005,6 +18005,8 @@ while running:
             if key_del:
                 del_selected()
 
+
+
             # Arrow keys to change playlist
             if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down:
                 gui.pl_update = 1
@@ -18053,6 +18055,13 @@ while running:
             if key_v_press and key_ctrl_down:
                 gui.pl_update = 1
                 paste()
+
+            if key_space_press:
+                if pctl.playing_state == 0:
+                    pctl.play()
+                else:
+                    pctl.pause()
+
 
         if key_return_press and (gui.rename_folder_box or renamebox or radiobox):
             key_return_press = False
@@ -18754,14 +18763,17 @@ while running:
                                 if album_dex[album_on] > len(default_playlist):
                                     break
 
+                                extend = 0
+                                if gui.gallery_show_text:
+                                    extend = 40
+
                                 if coll_point(mouse_position, (
-                                        x, y, album_mode_art_size, album_mode_art_size + 40 * gui.scale)) and gui.panelY < mouse_position[
+                                        x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)) and gui.panelY < mouse_position[
                                     1] < window_size[1] - gui.panelBY:
 
                                     info = get_album_info(album_dex[album_on])
 
                                     if input.mouse_click:
-
 
                                         if info[0] == 1 and pctl.playing_state == 2:
                                             pctl.play()
