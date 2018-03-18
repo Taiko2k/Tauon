@@ -3,8 +3,10 @@ Changelog-------------------------------------
 
 v2.7.1
 
+ - Added time display mode for total album time
  - Bound space-bar key to pause and resume playback
- - Fixed gallery hit boxes when titles are disabled
+ - Tweaked device selection UI feedback
+ - Fixed gallery hit boxes being too large when titles are disabled
 
 
 v2.7.0

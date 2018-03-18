@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.7.0"
+t_version = "v2.7.1"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -759,6 +759,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.view_name = "S"
         self.restart_album_mode = False
+
+        self.dtm3_index = -1
+        self.dtm3_cum = 0
+        self.dtm3_total = 0
 
 gui = GuiVar()
 
@@ -13475,7 +13479,7 @@ class Over:
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
-                rect = (x, y - 1 * gui.scale, 245 * gui.scale, 14)
+                rect = (x, y + 2 * gui.scale, 245 * gui.scale, 13)
                 #draw.rect_r(rect, [0, 255, 0, 50])
 
                 if self.click and coll_point(mouse_position, rect):
@@ -13485,10 +13489,17 @@ class Over:
                     pctl.playerCommand = "setdev"
 
                 line = trunc_line(item[0], 10, 245 * gui.scale)
+
+                fields.add(rect)
+
                 if pctl.set_device == item[4]: #item[3] > 0:
-                    draw_text((x, y), line, [140, 140, 140, 255], 10)
+                    draw_text((x, y), line, [150, 150, 150, 255], 10)
+                    draw_text((x - 12 * gui.scale, y - 2 * gui.scale), ">", [140, 140, 140, 255], 213)
                 else:
-                    draw_text((x, y), line, [100, 100, 100, 255], 10)
+                    if coll_point(mouse_position, rect):
+                        draw_text((x, y), line, [150, 150, 150, 255], 10)
+                    else:
+                        draw_text((x, y), line, [100, 100, 100, 255], 10)
                 y += 14 * gui.scale
 
             y = self.box_y + 225 * gui.scale
@@ -14823,7 +14834,7 @@ class BottomBarType1:
 
 
         right_offset = 0
-        if gui.display_time_mode == 2:
+        if gui.display_time_mode >= 2:
             right_offset = 22 * gui.scale
 
         # if gui.light_mode:
@@ -15087,7 +15098,7 @@ class BottomBarType1:
         # draw.rect_r(rect, [255, 0, 0, 40], True)
         if input.mouse_click and rect_in(rect):
             gui.display_time_mode += 1
-            if gui.display_time_mode > 2:
+            if gui.display_time_mode > 3:
                 gui.display_time_mode = 0
 
         if gui.display_time_mode == 0:
@@ -15117,6 +15128,42 @@ class BottomBarType1:
                 text_time = "-- : --"
             draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
                       fonts.bottom_panel_time)
+
+        elif gui.display_time_mode == 3:
+
+            track = pctl.playing_object()
+            if track.index != gui.dtm3_index:
+
+                gui.dtm3_cum = 0
+                gui.dtm3_total = 0
+                run = True
+                collected = []
+                for item in default_playlist:
+                    if pctl.master_library[item].parent_folder_path == track.parent_folder_path:
+                        if item not in collected:
+                            collected.append(item)
+                            gui.dtm3_total += pctl.master_library[item].length
+                            if item == track.index:
+                                run = False
+                            if run:
+                                gui.dtm3_cum += pctl.master_library[item].length
+                gui.dtm3_index = track.index
+
+            x -= 4
+            text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
+            draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
+                      fonts.bottom_panel_time)
+            draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
+                      fonts.bottom_panel_time)
+            text_time = get_display_time(gui.dtm3_total)
+            if pctl.playing_state == 0:
+                text_time = get_display_time(0)
+            elif pctl.playing_state == 3:
+                text_time = "-- : --"
+            draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
+                      fonts.bottom_panel_time)
+
+
 
         # BUTTONS
         # bottom buttons
@@ -17572,7 +17619,7 @@ while running:
             break
         elif event.type == SDL_TEXTEDITING:
             power += 5
-            print("edit text")
+            #print("edit text")
             editline = event.edit.text
             editline = editline.decode("utf-8", 'ignore')
             k_input = True
