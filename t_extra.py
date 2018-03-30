@@ -172,3 +172,7 @@ def star_count(sec, dur):
     if sec > 60 * 60 * 10:
         stars += 1
     return stars
+
+
+def search_magic(terms, evaluate):
+    return all(word in evaluate.lower() for word in terms.lower().split())
