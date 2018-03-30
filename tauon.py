@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.7.1"
+t_version = "v2.8.0"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
@@ -229,7 +229,6 @@ warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
 default_player = 1
-gapless_type1 = False
 running = True
 
 
@@ -241,7 +240,6 @@ if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.s
         gi.require_version('Gst', '1.0')
         from gi.repository import GObject, Gst
         default_player = 2
-        gapless_type1 = True
         print("Using fallback GStreamer")
     except:
         print("ERROR: gi.repository not found")
@@ -258,6 +256,7 @@ if system == 'linux':
 
 # Setting various timers
 
+message_box_min_timer = Timer()
 cursor_blink_timer = Timer()
 animate_monitor_timer = Timer()
 spec_decay_timer = Timer()
@@ -273,6 +272,7 @@ broadcast_update_timer = Timer()
 broadcast_update_timer.set()
 core_timer = Timer()
 gallery_select_animate_timer = Timer()
+gallery_select_animate_timer.force_set(10)
 search_clear_timer = Timer()
 test_timer = Timer()
 vis_update = False
@@ -280,7 +280,7 @@ vis_update = False
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
-GUI_Mode = 1
+GUI_Mode = 1  # For possible future skins
 
 worker_save_state = False
 
@@ -763,6 +763,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.dtm3_index = -1
         self.dtm3_cum = 0
         self.dtm3_total = 0
+        self.previous_playlist_id = ""
 
 gui = GuiVar()
 
@@ -1245,6 +1246,7 @@ def show_message(text, message_mode='info', subtext=""):
     gui.message_text = text
     gui.message_mode = message_mode
     gui.message_subtext = subtext
+    message_box_min_timer.set()
     gui.update = 1
 
 def track_number_process(line):
@@ -5270,6 +5272,8 @@ if system == "linux":
         cairo_text.prime_font(standard_font, 17 - 5, 17)
         cairo_text.prime_font(standard_font, 18 - 6, 18)
 
+        cairo_text.prime_font(standard_font, 30 - 6, 30)
+
         cairo_text.prime_font(standard_font, 12 - 3, 412)
         cairo_text.prime_font(standard_font, 13 - 3, 413)
 
@@ -5295,6 +5299,8 @@ if system == "linux":
         cairo_text.prime_font(standard_font, 26 - 4, 16, 17)
         cairo_text.prime_font(standard_font, 27 - 5, 17, 17)
         cairo_text.prime_font(standard_font, 28 - 6, 18, 17)
+
+        cairo_text.prime_font(standard_font, 30 - 6, 30, 17)
 
         cairo_text.prime_font(standard_font, 22 - 3, 412, 13)
         cairo_text.prime_font(standard_font, 23 - 3, 413, 13)
@@ -5634,6 +5640,8 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 16 + 6, 16, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 17 + 6, 17, weight=standard_weight, y_offset=1)
 
+        pretty_text.prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=1)
+
         pretty_text.prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
         pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
         pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
@@ -5688,6 +5696,9 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 16 + 2, 16, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
 
+
+        pretty_text.prime_font(standard_font, 30 + 2, 30, weight=standard_weight, y_offset=1)
+
         pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
         pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
         pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=0)
@@ -5696,6 +5707,8 @@ if system == 'windows':
         pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 16 + 2, 216, weight=bold_weight)
         pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
+
+
 
         pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
         pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
@@ -6225,6 +6238,8 @@ class GallClass:
             key = self.queue[0]
             order = self.gall[key]
 
+            size = key[1]
+
             source = self.get_file_source(key[0])
 
             if source is False:
@@ -6233,7 +6248,7 @@ class GallClass:
                 del self.queue[0]
                 continue
 
-            img_name = str(self.size) + '-' + str(key[0]) + "-" + str(source[2])
+            img_name = str(size) + '-' + str(key[0]) + "-" + str(source[2])
 
             try:
                 if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
@@ -6253,7 +6268,7 @@ class GallClass:
                 im = Image.open(source_image)
                 if im.mode != "RGB":
                     im = im.convert("RGB")
-                im.thumbnail((self.size, self.size), Image.ANTIALIAS)
+                im.thumbnail((size, size), Image.ANTIALIAS)
 
                 im.save(g, 'BMP')
                 if self.save_out and prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
@@ -6290,14 +6305,16 @@ class GallClass:
         else:
             return False
 
-    def render(self, index, location):
+    def render(self, index, location, size=None):
 
         # time.sleep(0.1)
+        if size is None:
+            size = self.size
 
-        if (index, self.size) in self.gall:
+        if (index, size) in self.gall:
             # print("old")
 
-            order = self.gall[(index, self.size)]
+            order = self.gall[(index, size)]
 
             if order[0] == 0:
                 # broken
@@ -6314,8 +6331,8 @@ class GallClass:
                 s_image = IMG_Load_RW(wop, 0)
                 c = SDL_CreateTextureFromSurface(renderer, s_image)
                 SDL_FreeSurface(s_image)
-                tex_w = pointer(c_int(self.size))
-                tex_h = pointer(c_int(self.size))
+                tex_w = pointer(c_int(size))
+                tex_h = pointer(c_int(size))
                 SDL_QueryTexture(c, None, None, tex_w, tex_h)
                 dst = SDL_Rect(location[0], location[1])
                 dst.w = int(tex_w.contents.value)
@@ -6325,24 +6342,24 @@ class GallClass:
                 order[1] = None
                 order[2] = c
                 order[3] = dst
-                self.gall[(index, self.size)] = order
+                self.gall[(index, size)] = order
 
             if order[0] == 3:
                 # ready
 
                 order[3].x = location[0]
                 order[3].y = location[1]
-                order[3].x = int((self.size - order[3].w) / 2) + order[3].x
-                order[3].y = int((self.size - order[3].h) / 2) + order[3].y
+                order[3].x = int((size - order[3].w) / 2) + order[3].x
+                order[3].y = int((size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
                 return True
 
         else:
             # Create new
             # stage, raw, texture, rect
-            self.gall[(index, self.size)] = [1, None, None, None]
-            self.queue.append((index, self.size))
-            self.key_list.append((index, self.size))
+            self.gall[(index, size)] = [1, None, None, None]
+            self.queue.append((index, size))
+            self.key_list.append((index, size))
 
             # Remove old images to conserve RAM usage
             if len(self.key_list) > 500:
@@ -8351,7 +8368,12 @@ def delete_playlist(index):
         default_playlist = []
         playlist_position = 0
     elif index == pctl.playlist_active and index > 0:
-        pctl.playlist_active -= 1
+        for i, pl in enumerate(pctl.multi_playlist):
+            if pl[6] == gui.previous_playlist_id and i < index:
+                pctl.playlist_active = i
+                break
+        else:
+            pctl.playlist_active -= 1
         pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
         default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
         playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
@@ -11340,7 +11362,7 @@ def toggle_search():
     search_text.text = ""
     input_text = ""
 
-extra_menu.add('Search', toggle_search, hint='BACKSLASH')
+# extra_menu.add('Search', toggle_search, hint='BACKSLASH')
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
@@ -11442,6 +11464,8 @@ def switch_playlist(number, cycle=False):
     global playlist_selected
     global search_index
     global shift_selection
+
+    gui.previous_playlist_id = pctl.multi_playlist[pctl.playlist_active][6]
 
     gui.pl_update = 1
     search_index = 0
@@ -11880,6 +11904,103 @@ def worker2():
         # if pl_thumbnail.worker_render():
         #     gui.pl_update += 1
         #     #gui.update = 1
+
+        if len(search_over.search_text.text) > 1:
+            if search_over.search_text.text != search_over.searched_text:
+
+                # search_over.results.clear()
+                temp_results = []
+
+                search_over.searched_text = search_over.search_text.text
+
+                # print("search")
+
+                artists = {}
+                albums = {}
+                genres = {}
+
+                br = 0
+
+                if search_over.searched_text in ("the", 'and'):
+                    continue
+
+                search_over.sip = True
+                gui.update += 1
+
+                for playlist in pctl.multi_playlist:
+
+                    for track in playlist[2]:
+
+                        if input_text != "":
+                            time.sleep(0.001)
+
+                        t = pctl.master_library[track]
+
+                        if search_magic(search_over.search_text.text, t.artist):
+
+                            if t.artist in artists:
+                                artists[t.artist] += 1
+                                # for i, result in enumerate(search_over.results):
+                                #     if result[0] == 0 and result[1] == t.artist:
+                                #
+                                #         search_over.results[i][4] += 1
+                                #         break
+                            else:
+                                temp_results.append([0, t.artist, track, playlist[6], 0])
+                                artists[t.artist] = 1
+
+                        # ALBUMS
+                        if search_magic(search_over.search_text.text, t.album):
+
+                            if t.album in albums:
+                                albums[t.album] += 1
+                                # for i, result in enumerate(search_over.results):
+                                #     if result[0] == 1 and result[1] == t.album:
+                                #
+                                #         search_over.results[i][4] += 1
+                                #         break
+                            else:
+                                temp_results.append([1, t.album, track, playlist[6], 0])
+                                albums[t.album] = 1
+
+                        # TRACKS
+                        if search_magic(search_over.search_text.text, t.title):
+                            temp_results.append([2, t.title, track, playlist[6], 1])
+
+                        # GENRE
+                        if search_magic(search_over.search_text.text, t.genre):
+
+                            if t.genre in genres:
+                                genres[t.genre] += 1
+                                # for i, result in enumerate(search_over.results):
+                                #     if result[0] == 1 and result[1] == t.album:
+                                #
+                                #         search_over.results[i][4] += 1
+                                #         break
+                            else:
+                                temp_results.append([3, t.genre, track, playlist[6], 0])
+                                genres[t.genre] = 1
+
+                        #time.sleep(0.00001)
+                        br += 1
+                        if br > 100:
+                            time.sleep(0.0001)
+                            br = 0
+                        if search_over.searched_text != search_over.search_text.text:
+                            break
+
+                search_over.sip = False
+                search_over.on = 0
+                gui.update += 1
+
+                for i, item in enumerate(temp_results):
+                    if item[0] == 0:
+                        temp_results[i][4] = artists[item[1]]
+                    if item[0] == 1:
+                        temp_results[i][4] = albums[item[1]]
+                    if item[0] == 3:
+                        temp_results[i][4] = genres[item[1]]
+                search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
 
 
@@ -14043,7 +14164,7 @@ class Over:
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 20 * gui.scale
+        prefs.playlist_row_height = 22 * gui.scale
         prefs.playlist_font_size = 15
         gui.update_layout()
 
@@ -14685,7 +14806,7 @@ class TopPanel:
             #     del transcode_list[1:]
             #     gui.tc_cancel = True
             if right_click and coll_point(mouse_position, [x, y, 180 * gui.scale, 18 * gui.scale]):
-                cancel_menu.activate()
+                cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 
             text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
             if len(transcode_list) > 1:
@@ -17035,6 +17156,332 @@ def download_img(link, target_folder):
         show_message("Image download failed.", 'warning')
         gui.image_downloading = False
 
+
+
+
+class SearchOverlay:
+
+    def __init__(self):
+
+        self.active = False
+        self.search_text = TextBox()
+
+        self.results = []
+        self.searched_text = ""
+        self.on = 0
+        self.force_select = -1
+        self.old_mouse = [0,0]
+        self.sip = False
+
+    def click_artist(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if pctl.master_library[item].artist.lower() == name.lower():
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title="Artist: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+        global key_return_press
+        key_return_press = False
+
+    def click_genre(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if pctl.master_library[item].genre.lower().replace("-", "") == name.lower().replace("-", ""):
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title="Genre: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+        global key_return_press
+        key_return_press = False
+
+    def click_album(self, index):
+
+        pctl.jump(index)
+        pctl.show_current(playing=True)
+
+
+    def render(self):
+
+        if self.active is False:
+
+            if input_text != "" and \
+                    not key_ctrl_down and not radiobox and \
+                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
+                    input_text.isalpha():
+
+                self.active = True
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+
+        if self.active:
+
+            x = 0
+            y = 0
+            w = window_size[0]
+            h = window_size[1]
+
+            if key_backspace_press:
+                self.searched_text = ""
+                self.results.clear()
+
+                if len(self.search_text.text) <= 1:
+                    self.active = False
+                    self.search_text.text = ""
+                    return
+
+            if key_esc_press:
+                self.active = False
+                self.search_text.text = ""
+                return
+
+            mouse_change = False
+            if self.old_mouse != mouse_position:
+                mouse_change = True
+            # mouse_change = True
+
+
+
+            draw.rect_r((x, y, w, h), [10,10,10,220], True)
+
+            if self.sip:
+                draw.rect_r((20,20,20,20), [255,50,50,255], True)
+
+            self.search_text.draw(100, 100, [230, 230, 230, 255], True, False, 30)
+
+            yy = 150
+
+            if key_down_press:
+
+                if self.force_select > -1:
+                    self.on = self.force_select
+                    self.force_select = -1
+                self.on += 1
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+            if key_up_press:
+
+                if self.force_select > -1:
+                    self.on = self.force_select
+                    self.force_select = -1
+                self.on -= 1
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+            self.on = max(self.on, 0)
+            self.on = min(len(self.results) - 1, self.on)
+
+            full_count = 0
+
+            sec = False
+
+            p = -1
+
+            if self.on > 4:
+                p += self.on - 4
+
+            for i, item in enumerate(self.results):
+
+                p += 1
+
+                if p > len(self.results) - 1:
+                    break
+
+                item = self.results[p]
+
+                fade = 1
+                selected = self.on
+                if self.force_select > -1:
+                    selected = self.force_select
+
+                # print(selected)
+
+                if selected != p:
+                    fade = 0.8
+
+                # Block separating lower search results
+                if item[4] < 4 and not sec:
+                    if i != 0:
+                        draw.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
+                        yy += 20
+
+                    sec = True
+
+                full = False
+
+                start = yy
+
+                if item[0] == 0:
+                    cl = [240, 120, 180, int(255 * fade)]
+                    text = "Artist"
+                    yy += 3
+                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        draw.rect_r((30, yy, 4, 23), [235, 80, 90, 255], True)
+
+                    rect = (30, yy, 600, 20)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if input.mouse_click:
+                            self.click_artist(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if key_return_press and fade == 1:
+                        self.click_artist(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6
+
+                if item[0] == 1:
+
+                    yy += 5
+                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    artist = pctl.master_library[item[2]].album_artist
+                    if artist == "":
+                        artist = pctl.master_library[item[2]].artist
+
+                    if full_count < 6:
+
+                        draw_text((120 + 5, yy + 28), "BY", [240, 210, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8
+
+                        xx += draw_text((120 + 30, yy + 25), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        draw.rect_r((50, yy + 5, 50, 50), [50,50,50,150], True)
+                        gall_ren.render(item[2], (50, yy + 5), 50)
+                        if fade != 1:
+                            draw.rect_r((50, yy + 5, 50, 50), [0, 0, 0, 70], True)
+                        full = True
+                        full_count += 1
+
+                        if fade == 1:
+                            draw.rect_r((30, yy + 5, 4, 50), [235, 80, 90, 255], True)
+
+                        # Mouse Selection
+                        rect = (30, yy, 600, 55)
+                        fields.add(rect)
+                        if coll_point(mouse_position, rect) and mouse_change:
+                            if self.force_select != p:
+                                self.force_select = p
+                                gui.update = 2
+
+                            if input.mouse_click:
+                                self.click_album(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+
+
+                    else:
+
+                        draw_text((120 + xx + 11, yy + 3), "BY", [240, 210, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8
+
+                        xx += draw_text((120 + xx + 30, yy), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        # Mouse Selection
+                        rect = (30, yy, 600, 20)
+                        fields.add(rect)
+                        if coll_point(mouse_position, rect) and mouse_change:
+                            if self.force_select != p:
+                                self.force_select = p
+                                gui.update = 2
+                            if input.mouse_click:
+                                self.click_album(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+                    if key_return_press and fade == 1:
+                        self.click_album(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+                    if full:
+                        yy += 50
+
+                if item[0] == 2:
+                    cl = [230, 200, 170, int(255 * fade)]
+                    text = "Track"
+                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                    draw_text((120 + xx + 11, yy + 3), "BY", [240, 150, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    xx += 8
+                    artist = pctl.master_library[item[2]].artist
+                    xx += draw_text((120 + xx + 30, yy), artist, [250, 250, 250, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    draw_text((65, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        draw.rect_r((30, yy, 4, 17), [235, 80, 90, 255], True)
+
+                    rect = (30, yy, 600, 20)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if input.mouse_click:
+                            self.click_album(item[2])
+                            self.active = False
+                            self.search_text.text = ""
+                    if key_return_press and fade == 1:
+                        self.click_album(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+                if item[0] == 3:
+                    cl = [230, 230, 180, int(255 * fade)]
+                    text = "Genre"
+                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    draw_text((65, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        draw.rect_r((30, yy, 4, 17), [235, 80, 90, 255], True)
+
+                    rect = (30, yy, 600, 20)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if input.mouse_click:
+                            self.click_genre(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if key_return_press and fade == 1:
+                        self.click_genre(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                if i > 15:
+                    break
+
+                yy += 22
+
+
+search_over = SearchOverlay()
+
+
 # Set SDL window drag areas
 if system != 'windows':
 
@@ -17248,6 +17695,7 @@ def update_layout_do():
     if GUI_Mode == 1:
         SDL_DestroyTexture(gui.ttext)
         gui.pl_update = 1
+
     update_set()
 
     SDL_DestroyTexture(gui.main_texture)
@@ -18033,7 +18481,7 @@ while running:
                 elif gui.gall_tab_enter:
                     toggle_album_mode()
 
-            if not quick_search_mode:
+            if not quick_search_mode and not search_over.active:
                 if album_mode and gui.album_tab_mode:
                     if key_left_press:
                         gal_left = True
@@ -18089,7 +18537,7 @@ while running:
 
         if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
                 and not gui.rename_folder_box \
-                and not rename_playlist_box:
+                and not rename_playlist_box and not search_over.active:
 
             if key_c_press and key_ctrl_down:
                 gui.pl_update = 1
@@ -20565,9 +21013,11 @@ while running:
 
             if gui.message_box:
                 if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press \
-                        or key_backslash_press:
+                        or key_backslash_press or (k_input and message_box_min_timer.get() > 1.2):
                     gui.message_box = False
                     key_return_press = False
+
+
 
                 w1 = draw.text_calc(gui.message_text, 15) + 74 * gui.scale
                 w2 = draw.text_calc(gui.message_subtext, 12) + 74 * gui.scale
@@ -20602,6 +21052,9 @@ while running:
                     draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(190), 15)
 
             # SEARCH
+
+            search_over.render()
+
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
                 quick_search_mode = True
                 if search_clear_timer.get() > 3:
@@ -20793,7 +21246,7 @@ while running:
                     quick_search_mode = False
                     search_clear_timer.set()
 
-            else:
+            elif not search_over.active:
 
                 if key_up_press:
                     shift_selection = []
