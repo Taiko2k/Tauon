@@ -5973,7 +5973,7 @@ class TextBox:
         else:
             return ""
 
-    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18):
+    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
 
         # A little bit messy.
         # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -6182,7 +6182,11 @@ class TextBox:
                 xx = x + space + 1
                 yy = y + 3
                 #draw.line(xx, yy, xx, yy + 12, colour)
-                draw.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
+                if big:
+                    #draw.rect_r((xx + 5 * gui.scale, yy + 10 * gui.scale, 20 * gui.scale, 3 * gui.scale), colour, True)
+                    draw.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
+                else:
+                    draw.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
 
         if active and editline != "" and editline != input_text:
             ex = draw_text((x + space + 4, y), editline, [240, 230, 230, 255], font)
@@ -11950,7 +11954,7 @@ def worker2():
                                 artists[t.artist] = 1
 
                         # ALBUMS
-                        if search_magic(search_over.search_text.text, t.album):
+                        if search_magic(search_over.search_text.text, t.album) or search_magic(search_over.search_text.text, t.artist):
 
                             if t.album in albums:
                                 albums[t.album] += 1
@@ -11964,11 +11968,13 @@ def worker2():
                                 albums[t.album] = 1
 
                         # TRACKS
-                        if search_magic(search_over.search_text.text, t.title):
+                        if search_magic(search_over.search_text.text, t.title) or \
+                                (search_magic_any(search_over.search_text.text, t.title) and \
+                                         search_magic_any(search_over.search_text.text, t.artist)):
                             temp_results.append([2, t.title, track, playlist[6], 1])
 
                         # GENRE
-                        if search_magic(search_over.search_text.text, t.genre):
+                        if search_magic(search_over.search_text.text, t.genre) :
 
                             if t.genre in genres:
                                 genres[t.genre] += 1
@@ -17213,7 +17219,8 @@ class SearchOverlay:
 
         pctl.jump(index)
         pctl.show_current(playing=True)
-
+        global key_return_press
+        key_return_press = False
 
     def render(self):
 
@@ -17259,11 +17266,13 @@ class SearchOverlay:
             draw.rect_r((x, y, w, h), [10,10,10,220], True)
 
             if self.sip:
-                draw.rect_r((20,20,20,20), [255,50,50,255], True)
+                draw.rect_r((15,15,10,10), [100,80,240,255], True)
+            elif not self.results and len(self.search_text.text) > 2:
+                draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
-            self.search_text.draw(100, 100, [230, 230, 230, 255], True, False, 30)
+            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, big=True)
 
-            yy = 150
+            yy = 130
 
             if key_down_press:
 
@@ -17449,13 +17458,13 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
                 if item[0] == 3:
-                    cl = [230, 230, 180, int(255 * fade)]
+                    cl = [230, 230, 150, int(255 * fade)]
                     text = "Genre"
                     xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
-                    draw_text((65, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30, yy, 4, 17), [235, 80, 90, 255], True)
+                        draw.rect_r((30, yy + 4, 4, 17), [235, 80, 90, 255], True)
 
                     rect = (30, yy, 600, 20)
                     fields.add(rect)
@@ -21088,11 +21097,13 @@ while running:
                     #     line = "last.fm loved tracks from user. Format: /love <username>"
                     # else:
                     line = "Folder filter mode. Enter path segment."
-                    draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(100), 11)
+                    draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(110), 12)
                 else:
                     line = "Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
+                    if len(search_text.text) == 0:
+                        line = "Find in current playlist"
                     draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
-                              colours.grey(100), 11)
+                              colours.grey(110), 12)
 
                     # draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
                     #           colours.grey(90), 214)

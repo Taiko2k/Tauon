@@ -176,3 +176,6 @@ def star_count(sec, dur):
 
 def search_magic(terms, evaluate):
     return all(word in evaluate.lower() for word in terms.lower().split())
+
+def search_magic_any(terms, evaluate):
+    return any(word in evaluate.lower() for word in terms.lower().split())
