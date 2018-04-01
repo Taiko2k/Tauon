@@ -1,45 +1,51 @@
 Tauon Music Box -  Manual
 ===========
 
-#### Updated for version 2.6.2
+#### Updated for version 2.8.0
 
-### Preface
+#### Preface
 
-Player is based around disposable playlists and the assumption that folders are albums.
+This music player is based around disposable playlists and the assumption that **folders are albums**.
 
 While playlists can be used as traditional 'playlists'. They are also intended to function as a kind of 'workspace' or to keep different 'libraries' separate.
 
-Thus, searching and sorting is applied to individual playlists and not from the whole database.
+Searching and sorting is applied to individual playlists and not from the whole database.
 
 For best experience you should have an organized and structured music library, ideally with each album in its own folder.
 
 If you have a large and varied music library, I recommend keeping albums in respective folders based on genre in order to keep like albums together.
 
-### Importing Music
+#### Importing Music
 
  - Drag and drop files and folders from your file manager.
 
   Tip: Try importing all your music to a single playlist to get started
 
-### Updating Library
+ - To update: Clear playlist and re-import. It should be faster the second time.
 
- - Clear playlist and re-import. It should be faster the second time.
+#### Playback
 
-### Track Navigation
+ - Double click a track to start playing
+ - Right click the play button to show / jump to the currently playing track.
+
+ Feature: If there is a matching track in the currently viewed playlist, it will be jumped to and will be set to be the playing track.
+
+#### Track Navigation
 
  - 'Forward' and 'Back' buttons play the next and previous tracks as they appear in the playlist.
  - With random mode on, 'Back' plays songs from playback history.
- - Right click the 'Play' button to jump playlist to the playing track.
 
-  This will search the currently open playlist for a matching track and make it the playing track if found.
+##### Special functions:
 
+ - **Radio Random**: Plays a random track with a random starting time.
+ - **Revert**: Resumes from the previous position of the previous track played.
 
-### Panel Buttons
+#### Panel Buttons
 
    ![Screenshot - Panel](https://raw.githubusercontent.com/Taiko2k/tauonmb/master/docs/panel-guide.png)
 
 
-### Playlist Scrolling
+#### Playlist Scrolling
 
  - The playlist scroll bar is to the left of the playlist, hidden until moused over.
  - Click above or below the scroll bar to scroll quickly in that direction.
@@ -47,26 +53,34 @@ If you have a large and varied music library, I recommend keeping albums in resp
 
 ### Gallery View
 
- - To enter gallery view, click VIEW->(Upper right icon) or press mouse button 4 (if you have a 5 button mouse).
- - Clicking an album plays it.
- - Right clicking an album shows its position in the playlist.
- - To select an album using the keyboard, press tab to toggle keyboard control mode.
+ - To enter gallery view, click VIEW->(2nd icon from top) or press mouse button 4 (if you have a 5 button mouse).
+ - Clicking an album picture plays the album.
+ - Right clicking an album shows its position in the playlist on the left.
+ - To select an album using the keyboard: Press tab to toggle keyboard control mode.
 
-### Quick Search
+### Global search (new in v2.8.0)
+
+To search for an Album, Artist, Track or Genre; simply start typing a search query.
+
+Use UP and DOWN keys to navigate shown results and press ENTER to select.
+
+For albums and tracks, the first matching result will be played, for artists and genres, a new playlist of matching results will be created.
+
+### Quick Find in playlist
 
 1. Use LEFT and RIGHT keys to switch to the playlist containing the track you wish to search for.
-2. Press the backslash key or Ctrl+F to open the search box.
+2. Press the backslash key or Ctrl+F to open the find box.
 3. Type word fragments separated by spaces. For example, to locate a track named 'Coldplay - Clocks' you could try enter the search text 'col clo'.
 
  - Use UP and DOWN keys to navigate any matching results in the playlist. Press enter key to play the selected track.
  - Press Shift+Enter to create a new playlist of all matching results
- - Press Shift+A to search currently playing artist name
+ - Press F4 to search currently playing artist name
 
 ##### New Playlist from folder path fragment:
 
 This function filters tracks to a new playlist that only contains tracks that have a given folder name fragment in their file path.
 
-1. Press the backslash key '\' or Ctrl+F to open search entry.
+1. Press the backslash key '\' or Ctrl+F to open find box.
 2. Begin text with a forward slash '/', then type part of a folder path to filter for. (Capitalization will be ignored but used for playlist title)
 3. Press Enter to create the new playlist.
 
@@ -80,8 +94,8 @@ __Tip__: End the search text with another forward slash to search just for folde
 
 ### Moving Tracks
 
- - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist tab.
- - Single tracks can be repositioned within a playlist by holding shift while dragging
+ - A single track can be quickly copied to the end of another playlist by dragging it onto a playlist's tab.
+ - Single tracks can be repositioned within a playlist by holding shift while dragging.
  - To move a block selection, click and drag.
  - To make a selection, click the first track, then hold shift and click the last track. Alternatively just click a block title to select that block.
 
@@ -93,7 +107,7 @@ Access by right clicking track; _TRACK MENU -> META... -> MODIFY FOLDER..._  OR 
 
 ***Delete*** - Deletes the folder and all containing files and folders. Use with caution!
 
-***Compact*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
+***Raise*** - If the upper containing folder contains no other folders or files, this function will eliminate that folder by moving the lower folder up 2 levels and deleting the old containing folder.
 
 ***Clean*** - Deletes the following OS related items in the folder: 'desktop.ini', 'Thumbs.db', Windows Media Player generated thumbnail images, Mac OS related '.DS_Store' and 'MACOSX' files/folders.
 
@@ -102,13 +116,9 @@ Warning: Although there are some checks in place it may still be possible to cau
 ### Modifying Album Art
 
  - To quickly add album art to a folder, images from a web browser can be dragged onto the side panel canvas. (HTTP only) (Linux only, not working on Windows)
- - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without needing to restart.
+ - If you add or change album art, use MENU -> DATABASE -> RESET IMAGE CACHE to update this without a restart.
 
-### Quirks
-
- - Program data is only saved once the program is exited cleanly and not in the case of a force close or crash (Shutting system down while the player is open is a force close). Play times are periodically saved however.
-
-### Extra Shortcuts
+### Keyboard Shortcuts
 
 
 | Function                    | Key         |
@@ -151,17 +161,19 @@ __Note__: Modifying the number of tracks in playlist that appear before the broa
 
 ### Transcoding albums
 
+This function allows you to transcode albums to a different codec. Files will be output to a dedicated folder and the original files will not be modified.
+
 Intended to be an easy way to reduce file sizes for copying tracks to devices with limited storage. Results will be of degraded quality (lossy codec) and should not be used for archival.
 
 1. Ensure FFMPEG is avaliable.
- - For Windows, download ffmpeg from https://ffmpeg.org/ and place 'ffmpeg.exe' in encoder directory. To find this folder press F9.
+ - For Windows, download ffmpeg from https://ffmpeg.org/ and place 'ffmpeg.exe' in encoder directory. To find this folder press F9 while the Tauon Music Box window is focused.
  - For Linux, install ffmpeg using your distro's package manager.
  - If you need MP3 output, repeat above steps for LAME (lame.exe). For Windows you may find lame.exe on the internet. For Linux consult your package manager.
 
 2. Optionally configure settings in MENU -> SETTINGS...-> TRANSCODE
- - 64Kbps OPUS provides good sound quality with small file size, but not many players are compatible with it.
+ - 64Kbps OPUS provides good sound quality with small file size, but not many players are compatible with it. (Setting the 'write as .ogg extension' will improve compatibility)
  - 96kbps OGG, or 128kbs MP3 provide comparable quality and are more widely compatible.
- - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail.
+ - The FLAC option should only be used to convert other lossless audio files. Note that the generated picture will still be a lossy thumbnail. (So you should delete it manually copy any original image)
 
 3. Right click a track and select, TRACK MENU -> TRANSCODE FOLDER to transcode the the tracks in the folder to which the track resides. Wait for it to finish.
  - If the yellow text in the top panel does not change for an extended amount of time, the transcode may have stalled. In this case you will need to restart the application as there is currently no handling on errors.

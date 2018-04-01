@@ -8634,7 +8634,7 @@ tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delet
 tab_menu.br()
 
 tab_menu.add_sub("Generate / Sort...", 133)
-tab_menu.add("Sort Filepath", standard_sort, pass_ref=True)
+tab_menu.add("Sort by Filepath", standard_sort, pass_ref=True)
 tab_menu.add("Sort Year per Artist", year_sort, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
@@ -8717,7 +8717,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Played Tracks", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub("Top Played Tracks", 0, gen_top_100, pass_ref=True)
 
 
 
@@ -8772,7 +8772,7 @@ def gen_folder_top(pl, get_sets=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Played Albums", 0, gen_folder_top, pass_ref=True)
+tab_menu.add_to_sub("Top Played Albums", 0, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -13910,7 +13910,7 @@ class Over:
         draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
         y += 25 * gui.scale
 
-        self.toggle_square(x, y, toggle_borderless, "Borderless window")
+        self.toggle_square(x, y, toggle_borderless, "Draw own window decorations")
 
         if system == "linux":
             y += 28 * gui.scale
@@ -17263,10 +17263,13 @@ class SearchOverlay:
 
 
 
-            draw.rect_r((x, y, w, h), [10,10,10,220], True)
+            draw.rect_r((x, y, w, h), [5,5,5,230], True)
 
             if self.sip:
-                draw.rect_r((15,15,10,10), [100,80,240,255], True)
+                pass
+                draw.rect_r((15,15,7,7), [100,80,240,255], True)
+                draw.rect_r((27,15,7,7), [100,80,240,255], True)
+                draw.rect_r((39,15,7,7), [100,80,240,255], True)
             elif not self.results and len(self.search_text.text) > 2:
                 draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
@@ -20727,7 +20730,7 @@ while running:
                     input.mouse_click = False
 
                 if move_folder_up(rename_index):
-                    if draw.button("Compact", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale):
+                    if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale):
                         move_folder_up(rename_index, True)
                         input.mouse_click = False
 
