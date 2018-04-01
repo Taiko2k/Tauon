@@ -47,17 +47,7 @@ kbd {
 
 }
 
-.button {
-  background-color: #4CAF50; /* Green */
-  border: none;
-  color: white;
-  padding: 2px 15px;
 
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px;
-}
 
 .divider{
     width:50px;
@@ -65,18 +55,7 @@ kbd {
     display:inline-block;
 }
 
-.dl-holder {
-  /*box-sizing: border-box;*/
-  width: auto;
-  margin-top: 10px;
 
-  text-align: center;
-  margin-bottom: 10px;
-  padding: 4px;
-  margin-right: 0px;
-  margin-left: 300px;
-  background-color: rgb(41, 41, 41);
-}
 
 
 .space {
@@ -139,26 +118,8 @@ kbd {
 
 }
 
-.feature-card {
-  background-color: rgb(33, 33, 33);
-  width: 650px;
-
-  margin-left: 15px;
-  margin-bottom: 15px;
-  padding: 2px;
-  padding-left: 15px;
 
 
-}
-
-
-.news-block {
-  color: rgb(215, 215, 215);
-  text-align: left;
-  padding-left: 0px;
-  font-size: 0.95em;
-
-}
 
 
 .points li {
@@ -199,17 +160,7 @@ margin-left: 75%;
   float: left;
 }
 
-#exe {
-  background-color: rgb(146, 67, 235);
-}
 
-#aur {
-  background-color: rgb(89, 123, 221);
-}
-
-#deb {
-  background-color: rgb(224, 140, 80);
-}
 
 #scrn1 {
   max-height: 470px;

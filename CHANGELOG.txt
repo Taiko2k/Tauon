@@ -12,7 +12,7 @@ v2.8.0
  - Fixed playlist default setting not matching original default
  - Fixed transcode cancel menu overlapping window drag area
  - Fixed fixed message box not clearing after continued keyboard input
- - Removed search shortcut from menu
+ - Removed 'search' shortcut from menu
 
 
 v2.7.0
