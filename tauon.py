@@ -7839,16 +7839,25 @@ def cancel_import():
 
 cancel_menu.add("Cancel", cancel_import)
 
+def get_lyric_fire(track_object):
+
+    print("Query Lyric Wiki...")
+    show_message("Searching...")
+    try:
+        track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+        gui.message_box = False
+    except:
+        show_message("LyricWiki does not appear to have lyrics for this song")
+
 def get_lyric_wiki(track_object):
 
     if track_object.artist == "" or track_object.title == "":
         show_message("Insufficient metadata to get lyrics", 'warning')
+        return
 
-    print("Query Lyric Wiki...")
-    try:
-        track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
-    except:
-        show_message("LyricWiki does not appear to have lyrics for this song")
+    shoot_dl = threading.Thread(target=get_lyric_fire, args=([track_object]))
+    shoot_dl.daemon = True
+    shoot_dl.start()
 
     print("..Done")
 
@@ -12407,6 +12416,9 @@ def worker1():
 
         global DA_Formats
         global master_count
+
+        if os.path.basename(direc) == "__MACOSX":
+            return
 
         items_in_dir = os.listdir(direc)
         for q in range(len(items_in_dir)):
@@ -18580,7 +18592,8 @@ while running:
             gui.pl_update = 1
 
         if key_F5:
-            show_message("This button doesn't do anything.")
+            view_box.lyrics(True)
+            #show_message("This button doesn't do anything.")
             # pctl.playerCommand = 'encpause'
             # pctl.playerCommandReady = True
 
