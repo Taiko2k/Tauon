@@ -6,12 +6,15 @@ v2.8.0
  - Added new global search function
  - Added time display mode for total album time
  - Bound space-bar key to pause and resume playback
- - Tweaked device selection UI feedback
- - Tweaked delete playlist function to try return view to previous playlist
+ - Improved device selection UI feedback
+ - Improved delete playlist function to try return view to previous playlist
+ - Improved importer to ignore MACOSX folders
+ - Improved 'get lyrics' function to not block main UI
  - Fixed gallery hit boxes being too large when titles are disabled
  - Fixed playlist default setting not matching original default
  - Fixed transcode cancel menu overlapping window drag area
  - Fixed fixed message box not clearing after continued keyboard input
+ - Bound F5 key to toggle lyrics view
  - Removed 'search' shortcut from menu
 
 
