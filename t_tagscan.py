@@ -682,7 +682,160 @@ class Wav:
         self.length = wav.getnframes() / self.sample_rate
         wav.close()
 
-# file = 'test.tta'
-#
-# item = Ape(file)
-# item.read()
+
+class M4a:
+
+    def __init__(self, file):
+        self.filepath = file
+        self.has_picture = False
+
+        self.album_artist = ""
+        self.artist = ""
+        self.genre = ""
+        self.date = ""
+        self.comment = ""
+        self.album = ""
+        self.track_number = ""
+        self.track_total = ""
+        self.title = ""
+        self.encoder = ""
+        self.disc_number = ""
+        self.disc_total = ""
+        self.picture = ""
+        self.lyrics = ""
+        self.track_gain = None
+        self.album_gain = None
+
+        self.sample_rate = 0
+        self.bit_rate = 0
+        self.length = 0
+
+    def read(self, get_picture=False):
+
+        f = open(self.filepath, 'rb')
+
+        k = [
+            b"moov",
+            b'trak',
+            b'----',
+            b'udta',
+            b'meta',
+            b'ilst',
+            b'mdia',
+            b'mdhd',
+            b'minf',
+            b'stbl',
+            b'stsd',
+            b'esds'
+        ]
+
+        s_name = b""
+
+        def meta_get(f, size):
+            start = f.tell()
+            f.seek(16, 1)
+            data = f.read(size - 8 - 16)
+            f.seek(start)
+            return data
+
+        def atom(f, tail=b"", name=""):
+
+            global s_name
+
+            start = f.tell()
+            b_size = f.read(4)
+            size = int.from_bytes(b_size, 'big')
+
+            name = f.read(4)
+
+            if name == b'':
+                return False
+
+            # print("NAME: ", end="")
+            # print(tail + b"." + name)
+
+            # Too lazy to parse each sub atom, lets just grab the data out the sub atom and
+            # hope the file is formatted normally
+
+            if name == b'\xa9nam':
+                self.title = meta_get(f, size).decode()
+
+
+            if name == b'\xa9alb':
+                self.album = meta_get(f, size).decode()
+
+            if name == b'\xa9ART':
+                self.artist = meta_get(f, size).decode()
+
+            if name == b'\xa9cmt':
+                self.comment = meta_get(f, size).decode()
+
+            if name == b'\xa9lyr':
+                self.lyrics = meta_get(f, size).decode()
+
+            if name == b'aART':
+                self.album_artist = meta_get(f, size).decode()
+
+            if name == b'covr':
+                self.has_picture = True
+                if get_picture:
+                    self.picture = meta_get(f, size)
+
+            if name == b'trkn':
+                self.track_number = int(meta_get(f, size)[3])  # We'll just grab that
+
+            if name == b'disk':  # They spelt disc wrong lol
+                self.disc_number = int(meta_get(f, size)[3])
+
+            # if tail[-4:] == b"----":
+            #
+            #
+            #     if name == b'name':
+            #         s_name = f.read(size - 8)
+            #         f.seek((size - 8) * -1, 1)
+            #
+            #     elif name == b'data' and s_name != b"":
+            #         data = f.read(size - 8)
+            #         f.seek((size - 8) * -1, 1)
+            #         print(s_name)
+            #         print(data)
+
+            if name in k:
+
+                if name == b'stsd':
+                    f.seek(44, 1)
+
+                if name == b'meta':
+                    f.seek(4, 1)  # The 'meta' atom has some extra space at the start
+
+                if name == b'mdhd':
+
+                    data = f.read(size - 8)
+                    f.seek((size - 8) * -1, 1)
+                    data = struct.unpack('>iiiiihh', data)
+                    self.sample_rate = data[3]
+                    self.length = data[4] / self.sample_rate
+
+                if name == b'esds':
+                    f.seek(26, 1)
+                    bitrate = int.from_bytes(f.read(4), 'big')
+                    f.seek(-30, 1)
+                    self.bit_rate = bitrate // 1000
+
+                else:
+
+                    while f.tell() < start + size:
+                        if not atom(f, tail + b"." + name, name):
+                            break
+
+            f.seek(start)
+            f.seek(size, 1)
+            if size == 0:
+                return False
+
+            return True
+
+        while atom(f):
+            pass
+
+
