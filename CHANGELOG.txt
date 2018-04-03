@@ -5,6 +5,8 @@ v2.8.0
 
  - Added new global search function
  - Added time display mode for total album time
+ - Added embedded image support for M4A files
+ - Extended metadata support for M4A: album-artist, disc number and lyrics
  - Bound space-bar key to pause and resume playback
  - Improved device selection UI feedback
  - Improved delete playlist function to try return view to previous playlist

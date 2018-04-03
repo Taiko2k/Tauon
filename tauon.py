@@ -2,7 +2,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2017, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2018, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ t_version = "v2.8.0"
 t_title = 'Tauon Music Box'
 print(t_title)
 print(t_version)
-print('Copyright 2015-2017 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 
 # Detect platform
 if sys.platform == 'win32':
@@ -222,6 +222,7 @@ from t_tagscan import Flac
 from t_tagscan import Opus
 from t_tagscan import Ape
 from t_tagscan import Wav
+from t_tagscan import M4a
 from t_extra import *
 
 # Mute some stagger warnings
@@ -1655,6 +1656,36 @@ def tag_scan(nt):
                     nt.date = tag.date
                 except:
                     print("Tag Scan: Couldn't find ID3v2 tag or APE tag")
+
+            return nt
+
+        elif nt.file_ext == "M4A":
+
+            audio = M4a(nt.fullpath)
+            audio.read()
+
+            # print(audio.title)
+
+            nt.length = audio.length
+            nt.title = audio.title
+            nt.artist = audio.artist
+            nt.album = audio.album
+            #nt.date = audio.date
+            nt.samplerate = audio.sample_rate
+            #nt.size = os.path.getsize(nt.fullpath)
+            nt.track_number = audio.track_number
+            #nt.genre = audio.genre
+            nt.album_artist = audio.album_artist
+            nt.disc_number = audio.disc_number
+            nt.lyrics = audio.lyrics
+            nt.bitrate = audio.bit_rate
+            #nt.track_total = audio.track_total
+            #nt.disk_total = audio.disc_total
+            nt.comment = audio.comment
+            #nt.track_gain = audio.track_gain
+            #nt.album_gain = audio.album_gain
+            #nt.cue_sheet = audio.cue_sheet
+
 
             return nt
 
@@ -6532,6 +6563,7 @@ class AlbumArt():
     def get_sources(self, index):
 
         filepath = pctl.master_library[index].fullpath
+        ext = pctl.master_library[index].file_ext
 
         # Check if source list already exists, if not, make it
         if index in self.source_cache:
@@ -6549,7 +6581,7 @@ class AlbumArt():
             return []
 
         try:
-            if '.mp3' in filepath or '.MP3' in filepath:
+            if ext == 'MP3':
                 tag = stagger.read_tag(filepath)
 
                 try:
@@ -6560,18 +6592,25 @@ class AlbumArt():
                 if len(tt.data) > 30:
                     source_list.append([True, filepath])
 
-            elif '.flac' in filepath or '.FLAC' in filepath:
+            elif ext == 'FLAC':
 
                 tt = Flac(filepath)
                 tt.read(True)
                 if tt.has_picture is True and len(tt.picture) > 30:
                     source_list.append([True, filepath])
 
-            elif '.ape' in filepath or '.APE' in filepath:
+            elif ext == 'APE':
 
                 tt = Ape(filepath)
                 tt.read()
                 if tt.has_picture is True and len(tt.picture) > 30:
+                    source_list.append([True, filepath])
+
+            elif ext == 'M4A':
+
+                tt = M4a(filepath)
+                tt.read()
+                if tt.has_picture:
                     source_list.append([True, filepath])
 
                     # elif '.opus' in filepath or '.OPUS' in filepath or ".ogg" in filepath or ".OGG" in filepath:
@@ -6728,6 +6767,11 @@ class AlbumArt():
         elif pctl.master_library[index].file_ext == 'APE':
             tag = Ape(filepath)
             tag.read()
+            return tag.picture
+
+        elif pctl.master_library[index].file_ext == 'M4A':
+            tag = M4a(filepath)
+            tag.read(True)
             return tag.picture
 
             # elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
@@ -13999,7 +14043,7 @@ class Over:
         y += 32 * gui.scale
         draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
-        draw_text((x, y), "Copyright © 2015-2017 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
+        draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
         y += 21 * gui.scale
         link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
         link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -18625,6 +18669,8 @@ while running:
 
             show_message("Test error message", 'error', "Just a test, no need to worry.")
 
+            print(pctl.playing_object().disc_number)
+
             # gallery_jumper.calculate()
 
             # colours.level_1_bg = [0, 6, 30, 255]
@@ -20528,7 +20574,7 @@ while running:
                         draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
-                    if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
+                    if pctl.master_library[r_menu_index].album_artist != "": #pctl.master_library[r_menu_index].artist !=
                         x += 170 * gui.scale
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
