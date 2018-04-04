@@ -1670,11 +1670,11 @@ def tag_scan(nt):
             nt.title = audio.title
             nt.artist = audio.artist
             nt.album = audio.album
-            #nt.date = audio.date
+            nt.date = audio.date
             nt.samplerate = audio.sample_rate
-            #nt.size = os.path.getsize(nt.fullpath)
+            nt.size = os.path.getsize(nt.fullpath)
             nt.track_number = audio.track_number
-            #nt.genre = audio.genre
+            nt.genre = audio.genre
             nt.album_artist = audio.album_artist
             nt.disc_number = audio.disc_number
             nt.lyrics = audio.lyrics
@@ -1688,6 +1688,8 @@ def tag_scan(nt):
 
 
             return nt
+
+
 
         else:
 
@@ -1753,6 +1755,7 @@ def tag_scan(nt):
     except:
 
         print("Warning: Tag read error")
+        print("     On file: " + nt.fullpath)
         return nt
 
 
@@ -2304,7 +2307,7 @@ class PlayerCtl:
                         print("advance gapless")
                         self.advance(quiet=True, gapless=True)
                     else:
-                        print("advance normal")
+                        #print("advance normal")
                         self.advance(quiet=True)
 
                     self.playing_time = 0
@@ -6428,7 +6431,7 @@ class ThumbTracks:
         source = gall_ren.get_file_source(track.index)
 
         if source is False:
-            print("NO ART")
+            # print("NO ART")
             return None
 
         image_name += "-" + str(source[2])
@@ -7996,9 +7999,10 @@ def save_embed_img():
     index = pctl.track_queue[pctl.queue_step]
     filepath = pctl.master_library[index].fullpath
     folder = pctl.master_library[index].parent_folder_path
+    ext = pctl.master_library[index].file_ext
 
     try:
-        if '.mp3' in filepath or '.MP3' in filepath:
+        if ext == 'MP3':
             tag = stagger.read_tag(filepath)
             try:
                 tt = tag[APIC][0]
@@ -8010,12 +8014,20 @@ def save_embed_img():
                     return
             pic = tt.data
 
-        elif '.flac' in filepath.lower() or '.ape' in filepath.lower() or '.tta' in filepath.lower() or '.wv' in filepath.lower():
+        elif ext in ('FLAC', 'APE', 'TTA', 'WV'):
 
             tt = Flac(filepath)
             tt.read(True)
             if tt.has_picture is False:
                 show_message("Image save error.", 'warning', "No embedded album art found in FLAC file")
+                return
+            pic = tt.picture
+
+        elif ext == 'M4A':
+            tt = M4a(filepath)
+            tt.read(True)
+            if tt.has_picture is False:
+                show_message("Image save error.", 'warning', "No embedded album art found in M4A file")
                 return
             pic = tt.picture
 
@@ -12474,6 +12486,10 @@ def worker1():
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
                 if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
+
+                    if len(items_in_dir[q]) > 2 and items_in_dir[q][0:2] == "._":
+                        continue
+
                     add_file(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
 
                 elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", 'cue'}:
@@ -20574,7 +20590,7 @@ while running:
                         draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
 
                     # -----------
-                    if pctl.master_library[r_menu_index].album_artist != "": #pctl.master_library[r_menu_index].artist !=
+                    if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
                         x += 170 * gui.scale
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)

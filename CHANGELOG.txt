@@ -10,7 +10,7 @@ v2.8.0
  - Bound space-bar key to pause and resume playback
  - Improved device selection UI feedback
  - Improved delete playlist function to try return view to previous playlist
- - Improved importer to ignore MACOSX folders
+ - Improved importer to ignore MACOSX folders and DOT files
  - Improved 'get lyrics' function to not block main UI
  - Fixed gallery hit boxes being too large when titles are disabled
  - Fixed playlist default setting not matching original default
