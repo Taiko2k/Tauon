@@ -10231,15 +10231,38 @@ def editor(index):
     if system == 'windows':
         file_line = file_line.replace("/", "\\")
 
+    extra = ""
+    if system != 'windows' and prefs.tag_editor_target == 'picard':
+        extra = " --d "
+
     if system == 'windows':
         file_line = '"' + prefs.tag_editor_path.replace("/", "\\") + '"' + file_line
     else:
-        file_line = prefs.tag_editor_target + file_line
+        file_line = prefs.tag_editor_target + extra + file_line
 
     show_message(prefs.tag_editor_name + " launched.", 'arrow', "Fields will be updated once application is closed.")
     gui.update = 1
 
-    subprocess.run(shlex.split(file_line))
+    complete = subprocess.run(shlex.split(file_line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    if system != 'windows' and prefs.tag_editor_target == 'picard':
+        r = complete.stderr.decode()
+        for line in r.split("\n"):
+            if 'file._rename' in line and ' Moving file ' in line:
+                a, b = line.split(" Moving file ")[1].split(" => ")
+                a = a.strip("'").strip('"')
+                b = b.strip("'").strip('"')
+
+                for track in todo:
+                    if pctl.master_library[track].fullpath == a:
+                        pctl.master_library[track].fullpath = b
+                        pctl.master_library[track].filename = os.path.basename(b)
+                        print("External Edit: File rename detected.")
+                        print("    Renaming: " + a)
+                        print("          To: " + b)
+                        break
+                else:
+                    print("External Edit: A file rename was detected but track was not found.")
 
     gui.message_box = False
     reload_metadata(index)
@@ -11964,25 +11987,19 @@ def cue_scan(content, tn):
 
 
 def worker2():
+
     while True:
 
         time.sleep(0.07)
 
-
         gall_ren.worker_render()
-        # if pl_thumbnail.worker_render():
-        #     gui.pl_update += 1
-        #     #gui.update = 1
 
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
 
-                # search_over.results.clear()
                 temp_results = []
 
                 search_over.searched_text = search_over.search_text.text
-
-                # print("search")
 
                 artists = {}
                 albums = {}
@@ -11990,7 +12007,7 @@ def worker2():
 
                 br = 0
 
-                if search_over.searched_text in ("the", 'and'):
+                if search_over.searched_text in ('the', 'and'):
                     continue
 
                 search_over.sip = True
@@ -12005,49 +12022,51 @@ def worker2():
 
                         t = pctl.master_library[track]
 
+                        # ARTIST
                         if search_magic(search_over.search_text.text, t.artist):
 
                             if t.artist in artists:
                                 artists[t.artist] += 1
-                                # for i, result in enumerate(search_over.results):
-                                #     if result[0] == 0 and result[1] == t.artist:
-                                #
-                                #         search_over.results[i][4] += 1
-                                #         break
                             else:
                                 temp_results.append([0, t.artist, track, playlist[6], 0])
                                 artists[t.artist] = 1
 
-                        # ALBUMS
-                        if search_magic(search_over.search_text.text, t.album) or search_magic(search_over.search_text.text, t.artist):
+                            if t.album in albums:
+                                albums[t.album] += 1
+                            else:
+                                temp_results.append([1, t.album, track, playlist[6], 0])
+                                albums[t.album] = 1
+
+                        elif search_combine(search_over.search_text.text, t.album, t.artist):
 
                             if t.album in albums:
                                 albums[t.album] += 1
-                                # for i, result in enumerate(search_over.results):
-                                #     if result[0] == 1 and result[1] == t.album:
-                                #
-                                #         search_over.results[i][4] += 1
-                                #         break
+                            else:
+                                temp_results.append([1, t.album, track, playlist[6], 0])
+                                albums[t.album] = 1
+
+                        # ALBUMS
+                        elif search_magic(search_over.search_text.text, t.album): #or search_magic(search_over.search_text.text, t.artist):
+
+                            if t.album in albums:
+                                albums[t.album] += 1
                             else:
                                 temp_results.append([1, t.album, track, playlist[6], 0])
                                 albums[t.album] = 1
 
                         # TRACKS
-                        if search_magic(search_over.search_text.text, t.title) or \
-                                (search_magic_any(search_over.search_text.text, t.title) and \
-                                         search_magic_any(search_over.search_text.text, t.artist)):
+                        if search_magic(search_over.search_text.text, t.title):
+                            temp_results.append([2, t.title, track, playlist[6], 1])
+
+                        # TRACKS + ARTIST
+                        elif search_combine(search_over.search_text.text, t.title, t.artist):
                             temp_results.append([2, t.title, track, playlist[6], 1])
 
                         # GENRE
-                        if search_magic(search_over.search_text.text, t.genre) :
+                        if len(t.genre) > 0 and search_magic(search_over.search_text.text, t.genre):
 
                             if t.genre in genres:
                                 genres[t.genre] += 1
-                                # for i, result in enumerate(search_over.results):
-                                #     if result[0] == 1 and result[1] == t.album:
-                                #
-                                #         search_over.results[i][4] += 1
-                                #         break
                             else:
                                 temp_results.append([3, t.genre, track, playlist[6], 0])
                                 genres[t.genre] = 1
@@ -12055,10 +12074,10 @@ def worker2():
                         #time.sleep(0.00001)
                         br += 1
                         if br > 100:
-                            time.sleep(0.0001)
+                            time.sleep(0.00001)
                             br = 0
-                        if search_over.searched_text != search_over.search_text.text:
-                            break
+                            if search_over.searched_text != search_over.search_text.text:
+                                break
 
                 search_over.sip = False
                 search_over.on = 0

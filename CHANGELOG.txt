@@ -16,6 +16,7 @@ v2.8.0
  - Fixed playlist default setting not matching original default
  - Fixed transcode cancel menu overlapping window drag area
  - Fixed fixed message box not clearing after continued keyboard input
+ - [Linux] Filename changes are now tracked when editing tags with Picard
  - Bound F5 key to toggle lyrics view
  - Removed 'search' shortcut from menu
 
