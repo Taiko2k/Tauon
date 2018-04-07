@@ -11448,13 +11448,15 @@ def love_deco():
 extra_menu.add('Love', love, love_deco)
 
 def toggle_search():
-    global quick_search_mode
-    global input_text
-    quick_search_mode ^= True
-    search_text.text = ""
-    input_text = ""
+    # global quick_search_mode
+    # global input_text
+    # quick_search_mode ^= True
+    # search_text.text = ""
+    # input_text = ""
+    #search_over.search_text.text = " "
+    search_over.active = True
 
-# extra_menu.add('Search', toggle_search, hint='BACKSLASH')
+extra_menu.add('Search All', toggle_search)
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
@@ -17320,7 +17322,7 @@ class SearchOverlay:
             if input_text != "" and \
                     not key_ctrl_down and not radiobox and \
                     not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
-                    input_text.isalpha():
+                    input_text.isalnum():
 
                 self.active = True
                 self.old_mouse = copy.deepcopy(mouse_position)
@@ -17347,12 +17349,14 @@ class SearchOverlay:
                 self.search_text.text = ""
                 return
 
+            if input.mouse_click:
+                self.active = False
+                self.search_text.text = ""
+
             mouse_change = False
             if self.old_mouse != mouse_position:
                 mouse_change = True
             # mouse_change = True
-
-
 
             draw.rect_r((x, y, w, h), [5,5,5,230], True)
 
@@ -17413,7 +17417,7 @@ class SearchOverlay:
                 # print(selected)
 
                 if selected != p:
-                    fade = 0.8
+                    fade = 0.85
 
                 # Block separating lower search results
                 if item[4] < 4 and not sec:
@@ -17428,10 +17432,10 @@ class SearchOverlay:
                 start = yy
 
                 if item[0] == 0:
-                    cl = [240, 120, 180, int(255 * fade)]
+                    cl = [250, 140, 190, int(255 * fade)]
                     text = "Artist"
                     yy += 3
-                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
                     draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
 
@@ -17450,6 +17454,11 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
 
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
+
                     if key_return_press and fade == 1:
                         self.click_artist(item[1])
                         self.active = False
@@ -17460,7 +17469,7 @@ class SearchOverlay:
                 if item[0] == 1:
 
                     yy += 5
-                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     artist = pctl.master_library[item[2]].album_artist
                     if artist == "":
@@ -17468,7 +17477,7 @@ class SearchOverlay:
 
                     if full_count < 6:
 
-                        draw_text((120 + 5, yy + 28), "BY", [240, 210, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        draw_text((120 + 5, yy + 28), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8
 
                         xx += draw_text((120 + 30, yy + 25), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
@@ -17481,7 +17490,7 @@ class SearchOverlay:
                         full_count += 1
 
                         if fade == 1:
-                            draw.rect_r((30, yy + 5, 4, 50), [235, 80, 90, 255], True)
+                            draw.rect_r((30, yy + 5, 4, 50), [245, 90, 100, 255], True)
 
                         # Mouse Selection
                         rect = (30, yy, 600, 55)
@@ -17496,14 +17505,16 @@ class SearchOverlay:
                                 self.active = False
                                 self.search_text.text = ""
 
-
-
+                            if level_2_right_click:
+                                pctl.show_current(index=item[2])
+                                self.active = False
+                                self.search_text.text = ""
                     else:
 
-                        draw_text((120 + xx + 11, yy + 3), "BY", [240, 210, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        draw_text((120 + xx + 11, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8
 
-                        xx += draw_text((120 + xx + 30, yy), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += draw_text((120 + xx + 30, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         # Mouse Selection
                         rect = (30, yy, 600, 20)
@@ -17516,6 +17527,10 @@ class SearchOverlay:
                                 self.click_album(item[2])
                                 self.active = False
                                 self.search_text.text = ""
+                            if level_2_right_click:
+                                pctl.show_current(index=item[2])
+                                self.active = False
+                                self.search_text.text = ""
                     if key_return_press and fade == 1:
                         self.click_album(item[2])
                         self.active = False
@@ -17524,18 +17539,18 @@ class SearchOverlay:
                         yy += 50
 
                 if item[0] == 2:
-                    cl = [230, 200, 170, int(255 * fade)]
+                    cl = [250, 220, 190, int(255 * fade)]
                     text = "Track"
-                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                    draw_text((120 + xx + 11, yy + 3), "BY", [240, 150, 100, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    draw_text((120 + xx + 11, yy + 3), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                     xx += 8
                     artist = pctl.master_library[item[2]].artist
-                    xx += draw_text((120 + xx + 30, yy), artist, [250, 250, 250, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    xx += draw_text((120 + xx + 30, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     draw_text((65, yy), text, cl, 14, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30, yy, 4, 17), [235, 80, 90, 255], True)
+                        draw.rect_r((30, yy, 4, 17), [245, 90, 100, 255], True)
 
                     rect = (30, yy, 600, 20)
                     fields.add(rect)
@@ -17547,18 +17562,22 @@ class SearchOverlay:
                             self.click_album(item[2])
                             self.active = False
                             self.search_text.text = ""
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
                     if key_return_press and fade == 1:
                         self.click_album(item[2])
                         self.active = False
                         self.search_text.text = ""
                 if item[0] == 3:
-                    cl = [230, 230, 150, int(255 * fade)]
+                    cl = [240, 240, 160, int(255 * fade)]
                     text = "Genre"
-                    xx = draw_text((120, yy), item[1], [250, 250, 250, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
                     draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30, yy + 4, 4, 17), [235, 80, 90, 255], True)
+                        draw.rect_r((30, yy + 4, 4, 17), [245, 90, 100, 255], True)
 
                     rect = (30, yy, 600, 20)
                     fields.add(rect)
@@ -17570,7 +17589,10 @@ class SearchOverlay:
                             self.click_genre(item[1])
                             self.active = False
                             self.search_text.text = ""
-
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
                     if key_return_press and fade == 1:
                         self.click_genre(item[1])
                         self.active = False
@@ -18807,7 +18829,7 @@ while running:
         if right_click:
             level_2_right_click = True
 
-        if right_click and (radiobox or renamebox or rename_playlist_box or gui.rename_folder_box):
+        if right_click and (radiobox or renamebox or rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
 
         if combo_menu.active and right_click:
@@ -21158,11 +21180,15 @@ while running:
                     draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(190), 15)
 
             # SEARCH
+            # if key_ctrl_down and key_v_press:
+
+            #     search_over.active = True
 
             search_over.render()
 
             if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
-                quick_search_mode = True
+                if not search_over.active:
+                    quick_search_mode = True
                 if search_clear_timer.get() > 3:
                     search_text.text = ""
                 input_text = ""
