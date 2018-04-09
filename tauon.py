@@ -6182,20 +6182,19 @@ class TextBox:
             else:
                 draw_text((x, y), self.text, colour, font)
 
-
-
             space = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
-
-
 
             if TextBox.cursor and self.selection == self.cursor_position:
                 #draw.line(x + space, y + 2, x + space, y + 15, colour)
-                draw.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
+
+                if big:
+                    #draw.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
+                    draw.rect_r((x + space, y - 10 * gui.scale + 2, 2 * gui.scale, 27 * gui.scale), colour, True)
+                else:
+                    draw.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
 
             if click:
                 self.selection = self.cursor_position
-
-
 
         else:
             if active:
@@ -6215,9 +6214,7 @@ class TextBox:
             if active and TextBox.cursor:
                 xx = x + space + 1
                 yy = y + 3
-                #draw.line(xx, yy, xx, yy + 12, colour)
                 if big:
-                    #draw.rect_r((xx + 5 * gui.scale, yy + 10 * gui.scale, 20 * gui.scale, 3 * gui.scale), colour, True)
                     draw.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
                 else:
                     draw.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
@@ -17227,6 +17224,7 @@ lyric_side_top_pulse = EdgePulse()
 
 
 def download_img(link, target_folder):
+
     try:
         response = urllib.request.urlopen(link)
         info = response.info()
@@ -17250,12 +17248,10 @@ def download_img(link, target_folder):
             show_message("The link does not appear to refer to an image file.", 'warning')
         gui.image_downloading = False
 
-
     except:
+
         show_message("Image download failed.", 'warning')
         gui.image_downloading = False
-
-
 
 
 class SearchOverlay:
@@ -17368,7 +17364,7 @@ class SearchOverlay:
             elif not self.results and len(self.search_text.text) > 2:
                 draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
-            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, big=True)
+            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True)
 
             yy = 130
 
@@ -18621,14 +18617,11 @@ while running:
                         gal_down = True
                         key_down_press = False
 
-
             if key_del:
                 del_selected()
 
-
-
             # Arrow keys to change playlist
-            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down:
+            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down and not search_over.active:
                 gui.pl_update = 1
                 gui.update += 1
                 if key_left_press:
