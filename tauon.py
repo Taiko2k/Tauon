@@ -51,6 +51,7 @@ import pickle
 
 t_version = "v2.8.0"
 t_title = 'Tauon Music Box'
+t_id = 'tauonmb'
 print(t_title)
 print(t_version)
 print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
@@ -74,10 +75,12 @@ if 'base_library' in install_directory:
 # Detect what folder should be used for user data
 user_directory = install_directory
 install_mode = False
-if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/"):
+if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/"):
     
     user_directory = os.path.expanduser('~') + "/.tauonmb-user"
     install_mode = True
+    if install_directory[:5] == "/app/":
+        t_id = "org.taiko2000.tauon"  # Flatpak mode
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -553,6 +556,7 @@ class Prefs:    # Used to hold any kind of settings
         self.windows_font_weight_bold = 600
 
         self.linux_font = "Noto Sans"
+        #self.linux_font = "Sans"
         self.linux_bold_font = "Noto Sans Bold"
 
         self.spec2_scroll = False
@@ -4468,8 +4472,8 @@ elif system != 'mac':
                             #'CanSetFullscreen'
                             'CanRaise': True,
                             'HasTrackList': False,
-                            'Identity': 'Tauon Music Box',
-                            'DesktopEntry': 'tauonmb',
+                            'Identity': t_title,
+                            'DesktopEntry': t_id,
                             #'SupportedUriSchemes': ['file']
                             'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
                             'SupportedMileTypes': dbus.Array([
