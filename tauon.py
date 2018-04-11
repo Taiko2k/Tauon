@@ -80,7 +80,7 @@ if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[
     user_directory = os.path.expanduser('~') + "/.tauonmb-user"
     install_mode = True
     if install_directory[:5] == "/app/":
-        t_id = "org.taiko2000.tauon"  # Flatpak mode
+        t_id = "org.taiko2k.tauon"  # Flatpak mode
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -17271,6 +17271,7 @@ class SearchOverlay:
         self.force_select = -1
         self.old_mouse = [0,0]
         self.sip = False
+        self.delay_enter = False
 
     def click_artist(self, name):
 
@@ -17388,6 +17389,19 @@ class SearchOverlay:
                 self.on -= 1
                 self.old_mouse = copy.deepcopy(mouse_position)
 
+            enter = False
+
+            if self.delay_enter and not self.sip:
+                enter = True
+                self.delay_enter = False
+            elif key_return_press:
+                if self.sip:
+                    self.delay_enter = True
+                else:
+                    enter = True
+                    self.delay_enter = False
+
+
             self.on = max(self.on, 0)
             self.on = min(len(self.results) - 1, self.on)
 
@@ -17459,7 +17473,7 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
 
-                    if key_return_press and fade == 1:
+                    if enter and fade == 1:
                         self.click_artist(item[1])
                         self.active = False
                         self.search_text.text = ""
@@ -17531,7 +17545,7 @@ class SearchOverlay:
                                 pctl.show_current(index=item[2])
                                 self.active = False
                                 self.search_text.text = ""
-                    if key_return_press and fade == 1:
+                    if enter and fade == 1:
                         self.click_album(item[2])
                         self.active = False
                         self.search_text.text = ""
@@ -17566,7 +17580,7 @@ class SearchOverlay:
                             pctl.show_current(index=item[2])
                             self.active = False
                             self.search_text.text = ""
-                    if key_return_press and fade == 1:
+                    if enter and fade == 1:
                         self.click_album(item[2])
                         self.active = False
                         self.search_text.text = ""
@@ -17593,7 +17607,7 @@ class SearchOverlay:
                             pctl.show_current(index=item[2])
                             self.active = False
                             self.search_text.text = ""
-                    if key_return_press and fade == 1:
+                    if enter and fade == 1:
                         self.click_genre(item[1])
                         self.active = False
                         self.search_text.text = ""
