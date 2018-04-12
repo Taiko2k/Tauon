@@ -155,7 +155,7 @@ Access by right clicking track; _TRACK MENU -> META... -> MODIFY FOLDER..._  OR 
 Compatible with HTTP streams (Shoutcast, Icecast etc). To open a stream:
 
 1. Go to _MENU -> OPEN STREAM..._
-2. Type in an address (or ctrl+c to paste). (Must start with http:// or ftp://)
+2. Type in an address (or ctrl+v to paste). (Must start with http:// or ftp://)
   > **Tip:** You can manually copy these URLs out of m3u files if available
 3. Click GO to start playing
 

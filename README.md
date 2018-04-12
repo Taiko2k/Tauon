@@ -22,19 +22,21 @@ Designed to be simple and streamlined while putting the user in control of their
   - Lyrics display with support for fetching lyrics from LyricWiki.
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
   - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
-  
-  
+
+
 
 ### Getting Started :dizzy:
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
-For __Ubuntu 17.10__, download and install latest deb package from [releases](https://github.com/Taiko2k/tauonmb/releases) section. (Experimental)
-
 For __Arch Linux__, install from the AUR:  
 
     $ yaourt -S tauon-music-box
 
+For __Other Linux distributions__, you can try an experiemental **flatpak** package.
+
+1. If you have not already, make sure you have correctly installed and configured flatpak for your distro. See https://flatpak.org/setup/.
+2. After downloading from lastes release in  [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `flatpak install --user tauon.flatpak`. To uninstall run `flatpak uninstall --user org.taiko2k.tauon`
 
 ___
 
