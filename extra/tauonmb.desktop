@@ -2,7 +2,7 @@
 Comment=
 Exec=python3 /opt/tauon-music-box/tauon.py %U
 GenericName=Audio Player
-Icon=/opt/tauon-music-box/gui/icon.png
+Icon=tauonmb
 MimeType=audio/ogg;audio/flac;audio/wav;audio/wave;audio/x-tta;audio/mp3;audio/m4a;audio/x-ape
 Name=Tauon Music Box
 StartupNotify=false

@@ -5338,7 +5338,7 @@ if system == "linux":
         cairo_text.prime_font(standard_font, 27 - 5, 17, 17)
         cairo_text.prime_font(standard_font, 28 - 6, 18, 17)
 
-        cairo_text.prime_font(standard_font, 30 - 6, 30, 17)
+        cairo_text.prime_font(standard_font, 50 - 6, 30, 17)
 
         cairo_text.prime_font(standard_font, 22 - 3, 412, 13)
         cairo_text.prime_font(standard_font, 23 - 3, 413, 13)
@@ -5678,7 +5678,7 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 16 + 6, 16, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 17 + 6, 17, weight=standard_weight, y_offset=1)
 
-        pretty_text.prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=-12)
 
         pretty_text.prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
         pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
@@ -5704,6 +5704,7 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 15 + 4, 15, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 16 + 4, 16, weight=standard_weight, y_offset=1)
         pretty_text.prime_font(standard_font, 17 + 4, 17, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
 
         pretty_text.prime_font(semibold_font, 10 + 2, 210, weight=600, y_offset=1)
         pretty_text.prime_font(semibold_font, 11 + 2, 211, weight=bold_weight, y_offset=1)
@@ -5735,7 +5736,7 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
 
 
-        pretty_text.prime_font(standard_font, 30 + 2, 30, weight=standard_weight, y_offset=1)
+        pretty_text.prime_font(standard_font, 30 + 2, 30, weight=standard_weight, y_offset=-12)
 
         pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
         pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
@@ -5765,8 +5766,9 @@ if system == 'windows':
         pretty_text.prime_font(standard_font, 15 + 5, 15, weight=standard_weight, y_offset=0)
         pretty_text.prime_font(standard_font, 16 + 5, 16, weight=standard_weight, y_offset=-1)
         pretty_text.prime_font(standard_font, 17 + 5, 17, weight=standard_weight, y_offset=0)
+        pretty_text.prime_font(standard_font, 30 + 5, 30, weight=standard_weight, y_offset=-12)
         pretty_text.prime_font(semibold_font, 10 + 5, 210, weight=600)
-        #pretty_text.prime_font('Arial', 11 + 4, 211, weight=600, y_offset=1)
+
         pretty_text.prime_font(semibold_font, 11 + 3, 211, weight=600, y_offset=1)
         pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
         pretty_text.prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=0)
@@ -6016,6 +6018,9 @@ class TextBox:
         # A little bit messy.
         # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
         # otherwise it is fixed to end
+
+        selection_height *= gui.scale
+
         if click is False:
             click = input.mouse_click
 
@@ -7600,7 +7605,10 @@ class Menu:
         self.down = False
         self.font = 412
         self.show_icons = show_icons
-        self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
+        if gui.scale > 1:
+            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/2x/sub.png"))
+        else:
+            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
 
         self.id = Menu.count
         self.break_height = 4 * gui.scale
@@ -7757,7 +7765,7 @@ class Menu:
                         colour = [150, 150, 150, 255]
                     if self.sub_active == self.items[i][2]:
                         colour = [150, 150, 150, 255]
-                    self.sub_arrow.asset.render(self.pos[0] + self.w - 13, y_run + 7, colour)
+                    self.sub_arrow.asset.render(self.pos[0] + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
                 # Render the items label
                 draw_text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
@@ -13363,6 +13371,8 @@ def toggle_scale(mode=0):
     if prefs.ui_scale != gui.scale:
         show_message("Change will be applied on restart.")
 
+    pref_box.small_preset()
+
 def toggle_borderless(mode=0):
     global draw_border
     global update_layout
@@ -14008,7 +14018,7 @@ class Over:
 
         if system == "linux":
             y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_scale, "2x UI scaling (broken)")
+            self.toggle_square(x, y, toggle_scale, "2x UI scaling")
 
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
@@ -14264,7 +14274,7 @@ class Over:
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 22 * gui.scale
+        prefs.playlist_row_height = 22 * prefs.ui_scale
         prefs.playlist_font_size = 15
         gui.update_layout()
 
@@ -17042,14 +17052,14 @@ class ViewBox:
             gui.level_2_click = True
 
 
-        x = self.x - 40
+        x = self.x - 40 * gui.scale
 
-        vr = [x, gui.panelY, 52, 220]
+        vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
         draw.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), colours.grey(30), True)
         draw.rect_r(vr, colours.menu_background, True)
 
-        x = x + 7
-        y = gui.panelY + 14
+        x = x + 7 * gui.scale
+        y = gui.panelY + 14 * gui.scale
 
         func = None
 
@@ -17350,7 +17360,7 @@ class SearchOverlay:
                 self.search_text.text = ""
                 return
 
-            if input.mouse_click:
+            if gui.level_2_click and mouse_position[0] > 350 * gui.scale:
                 self.active = False
                 self.search_text.text = ""
 
@@ -17369,7 +17379,7 @@ class SearchOverlay:
             elif not self.results and len(self.search_text.text) > 2:
                 draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
-            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True)
+            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click)
 
             yy = 130
 
@@ -17437,7 +17447,7 @@ class SearchOverlay:
                 if item[4] < 4 and not sec:
                     if i != 0:
                         draw.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
-                        yy += 20
+                        yy += 20 * gui.scale
 
                     sec = True
 
@@ -17448,22 +17458,22 @@ class SearchOverlay:
                 if item[0] == 0:
                     cl = [250, 140, 190, int(255 * fade)]
                     text = "Artist"
-                    yy += 3
-                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    yy += 3 * gui.scale
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
-                    draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
 
                     if fade == 1:
-                        draw.rect_r((30, yy, 4, 23), [235, 80, 90, 255], True)
+                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
 
-                    rect = (30, yy, 600, 20)
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll_point(mouse_position, rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
 
-                        if input.mouse_click:
+                        if gui.level_2_click:
                             self.click_artist(item[1])
                             self.active = False
                             self.search_text.text = ""
@@ -17478,12 +17488,12 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                    yy += 6
+                    yy += 6 * gui.scale
 
                 if item[0] == 1:
 
-                    yy += 5
-                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    yy += 5 * gui.scale
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     artist = pctl.master_library[item[2]].album_artist
                     if artist == "":
@@ -17491,30 +17501,30 @@ class SearchOverlay:
 
                     if full_count < 6:
 
-                        draw_text((120 + 5, yy + 28), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                        xx += 8
+                        draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
 
-                        xx += draw_text((120 + 30, yy + 25), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                        draw.rect_r((50, yy + 5, 50, 50), [50,50,50,150], True)
-                        gall_ren.render(item[2], (50, yy + 5), 50)
+                        draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
+                        gall_ren.render(item[2], (50 * gui.scale, yy + 5), 50 * gui.scale)
                         if fade != 1:
-                            draw.rect_r((50, yy + 5, 50, 50), [0, 0, 0, 70], True)
+                            draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
                         full = True
                         full_count += 1
 
                         if fade == 1:
-                            draw.rect_r((30, yy + 5, 4, 50), [245, 90, 100, 255], True)
+                            draw.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
 
                         # Mouse Selection
-                        rect = (30, yy, 600, 55)
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
                         fields.add(rect)
                         if coll_point(mouse_position, rect) and mouse_change:
                             if self.force_select != p:
                                 self.force_select = p
                                 gui.update = 2
 
-                            if input.mouse_click:
+                            if gui.level_2_click:
                                 self.click_album(item[2])
                                 self.active = False
                                 self.search_text.text = ""
@@ -17525,10 +17535,10 @@ class SearchOverlay:
                                 self.search_text.text = ""
                     else:
 
-                        draw_text((120 + xx + 11, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                        xx += 8
+                        draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
 
-                        xx += draw_text((120 + xx + 30, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         # Mouse Selection
                         rect = (30, yy, 600, 20)
@@ -17537,7 +17547,7 @@ class SearchOverlay:
                             if self.force_select != p:
                                 self.force_select = p
                                 gui.update = 2
-                            if input.mouse_click:
+                            if gui.level_2_click:
                                 self.click_album(item[2])
                                 self.active = False
                                 self.search_text.text = ""
@@ -17550,29 +17560,29 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
                     if full:
-                        yy += 50
+                        yy += 50 * gui.scale
 
                 if item[0] == 2:
                     cl = [250, 220, 190, int(255 * fade)]
                     text = "Track"
-                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                    draw_text((120 + xx + 11, yy + 3), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                    xx += 8
+                    draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    xx += 8 * gui.scale
                     artist = pctl.master_library[item[2]].artist
-                    xx += draw_text((120 + xx + 30, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    xx += draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
-                    draw_text((65, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30, yy, 4, 17), [245, 90, 100, 255], True)
+                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
 
-                    rect = (30, yy, 600, 20)
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll_point(mouse_position, rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
-                        if input.mouse_click:
+                        if gui.level_2_click:
                             self.click_album(item[2])
                             self.active = False
                             self.search_text.text = ""
@@ -17587,19 +17597,19 @@ class SearchOverlay:
                 if item[0] == 3:
                     cl = [240, 240, 160, int(255 * fade)]
                     text = "Genre"
-                    xx = draw_text((120, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
-                    draw_text((65, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30, yy + 4, 4, 17), [245, 90, 100, 255], True)
+                        draw.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
 
-                    rect = (30, yy, 600, 20)
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll_point(mouse_position, rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
-                        if input.mouse_click:
+                        if gui.level_2_click:
                             self.click_genre(item[1])
                             self.active = False
                             self.search_text.text = ""
@@ -17615,7 +17625,7 @@ class SearchOverlay:
                 if i > 15:
                     break
 
-                yy += 22
+                yy += 22 * gui.scale
 
 
 search_over = SearchOverlay()
@@ -18802,9 +18812,11 @@ while running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or gui.rename_folder_box or rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
+        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
+        else:
+            gui.level_2_click = False
 
         if track_box and input.mouse_click:
             w = 540

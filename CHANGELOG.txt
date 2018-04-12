@@ -18,7 +18,6 @@ v2.8.0
  - Fixed fixed message box not clearing after continued keyboard input
  - [Linux] Filename changes are now tracked when editing tags with Picard
  - Bound F5 key to toggle lyrics view
- - Removed 'search' shortcut from menu
 
 
 v2.7.0
