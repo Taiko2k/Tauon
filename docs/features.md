@@ -9,7 +9,7 @@
 | APE | Y        | APEv2    | APEv2   |
 | WV  | Y        | APEv2    | APEv2   |
 | TTA | Y        | APEv2    | APEv2   |
-| M4A | Y        | Y        |         |
+| M4A | Y        | Y        | Y       |
 | OGG | Y        | Y        |         |
 | OPUS| Y        | Y        |         |
 | WMA | Windows  | Windows  |         |
@@ -63,7 +63,7 @@
  - Folder monitoring / auto update
  - Global hotkeys (other than default media keys)
  - Audio EQ setting
- - Tag editing
+ - Tag editing (internal)
  - Read from archive (auto extract zip function exists)
  - Artist/metadata scraping
  - All tag metadata
