@@ -1,4 +1,4 @@
-Release packages under releases page are distributed as 'freeware' and cannot be used for commercial purposes.
+Release packages under releases page are subject to additional restrictions as per the BASS license.
 
 License for this repository alone is as below.
 __________________________________________________
