@@ -33,6 +33,11 @@ For __Arch Linux__, install from the AUR:
 
     $ yaourt -S tauon-music-box
 
+For __Other Linux distributions__, you can try an experiemental **flatpak** package.
+ 
+ 1. If you have not already, make sure you have correctly installed and configured flatpak for your distro. See https://flatpak.org/setup/.
+ 
+ 2. After downloading tauon.flatpak from lastest release in [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `flatpak install tauon.flatpak`. To uninstall run `flatpak uninstall com.github.taiko2k.tauonmb`
 
 ___
 
