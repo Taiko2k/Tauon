@@ -13,11 +13,8 @@ Designed to be simple and streamlined while putting the user in control of their
 
   - Plays most common codecs including MP3 and FLAC.
   - Simple drag and drop track importing.
-  - Fast and responsive UI.
-  - Playlist oriented search and sorting.
-  - Visually keep track of play time.
   - Automatic CUE sheet detection.
-  - Transcode folders while keeping album art. Useful for copying to DAP's.
+  - Quickly transcode folders.
   - Last.fm scrobbling.
   - Lyrics display with support for fetching lyrics from LyricWiki.
   - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
@@ -44,3 +41,4 @@ ___
 For further documentation see [guide](docs/guide.md).
 
 Feel free to submit any issues or suggestions.
+
