@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.8.0"
+t_version = "v2.8.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 print(t_title)
@@ -80,7 +80,7 @@ if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[
     user_directory = os.path.expanduser('~') + "/.tauonmb-user"
     install_mode = True
     if install_directory[:5] == "/app/":
-        t_id = "org.taiko2k.tauon"  # Flatpak mode
+        t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -162,6 +162,20 @@ else:
 
 last_fm_enable = False
 
+try:
+    import setproctitle
+    setproctitle.setproctitle("tauonmb")
+except:
+    print("Could not set process title.")
+
+discord_allow = False
+discord_enable = False
+try:
+    import rpc
+    discord_allow = True
+except:
+    pass
+
 import time
 import ctypes
 import random
@@ -190,6 +204,7 @@ import struct
 import colorsys
 import html
 import csv
+import stat
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -232,12 +247,20 @@ from t_extra import *
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 
+if discord_allow:
+    if system == 'linux':
+        pl = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE).communicate()[0]
+        if not 'Discord' in pl.decode('utf-8', 'ignore'):
+            discord_allow = False
+    else:
+        discord_allow = False
+
 default_player = 1
 running = True
 
 
 # Check if BASS is present and fall back to Gstreamer if not
-if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-Gst' in sys.argv):
+if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-gst' in sys.argv):
     print("BASS not found")
     try:
         import gi
@@ -396,6 +419,11 @@ format_colours = {  # These are the colours used for the label icon in UI 'info 
 # These will be the extensions of files to be added when importing
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
               'm4a', 'ogg', 'aac', 'tta', 'wv', }
+
+Archive_Formats = {'zip'}
+
+if shutil.which('unrar'):
+    Archive_Formats.add("rar")
 
 if system == 'windows':
     DA_Formats.add('wma')  # Bass on Linux does not support WMA
@@ -588,6 +616,10 @@ class Prefs:    # Used to hold any kind of settings
         self.last_device = ""
 
         self.transcode_opus_as = False
+
+
+        self.discord_active = False
+        self.discord_ready = False
 
 
 prefs = Prefs()
@@ -2287,6 +2319,13 @@ class PlayerCtl:
                     self.playerCommand = 'seek'
                     self.playerCommandReady = True
 
+                    # Reload lastfm for rescrobble
+                    if lfm_scrobbler.a_sc:
+                        lfm_scrobbler.a_sc = False
+                        self.a_time = 0
+
+
+
                 elif self.random_mode is False and len(default_playlist) > self.playlist_playing and \
                                 self.master_library[default_playlist[self.playlist_playing]].is_cue is True \
                         and self.master_library[default_playlist[self.playlist_playing + 1]].filename == \
@@ -2881,7 +2920,7 @@ def player3():  # Gstreamer
 
                     # Stop if playing or paused
                     if self.play_state == 1 or self.play_state == 2:
-                        self.pl.set_state(Gst.State.NULL)
+                        self.pl.set_state(Gst.State.READY)
 
                     self.play_state = 1
 
@@ -2922,7 +2961,7 @@ def player3():  # Gstreamer
 
                 elif pctl.playerCommand == 'stop':
                     if self.play_state > 0:
-                        self.pl.set_state(Gst.State.NULL)
+                        self.pl.set_state(Gst.State.READY)
                     self.play_state = 0
 
                 elif pctl.playerCommand == 'seek':
@@ -3291,7 +3330,7 @@ def player():   # BASS
 
     if not bass_ready:
         BassInitSuccess = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
-        print("Using defualt sound device")
+        print("Using default sound device")
     if BassInitSuccess == True:
         print("Bass library initialised")
 
@@ -11553,6 +11592,106 @@ if last_fm_enable:
     x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon)
 
 
+def discord_loop():
+
+    prefs.discord_active = True
+
+    try:
+        print("Attempting to connect to Discord...")
+        rpc_obj = rpc.DiscordIpcClient.for_platform('434627346574606351')
+        print("Discord RPC connection successful.")
+
+        time.sleep(8)
+        start_time = time.time()
+
+        idle_time = Timer()
+
+        state = 0
+        index = -1
+
+        while True:
+            while True:
+                current_state = 0
+                current_index = pctl.playing_object().index
+                if pctl.playing_state == 1:
+                    current_state = 1
+                if state != current_state or index != current_index:
+                    if pctl.playing_time > 4 or current_state != 1:
+                        state = current_state
+                        index = current_index
+                        start_time = time.time()
+                        idle_time.set()
+                        break
+
+                time.sleep(2)
+                if pctl.playing_state != 0:
+                    idle_time.set()
+                if idle_time.get() > 120:
+                    rpc_obj.close()
+                    time.sleep(14)
+                    prefs.discord_active = False
+                    show_message("Disconnected from Discord due to idling")
+                    return
+
+
+            title = "Unknown Track"
+            if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
+                title = pctl.playing_object().artist + " - " + pctl.playing_object().title
+                if len(title) > 50:
+                    title = "Unknown Track"
+
+            if state == 1:
+                print("PLAYING: " + title)
+                activity = {
+                    "state": "Listening",
+                    "details": title,
+                    "timestamps": {
+                        "start": start_time
+                    },
+                    "assets": {
+                        # "small_text": "Text for small_image",
+                        # "small_image": "img_small",
+                        #"large_text": "Application Icon",
+                        "large_image": "tauon-large"
+                    }
+                }
+                rpc_obj.set_activity(activity)
+            else:
+                print("STOPPED")
+                activity = {
+                    "state": "Idle",
+                    "assets": {
+                        "large_image": "tauon-large"
+                    }
+                }
+                rpc_obj.set_activity(activity)
+            time.sleep(16)
+    except:
+        show_message("Error connecting to Discord", 'error')
+    prefs.discord_active = False
+
+
+def activate_discord():
+
+    if not prefs.discord_active:
+        discord_t = threading.Thread(target=discord_loop)
+        discord_t.daemon = True
+        discord_t.start()
+
+def discord_deco():
+    tc = colours.menu_text
+    if prefs.discord_active:
+        tc = colours.menu_text_disabled
+
+    if prefs.discord_active:
+        return [tc, colours.menu_background, "Discord Connected"]
+    else:
+        return [tc, colours.menu_background, 'Show playing in Discord']
+
+
+if discord_allow:
+    x_menu.add("Show playing in Discord", activate_discord, discord_deco)
+
 def exit_func():
     global running
     running = False
@@ -12375,35 +12514,51 @@ def worker1():
             return 0
 
         if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
-            if prefs.auto_extract and os.path.splitext(path)[1][1:].lower() == "zip":
+            if prefs.auto_extract and os.path.splitext(path)[1][1:].lower() in Archive_Formats:
+                type = os.path.splitext(path)[1][1:].lower()
                 split = os.path.splitext(path)
                 target_dir = split[0]
                 print(os.path.getsize(path))
                 if os.path.getsize(path) > 2e+9:
-                    print("Zip file is large!")
+                    print("Archive file is large!")
                     show_message("Skipping oversize zip file (>2GB)")
                     return 1
                 if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
-                    try:
-                        b = to_got
-                        to_got = "ex"
-                        gui.update += 1
-                        zip_ref = zipfile.ZipFile(path, 'r')
-                        zip_ref.extractall(target_dir)
-                        zip_ref.close()
-                    except RuntimeError as e:
-                        to_got = b
-                        if 'encrypted' in e:
-                            show_message("Failed to extract zip archive.", 'warning',
-                                         "The archive is encrypted. You'll need to extract it manually with the password.")
-                        else:
-                            show_message("Failed to extract zip archive.", 'warning',
-                                         "Maybe archive is corrupted? Does disk have enough space and have write permission?")
-                        return 1
-                    except:
-                        to_got = b
-                        show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
-                        return 1
+                    if type == "zip":
+                        try:
+                            b = to_got
+                            to_got = "ex"
+                            gui.update += 1
+                            zip_ref = zipfile.ZipFile(path, 'r')
+                            zip_ref.extractall(target_dir)
+                            zip_ref.close()
+                        except RuntimeError as e:
+                            to_got = b
+                            if 'encrypted' in e:
+                                show_message("Failed to extract zip archive.", 'warning',
+                                             "The archive is encrypted. You'll need to extract it manually with the password.")
+                            else:
+                                show_message("Failed to extract zip archive.", 'warning',
+                                             "Maybe archive is corrupted? Does disk have enough space and have write permission?")
+                            return 1
+                        except:
+                            to_got = b
+                            show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
+                            return 1
+
+                    if type == 'rar':
+
+                        try:
+                            b = to_got
+                            to_got = "ex"
+                            gui.update += 1
+                            line = "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                            result = subprocess.run(shlex.split(line))
+                            print(result)
+                        except:
+                            to_got = b
+                            show_message("Failed to extract rar archive.", 'warning')
+                            return 1
 
                     upper = os.path.dirname(target_dir)
                     cont = os.listdir(target_dir)
@@ -12419,15 +12574,16 @@ def worker1():
                         shutil.rmtree(new)
                         print(new)
                         target_dir = upper + "/" + cont[0]
-                        if not os.path.isfile(target_dir):
-                            print("ERROR!")
+                        if not os.path.isdir(target_dir):
+                            print("Extract error, expected directory not found")
 
                     if prefs.auto_del_zip and not error:
-                        print("Deleting zip file: " + path)
+                        print("Deleting archive file: " + path)
                         os.remove(path)
 
                     to_got = b
                     gets(target_dir)
+                    quick_import_done.append(target_dir)
 
             return 1
 
@@ -14841,6 +14997,7 @@ class TopPanel:
             if x_menu.active:
                 x_menu.active = False
             else:
+
                 x_menu.activate(position=(x + 12, self.height))
                 view_box.activate(x)
 
@@ -14850,8 +15007,6 @@ class TopPanel:
             # vr = [5, self.height, 52, 250]
             # draw.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), colours.grey(30), True)
             # draw.rect_r(vr, colours.menu_background, True)
-
-
 
         # LAYOUT --------------------------------
         x += self.menu_space + word_length
@@ -15929,7 +16084,8 @@ class StandardPlaylist:
                                     u += 1
 
                         # Add folder to selection if clicked
-                        if input.mouse_click:
+                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30):
+
                             quick_drag = True
                             gui.drag_source_position = copy.deepcopy(click_location)
                             playlist_hold = True
@@ -16008,6 +16164,7 @@ class StandardPlaylist:
                 line_hit = False
                 line_over = False
 
+            # Prevent click if near scroll bar
             if scroll_enable and mouse_position[0] < 30:
                 line_hit = False
 
@@ -17037,6 +17194,14 @@ class ViewBox:
 
         if hit is False:
             return gui.set_mode
+
+        if not gui.set_mode:
+            if gui.combo_mode:
+                switch_showcase()
+
+        if album_mode and gui.playlist_width < 550 * gui.scale:
+            toggle_album_mode()
+
         toggle_library_mode()
 
     def render(self):
@@ -17671,6 +17836,8 @@ if system != 'windows':
 # --------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------
 
+
+
 # MAIN LOOP---------------------------------------------------------------------------
 
 gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
@@ -18018,6 +18185,8 @@ def save_state():
 if gui.restart_album_mode:
     toggle_album_mode(True)
 
+quick_import_done = []
+
 while running:
     # bm.get('main')
 
@@ -18040,6 +18209,7 @@ while running:
         key_backslash_press = False
         key_esc_press = False
         key_F11 = False
+        key_F12 = False
         key_F8 = False
         key_F10 = False
         key_F2 = False
@@ -18286,6 +18456,8 @@ while running:
                 key_ralt = True
             elif event.key.keysym.sym == SDLK_F11:
                 key_F11 = True
+            elif event.key.keysym.sym == SDLK_F12:
+                key_F12 = True
             elif event.key.keysym.sym == SDLK_F10:
                 key_F10 = True
             elif event.key.keysym.sym == SDLK_F8:
@@ -18617,7 +18789,37 @@ while running:
                 SDL_SetWindowBordered(t_window, SDL_FALSE)
 
         if key_F8:
-            pass
+
+            downloads = os.path.expanduser("~/Downloads")
+
+            found = False
+            for item in os.listdir(downloads):
+
+                path = os.path.join(downloads, item)
+                print(path)
+                min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
+                if min_age < 10 and os.path.isfile(path) and item[-4:] == '.zip':
+                    if os.path.getsize(path) < 0.6e+9:
+                        load_order = LoadClass()
+                        load_order.target = path
+                        load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+                        load_orders.append(copy.deepcopy(load_order))
+                        found = True
+                    else:
+                        show_message("One or more files seemed a bit too large")
+
+                if min_age < 10 and os.path.isdir(path) and path not in quick_import_done:
+                    if os.path.getsize(path) < 0.6e+9:
+                        load_order = LoadClass()
+                        load_order.target = path
+                        load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+                        load_orders.append(copy.deepcopy(load_order))
+                        quick_import_done.append(path)
+                        found = True
+                    else:
+                        show_message("One or more folders seemed a bit too large")
+            if not found:
+                show_message("No recent archives or folders found")
 
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
@@ -21509,9 +21711,9 @@ while running:
             gui.drag_source_position = [0, 0]
             if window_size[1] - gui.panelBY > i_y > gui.panelY:
                 if len(shift_selection) == 1:
-                    draw.rect_r((i_x + 20, i_y + 1, 10, 10), [150, 150, 235, 240], True)
+                    draw.rect_r((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
                 else:
-                    draw.rect_r((i_x + 20, i_y + 1, 10, 25), [150, 150, 235, 240], True)
+                    draw.rect_r((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
 
             gui.update += 1
 
