@@ -1,6 +1,16 @@
 
 Changelog-------------------------------------
 
+v2.8.1
+
+ - Added new quick import function to key F8
+ - [Linux] Added function to show playing track name in Discord
+ - [Linux] Added auto extract rar archive support where 'unrar' is available
+ - Tweaked 'show columns' button to switch view when on showcase view
+ - Fixed folder title hit area overlapping scroll area
+ - Fixed not scrobbling to last.fm when track is on repeat
+
+
 v2.8.0
 
  - Added new global search function
