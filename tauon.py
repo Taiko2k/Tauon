@@ -302,6 +302,8 @@ gallery_select_animate_timer = Timer()
 gallery_select_animate_timer.force_set(10)
 search_clear_timer = Timer()
 test_timer = Timer()
+lfm_dl_timer = Timer()
+lfm_dl_timer.force_set(60)
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -2299,6 +2301,11 @@ class PlayerCtl:
 
     def test_progress(self):
 
+        # Fuzzy reload lastfm for rescrobble
+        if lfm_scrobbler.a_sc and self.playing_time < 1:
+            lfm_scrobbler.a_sc = False
+            self.a_time = 0
+
         if self.playing_state == 1 and self.playing_time + (
                     prefs.cross_fade_time / 1000) + 0 >= self.playing_length and self.playing_time > 0.2:
 
@@ -2678,19 +2685,82 @@ class LastFMapi:
             track.love()
             track.unlove()
 
-    # The last.fm api is broken here
 
-    # def user_love_to_playlist(self, username):
-    #     if len(username) > 15:
-    #         return
-    #     if self.network is None:
-    #         self.no_user_connect()
-    #
-    #     print("Lookup last.fm user " + username)
-    #
-    #     lastfm_user = self.network.get_user(username)
-    #     #loved = lastfm_user.get_loved_tracks()
-    #     print(lastfm_user.get_recent_tracks())
+    def dl_love(self):
+
+        global lfm_username
+        username = lfm_username
+
+        if last_fm_user_field.text != "":
+            username = last_fm_user_field.text
+
+        if username == "":
+            show_message("No username found", 'error')
+            return
+
+        if len(username) > 25:
+            return
+
+        if lfm_dl_timer.get() < 15:
+            show_message("Dont press this button so much.")
+        lfm_dl_timer.set()
+
+        try:
+
+            if self.network is None:
+                self.no_user_connect()
+
+
+
+            print("Lookup last.fm user " + username)
+
+            lastfm_user = self.network.get_user(username)
+            tracks = lastfm_user.get_loved_tracks(limit=None)
+            #tracks = lastfm_user.get_recent_tracks()
+
+            matches = 0
+            misses = 0
+            updated = 0
+
+            for track in tracks:
+                title = track.track.title
+                artist = track.track.artist.name
+
+                #print("test")
+                #print(dir(artist))
+                #print(artist + " - " + title)
+
+                for index, tr in pctl.master_library.items():
+                    if tr.title == title and tr.artist == artist:
+                        matches += 1
+                        print("MATCH:")
+                        print("     " + artist + " - " + title)
+                        star = star_store.full_get(index)
+                        if star is None:
+                            star = [0, ""]
+                        if "L" not in star[1]:
+                            updated += 1
+                            print("     NEW LOVE")
+                        star = [star[0], star[1] + "L"]
+                        star_store.insert(index, star)
+
+            if len(tracks) == 0:
+                show_message("User has no loved tracks.")
+                return
+            if matches > 0 and updated == 0:
+                show_message(str(matches) + " matched tracks are up to date.")
+                return
+            if matches > 0 and updated > 0:
+                show_message(str(matches) + " tracks matched. " + str(updated) + " were updated.")
+                return
+            else:
+                show_message("Of " + str(len(tracks)) + " loved tracks, no matches were found in local db")
+                return
+        except:
+            raise
+            show_message("This doesn't seem to be working :(", 'error')
+
+
 
 
     def update(self, title, artist, album):
@@ -2754,21 +2824,26 @@ def get_love_index(index):
     else:
         return False
 
-def love(set=True):
+def love(set=True, index=None):
 
     if len(pctl.track_queue) < 1:
         return False
 
-    index = pctl.track_queue[pctl.queue_step]
+    if index is None:
+        index = pctl.track_queue[pctl.queue_step]
 
     loved = False
     star = star_store.full_get(index)
+
     if star is not None:
         if 'L' in star[1]:
             loved = True
 
     if set is False:
         return loved
+
+    if star is None:
+        star = [0, ""]
 
     loved ^= True
 
@@ -9893,6 +9968,46 @@ track_menu = Menu(195, show_icons=True) #175
 
 track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
 track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
+
+
+def last_fm_test(ignore):
+    if lastfm.connected:
+        return True
+    else:
+        return False
+
+def heart_xmenu_colour():
+    global r_menu_index
+    if love(False, r_menu_index):
+        return [245, 60, 60, 255]
+    else:
+        return None
+
+if gui.scale == 2:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
+else:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
+
+heartx_icon.colour = [55, 55, 55, 255]
+heartx_icon.xoff = 1
+heartx_icon.yoff = 0
+heartx_icon.colour_callback = heart_xmenu_colour
+
+def love_decox():
+    global r_menu_index
+
+    if love(False, r_menu_index):
+        return [colours.menu_text, colours.menu_background, "Un-Love Track"]
+    else:
+        return [colours.menu_text, colours.menu_background, "Love Track"]
+
+
+def love_index():
+    global r_menu_index
+    love(True, r_menu_index)
+
+track_menu.add('Love', love_index, love_decox, icon=heartx_icon, show_test=last_fm_test)
+
 track_menu.add('Show  in Gallery', show_in_gal, pass_ref=True, show_test=test_show)
 
 track_menu.add_sub("Meta...", 150)
@@ -11482,6 +11597,24 @@ def toggle_random():
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
 extra_menu.add('Clear Queue', clear_queue, queue_deco)
 
+
+def heart_menu_colour():
+    if not (pctl.playing_state == 1 or pctl.playing_state == 2):
+        return [50, 50, 50, 255]
+    if love(False):
+        return [245, 60, 60, 255]
+    else:
+        return None
+
+if gui.scale == 2:
+    heart_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
+else:
+    heart_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
+
+heart_icon.colour = [245, 60, 60, 255]
+heart_icon.xoff = 3
+heart_icon.yoff = 0
+heart_icon.colour_callback = heart_menu_colour
 def love_deco():
 
     if love(False):
@@ -11493,7 +11626,7 @@ def love_deco():
             return [colours.menu_text_disabled, colours.menu_background, "Love Track"]
 
 
-extra_menu.add('Love', love, love_deco)
+extra_menu.add('Love', love, love_deco, icon=heart_icon)
 
 def toggle_search():
     # global quick_search_mode
@@ -11624,20 +11757,20 @@ def discord_loop():
                         break
 
                 time.sleep(2)
-                if pctl.playing_state != 0:
-                    idle_time.set()
-                if idle_time.get() > 120:
-                    rpc_obj.close()
-                    time.sleep(14)
-                    prefs.discord_active = False
-                    show_message("Disconnected from Discord due to idling")
-                    return
+                # if pctl.playing_state != 0:
+                #     idle_time.set()
+                # if idle_time.get() > 120:
+                #     rpc_obj.close()
+                #     time.sleep(14)
+                #     prefs.discord_active = False
+                #     show_message("Disconnected from Discord due to idling")
+                #     return
 
 
             title = "Unknown Track"
             if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
                 title = pctl.playing_object().artist + " - " + pctl.playing_object().title
-                if len(title) > 50:
+                if len(title) > 150:
                     title = "Unknown Track"
 
             if state == 1:
@@ -12518,7 +12651,7 @@ def worker1():
                 type = os.path.splitext(path)[1][1:].lower()
                 split = os.path.splitext(path)
                 target_dir = split[0]
-                print(os.path.getsize(path))
+                # print(os.path.getsize(path))
                 if os.path.getsize(path) > 2e+9:
                     print("Archive file is large!")
                     show_message("Skipping oversize zip file (>2GB)")
@@ -12530,6 +12663,23 @@ def worker1():
                             to_got = "ex"
                             gui.update += 1
                             zip_ref = zipfile.ZipFile(path, 'r')
+                            matches = 0
+                            count = 0
+                            for fi in zip_ref.namelist():
+                                for ty in DA_Formats:
+                                    if fi[len(ty) * -1:].lower() == ty:
+                                        matches += 1
+                                        break
+                                count += 1
+                            if count == 0:
+                                print("Archive has no files")
+                                return
+                            if count > 300:
+                                print("Zip archive has many files")
+                                return
+                            if matches == 0:
+                                print("Zip archive does not appear to contain audio files")
+                                return
                             zip_ref.extractall(target_dir)
                             zip_ref.close()
                         except RuntimeError as e:
@@ -12547,9 +12697,32 @@ def worker1():
                             return 1
 
                     if type == 'rar':
-
+                        b = to_got
                         try:
-                            b = to_got
+                            matches = 0
+                            count = 0
+                            line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                            result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+                            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+                            # print(file_list)
+                            for fi in file_list:
+                                for ty in DA_Formats:
+                                    if fi[len(ty) * -1:].lower() == ty:
+                                        matches += 1
+                                        break
+                                count += 1
+                            if count > 300:
+                                print("RAR archive has many files")
+                                return
+                            if matches == 0:
+                                print("RAR archive does not appear to contain audio files")
+                                return
+                            if count == 0:
+                                print("Archive has no files")
+                                return
+                            #print(matches)
+
+
                             to_got = "ex"
                             gui.update += 1
                             line = "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
@@ -12558,6 +12731,7 @@ def worker1():
                         except:
                             to_got = b
                             show_message("Failed to extract rar archive.", 'warning')
+
                             return 1
 
                     upper = os.path.dirname(target_dir)
@@ -14070,6 +14244,8 @@ class Over:
 
         self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
+        y += 52 * gui.scale
+        self.button(x, y, "Update local loves", lastfm.dl_love)
 
     def clear_lfm(self):
         global lfm_hash
@@ -15835,6 +16011,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 os.path.splitext((n_track.filename))[
                     0]
 
+        #line += "   💓"
+
         index = default_playlist[p_track]
         star_x = 0
         total = star_store.get(index)
@@ -16340,6 +16518,8 @@ class StandardPlaylist:
                     selection_menu.activate(default_playlist[p_track])
                     selection_stage = 2
                 else:
+                    global r_menu_index
+                    r_menu_index = default_playlist[p_track]
                     track_menu.activate(default_playlist[p_track])
                     gui.pl_update += 1
 
@@ -16827,6 +17007,8 @@ class ComboPlaylist:
 
                 # Right click menu
                 if right_click and line_hit:
+                    global r_menu_index
+                    r_menu_index = index_on
                     track_menu.activate(index_on)
                     quick_drag = False
 
@@ -18790,34 +18972,53 @@ while running:
 
         if key_F8:
 
-            downloads = os.path.expanduser("~/Downloads")
-
+            download_directories = [os.path.expanduser("~/Downloads")]
             found = False
-            for item in os.listdir(downloads):
 
-                path = os.path.join(downloads, item)
-                print(path)
-                min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
-                if min_age < 10 and os.path.isfile(path) and item[-4:] == '.zip':
-                    if os.path.getsize(path) < 0.6e+9:
-                        load_order = LoadClass()
-                        load_order.target = path
-                        load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-                        load_orders.append(copy.deepcopy(load_order))
-                        found = True
-                    else:
-                        show_message("One or more files seemed a bit too large")
+            path = config_directory + "/config.txt"
+            with open(path, encoding="utf_8") as f:
+                content = f.read().splitlines()
+                for p in content:
+                    if len(p) == 0:
+                        continue
+                    if p[0] == " " or p[0] == "#":
+                        continue
+                    if 'add_download_directory=' in p:
+                        if len(p) < 1000:
+                            path = p.split('=')[1]
+                            if os.path.isdir(path):
+                                download_directories.append(path)
+                                print("Additional directory: " + path)
+                            else:
+                                print("Directory was not found: " + path)
 
-                if min_age < 10 and os.path.isdir(path) and path not in quick_import_done:
-                    if os.path.getsize(path) < 0.6e+9:
-                        load_order = LoadClass()
-                        load_order.target = path
-                        load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-                        load_orders.append(copy.deepcopy(load_order))
-                        quick_import_done.append(path)
-                        found = True
-                    else:
-                        show_message("One or more folders seemed a bit too large")
+            for downloads in download_directories:
+
+                for item in os.listdir(downloads):
+
+                    path = os.path.join(downloads, item)
+                    # print(path)
+                    min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
+                    if min_age < 120 and os.path.isfile(path) and item[-3:] in Archive_Formats:
+                        if os.path.getsize(path) < 0.6e+9:
+                            load_order = LoadClass()
+                            load_order.target = path
+                            load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+                            load_orders.append(copy.deepcopy(load_order))
+                            found = True
+                        else:
+                            show_message("One or more archives seemed a bit too large")
+
+                    if min_age < 30 and os.path.isdir(path) and path not in quick_import_done:
+                        if os.path.getsize(path) < 0.6e+9:
+                            load_order = LoadClass()
+                            load_order.target = path
+                            load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+                            load_orders.append(copy.deepcopy(load_order))
+                            quick_import_done.append(path)
+                            found = True
+                        else:
+                            show_message("One or more folders seemed a bit too large")
             if not found:
                 show_message("No recent archives or folders found")
 
@@ -18949,7 +19150,7 @@ while running:
 
             show_message("Test error message", 'error', "Just a test, no need to worry.")
 
-            print(pctl.playing_object().disc_number)
+            lastfm.dl_love()
 
             # gallery_jumper.calculate()
 
