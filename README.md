@@ -26,9 +26,7 @@ Designed to be simple and streamlined while putting the user in control of their
 
 For __Windows__, download latest installer from [releases](https://github.com/Taiko2k/tauonmb/releases) section.
 
-For __Arch Linux__, install from the AUR:  
-
-    $ yaourt -S tauon-music-box
+For __Arch Linux__, install avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
 
 For __Other Linux distributions__, you can try an experiemental **flatpak** package.
  
