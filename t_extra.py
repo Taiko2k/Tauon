@@ -20,7 +20,8 @@
 
 
 import time
-
+import random
+import colorsys
 
 # A seconds based timer
 class Timer:
@@ -200,3 +201,27 @@ def search_combine(terms, ev1, ev2):
         if word in ev2:
                 return True
     return False
+
+
+class ColourGenCache:
+
+    def __init__(self, range_min, range_max):
+
+        self.range_min = range_min
+        self.range_max = range_max
+        self.store = {}
+
+    def get(self, key):
+
+        if key in self.store:
+            return self.store[key]
+
+        h = round(random.random(), 2)
+        s = 0.7
+        l = 0.7
+        colour = colorsys.hls_to_rgb(h, s, l)
+        colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+
+        self.store[key] = colour
+        return colour
+

@@ -4,13 +4,19 @@ Changelog-------------------------------------
 v2.8.1
 
  - Added 'love track' option to track menu
- - Added option to download/update loved tracks from last.fm
+ - Added show love hearts for loved tracks display option
+ - Added function to show last.fm friends loves in heart display
+ - Added function to fetch loved tracks from last.fm
+ - Added functions to clear loved tracks from db
  - Added new quick import function to key F8
+ - Added warning when attempting to love track while not connected to last.fm
  - [Linux] Added function to show playing track name in Discord
  - [Linux] Added auto extract rar archive support where 'unrar' is available
  - Tweaked 'show columns' button to switch view when on showcase view
  - Fixed folder title hit area overlapping scroll area
  - Fixed tracks not scrobbling on repeats
+ - Fixed track love function blocking main UI
+ - [Linux only] Fixed performance slowdown when truncating text
 
 
 v2.8.0
