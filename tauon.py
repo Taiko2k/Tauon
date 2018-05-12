@@ -246,6 +246,7 @@ from t_extra import *
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
+warnings.simplefilter('ignore', stagger.errors.Warning)
 
 if discord_allow:
     if system == 'linux':
@@ -381,7 +382,6 @@ source = None
 album_playlist_width = 430
 
 update_title = False
-star_lines = False
 
 playlist_hold_position = 0
 playlist_hold = False
@@ -746,7 +746,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.gallery_show_text = False
         self.bb_show_art = False
-        self.show_stars = True
+        # self.show_stars = True
 
         self.spec2_y = 22 * self.scale
         self.spec2_w = 140 * self.scale
@@ -803,6 +803,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.dtm3_cum = 0
         self.dtm3_total = 0
         self.previous_playlist_id = ""
+
+        self.star_mode = "line"
+        self.heart_fields = []
 
 gui = GuiVar()
 
@@ -1119,6 +1122,8 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.album_gain = None
         self.track_gain = None
 
+        self.lfm_friend_likes = set()
+
 
 class LoadClass:    # Object for import track jobs (passed to worker thread)
     def __init__(self):
@@ -1228,8 +1233,8 @@ try:
         gui.gallery_show_text = save[50]
     if save[51] is not None:
         gui.bb_show_art = save[51]
-    if save[52] is not None:
-        gui.show_stars = save[52]
+    # if save[52] is not None:
+    #     gui.show_stars = save[52]
     if save[53] is not None:
         prefs.auto_lfm = save[53]
     if save[54] is not None:
@@ -1260,7 +1265,8 @@ try:
         album_playlist_width = save[67]
     if save[68] is not None:
         prefs.transcode_opus_as = save[68]
-
+    if save[69] is not None:
+        gui.star_mode = save[69]
 
     state_file.close()
     del save
@@ -1407,6 +1413,11 @@ if db_version > 0:
         show_message(
             "Updated to v2.6.3")
 
+    if db_version <= 2.1:
+        print("Updating database to version 2.1")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'lfm_friend_likes', set())
+
 # Loading Config -----------------
 
 # main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
@@ -1537,7 +1548,7 @@ else:
 
 
 try:
-    star_lines = view_prefs['star-lines']
+    # star_lines = view_prefs['star-lines']
     update_title = view_prefs['update-title']
     prefs.prefer_side = view_prefs['side-panel']
     prefs.dim_art = view_prefs['dim-art']
@@ -1557,6 +1568,7 @@ if prefs.prefer_side is False:
 
 # get_len = 0
 # get_len_filepath = ""
+
 
 
 def get_global_mouse():
@@ -2532,6 +2544,8 @@ class LastFMapi:
 
     network = None
 
+    scanning_friends = False
+
     def connect(self, m_notify=True):
 
         global lfm_password
@@ -2671,20 +2685,75 @@ class LastFMapi:
         #    return ""
 
     def love(self, artist, title):
-        if prefs.auto_lfm:
+        if not self.connected and prefs.auto_lfm:
             self.connect(False)
+            self.hold = True
         if self.connected and artist != "" and title != "":
             track = self.network.get_track(artist, title)
             track.love()
 
     def unlove(self, artist, title):
-        if prefs.auto_lfm:
+        if not self.connected and prefs.auto_lfm:
             self.connect(False)
+            self.hold = True
         if self.connected and artist != "" and title != "":
             track = self.network.get_track(artist, title)
             track.love()
             track.unlove()
 
+    def clear_friends_love(self):
+
+        count = 0
+        for index, tr in pctl.master_library.items():
+            count += len(tr.lfm_friend_likes)
+            tr.lfm_friend_likes.clear()
+
+        show_message("Removed {} loves.".format(count))
+
+    def get_friends_love(self):
+
+        self.scanning_friends = True
+
+        try:
+            global lfm_username
+            username = lfm_username
+
+            if username == "":
+                return
+
+            if self.network is None:
+                self.no_user_connect()
+
+            time.sleep(1)
+            lastfm_user = self.network.get_user(username)
+            friends = lastfm_user.get_friends(limit=None)
+            show_message("Getting friend data...", 'info', "This may take a very long time.")
+            time.sleep(3)
+            for friend in friends:
+                time.sleep(1)
+                print("Getting friend loves: " + friend.name)
+
+                try:
+                    loves = friend.get_loved_tracks(limit=None)
+                except:
+                    continue
+
+                for track in loves:
+                    title = track.track.title
+                    artist = track.track.artist.name
+                    time.sleep(0.001)
+                    for index, tr in pctl.master_library.items():
+
+                        if tr.title == title and tr.artist == artist:
+                            tr.lfm_friend_likes.add(friend.name)
+                            print("MATCH")
+                            print("     " + artist + " - " + title)
+                            print("      ----- " + friend.name)
+
+        except:
+            show_message("There was an error getting friends loves", 'warning')
+            raise
+        self.scanning_friends = False
 
     def dl_love(self):
 
@@ -2842,6 +2911,12 @@ def love(set=True, index=None):
     if set is False:
         return loved
 
+    global lfm_username
+    if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
+        show_message("You have a last.fm account ready but are not connected.", 'info',
+                     'Either connect, enable auto connect, or select clear to remove the account.')
+        return
+
     if star is None:
         star = [0, ""]
 
@@ -2856,7 +2931,8 @@ def love(set=True, index=None):
 
 
     star_store.insert(index, star)
-    gui.pl_update = 1
+    gui.pl_update = 2
+    gui.pl_update = 2
 
 
 class LastScrob:
@@ -5140,7 +5216,7 @@ class Drawing:
                 return xy[0]
 
         if gui.cairo_text:
-            x, y = cairo_text.wh(text, font)
+            x, y = cairo_text.wh(text, font, 1000)
             if height:
                 return y
             else:
@@ -5261,16 +5337,19 @@ if system == "linux":
 
             self.f_dict[user_handle] = (name + " " + str(size), y_off)
 
-        def wh(self, text, font):
+        def wh(self, text, font, max_x):
 
             self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-
+            self.layout.set_ellipsize(Pango.EllipsizeMode.END)
+            self.layout.set_width(max_x * 1000)
             self.layout.set_text(text, -1)
 
             return self.layout.get_pixel_size()
 
 
         def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False):
+
+            max_x += 12  # HACKY
 
             if len(text) == 0:
                 return 0
@@ -5296,7 +5375,7 @@ if system == "linux":
 
                 return sd[0].w
 
-            w, h = self.wh(text, font)
+            w, h = self.wh(text, font, max_x)
 
             if w < 1:
                 return 0
@@ -5321,9 +5400,11 @@ if system == "linux":
 
             if max_y != None:
                 layout.set_ellipsize(Pango.EllipsizeMode.END)
-                layout.set_width(max_x * 1000)  # x1000 seems to make it work, idy why
+                layout.set_width(max_x * 1000)
                 layout.set_height(max_y * 1000)  # This doesn't seem to work
-
+            else:
+                layout.set_ellipsize(Pango.EllipsizeMode.END)
+                layout.set_width(max_x * 1000)
 
             # Antialias settings here dont any effect, fontconfg settings override it
 
@@ -5477,7 +5558,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
     return draw_text(location, text, colour, font, maxx)
 
 
-def draw_text(location, text, colour, font, max=1000, bg=None):
+def draw_text(location, text, colour, font, max=4000, bg=None):
 
 
     if gui.win_text:
@@ -5529,8 +5610,8 @@ def draw_text(location, text, colour, font, max=1000, bg=None):
                     max_y = location[4]
                 return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True)
 
-        if max < 1000:
-            text = trunc_line(text, font, max)
+        # if max < 4000:
+        #     text = trunc_line(text, font, max)
         return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
     else:
         print("draw sdl")
@@ -10004,9 +10085,13 @@ def love_decox():
 
 def love_index():
     global r_menu_index
-    love(True, r_menu_index)
 
-track_menu.add('Love', love_index, love_decox, icon=heartx_icon, show_test=last_fm_test)
+    #love(True, r_menu_index)
+    shoot_love = threading.Thread(target=love, args=[True, r_menu_index])
+    shoot_love.daemon = True
+    shoot_love.start()
+
+track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
 track_menu.add('Show  in Gallery', show_in_gal, pass_ref=True, show_test=test_show)
 
@@ -11611,6 +11696,10 @@ if gui.scale == 2:
 else:
     heart_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
 
+heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
+heart_colours = ColourGenCache(160, 255)
+
+
 heart_icon.colour = [245, 60, 60, 255]
 heart_icon.xoff = 3
 heart_icon.yoff = 0
@@ -11625,8 +11714,12 @@ def love_deco():
         else:
             return [colours.menu_text_disabled, colours.menu_background, "Love Track"]
 
+def bar_love():
+    shoot_love = threading.Thread(target=love)
+    shoot_love.daemon = True
+    shoot_love.start()
 
-extra_menu.add('Love', love, love_deco, icon=heart_icon)
+extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
 def toggle_search():
     # global quick_search_mode
@@ -13652,24 +13745,40 @@ if prefs.enable_web is True:
 # --------------------------------------------------------------
 
 def star_line_toggle(mode=0):
-    global star_lines
 
     if mode == 1:
-        return star_lines
-    star_lines ^= True
-    if star_lines:
-        gui.show_stars = False
+        return gui.star_mode == 'line'
+
+    if gui.star_mode == 'line':
+        gui.star_mode = 'none'
+    else:
+        gui.star_mode = 'line'
+
     gui.update += 1
     gui.pl_update = 1
 
 def star_toggle(mode=0):
 
     if mode == 1:
-        return gui.show_stars
-    gui.show_stars ^= True
-    if gui.show_stars:
-        global star_lines
-        star_lines = False
+        return gui.star_mode == 'star'
+
+    if gui.star_mode == 'star':
+        gui.star_mode = 'none'
+    else:
+        gui.star_mode = 'star'
+
+    gui.update += 1
+    gui.pl_update = 1
+
+def heart_toggle(mode=0):
+
+    if mode == 1:
+        return gui.star_mode == 'heart'
+
+    if gui.star_mode == 'heart':
+        gui.star_mode = 'none'
+    else:
+        gui.star_mode = 'heart'
 
     gui.update += 1
     gui.pl_update = 1
@@ -13724,8 +13833,9 @@ def toggle_borderless(mode=0):
 
 
 config_items = [
-    ['Show playtime as lines', star_line_toggle],
-    ['Show playtime as stars', star_toggle],
+    ['Show playtime lines', star_line_toggle],
+    ['Show playtime stars', star_toggle],
+    ['Show love hearts', heart_toggle],
 ]
 
 
@@ -14234,18 +14344,47 @@ class Over:
         if not prefs.auto_lfm:
             x = self.box_x + 50 * gui.scale + int(self.w / 2)
             y += 85 * gui.scale
-            draw_text((x,y, 2), "Events will only be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
+            draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
         x = self.box_x + self.item_x_offset + 300 * gui.scale
-        y = self.box_y + 20 * gui.scale + 40 * gui.scale
+        y = self.box_y + 35 * gui.scale
 
-        self.toggle_square(x, y, toggle_lfm_auto, "Auto activate")
+        self.toggle_square(x, y, toggle_lfm_auto, "Auto connect")
         y += 26 * gui.scale
 
         self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
-        y += 52 * gui.scale
-        self.button(x, y, "Update local loves", lastfm.dl_love)
+        y += 42 * gui.scale
+        self.button(x, y, "Get user loves", lastfm.dl_love, width=110)
+
+        y += 26 * gui.scale
+        self.button(x, y, "Clear local loves", self.clear_local_loves, width=110)
+
+
+
+        y += 36 * gui.scale
+        self.button(x, y, "Get friend loves", self.get_friend_love, width=110)
+        if lastfm.scanning_friends:
+            draw_text((x + 120 * gui.scale, y), "Scanning...",
+                      colours.grey_blend_bg(111), 11)
+
+        y += 26 * gui.scale
+        self.button(x, y, "Clear friend loves", lastfm.clear_friends_love, width=110)
+
+    def clear_local_loves(self):
+
+        for key, star in star_store.db.items():
+            star = [star[0], star[1].strip("L")]
+            star_store.db[key] = star
+
+    def get_friend_love(self):
+
+        if not lastfm.scanning_friends:
+            shoot_dl = threading.Thread(target=lastfm.get_friends_love)
+            shoot_dl.daemon = True
+            shoot_dl.start()
+        else:
+            show_message("This process is already running. Wait for it to finish.")
 
     def clear_lfm(self):
         global lfm_hash
@@ -14769,9 +14908,9 @@ class Fields:
         self.field_array = []
         self.force = False
 
-    def add(self, rect):
+    def add(self, rect, callback=None):
 
-        self.field_array.append(rect)
+        self.field_array.append((rect, callback))
 
     def test(self):
 
@@ -14784,8 +14923,10 @@ class Fields:
         self.id = []
 
         for f in self.field_array:
-            if coll_point(mouse_position, f):
+            if coll_point(mouse_position, f[0]):
                 self.id.append(1)  # += "1"
+                if f[1] is not None:  # Call callback if present
+                    f[1]()
             else:
                 self.id.append(0)  # += "0"
 
@@ -14801,6 +14942,11 @@ class Fields:
 
 
 fields = Fields()
+
+def update_playlist_call():
+    gui.update + 2
+    gui.pl_update = 2
+
 
 pref_box = Over()
 
@@ -15941,7 +16087,7 @@ class BottomBarType1:
 bottom_bar1 = BottomBarType1()
 
 
-def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1):
+def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
     timec = colours.bar_time
     titlec = colours.title_text
     indexc = colours.index_text
@@ -16017,7 +16163,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         star_x = 0
         total = star_store.get(index)
 
-        if star_lines and total > 0 and pctl.master_library[index].length > 0:
+        if gui.star_mode == 'line' and total > 0 and pctl.master_library[index].length > 0:
             #total = pctl.star_library[key]
             ratio = total / pctl.master_library[index].length
             if ratio > 0.55:
@@ -16033,7 +16179,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
 
-        if gui.show_stars and total > 0 and pctl.master_library[
+        if gui.star_mode == 'star' and total > 0 and pctl.master_library[
             index].length != 0:
 
             stars = star_count(total, pctl.master_library[index].length)
@@ -16042,6 +16188,34 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                        y + gui.star_text_y_offset, 1), starl,
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
+
+        if gui.star_mode == 'heart':
+            count = 0
+            spacing = 6
+            if love(False, index):
+
+                count = 1
+
+                heart_row_icon.render(width + start_x - 52 * gui.scale - offset_font_extra,
+                       ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
+
+            for name in pctl.master_library[index].lfm_friend_likes:
+                x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count
+                yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
+                heart_row_icon.render(x,
+                                      yy, heart_colours.get(name))
+
+                rect = [x - 4, yy - 4, 17, 17]
+                gui.heart_fields.append(rect)
+                fields.add(rect, update_playlist_call)
+                #draw.rect_r(rect, [255, 0, 0, 50], True)
+                if coll_point(mouse_position, rect):
+                    gui.pl_update += 1
+
+                    w = draw.text_calc(name, 12)
+                    xx = x - w
+                    draw.rect_r((xx + 4, yy - 22, w + 6, 15), [15, 15, 15, 255], True)
+                    draw_text((xx + 7, yy - 23), name, [240, 240, 240, 255], 12)
 
         if len(indexLine) > 2:
 
@@ -16536,7 +16710,7 @@ class StandardPlaylist:
             if not gui.set_mode:
 
                 line_render(n_track, p_track, gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w,
-                            this_line_playing, album_fade, gui.playlist_left + inset_left, gui.playlist_width - inset_right, prefs.line_style)
+                            this_line_playing, album_fade, gui.playlist_left + inset_left, gui.playlist_width - inset_right, prefs.line_style, gui.playlist_top + gui.playlist_row_height * w)
             else:
                 # NEE ---------------------------------------------------------
 
@@ -16567,7 +16741,7 @@ class StandardPlaylist:
                         #total = playtime_penalty(n_track, total)
                         #if (key in pctl.star_library) and pctl.star_library[key] != 0 and n_track.length != 0 and wid > 0:
                         if total > 0 and n_track.length != 0 and wid > 0:
-                            if gui.show_stars:
+                            if gui.star_mode == 'star':
 
                                 # re = 0
                                 # if get_love(n_track):
@@ -18269,7 +18443,7 @@ def save_state():
 
     print("Writing database to disk.")
 
-    view_prefs['star-lines'] = star_lines
+    #view_prefs['star-lines'] = star_lines
     view_prefs['update-title'] = update_title
     view_prefs['side-panel'] = prefs.prefer_side
     view_prefs['dim-art'] = prefs.dim_art
@@ -18301,7 +18475,7 @@ def save_state():
             folder_image_offsets,
             lfm_username,
             lfm_hash,
-            2.1,  # Version, used for upgrading
+            2.2,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             gui.side_panel_size,
@@ -18336,7 +18510,7 @@ def save_state():
             gui.set_bar,
             gui.gallery_show_text,
             gui.bb_show_art,
-            gui.show_stars,
+            False, # Was show stars
             prefs.auto_lfm,
             prefs.scrobble_mark,
             prefs.replay_gain,
@@ -18353,7 +18527,7 @@ def save_state():
             album_mode,
             album_playlist_width,
             prefs.transcode_opus_as,
-            None
+            gui.star_mode
             ]
 
     #print(prefs.last_device + "-----")
@@ -19150,7 +19324,7 @@ while running:
 
             show_message("Test error message", 'error', "Just a test, no need to worry.")
 
-            lastfm.dl_love()
+            lastfm.get_friends()
 
             # gallery_jumper.calculate()
 
@@ -20156,6 +20330,13 @@ while running:
                             SDL_SetCursor(cursor_standard)
                             gui.cursor_mode = 0
 
+                # heart field test
+                if gui.heart_fields:
+                    for field in gui.heart_fields:
+                        fields.add(field, update_playlist_call)
+
+
+
                 if gui.pl_update > 0:
 
                     gui.pl_update -= 1
@@ -20165,6 +20346,7 @@ while running:
                         else:
                             combo_pl_render.full_render()
                     else:
+                        gui.heart_fields.clear()
                         playlist_render.full_render()
 
                 else:
