@@ -11,11 +11,14 @@ v2.8.1
  - Added new quick import function to key F8
  - Added warning when attempting to love track while not connected to last.fm
  - [Linux] Added function to show playing track name in Discord
- - [Linux] Added auto extract rar archive support where 'unrar' is available
+ - [Linux] Added auto extract rar archive support when 'unrar' is available
  - Tweaked 'show columns' button to switch view when on showcase view
  - Fixed folder title hit area overlapping scroll area
  - Fixed tracks not scrobbling on repeats
  - Fixed track love function blocking main UI
+ - Fixed crash when broadcast advances track after deleting playlists
+ - Fixed right end of broadcast seek bar not being clickable
+ - Fixed possible case causing subroutine crash
  - [Linux only] Fixed performance slowdown when truncating text
 
 
