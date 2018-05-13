@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.8.1"
+t_version = "v2.8.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 print(t_title)
@@ -1864,7 +1864,7 @@ class PlayerCtl:
 
         self.broadcast_active = False
         self.join_broadcast = False
-        self.broadcast_playlist = 0
+        self.broadcast_playlist = ""
         self.broadcast_position = 0
         self.broadcast_index = 0
         self.broadcast_time = 0
@@ -2541,6 +2541,7 @@ class LastFMapi:
     connected = False
     hold = False
     API_KEY = "0eea8ea966ab2ca395731e2c3c22e81e"
+    scanning_username = ""
 
     network = None
 
@@ -2730,6 +2731,7 @@ class LastFMapi:
             show_message("Getting friend data...", 'info', "This may take a very long time.")
             time.sleep(3)
             for friend in friends:
+                self.scanning_username = friend.name
                 time.sleep(1)
                 print("Getting friend loves: " + friend.name)
 
@@ -10917,7 +10919,8 @@ def broadcast_feature_deco():
 def broadcast_select_track(index):
     if pctl.broadcast_active:
         pctl.broadcast_index = index
-        pctl.broadcast_playlist = copy.deepcopy(pctl.playlist_active)
+        pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][6])
+
         pctl.broadcast_position = default_playlist.index(pctl.broadcast_index)
         pctl.broadcast_time = 0
         pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
@@ -11574,10 +11577,10 @@ def toggle_broadcast():
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
             return 0
-        pctl.broadcast_playlist = pctl.playlist_active
+        pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][6])
         pctl.broadcast_position = 0
 
-        pctl.broadcast_index = pctl.multi_playlist[pctl.broadcast_playlist][2][pctl.broadcast_position]
+        pctl.broadcast_index = pctl.multi_playlist[pctl.playlist_active][2][pctl.broadcast_position]
         pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
                               pctl.master_library[pctl.broadcast_index].title
@@ -12358,9 +12361,369 @@ def cue_scan(content, tn):
     # cue_list.append(filepath)
 
 
+class SearchOverlay:
+
+    def __init__(self):
+
+        self.active = False
+        self.search_text = TextBox()
+
+        self.results = []
+        self.searched_text = ""
+        self.on = 0
+        self.force_select = -1
+        self.old_mouse = [0,0]
+        self.sip = False
+        self.delay_enter = False
+
+    def click_artist(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if pctl.master_library[item].artist.lower() == name.lower():
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title="Artist: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+        global key_return_press
+        key_return_press = False
+
+    def click_genre(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if pctl.master_library[item].genre.lower().replace("-", "") == name.lower().replace("-", ""):
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title="Genre: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+        global key_return_press
+        key_return_press = False
+
+    def click_album(self, index):
+
+        pctl.jump(index)
+        pctl.show_current(playing=True)
+        global key_return_press
+        key_return_press = False
+
+    def render(self):
+
+        if self.active is False:
+
+            if input_text != "" and \
+                    not key_ctrl_down and not radiobox and \
+                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
+                    input_text.isalnum():
+
+                self.active = True
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+
+        if self.active:
+
+            x = 0
+            y = 0
+            w = window_size[0]
+            h = window_size[1]
+
+            if key_backspace_press:
+                self.searched_text = ""
+                self.results.clear()
+
+                if len(self.search_text.text) <= 1:
+                    self.active = False
+                    self.search_text.text = ""
+                    return
+
+            if key_esc_press:
+                self.active = False
+                self.search_text.text = ""
+                return
+
+            if gui.level_2_click and mouse_position[0] > 350 * gui.scale:
+                self.active = False
+                self.search_text.text = ""
+
+            mouse_change = False
+            if self.old_mouse != mouse_position:
+                mouse_change = True
+            # mouse_change = True
+
+            draw.rect_r((x, y, w, h), [5,5,5,230], True)
+
+            if self.sip:
+                pass
+                draw.rect_r((15,15,7,7), [100,80,240,255], True)
+                draw.rect_r((27,15,7,7), [100,80,240,255], True)
+                draw.rect_r((39,15,7,7), [100,80,240,255], True)
+            elif not self.results and len(self.search_text.text) > 2:
+                draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
+
+            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click)
+
+            yy = 130
+
+            if key_down_press:
+
+                if self.force_select > -1:
+                    self.on = self.force_select
+                    self.force_select = -1
+                self.on += 1
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+            if key_up_press:
+
+                if self.force_select > -1:
+                    self.on = self.force_select
+                    self.force_select = -1
+                self.on -= 1
+                self.old_mouse = copy.deepcopy(mouse_position)
+
+            enter = False
+
+            if self.delay_enter and not self.sip:
+                enter = True
+                self.delay_enter = False
+            elif key_return_press:
+                if self.sip:
+                    self.delay_enter = True
+                else:
+                    enter = True
+                    self.delay_enter = False
+
+
+            self.on = max(self.on, 0)
+            self.on = min(len(self.results) - 1, self.on)
+
+            full_count = 0
+
+            sec = False
+
+            p = -1
+
+            if self.on > 4:
+                p += self.on - 4
+
+            for i, item in enumerate(self.results):
+
+                p += 1
+
+                if p > len(self.results) - 1:
+                    break
+
+                item = self.results[p]
+
+                fade = 1
+                selected = self.on
+                if self.force_select > -1:
+                    selected = self.force_select
+
+                # print(selected)
+
+                if selected != p:
+                    fade = 0.85
+
+                # Block separating lower search results
+                if item[4] < 4 and not sec:
+                    if i != 0:
+                        draw.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
+                        yy += 20 * gui.scale
+
+                    sec = True
+
+                full = False
+
+                start = yy
+
+                if item[0] == 0:
+                    cl = [250, 140, 190, int(255 * fade)]
+                    text = "Artist"
+                    yy += 3 * gui.scale
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+                            self.click_artist(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        self.click_artist(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+
+                if item[0] == 1:
+
+                    yy += 5 * gui.scale
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    artist = pctl.master_library[item[2]].album_artist
+                    if artist == "":
+                        artist = pctl.master_library[item[2]].artist
+
+                    if full_count < 6:
+
+                        draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
+
+                        xx += draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
+                        gall_ren.render(item[2], (50 * gui.scale, yy + 5), 50 * gui.scale)
+                        if fade != 1:
+                            draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
+                        full = True
+                        full_count += 1
+
+                        if fade == 1:
+                            draw.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
+
+                        # Mouse Selection
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
+                        fields.add(rect)
+                        if coll_point(mouse_position, rect) and mouse_change:
+                            if self.force_select != p:
+                                self.force_select = p
+                                gui.update = 2
+
+                            if gui.level_2_click:
+                                self.click_album(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
+                            if level_2_right_click:
+                                pctl.show_current(index=item[2])
+                                self.active = False
+                                self.search_text.text = ""
+                    else:
+
+                        draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        xx += 8 * gui.scale
+
+                        xx += draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                        # Mouse Selection
+                        rect = (30, yy, 600, 20)
+                        fields.add(rect)
+                        if coll_point(mouse_position, rect) and mouse_change:
+                            if self.force_select != p:
+                                self.force_select = p
+                                gui.update = 2
+                            if gui.level_2_click:
+                                self.click_album(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+                            if level_2_right_click:
+                                pctl.show_current(index=item[2])
+                                self.active = False
+                                self.search_text.text = ""
+                    if enter and fade == 1:
+                        self.click_album(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+                    if full:
+                        yy += 50 * gui.scale
+
+                if item[0] == 2:
+                    cl = [250, 220, 190, int(255 * fade)]
+                    text = "Track"
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+
+                    draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    xx += 8 * gui.scale
+                    artist = pctl.master_library[item[2]].artist
+                    xx += draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+                            self.click_album(item[2])
+                            self.active = False
+                            self.search_text.text = ""
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
+                    if enter and fade == 1:
+                        self.click_album(item[2])
+                        self.active = False
+                        self.search_text.text = ""
+                if item[0] == 3:
+                    cl = [240, 240, 160, int(255 * fade)]
+                    text = "Genre"
+                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        draw.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll_point(mouse_position, rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+                            self.click_genre(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            self.active = False
+                            self.search_text.text = ""
+                    if enter and fade == 1:
+                        self.click_genre(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                if i > 15:
+                    break
+
+                yy += 22 * gui.scale
+
+
+search_over = SearchOverlay()
+
 # LOADER----------------------------------------------------------------------
-
-
 
 def worker2():
 
@@ -14365,7 +14728,7 @@ class Over:
         y += 36 * gui.scale
         self.button(x, y, "Get friend loves", self.get_friend_love, width=110)
         if lastfm.scanning_friends:
-            draw_text((x + 120 * gui.scale, y), "Scanning...",
+            draw_text((x + 120 * gui.scale, y), "scanning...",
                       colours.grey_blend_bg(111), 11)
 
         y += 26 * gui.scale
@@ -15408,6 +15771,9 @@ class TopPanel:
         elif pctl.encoder_pause == 1 and pctl.broadcast_active:
             text = "Streaming Paused"
             bg = colours.streaming_text
+        elif lastfm.scanning_friends:
+            text = "Scanning: " + lastfm.scanning_username
+            bg = [200, 150, 240, 255]
         else:
             status = False
 
@@ -15433,7 +15799,7 @@ class TopPanel:
             draw.rect((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
             draw.rect((x, y + 4), (100, 9), colours.grey(30))
 
-            if input.mouse_click and coll_point(mouse_position, (x, y, 90, 11)):
+            if input.mouse_click and coll_point(mouse_position, (x, y, 100, 11)):
                 newtime = ((mouse_position[0] - x) / 100) * pctl.master_library[pctl.broadcast_index].length
                 pctl.broadcast_time = newtime
                 pctl.playerCommand = 'encseek'
@@ -15443,7 +15809,7 @@ class TopPanel:
             x += 110
             draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
 
-            self.drag_zone_start_x = x + 21
+            self.drag_zone_start_x = x + 21 * gui.scale
 
             if input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
                 line = ""
@@ -16199,23 +16565,35 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 heart_row_icon.render(width + start_x - 52 * gui.scale - offset_font_extra,
                        ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
 
+                x = width + start_x - 52 * gui.scale - offset_font_extra
+
+                yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
+                rect = [x - 4, yy - 4, 15, 17]
+                gui.heart_fields.append(rect)
+                fields.add(rect, update_playlist_call)
+                if coll_point(mouse_position, rect):
+                    gui.pl_update += 1
+                    w = draw.text_calc("You", 13)
+                    xx = (x - w) - 5 * gui.scale
+                    draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
+                    draw_text((xx + 5, yy - 26), "You", [250, 250, 250, 255], 13)
+
             for name in pctl.master_library[index].lfm_friend_likes:
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 heart_row_icon.render(x,
                                       yy, heart_colours.get(name))
 
-                rect = [x - 4, yy - 4, 17, 17]
+                rect = [x - 4, yy - 4, 15, 17]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
-                #draw.rect_r(rect, [255, 0, 0, 50], True)
                 if coll_point(mouse_position, rect):
                     gui.pl_update += 1
-
-                    w = draw.text_calc(name, 12)
-                    xx = x - w
-                    draw.rect_r((xx + 4, yy - 22, w + 6, 15), [15, 15, 15, 255], True)
-                    draw_text((xx + 7, yy - 23), name, [240, 240, 240, 255], 12)
+                    w = draw.text_calc(name, 13)
+                    xx = (x - w) - 5 * gui.scale
+                    draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
+                    draw_text((xx + 5, yy - 26), name, [250, 250, 250, 255], 13)
+                count += 1
 
         if len(indexLine) > 2:
 
@@ -17788,368 +18166,6 @@ def download_img(link, target_folder):
         show_message("Image download failed.", 'warning')
         gui.image_downloading = False
 
-
-class SearchOverlay:
-
-    def __init__(self):
-
-        self.active = False
-        self.search_text = TextBox()
-
-        self.results = []
-        self.searched_text = ""
-        self.on = 0
-        self.force_select = -1
-        self.old_mouse = [0,0]
-        self.sip = False
-        self.delay_enter = False
-
-    def click_artist(self, name):
-
-        playlist = []
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
-                if pctl.master_library[item].artist.lower() == name.lower():
-                    if item not in playlist:
-                        playlist.append(item)
-
-        pctl.multi_playlist.append(pl_gen(title="Artist: " + name,
-                                          playlist=copy.deepcopy(playlist),
-                                          hide_title=0))
-
-        switch_playlist(len(pctl.multi_playlist) - 1)
-
-        global key_return_press
-        key_return_press = False
-
-    def click_genre(self, name):
-
-        playlist = []
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
-                if pctl.master_library[item].genre.lower().replace("-", "") == name.lower().replace("-", ""):
-                    if item not in playlist:
-                        playlist.append(item)
-
-        pctl.multi_playlist.append(pl_gen(title="Genre: " + name,
-                                          playlist=copy.deepcopy(playlist),
-                                          hide_title=0))
-
-        switch_playlist(len(pctl.multi_playlist) - 1)
-
-        global key_return_press
-        key_return_press = False
-
-    def click_album(self, index):
-
-        pctl.jump(index)
-        pctl.show_current(playing=True)
-        global key_return_press
-        key_return_press = False
-
-    def render(self):
-
-        if self.active is False:
-
-            if input_text != "" and \
-                    not key_ctrl_down and not radiobox and \
-                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
-                    input_text.isalnum():
-
-                self.active = True
-                self.old_mouse = copy.deepcopy(mouse_position)
-
-
-        if self.active:
-
-            x = 0
-            y = 0
-            w = window_size[0]
-            h = window_size[1]
-
-            if key_backspace_press:
-                self.searched_text = ""
-                self.results.clear()
-
-                if len(self.search_text.text) <= 1:
-                    self.active = False
-                    self.search_text.text = ""
-                    return
-
-            if key_esc_press:
-                self.active = False
-                self.search_text.text = ""
-                return
-
-            if gui.level_2_click and mouse_position[0] > 350 * gui.scale:
-                self.active = False
-                self.search_text.text = ""
-
-            mouse_change = False
-            if self.old_mouse != mouse_position:
-                mouse_change = True
-            # mouse_change = True
-
-            draw.rect_r((x, y, w, h), [5,5,5,230], True)
-
-            if self.sip:
-                pass
-                draw.rect_r((15,15,7,7), [100,80,240,255], True)
-                draw.rect_r((27,15,7,7), [100,80,240,255], True)
-                draw.rect_r((39,15,7,7), [100,80,240,255], True)
-            elif not self.results and len(self.search_text.text) > 2:
-                draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
-
-            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click)
-
-            yy = 130
-
-            if key_down_press:
-
-                if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on += 1
-                self.old_mouse = copy.deepcopy(mouse_position)
-
-            if key_up_press:
-
-                if self.force_select > -1:
-                    self.on = self.force_select
-                    self.force_select = -1
-                self.on -= 1
-                self.old_mouse = copy.deepcopy(mouse_position)
-
-            enter = False
-
-            if self.delay_enter and not self.sip:
-                enter = True
-                self.delay_enter = False
-            elif key_return_press:
-                if self.sip:
-                    self.delay_enter = True
-                else:
-                    enter = True
-                    self.delay_enter = False
-
-
-            self.on = max(self.on, 0)
-            self.on = min(len(self.results) - 1, self.on)
-
-            full_count = 0
-
-            sec = False
-
-            p = -1
-
-            if self.on > 4:
-                p += self.on - 4
-
-            for i, item in enumerate(self.results):
-
-                p += 1
-
-                if p > len(self.results) - 1:
-                    break
-
-                item = self.results[p]
-
-                fade = 1
-                selected = self.on
-                if self.force_select > -1:
-                    selected = self.force_select
-
-                # print(selected)
-
-                if selected != p:
-                    fade = 0.85
-
-                # Block separating lower search results
-                if item[4] < 4 and not sec:
-                    if i != 0:
-                        draw.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
-                        yy += 20 * gui.scale
-
-                    sec = True
-
-                full = False
-
-                start = yy
-
-                if item[0] == 0:
-                    cl = [250, 140, 190, int(255 * fade)]
-                    text = "Artist"
-                    yy += 3 * gui.scale
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
-
-                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-
-                    if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-
-                        if gui.level_2_click:
-                            self.click_artist(item[1])
-                            self.active = False
-                            self.search_text.text = ""
-
-                        if level_2_right_click:
-                            pctl.show_current(index=item[2])
-                            self.active = False
-                            self.search_text.text = ""
-
-                    if enter and fade == 1:
-                        self.click_artist(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                    yy += 6 * gui.scale
-
-                if item[0] == 1:
-
-                    yy += 5 * gui.scale
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
-
-                    artist = pctl.master_library[item[2]].album_artist
-                    if artist == "":
-                        artist = pctl.master_library[item[2]].artist
-
-                    if full_count < 6:
-
-                        draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
-
-                        xx += draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
-
-                        draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
-                        gall_ren.render(item[2], (50 * gui.scale, yy + 5), 50 * gui.scale)
-                        if fade != 1:
-                            draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
-                        full = True
-                        full_count += 1
-
-                        if fade == 1:
-                            draw.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
-
-                        # Mouse Selection
-                        rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
-                        fields.add(rect)
-                        if coll_point(mouse_position, rect) and mouse_change:
-                            if self.force_select != p:
-                                self.force_select = p
-                                gui.update = 2
-
-                            if gui.level_2_click:
-                                self.click_album(item[2])
-                                self.active = False
-                                self.search_text.text = ""
-
-                            if level_2_right_click:
-                                pctl.show_current(index=item[2])
-                                self.active = False
-                                self.search_text.text = ""
-                    else:
-
-                        draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                        xx += 8 * gui.scale
-
-                        xx += draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
-
-                        # Mouse Selection
-                        rect = (30, yy, 600, 20)
-                        fields.add(rect)
-                        if coll_point(mouse_position, rect) and mouse_change:
-                            if self.force_select != p:
-                                self.force_select = p
-                                gui.update = 2
-                            if gui.level_2_click:
-                                self.click_album(item[2])
-                                self.active = False
-                                self.search_text.text = ""
-                            if level_2_right_click:
-                                pctl.show_current(index=item[2])
-                                self.active = False
-                                self.search_text.text = ""
-                    if enter and fade == 1:
-                        self.click_album(item[2])
-                        self.active = False
-                        self.search_text.text = ""
-                    if full:
-                        yy += 50 * gui.scale
-
-                if item[0] == 2:
-                    cl = [250, 220, 190, int(255 * fade)]
-                    text = "Track"
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
-
-                    draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
-                    xx += 8 * gui.scale
-                    artist = pctl.master_library[item[2]].artist
-                    xx += draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
-
-                    draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
-                            self.click_album(item[2])
-                            self.active = False
-                            self.search_text.text = ""
-                        if level_2_right_click:
-                            pctl.show_current(index=item[2])
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
-                        self.click_album(item[2])
-                        self.active = False
-                        self.search_text.text = ""
-                if item[0] == 3:
-                    cl = [240, 240, 160, int(255 * fade)]
-                    text = "Genre"
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
-
-                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
-                    if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
-
-                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
-                    fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
-                        if self.force_select != p:
-                            self.force_select = p
-                            gui.update = 2
-                        if gui.level_2_click:
-                            self.click_genre(item[1])
-                            self.active = False
-                            self.search_text.text = ""
-                        if level_2_right_click:
-                            pctl.show_current(index=item[2])
-                            self.active = False
-                            self.search_text.text = ""
-                    if enter and fade == 1:
-                        self.click_genre(item[1])
-                        self.active = False
-                        self.search_text.text = ""
-
-                if i > 15:
-                    break
-
-                yy += 22 * gui.scale
-
-
-search_over = SearchOverlay()
 
 
 # Set SDL window drag areas
@@ -22459,11 +22475,21 @@ while running:
             pctl.broadcast_index].length and not pctl.join_broadcast:
         pctl.broadcast_position += 1
         print('next')
-        if pctl.broadcast_position > len(pctl.multi_playlist[pctl.broadcast_playlist][2]) - 1:
+
+
+        for i, playlist in enumerate(pctl.multi_playlist):
+            if playlist[6] == pctl.broadcast_playlist:
+                broadcast_playlist = i
+                break
+        else:
+            pctl.broadcast_position = 0
+            broadcast_playlist = 0
+
+        if pctl.broadcast_position > len(pctl.multi_playlist[broadcast_playlist][2]) - 1:
             print('reset')
             pctl.broadcast_position = 0
 
-        pctl.broadcast_index = pctl.multi_playlist[pctl.broadcast_playlist][2][pctl.broadcast_position]
+        pctl.broadcast_index = pctl.multi_playlist[broadcast_playlist][2][pctl.broadcast_position]
         pctl.broadcast_time = 0
         pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
         pctl.b_start_time = pctl.master_library[pctl.broadcast_index].start_time
