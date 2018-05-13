@@ -14,11 +14,10 @@ Designed to be simple and streamlined while putting the user in control of their
   - Plays most common codecs including MP3 and FLAC.
   - Simple drag and drop track importing.
   - Automatic CUE sheet detection.
-  - Quickly transcode folders.
-  - Last.fm scrobbling.
+  - Easily [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone).
+  - Last.fm scrobbling with track love support.
   - Lyrics display with support for fetching lyrics from LyricWiki.
-  - Open Icecast/Shoutcast streams from URL. Record streams with automatic tagging and splitting.
-  - Outbound radio broadcasting. Streams playlist in background without affecting local playback.
+  - Outbound [radio broadcasting](https://github.com/Taiko2k/tauonmb/wiki/Outbound-Broadcasting). Streams playlist in background without affecting local playback.
 
 
 
