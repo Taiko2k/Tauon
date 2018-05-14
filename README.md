@@ -35,7 +35,7 @@ For __Other Linux distributions__, you can try an experiemental **flatpak** pack
 
 ___
 
-For further documentation see [guide](docs/guide.md).
+For further documentation see [tutorial](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Tutorial).
 
 Feel free to submit any issues or suggestions.
 
