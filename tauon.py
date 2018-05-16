@@ -14540,7 +14540,7 @@ class Over:
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
 
-            draw_text((x, y - 22 * gui.scale), "Set audio output device", [160, 160, 160, 255], 212)
+            draw_text((x, y - 22 * gui.scale), "Set audio output device", [170, 170, 170, 255], 212)
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
