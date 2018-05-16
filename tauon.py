@@ -15655,7 +15655,7 @@ class TopPanel:
         # Menu Bar
 
         x += self.ini_menu_space
-        y += 8 * gui.scale
+        y += 7 * gui.scale
         #y += 7
 
 
