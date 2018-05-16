@@ -23,10 +23,10 @@
 245,240,90		album line
 
 202,232,162		track playing
-140,140,140		index playing
+160,160,160		index playing
 255,107,107		artist playing
 245,240,90		album playing
-140,140,140		time playing
+160,160,160		time playing
 
 85,85,85		track missing
 

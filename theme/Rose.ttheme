@@ -23,16 +23,16 @@
 8,250,134		album line
 
 241,65,107		track playing
-140,140,140		index playing
+160,160,160		index playing
 32,178,170		artist playing
 8,250,134		album playing
-140,140,140		time playing
+160,160,160		time playing
 
 85,85,85		track missing
 
 100,100,100		fav line
 40,40,40		folder line
-120,120,120		folder title 
+125,125,125		folder title
 #8,250,134
 
 255,255,255,4		playing highlight
