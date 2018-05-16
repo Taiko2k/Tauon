@@ -49,7 +49,7 @@ import sys
 import os
 import pickle
 
-t_version = "v2.8.2"
+t_version = "v2.8.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 print(t_title)
@@ -807,6 +807,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.star_mode = "line"
         self.heart_fields = []
 
+        self.web_running = False
+
 gui = GuiVar()
 
 
@@ -963,14 +965,14 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.title_text = [190, 190, 190, 255]
         self.index_text = self.grey(70)
-        self.time_text = self.index_text
+        self.time_text = self.grey(180)
         self.artist_text = [195, 255, 104, 255]
         self.album_text = [245, 240, 90, 255]
 
-        self.index_playing = self.grey(200)
+        self.index_playing = self.grey(190)
         self.artist_playing = [195, 255, 104, 255]
         self.album_playing = [245, 240, 90, 255]
-        self.title_playing = self.grey(210)
+        self.title_playing = self.grey(230)
 
         self.time_playing = [180, 194, 107, 255]
 
@@ -997,7 +999,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.media_buttons_off = self.grey(55)
 
         self.star_line = [100, 100, 100, 255]
-        self.folder_title = [120, 120, 120, 255]
+        self.folder_title = [130, 130, 130, 255]
         self.folder_line = [40, 40, 40, 255]
 
         self.scroll_colour = [45, 45, 45, 255]
@@ -12424,7 +12426,7 @@ class SearchOverlay:
         if self.active is False:
 
             if input_text != "" and \
-                    not key_ctrl_down and not radiobox and \
+                    not key_ctrl_down and not radiobox and not renamebox and \
                     not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
                     input_text.isalnum():
 
@@ -13787,6 +13789,8 @@ def reload_albums(quiet=False):
 # ------------------------------------------------------------------------------------
 # WEBSERVER
 
+
+
 def webserv():
     if prefs.enable_web is False:
 
@@ -13800,9 +13804,22 @@ def webserv():
         show_message("Web server failed to start.", 'warning', "Required dependency 'flask' was not found.")
         return 0
 
-
+    gui.web_running = True
 
     app = Flask(__name__)
+
+    def shutdown_server():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+
+    @app.route('/shutdown', methods=['POST'])
+    def shutdown():
+        shutdown_server()
+        gui.web_running = False
+        show_message("Web server stopped.")
+        return 'Server shutting down...'
 
     @app.route('/radio/')
     def radio():
@@ -14260,7 +14277,18 @@ def toggle_append_date(mode=0):
 def toggle_enable_web(mode=0):
     if mode == 1:
         return prefs.enable_web
+
     prefs.enable_web ^= True
+
+    if prefs.enable_web and not gui.web_running:
+        webThread = threading.Thread(target=webserv)
+        webThread.daemon = True
+        webThread.start()
+        show_message("Web server starting", 'done')
+
+    elif prefs.enable_web is False:
+        requests.post("http://localhost:7590/shutdown")
+        time.sleep(0.25)
 
 
 def toggle_allow_remote(mode=0):
@@ -14278,8 +14306,11 @@ def toggle_expose_web(mode=0):
     if mode == 1:
         return prefs.expose_web
     prefs.expose_web ^= True
-    if prefs.expose_web:
-        show_message("Caution! External network connections will be accepted.", 'info', "Leaving this setting enabled may pose security and/or privacy risks.")
+
+    if not gui.web_running:
+        return
+    else:
+        show_message("Web server needs restart for this change to take effect.")
 
 def toggle_scrobble_mark(mode=0):
     if mode == 1:
@@ -14552,7 +14583,7 @@ class Over:
 
         y += 35 * gui.scale
         self.toggle_square(x, y, toggle_enable_web,
-                           "Web interface*")
+                           "Web interface")
 
         if toggle_enable_web(1):
 
@@ -14582,7 +14613,7 @@ class Over:
                 SDL_SetCursor(cursor_standard)
 
         y += 25 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections*")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections")
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
         y += 23 * gui.scale
@@ -14619,7 +14650,6 @@ class Over:
         self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
 
         y = self.box_y + 220 * gui.scale
-        draw_text((x, y - 2 * gui.scale), "* Applies on restart", colours.grey(100), 11)
         self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file)
 
 
@@ -16544,6 +16574,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                              star_x + 3 * gui.scale,
                              1
                              ], alpha_mod(colours.star_line, album_fade), True)
+                star_x += 5
 
         if gui.star_mode == 'star' and total > 0 and pctl.master_library[
             index].length != 0:
@@ -16562,38 +16593,48 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 count = 1
 
-                heart_row_icon.render(width + start_x - 52 * gui.scale - offset_font_extra,
-                       ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
-
                 x = width + start_x - 52 * gui.scale - offset_font_extra
 
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
-                rect = [x - 4, yy - 4, 15, 17]
+                rect = [x - 1, yy - 4, 15, 17]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
                 if coll_point(mouse_position, rect):
                     gui.pl_update += 1
                     w = draw.text_calc("You", 13)
                     xx = (x - w) - 5 * gui.scale
+                    draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
                     draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
                     draw_text((xx + 5, yy - 26), "You", [250, 250, 250, 255], 13)
 
+
+                heart_row_icon.render(width + start_x - 52 * gui.scale - offset_font_extra,
+                       ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
+
+                star_x = 18
+
             for name in pctl.master_library[index].lfm_friend_likes:
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count
+
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 heart_row_icon.render(x,
                                       yy, heart_colours.get(name))
 
-                rect = [x - 4, yy - 4, 15, 17]
+                rect = [x - 1, yy - 4, 15, 17]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
                 if coll_point(mouse_position, rect):
                     gui.pl_update += 1
                     w = draw.text_calc(name, 13)
                     xx = (x - w) - 5 * gui.scale
+                    draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
                     draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
                     draw_text((xx + 5, yy - 26), name, [250, 250, 250, 255], 13)
                 count += 1
+                star_x = (heart_row_icon.w + spacing) * count + 2
+
+
+
 
         if len(indexLine) > 2:
 
@@ -19189,7 +19230,7 @@ while running:
                     path = os.path.join(downloads, item)
                     # print(path)
                     min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
-                    if min_age < 120 and os.path.isfile(path) and item[-3:] in Archive_Formats:
+                    if os.path.isfile(path) and item[-3:] in Archive_Formats:
                         if os.path.getsize(path) < 0.6e+9:
                             load_order = LoadClass()
                             load_order.target = path
@@ -19209,6 +19250,7 @@ while running:
                             found = True
                         else:
                             show_message("One or more folders seemed a bit too large")
+
             if not found:
                 show_message("No recent archives or folders found")
 
@@ -19825,7 +19867,7 @@ while running:
                 if input.mouse_click:
                     side_drag = True
 
-                if gui.cursor_mode == 0:
+                if gui.cursor_mode == 0 and not quick_drag:
                     gui.cursor_mode = 2
                     SDL_SetCursor(cursor_shift)
 

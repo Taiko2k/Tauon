@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v2.8.1
+v2.8.3
 
  - Added 'love track' option to track menu
  - Added show love hearts for loved tracks display option
@@ -13,13 +13,16 @@ v2.8.1
  - [Linux] Added function to show playing track name in Discord
  - [Linux] Added auto extract rar archive support when 'unrar' is available
  - Tweaked 'show columns' button to switch view when on showcase view
+ - Web server can now be stated and stopped without restart
  - Fixed folder title hit area overlapping scroll area
  - Fixed tracks not scrobbling on repeats
  - Fixed track love function blocking main UI
  - Fixed crash when broadcast advances track after deleting playlists
  - Fixed right end of broadcast seek bar not being clickable
  - Fixed possible case causing subroutine crash
+ - Fixed rename box triggering search overlay
  - [Linux only] Fixed performance slowdown when truncating text
+ - Moved documentation to Github wiki
 
 
 v2.8.0
