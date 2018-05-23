@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v2.8.4
+
+ - Fixed extra track being selected if mouse moved quickly
+ - Fixed previous selected track temporarily remaining highlighted after right click
+
 v2.8.3
 
  - Added 'love track' option to track menu
