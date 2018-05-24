@@ -1,8 +1,10 @@
 
 Changelog-------------------------------------
 
-v2.8.4
+v3.0.0
 
+ - Added new bugs
+ - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
 
