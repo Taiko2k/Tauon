@@ -5368,7 +5368,9 @@ if system == "linux":
             self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
             self.layout.set_ellipsize(Pango.EllipsizeMode.END)
             self.layout.set_width(max_x * 1000)
+            self.layout.set_height(2000 * 1000)
             self.layout.set_text(text, -1)
+
 
             return self.layout.get_pixel_size()
 
@@ -5399,6 +5401,8 @@ if system == "linux":
 
                 SDL_RenderCopy(renderer, sd[1], None, sd[0])
 
+                if wrap:
+                    return sd[0].h
                 return sd[0].w
 
             w, h = self.wh(text, font, max_x)
@@ -5409,10 +5413,10 @@ if system == "linux":
             h += 4  # Compensate for characters that drop past the baseline, pango dosent seem to allow for this
 
             if wrap:
-                h = int((w / max_x) * h) + h
+                #h = int((w / max_x) * h) + h
                 w = max_x + 1
-            if max_y != None:
-                h = max_y
+            # if max_y != None:
+            #     h = max_y
 
             #perf_timer.set()
 
@@ -5514,6 +5518,8 @@ if system == "linux":
                 SDL_DestroyTexture(so[1])
                 del ttc[key]
                 del ttl[0]
+            if wrap:
+                return dst.h
             return dst.w
 
     cairo_text = CT()
@@ -16875,7 +16881,7 @@ class StandardPlaylist:
                             move_on_title = True
 
                     # Detect folder title click
-                    if (input.mouse_click or right_click) and coll_point(mouse_position, track_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+                    if (input.mouse_click or right_click) and coll_point(mouse_position, input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
@@ -17791,6 +17797,91 @@ class ArtBox:
 
 art_box = ArtBox()
 
+class ScrollBox():
+
+    def __init__(self):
+
+        self.held = False
+        self.source_click_y = 0
+        self.source_bar_y = 0
+
+    def draw(self, x, y, w, h, value, max_value):
+
+        if max_value < 2:
+            return 0
+
+
+
+        bar_height = 90
+
+        draw.rect_r((x, y, w, h), [255, 255, 255, 10], True)
+
+        half = bar_height // 2
+
+        ratio = value / max_value
+
+        mi = y + half
+        mo = y + h - half
+        distance = mo - mi
+
+        position = int(round(distance * ratio))
+
+        if coll_point(mouse_position, (x, y, w, h)):
+
+            if coll_point(mouse_position, (x, mi + position - half, w, bar_height)):
+                if input.mouse_click:
+                    self.held = True
+
+                    p_y = pointer(c_int(0))
+                    SDL_GetGlobalMouseState(None, p_y)
+                    self.source_click_y = p_y.contents.value
+                    self.source_bar_y = position
+
+            elif mouse_down:
+
+                    if mouse_position[1] < mi + position:
+                        position -= 1
+                    else:
+                        position += 1
+
+                    if position < 0:
+                        position = 0
+                    if position > distance:
+                        position = distance
+
+                    ratio = position / distance
+                    value = int(round(max_value * ratio))
+
+        if self.held and mouse_up or not mouse_down:
+            self.held = False
+
+        if self.held and not window_is_focused():
+            self.held = False
+
+        if self.held:
+            p_y = pointer(c_int(0))
+            SDL_GetGlobalMouseState(None, p_y)
+            new_y = p_y.contents.value
+            gui.update += 1
+
+            offset = new_y - self.source_click_y
+
+            position = self.source_bar_y + offset
+
+            if position < 0:
+                position = 0
+            if position > distance:
+                position = distance
+
+            ratio = position / distance
+            value = int(round(max_value * ratio))
+
+
+        draw.rect_r((x, mi + position - half, w, bar_height), [255, 255, 255, 10], True)
+
+        return value
+
+mini_lyrics_scroll = ScrollBox()
 
 class MetaBox:
 
@@ -17801,11 +17892,71 @@ class MetaBox:
         if h < 15:
             return
 
-        if prefs.show_lyrics_side and len(pctl.track_queue) > 0 \
-                    and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
-            pass
+        # Test for show lyric menu on right ckick
+        if coll_point(mouse_position, (x + 10, y, w - 10, h)):
+            if right_click and 3 > pctl.playing_state > 0:
+                gui.force_showcase_index = -1
+                showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
 
+        # Draw lyrics if avaliable
+        if prefs.show_lyrics_side and pctl.track_queue \
+                    and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and h > 45 and w > 200:
+
+            # Test for scroll wheel input
+            if mouse_wheel != 0 and coll_point(mouse_position, (x + 10, y, w - 10, h)):
+                lyrics_ren_mini.lyrics_position += mouse_wheel * 30 * gui.scale
+                if lyrics_ren_mini.lyrics_position > 0:
+                    lyrics_ren_mini.lyrics_position = 0
+                    lyric_side_top_pulse.pulse()
+
+                gui.update += 1
+
+            if system == 'linux':
+
+                tw, th = cairo_text.wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30)
+                oth = th
+
+                th -= h
+                th += 20
+
+            else:
+                th = 1000
+
+            if system == 'linux':
+                if lyrics_ren_mini.lyrics_position * -1 > th:
+                    lyrics_ren_mini.lyrics_position = th * -1
+                    if oth > h:
+                        lyric_side_bottom_pulse.pulse()
+
+            if system == 'linux':
+                lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17, y, 15, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
+
+
+
+            lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + 8 * gui.scale,
+                                   y + lyrics_ren_mini.lyrics_position + 5,
+                                   w - 30,
+                                   2000, 0)
+
+
+
+            draw.rect_r((x, y + h - 1, w,
+                         1), colours.side_panel_background, True)
+
+            lyric_side_top_pulse.render(x, y + 1, w - 17, 2)
+            lyric_side_bottom_pulse.render(x, y + h - 2, w - 17, 2)
+
+
+        # Draw standard metadata
         elif pctl.playing_state > 0 and len(pctl.track_queue) > 0:
+
+
+            if coll_point(mouse_position, (x + 10, y, w - 10, h)):
+                # Click area to jump to current track
+                if input.mouse_click:
+                    pctl.show_current()
+                    gui.update += 1
+
 
             title = ""
             album = ""
@@ -18408,6 +18559,7 @@ bottom_playlist = EdgePulse()
 gallery_pulse_top = EdgePulse()
 tab_pulse = EdgePulse()
 lyric_side_top_pulse = EdgePulse()
+lyric_side_bottom_pulse = EdgePulse()
 
 
 
@@ -18469,7 +18621,7 @@ if system != 'windows':
         elif point.contents.y > window_size[1] - 7:
             return SDL_HITTEST_RESIZE_BOTTOM
 
-        elif point.contents.x > window_size[0] - 4 and point.contents.y > 20:
+        elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
             return SDL_HITTEST_RESIZE_RIGHT
         elif point.contents.x < 5:
             return SDL_HITTEST_RESIZE_LEFT
@@ -20885,20 +21037,22 @@ while running:
                 # ALBUM ART
 
                 # Right side panel drawing
-
                 if gui.rsp:
                     if True and not album_mode:
 
                         boxw = gui.rspw
                         boxh = gui.rspw
 
+                        meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
+                                      window_size[1] - gui.panelY - gui.panelBY - boxh)
+
                         art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh)
 
-                        meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - boxh)
+
 
                     elif album_mode:
                         pass
-                    else:
+
                         #
                         # left = window_size[0] - gui.rspw
                         # width = gui.rspw
@@ -20915,45 +21069,45 @@ while running:
                         # x = left + 10 * gui.scale
                         # gui.main_art_box = (x, gui.artboxY, box, box)
 
-                        # Input of section below album art
-                        if (coll_point(mouse_position, (
-                                x, gui.panelY + boxx + 5 * gui.scale, boxx, window_size[1] - boxx - 90 * gui.scale))):
-
-                            # Click area to jump to current track
-                            if input.mouse_click:
-                                pctl.show_current()
-                                gui.update += 1
-
-                            # Scroll area to scroll lyrics
-                            if mouse_wheel != 0 and prefs.show_lyrics_side and pctl.track_queue and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
-                                lyrics_ren_mini.lyrics_position += mouse_wheel * 21 * gui.scale
-                                if lyrics_ren_mini.lyrics_position > 0:
-                                    lyrics_ren_mini.lyrics_position = 0
-                                    lyric_side_top_pulse.pulse()
-
-
-                                gui.update += 1
-
-                            # Right click to show lyric menu
-                            if right_click and prefs.show_lyrics_side and pctl.track_queue and 3 > pctl.playing_state > 0:
-                                gui.force_showcase_index = -1
-                                showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
-
-                        # Render lyrics if available
-                        if prefs.show_lyrics_side and pctl.track_queue \
-                                and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
-                                and 3 > pctl.playing_state > 0 \
-                                and 38 * gui.scale + box + 133 * gui.scale < window_size[1] + 52 * gui.scale:
-
-                            lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x,
-                                                   gui.main_art_box[1] + gui.main_art_box[
-                                                       3] + 10 + lyrics_ren_mini.lyrics_position,
-                                                   gui.rspw - 10,
-                                                   2000, 0)
-                            draw.rect_r((gui.plw + 1 * gui.scale, gui.panelY, window_size[0] - gui.plw,
-                                         gui.main_art_box[3] + 17), colours.side_panel_background, True)
-
-                        lyric_side_top_pulse.render(x, gui.main_art_box[1] + gui.main_art_box[3] + 5, window_size[0] - gui.plw, 2)
+                        # # Input of section below album art
+                        # if (coll_point(mouse_position, (
+                        #         x, gui.panelY + boxx + 5 * gui.scale, boxx, window_size[1] - boxx - 90 * gui.scale))):
+                        #
+                        #     # Click area to jump to current track
+                        #     if input.mouse_click:
+                        #         pctl.show_current()
+                        #         gui.update += 1
+                        #
+                        #     # Scroll area to scroll lyrics
+                        #     if mouse_wheel != 0 and prefs.show_lyrics_side and pctl.track_queue and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
+                        #         lyrics_ren_mini.lyrics_position += mouse_wheel * 21 * gui.scale
+                        #         if lyrics_ren_mini.lyrics_position > 0:
+                        #             lyrics_ren_mini.lyrics_position = 0
+                        #             lyric_side_top_pulse.pulse()
+                        #
+                        #
+                        #         gui.update += 1
+                        #
+                        #     # Right click to show lyric menu
+                        #     if right_click and prefs.show_lyrics_side and pctl.track_queue and 3 > pctl.playing_state > 0:
+                        #         gui.force_showcase_index = -1
+                        #         showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
+                        #
+                        # # Render lyrics if available
+                        # if prefs.show_lyrics_side and pctl.track_queue \
+                        #         and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
+                        #         and 3 > pctl.playing_state > 0 \
+                        #         and 38 * gui.scale + box + 133 * gui.scale < window_size[1] + 52 * gui.scale:
+                        #
+                        #     lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x,
+                        #                            gui.main_art_box[1] + gui.main_art_box[
+                        #                                3] + 10 + lyrics_ren_mini.lyrics_position,
+                        #                            gui.rspw - 10,
+                        #                            2000, 0)
+                        #     draw.rect_r((gui.plw + 1 * gui.scale, gui.panelY, window_size[0] - gui.plw,
+                        #                  gui.main_art_box[3] + 17), colours.side_panel_background, True)
+                        #
+                        # lyric_side_top_pulse.render(x, gui.main_art_box[1] + gui.main_art_box[3] + 5, window_size[0] - gui.plw, 2)
 
                         # # Input for album art
                         # if len(pctl.track_queue) > 0:
