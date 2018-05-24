@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v3.0.0
 
  - Added new bugs
+ - [Linux] Added scroll bar to side bar lyrics
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
