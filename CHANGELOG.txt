@@ -4,6 +4,10 @@ Changelog-------------------------------------
 v3.0.0
 
  - Added new bugs
+ - Added playlist selector side panel
+ - Added playlist panel toggle button to top panel
+ - Added playlist hide feature to hide individual playlist tabs in top panel
+ - Removed previous playlist selector box with quick add and set playing features
  - [Linux] Added scroll bar to side bar lyrics
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
