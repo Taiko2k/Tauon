@@ -5362,12 +5362,15 @@ if system == "linux":
 
             self.f_dict[user_handle] = (name + " " + str(size), y_off)
 
-        def wh(self, text, font, max_x):
+        def wh(self, text, font, max_x, wrap=False):
 
             self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
             self.layout.set_ellipsize(Pango.EllipsizeMode.END)
             self.layout.set_width(max_x * 1000)
-            self.layout.set_height(2000 * 1000)
+            if wrap:
+                self.layout.set_height(3000 * 1000)
+            else:
+                self.layout.set_height(0)
             self.layout.set_text(text, -1)
 
 
@@ -5404,12 +5407,15 @@ if system == "linux":
                     return sd[0].h
                 return sd[0].w
 
-            w, h = self.wh(text, font, max_x)
+            w, h = self.wh(text, font, max_x, wrap)
+            #w += 100
 
             if w < 1:
                 return 0
 
             h += 4  # Compensate for characters that drop past the baseline, pango dosent seem to allow for this
+
+
 
             if wrap:
                 #h = int((w / max_x) * h) + h
@@ -5430,7 +5436,7 @@ if system == "linux":
             if max_y != None:
                 layout.set_ellipsize(Pango.EllipsizeMode.END)
                 layout.set_width(max_x * 1000)
-                layout.set_height(max_y * 1000)  # This doesn't seem to work
+                layout.set_height(max_y * 1000)
             else:
                 layout.set_ellipsize(Pango.EllipsizeMode.END)
                 layout.set_width(max_x * 1000)
@@ -5480,7 +5486,7 @@ if system == "linux":
             # if te.height > 30:
             #     print(te.height)
 
-
+            #w, h = layout.get_pixel_size()
 
             #print(layout.get_extents())
             # print(text)
@@ -8121,6 +8127,35 @@ def cancel_import():
 
 cancel_menu.add("Cancel", cancel_import)
 
+
+def toggle_lyrics_show(a):
+
+    return not gui.showcase_mode
+
+
+
+def toggle_lyrics_deco():
+
+    colour = colours.menu_text
+    if prefs.show_lyrics_side:
+        line = "Hide lyrics"
+    else:
+        line = "Show lyrics"
+    if pctl.playing_object().lyrics == "":
+        colour = colours.menu_text_disabled
+
+    return [colour, colours.menu_background, line]
+
+def toggle_lyrics(track_object):
+
+    prefs.show_lyrics_side ^= True
+
+    if prefs.show_lyrics_side and track_object.lyrics == "":
+        show_message("No lyrics for this track")
+
+showcase_menu.add('Toggle Lyrics', toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
+
+
 def get_lyric_fire(track_object):
 
     print("Query Lyric Wiki...")
@@ -8128,6 +8163,8 @@ def get_lyric_fire(track_object):
     try:
         track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
         gui.message_box = False
+        if not gui.showcase_mode:
+            prefs.show_lyrics_side = True
     except:
         show_message("LyricWiki does not appear to have lyrics for this song")
 
@@ -8286,7 +8323,7 @@ def save_embed_img():
     except:
         show_message("Image save error.", "error", "A mysterious error occurred")
 
-picture_menu = Menu(160)
+picture_menu = Menu(165)
 
 def open_image_deco():
 
@@ -8406,6 +8443,29 @@ def remove_embed_picture(index):
 
 
 picture_menu.add('Folder Purge Embedded', remove_embed_picture, remove_embed_deco, pass_ref=True)
+
+def toggle_gimage(mode=0):
+    if mode == 1:
+        return prefs.show_gimage
+    prefs.show_gimage ^= True
+
+
+def search_image_deco():
+
+    if pctl.playing_state > 0:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def ser_gimage(index):
+    track = pctl.master_library[index]
+    line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
+    webbrowser.open(line, new=2, autoraise=True)
+
+picture_menu.add('Search Google for Image', ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+
 
 def append_here():
     global cargo
@@ -8958,6 +9018,9 @@ tab_menu.add_to_sub('Rescan Tags', 1, rescan_tags, pass_ref=True)
 tab_menu.add_to_sub('Re-Import Last Folder', 1, re_import, pass_ref=True)
 tab_menu.add_to_sub('Export XSPF', 1, export_xspf, pass_ref=True)
 tab_menu.add_to_sub("Toggle Breaks", 1, pl_toggle_playlist_break, pass_ref=True)
+
+
+
 
 def new_playlist(switch=True):
     ex = 1
@@ -10841,10 +10904,7 @@ def toggle_wiki(mode=0):
         return prefs.show_wiki
     prefs.show_wiki ^= True
 
-def toggle_gimage(mode=0):
-    if mode == 1:
-        return prefs.show_gimage
-    prefs.show_gimage ^= True
+
 
 def toggle_gen(mode=0):
     if mode == 1:
@@ -10890,13 +10950,10 @@ def ser_wiki(index):
            urllib.parse.quote(pctl.master_library[index].artist)
     webbrowser.open(line, new=2, autoraise=True)
 
-def ser_gimage(index):
-    track = pctl.master_library[index]
-    line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
-    webbrowser.open(line, new=2, autoraise=True)
 
 
-track_menu.add('Search Images on Google', ser_gimage, pass_ref=True, show_test=toggle_gimage)
+
+#track_menu.add('Search Images on Google', ser_gimage, pass_ref=True, show_test=toggle_gimage)
 
 track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True, show_test=toggle_wiki)
 
@@ -11424,6 +11481,11 @@ add_icon.yoff = 0
 add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
 x_menu.add("New Playlist", new_playlist, icon=add_icon)
+
+
+extra_tab_menu = Menu(130, show_icons=True)
+
+extra_tab_menu.add("New Playlist", new_playlist, icon=add_icon)
 
 if default_player == 1:
     x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
@@ -14660,7 +14722,7 @@ class Over:
         x += 280 * gui.scale
 
         y += 68 * gui.scale
-        draw_text((x, y), "Show in track menu:", colours.grey(100), 11)
+        draw_text((x, y), "Show in context menus:", colours.grey(100), 11)
         y += 23 * gui.scale
 
         self.toggle_square(x, y, toggle_wiki, "Search artist on Wikipedia")
@@ -14704,7 +14766,7 @@ class Over:
 
     def toggle_square(self, x, y, function, text):
 
-        le = draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(170), 12)
+        le = draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
         draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
         draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
         if self.click and coll_point(mouse_position, (x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
@@ -14716,7 +14778,7 @@ class Over:
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
-        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm account', colours.grey_blend_bg(140), 11)
+        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm account', colours.grey_blend_bg(180), 11)
         if lfm_username != "":
             line = "Current user: " + lfm_username
             draw_text((x + 130 * gui.scale, y - 3 * gui.scale), line, colours.grey_blend_bg(70), 11)
@@ -14841,7 +14903,7 @@ class Over:
         y = self.box_y - 5 * gui.scale
 
         y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_transcode, "Show in track menu")
+        self.toggle_square(x, y, toggle_transcode, "Show in context menu")
         self.button(x + 370 * gui.scale, y - 4 * gui.scale, "Open output folder", open_encode_out)
 
 
@@ -14917,7 +14979,8 @@ class Over:
             self.toggle_square(x, y, toggle_scale, "2x UI scaling")
 
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
+        if not draw_border:
+            self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
 
 
         y += 28 * gui.scale
@@ -14951,8 +15014,8 @@ class Over:
             y += 28 * gui.scale
 
 
-        self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
-        y += 28 * gui.scale
+        # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
+        # y += 28 * gui.scale
 
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
 
@@ -14983,7 +15046,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        draw_text((x, y), "Tauon Music Box", colours.grey(200), 216)
+        draw_text((x, y), "Tauon Music Box", colours.grey(210), 216)
         y += 32 * gui.scale
         draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
@@ -15097,7 +15160,7 @@ class Over:
         y2 = y
         x2 = x
         for k in config_items:
-            draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(170), 12)
+            draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
             if self.click and coll_point(mouse_position, (x - 20, y - 5, 220, 24)):
@@ -15395,8 +15458,8 @@ class TopPanel:
         self.height = gui.panelY
         self.ty = 0
 
-        self.start_space_left = 47 * gui.scale  # 9
-        self.start_space_compact_left = 47 * gui.scale  # 25
+        self.start_space_left = 46 * gui.scale  # 9
+        self.start_space_compact_left = 46 * gui.scale  # 25
 
         self.tab_text_font = fonts.tabs #211 # 211
         self.tab_extra_width = 17 * gui.scale
@@ -15443,7 +15506,7 @@ class TopPanel:
         # Draw the background
         draw.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
 
-        rect = (9, 4, 40, 25)
+        rect = (9, 4, 34, 25)
         fields.add(rect)
 
         if coll_point(mouse_position, rect):
@@ -15456,9 +15519,9 @@ class TopPanel:
         colour = [60, 60, 60, 255] #[230, 230, 230, 255]
 
         if gui.lsp:
-            colour = [250, 170, 50, 255]
+            colour = [230, 230, 230, 255]
 
-        self.playlist_icon.render(14, 8, colour)
+        self.playlist_icon.render(13, 8, colour)
 
         # x += 36
         # self.standard_icon.render(x, 10, [230, 230, 230, 255])
@@ -15607,7 +15670,7 @@ class TopPanel:
                 elif right_click:
                     tab_menu.activate(copy.deepcopy(i))
 
-                # Quick drop tracks (red plus sign to indicate)
+                # Quick drop tracks
                 elif quick_drag is True:
                     if mouse_up:
                         quick_drag = False
@@ -16910,7 +16973,7 @@ class StandardPlaylist:
                     # Draw highlight
                     if p_track in shift_selection and len(shift_selection) > 1:
                         gui.win_fore = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-                        draw.rect((highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                        draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
                                   (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
 
 
@@ -17017,7 +17080,7 @@ class StandardPlaylist:
                     gui.row_extra += 1
 
             track_box = (left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
-                            gui.playlist_row_height - 1)
+                            gui.playlist_row_height)
 
             input_box = (track_box[0] + 30, track_box[1], track_box[2] - 36, track_box[3])
             # Shade ever other line if option set
@@ -17243,13 +17306,16 @@ class StandardPlaylist:
                 #     if gui.row_font_size > 14:
                 #         offset_y_extra = 3
 
-                start = gui.playlist_left - 2 * gui.scale
+                start = 18 * gui.scale
+                if gui.lsp:
+                    start += gui.lspw
                 run = start
+                end = start + gui.plw
                 for h, item in enumerate(gui.pl_st):
 
                     wid = item[1] - 20 * gui.scale
                     y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w
-                    if run > width + 24 * gui.scale:
+                    if run > end + 24 * gui.scale:
                         break
 
                     if len(gui.pl_st) == h + 1:
@@ -17962,8 +18028,8 @@ class PlaylistBox:
         if mouse_wheel != 0 and coll_point(mouse_position, (x, y, w, h)):
             self.scroll_on -= mouse_wheel
 
-        if self.scroll_on > len(pctl.multi_playlist) - max_tabs:
-            self.scroll_on = len(pctl.multi_playlist) - max_tabs
+        if self.scroll_on > len(pctl.multi_playlist) - max_tabs + 1:
+            self.scroll_on = len(pctl.multi_playlist) - max_tabs + 1
 
         if self.scroll_on < 0:
             self.scroll_on = 0
@@ -17996,13 +18062,18 @@ class PlaylistBox:
             if i < self.scroll_on:
                 continue
 
+
+
             if coll_point(mouse_position, (tab_start + 50, yy - 1, tab_width - 50, 23 + 3)):
                 if input.mouse_click:
                     switch_playlist(i)
                     self.drag_on = i
                     self.drag = True
+
+            if coll_point(mouse_position, (tab_start, yy - 1, tab_width, 23 + 3)):
                 if right_click:
                     tab_menu.activate(i, mouse_position)
+
 
                 if mouse_up and self.drag and i != self.drag_on:
 
@@ -18021,17 +18092,6 @@ class PlaylistBox:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                         if len(shift_selection) > 0:
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
-
-
-                # Draw tab move indicators
-                if self.drag and i != self.drag_on:
-                    if key_shift_down:
-                        draw.rect_r((tab_start + tab_width, yy, 2, 23), [80, 160, 200, 255], True)
-                    else:
-                        if i < self.drag_on:
-                            draw.rect_r((tab_start, yy - 3, tab_width, 2), [80, 160, 200, 255], True)
-                        else:
-                            draw.rect_r((tab_start, yy + 23, tab_width, 2), [80, 160, 200, 255], True)
 
 
             # Toggle hidden flag on click
@@ -18062,6 +18122,23 @@ class PlaylistBox:
                 indicator_colour = [60, 60, 60, 255]
             draw.rect_r((tab_start + 10, yy + 8, 6, 6), indicator_colour, True)
 
+
+            if coll_point(mouse_position, (tab_start + 50, yy - 1, tab_width - 50, 23 + 3)):
+                if quick_drag:
+
+                    draw.rect_r((tab_start + tab_width - 4, yy, 2, 23), [80, 200, 180, 255], True)
+
+                # Draw tab move indicators
+                if self.drag and i != self.drag_on:
+                    if key_shift_down:
+                        draw.rect_r((tab_start + tab_width - 4, yy, 2, 23), [80, 160, 200, 255], True)
+                    else:
+                        if i < self.drag_on:
+                            draw.rect_r((tab_start, yy - 3, tab_width, 2), [80, 160, 200, 255], True)
+                        else:
+                            draw.rect_r((tab_start, yy + 23, tab_width, 2), [80, 160, 200, 255], True)
+
+
             # Draw effect of adding tracks to playlist
             if len(self.adds) > 0:
                 for k in reversed(range(len(self.adds))):
@@ -18080,6 +18157,18 @@ class PlaylistBox:
 
             yy += 27
 
+        # Create new playlist if drag in blank space after tabs
+        if coll_point(mouse_position, (x, yy, w, h - (yy - y))):
+            if quick_drag:
+
+                draw.rect_r((tab_start, yy, tab_width, 2), [80, 160, 200, 255], True)
+                if mouse_up:
+                    pl = new_playlist(False)
+                    for item in shift_selection:
+                        pctl.multi_playlist[pl][2].append(default_playlist[item])
+
+            if right_click:
+                extra_tab_menu.activate(pctl.playlist_active)
 
         if not mouse_down:
             self.drag = False
@@ -18915,6 +19004,8 @@ def update_layout_do():
     else:
         album_v_gap = 25 * gui.scale
 
+
+
     #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
     gui.spec1_rec.x = window_size[0] - gui.offset_extra - 90 * gui.scale
     #gui.spec_x = window_size[0] - gui.offset_extra - 90
@@ -18962,6 +19053,11 @@ def update_layout_do():
             if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
                 gui.rspw = window_size[1] - gui.panelY - gui.panelBY
 
+
+
+
+    #if gui.plw < 300:
+
     # Determine how wide the playlist need to be
     gui.plw = window_size[0]
     gui.playlist_left = 0
@@ -18972,6 +19068,32 @@ def update_layout_do():
     if gui.rsp:
         gui.plw -= gui.rspw
 
+
+    # Shrink side panel if playlist gets too small
+    if window_size[0] > 100:
+
+        if gui.plw < 300:
+            if gui.rsp:
+
+                l = 0
+                if gui.lsp:
+                    l = gui.lspw
+
+                gui.rspw = max(window_size[0] - l - 300, 110)
+                if album_mode:
+                    gui.pref_gallery_w = gui.rspw
+
+
+
+    # Determine how wide the playlist need to be (again)
+    gui.plw = window_size[0]
+    gui.playlist_left = 0
+    if gui.lsp:
+        #if gui.plw > gui.lspw:
+        gui.plw -= gui.lspw
+        gui.playlist_left = gui.lspw
+    if gui.rsp:
+        gui.plw -= gui.rspw
 
 
     # if gui.rsp is True:
@@ -19984,9 +20106,9 @@ while running:
 
         if key_F7:
 
-            show_message("Test error message", 'error', "Just a test, no need to worry.")
-
-            lastfm.get_friends()
+            show_message("Test error message", 'error', "------")
+            #
+            # lastfm.get_friends()
 
             # gallery_jumper.calculate()
 
@@ -20027,7 +20149,7 @@ while running:
 
         if mouse4:
             toggle_album_mode()
-        if mouse5:
+        if mouse5 and not album_mode:
             toggle_side_panel()
 
         ab_click = False
@@ -20931,8 +21053,8 @@ while running:
                 # C-PR
 
                 if gui.set_bar:
-                    rect = [0, gui.panelY, gui.plw, gui.set_height]
-                    start = 16 * gui.scale
+                    rect = [gui.lspw, gui.panelY, gui.plw, gui.set_height]
+                    start = gui.lspw + 16 * gui.scale
                     run = 0
                     in_grip = False
 
@@ -21034,10 +21156,15 @@ while running:
                         playlist_render.cache_render()
 
                 if gui.set_bar and not gui.combo_mode:
-                    rect = [0, gui.panelY, gui.plw, gui.set_height]
+
+                    x = 0
+                    if gui.lsp:
+                        x = gui.lspw
+
+                    rect = [x, gui.panelY, gui.plw, gui.set_height]
                     draw.rect_r(rect, [30, 30, 30, 255], True)
 
-                    start = 16 * gui.scale
+                    start = x + 16 * gui.scale
                     run = 0
                     for item in gui.pl_st:
                         box = (start + run, rect[1], item[1], rect[3])
