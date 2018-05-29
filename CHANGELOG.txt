@@ -3,15 +3,17 @@ Changelog-------------------------------------
 
 v3.0.0
 
- - Added new bugs
  - Added playlist selector side panel
  - Added playlist panel toggle button to top panel
  - Added playlist hide feature to hide individual playlist tabs in top panel
+ - Moved 'search image on google' function to picture menu
+ - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed previous playlist selector box with quick add and set playing features
- - [Linux] Added scroll bar to side bar lyrics
+ - [Linux] Added scroll bar to side panel lyrics
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
+ - [Linux] Fixed words not truncating properly
 
 v2.8.3
 
