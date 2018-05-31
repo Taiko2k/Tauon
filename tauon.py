@@ -1579,7 +1579,7 @@ try:
     # star_lines = view_prefs['star-lines']
     update_title = view_prefs['update-title']
     prefs.prefer_side = view_prefs['side-panel']
-    prefs.dim_art = view_prefs['dim-art']
+    prefs.dim_art = False #view_prefs['dim-art']
     gui.turbo = view_prefs['level-meter']
     pl_follow = view_prefs['pl-follow']
     scroll_enable = view_prefs['scroll-enable']
@@ -6019,56 +6019,6 @@ if system == 'windows':
     # pretty_text.prime_font(menu_font, 15, 413, weight=500)
 
 
-# pretty_text.draw(x, y + 1, word, colours.top_panel_background, bg)
-
-
-
-# class LyricsRen:
-#
-#     def __init__(self):
-#
-#         self.index = -1
-#         self.text = ""
-#         self.colour = colours.lyrics
-#         self.colour_sdl = SDL_Color(self.colour[0], self.colour[1], self.colour[2], self.colour[3])
-#         self.tex_w = pointer(c_int(0))
-#         self.tex_h = pointer(c_int(0))
-#         self.font = 15
-#         self.dst = SDL_Rect(1, 1)
-#         self.texture = None
-#
-#         self.lyrics_position = 0
-#
-#     def generate(self, index, w):
-#
-#         self.text = pctl.master_library[index].lyrics
-#         self.lyrics_position = 0
-#
-#         if self.text == "":
-#             return
-#         if self.texture is not None:
-#             SDL_DestroyTexture(self.texture)
-#
-#         font_surface = TTF_RenderUTF8_Blended_Wrapped(font_dict[self.font][0], self.text.encode("utf-8"), self.colour_sdl, w)
-#         self.texture = SDL_CreateTextureFromSurface(renderer, font_surface)
-#         SDL_QueryTexture(self.texture, None, None, self.tex_w, self.tex_h)
-#         self.dst.w = self.tex_w.contents.value
-#         self.dst.h = self.tex_h.contents.value
-#         SDL_FreeSurface(font_surface)
-#
-#     def render(self, index, x, y, w, h, p):
-#
-#         if index != self.index:
-#             self.index = index
-#             self.generate(index, w)
-#
-#         self.dst.x = x
-#         self.dst.y = y
-#
-#         if self.texture is not None:
-#             SDL_RenderCopy(renderer, self.texture, None, self.dst)
-
-
 class LyricsRenMini:
 
     def __init__(self):
@@ -6101,13 +6051,6 @@ class LyricsRenWin:
 
         self.index = -1
         self.text = ""
-        # self.colour = colours.side_bar_line1
-        # self.colour_sdl = SDL_Color(self.colour[0], self.colour[1], self.colour[2], self.colour[3])
-        # self.tex_w = pointer(c_int(0))
-        # self.tex_h = pointer(c_int(0))
-        # self.font = 15
-        # self.dst = SDL_Rect(1, 1)
-        # self.texture = None
 
         self.lyrics_position = 0
 
@@ -6115,18 +6058,6 @@ class LyricsRenWin:
 
         self.text = pctl.master_library[index].lyrics
         self.lyrics_position = 0
-
-        # if self.text == "":
-        #     return
-        # if self.texture is not None:
-        #     SDL_DestroyTexture(self.texture)
-        #
-        # font_surface = TTF_RenderUTF8_Blended_Wrapped(font_dict[self.font][0], self.text.encode("utf-8"), self.colour_sdl, w)
-        # self.texture = SDL_CreateTextureFromSurface(renderer, font_surface)
-        # SDL_QueryTexture(self.texture, None, None, self.tex_w, self.tex_h)
-        # self.dst.w = self.tex_w.contents.value
-        # self.dst.h = self.tex_h.contents.value
-        # SDL_FreeSurface(font_surface)
 
     def render(self, index, x, y, w, h, p):
 
@@ -6136,10 +6067,8 @@ class LyricsRenWin:
 
         draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
-# if gui.win_text or gui.cairo_text:
+
 lyrics_ren = LyricsRenWin()
-# else:
-#     lyrics_ren = LyricsRen()
 
 
 def draw_linked_text(location, text, colour, font):
@@ -6739,7 +6668,7 @@ def img_slide_update_gall(value):
         update_layout = True
         gui.pl_update = 1
 
-def clear_img_cache():
+def clear_img_cache(delete_disk=True):
     global album_art_gen
     album_art_gen.clear_cache()
     gall_ren.key_list = []
@@ -6750,7 +6679,7 @@ def clear_img_cache():
         SDL_DestroyTexture(value[2])
     gall_ren.gall = {}
 
-    if prefs.cache_gallery:
+    if prefs.cache_gallery and delete_disk:
         direc = os.path.join(user_directory, 'cache')
         if os.path.isdir(direc):
             shutil.rmtree(direc)
@@ -12889,12 +12818,15 @@ def worker2():
                                 temp_results.append([1, t.album, track, playlist[6], 0])
                                 albums[t.album] = 1
 
+                        # # TRACKS
+                        # if search_magic(search_over.search_text.text, t.title):
+                        #     temp_results.append([2, t.title, track, playlist[6], 1])
+                        #
+                        # # TRACKS + ARTIST
+                        # elif search_combine(search_over.search_text.text, t.title, t.artist):
+                        #     temp_results.append([2, t.title, track, playlist[6], 1])
                         # TRACKS
-                        if search_magic(search_over.search_text.text, t.title):
-                            temp_results.append([2, t.title, track, playlist[6], 1])
-
-                        # TRACKS + ARTIST
-                        elif search_combine(search_over.search_text.text, t.title, t.artist):
+                        if search_magic(search_over.search_text.text, t.title + t.artist + t.filename + t.album):
                             temp_results.append([2, t.title, track, playlist[6], 1])
 
                         # GENRE
@@ -14540,7 +14472,7 @@ config_items.append(['Use double digit track indices', toggle_dd])
 
 # config_items.append(['Use custom line format [broken]', toggle_custom_line])
 
-config_items.append(['Always use folder name as title', toggle_use_title])
+# config_items.append(['Always use folder name as title', toggle_use_title])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
 
@@ -14997,11 +14929,11 @@ class Over:
 
         draw_text((x, y), "Gallery", colours.grey_blend_bg(100), 12)
 
+        # y += 28 * gui.scale
+        # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+        self.toggle_square(x, y, toggle_galler_text, "Show titles")
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, "Show album title in gallery")
-
         y += 28 * gui.scale
         y += 28 * gui.scale
         draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
@@ -15797,8 +15729,6 @@ class TopPanel:
             switch_playlist(mouse_wheel * -1, True)
             gui.pl_update = 1
 
-
-
         # ---------
         # Menu Bar
 
@@ -15809,24 +15739,6 @@ class TopPanel:
 
         gui.win_fore = colours.top_panel_background
 
-        # PLAYLIST -----------------------
-        # if draw_alt:
-        #     word = "PLAYLIST"
-        #     word_length = draw.text_calc(word, 212)
-        #     rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
-        #     hit = coll_point(mouse_position, rect)
-        #     fields.add(rect)
-        #
-        #     if hit and input.mouse_click:
-        #         playlist_panel ^= True
-        #
-        #     if playlist_panel or hit:
-        #         bg = colours.status_text_over
-        #     else:
-        #         bg = colours.status_text_normal
-        #     draw_text((x, y), word, bg, 212)
-        #     x += self.menu_space + word_length
-
         # MENU -----------------------------
 
         word = "MENU"
@@ -15834,28 +15746,13 @@ class TopPanel:
         rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
         hit = coll_point(mouse_position, rect)
         fields.add(rect)
-        #
-        # if hit and view_box.active:
-        #     view_box.active = False
-        #     x_menu.activate(position=(x + 12, self.height))
-        #     gui.update += 1
-        #
-        # if hit and input.mouse_click:
-        #     if x_menu.active:
-        #         x_menu.active = False
-        #     else:
-        #         x_menu.activate(position=(x + 12, self.height))
-        #
+
         if x_menu.active or hit:
             bg = colours.status_text_over
         else:
             bg = colours.status_text_normal
         draw_text((x, y), word, bg, 212)
 
-        #main_rect = [14, 7, 39, gui.panelY - 7]
-        #draw.rect_r(main_rect, [255, 255, 255, 10], True)
-        #menu_icon.render(26, 11)
-        #hit = coll_point(mouse_position, main_rect)
         if hit and input.mouse_click:
             if x_menu.active:
                 x_menu.active = False
@@ -15864,45 +15761,11 @@ class TopPanel:
                 x_menu.activate(position=(x + 12, self.height))
                 view_box.activate(x)
 
-
-
         view_box.render()
-            # vr = [5, self.height, 52, 250]
-            # draw.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), colours.grey(30), True)
-            # draw.rect_r(vr, colours.menu_background, True)
 
         # LAYOUT --------------------------------
         x += self.menu_space + word_length
-        # word = "VIEW"
-        # word_length = draw.text_calc(word, 12)
-        # rect = [x - self.click_buffer + 6, self.ty + 1, word_length - 6 + self.click_buffer * 2, self.height - 1 - 4]
-        # hit = coll_point(mouse_position, rect)
-        # fields.add(rect)
 
-        # if hit and x_menu.active:
-        #     x_menu.active = False
-        #     #view_menu.activate(position=(x + 12, self.height))
-        #     view_box.activate(x - 80 * gui.scale)
-        #     gui.update += 1
-        #
-        # if hit and input.mouse_click:
-        #     if view_box.active:
-        #         view_box.active = False
-        #     else:
-        #         view_box.activate(x - 80 * gui.scale)
-        #     # if view_menu.active:
-        #     #     view_menu.active = False
-        #     # else:
-        #     #     view_menu.activate(position=(x + 12, self.height))
-        #
-        # if view_menu.active or hit:
-        #     bg = colours.status_text_over
-        # else:
-        #     bg = colours.status_text_normal
-        # draw_text((x, y), word, bg, 212)
-
-        # Status text
-        # x += self.menu_space + word_length + 5
         self.drag_zone_start_x = x
         status = True
 
@@ -16956,7 +16819,7 @@ class StandardPlaylist:
 
                 if not prefs.pl_thumb:
 
-                    if not prefs.use_title and n_track.album_artist != "" and n_track.album != "":
+                    if n_track.album_artist != "" and n_track.album != "":
                         line = n_track.album_artist + " - " + n_track.album
 
                     if len(line) < 6 and "CD" in line:
@@ -17508,291 +17371,6 @@ class StandardPlaylist:
         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
 
 
-# class ComboPlaylist:
-#     def __init__(self):
-#
-#         self.pl_pos_px = 0
-#         self.pl_album_art_size = combo_mode_art_size
-#         self.v_buffer = 58 * gui.scale#60
-#         self.h_buffer = 70 * gui.scale
-#
-#         self.mirror_cache = []
-#         self.last_dex = 0
-#         self.max_y = 0
-#
-#         self.hit = True
-#         self.preped_row_size = 1
-#
-#     def prep(self, goto=False):
-#
-#         self.mirror_cache = []
-#         album_dex_on = 0
-#         pl_entry_on = 0
-#         pl_render_pos = 30 * gui.scale
-#         min = 0
-#         self.pl_album_art_size = combo_mode_art_size
-#
-#         while True:
-#
-#             if pl_entry_on > len(default_playlist) - 1:
-#                 break
-#
-#             if album_dex_on < len(album_dex) - 0:
-#                 if album_dex[album_dex_on] == pl_entry_on:
-#
-#                     album_dex_on += 1
-#                     # if goto and playlist_selected < pl_entry_on + 1:
-#                     if goto and pl_entry_on > playlist_selected:
-#                         if len(self.mirror_cache) > 0:
-#                             self.pl_pos_px = self.mirror_cache[-1:][0]
-#                             self.pl_pos_px -= 25 * gui.scale
-#
-#                         else:
-#                             self.pl_pos_px = 0
-#                         self.prep()
-#                         return
-#
-#                     if min > 0:
-#                         pl_render_pos += min
-#
-#                     self.mirror_cache.append(pl_render_pos)
-#
-#                     pl_render_pos += self.v_buffer
-#
-#                     min = self.pl_album_art_size
-#
-#             pl_entry_on += 1
-#             pl_render_pos += prefs.playlist_row_height
-#             min -= prefs.playlist_row_height
-#
-#         self.max_y = pl_render_pos + 20 * gui.scale
-#
-#         if goto and len(self.mirror_cache) > 0:
-#             self.pl_pos_px = self.mirror_cache[-1:][0] - 25 * gui.scale
-#
-#     def full_render(self):
-#         # C-CM
-#         global click_time
-#         global playlist_selected
-#         global shift_selection
-#         global quick_drag
-#
-#         if self.preped_row_size != gui.playlist_row_height:
-#             self.preped_row_size = gui.playlist_row_height
-#             self.prep()
-#
-#         # Draw the background
-#         SDL_SetRenderTarget(renderer, gui.ttext)
-#         rect = (0, gui.panelY, gui.playlist_width + 31, window_size[1])
-#         if gui.rsp is False:
-#             rect = (0, gui.panelY, window_size[0], window_size[1])
-#         draw.rect_r(rect, colours.playlist_panel_background, True)
-#
-#         # Get scroll movement
-#
-#         if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-#             self.pl_pos_px -= mouse_wheel * 75 * gui.scale
-#             if self.pl_pos_px < 0:
-#                 self.pl_pos_px = 0
-#             elif self.pl_pos_px > self.max_y:
-#                 self.pl_pos_px = self.max_y
-#                 # if key_shift_down:
-#                 #     self.pl_pos_px -= mouse_wheel * 10000
-#
-#         if key_PGU:
-#             self.pl_pos_px -= abs(window_size[1] - 80 * gui.scale)
-#         if key_PGD:
-#             self.pl_pos_px += abs(window_size[1] - 80 * gui.scale)
-#
-#         # Set some things
-#         pl_render_pos = 30 * gui.scale
-#         pl_entry_on = 0
-#         render = False
-#         album_dex_on = 0
-#         min = 0
-#
-#         i = 0
-#         for item in self.mirror_cache:
-#
-#             if item > self.pl_pos_px - 2000 * gui.scale:
-#                 pl_render_pos = self.mirror_cache[i]
-#                 pl_entry_on = album_dex[i]
-#                 album_dex_on = i
-#                 break
-#             i += 1
-#
-#         if (input.mouse_click or right_click) and mouse_position[1] < window_size[1] - gui.panelBY and \
-#                         mouse_position[1] > gui.panelY:
-#             self.hit = False
-#
-#
-#         while pl_render_pos < self.pl_pos_px + window_size[1] and \
-#                         pl_entry_on < len(default_playlist):
-#
-#             if not render and pl_render_pos + self.pl_album_art_size + 200 * gui.scale > self.pl_pos_px:
-#                 render = True
-#
-#             index_on = default_playlist[pl_entry_on]
-#             track = pctl.master_library[index_on]
-#
-#             if album_dex_on < len(album_dex) - 0:
-#                 if album_dex[album_dex_on] == pl_entry_on:
-#
-#                     if min > 0:
-#                         pl_render_pos += min
-#
-#                     # print('test match')
-#                     # print(self.mirror_cache[album_dex_on])
-#                     # print(pl_render_pos)
-#
-#                     pl_render_pos += self.v_buffer
-#
-#                     album_dex_on += 1
-#
-#                     if render:
-#                         y = pl_render_pos - self.pl_pos_px
-#                         x = 20 * gui.scale
-#
-#
-#
-#                         # Draw album header
-#                         if break_enable:
-#                             x1 = 20 * gui.scale
-#                             y1 = y - 1 * gui.scale
-#                             x2 = gui.playlist_width + self.pl_album_art_size + 20 * gui.scale
-#
-#                             if gui.scale == 2 or True:
-#                                 y1 -= 25 * gui.scale  # hacky fix
-#                                 if gui.scale == 2:
-#                                     draw.line(x1, y1 + 1, x2, y1 + 1, [50, 50, 50, 50])
-#
-#                             draw.line(x1, y1, x2, y1, [50, 50, 50, 50])
-#
-#
-#
-#                             right_space = 22 * gui.scale
-#                             right_position = window_size[0] - right_space
-#
-#                             if len(track.date) > 1:
-#                                 album = trunc_line(track.album, 17, window_size[0] - 120 * gui.scale)
-#                                 w = draw.text_calc(album, 17) + 30 * gui.scale
-#                                 draw.line(right_position - w + 10 * gui.scale, y1, right_position + 20 * gui.scale, y1, colours.playlist_panel_background)
-#                                 if gui.scale == 2:
-#                                     draw.line(right_position - w + 10 * gui.scale, y1 + 1, right_position + 20 * gui.scale, y1 + 1,
-#                                               colours.playlist_panel_background)
-#
-#                                 draw_text((right_position, y1 - 20 * gui.scale, 1), album, colours.folder_title, 17)
-#
-#                                 draw_text((right_position, y1 - 0, 1), track.date, colours.folder_title, 14)
-#                             else:
-#                                 album = trunc_line(track.album, 17, window_size[0] - 120 * gui.scale)
-#                                 w = draw.text_calc(album, 17) + 30 * gui.scale
-#                                 draw.line(right_position - w + 10 * gui.scale, y1, right_position + 20 * gui.scale, y1, colours.playlist_panel_background)
-#                                 if gui.scale == 2:
-#                                     draw.line(right_position - w + 10 * gui.scale, y1 + 1, right_position + 20 * gui.scale,
-#                                               y1 + 1, colours.playlist_panel_background)
-#                                 draw_text((right_position, y1 - 13 * gui.scale, 1), album, colours.folder_title, 17)
-#
-#
-#
-#                         # Draw album art
-#                         a_rect = (x, y, self.pl_album_art_size, self.pl_album_art_size)
-#                         draw.rect_r(a_rect, [40, 40, 40, 50], True)
-#                         gall_ren.render(index_on, (x, y))
-#
-#                         if right_click and coll_point(mouse_position, a_rect) and mouse_position[0] > 30 * gui.scale and \
-#                                         mouse_position[1] < window_size[1] - gui.panelBY - 10 * gui.scale:
-#                             combo_menu.activate(index_on, (mouse_position[0] + 5 * gui.scale, mouse_position[1] + 3 * gui.scale))
-#
-#                     min = self.pl_album_art_size
-#
-#             if render:
-#
-#                 x = self.pl_album_art_size + 20 * gui.scale
-#                 y = pl_render_pos - self.pl_pos_px
-#
-#                 rect = [x, y, gui.playlist_width, prefs.playlist_row_height]
-#                 s_rect = [x, y, gui.playlist_width - 15 * gui.scale, prefs.playlist_row_height - 1]
-#                 fields.add(rect)
-#                 # draw.rect_r(rect,[255,0,0,30], True)
-#
-#                 # Test if line hit
-#                 line_hit = False
-#                 if (input.mouse_click or right_click or middle_click) and coll_point(mouse_position, s_rect) and \
-#                                 mouse_position[1] < window_size[1] - gui.panelBY and mouse_position[1] > gui.panelY:
-#                     line_hit = True
-#                     self.hit = True
-#                     quick_drag = True
-#                     gui.drag_source_position = copy.deepcopy(click_location)
-#
-#                 # Double click to play
-#                 if d_mouse_click and line_hit and pl_entry_on == playlist_selected:
-#                     click_time -= 1.5
-#                     pctl.jump(default_playlist[pl_entry_on], pl_entry_on)
-#
-#                 # Test is line playing
-#                 playing = False
-#                 if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
-#                         index_on:
-#                     playing = True
-#                     draw.rect_r(rect, colours.row_playing_highlight, True)
-#
-#                 # Make selected if clicked (we do this after the play click test thing)
-#                 # if line_hit:
-#                 #     playlist_selected = pl_entry_on
-#                 #     shift_selection = [playlist_selected]
-#
-#                 # Test if line selected
-#                 this_line_selected = False
-#                 if (pl_entry_on == playlist_selected and self.hit):
-#                     draw.rect_r(rect, colours.row_select_highlight, True)
-#                     this_line_selected = True
-#
-#                 # Calculate background after highlight
-#                 if True:
-#                     if playing and this_line_selected:
-#                         gui.win_fore = alpha_blend(colours.row_select_highlight,
-#                                                    alpha_blend(colours.row_playing_highlight,
-#                                                                colours.playlist_panel_background))
-#                     elif playing and not this_line_selected:
-#                         gui.win_fore = alpha_blend(colours.row_playing_highlight, colours.playlist_panel_background)
-#                     elif this_line_selected:
-#                         gui.win_fore = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-#                     else:
-#                         gui.win_fore = colours.playlist_panel_background
-#
-#
-#                 # Draw track text
-#                 line_render(track, pl_entry_on, y + gui.playlist_text_offset, playing, 255, x + 17 * gui.scale, gui.playlist_width - 28 * gui.scale,
-#                             style=prefs.line_style)
-#
-#                 # Right click menu
-#                 if right_click and line_hit:
-#                     global r_menu_index
-#                     r_menu_index = index_on
-#                     track_menu.activate(index_on)
-#                     quick_drag = False
-#
-#             # Move render position down for next track
-#             pl_entry_on += 1
-#             pl_render_pos += prefs.playlist_row_height
-#             min -= prefs.playlist_row_height
-#
-#
-#         # Set the render target back to window and render playlist texture
-#         SDL_SetRenderTarget(renderer, gui.main_texture)
-#         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
-#
-#     def cache_render(self):
-#
-#         if input.mouse_click or right_click or middle_click:
-#             self.full_render()
-#             return
-#         # Render the cached playlist texture
-#         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
-
-
-# combo_pl_render = ComboPlaylist()
 playlist_render = StandardPlaylist()
 
 
@@ -17813,6 +17391,7 @@ class ArtBox:
         # And position the square
         rect = (x + ((w - box) // 2), y + ((h - box) // 2), box, box)
         fields.add(rect)
+        gui.main_art_box = rect
 
         # Draw the album art. If side bar is being dragged set quick draw flag
         showc = None
@@ -20149,8 +19728,11 @@ while running:
 
         if mouse4:
             toggle_album_mode()
-        if mouse5 and not album_mode:
-            toggle_side_panel()
+        if mouse5:
+            if not album_mode:
+                toggle_side_panel()
+            else:
+                toggle_album_mode()
 
         ab_click = False
 
@@ -20698,7 +20280,7 @@ while running:
 
                 render_pos = 0
                 album_on = 0
-                if mouse_position[0] > gui.plw + 5 * gui.scale and mouse_position[1] < window_size[1] - gui.panelBY:
+                if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                     if prefs.gallery_row_scroll:
                         album_pos_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
                     else:
@@ -21270,79 +20852,7 @@ while running:
 
                         if (coll_point(mouse_position, (x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
                             draw.rect((x + 1 * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
-                    # else:
-                    #     # Combo mode scroll:
-                    #     sy = 31 * gui.scale
-                    #     ey = window_size[1] - (30 + 22) * gui.scale
-                    #
-                    #     sbl = 105 * gui.scale
-                    #
-                    #
-                    #
-                    #     fields.add((window_size[0] - (2 - 20) * gui.scale, sbp, 20 * gui.scale, sbl))
-                    #     if coll_point(mouse_position, (window_size[0] - 28 * gui.scale, gui.panelY, 28 * gui.scale, ey - gui.panelY)) and not playlist_panel and (
-                    #                 mouse_down or right_click) \
-                    #             and coll_point(click_location, (window_size[0] - 28 * gui.scale, gui.panelY, 28 * gui.scale, ey - gui.panelY)):
-                    #
-                    #         gui.pl_update = 1
-                    #         if right_click:
-                    #
-                    #             sbp = mouse_position[1] - int(sbl / 2)
-                    #             if sbp + sbl > ey:
-                    #                 sbp = ey - sbl
-                    #             elif sbp < gui.panelY:
-                    #                 sbp = gui.panelY
-                    #             per = (sbp - gui.panelY) / (ey - gui.panelY - sbl)
-                    #             combo_pl_render.pl_pos_px = int(combo_pl_render.max_y * per)
-                    #             #
-                    #             # # if playlist_position < 0:
-                    #             # #     playlist_position = 0
-                    #         elif mouse_position[1] < sbp:
-                    #             combo_pl_render.pl_pos_px -= 30 * gui.scale
-                    #         elif mouse_position[1] > sbp + sbl:
-                    #             combo_pl_render.pl_pos_px += 30 * gui.scale
-                    #         elif input.mouse_click:
-                    #
-                    #             p_y = pointer(c_int(0))
-                    #             p_x = pointer(c_int(0))
-                    #             SDL_GetGlobalMouseState(p_x, p_y)
-                    #
-                    #             scroll_hold = True
-                    #             scroll_point = p_y.contents.value  # mouse_position[1]
-                    #             scroll_bpoint = sbp
-                    #
-                    #     if not mouse_down:
-                    #         scroll_hold = False
-                    #
-                    #     if scroll_hold and not input.mouse_click:
-                    #         gui.pl_update = 1
-                    #         p_y = pointer(c_int(0))
-                    #         p_x = pointer(c_int(0))
-                    #         SDL_GetGlobalMouseState(p_x, p_y)
-                    #         sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
-                    #         if sbp + sbl > ey:
-                    #             sbp = ey - sbl
-                    #         elif sbp < gui.panelY:
-                    #             sbp = gui.panelY
-                    #         per = (sbp - gui.panelY) / (ey - gui.panelY - sbl)
-                    #         # playlist_position = int(len(default_playlist) * per)
-                    #         combo_pl_render.pl_pos_px = int(combo_pl_render.max_y * per)
-                    #         combo_pl_render.last_dex = 0
-                    #
-                    #
-                    #
-                    #     else:
-                    #
-                    #         if combo_pl_render.max_y > 0:
-                    #             per = combo_pl_render.pl_pos_px / combo_pl_render.max_y
-                    #             sbp = int((ey - gui.panelY - sbl) * per) + gui.panelY + 1
-                    #
-                    #     draw.rect((window_size[0] - 17 * gui.scale, gui.panelY), (17 * gui.scale, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
-                    #     draw.rect((window_size[0] - 14 * gui.scale, sbp), (15 * gui.scale, sbl), colours.scroll_colour, True)
-                    #
-                    #
-                    #     if (coll_point(mouse_position, (window_size[0] - (2 - 20) * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                    #         draw.rect((window_size[0] - (1 - 15) * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
+
 
                 # Switch Vis:
                 if right_click and coll_point(mouse_position, (window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
@@ -21383,314 +20893,6 @@ while running:
                     elif album_mode:
                         pass
 
-                        #
-                        # left = window_size[0] - gui.rspw
-                        # width = gui.rspw
-                        #
-                        # rect = [left, gui.panelY, width,
-                        #         window_size[1] - gui.panelY - gui.panelBY]
-                        # draw.rect_r(rect, colours.side_panel_background, True)
-                        #
-                        # showc = False
-                        #
-                        # boxx = left + 20 * gui.scale
-                        # boxy = window_size[1] - 160 * gui.scale
-                        # box = boxx
-                        # x = left + 10 * gui.scale
-                        # gui.main_art_box = (x, gui.artboxY, box, box)
-
-                        # # Input of section below album art
-                        # if (coll_point(mouse_position, (
-                        #         x, gui.panelY + boxx + 5 * gui.scale, boxx, window_size[1] - boxx - 90 * gui.scale))):
-                        #
-                        #     # Click area to jump to current track
-                        #     if input.mouse_click:
-                        #         pctl.show_current()
-                        #         gui.update += 1
-                        #
-                        #     # Scroll area to scroll lyrics
-                        #     if mouse_wheel != 0 and prefs.show_lyrics_side and pctl.track_queue and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "":
-                        #         lyrics_ren_mini.lyrics_position += mouse_wheel * 21 * gui.scale
-                        #         if lyrics_ren_mini.lyrics_position > 0:
-                        #             lyrics_ren_mini.lyrics_position = 0
-                        #             lyric_side_top_pulse.pulse()
-                        #
-                        #
-                        #         gui.update += 1
-                        #
-                        #     # Right click to show lyric menu
-                        #     if right_click and prefs.show_lyrics_side and pctl.track_queue and 3 > pctl.playing_state > 0:
-                        #         gui.force_showcase_index = -1
-                        #         showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
-                        #
-                        # # Render lyrics if available
-                        # if prefs.show_lyrics_side and pctl.track_queue \
-                        #         and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
-                        #         and 3 > pctl.playing_state > 0 \
-                        #         and 38 * gui.scale + box + 133 * gui.scale < window_size[1] + 52 * gui.scale:
-                        #
-                        #     lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x,
-                        #                            gui.main_art_box[1] + gui.main_art_box[
-                        #                                3] + 10 + lyrics_ren_mini.lyrics_position,
-                        #                            gui.rspw - 10,
-                        #                            2000, 0)
-                        #     draw.rect_r((gui.plw + 1 * gui.scale, gui.panelY, window_size[0] - gui.plw,
-                        #                  gui.main_art_box[3] + 17), colours.side_panel_background, True)
-                        #
-                        # lyric_side_top_pulse.render(x, gui.main_art_box[1] + gui.main_art_box[3] + 5, window_size[0] - gui.plw, 2)
-
-                        # # Input for album art
-                        # if len(pctl.track_queue) > 0:
-                        #
-                        #     # Cycle images
-                        #     if coll_point(mouse_position, gui.main_art_box) and input.mouse_click is True:
-                        #         album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
-
-                            # Open image externally
-                            # if coll_point(mouse_position, gui.main_art_box) and right_click is True and pctl.playing_state > 0 and not key_shift_down:
-                            #     album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
-
-                        # # Draw image downloading indicator
-                        # if gui.image_downloading:
-                        #     draw_text((x + int(box/2), 38 * gui.scale + int(box/2), 2), "Fetching image...", colours.side_bar_line1, 14)
-                        #     gui.update = 2
-
-                        # # Draw the album art. If side bar is being dragged set quick draw flag
-                        # showc = None
-                        # if 3 > pctl.playing_state > 0:
-                        #
-                        #     if side_drag:
-                        #
-                        #         album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38 * gui.scale),
-                        #                               (box, box), True)
-                        #     else:
-                        #         album_art_gen.display(pctl.track_queue[pctl.queue_step], (x, 38 * gui.scale), (box, box))
-                        #
-                        #     showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
-                        #
-                        # draw.rect((x, 38 * gui.scale), (box + 1 * gui.scale, box + 1 * gui.scale), colours.art_box)
-
-                        #
-                        #
-                        # rect = gui.main_art_box
-                        # fields.add(rect)
-                        #
-                        # if right_click and coll_point(mouse_position, rect):
-                        #     picture_menu.activate(in_reference=pctl.playing_object().index)
-
-                        # # Draw picture metadata
-                        # if showc is not None and coll_point(mouse_position, rect) \
-                        #         and renamebox is False \
-                        #         and radiobox is False \
-                        #         and pref_box.enabled is False \
-                        #         and rename_playlist_box is False \
-                        #         and gui.message_box is False \
-                        #         and track_box is False:
-                        #
-                        #     # if right_click and showc[0] is True:
-                        #     #     #if pctl.playing_object().file_ext == "MP3":
-                        #     #     #    picture_menu2.activate(pctl.track_queue[pctl.queue_step])
-                        #     #     #else:
-                        #     #     #print(showc)
-                        #     #     picture_menu.activate()
-                        #
-                        #     if not key_shift_down:
-                        #
-                        #         line = ""
-                        #         if showc[0] is True:
-                        #             line += 'E '
-                        #         else:
-                        #             line += 'F '
-                        #
-                        #         line += str(showc[2] + 1) + "/" + str(showc[1])
-                        #         y = box + 11 * gui.scale
-                        #
-                        #         xoff = 0
-                        #         xoff = draw.text_calc(line, 12) + 12 * gui.scale
-                        #
-                        #         draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
-                        #                   [8, 8, 8, 255], True)
-                        #
-                        #         draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-                        #
-                        #     else:   # Extended metadata
-                        #
-                        #         # if right_click:
-                        #         #     if pctl.playing_object().file_ext == "MP3":
-                        #         #         picture_menu2.activate(pctl.track_queue[pctl.queue_step])
-                        #         line = ""
-                        #         if showc[0] is True:
-                        #             line += 'Embedded'
-                        #         else:
-                        #             line += 'File'
-                        #
-                        #         #line += str(showc[2] + 1) + "/" + str(showc[1])
-                        #         y = 36 * gui.scale + box - 61 * gui.scale
-                        #
-                        #         xoff = 0
-                        #         xoff = draw.text_calc(line, 12) + 12 * gui.scale
-                        #
-                        #         draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
-                        #                   [8, 8, 8, 255], True)
-                        #
-                        #         draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-                        #
-                        #         y += 18 * gui.scale
-                        #
-                        #         line = ""
-                        #         line += showc[4]
-                        #         line += " " +  str(showc[3][1]) + 'vr'
-                        #         xoff = 0
-                        #         xoff = draw.text_calc(line, 12) + 12 * gui.scale
-                        #
-                        #         draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
-                        #                   [8, 8, 8, 255], True)
-                        #         draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
-                        #                   bg=[30, 30, 30, 255])
-                        #
-                        #         y += 18 * gui.scale
-                        #
-                        #         line = ""
-                        #         line += str(showc[2] + 1) + "/" + str(showc[1])
-                        #         xoff = 0
-                        #         xoff = draw.text_calc(line, 12) + 12 * gui.scale
-                        #
-                        #         draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
-                        #                   [8, 8, 8, 255], True)
-                        #         draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
-                        #                   bg=[30, 30, 30, 255])
-
-                        # # Draw track metadata
-                        # if pctl.playing_state > 0:
-                        #     if len(pctl.track_queue) > 0:
-                        #         if prefs.show_lyrics_side and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" \
-                        #                 and pctl.playing_state != 3:
-                        #             pass
-                        #
-                        #         else:
-                        #
-                        #             gui.win_fore = colours.side_panel_background
-                        #
-                        #             block3 = False
-                        #             block4 = False
-                        #             block5 = False
-                        #             block6 = False
-                        #
-                        #             t_title = ""
-                        #             album = ""
-                        #             artist = ""
-                        #             ext = ""
-                        #             date = ""
-                        #
-                        #             if pctl.playing_state < 3:
-                        #
-                        #                 t_title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
-                        #                 album = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                        #                 artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
-                        #                 ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
-                        #                 date = pctl.master_library[pctl.track_queue[pctl.queue_step]].date
-                        #                 genre = pctl.master_library[pctl.track_queue[pctl.queue_step]].genre
-                        #
-                        #             else:
-                        #
-                        #                 t_title = pctl.tag_meta
-                        #
-                        #             if side_panel_text_align == 1:
-                        #                 pass
-                        #
-                        #             else:
-                        #                 # -------------------------------
-                        #
-                        #                 if 38 * gui.scale + box + 130 * gui.scale > window_size[1] + 52 * gui.scale:
-                        #                     block6 = True
-                        #                 if block6 != True:
-                        #                     if 38 * gui.scale + box + 134 * gui.scale > window_size[1] + 37 * gui.scale:
-                        #                         block5 = True
-                        #
-                        #                     if 38 * gui.scale + box + 126 * gui.scale > window_size[1] + 10 * gui.scale:
-                        #                         block4 = True
-                        #                     if 38 * gui.scale + box + 126 * gui.scale > window_size[1] - 39 * gui.scale:
-                        #                         block3 = True
-                        #
-                        #                     if 38 * gui.scale + box + 126 * gui.scale + 2 * gui.scale > window_size[1] \
-                        #                             - 70 * gui.scale:
-                        #
-                        #                         block1 = 38 * gui.scale + box + 20 * gui.scale
-                        #                         block2 = window_size[1] - (70 - 36 - 2) * gui.scale
-                        #
-                        #                     else:
-                        #                         block1 = 38 * gui.scale + box + 20 * gui.scale
-                        #                         block2 = 38 * gui.scale + box + 90 * gui.scale
-                        #
-                        #                     if block4 is False:
-                        #
-                        #                         if block3 is True:
-                        #                             block1 -= 14
-                        #
-                        #                         if t_title != "":
-                        #                             playing_info = t_title
-                        #                             playing_info = trunc_line(playing_info, fonts.side_panel_line1,
-                        #                                                       window_size[0] - gui.plw - 23 * gui.scale)
-                        #                             draw_text((x - 1 * gui.scale, block1 + 2 * gui.scale), playing_info, colours.side_bar_line1,
-                        #                                       fonts.side_panel_line1, max=gui.rspw - 32 * gui.scale)
-                        #
-                        #                         if artist != "":
-                        #                             playing_info = artist
-                        #                             draw_text((x - 1 * gui.scale, block1 + (17 + 6) * gui.scale),
-                        #                                       playing_info,
-                        #                                       colours.side_bar_line2,
-                        #                                       fonts.side_panel_line2,
-                        #                                       max=gui.rspw - 32 * gui.scale)
-                        #                     else:
-                        #                         block1 -= 14 * gui.scale
-                        #
-                        #                         line = ""
-                        #                         if artist != "":
-                        #                             line += artist
-                        #                         if t_title != "":
-                        #                             if line != "":
-                        #                                 line += " - "
-                        #                             line += t_title
-                        #                         line = trunc_line(line, 15, window_size[0] - gui.plw - 23 * gui.scale)
-                        #                         draw_text((x - 1 * gui.scale, block1), line, colours.side_bar_line1, 15, max=gui.rspw - 32 * gui.scale)
-                        #
-                        #                     if block3 == False:
-                        #
-                        #                         if album != "":
-                        #                             playing_info = album
-                        #                             draw_text((x - 1 * gui.scale, block2), playing_info, colours.side_bar_line2,
-                        #                                       14, max=gui.rspw - 32 * gui.scale)
-                        #
-                        #                         if date != "":
-                        #                             playing_info = date
-                        #                             if genre != "":
-                        #                                 playing_info += " | " + genre
-                        #                             playing_info = trunc_line(playing_info, 13,
-                        #                                                       window_size[0] - gui.plw - 13 * gui.scale)
-                        #                             draw_text((x - 1 * gui.scale, block2 + 18 * gui.scale), playing_info, colours.side_bar_line2,
-                        #                                       13)
-                        #
-                        #                         if ext != "":
-                        #                             playing_info = ext  # + " | " + sample
-                        #                             # playing_info = trunc_line(playing_info, 12,
-                        #                             #                           window_size[0] - gui.playlist_width - 53)
-                        #                             draw_text((x - 1 * gui.scale, block2 + 36 * gui.scale), playing_info, colours.side_bar_line2,
-                        #                                       12, max=gui.rspw - 32 * gui.scale)
-                        #                     else:
-                        #                         if block5 != True:
-                        #                             line = ""
-                        #                             if album != "":
-                        #                                 line += album
-                        #                             if line != "":
-                        #                                 line += " | "
-                        #                             if date != "":
-                        #                                 line += date + " | "
-                        #                             line += ext
-                        #
-                        #                             draw_text((x - 1 * gui.scale, block2 + 32 * gui.scale), line,
-                        #                                       colours.side_bar_line2, 14,
-                        #                                       max=gui.rspw - 32 * gui.scale)
-
                 # Seperation Line Drawing
                 if gui.rsp:
 
@@ -21729,34 +20931,6 @@ while running:
 
                 playlist_box.draw(0, gui.panelY, gui.lspw, full)
 
-            # if album_mode:
-            #     gui.show_bottom_title = True
-            #     gui.show_top_title = False
-            # elif gui.combo_mode:
-            #     if window_size[0] > 860 * gui.scale:
-            #         gui.show_bottom_title = prefs.prefer_bottom_title
-            #         gui.show_top_title = not gui.show_bottom_title
-            #     else:
-            #         gui.show_bottom_title = False
-            #         gui.show_top_title = True
-            # else:
-            #     if not gui.rsp:
-            #         if window_size[0] > 840 * gui.scale:
-            #             gui.show_bottom_title = prefs.prefer_bottom_title
-            #             gui.show_top_title = not gui.show_bottom_title
-            #         else:
-            #             gui.show_bottom_title = False
-            #             gui.show_top_title = True
-            #     else:
-            #         if not block6:
-            #             gui.show_bottom_title = False
-            #             gui.show_top_title = False
-            #         elif window_size[0] > 840 * gui.scale:
-            #             gui.show_bottom_title = prefs.prefer_bottom_title
-            #             gui.show_top_title = not gui.show_bottom_title
-            #         else:
-            #             gui.show_bottom_title = False
-            #             gui.show_top_title = True
 
             # BOTTOM BAR!
             # C-BB
@@ -23402,7 +22576,15 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 
 save_state()
 
-print("unloading SDL")
+print("Unloading SDL...")
+SDL_DestroyTexture(gui.main_texture)
+SDL_DestroyTexture(gui.ttext)
+SDL_DestroyTexture(gui.spec2_tex)
+SDL_DestroyTexture(gui.spec1_tex)
+SDL_DestroyTexture(gui.spec_level_tex)
+clear_text_cache()
+clear_img_cache(False)
+
 IMG_Quit()
 SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
 SDL_Quit()
