@@ -9,11 +9,15 @@ v3.0.0
  - Moved 'search image on google' function to picture menu
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed previous playlist selector box with quick add and set playing features
+ - Removed 'dim gallery' function and setting
+ - Removed 'always use folder names' setting
  - [Linux] Added scroll bar to side panel lyrics
+ - Tweaked search overlay search algorithm for track matching
+ - Tweaked mouse side button functions for more obvious behavior
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
- - [Linux] Fixed words not truncating properly
+ - [Linux] Fixed words not truncating properly (bug from v2.8.3)
 
 v2.8.3
 
