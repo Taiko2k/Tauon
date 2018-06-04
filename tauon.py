@@ -319,7 +319,6 @@ resize_mode = False
 
 block6 = False
 
-playlist_panel = False
 side_panel_text_align = 0
 
 album_mode = False
@@ -819,6 +818,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.pref_gallery_w = 600
 
+        self.artist_info_panel = True
 
 gui = GuiVar()
 
@@ -2646,15 +2646,20 @@ class LastFMapi:
 
         if self.network is None:
             if self.no_user_connect() is False:
-                return
+                return False, "", ""
 
-        print(artist)
-        if artist != "":
-            l_artist = pylast.Artist(artist, self.network)
-            #print(artist.get_bio_summary(language="en"))
-            print(l_artist.get_bio_content())
-            print(l_artist.get_cover_image())
+        # print(artist)
+        try:
+            if artist != "":
+                l_artist = pylast.Artist(artist, self.network)
+                #print(artist.get_bio_summary(language="en"))
+                bio = l_artist.get_bio_content()
+                cover_link = l_artist.get_cover_image()
+                return True, bio, cover_link
+        except:
+            print("last.fm get artist info failed")
 
+        return False, "", ""
 
 
     def scrobble(self, title, artist, album):
@@ -5345,6 +5350,10 @@ if system == "linux":
     class CT:
 
         def __init__(self):
+
+            self.source_rect = SDL_Rect(0, 0, 0, 0)
+            self.dest_rect = SDL_Rect(0, 0, 0, 0)
+
             self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
             self.context = cairo.Context(self.surf)
             self.layout = PangoCairo.create_layout(self.context)
@@ -5376,8 +5385,39 @@ if system == "linux":
 
             return self.layout.get_pixel_size()
 
+        def render(self, key, x, y, range_top, range_height, align):
+            sd = key
 
-        def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False):
+
+            if align == 1:
+                sd[0].x = x - sd[0].w
+
+            elif align == 2:
+                sd[0].x = sd[0].x - int(sd[0].w / 2)
+
+            if range_height is not None and range_height < sd[0].h:
+
+                if range_top < 0:
+                    range_top = 0
+
+                if range_top > sd[0].h - range_height:
+                    range_top = sd[0].h - range_height
+
+                self.source_rect.y = range_top
+                self.source_rect.w = sd[0].w
+                self.source_rect.h = range_height
+
+                self.dest_rect.x = sd[0].x
+                self.dest_rect.y = sd[0].y
+                self.dest_rect.w = sd[0].w
+                self.dest_rect.h = range_height
+
+                SDL_RenderCopyEx(renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
+                return
+
+            SDL_RenderCopy(renderer, sd[1], None, sd[0])
+
+        def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
             max_x += 12  # HACKY
 
@@ -5391,17 +5431,12 @@ if system == "linux":
             y = location[1] + gui.universal_y_text_offset
 
             if key in ttc:
+
                 sd = ttc[key]
                 sd[0].x = x
                 sd[0].y = y - sd[2]
+                self.render(sd, x, y, range_top, range_height, align)
 
-                if align == 1:
-                    sd[0].x = x - sd[0].w
-
-                elif align == 2:
-                    sd[0].x = sd[0].x - int(sd[0].w / 2)
-
-                SDL_RenderCopy(renderer, sd[1], None, sd[0])
 
                 if wrap:
                     return sd[0].h
@@ -5507,15 +5542,16 @@ if system == "linux":
             dst.w = w
             dst.h = h
 
-            if align == 1:
-                dst.x = location[0] - dst.w
+            # if align == 1:
+            #     dst.x = location[0] - dst.w
+            #
+            # elif align == 2:
+            #     dst.x = dst.x - int(dst.w / 2)
 
-            elif align == 2:
-                dst.x = dst.x - int(dst.w / 2)
-
-            SDL_RenderCopy(renderer, c, None, dst)
+            #SDL_RenderCopy(renderer, c, None, dst)
 
             ttc[key] = [dst, c, y_off]
+            self.render(ttc[key], x, y, range_top, range_height, align)
             ttl.append(key)
             if len(ttl) > 350:
                 key = ttl[0]
@@ -5526,6 +5562,8 @@ if system == "linux":
             if wrap:
                 return dst.h
             return dst.w
+
+
 
     cairo_text = CT()
 
@@ -5595,7 +5633,7 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
     return draw_text(location, text, colour, font, maxx)
 
 
-def draw_text(location, text, colour, font, max=4000, bg=None):
+def draw_text(location, text, colour, font, max=4000, bg=None, range_top=0, range_height=None):
 
 
     if gui.win_text:
@@ -5619,7 +5657,7 @@ def draw_text(location, text, colour, font, max=4000, bg=None):
                 if len(location) > 4:
                     max_y = location[4]
 
-                pretty_text.draw(location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y)
+                pretty_text.draw(location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y, range_top, range_height)
                 return
 
         if max < 1000:
@@ -5645,7 +5683,7 @@ def draw_text(location, text, colour, font, max=4000, bg=None):
                 max_y = None
                 if len(location) > 4:
                     max_y = location[4]
-                return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True)
+                return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True, range_top=range_top, range_height=range_height)
 
         # if max < 4000:
         #     text = trunc_line(text, font, max)
@@ -5791,6 +5829,9 @@ if system == 'windows':
             self.cache = {}
             self.ca_li = []
 
+            self.source_r = SDL_Rect(0, 0, 100, 100)
+            self.dest_r = SDL_Rect(0, 0, 100, 100)
+
         def prime_font(self, name, size, user_handle, weight=500, y_offset=0):
 
             self.f_dict[user_handle] = Win32Font(name, size, weight)
@@ -5805,7 +5846,7 @@ if system == 'windows':
 
             return self.f_dict[font].get_metrics(text)
 
-        def draw(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None):
+        def draw(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
 
             y += self.y_offset_dict[font]
 
@@ -5823,6 +5864,21 @@ if system == 'windows':
                     sd[0].x = sd[0].x - int(sd[0].w / 2)
 
                 #SDL_RenderCopy(renderer, sd[1], None, sd[0])
+                # print(range_height)
+                # if range_height is not None:
+                #
+                #     self.source_rect.y = sd[0].h - range_height - range_top
+                #     self.source_rect.w = sd[0].w
+                #     self.source_rect.h = range_height
+                #
+                #     self.dest_r.x = sd[0].x
+                #     self.dest_r.y = sd[0].y
+                #     self.dest_r.w = sd[0].w
+                #     self.dest_r.h = range_height
+                #
+                #     SDL_RenderCopyEx(renderer, sd[1], self.source_rect, self.dest_r, 0, None, SDL_FLIP_VERTICAL)
+                #     return sd[0].w
+
                 SDL_RenderCopyEx(renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
 
                 return sd[0].w
@@ -8059,7 +8115,7 @@ cancel_menu.add("Cancel", cancel_import)
 
 def toggle_lyrics_show(a):
 
-    return not gui.showcase_mode
+    return not gui.combo_mode
 
 
 
@@ -15430,7 +15486,7 @@ class TopPanel:
 
         # C-TD
         global quick_drag
-        global playlist_panel
+
 
         if quick_drag is True:
             gui.pl_update = 1
@@ -16743,7 +16799,7 @@ class StandardPlaylist:
 
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
-                and not (playlist_panel and coll_point(mouse_position, pl_rect)) and not (
+                and not (coll_point(mouse_position, pl_rect)) and not (
             key_shift_down and track_box):
 
             if False: #album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
@@ -17015,7 +17071,7 @@ class StandardPlaylist:
                     gui.win_fore = alpha_blend([130, 220, 130, 30], gui.win_fore)
 
             # Make track the selection if right clicked
-            if right_click and line_hit and not playlist_panel:
+            if right_click and line_hit:
                 if p_track not in shift_selection:
                     shift_selection = [p_track]
 
@@ -17129,8 +17185,7 @@ class StandardPlaylist:
                 this_line_selected = True
                 gui.win_fore = alpha_blend(colours.row_select_highlight, gui.win_fore)
 
-            if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10 \
-                    and not playlist_panel:
+            if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10:
 
                 if len(shift_selection) > 1:
                     selection_menu.activate(default_playlist[p_track])
@@ -17356,7 +17411,7 @@ class StandardPlaylist:
 
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
-            1] - 55 and not playlist_panel and
+            1] - 55 and
                             width + left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
 
@@ -17760,6 +17815,9 @@ class MetaBox:
 
         draw.rect_r((x, y, w, h), colours.side_panel_background, True)
 
+        if pctl.playing_state == 0:
+            return
+
         if h < 15:
             return
 
@@ -17784,7 +17842,8 @@ class MetaBox:
 
             if system == 'linux':
 
-                tw, th = cairo_text.wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30)
+                tw, th = cairo_text.wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30, True)
+
                 oth = th
 
                 th -= h
@@ -17883,6 +17942,220 @@ class MetaBox:
 
 
 meta_box = MetaBox()
+
+class PictureRender:
+
+    def __init__(self):
+        self.show = False
+        self.path = ""
+
+        self.image_data = None
+        self.texture = None
+        self.sdl_rect = None
+
+
+    def load(self, path, box_size=None):
+
+        if not os.path.isfile(path):
+            print("NO PICTURE FILE TO LOAD")
+            return
+
+        g = io.BytesIO()
+        g.seek(0)
+
+        im = Image.open(path)
+        if box_size is not None:
+            im.thumbnail((box_size, box_size), Image.ANTIALIAS)
+
+        im.save(g, 'BMP')
+        g.seek(0)
+        self.image_data = g
+        print("Save BMP to memory")
+
+    def draw(self, x, y):
+
+        if self.show is False:
+            return
+
+        if self.image_data is not None:
+            if self.texture is not None:
+                SDL_DestroyTexture(self.texture)
+
+            # Convert raw image to sdl texture
+            print("Create Texture")
+            wop = rw_from_object(self.image_data)
+            s_image = IMG_Load_RW(wop, 0)
+            self.texture = SDL_CreateTextureFromSurface(renderer, s_image)
+            SDL_FreeSurface(s_image)
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+            SDL_QueryTexture(self.texture, None, None, tex_w, tex_h)
+            self.sdl_rect = SDL_Rect(x, y)
+            self.sdl_rect.w = int(tex_w.contents.value)
+            self.sdl_rect.h = int(tex_h.contents.value)
+            self.image_data = None
+
+        if self.texture is not None:
+            self.sdl_rect.x = x
+            self.sdl_rect.y = y
+            SDL_RenderCopy(renderer, self.texture, None, self.sdl_rect)
+
+artist_picture_render = PictureRender()
+
+
+class ArtistInfoBox:
+
+    def __init__(self):
+        self.artist_on = None
+        self.min_rq_timer = Timer()
+        self.min_rq_timer.force_set(10)
+
+        self.text = ""
+
+        self.status = ""
+
+        self.scroll_y = 0
+
+
+    def draw(self, x, y, w, h):
+
+        backgound = [27, 27, 27, 255]
+        draw.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
+
+        track = pctl.playing_object()
+        if track is None:
+            return
+
+        # Check if the artist has changed.
+        artist = track.artist
+        wait = False
+        if artist != self.artist_on:
+            if artist == "":
+                return
+
+            if self.min_rq_timer.get() < 5:  # Limit rate
+                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+                    pass
+                else:
+                    self.status = "Changing too fast..."
+                    wait = True
+
+
+            if pctl.playing_time < 1:
+                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+                    pass
+                else:
+                    self.status = "..."
+                    wait = True
+
+
+            if not wait:
+                self.min_rq_timer.set()
+
+                self.artist_on = artist
+                self.scroll_y = 0
+                print("SET NEW ARTIST")
+                self.status = "Looking up..."
+
+                shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
+                shoot_dl.daemon = True
+                shoot_dl.start()
+
+
+        if self.status == "Ready":
+
+            tw, th = cairo_text.wh(self.text, 14, w - 245, True)
+
+            if coll_point(mouse_position, (x, y, w, h)):
+                self.scroll_y += mouse_wheel * -20
+            if self.scroll_y < 0:
+                self.scroll_y = 0
+            if self.scroll_y > th - (h - 26):
+                self.scroll_y = th - (h - 26)
+
+            if th > h - 26:
+                self.scroll_y = mini_lyrics_scroll.draw(x + w - 20, y + 5, 15, h - 5,
+                                                        self.scroll_y, th - (h - 26))
+
+            artist_picture_render.draw(x + 20, y + 10)
+            draw_text((x + 220, y + 14, 4, w - 245, 2000), self.text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+
+        else:
+            draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 13, bg=backgound)
+
+
+    def get_data(self, artist):
+
+        filename = artist + '-lfm.png'
+        filename2 = artist + '-lfm.txt'
+        filepath = os.path.join(cache_directory, filename)
+        filepath2 = os.path.join(cache_directory, filename2)
+
+
+
+        # Check for cache
+
+        if os.path.isfile(filepath):
+            print("Load cached bio")
+            artist_picture_render.load(filepath, 180)
+            artist_picture_render.show = True
+            if os.path.isfile(filepath2):
+                with open(filepath2) as f:
+                    self.text = f.read()
+            self.status = "Ready"
+            gui.update = 2
+            return
+
+
+
+        # Get new from last.fm
+        data = lastfm.artist_info(artist)
+        if data[0] is False:
+            self.text = ""
+            artist_picture_render.show = False
+            self.status = "No artist bio found"
+            return
+        else:
+            self.text = data[1]
+            cover_link = data[2]
+
+            # Save text as file
+            f = open(filepath2, 'w')
+            f.write(self.text)
+            f.close()
+
+        if 'http' in cover_link:
+            # Fetch cover_link
+            try:
+                print("Fetching artist image...")
+                response = urllib.request.urlopen(cover_link)
+                info = response.info()
+                print("got response")
+                if info.get_content_maintype() == 'image':
+
+                    f = open(filepath, 'wb')
+                    f.write(response.read())
+                    f.close()
+
+                    print("written file, now loading...")
+
+                    artist_picture_render.load(filepath, 180)
+                    artist_picture_render.show = True
+
+                    self.status = "Ready"
+                    gui.update = 2
+            except HTTPError as e:
+                self.status = e
+                print("request failed")
+            except:
+                print("request failed")
+                self.status = "Request Failed"
+
+
+
+
+artist_info_box = ArtistInfoBox()
+
 
 class Showcase:
 
@@ -18477,13 +18750,14 @@ if system != 'windows':
         elif point.contents.y < 0 and point.contents.x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40:
+        elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
         elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
+
             return SDL_HITTEST_DRAGGABLE
         elif point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
@@ -18573,6 +18847,9 @@ def update_layout_do():
         gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
     else:
         gui.playlist_top = gui.playlist_top_bk
+
+    gui.playlist_top += 200
+
     gui.offset_extra = 0
     if draw_border:
         gui.offset_extra = 61 * gui.scale
@@ -18584,37 +18861,25 @@ def update_layout_do():
         album_v_gap = 25 * gui.scale
 
 
-
     #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
     gui.spec1_rec.x = window_size[0] - gui.offset_extra - 90 * gui.scale
     #gui.spec_x = window_size[0] - gui.offset_extra - 90
 
     gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra
 
-
-    # gui.scroll_hide_box = (1 if not gui.maximized else 0, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-
-    if gui.combo_mode:
-        gui.playlist_row_height = prefs.playlist_row_height #31
-        gui.row_font_size = prefs.playlist_font_size
-        gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
-        gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))#6
-         #13
-        gui.scroll_hide_box = (window_size[0] - (28 * gui.scale) - 2 * gui.scale, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-    else:
-        gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-        gui.playlist_row_height = prefs.playlist_row_height
-        gui.playlist_text_offset = 0
-        gui.row_font_size = prefs.playlist_font_size  # 13
-        gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
-        gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
-        gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
-        # To improve
-        if system == 'linux' and gui.scale == 1:
-            gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-            #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-        if system == 'windows':
-            gui.playlist_text_offset -= 1
+    gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+    gui.playlist_row_height = prefs.playlist_row_height
+    gui.playlist_text_offset = 0
+    gui.row_font_size = prefs.playlist_font_size  # 13
+    gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
+    gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
+    gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
+    # To improve
+    if system == 'linux' and gui.scale == 1:
+        gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+        #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+    if system == 'windows':
+        gui.playlist_text_offset -= 1
 
     # if gui.scale > 1:
     #     #gui.playlist_text_offset += 17
@@ -18663,7 +18928,6 @@ def update_layout_do():
                     gui.pref_gallery_w = gui.rspw
 
 
-
     # Determine how wide the playlist need to be (again)
     gui.plw = window_size[0]
     gui.playlist_left = 0
@@ -18675,32 +18939,6 @@ def update_layout_do():
         gui.plw -= gui.rspw
 
 
-    # if gui.rsp is True:
-    #
-    #     if gui.rspw < 100 * gui.scale:
-    #         gui.rspw = 100 * gui.scale
-    #
-    #
-    #     if gui.rspw > window_size[1] - 77 * gui.scale and album_mode is not True:
-    #         gui.rspw = window_size[1] - 77 * gui.scale
-    #
-    #     if gui.rspw > window_size[0] - 300 * gui.scale and album_mode is True:
-    #         gui.rspw = window_size[0] - 300 * gui.scale
-    #
-    #
-    #     if album_mode != True:
-    #         gui.playlist_width = window_size[0] - gui.rspw - 30 * gui.scale
-    #     else:
-    #         gui.rspw = window_size[0] - gui.playlist_width - 30 * gui.scale
-    #
-    # else:
-    #     gui.playlist_width = window_size[0] - 30 * gui.scale
-
-
-
-    # tttt
-    # if gui.combo_mode:
-    #     gui.playlist_width -= combo_pl_render.pl_album_art_size
 
     if window_size[0] < 630 * gui.scale:
         gui.compact_bar = True
@@ -18709,19 +18947,10 @@ def update_layout_do():
 
     gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
 
-    if GUI_Mode == 2:
-        SDL_DestroyTexture(gui.ttext)
-        gui.panelBY = 30 * gui.scale
-        gui.panelY = 0
-        gui.playlist_top = 5 * gui.scale
 
-        gui.pl_update = 1
 
-        gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / gui.playlist_row_height) - 0) - 3
-
-    if GUI_Mode == 1:
-        SDL_DestroyTexture(gui.ttext)
-        gui.pl_update = 1
+    SDL_DestroyTexture(gui.ttext)
+    gui.pl_update = 1
 
     update_set()
 
@@ -18729,6 +18958,7 @@ def update_layout_do():
 
     gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
                               window_size[1])
+
     SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
     SDL_SetRenderTarget(renderer, gui.ttext)
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
@@ -19309,7 +19539,7 @@ while running:
                 window_size[0] = event.window.data1
                 window_size[1] = event.window.data2
                 update_layout = True
-                gui.maximized = False
+
                 # print('resize')
 
             # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
@@ -19323,7 +19553,7 @@ while running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
                 gui.lowered = False
-
+                gui.maximized = False
                 gui.pl_update = 1
                 gui.update += 1
 
@@ -19679,13 +19909,14 @@ while running:
             open_encode_out()
 
         if key_tilde:
-            #playlist_panel ^= True
+
             gui.lsp ^= True
             update_layout_do()
 
         if key_F7:
 
             show_message("Test error message", 'error', "------")
+            lastfm.artist_info(pctl.playing_object().artist)
             #
             # lastfm.get_friends()
 
@@ -19800,11 +20031,6 @@ while running:
 
         if combo_menu.active and right_click:
             combo_menu.active = False
-
-        genre_box_click = False
-        if playlist_panel and input.mouse_click:
-            input.mouse_click = False
-            genre_box_click = True
 
         if mouse_wheel != 0:
             gui.update += 1
@@ -20762,15 +20988,19 @@ while running:
                 # Scroll Bar
 
                 # if not scroll_enable:
+                top = gui.panelY
+                if gui.artist_info_panel:
+                    top += 200
+                
                 x = 0
                 if gui.lsp:
                     x = gui.lspw
 
                 gui.scroll_hide_box = (
-                    x + 1 if not gui.maximized else x, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+                    x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
 
                 fields.add(gui.scroll_hide_box)
-                if (coll_point(mouse_position, gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not playlist_panel and not x_menu.active:  # or scroll_opacity > 0:
+                if (coll_point(mouse_position, gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active:  # or scroll_opacity > 0:
                     scroll_opacity = 255
 
                     if not gui.combo_mode:
@@ -20780,14 +21010,14 @@ while running:
                         if len(default_playlist) < 50:
                             sbl = 85 * gui.scale
                             if len(default_playlist) == 0:
-                                sbp = gui.panelY
+                                sbp = top
                         else:
                             sbl = 105 * gui.scale
 
                         fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-                        if coll_point(mouse_position, (x, gui.panelY, 28 * gui.scale, ey - gui.panelY)) and not playlist_panel and (
+                        if coll_point(mouse_position, (x, top, 28 * gui.scale, ey - top)) and (
                             mouse_down or right_click) \
-                                and coll_point(click_location, (x, gui.panelY, 28 * gui.scale, ey - gui.panelY)):
+                                and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
 
                             gui.pl_update = 1
                             if right_click:
@@ -20795,9 +21025,9 @@ while running:
                                 sbp = mouse_position[1] - int(sbl / 2)
                                 if sbp + sbl > ey:
                                     sbp = ey - sbl
-                                elif sbp < gui.panelY:
-                                    sbp = gui.panelY
-                                per = (sbp - gui.panelY) / (ey - gui.panelY - sbl)
+                                elif sbp < top:
+                                    sbp = top
+                                per = (sbp - top) / (ey - top - sbl)
                                 playlist_position = int(len(default_playlist) * per)
 
                                 if playlist_position < 0:
@@ -20833,21 +21063,21 @@ while running:
                             sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
                             if sbp + sbl > ey:
                                 sbp = ey - sbl
-                            elif sbp < gui.panelY:
-                                sbp = gui.panelY
-                            per = (sbp - gui.panelY) / (ey - gui.panelY - sbl)
+                            elif sbp < top:
+                                sbp = top
+                            per = (sbp - top) / (ey - top - sbl)
                             playlist_position = int(len(default_playlist) * per)
 
 
                         else:
                             if len(default_playlist) > 0:
                                 per = playlist_position / len(default_playlist)
-                                sbp = int((ey - gui.panelY - sbl) * per) + gui.panelY + 1
+                                sbp = int((ey - top - sbl) * per) + top + 1
 
                         # if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[
                         #     0] != 0) or scroll_hold:
                         #     scroll_opacity = 255
-                        draw.rect((x, gui.panelY), (18 * gui.scale, window_size[1] - gui.panelY - gui.panelBY), [18, 18, 18, 255], True)
+                        draw.rect((x, top), (18 * gui.scale, window_size[1] - top - gui.panelBY), [18, 18, 18, 255], True)
                         draw.rect((x + 1, sbp), (15 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
 
                         if (coll_point(mouse_position, (x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
@@ -20924,13 +21154,16 @@ while running:
                 if window_size[0] < 820 * gui.scale:
                     gui.show_top_title = True
 
-            if gui.lsp:
+            if gui.lsp and not gui.combo_mode:
 
                 half = int(round((window_size[1] - gui.panelY - gui.panelBY) / 2))
                 full = (window_size[1] - gui.panelY - gui.panelBY)
 
                 playlist_box.draw(0, gui.panelY, gui.lspw, full)
 
+
+            if gui.artist_info_panel:
+                artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, 200)
 
             # BOTTOM BAR!
             # C-BB
@@ -20949,125 +21182,6 @@ while running:
                 top_panel.render()
 
             # Overlay GUI ----------------------
-
-            if playlist_panel:
-
-                pl_items_len = len(pctl.multi_playlist)
-                pl_max_view_len = int((window_size[1] - gui.panelY) / 16)
-                if pl_max_view_len < 1:
-                    pl_max_view_len = 1
-                if pl_max_view_len > pl_items_len:
-                    pl_max_view_len = pl_items_len
-
-                if coll_point(mouse_position, pl_rect):
-                    pl_view_offset -= mouse_wheel * 2
-                if pl_view_offset < 0:
-                    pl_view_offset = 0
-                if pl_view_offset > pl_items_len - pl_max_view_len:
-                    pl_view_offset = pl_items_len - pl_max_view_len
-
-                x = 5 * gui.scale
-                y = gui.panelY + 5 * gui.scale
-                w = 400 * gui.scale
-                rh = 25 * gui.scale
-                h = pl_max_view_len * rh + 5 * gui.scale
-
-                pl_rect = (x, y, w, h)
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
-                draw.rect_r(pl_rect, colours.bottom_panel_colour, True)
-                gui.win_fore = colours.bottom_panel_colour
-
-                if genre_box_click and not coll_point(mouse_position, pl_rect):
-                    playlist_panel = False
-
-
-                p = 0
-                for i, item in enumerate(pctl.multi_playlist):
-
-                    if i < pl_view_offset:
-                        continue
-                    if p >= pl_max_view_len:
-                        break
-
-                    ty = (p * rh) + y
-
-                    x_rect = (x, ty, rh - 1, rh - 1)
-                    fields.add(x_rect)
-
-                    if coll_point(mouse_position, x_rect) and not tab_menu.active:
-                        draw_text2((x + int(rh / 2), ty + int(rh / 2) - 10 * gui.scale, 2), "✖", [225, 50, 50, 255], 15, 300 * gui.scale)
-                        if genre_box_click:
-                            delete_playlist(i)
-                    else:
-                        draw_text2((x + int(rh / 2), ty + int(rh / 2) - 10 * gui.scale, 2), "✖", [50, 50, 50, 255], 15, 300 * gui.scale)
-
-                    y_rect = (x + rh, ty, 27 * gui.scale, rh - 1 * gui.scale)
-                    fields.add(y_rect)
-
-                    playing_in = False
-                    if i == pctl.active_playlist_playing and pctl.playing_state > 0:
-                        if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] in item[2]:
-                            draw_text2((x + rh + 15 * gui.scale, ty + int(rh / 2) - 10 * gui.scale, 2), "▶ ", [200, 200, 100, 255], 15, 300 * gui.scale)
-                            playing_in = True
-                        else:
-                            draw_text2((x + rh + 15 * gui.scale, ty + int(rh / 2) - 10 * gui.scale, 2), "▶ ", [50, 50, 50, 255], 15, 300 * gui.scale)
-                    elif pctl.playing_state > 0 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] in item[2]:
-                        draw_text2((x + rh + 15, ty + int(rh / 2) - 10, 2), "▶ ", [50, 50, 50, 255], 15, 300)
-                        playing_in = True
-
-                    if not playing_in and coll_point(mouse_position, y_rect) and pctl.playing_state > 0:
-                        draw_text2((x + rh + 15 * gui.scale, ty + int(rh / 2) - 10 * gui.scale, 2), "+ ", [80, 170, 80, 255], 15, 300 * gui.scale)
-                        if genre_box_click:
-                            append_current_playing(i)
-                    elif coll_point(mouse_position, y_rect) and playing_in:
-                        if genre_box_click:
-                            pctl.active_playlist_playing = i
-                            pctl.playlist_playing = item[2].index(pctl.track_queue[pctl.queue_step])
-
-
-                    t_rect = (x + rh + 30 * gui.scale, ty, w - rh - 30 * gui.scale, rh - 1 * gui.scale)
-                    fields.add(t_rect)
-
-                    if coll_point(mouse_position, t_rect) and not tab_menu.active:
-                        if not tab_menu.active:
-                            draw.rect_r(t_rect, [30, 30, 30, 255], True)
-                        gui.win_fore = [30, 30, 30, 255]
-                        if genre_box_click:
-                            if i == gui.playlist_box_d_click and quick_d_timer.get() < 0.6 and len(item[2]) > 0:
-                                gui.playlist_box_d_click = -1
-                                pctl.jump(item[2][0], 0)
-
-                            switch_playlist(i)
-                            gui.playlist_box_d_click = copy.deepcopy(i)
-                            quick_d_timer.set()
-                        if right_click and coll_point(mouse_position, t_rect):
-                            tab_menu.activate(copy.deepcopy(i), mouse_position)
-
-                    if tab_menu.active and tab_menu.reference == i:
-                        draw.rect_r(t_rect, [30, 30, 30, 255], True)
-                        gui.win_fore = [30, 30, 30, 255]
-
-                    line = item[0]
-                    line = trunc_line(line, 14, 300)
-                    if i == pctl.playlist_active:
-                        draw_text((x + rh + 35 * gui.scale, ty + int(rh / 2) - 10 * gui.scale), line, [170, 170, 170, 255], 14)
-                    else:
-                        draw_text((x + rh + 35 * gui.scale, ty + int(rh / 2) - 10 * gui.scale), line, [100, 100, 100, 255], 14)
-
-
-                    if len(item[2]) == 0:
-                        line = "Empty"
-                    elif len(item[2]) == 1:
-                        line = '1 Track'
-                    else:
-                        line = str(len(item[2])) + " Tracks"
-
-                    draw_text((w - 4 * gui.scale, ty + int(rh / 2) - 10 * gui.scale, 1), line, [80, 80, 80, 80], 12)
-
-                    gui.win_fore = colours.bottom_panel_colour
-
-
-                    p += 1
 
             if rename_playlist_box:
 
@@ -22097,7 +22211,7 @@ while running:
             else:
                 top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
 
-            if not fullscreen:
+            if not fullscreen and not gui.maximized:
 
                 corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
