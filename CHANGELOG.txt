@@ -5,7 +5,7 @@ v3.0.0
 
  - Added artist info panel (gets data from last fm)
  - Added playlist selector side panel
- - Added playlist hide feature to hide individual playlist tabs in top panel
+ - Added playlist hide feature (hides individual playlist tabs from top panel)
  - Moved 'search image on google' function to picture menu
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed previous playlist selector box with quick add and set playing features
