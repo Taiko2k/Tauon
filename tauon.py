@@ -564,7 +564,7 @@ class Prefs:    # Used to hold any kind of settings
         self.device = 1
         self.device_name = ""
 
-        self.cache_gallery = False
+        self.cache_gallery = True
         self.gallery_row_scroll = False
         self.gallery_scroll_wheel_px = 90
 
@@ -820,6 +820,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.artist_panel_height = 200
 
         self.artist_info_panel = False
+
+        self.show_hearts = True
 
 gui = GuiVar()
 
@@ -1221,8 +1223,8 @@ try:
         prefs.transcode_bitrate = save[37]
     if save[38] is not None:
         prefs.line_style = save[38]
-    if save[39] is not None:
-        prefs.cache_gallery = save[39]
+    # if save[39] is not None:
+    #     prefs.cache_gallery = save[39]
     if save[40] is not None:
         prefs.playlist_font_size = save[40]
     if save[41] is not None:
@@ -1292,6 +1294,8 @@ try:
         gui.pref_gallery_w = save[73]
     if save[74] is not None:
         gui.pref_rspw = save[74]
+    if save[75] is not None:
+        gui.show_hearts = save[75]
 
     state_file.close()
     del save
@@ -12574,6 +12578,13 @@ class SearchOverlay:
                 self.on -= 1
                 self.old_mouse = copy.deepcopy(mouse_position)
 
+            if mouse_wheel == -1:
+                self.on += 1
+                self.force_select += 1
+            if mouse_wheel == 1 and self.on > -1:
+                self.on -= 1
+                self.force_select -= 1
+
             enter = False
 
             if self.delay_enter and not self.sip:
@@ -12826,6 +12837,8 @@ def worker2():
                 albums = {}
                 genres = {}
 
+                tracks = set()
+
                 br = 0
 
                 if search_over.searched_text in ('the', 'and'):
@@ -12834,71 +12847,91 @@ def worker2():
                 search_over.sip = True
                 gui.update += 1
 
+                s_text = search_over.search_text.text.lower()
+
                 for playlist in pctl.multi_playlist:
 
                     for track in playlist[2]:
 
-                        if input_text != "":
-                            time.sleep(0.001)
+                        # if input_text != "":
+                        #     time.sleep(0.001)
 
                         t = pctl.master_library[track]
 
-                        # ARTIST
-                        if search_magic(search_over.search_text.text, t.artist):
+                        title = t.title.lower()
+                        artist = t.artist.lower()
+                        album = t.album.lower()
+                        filename = t.filename.lower()
 
-                            if t.artist in artists:
-                                artists[t.artist] += 1
+
+                        if search_magic(s_text, title + artist + filename + album):
+
+                            if s_text in artist:
+
+                                value = 1
+                                if s_text == artist:
+                                    value = 3
+
+                                # Add artist
+                                if t.artist in artists:
+                                    artists[t.artist] += value
+                                else:
+                                    temp_results.append([0, t.artist, track, playlist[6], 0])
+                                    artists[t.artist] = value
+
+
+                                if t.album in albums:
+                                    albums[t.album] += 1
+                                else:
+                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    albums[t.album] = 1
+
+
+                            if s_text in album:
+
+                                value = 1
+                                if s_text == album:
+                                    value = 3
+
+                                if t.album in albums:
+                                    albums[t.album] += value
+                                else:
+                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    albums[t.album] = value
+
+
+                            if search_magic_any(s_text, artist) and search_magic_any(s_text, album):
+
+
+                                if t.album in albums:
+                                    albums[t.album] += 3
+                                else:
+                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    albums[t.album] = 3
+
+                            if s_text in title:
+
+                                if t not in tracks:
+
+                                    value = 1
+                                    if s_text == title:
+                                        value = 2000
+
+                                    temp_results.append([2, t.title, track, playlist[6], value])
+
+                                    tracks.add(t)
+
+
                             else:
-                                temp_results.append([0, t.artist, track, playlist[6], 0])
-                                artists[t.artist] = 1
+                                if t not in tracks:
+                                    temp_results.append([2, t.title, track, playlist[6], 1])
 
-                            if t.album in albums:
-                                albums[t.album] += 1
-                            else:
-                                temp_results.append([1, t.album, track, playlist[6], 0])
-                                albums[t.album] = 1
+                                    tracks.add(t)
 
-                        elif search_combine(search_over.search_text.text, t.album, t.artist):
 
-                            if t.album in albums:
-                                albums[t.album] += 1
-                            else:
-                                temp_results.append([1, t.album, track, playlist[6], 0])
-                                albums[t.album] = 1
-
-                        # ALBUMS
-                        elif search_magic(search_over.search_text.text, t.album): #or search_magic(search_over.search_text.text, t.artist):
-
-                            if t.album in albums:
-                                albums[t.album] += 1
-                            else:
-                                temp_results.append([1, t.album, track, playlist[6], 0])
-                                albums[t.album] = 1
-
-                        # # TRACKS
-                        # if search_magic(search_over.search_text.text, t.title):
-                        #     temp_results.append([2, t.title, track, playlist[6], 1])
-                        #
-                        # # TRACKS + ARTIST
-                        # elif search_combine(search_over.search_text.text, t.title, t.artist):
-                        #     temp_results.append([2, t.title, track, playlist[6], 1])
-                        # TRACKS
-                        if search_magic(search_over.search_text.text, t.title + t.artist + t.filename + t.album):
-                            temp_results.append([2, t.title, track, playlist[6], 1])
-
-                        # GENRE
-                        if len(t.genre) > 0 and search_magic(search_over.search_text.text, t.genre):
-
-                            if t.genre in genres:
-                                genres[t.genre] += 1
-                            else:
-                                temp_results.append([3, t.genre, track, playlist[6], 0])
-                                genres[t.genre] = 1
-
-                        #time.sleep(0.00001)
                         br += 1
                         if br > 100:
-                            time.sleep(0.00001)
+                            time.sleep(0.0002)
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
                                 break
@@ -12906,7 +12939,7 @@ def worker2():
                 search_over.sip = False
                 search_over.on = 0
                 gui.update += 1
-
+                #
                 for i, item in enumerate(temp_results):
                     if item[0] == 0:
                         temp_results[i][4] = artists[item[1]]
@@ -14236,12 +14269,9 @@ def star_toggle(mode=0):
 def heart_toggle(mode=0):
 
     if mode == 1:
-        return gui.star_mode == 'heart'
+        return gui.show_hearts
 
-    if gui.star_mode == 'heart':
-        gui.star_mode = 'none'
-    else:
-        gui.star_mode = 'heart'
+    gui.show_hearts ^= True
 
     gui.update += 1
     gui.pl_update = 1
@@ -14407,16 +14437,16 @@ def toggle_lfm_auto(mode=0):
 
 
 
-def toggle_cache(mode=0):
-    if mode == 1:
-        return prefs.cache_gallery
-    if not prefs.cache_gallery:
-        prefs.cache_gallery = True
-        direc = os.path.join(user_directory, 'cache')
-        if not os.path.exists(direc):
-            os.makedirs(direc)
-    else:
-        prefs.cache_gallery = False
+# def toggle_cache(mode=0):
+#     if mode == 1:
+#         return prefs.cache_gallery
+#     if not prefs.cache_gallery:
+#         prefs.cache_gallery = True
+#         direc = os.path.join(user_directory, 'cache')
+#         if not os.path.exists(direc):
+#             os.makedirs(direc)
+#     else:
+#         prefs.cache_gallery = False
 
 
 def toggle_ex_del(mode=0):
@@ -14726,8 +14756,8 @@ class Over:
         y = y1
 
         y += 10 * gui.scale
-        self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
-        y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
+        # y += 25 * gui.scale
         self.toggle_square(x, y, toggle_extract, "Auto extract zip archives")
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
@@ -16654,14 +16684,17 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
 
-        if gui.star_mode == 'heart':
+        if gui.show_hearts:
             count = 0
             spacing = 6
+            xxx = star_x
+            if xxx > 0:
+                xxx += 5
             if love(False, index):
 
                 count = 1
 
-                x = width + start_x - 52 * gui.scale - offset_font_extra
+                x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 rect = [x - 1, yy - 4, 15, 17]
@@ -16676,13 +16709,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     draw_text((xx + 5, yy - 26), "You", [250, 250, 250, 255], 13)
 
 
-                heart_row_icon.render(width + start_x - 52 * gui.scale - offset_font_extra,
+                heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
                        ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
 
-                star_x = 18
+                star_x += 18
 
             for name in pctl.master_library[index].lfm_friend_likes:
-                x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count
+                x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 heart_row_icon.render(x,
@@ -16699,7 +16732,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
                     draw_text((xx + 5, yy - 26), name, [250, 250, 250, 255], 13)
                 count += 1
-                star_x = (heart_row_icon.w + spacing) * count + 2
+                star_x += heart_row_icon.w + spacing + 2
 
 
 
@@ -16801,7 +16834,7 @@ class StandardPlaylist:
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
                 and not (coll_point(mouse_position, pl_rect)) and not (
-            key_shift_down and track_box):
+            key_shift_down and track_box) and not search_over.active:
 
             if False: #album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
                 pass
@@ -17636,6 +17669,8 @@ class ScrollBox():
         return value
 
 mini_lyrics_scroll = ScrollBox()
+playlist_panel_scroll = ScrollBox()
+artist_info_scroll = ScrollBox()
 
 
 class PlaylistBox:
@@ -17683,7 +17718,7 @@ class PlaylistBox:
 
 
         if show_scroll:
-            self.scroll_on = mini_lyrics_scroll.draw(x + 2, y + 1, 15, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
+            self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
 
         # Inputs
@@ -18127,12 +18162,12 @@ class ArtistInfoBox:
 
             right = x + w - 25
             if self.th > h - 26:
-                self.scroll_y = mini_lyrics_scroll.draw(x + w - 20, y + 5, 15, h - 5,
+                self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max)
                 right -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            draw_text((x + 215, y + 14, 4, w - 245, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            draw_text((x + 215, y + 14, 4, w - 255, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -19160,7 +19195,7 @@ def save_state():
             folder_image_offsets,
             lfm_username,
             lfm_hash,
-            2.2,  # Version, used for upgrading
+            2.3,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -19217,7 +19252,8 @@ def save_state():
             gui.lsp,
             gui.rspw,
             gui.pref_gallery_w,
-            gui.pref_rspw]
+            gui.pref_rspw,
+            gui.show_hearts]
 
     #print(prefs.last_device + "-----")
 
@@ -19864,7 +19900,7 @@ while running:
                     # print(path)
                     min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
                     if os.path.isfile(path) and item[-3:] in Archive_Formats:
-                        if os.path.getsize(path) < 0.6e+9:
+                        if os.path.getsize(path) < 0.9e+9:
                             load_order = LoadClass()
                             load_order.target = path
                             load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
@@ -19873,8 +19909,8 @@ while running:
                         else:
                             show_message("One or more archives seemed a bit too large")
 
-                    if min_age < 30 and os.path.isdir(path) and path not in quick_import_done:
-                        if os.path.getsize(path) < 0.6e+9:
+                    if min_age < 120 and os.path.isdir(path) and path not in quick_import_done:
+                        if os.path.getsize(path) < 1.1e+9:
                             load_order = LoadClass()
                             load_order.target = path
                             load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
@@ -20489,7 +20525,8 @@ while running:
                     and not tab_menu.active \
                     and not selection_menu.active\
                     and not view_box.active \
-                    and not folder_menu.active:
+                    and not folder_menu.active \
+                    and not artist_info_scroll.held:
 
                 #update_layout = True
 

@@ -8,16 +8,22 @@ v3.0.0
  - Added playlist hide feature (hides individual playlist tabs from top panel)
  - Moved 'search image on google' function to picture menu
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
- - Removed previous playlist selector box with quick add and set playing features
+ - Removed Windows operating system support
+ - Removed previous playlist selector box
+ - Removed playlist left click to quick add and set playlist playing features
  - Removed 'dim gallery' function and setting
- - Removed 'always use folder names' setting
+ - Removed 'always use folder names' setting (now always off)
+ - Removed setting for gallery disk caching (now always on)
  - [Linux] Added scroll bar to side panel lyrics
- - Tweaked search overlay search algorithm for track matching
+ - Tweaked search overlay search algorithm
  - Tweaked mouse side button functions for more obvious behavior
+ - Tweaked show hearts setting to be allowed in addition to stars and lines
+ - Improved search overlay to allow scrolling by scroll wheel
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
  - Fixed border being active when window maximized
+ - Fixed duplicate tracks appearing in search overlay
  - [Linux] Fixed words not truncating properly (bug from v2.8.3)
 
 v2.8.3
