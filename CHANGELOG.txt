@@ -10,10 +10,13 @@ v3.0.0
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed Windows operating system support
  - Removed previous playlist selector box
- - Removed playlist left click to quick add and set playlist playing features
+ - Removed playlist selector box's left click to quick add track feature
+ - Removed playlist selector box's direct set playlist playing feature
  - Removed 'dim gallery' function and setting
  - Removed 'always use folder names' setting (now always off)
  - Removed setting for gallery disk caching (now always on)
+ - Removed setting for showing lyrics in radio web page (now always on)
+ - Removed UI colour theme 'Deep'
  - [Linux] Added scroll bar to side panel lyrics
  - Tweaked search overlay search algorithm
  - Tweaked mouse side button functions for more obvious behavior
@@ -898,4 +901,5 @@ v0.6.5
 
 - Fixed bug with not being able to rearrange playlists
 - Improved theme loading
+
 - First public release

@@ -484,7 +484,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", False])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", True])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -604,7 +604,7 @@ class Prefs:    # Used to hold any kind of settings
         self.server_port = 7590
         self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
-        self.radio_page_lyrics = False
+        self.radio_page_lyrics = True
 
         self.show_gimage = True
         self.end_setting = "stop"
@@ -1257,8 +1257,8 @@ try:
         prefs.scrobble_mark = save[54]
     if save[55] is not None:
         prefs.replay_gain = save[55]
-    if save[56] is not None:
-        prefs.radio_page_lyrics = save[56]
+    # if save[56] is not None:
+    #     prefs.radio_page_lyrics = save[56]
     if save[57] is not None:
         prefs.show_gimage = save[57]
     if save[58] is not None:
@@ -1450,7 +1450,7 @@ if db_version > 0:
     if db_version <= 2.2:
         for i in range(len(multi_playlist)):
             if len(multi_playlist[i]) < 9:
-                multi_playlist[i].append(False)
+                multi_playlist[i].append(True)
 # Loading Config -----------------
 
 # main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
@@ -14329,6 +14329,7 @@ config_items = [
     ['Show playtime lines', star_line_toggle],
     ['Show playtime stars', star_toggle],
     ['Show love hearts', heart_toggle],
+    None
 ]
 
 
@@ -14409,10 +14410,10 @@ def toggle_allow_remote(mode=0):
         return prefs.allow_remote #^ True
     prefs.allow_remote ^= True
 
-def toggle_radio_lyrics(mode=0):
-    if mode == 1:
-        return prefs.radio_page_lyrics
-    prefs.radio_page_lyrics ^= True
+# def toggle_radio_lyrics(mode=0):
+#     if mode == 1:
+#         return prefs.radio_page_lyrics
+#     prefs.radio_page_lyrics ^= True
 
 
 def toggle_expose_web(mode=0):
@@ -14730,7 +14731,7 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_radio_lyrics, "Show lyrics on radio page")
+        # self.toggle_square(x + 10 * gui.scale, y, toggle_radio_lyrics, "Show lyrics on radio page")
         #y += 35
         # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
         # self.button(x + 289, y-4, "Open output folder", open_encode_out)
@@ -15179,6 +15180,9 @@ class Over:
         y2 = y
         x2 = x
         for k in config_items:
+            if k is None:
+                y += 25 * gui.scale
+                continue
             draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
@@ -15576,6 +15580,9 @@ class TopPanel:
         self.tab_text_spaces = []
         left_space_es = 0
         for i, item in enumerate(pctl.multi_playlist):
+
+            # if item[8] is True:
+            #     continue
             le = draw.text_calc(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
             left_space_es += le + self.tab_extra_width + self.tab_spacing
@@ -15631,10 +15638,11 @@ class TopPanel:
 
 
 
-        if window_size[0] - right_space_es - left_space_es < 190:
-            draw_alt = True
-        else:
-            draw_alt = False
+        # if window_size[0] - right_space_es - left_space_es < 190:
+        #     draw_alt = True
+        # else:
+        #     draw_alt = False
+        draw_alt = False
 
         if draw_alt:
             x = self.start_space_compact_left
@@ -15645,6 +15653,9 @@ class TopPanel:
         for i, tab in enumerate(pctl.multi_playlist):
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                break
+
+            if window_size[0] - right_space_es - x < 190:
                 break
 
             if draw_alt and i != pctl.playlist_active:
@@ -15714,6 +15725,9 @@ class TopPanel:
         for i, tab in enumerate(pctl.multi_playlist):
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
+                break
+
+            if window_size[0] - right_space_es - x < 190:
                 break
 
             if draw_alt and i != pctl.playlist_active:
@@ -18095,7 +18109,6 @@ class ArtistInfoBox:
 
                 self.artist_on = artist
                 self.scroll_y = 0
-                print("SET NEW ARTIST")
                 self.status = "Looking up..."
 
                 shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
@@ -18134,11 +18147,12 @@ class ArtistInfoBox:
                             self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
                         elif 'twitter' in word:
                             self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
+                        elif 'facebook' in word:
+                            self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
+                        elif 'youtube' in word:
+                            self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
                         else:
-                            self.urls.append((word.strip(), [60, 60, 230, 255], "W"))
-
-                print(self.urls)
-
+                            self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
 
                 tw, th = cairo_text.wh(text, 14, w - 245, True)
                 self.th = th
@@ -18146,12 +18160,6 @@ class ArtistInfoBox:
                 self.processed_text = text
 
             scroll_max = self.th - (h - 26)
-
-            #scroll_max = text_block_h
-
-            # lift_y_extra = self.scroll_y - text_block_h
-            # lift_y_extra = max(lift_y_extra, 0)
-
 
             if coll_point(mouse_position, (x, y, w, h)):
                 self.scroll_y += mouse_wheel * -20
@@ -18161,13 +18169,15 @@ class ArtistInfoBox:
                 self.scroll_y = scroll_max
 
             right = x + w - 25
+            text_max_w = w - 250
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max)
                 right -= 15
+                text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            draw_text((x + 215, y + 14, 4, w - 255, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            draw_text((x + 215, y + 14, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -18188,11 +18198,7 @@ class ArtistInfoBox:
                     self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
                 # draw.rect_r(rect, [210, 80, 80, 255], True)
 
-
                 yy += 19
-
-
-
 
         else:
             draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 13, bg=backgound)
@@ -18206,11 +18212,10 @@ class ArtistInfoBox:
         filepath2 = os.path.join(cache_directory, filename2)
 
 
-
         # Check for cache
 
         if os.path.isfile(filepath):
-            print("Load cached bio")
+            # print("Load cached bio")
             artist_picture_render.load(filepath, 180)
             artist_picture_render.show = True
             if os.path.isfile(filepath2):
@@ -18241,17 +18246,17 @@ class ArtistInfoBox:
         if 'http' in cover_link:
             # Fetch cover_link
             try:
-                print("Fetching artist image...")
+                # print("Fetching artist image...")
                 response = urllib.request.urlopen(cover_link)
                 info = response.info()
-                print("got response")
+                # print("got response")
                 if info.get_content_maintype() == 'image':
 
                     f = open(filepath, 'wb')
                     f.write(response.read())
                     f.close()
 
-                    print("written file, now loading...")
+                    # print("written file, now loading...")
 
                     artist_picture_render.load(filepath, 180)
                     artist_picture_render.show = True
@@ -19234,7 +19239,7 @@ def save_state():
             prefs.auto_lfm,
             prefs.scrobble_mark,
             prefs.replay_gain,
-            prefs.radio_page_lyrics,
+            True,  # Was radio lyrics
             prefs.show_gimage,
             prefs.end_setting,
             prefs.show_gen,
@@ -21341,9 +21346,9 @@ while running:
                 draw.rect((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
                 gui.win_fore = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 30 * gui.scale, colours.alpha_grey(150), width=220 * gui.scale)
+                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 30 * gui.scale, colours.alpha_grey(180), width=220 * gui.scale)
 
-                draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(180), 12)
+                draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(200), 12)
 
                 if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not rect_in(rect)):
                     rename_playlist_box = False
