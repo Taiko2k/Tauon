@@ -176,31 +176,32 @@ def star_count(sec, dur):
 
 
 def search_magic(terms, evaluate):
-    return all(word in evaluate.lower() for word in terms.lower().split())
+    return all(word in evaluate for word in terms.split())
+
 
 def search_magic_any(terms, evaluate):
-    return any(word in evaluate.lower() for word in terms.lower().split())
+    return any(word in evaluate for word in terms.split())
 
-def search_combine(terms, ev1, ev2):
-
-    if " " not in terms:
-        return False
-    b = []
-    ev1 = ev1.lower()
-
-    one = False
-    for word in terms.lower().split():
-        if word in ev1:
-            one = True
-        else:
-          b.append(word)
-    if not one:
-        return False
-    ev2 = ev2.lower()
-    for word in b:
-        if word in ev2:
-                return True
-    return False
+# def search_combine(terms, ev1, ev2):
+#
+#     if " " not in terms:
+#         return False
+#     b = []
+#     ev1 = ev1.lower()
+#
+#     one = False
+#     for word in terms.lower().split():
+#         if word in ev1:
+#             one = True
+#         else:
+#           b.append(word)
+#     if not one:
+#         return False
+#     ev2 = ev2.lower()
+#     for word in b:
+#         if word in ev2:
+#                 return True
+#     return False
 
 
 class ColourGenCache:
