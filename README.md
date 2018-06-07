@@ -9,6 +9,8 @@ Designed to be simple and streamlined while putting the user in control of their
 
 <img src="https://user-images.githubusercontent.com/17271572/41102318-b202263e-6aba-11e8-8fd6-2add18ab9608.jpg" hspace="0px" vspace="60px">
 
+> **Note:** Screenshot is of a development version
+
 ### Features :sparkles:
 
   - Plays most common codecs including MP3 and FLAC.
