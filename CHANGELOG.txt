@@ -6,6 +6,7 @@ v3.0.0
  - Added artist info panel (gets data from last fm)
  - Added playlist selector side panel
  - Added playlist hide feature (hides individual playlist tabs from top panel)
+ - Added download monitor indicator to top panel (replaces previous F8 function)
  - Moved 'search image on google' function to picture menu
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed Windows operating system support
@@ -16,8 +17,10 @@ v3.0.0
  - Removed 'always use folder names' setting (now always off)
  - Removed setting for gallery disk caching (now always on)
  - Removed setting for showing lyrics in radio web page (now always on)
+ - Removed setting for deleting archives (now always on)
  - Removed UI colour theme 'Deep'
  - [Linux] Added scroll bar to side panel lyrics
+ - Tweaked delete archive function to move files to trash
  - Tweaked search overlay search algorithm
  - Tweaked mouse side button functions for more obvious behavior
  - Tweaked show hearts setting to be allowed in addition to stars and lines

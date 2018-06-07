@@ -210,6 +210,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
+from send2trash import send2trash
 
 locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
@@ -622,6 +623,7 @@ class Prefs:    # Used to hold any kind of settings
         self.discord_active = False
         self.discord_ready = False
 
+        self.monitor_downloads = True
 
 prefs = Prefs()
 
@@ -1296,6 +1298,8 @@ try:
         gui.pref_rspw = save[74]
     if save[75] is not None:
         gui.show_hearts = save[75]
+    if save[76] is not None:
+        prefs.monitor_downloads = save[76]
 
     state_file.close()
     del save
@@ -1458,6 +1462,8 @@ if db_version > 0:
 # gui_font = 'Koruri-Semibold.ttf'
 #light_font = 'Koruri-Light.ttf'
 
+download_directories = [os.path.expanduser("~/Downloads")]
+
 path = config_directory + "/config.txt"
 if os.path.isfile(os.path.join(config_directory, "config.txt")):
     with open(path, encoding="utf_8") as f:
@@ -1575,6 +1581,14 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 prefs.enable_mpris = False
             if 'mediakey=False' in p:
                 prefs.mkey = False
+            if 'add_download_directory=' in p:
+                if len(p) < 1000:
+                    path = p.split('=')[1]
+                    if os.path.isdir(path):
+                        download_directories.append(path)
+                        print("Additional directory: " + path)
+                    else:
+                        print("Directory was not found: " + path)
 
 else:
     print("Warning: Missing config file")
@@ -5575,6 +5589,7 @@ if system == "linux":
     if gui.scale == 1:
 
         standard_font = prefs.linux_font #"Noto Sans"
+        cairo_text.prime_font(standard_font, 10 - 2, 9)
         cairo_text.prime_font(standard_font, 10 - 2, 10)
         cairo_text.prime_font(standard_font, 11 - 2.5, 11)
         cairo_text.prime_font(standard_font, 12 - 3, 12)
@@ -5591,6 +5606,7 @@ if system == "linux":
         cairo_text.prime_font(standard_font, 13 - 3, 413)
 
         standard_font = prefs.linux_bold_font #"Noto Sans Bold"
+        cairo_text.prime_font(standard_font, 9 - 3, 209)
         cairo_text.prime_font(standard_font, 10 - 3, 210)
         cairo_text.prime_font(standard_font, 11 - 3, 211)
         cairo_text.prime_font(standard_font, 12 - 3, 212)
@@ -5603,6 +5619,7 @@ if system == "linux":
 
     else:
         standard_font = prefs.linux_font  # "Noto Sans"
+        cairo_text.prime_font(standard_font, 19 - 2, 9, 12)
         cairo_text.prime_font(standard_font, 20 - 2, 10, 12)
         cairo_text.prime_font(standard_font, 21 - 2.5, 11, 12)
         cairo_text.prime_font(standard_font, 22 - 3, 12, 12)
@@ -5619,6 +5636,7 @@ if system == "linux":
         cairo_text.prime_font(standard_font, 23 - 3, 413, 13)
 
         standard_font = prefs.linux_bold_font  # "Noto Sans Bold"
+        cairo_text.prime_font(standard_font, 19 - 3, 209, 12)
         cairo_text.prime_font(standard_font, 20 - 3, 210, 12)
         cairo_text.prime_font(standard_font, 21 - 3, 211, 12)
         cairo_text.prime_font(standard_font, 22 - 3, 212, 12)
@@ -11021,6 +11039,7 @@ view_menu = Menu(170)
 set_menu = Menu(150)
 vis_menu = Menu(140)
 field_menu = Menu(140)
+dl_menu = Menu(90)
 
 def field_copy(text_field):
     text_field.copy()
@@ -13285,7 +13304,7 @@ def worker1():
                                         matches += 1
                                         break
                                 count += 1
-                            if count > 300:
+                            if count > 200:
                                 print("RAR archive has many files")
                                 return
                             if matches == 0:
@@ -13325,9 +13344,12 @@ def worker1():
                         if not os.path.isdir(target_dir):
                             print("Extract error, expected directory not found")
 
-                    if prefs.auto_del_zip and not error:
+                    if True and not error:  # prefs.auto_del_zip
                         print("Deleting archive file: " + path)
-                        os.remove(path)
+                        try:
+                            send2trash(path)
+                        except:
+                            show_message("Could not move archive to trash", 'info', path)
 
                     to_got = b
                     gets(target_dir)
@@ -13450,6 +13472,9 @@ def worker1():
 
     while True:
         time.sleep(0.15)
+
+        if prefs.auto_extract and prefs.monitor_downloads:
+            dl_mon.scan()
 
         # Folder moving
         if len(move_jobs) > 0:
@@ -14457,6 +14482,12 @@ def toggle_ex_del(mode=0):
     if prefs.auto_del_zip is True:
         show_message("Caution! This function deletes things!", 'info', "This could result in data loss if the process were to malfunction.")
 
+def toggle_dl_mon(mode=0):
+    if mode == 1:
+        return prefs.monitor_downloads
+
+    prefs.monitor_downloads ^= True
+
 
 def toggle_extract(mode=0):
     if mode == 1:
@@ -14759,9 +14790,10 @@ class Over:
         y += 10 * gui.scale
         # self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         # y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_extract, "Auto extract zip archives")
+        self.toggle_square(x, y, toggle_extract, "Extract and trash archives on import")
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
+        #self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, "Monitor download folders")
 
         y = self.box_y + 220 * gui.scale
         self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file)
@@ -15514,6 +15546,10 @@ class TopPanel:
         self.playlist_icon = WhiteModImageAsset('/gui/playlist.png')
         #self.standard_icon = WhiteModImageAsset('/gui/bar-stan.png')
         #self.gallery_icon = WhiteModImageAsset('/gui/bar-gallery.png')
+        if gui.scale == 2:
+            self.dl_button = WhiteModImageAsset('/gui/2x/dl.png')
+        else:
+            self.dl_button = WhiteModImageAsset('/gui/dl.png')
 
         self.adds = []
 
@@ -15863,6 +15899,51 @@ class TopPanel:
                 view_box.activate(x)
 
         view_box.render()
+
+
+        dl = len(dl_mon.ready)
+        watching = len(dl_mon.watching)
+
+        if (dl > 0 or watching > 0) and core_timer.get() > 10 and prefs.auto_extract and prefs.monitor_downloads:
+            x += 52
+            rect = (x - 5, y - 2, 30, 23)
+            fields.add(rect)
+
+            if coll_point(mouse_position, rect) and dl > 0:
+                colour = [230, 230, 230, 255]
+                if right_click:
+                    dl_menu.activate()
+                if input.mouse_click:
+                    pln = 0
+                    for item in dl_mon.ready:
+                        load_order = LoadClass()
+                        load_order.target = item
+                        pln = pctl.playlist_active
+                        load_order.playlist = pctl.multi_playlist[pln][6]
+                        for i, pl in enumerate(pctl.multi_playlist):
+                            if pl[0].lower() == "downloads":
+                                load_order.playlist = pl[6]
+                                pln = i
+                                break
+
+                        load_orders.append(copy.deepcopy(load_order))
+                    if len(dl_mon.ready) > 0:
+                        dl_mon.ready.clear()
+                        switch_playlist(pln)
+                        global playlist_position
+                        playlist_position = len(default_playlist)
+                        gui.update += 1
+
+            else:
+                colour = [60, 60, 60, 255]
+
+            self.dl_button.render(x, y + 1, colour)
+            if dl > 0:
+                draw_text((x + 18, y - 2), str(dl), [244, 223, 66, 255] , 209)
+                # [166, 244, 179, 255]
+
+
+
 
         # LAYOUT --------------------------------
         x += self.menu_space + word_length
@@ -18710,6 +18791,86 @@ class ViewBox:
 view_box = ViewBox()
 
 
+class DLMon:
+
+    def __init__(self):
+
+        self.ticker = Timer()
+        self.ticker.force_set(8)
+
+        self.watching = {}
+        self.ready = set()
+        self.done = set()
+
+
+    def scan(self):
+
+        if self.ticker.get() < 9:
+            return
+        self.ticker.set()
+        print("scan...")
+
+        for downloads in download_directories:
+
+            for item in os.listdir(downloads):
+
+                path = os.path.join(downloads, item)
+                if path in self.done:
+                    continue
+                # print(path)
+                min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
+                ext = item[-3:]
+
+                if os.path.isfile(path) and ext in Archive_Formats:
+                    size = os.path.getsize(path)
+                    if path in self.watching:
+                        # Check if size is stable, then scan for audio files
+                        if size == self.watching[path] and size != 0:
+                            del self.watching[path]
+                            if archive_file_scan(path, DA_Formats) > 0.7:
+                                self.ready.add(path)
+                                gui.update += 1
+                            self.done.add(path)
+                        else:
+                            self.watching[path] = size
+                    else:
+                        self.watching[path] = size
+
+
+                elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done:
+                    size = os.path.getsize(path)
+                    if path in self.watching:
+                        # Check if size is stable, then scan for audio files
+                        if size == self.watching[path] and size != 0:
+                            del self.watching[path]
+                            if folder_file_scan(path, DA_Formats) > 0.7:
+                                self.ready.add(path)
+                                gui.update += 1
+                            self.done.add(path)
+                        else:
+                            self.watching[path] = size
+                    else:
+                        self.watching[path] = size
+                else:
+                    self.done.add(path)
+
+        # print("READY: ", end="")
+        # print(len(self.ready))
+        # print("Watching: ", end="")
+        # print(len(self.watching))
+        # print("Ignore: ", end="")
+        # print(len(self.done))
+
+        if len(self.watching) > 0:
+            gui.update += 1
+
+dl_mon = DLMon()
+
+def dismiss_dl():
+    dl_mon.ready.clear()
+
+dl_menu.add("Dismiss", dismiss_dl)
+
 class GalleryJumper:
 
     def __init__(self):
@@ -19258,7 +19419,8 @@ def save_state():
             gui.rspw,
             gui.pref_gallery_w,
             gui.pref_rspw,
-            gui.show_hearts]
+            gui.show_hearts,
+            prefs.monitor_downloads]
 
     #print(prefs.last_device + "-----")
 
@@ -19876,57 +20038,40 @@ while running:
                 SDL_SetWindowBordered(t_window, SDL_FALSE)
 
         if key_F8:
-
-            download_directories = [os.path.expanduser("~/Downloads")]
-            found = False
-
-            path = config_directory + "/config.txt"
-            with open(path, encoding="utf_8") as f:
-                content = f.read().splitlines()
-                for p in content:
-                    if len(p) == 0:
-                        continue
-                    if p[0] == " " or p[0] == "#":
-                        continue
-                    if 'add_download_directory=' in p:
-                        if len(p) < 1000:
-                            path = p.split('=')[1]
-                            if os.path.isdir(path):
-                                download_directories.append(path)
-                                print("Additional directory: " + path)
-                            else:
-                                print("Directory was not found: " + path)
-
-            for downloads in download_directories:
-
-                for item in os.listdir(downloads):
-
-                    path = os.path.join(downloads, item)
-                    # print(path)
-                    min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
-                    if os.path.isfile(path) and item[-3:] in Archive_Formats:
-                        if os.path.getsize(path) < 0.9e+9:
-                            load_order = LoadClass()
-                            load_order.target = path
-                            load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-                            load_orders.append(copy.deepcopy(load_order))
-                            found = True
-                        else:
-                            show_message("One or more archives seemed a bit too large")
-
-                    if min_age < 120 and os.path.isdir(path) and path not in quick_import_done:
-                        if os.path.getsize(path) < 1.1e+9:
-                            load_order = LoadClass()
-                            load_order.target = path
-                            load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-                            load_orders.append(copy.deepcopy(load_order))
-                            quick_import_done.append(path)
-                            found = True
-                        else:
-                            show_message("One or more folders seemed a bit too large")
-
-            if not found:
-                show_message("No recent archives or folders found")
+            show_message("This function has been replaced")
+            #
+            # found = False
+            #
+            # for downloads in download_directories:
+            #
+            #     for item in os.listdir(downloads):
+            #
+            #         path = os.path.join(downloads, item)
+            #         # print(path)
+            #         min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
+            #         if os.path.isfile(path) and item[-3:] in Archive_Formats:
+            #             if os.path.getsize(path) < 0.9e+9:
+            #                 load_order = LoadClass()
+            #                 load_order.target = path
+            #                 load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+            #                 load_orders.append(copy.deepcopy(load_order))
+            #                 found = True
+            #             else:
+            #                 show_message("One or more archives seemed a bit too large")
+            #
+            #         if min_age < 120 and os.path.isdir(path) and path not in quick_import_done:
+            #             if os.path.getsize(path) < 1.1e+9:
+            #                 load_order = LoadClass()
+            #                 load_order.target = path
+            #                 load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
+            #                 load_orders.append(copy.deepcopy(load_order))
+            #                 quick_import_done.append(path)
+            #                 found = True
+            #             else:
+            #                 show_message("One or more folders seemed a bit too large")
+            #
+            # if not found:
+            #     show_message("No recent archives or folders found")
 
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
