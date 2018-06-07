@@ -19,13 +19,7 @@ what you want to work on beforehand.
 
 ## Possible contribution projects
 
-- Website design. Are you good at site design? Could you design a main site? This would be hosted at https://taiko2k.github.io/tauonmb/ Theres already a basic
-site there to give you a a starting idea for design, but its up to you as long as its good and vaugly in keeping with the project design.
-
-- Branding and Icon desgin. Either an upgrade of the current designs or an entire overhaul / renaming
-
-- UI design concepts. If you have an idea for an interface refreash, I might like to see it. Big or small. But ideally
-keeping all existing functionality and vaugly in keeping with current design language.
+- Website design.
 
 - Gstreamer backend. Do you know your way around gstreamer and would like to see this project become fully free software? Then you
 could help replace the existing BASS backend with a Gstreamer backend. There is already a basic implimentation in place which can
