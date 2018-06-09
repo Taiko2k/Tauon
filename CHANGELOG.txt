@@ -7,6 +7,8 @@ v3.0.0
  - Added playlist selector side panel
  - Added playlist hide feature (hides individual playlist tabs from top panel)
  - Added download monitor indicator to top panel (replaces previous F8 function)
+ - Added setting to extract archives to music folder
+ - Added scroll bar to side panel lyrics
  - Moved 'search image on google' function to picture menu
  - Moved 'show lyrics in side panel' setting from settings box to lyric menu
  - Removed Windows operating system support
@@ -19,18 +21,19 @@ v3.0.0
  - Removed setting for showing lyrics in radio web page (now always on)
  - Removed setting for deleting archives (now always on)
  - Removed UI colour theme 'Deep'
- - [Linux] Added scroll bar to side panel lyrics
  - Tweaked delete archive function to move files to trash
  - Tweaked search overlay search algorithm
  - Tweaked mouse side button functions for more obvious behavior
  - Tweaked show hearts setting to be allowed in addition to stars and lines
  - Improved search overlay to allow scrolling by scroll wheel
+ - Changed user config, cache, and data folder locations to Linux appropriate ones
  - Fixed track special indicator lengths in playlist only view
  - Fixed extra track being selected if mouse moved quickly
  - Fixed previous selected track temporarily remaining highlighted after right click
  - Fixed border being active when window maximized
  - Fixed duplicate tracks appearing in search overlay
- - [Linux] Fixed words not truncating properly (bug from v2.8.3)
+ - Fixed words not truncating properly (bug from v2.8.3)
+ - Fixed window minimum size not being enforced
 
 v2.8.3
 
