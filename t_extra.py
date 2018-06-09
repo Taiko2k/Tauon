@@ -22,6 +22,10 @@
 import time
 import random
 import colorsys
+import subprocess
+import os
+import shlex
+import zipfile
 
 # A seconds based timer
 class Timer:
@@ -226,3 +230,98 @@ class ColourGenCache:
         self.store[key] = colour
         return colour
 
+
+import glob
+def folder_file_scan(path, extensions):
+
+    match = 0
+    count = sum([len(files) for r, d, files in os.walk(path)])
+    for ext in extensions:
+
+        match += len(glob.glob(path + '/**/*.' + ext.lower(), recursive=True))
+
+    if count == 0:
+        return 0
+
+    if count < 5 and match > 0:
+        return 1
+
+    return match / count
+
+# Get ratio of given file extensions in archive
+def archive_file_scan(path, extensions):
+
+    ext = os.path.splitext(path)[1][1:].lower()
+    try:
+        if ext == 'rar':
+            matches = 0
+            count = 0
+            line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
+            result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+            # print(file_list)
+            for fi in file_list:
+                for ty in extensions:
+                    if fi[len(ty) * -1:].lower() == ty:
+                        matches += 1
+                        break
+                count += 1
+            if count > 200:
+                print("RAR archive has many files")
+                print("   --- " + path)
+                return 0
+            if matches == 0:
+                print("RAR archive does not appear to contain audio files")
+                print("   --- " + path)
+                return 0
+            if count == 0:
+                print("Archive has no files")
+                print("   --- " + path)
+                return 0
+
+        elif ext == "zip":
+
+            zip_ref = zipfile.ZipFile(path, 'r')
+            matches = 0
+            count = 0
+            for fi in zip_ref.namelist():
+                for ty in extensions:
+                    if fi[len(ty) * -1:].lower() == ty:
+                        matches += 1
+                        break
+                count += 1
+            if count == 0:
+                print("Archive has no files")
+                print("   --- " + path)
+                return 0
+            if count > 300:
+                print("Zip archive has many files")
+                print("   --- " + path)
+                return 0
+            if matches == 0:
+                print("Zip archive does not appear to contain audio files")
+                print("   --- " + path)
+                return 0
+        else:
+            return 0
+
+    except:
+        print("Archive test error")
+
+        return 0
+
+    if count == 0:
+        return 0
+
+    ratio = matches / count
+    if count < 5 and matches > 0:
+        ratio = 100
+    return ratio
+
+def get_folder_size(path):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size

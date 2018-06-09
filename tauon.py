@@ -48,6 +48,7 @@
 import sys
 import os
 import pickle
+import shutil
 
 t_version = "v3.0.0"
 t_title = 'Tauon Music Box'
@@ -56,48 +57,94 @@ print(t_title)
 print(t_version)
 print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 
-# Detect platform
-if sys.platform == 'win32':
-    system = 'windows'
-elif sys.platform == 'darwin':
-    system = 'mac'
-else:
-    system = 'linux'
+# # Detect platform
+# if sys.platform == 'win32':
+#     system = 'windows'
+# elif sys.platform == 'darwin':
+#     system = 'mac'
+# else:
+system = 'linux'
 
 # Find directories
 working_directory = os.getcwd()
 install_directory = sys.path[0].replace('\\', '/')
 
-# Workaround for Py-Installer
-if 'base_library' in install_directory:
-    install_directory = os.path.dirname(install_directory)
+# # Workaround for Py-Installer
+# if 'base_library' in install_directory:
+#     install_directory = os.path.dirname(install_directory)
 
 # Detect what folder should be used for user data
 user_directory = install_directory
+config_directory = user_directory
+cache_directory = os.path.join(user_directory, "cache")
+
+
 install_mode = False
 if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/"):
     
-    user_directory = os.path.expanduser('~') + "/.tauonmb-user"
+    #user_directory = os.path.expanduser('~') + "/.tauonmb-user"
     install_mode = True
     if install_directory[:5] == "/app/":
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
+        print("Running as Flatpak")
 
-elif system == 'windows' and ('Program Files' in install_directory or
-                                  os.path.isfile(install_directory + '\\unins000.exe')):
-
-    user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-    print("User Directroy: ", end="")
-    print(user_directory)
-    install_mode = True
+# elif system == 'windows' and ('Program Files' in install_directory or
+#                                   os.path.isfile(install_directory + '\\unins000.exe')):
+#
+#     user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+#     print("User Directroy: ", end="")
+#     print(user_directory)
+#     install_mode = True
 
 if install_mode:
-    print("Running from installed location")
-    print("User files and config location: " + user_directory)
+
+    old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
+
+    # Cache Directory
+    if "XDG_CACHE_HOME" in os.environ:
+        cache_directory = os.path.join(os.environ["XDG_CACHE_HOME"], "TauonMusicBox")
+    else:
+        cache_directory = os.path.join(os.path.expanduser('~'), ".cache/TauonMusicBox")
+
+    if not os.path.isdir(cache_directory):
+        os.makedirs(cache_directory)
+
+    # Data / User Directory
+    if "XDG_DATA_HOME" in os.environ:
+        user_directory = os.path.join(os.environ["XDG_DATA_HOME"], "TauonMusicBox")
+    else:
+        user_directory = os.path.join(os.path.expanduser('~'), ".local/share/TauonMusicBox")
+
     if not os.path.isdir(user_directory):
-        print("User directory is missing... creating")
-        os.makedirs(user_directory + "/encoder")
+        os.makedirs(user_directory)
+
+    # Config Directory
+    if "XDG_CONFIG_HOME" in os.environ:
+        config_directory = os.path.join(os.environ["XDG_CONFIG_HOME"], "TauonMusicBox")
+    else:
+        config_directory = os.path.join(os.path.expanduser('~'), ".config/TauonMusicBox")
+
+    if not os.path.isdir(config_directory):
+        os.makedirs(config_directory)
+
+    print("Running from installed location")
+    print("User files location: " + user_directory)
+    if not os.path.isfile(os.path.join(config_directory, "config.txt")):
+        print("Config file is missing... copying template from program files")
         import shutil
-        shutil.copy(install_directory + "/config.txt", user_directory)
+        shutil.copy(install_directory + "/config.txt", config_directory)
+
+    if not os.path.isdir(os.path.join(user_directory, "encoder")):
+        os.makedirs(os.path.join(user_directory, "encoder"))
+
+    if os.path.isfile(os.path.join(old_user_directory, 'state.p')) and \
+        not os.path.isfile(os.path.join(user_directory, 'state.p')):
+            shutil.copy(os.path.join(old_user_directory, 'state.p'), os.path.join(user_directory, 'state.p'))
+
+    if os.path.isfile(os.path.join(old_user_directory, 'star.p')) and \
+        not os.path.isfile(os.path.join(user_directory, 'star.p')):
+            shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
+
 else:
     print("Running in portable mode")
 
@@ -106,9 +153,14 @@ transfer_target = user_directory + "/transfer.p"
 # print("Working directory: " + working_directory)
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
-config_directory = user_directory
-cache_directory = os.path.join(user_directory, 'cache')
+# config_directory = user_directory
+
 b_active_directory = install_directory.encode('utf-8')
+
+
+music_folder = None
+if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
+    music_folder = os.path.expanduser('~').replace("\\", '/') + "/Music"
 
 # -------------------------------
 # Single Instancing
@@ -191,7 +243,6 @@ try:
     last_fm_enable = True
 except:
     print("PyLast moduel not found, last fm will be disabled.")
-import shutil
 import shlex
 import math
 import locale
@@ -485,7 +536,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", True])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", False])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -624,6 +675,7 @@ class Prefs:    # Used to hold any kind of settings
         self.discord_ready = False
 
         self.monitor_downloads = True
+        self.extract_to_music = False
 
 prefs = Prefs()
 
@@ -1300,7 +1352,10 @@ try:
         gui.show_hearts = save[75]
     if save[76] is not None:
         prefs.monitor_downloads = save[76]
-
+    if save[77] is not None:
+        gui.artist_info_panel = save[77]
+    if save[78] is not None:
+        prefs.extract_to_music = save[78]
     state_file.close()
     del save
 
@@ -1462,7 +1517,12 @@ if db_version > 0:
 # gui_font = 'Koruri-Semibold.ttf'
 #light_font = 'Koruri-Light.ttf'
 
-download_directories = [os.path.expanduser("~/Downloads")]
+download_directories = []
+
+if os.path.isdir(os.path.expanduser("~/Downloads")):
+    download_directories.append(os.path.expanduser("~/Downloads"))
+if os.path.isdir(os.path.expanduser("~/Music")):
+    download_directories.append(os.path.expanduser("~/Music"))
 
 path = config_directory + "/config.txt"
 if os.path.isfile(os.path.join(config_directory, "config.txt")):
@@ -5083,7 +5143,6 @@ try:
 except:
     print("old version of SDL detected")
 
-SDL_SetWindowMinimumSize(t_window, 450, 175)
 # get window surface and set up renderer
 #renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
@@ -5121,6 +5180,8 @@ SDL_RenderClear(renderer)
 
 gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
 gui.pl_update = 2
+
+SDL_SetWindowMinimumSize(t_window, 560, 330)
 
 # SDL_SetRenderTarget(renderer, None)
 # SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
@@ -6535,8 +6596,8 @@ class GallClass:
             img_name = str(size) + '-' + str(key[0]) + "-" + str(source[2])
 
             try:
-                if prefs.cache_gallery and os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
-                    source_image = open(user_directory + "/cache/" + img_name + '.jpg', 'rb')
+                if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
+                    source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
                     # print('load from cache')
 
                 elif source[0] is True:
@@ -6555,9 +6616,9 @@ class GallClass:
                 im.thumbnail((size, size), Image.ANTIALIAS)
 
                 im.save(g, 'BMP')
-                if self.save_out and prefs.cache_gallery and not os.path.isfile(user_directory + "/cache/" + img_name + '.jpg'):
+                if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                     # print("no old found")
-                    im.save(user_directory + "/cache/" + img_name + '.jpg', 'JPEG')
+                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG')
 
                 g.seek(0)
 
@@ -6684,7 +6745,9 @@ class ThumbTracks:
         image_name = "".join([c for c in image_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
 
 
-        t_path = user_directory + "/cache/" + image_name + '.jpg'
+        #t_path = user_directory + "/cache/" + image_name + '.jpg'
+        t_path = os.path.join(cache_directory, image_name + '.jpg')
+
         if os.path.isfile(t_path):
             return t_path
 
@@ -13230,6 +13293,10 @@ def worker1():
         global to_got
         global auto_play_import
 
+        if not os.path.isfile(path):
+            print("file to import missing")
+            return 0
+
         if os.path.splitext(path)[1][1:] in {"CUE", 'cue'}:
             add_from_cue(path)
             return 0
@@ -13244,6 +13311,8 @@ def worker1():
                 type = os.path.splitext(path)[1][1:].lower()
                 split = os.path.splitext(path)
                 target_dir = split[0]
+                if prefs.extract_to_music and music_folder is not None:
+                    target_dir = os.path.join(music_folder, os.path.basename(target_dir))
                 # print(os.path.getsize(path))
                 if os.path.getsize(path) > 2e+9:
                     print("Archive file is large!")
@@ -13256,23 +13325,23 @@ def worker1():
                             to_got = "ex"
                             gui.update += 1
                             zip_ref = zipfile.ZipFile(path, 'r')
-                            matches = 0
-                            count = 0
-                            for fi in zip_ref.namelist():
-                                for ty in DA_Formats:
-                                    if fi[len(ty) * -1:].lower() == ty:
-                                        matches += 1
-                                        break
-                                count += 1
-                            if count == 0:
-                                print("Archive has no files")
-                                return
-                            if count > 300:
-                                print("Zip archive has many files")
-                                return
-                            if matches == 0:
-                                print("Zip archive does not appear to contain audio files")
-                                return
+                            # matches = 0
+                            # count = 0
+                            # for fi in zip_ref.namelist():
+                            #     for ty in DA_Formats:
+                            #         if fi[len(ty) * -1:].lower() == ty:
+                            #             matches += 1
+                            #             break
+                            #     count += 1
+                            # if count == 0:
+                            #     print("Archive has no files")
+                            #     return
+                            # if count > 300:
+                            #     print("Zip archive has many files")
+                            #     return
+                            # if matches == 0:
+                            #     print("Zip archive does not appear to contain audio files")
+                            #     return
                             zip_ref.extractall(target_dir)
                             zip_ref.close()
                         except RuntimeError as e:
@@ -13292,28 +13361,28 @@ def worker1():
                     if type == 'rar':
                         b = to_got
                         try:
-                            matches = 0
-                            count = 0
-                            line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
-                            result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-                            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
-                            # print(file_list)
-                            for fi in file_list:
-                                for ty in DA_Formats:
-                                    if fi[len(ty) * -1:].lower() == ty:
-                                        matches += 1
-                                        break
-                                count += 1
-                            if count > 200:
-                                print("RAR archive has many files")
-                                return
-                            if matches == 0:
-                                print("RAR archive does not appear to contain audio files")
-                                return
-                            if count == 0:
-                                print("Archive has no files")
-                                return
-                            #print(matches)
+                            # matches = 0
+                            # count = 0
+                            # line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                            # result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+                            # file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+                            # # print(file_list)
+                            # for fi in file_list:
+                            #     for ty in DA_Formats:
+                            #         if fi[len(ty) * -1:].lower() == ty:
+                            #             matches += 1
+                            #             break
+                            #     count += 1
+                            # if count > 200:
+                            #     print("RAR archive has many files")
+                            #     return
+                            # if matches == 0:
+                            #     print("RAR archive does not appear to contain audio files")
+                            #     return
+                            # if count == 0:
+                            #     print("Archive has no files")
+                            #     return
+                            # #print(matches)
 
 
                             to_got = "ex"
@@ -14488,6 +14557,12 @@ def toggle_dl_mon(mode=0):
 
     prefs.monitor_downloads ^= True
 
+def toggle_music_ex(mode=0):
+    if mode == 1:
+        return prefs.extract_to_music
+
+    prefs.extract_to_music ^= True
+
 
 def toggle_extract(mode=0):
     if mode == 1:
@@ -14794,6 +14869,8 @@ class Over:
         y += 23 * gui.scale
         #self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
         self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, "Monitor download folders")
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, "Always extract to ~/Music")
 
         y = self.box_y + 220 * gui.scale
         self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file)
@@ -15094,7 +15171,7 @@ class Over:
         elif pctl.playing_object() is not None and 'ambient' in pctl.playing_object().genre.lower():
             self.about_image3.render(x - 100 * gui.scale, y - 10 * gui.scale)
         else:
-            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
+            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
@@ -15904,35 +15981,41 @@ class TopPanel:
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
 
-        if (dl > 0 or watching > 0) and core_timer.get() > 10 and prefs.auto_extract and prefs.monitor_downloads:
+        if (dl > 0 or watching > 0) and core_timer.get() > 8 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52
             rect = (x - 5, y - 2, 30, 23)
             fields.add(rect)
 
-            if coll_point(mouse_position, rect) and dl > 0:
-                colour = [230, 230, 230, 255]
-                if right_click:
-                    dl_menu.activate()
-                if input.mouse_click:
-                    pln = 0
-                    for item in dl_mon.ready:
-                        load_order = LoadClass()
-                        load_order.target = item
-                        pln = pctl.playlist_active
-                        load_order.playlist = pctl.multi_playlist[pln][6]
-                        for i, pl in enumerate(pctl.multi_playlist):
-                            if pl[0].lower() == "downloads":
-                                load_order.playlist = pl[6]
-                                pln = i
-                                break
+            if coll_point(mouse_position, rect):
+                if dl > 0:
+                    colour = [230, 230, 230, 255]
+                    if right_click:
+                        dl_menu.activate(position=(mouse_position[0], gui.panelY))
+                    if input.mouse_click:
+                        pln = 0
+                        for item in dl_mon.ready:
+                            load_order = LoadClass()
+                            load_order.target = item
+                            pln = pctl.playlist_active
+                            load_order.playlist = pctl.multi_playlist[pln][6]
+                            for i, pl in enumerate(pctl.multi_playlist):
+                                if pl[0].lower() == "downloads":
+                                    load_order.playlist = pl[6]
+                                    pln = i
+                                    break
 
-                        load_orders.append(copy.deepcopy(load_order))
-                    if len(dl_mon.ready) > 0:
-                        dl_mon.ready.clear()
-                        switch_playlist(pln)
-                        global playlist_position
-                        playlist_position = len(default_playlist)
-                        gui.update += 1
+                            load_orders.append(copy.deepcopy(load_order))
+                        if len(dl_mon.ready) > 0:
+                            dl_mon.ready.clear()
+                            switch_playlist(pln)
+                            global playlist_position
+                            playlist_position = len(default_playlist)
+                            gui.update += 1
+                else:
+                    colour = [60, 60, 60, 255]
+                    if input.mouse_click:
+                        input.mouse_click = False
+                        show_message("It looks like something is being downloaded...", 'info', "Let's check back later...")
 
             else:
                 colour = [60, 60, 60, 255]
@@ -17829,7 +17912,7 @@ class PlaylistBox:
 
 
 
-            if coll_point(mouse_position, (tab_start + 50, yy - 1, tab_width - 50, 23 + 3)):
+            if coll_point(mouse_position, (tab_start + 35, yy - 1, tab_width - 35, 23 + 3)):
                 if input.mouse_click:
                     switch_playlist(i)
                     self.drag_on = i
@@ -17839,6 +17922,9 @@ class PlaylistBox:
                 if right_click:
                     tab_menu.activate(i, mouse_position)
 
+                if tab_menu.active is False and middle_click:
+                    delete_playlist(i)
+                    break
 
                 if mouse_up and self.drag and i != self.drag_on:
 
@@ -18154,6 +18240,13 @@ class ArtistInfoBox:
         self.mini_box = WhiteModImageAsset("/gui/mini-box.png")
 
     def draw(self, x, y, w, h):
+
+
+        if w < 300:
+            gui.artist_info_panel = False
+            gui.update_layout()
+            return
+
 
         backgound = [27, 27, 27, 255]
         draw.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
@@ -18805,10 +18898,15 @@ class DLMon:
 
     def scan(self):
 
-        if self.ticker.get() < 9:
-            return
+        if len(self.watching) == 0:
+            if self.ticker.get() < 10:
+                return
+        else:
+            if self.ticker.get() < 2:
+                return
+
         self.ticker.set()
-        print("scan...")
+        # print("scan...")
 
         for downloads in download_directories:
 
@@ -18838,13 +18936,25 @@ class DLMon:
 
 
                 elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done:
-                    size = os.path.getsize(path)
+                    size = get_folder_size(path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
                         if size == self.watching[path] and size != 0:
                             del self.watching[path]
                             if folder_file_scan(path, DA_Formats) > 0.7:
-                                self.ready.add(path)
+
+                                # Check if folder not already imported
+                                imported = False
+                                for pl in pctl.multi_playlist:
+                                    for i in pl[2]:
+                                        if path == pctl.master_library[i].fullpath[:len(path)]:
+                                            imported = True
+                                        if imported:
+                                            break
+                                    if imported:
+                                        break
+                                else:
+                                    self.ready.add(path)
                                 gui.update += 1
                             self.done.add(path)
                         else:
@@ -18854,12 +18964,27 @@ class DLMon:
                 else:
                     self.done.add(path)
 
+
+
         # print("READY: ", end="")
         # print(len(self.ready))
         # print("Watching: ", end="")
         # print(len(self.watching))
         # print("Ignore: ", end="")
         # print(len(self.done))
+
+
+        if len(self.ready) > 0:
+            temp = set()
+            # print(quick_import_done)
+            # print(self.ready)
+            for item in self.ready:
+                if item not in quick_import_done:
+                    if os.path.exists(path):
+                        temp.add(item)
+                else:
+                    print("FILE IMPORTED")
+            self.ready = temp
 
         if len(self.watching) > 0:
             gui.update += 1
@@ -19118,12 +19243,12 @@ if default_player == 2:
 elif default_player == 0:
     show_message("ERROR: No backend found", 'error')
 
-total = 0
-if gui.set_load_old is False:
-    for i in range(len(gui.pl_st) - 1):
-        total += gui.pl_st[i][1]
-
-    gui.pl_st[len(gui.pl_st) - 1][1] = gui.plw - 16 - total
+# total = 0
+# if gui.set_load_old is False:
+#     for i in range(len(gui.pl_st) - 1):
+#         total += gui.pl_st[i][1]
+#
+#     gui.pl_st[len(gui.pl_st) - 1][1] = gui.plw - 16 - total
 
 
 def update_layout_do():
@@ -19420,7 +19545,14 @@ def save_state():
             gui.pref_gallery_w,
             gui.pref_rspw,
             gui.show_hearts,
-            prefs.monitor_downloads]
+            prefs.monitor_downloads, # 76
+            gui.artist_info_panel,   # 77
+            prefs.extract_to_music,  # 78
+            None,
+            None,
+            None,
+            None,
+            None]
 
     #print(prefs.last_device + "-----")
 
@@ -19613,6 +19745,9 @@ while running:
             dropped_file_sdl = event.drop.file
             load_order = LoadClass()
             load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
+
+            if os.path.isdir(load_order.target):
+                quick_import_done.append(load_order.target)
 
             pctl.multi_playlist[playlist_target][7] = load_order.target
 
@@ -20106,10 +20241,41 @@ while running:
             if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down and not search_over.active:
                 gui.pl_update = 1
                 gui.update += 1
-                if key_left_press:
-                    switch_playlist(-1, True)
-                if key_right_press:
-                    switch_playlist(1, True)
+                if gui.lsp:
+                    if key_left_press:
+                        switch_playlist(-1, True)
+                    if key_right_press:
+                        switch_playlist(1, True)
+                else:
+                    if key_left_press:
+                        p = pctl.playlist_active
+                        le = len(pctl.multi_playlist)
+                        on = p
+                        on -= 1
+                        while True:
+                            if on < 0:
+                                on = le - 1
+                            if on == p:
+                                break
+                            if pctl.multi_playlist[on][8] is False:
+                                switch_playlist(on)
+                                break
+                            on -= 1
+                    if key_right_press:
+                        p = pctl.playlist_active
+                        le = len(pctl.multi_playlist)
+                        on = p
+                        on += 1
+                        while True:
+                            if on == le:
+                                on = 0
+                            if on == p:
+                                break
+                            if pctl.multi_playlist[on][8] is False:
+                                switch_playlist(on)
+                                break
+                            on += 1
+
 
             if key_home_press:
                 if key_shift_down or key_shiftr_down:
@@ -21152,8 +21318,11 @@ while running:
                     top += gui.artist_panel_height
 
                 if gui.set_bar:
-                    rect = [gui.lspw, top, gui.plw, gui.set_height]
-                    start = gui.lspw + 16 * gui.scale
+                    left = 0
+                    if gui.lsp:
+                        left = gui.lspw
+                    rect = [left, top, gui.plw, gui.set_height]
+                    start = left + 16 * gui.scale
                     run = 0
                     in_grip = False
 
@@ -21293,7 +21462,7 @@ while running:
                     x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
 
                 fields.add(gui.scroll_hide_box)
-                if (coll_point(mouse_position, gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active:  # or scroll_opacity > 0:
+                if (coll_point(mouse_position, gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
                     scroll_opacity = 255
 
                     if not gui.combo_mode:
