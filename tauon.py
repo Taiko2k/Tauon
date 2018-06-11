@@ -15175,7 +15175,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        draw_text((x, y), "Tauon Music Box", colours.grey(210), 216)
+        draw_text((x, y), t_title, colours.grey(210), 216)
         y += 32 * gui.scale
         draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
