@@ -17929,9 +17929,9 @@ class PlaylistBox:
                 if mouse_up and self.drag and i != self.drag_on:
 
                     if key_shift_down:
-                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
-                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.tab_hold_index])
-                        delete_playlist(self.tab_hold_index)
+                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
+                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.drag_on])
+                        delete_playlist(self.drag_on)
                     else:
                         move_playlist(self.drag_on, i)
 
@@ -18919,7 +18919,7 @@ class DLMon:
                 min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
                 ext = item[-3:]
 
-                if os.path.isfile(path) and ext in Archive_Formats:
+                if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
                     size = os.path.getsize(path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
