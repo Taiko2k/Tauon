@@ -9,7 +9,6 @@ Designed to be simple and streamlined while putting the user in control of their
 
 <img src="https://user-images.githubusercontent.com/17271572/41158620-b1819762-6b7d-11e8-94b7-42a45c0b499b.jpg" hspace="0px" vspace="60px">
 
-> **Note:** Screenshot is of a development version
 
 ### Features :sparkles:
 
