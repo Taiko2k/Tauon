@@ -50,53 +50,39 @@ import os
 import pickle
 import shutil
 
-t_version = "v3.0.0"
+t_version = "v3.0.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
+
 print(t_title)
 print(t_version)
 print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 
-# # Detect platform
-# if sys.platform == 'win32':
-#     system = 'windows'
-# elif sys.platform == 'darwin':
-#     system = 'mac'
-# else:
+# Previously there was Windows and Mac support, but these have been dropped.
 system = 'linux'
 
-# Find directories
-working_directory = os.getcwd()
+# Find the directory we are running from
 install_directory = sys.path[0].replace('\\', '/')
 
-# # Workaround for Py-Installer
-# if 'base_library' in install_directory:
-#     install_directory = os.path.dirname(install_directory)
-
-# Detect what folder should be used for user data
+# Set data folders (portable mode)
 user_directory = install_directory
 config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
 
 
+# Detect if we are installed or running portably
 install_mode = False
 if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/"):
-    
-    #user_directory = os.path.expanduser('~') + "/.tauonmb-user"
+
     install_mode = True
     if install_directory[:5] == "/app/":
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
         print("Running as Flatpak")
 
-# elif system == 'windows' and ('Program Files' in install_directory or
-#                                   os.path.isfile(install_directory + '\\unins000.exe')):
-#
-#     user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-#     print("User Directroy: ", end="")
-#     print(user_directory)
-#     install_mode = True
-
+# If we're installed, use home data locations rather than the portable mode locations
 if install_mode:
+
+    # Im not sure these XDG variables are ever set
 
     old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
 
@@ -129,6 +115,7 @@ if install_mode:
 
     print("Running from installed location")
     print("User files location: " + user_directory)
+
     if not os.path.isfile(os.path.join(config_directory, "config.txt")):
         print("Config file is missing... copying template from program files")
         import shutil
@@ -137,6 +124,7 @@ if install_mode:
     if not os.path.isdir(os.path.join(user_directory, "encoder")):
         os.makedirs(os.path.join(user_directory, "encoder"))
 
+    # Copy data from old location if needed (new location since v3.0.0)
     if os.path.isfile(os.path.join(old_user_directory, 'state.p')) and \
         not os.path.isfile(os.path.join(user_directory, 'state.p')):
             shutil.copy(os.path.join(old_user_directory, 'state.p'), os.path.join(user_directory, 'state.p'))
@@ -150,11 +138,8 @@ else:
 
 
 transfer_target = user_directory + "/transfer.p"
-# print("Working directory: " + working_directory)
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
-# config_directory = user_directory
-
 b_active_directory = install_directory.encode('utf-8')
 
 
@@ -168,46 +153,46 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 if os.path.isfile('.gitignore') or os.path.isfile('multiinstance'):
     print("Dev mode, ignoring single instancing")
 else:
-    if system == 'windows':
-        from win32event import CreateMutex
-        from win32api import CloseHandle, GetLastError
-        from winerror import ERROR_ALREADY_EXISTS
+    # if system == 'windows':
+    #     from win32event import CreateMutex
+    #     from win32api import CloseHandle, GetLastError
+    #     from winerror import ERROR_ALREADY_EXISTS
+    #
+    #
+    #     class singleinstance:
+    #         """ Limits application to single instance """
+    #
+    #         def __init__(self):
+    #             self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
+    #             self.mutex = CreateMutex(None, False, self.mutexname)
+    #             self.lasterror = GetLastError()
+    #
+    #         def aleradyrunning(self):
+    #             return (self.lasterror == ERROR_ALREADY_EXISTS)
+    #
+    #         def __del__(self):
+    #             if self.mutex:
+    #                 CloseHandle(self.mutex)
+    #
+    #     lock = singleinstance()
+    #
+    #     if lock.aleradyrunning():
+    #         print("Program is already running")
+    #         pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+    #         sys.exit()
+    #
+    # elif system == 'linux':
 
-
-        class singleinstance:
-            """ Limits application to single instance """
-
-            def __init__(self):
-                self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
-                self.mutex = CreateMutex(None, False, self.mutexname)
-                self.lasterror = GetLastError()
-
-            def aleradyrunning(self):
-                return (self.lasterror == ERROR_ALREADY_EXISTS)
-
-            def __del__(self):
-                if self.mutex:
-                    CloseHandle(self.mutex)
-
-        lock = singleinstance()
-
-        if lock.aleradyrunning():
-            print("Program is already running")
-            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-            sys.exit()
-
-    elif system == 'linux':
-
-        import fcntl
-        pid_file = os.path.join(user_directory, 'program.pid')
-        fp = open(pid_file, 'w')
-        try:
-            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError:
-            # another instance is running
-            print("Program is already running")
-            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-            sys.exit()
+    import fcntl
+    pid_file = os.path.join(user_directory, 'program.pid')
+    fp = open(pid_file, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        # another instance is running
+        print("Program is already running")
+        pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+        sys.exit()
 
 # ------------------------------------
 # Continue startup
@@ -266,19 +251,19 @@ from send2trash import send2trash
 locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
 # Platform specific imports
-if system == 'windows':
-    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
-    from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
-    import win32con, win32api, win32gui, win32ui, atexit  # win32clipboard, pythoncom
-elif system == 'linux':
-    os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
-    import gi
-    gi.require_version('Notify', '0.7')
-    from gi.repository import Notify
+# if system == 'windows':
+#     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+#     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
+#     import win32con, win32api, win32gui, win32ui, atexit  # win32clipboard, pythoncom
+# elif system == 'linux':
+os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
+import gi
+gi.require_version('Notify', '0.7')
+from gi.repository import Notify
 
-    Notify.init("Hello World")
-    g_tc_notify = Notify.Notification.new("Tauon Music Box",
-                                    "Transcoding has finished.")
+Notify.init("Hello World")
+g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                "Transcoding has finished.")
 
 
 # Other imports
@@ -456,7 +441,7 @@ clicked = False
 
 # Player Variables----------------------------------------------------------------------------
 
-format_colours = {  # These are the colours used for the label icon in UI 'info box'
+format_colours = {  # These are the colours used for the label icon in UI 'track info box'
     "MP3": [255, 130, 80, 255],
     "FLAC": [156, 249, 79, 255],
     "M4A": [81, 220, 225, 255],
@@ -973,6 +958,7 @@ class Input:    # Used to keep track of button states (or should be)
 
         self.mouse_click = False
         self.level_2_enter = False
+
 
 
 input = Input()
@@ -13901,19 +13887,20 @@ def get_album_info(position):
     album = []
     playing = 0
     select = False
-    while current < len(default_playlist) - 1:
+    while current < len(default_playlist):
         album.append(current)
         if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
         if current == playlist_selected:
             select = True
-        if pctl.master_library[default_playlist[current]].parent_folder_name != pctl.master_library[
+        if current < len(default_playlist) - 1 and pctl.master_library[default_playlist[current]].parent_folder_name != pctl.master_library[
                 default_playlist[current + 1]].parent_folder_name:
             break
         else:
             current += 1
     if len(album) == 0:
         album = [default_playlist[len(default_playlist) - 1]]
+
     return playing, album, select
 
 
@@ -15940,7 +15927,37 @@ class TopPanel:
 
         # Scroll anywhere on panel to change playlist
         if mouse_wheel != 0 and mouse_position[1] < self.height + 1 and len(pctl.multi_playlist) > 1:
-            switch_playlist(mouse_wheel * -1, True)
+
+            #switch_playlist(mouse_wheel * -1, True)
+            if mouse_wheel > 0:
+                p = pctl.playlist_active
+                le = len(pctl.multi_playlist)
+                on = p
+                on -= 1
+                while True:
+                    if on < 0:
+                        on = le - 1
+                    if on == p:
+                        break
+                    if pctl.multi_playlist[on][8] is False:
+                        switch_playlist(on)
+                        break
+                    on -= 1
+            if mouse_wheel < 0:
+                p = pctl.playlist_active
+                le = len(pctl.multi_playlist)
+                on = p
+                on += 1
+                while True:
+                    if on == le:
+                        on = 0
+                    if on == p:
+                        break
+                    if pctl.multi_playlist[on][8] is False:
+                        switch_playlist(on)
+                        break
+                    on += 1
+
             gui.pl_update = 1
 
         # ---------
@@ -19634,6 +19651,7 @@ while running:
         input_text = ''
         input.level_2_enter = False
 
+
     if not mouse_down:
         k_input = False
 
@@ -20003,6 +20021,15 @@ while running:
                 focused = True
                 gui.pl_update = 1
                 gui.update += 1
+
+
+
+            # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
+            #
+            #     input.mouse_enter_event = True
+            #     gui.update += 1
+            #     k_input = True
+
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
@@ -21117,6 +21144,7 @@ while running:
                             if album_dex[album_on] > len(default_playlist):
                                 break
                             info = get_album_info(album_dex[album_on])
+
 
                             #artisttitle = colours.side_bar_line2
                             albumtitle = colours.side_bar_line1  # grey(220)
@@ -22465,17 +22493,17 @@ while running:
                             else:
 
                                 if search_text.text[-1] == "/":
-                                    t_title = search_text.text.replace('/', "")
+                                    tt_title = search_text.text.replace('/', "")
                                 else:
                                     search_text.text = search_text.text.replace('/', "")
-                                    t_title = search_text.text
+                                    tt_title = search_text.text
                                 search_text.text = search_text.text.lower()
                                 for item in default_playlist:
                                     if search_text.text in pctl.master_library[item].parent_folder_path.lower():
                                         playlist.append(item)
                                 if len(playlist) > 0:
 
-                                    pctl.multi_playlist.append(pl_gen(title=t_title,
+                                    pctl.multi_playlist.append(pl_gen(title=tt_title,
                                                                       playlist=copy.deepcopy(playlist)))
                                     switch_playlist(len(pctl.multi_playlist) - 1)
 
