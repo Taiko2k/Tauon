@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v3.0.1
+
+ - Fixed about title showing playlist name after using folder filter
+ - Fixed scroll on top bar not respecting hidden playlists
+ - Fixed last track in playlist not showing as playing in gallery
+
 v3.0.0
 
  - Added artist info panel (gets data from last fm)
