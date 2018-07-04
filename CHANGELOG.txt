@@ -3,9 +3,19 @@ Changelog-------------------------------------
 
 v3.0.1
 
+ - Added button to open app data folder
+ - Improved queue display indication
  - Fixed about title showing playlist name after using folder filter
- - Fixed scroll on top bar not respecting hidden playlists
+ - Fixed scroll on top bar not respecting hidden playlist's
  - Fixed last track in playlist not showing as playing in gallery
+ - Fixed UI slowdown when playing title is long
+ - Fixed queue not working for end of track advancing
+ - Fixed playing highlight to show only playing instance
+ - Partial fixes to 2x scaling
+ - Partial fixes to auto theme mode
+ - Tweaked tooltip display to be slightly larger
+ - Tweaked layout setting defaults: CSD on, default window size, side panel on
+ - Tweaked audio archive detection to be more relaxed
 
 v3.0.0
 
