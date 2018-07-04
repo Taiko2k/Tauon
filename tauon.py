@@ -49,6 +49,7 @@ import sys
 import os
 import pickle
 import shutil
+from gi.repository import GLib
 
 t_version = "v3.0.1"
 t_title = 'Tauon Music Box'
@@ -82,33 +83,17 @@ if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[
 # If we're installed, use home data locations rather than the portable mode locations
 if install_mode:
 
-    # Im not sure these XDG variables are ever set
-
     old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
 
-    # Cache Directory
-    if "XDG_CACHE_HOME" in os.environ:
-        cache_directory = os.path.join(os.environ["XDG_CACHE_HOME"], "TauonMusicBox")
-    else:
-        cache_directory = os.path.join(os.path.expanduser('~'), ".cache/TauonMusicBox")
+    cache_directory = os.path.join(GLib.get_user_cache_dir(), "TauonMusicBox")
+    user_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
+    config_directory = os.path.join(GLib.get_user_data_dir(), "TauonMusicBox")
 
     if not os.path.isdir(cache_directory):
         os.makedirs(cache_directory)
 
-    # Data / User Directory
-    if "XDG_DATA_HOME" in os.environ:
-        user_directory = os.path.join(os.environ["XDG_DATA_HOME"], "TauonMusicBox")
-    else:
-        user_directory = os.path.join(os.path.expanduser('~'), ".local/share/TauonMusicBox")
-
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
-
-    # Config Directory
-    if "XDG_CONFIG_HOME" in os.environ:
-        config_directory = os.path.join(os.environ["XDG_CONFIG_HOME"], "TauonMusicBox")
-    else:
-        config_directory = os.path.join(os.path.expanduser('~'), ".config/TauonMusicBox")
 
     if not os.path.isdir(config_directory):
         os.makedirs(config_directory)
@@ -261,6 +246,9 @@ import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify
 
+
+
+
 Notify.init("Hello World")
 g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                 "Transcoding has finished.")
@@ -351,7 +339,7 @@ GUI_Mode = 1  # For possible future skins
 
 worker_save_state = False
 
-draw_border = False
+draw_border = True
 resize_mode = False
 
 block6 = False
@@ -378,7 +366,7 @@ albums_to_render = 0
 
 album_pos_px = 1
 time_last_save = 0
-window_default_size = [1100, 500]
+window_default_size = [1110, 540]
 window_size = window_default_size
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
 fullscreen = 0
@@ -847,16 +835,16 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.web_running = False
 
-        self.rsp = False
+        self.rsp = True
         self.rspw = 300
         self.lsp = False
-        self.lspw = 220
+        self.lspw = 220 * self.scale
         self.plw = None
 
         self.pref_rspw = 300
 
         self.pref_gallery_w = 600
-        self.artist_panel_height = 200
+        self.artist_panel_height = 200 * self.scale
 
         self.artist_info_panel = False
 
@@ -2431,7 +2419,8 @@ class PlayerCtl:
                         lfm_scrobbler.a_sc = False
                         self.a_time = 0
 
-
+                elif self.force_queue:
+                    self.advance()
 
                 elif self.random_mode is False and len(default_playlist) > self.playlist_playing and \
                                 self.master_library[default_playlist[self.playlist_playing]].is_cue is True \
@@ -7406,7 +7395,7 @@ class AlbumArt():
 album_art_gen = AlbumArt()
 
 
-def trunc_line(line, font, px, dots=True):
+def trunc_line(line, font, px, dots=True):  # This old function is slow and should be avoided
 
     if draw.text_calc(line, font) < px + 10:
         return line
@@ -7420,12 +7409,11 @@ def trunc_line(line, font, px, dots=True):
 
     else:
         while draw.text_calc(line, font) > px:
-            # trunk = True
+
             line = line[:-1]
             if len(line) < 2:
                 break
-        # if trunk and dots:
-        #     line = line.rstrip(" ") + gui.trunk_end
+
         return line
 
 def right_trunc(line, font, px, dots=True):
@@ -7450,24 +7438,24 @@ def right_trunc(line, font, px, dots=True):
         #     line = line.rstrip(" ") + gui.trunk_end
         return line
 
-def trunc_line2(line, font, px):
-    trunk = False
-    p = draw.text_calc(line, font)
-    if p == 0 or p < px + 15:
-        return line
-
-    tl = line[0:(int(px / p * len(line)) + 3)]
-
-    if draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
-        line = tl
-
-    while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
-        trunk = True
-        line = line[:-1]
-        if len(line) < 1:
-            break
-
-    return line.rstrip(" ") + gui.trunk_end
+# def trunc_line2(line, font, px):
+#     trunk = False
+#     p = draw.text_calc(line, font)
+#     if p == 0 or p < px + 15:
+#         return line
+#
+#     tl = line[0:(int(px / p * len(line)) + 3)]
+#
+#     if draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+#         line = tl
+#
+#     while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
+#         trunk = True
+#         line = line[:-1]
+#         if len(line) < 1:
+#             break
+#
+#     return line.rstrip(" ") + gui.trunk_end
 
 
 
@@ -7805,7 +7793,7 @@ class ToolTip:
 
     def __init__(self):
         self.text = ""
-        self.h = 21 * gui.scale
+        self.h = 24 * gui.scale
         self.w = 62 * gui.scale
         self.x = 0
         self.y = 0
@@ -7827,7 +7815,7 @@ class ToolTip:
 
             self.x = x
             self.y = y
-            self.w = draw.text_calc(text, self.font) + 10
+            self.w = draw.text_calc(text, self.font) + 20
 
         self.called = True
 
@@ -7843,8 +7831,8 @@ class ToolTip:
             if self.timer.get() > self.trigger:
 
                 draw.rect_r((self.x, self.y, self.w, self.h), colours.menu_background, True)
-                draw.rect_r((self.x, self.y, self.w, self.h), colours.grey(50))
-                draw_text((self.x + int(self.w / 2), self.y, 2), self.text, colours.grey(220), self.font)
+                draw.rect_r((self.x, self.y, self.w, self.h), colours.grey(45))
+                draw_text((self.x + int(self.w / 2), self.y + 2 * gui.scale, 2), self.text, colours.grey(235), self.font)
             else:
                 #gui.update += 1
                 pass
@@ -9634,6 +9622,14 @@ def open_config_file():
     else:
         subprocess.call(["xdg-open", target])
 
+def open_data_directory():
+    target = user_directory
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
 
 def open_encode_out():
     if system == 'windows':
@@ -11847,10 +11843,12 @@ def heart_menu_colour():
 
 if gui.scale == 2:
     heart_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
+    heart_row_icon = WhiteModImageAsset('/gui/2x/heart-track.png')
 else:
     heart_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
+    heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
 
-heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
+
 heart_colours = ColourGenCache(160, 255)
 
 
@@ -14834,7 +14832,7 @@ class Over:
         y1 = y + 100 * gui.scale
         x += 280 * gui.scale
 
-        y += 68 * gui.scale
+        y += 38 * gui.scale
         draw_text((x, y), "Show in context menus:", colours.grey(100), 11)
         y += 23 * gui.scale
 
@@ -14859,9 +14857,10 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, "Always extract to ~/Music")
 
-        y = self.box_y + 220 * gui.scale
-        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file)
-
+        y = self.box_y + 190 * gui.scale
+        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file, 100 * gui.scale)
+        y += 26 * gui.scale
+        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open data folder", open_data_directory, 100 * gui.scale)
 
 
     def button(self, x, y, text, plug, width=0):
@@ -15604,12 +15603,12 @@ class TopPanel:
 
         if gui.scale == 2:
             self.exit_button = WhiteModImageAsset('/gui/2x/ex.png')
+            self.playlist_icon = WhiteModImageAsset('/gui/2x/playlist.png')
         else:
             self.exit_button = WhiteModImageAsset('/gui/ex.png')
+            self.playlist_icon = WhiteModImageAsset('/gui/playlist.png')
 
-        self.playlist_icon = WhiteModImageAsset('/gui/playlist.png')
-        #self.standard_icon = WhiteModImageAsset('/gui/bar-stan.png')
-        #self.gallery_icon = WhiteModImageAsset('/gui/bar-gallery.png')
+
         if gui.scale == 2:
             self.dl_button = WhiteModImageAsset('/gui/2x/dl.png')
         else:
@@ -15629,7 +15628,7 @@ class TopPanel:
         # Draw the background
         draw.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
 
-        rect = (9, 4, 34, 25)
+        rect = (9 * gui.scale, 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
 
         if coll_point(mouse_position, rect):
@@ -15644,35 +15643,9 @@ class TopPanel:
         if gui.lsp:
             colour = [230, 230, 230, 255]
 
-        self.playlist_icon.render(13, 8, colour)
-
-        # x += 36
-        # self.standard_icon.render(x, 10, [230, 230, 230, 255])
-        #
-        # x += 39
-        # self.gallery_icon.render(x, 10, [230, 230, 230, 255])
-        #
-        # x += 40
-        # self.playlist_icon.render(x, 8, [230, 230, 230, 255])
-        #
-        # x += 38
-        # self.playlist_icon.render(x, 8, [230, 230, 230, 255])
-        #
-        # x += 38
-        # self.playlist_icon.render(x, 8, [230, 230, 230, 255])
+        self.playlist_icon.render(13 * gui.scale, 8 * gui.scale, colour)
 
 
-        #rect = (60, 3, 20, 20)
-        #draw.rect_r(rect, [244, 10, 10, 200], True)
-        # if input.mouse_click and coll_point(mouse_position, rect):
-        #     x_menu.activate(position=(60, gui.panelY))
-        #     view_box.activate(60 - 12)
-        #x = 13
-        #y = 7
-
-        #draw.rect_r
-
-        # ?
         if self.tab_hold:
             drag_mode = False
 
@@ -16113,8 +16086,8 @@ class TopPanel:
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
             trunc = window_size[0] - x - 150
-            text = trunc_line(text, 11, trunc)
-            draw_text((x, y), text, colours.grey(130), 11)
+            #text = trunc_line(text, 11, trunc)
+            draw_text((x, y), text, colours.grey(130), 11, max=trunc)
             x += draw.text_calc(text, 11) + 6
 
             x += 7
@@ -16472,9 +16445,9 @@ class BottomBarType1:
             #     x += 10 * gui.scale
             #     mx -= gui.panelBY - 10
 
-            line = trunc_line(line, 213, mx)
+            #line = trunc_line(line, 213, mx)
             draw_text((x, self.seek_bar_position[1] + 22 * gui.scale), line, colours.bar_title_text,
-                      fonts.panel_title)
+                      fonts.panel_title, max=mx)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
                 if pctl.playing_state == 3:
@@ -16881,10 +16854,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if gui.show_hearts:
             count = 0
-            spacing = 6
+            spacing = 6 * gui.scale
             xxx = star_x
             if xxx > 0:
-                xxx += 5
+                xxx += 5 * gui.scale
             if love(False, index):
 
                 count = 1
@@ -16892,22 +16865,23 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
                 yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
-                rect = [x - 1, yy - 4, 15, 17]
+                rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
                 if coll_point(mouse_position, rect):
                     gui.pl_update += 1
                     w = draw.text_calc("You", 13)
                     xx = (x - w) - 5 * gui.scale
-                    draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-                    draw_text((xx + 5, yy - 26), "You", [250, 250, 250, 255], 13)
+                    #draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+                    draw_text((xx + 5 * gui.scale, yy - 26 * gui.scale), "You", [250, 250, 250, 255], 13)
 
 
                 heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
                        ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
 
-                star_x += 18
+                star_x += 18 * gui.scale
 
             for name in pctl.master_library[index].lfm_friend_likes:
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
@@ -16916,33 +16890,67 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 heart_row_icon.render(x,
                                       yy, heart_colours.get(name))
 
-                rect = [x - 1, yy - 4, 15, 17]
+                rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
                 if coll_point(mouse_position, rect):
                     gui.pl_update += 1
                     w = draw.text_calc(name, 13)
                     xx = (x - w) - 5 * gui.scale
-                    draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-                    draw_text((xx + 5, yy - 26), name, [250, 250, 250, 255], 13)
+                    # draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+                    # draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
+                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+                    draw_text((xx + 5 * gui.scale, yy - 26 * gui.scale), name, [250, 250, 250, 255], 13)
                 count += 1
                 star_x += heart_row_icon.w + spacing + 2
 
 
 
 
-        if len(indexLine) > 2:
+        # Draw track number/index
+        display_queue = False
+
+        if pctl.force_queue:
+
+            this = (n_track.index, p_track, pctl.playlist_active)
+
+            marks = [i for i, j in enumerate(pctl.force_queue) if j == this]
+
+            if marks:
+                display_queue = True
+
+
+        if display_queue:
+
+            li = str(marks[0] + 1)
+            if li == '1':
+                li = "N"
+                if this == (pctl.track_queue[pctl.queue_step], pctl.playlist_playing, pctl.playlist_active):
+                    li = "R"
+
+            # rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
+            # draw.rect_r(rect, [100, 200, 100, 255], True)
+            if len(marks) > 1:
+                li += " " + ("." * (len(marks) - 1))
+                li = li[:5]
 
             draw_text((start_x + 5 * gui.scale,
-                       y, 2), indexLine,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
+                       y, 2), li,
+                      [244, 200, 66, 255], gui.row_font_size + 200 - 1)
 
         else:
+            if len(indexLine) > 2:
 
-            draw_text((start_x,
-                       y), indexLine,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
+                draw_text((start_x + 5 * gui.scale,
+                           y, 2), indexLine,
+                          alpha_mod(indexc, album_fade), gui.row_font_size)
+            else:
+
+                draw_text((start_x,
+                           y), indexLine,
+                          alpha_mod(indexc, album_fade), gui.row_font_size)
+
 
         draw_text2((start_x + 33 * gui.scale + artistoffset,
                     y),
@@ -17274,10 +17282,13 @@ class StandardPlaylist:
 
             if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
                     default_playlist[p_track]:
-                draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
-                          (highlight_width, gui.playlist_row_height - 1), colours.row_playing_highlight, True)
-                this_line_playing = True
-                gui.win_fore = alpha_blend(colours.row_playing_highlight, gui.win_fore)
+
+                if p_track == pctl.playlist_playing and pctl.playlist_active == pctl.active_playlist_playing:
+
+                    draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                              (highlight_width, gui.playlist_row_height - 1), colours.row_playing_highlight, True)
+                    this_line_playing = True
+                    gui.win_fore = alpha_blend(colours.row_playing_highlight, gui.win_fore)
 
             # Highlight blue if track is being broadcast
             if default_playlist[
@@ -17287,17 +17298,17 @@ class StandardPlaylist:
 
             # Add to queue on middle click
             if middle_click and line_hit:
-                pctl.force_queue.append([default_playlist[p_track],
-                                         p_track, pctl.playlist_active])
+                pctl.force_queue.append((default_playlist[p_track],
+                                         p_track, pctl.playlist_active))
 
             # Highlight green if track in queue
-            for item in pctl.force_queue:
-                if default_playlist[p_track] == item[0] and item[1] == p_track:
-                    # draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
-                    #           (gui.playlist_width, gui.playlist_row_height - 1), [130, 220, 130, 30],
-                    #           True)
-                    draw.rect_r(track_box, [130, 220, 130, 30], True)
-                    gui.win_fore = alpha_blend([130, 220, 130, 30], gui.win_fore)
+            # for item in pctl.force_queue:
+            #     if default_playlist[p_track] == item[0] and item[1] == p_track:
+            #         # draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+            #         #           (gui.playlist_width, gui.playlist_row_height - 1), [130, 220, 130, 30],
+            #         #           True)
+            #         draw.rect_r(track_box, [130, 220, 130, 30], True)
+            #         gui.win_fore = alpha_blend([130, 220, 130, 30], gui.win_fore)
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -17618,12 +17629,12 @@ class StandardPlaylist:
                             colour = colours.playlist_text_missing
 
                         #text = trunc_line(text, gui.row_font_size, wid)
-                        text = trunc_line2(text, gui.row_font_size, wid)
+                        #text = trunc_line2(text, gui.row_font_size, wid)
                         draw_text((run + 6, y + y_off),
                                   text,
                                   colour,
                                   font,
-                                  )
+                                  max=wid)
                     run += item[1]
 
 
@@ -17884,11 +17895,11 @@ class PlaylistBox:
 
         draw.rect_r((x, y, w, h), colours.side_panel_background, True)
 
-        max_tabs = h // 27
+        max_tabs = h // 27 * gui.scale
 
 
         show_scroll = False
-        tab_start = x + 10
+        tab_start = x + 10 * gui.scale
 
         if mouse_wheel != 0 and coll_point(mouse_position, (x, y, w, h)):
             self.scroll_on -= mouse_wheel
@@ -17907,13 +17918,13 @@ class PlaylistBox:
 
 
         if show_scroll:
-            tab_start += 15
+            tab_start += 15 * gui.scale
 
-        tab_width = w - tab_start - 15
+        tab_width = w - tab_start - 15 * gui.scale
 
 
         if show_scroll:
-            self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
+            self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
 
         # Inputs
@@ -17921,7 +17932,7 @@ class PlaylistBox:
 
 
         # Drawing
-        yy = y + 5
+        yy = y + 5 * gui.scale
         for i, pl in enumerate(pctl.multi_playlist):
 
             if i < self.scroll_on:
@@ -17929,13 +17940,13 @@ class PlaylistBox:
 
 
 
-            if coll_point(mouse_position, (tab_start + 35, yy - 1, tab_width - 35, 23 + 3)):
+            if coll_point(mouse_position, (tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, 26 * gui.scale)):
                 if input.mouse_click:
                     switch_playlist(i)
                     self.drag_on = i
                     self.drag = True
 
-            if coll_point(mouse_position, (tab_start, yy - 1, tab_width, 23 + 3)):
+            if coll_point(mouse_position, (tab_start, yy - 1, tab_width, 26  * gui.scale)):
                 if right_click:
                     tab_menu.activate(i, mouse_position)
 
@@ -17963,7 +17974,7 @@ class PlaylistBox:
 
 
             # Toggle hidden flag on click
-            if input.mouse_click and coll_point(mouse_position, (tab_start + 5, yy + 3, 25, 23 - 3)):
+            if input.mouse_click and coll_point(mouse_position, (tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25, 26  * gui.scale)):
                 pl[8] ^= True
 
             name = pl[0]
@@ -17976,35 +17987,35 @@ class PlaylistBox:
             if i == pctl.playlist_active or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 14]
 
-            if coll_point(mouse_position, (tab_start + 50, yy - 1, tab_width - 50, 23 + 3)) and quick_drag:
+            if coll_point(mouse_position, (tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26  * gui.scale)) and quick_drag:
                 bg = [255, 255, 255, 15]
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
-            draw.rect_r((tab_start, yy, tab_width, 23), bg, True)
-            draw_text((tab_start + 40, yy + 3), name, [230, 230, 230, 255], 211, max=tab_width - 50, bg=real_bg)
+            draw.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
+            draw_text((tab_start + 40 * gui.scale, yy + 3 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
             if hidden:
                 indicator_colour = [60, 60, 60, 255]
-            draw.rect_r((tab_start + 10, yy + 8, 6, 6), indicator_colour, True)
+            draw.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
 
-            if coll_point(mouse_position, (tab_start + 50, yy - 1, tab_width - 50, 23 + 3)):
+            if coll_point(mouse_position, (tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26 * gui.scale)):
                 if quick_drag:
 
-                    draw.rect_r((tab_start + tab_width - 4, yy, 2, 23), [80, 200, 180, 255], True)
+                    draw.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 200, 180, 255], True)
 
                 # Draw tab move indicators
                 if self.drag and i != self.drag_on:
                     if key_shift_down:
-                        draw.rect_r((tab_start + tab_width - 4, yy, 2, 23), [80, 160, 200, 255], True)
+                        draw.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 160, 200, 255], True)
                     else:
                         if i < self.drag_on:
-                            draw.rect_r((tab_start, yy - 3, tab_width, 2), [80, 160, 200, 255], True)
+                            draw.rect_r((tab_start, yy - 3 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
                         else:
-                            draw.rect_r((tab_start, yy + 23, tab_width, 2), [80, 160, 200, 255], True)
+                            draw.rect_r((tab_start, yy + 23 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
 
 
             # Draw effect of adding tracks to playlist
@@ -18014,22 +18025,22 @@ class PlaylistBox:
                         if self.adds[k][2].get() > 0.3:
                             del self.adds[k]
                         else:
-                            ay = yy + 4
-                            ay -= 6 * self.adds[k][2].get() / 0.3
+                            ay = yy + 4 * gui.scale
+                            ay -= 6 * gui.scale * self.adds[k][2].get() / 0.3
 
-                            draw_text((tab_start + tab_width - 10, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
                             gui.update += 1
 
-                            draw.rect_r((tab_start + tab_width, yy, 2, 23), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
+                            draw.rect_r((tab_start + tab_width, yy, 2 * gui.scale, 23 * gui.scale), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
 
 
-            yy += 27
+            yy += 27 * gui.scale
 
         # Create new playlist if drag in blank space after tabs
         if coll_point(mouse_position, (x, yy, w, h - (yy - y))):
             if quick_drag:
 
-                draw.rect_r((tab_start, yy, tab_width, 2), [80, 160, 200, 255], True)
+                draw.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
                 if mouse_up:
                     pl = new_playlist(False)
                     for item in shift_selection:
@@ -18114,6 +18125,7 @@ class MetaBox:
         # Draw standard metadata
         elif pctl.playing_state > 0 and len(pctl.track_queue) > 0:
 
+            gui.win_fore = colours.side_panel_background
 
             if coll_point(mouse_position, (x + 10, y, w - 10, h)):
                 # Click area to jump to current track
@@ -18690,7 +18702,7 @@ class ViewBox:
         self.lyrics_colour = ColourPulse(0.7)
         self.gallery2_colour = ColourPulse(0.65)
         self.col_colour = ColourPulse(0.14)
-        self.artist_colour = ColourPulse(0.65)
+        self.artist_colour = ColourPulse(0.07)
 
         self.on_colour = [255, 190, 50, 255]
         self.over_colour = [255, 190, 50, 255]
@@ -18942,7 +18954,7 @@ class DLMon:
                         # Check if size is stable, then scan for audio files
                         if size == self.watching[path] and size != 0:
                             del self.watching[path]
-                            if archive_file_scan(path, DA_Formats) > 0.7:
+                            if archive_file_scan(path, DA_Formats) > 0.5:
                                 self.ready.add(path)
                                 gui.update += 1
                             self.done.add(path)
@@ -18958,7 +18970,7 @@ class DLMon:
                         # Check if size is stable, then scan for audio files
                         if size == self.watching[path] and size != 0:
                             del self.watching[path]
-                            if folder_file_scan(path, DA_Formats) > 0.7:
+                            if folder_file_scan(path, DA_Formats) > 0.5:
 
                                 # Check if folder not already imported
                                 imported = False
@@ -19195,7 +19207,7 @@ if system != 'windows':
         elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
-        elif point.contents.y < 30 and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+        elif point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
             if tab_menu.active: # or pctl.broadcast_active:
                 return SDL_HITTEST_NORMAL
@@ -21770,8 +21782,8 @@ while running:
                     else:
                         draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
-                    draw_text((x2, y1 - (3 * gui.scale)), trunc_line(pctl.master_library[r_menu_index].title, 15, w - 190 * gui.scale)
-                              , colours.grey_blend_bg3(220), 15)
+                    draw_text((x2, y1 - (3 * gui.scale)), pctl.master_library[r_menu_index].title
+                              , colours.grey_blend_bg3(220), 15, max=w - 190 * gui.scale)
                     #y += 4
 
 
@@ -21809,8 +21821,8 @@ while running:
                     else:
                         draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x2, y1 - (2 * gui.scale)), trunc_line(pctl.master_library[r_menu_index].artist, 13, 420 * gui.scale),
-                              colours.grey_blend_bg3(220), 13)
+                    draw_text((x2, y1 - (2 * gui.scale)), pctl.master_library[r_menu_index].artist,
+                              colours.grey_blend_bg3(220), 13, max=420 * gui.scale)
 
                     y1 += 16 * gui.scale
 
@@ -22093,12 +22105,12 @@ while running:
                 draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(170), 211)
 
                 draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
-                line = trunc_line(pctl.master_library[rename_index].parent_folder_name, 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211)
+                line = pctl.master_library[rename_index].parent_folder_name
+                draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
 
                 draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
-                line = trunc_line(parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True), 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211)
+                line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
+                draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
 
 
             if renamebox:
@@ -22405,10 +22417,10 @@ while running:
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
 
                 if len(gui.message_subtext) > 0:
-                    draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(190), 15)
-                    draw_text((x + 63, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(190), 12)
+                    draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(230), 15)
+                    draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(230), 12)
                 else:
-                    draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(190), 15)
+                    draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(230), 15)
 
             # SEARCH
             # if key_ctrl_down and key_v_press:
