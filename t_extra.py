@@ -87,7 +87,7 @@ def get_display_time(seconds):
     if result[0] > 99:
         result = divmod(result[0], 60)
         return str(result[0]) + 'h ' + str(result[1]).zfill(2)
-    return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
+    return str(result[0]).zfill(2) + "∶" + str(result[1]).zfill(2)
 
 
 # Creates a string from number of bytes to X MB/kB etc
@@ -252,6 +252,8 @@ def folder_file_scan(path, extensions):
 def archive_file_scan(path, extensions):
 
     ext = os.path.splitext(path)[1][1:].lower()
+    print(path)
+    print(ext)
     try:
         if ext == 'rar':
             matches = 0
@@ -325,3 +327,4 @@ def get_folder_size(path):
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
     return total_size
+

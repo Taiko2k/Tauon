@@ -73,12 +73,14 @@ cache_directory = os.path.join(user_directory, "cache")
 
 # Detect if we are installed or running portably
 install_mode = False
+flatpak_mode = False
 if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/"):
 
     install_mode = True
     if install_directory[:5] == "/app/":
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
         print("Running as Flatpak")
+        flatpak_mode = True
 
 # If we're installed, use home data locations rather than the portable mode locations
 if install_mode:
@@ -110,13 +112,14 @@ if install_mode:
         os.makedirs(os.path.join(user_directory, "encoder"))
 
     # Copy data from old location if needed (new location since v3.0.0)
-    if os.path.isfile(os.path.join(old_user_directory, 'state.p')) and \
-        not os.path.isfile(os.path.join(user_directory, 'state.p')):
-            shutil.copy(os.path.join(old_user_directory, 'state.p'), os.path.join(user_directory, 'state.p'))
+    if not flatpak_mode:
+        if os.path.isfile(os.path.join(old_user_directory, 'state.p')) and \
+            not os.path.isfile(os.path.join(user_directory, 'state.p')):
+                shutil.copy(os.path.join(old_user_directory, 'state.p'), os.path.join(user_directory, 'state.p'))
 
-    if os.path.isfile(os.path.join(old_user_directory, 'star.p')) and \
-        not os.path.isfile(os.path.join(user_directory, 'star.p')):
-            shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
+        if os.path.isfile(os.path.join(old_user_directory, 'star.p')) and \
+            not os.path.isfile(os.path.join(user_directory, 'star.p')):
+                shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
 else:
     print("Running in portable mode")
@@ -568,6 +571,8 @@ class Prefs:    # Used to hold any kind of settings
         self.cross_fade_time = 700
         self.volume_wheel_increment = 2
         self.encoder_output = user_directory + '/encoder/'
+        if music_folder is not None:
+            self.encoder_output = music_folder + '/encode-output/'
         self.rename_folder_template = "%a - %b"
         self.rename_tracks_template = "%n. %a - %t%x"
 
@@ -4607,23 +4612,8 @@ def keyboard_hook():
     listen()
 
 
-x_hook = False
-if system == 'windows':
-    if prefs.mkey is True:
-        print('Starting hook thread for Windows')
-        keyboardHookThread = threading.Thread(target=keyboard_hook)
-        keyboardHookThread.daemon = True
-        keyboardHookThread.start()
+if True:
 
-elif system != 'mac':
-    # de = os.environ.get('DESKTOP_SESSION')
-    # if True or (prefs.mkey and ('gnome' in de or 'budgie-desktop' in de)):
-    #     media_key_mode = 1
-    # elif prefs.mkey and os.path.isfile(install_directory + "/pyxhook.py"):
-    #     media_key_mode = 2
-
-
-    #if True: # media_key_mode == 1 or prefs.enable_mpris:
     def gnome():
 
 
@@ -4672,8 +4662,7 @@ elif system != 'mac':
                                              on_mediakey)
             except:
                 print("Could not connect to gnome media keys")
-                global x_hook
-                x_hook = True
+
 
         # ----------
         if prefs.enable_mpris:
@@ -4884,37 +4873,7 @@ elif system != 'mac':
 
     except:
         print("ERROR: Could not start Dbus thread")
-        x_hook = True
 
-    if x_hook is True: #media_key_mode == 2:
-
-        import pyxhook
-
-        def kbevent(event):
-            if 170 < event.ScanCode < 175:
-                global mediaKey
-                global mediaKey_pressed
-
-                if event.ScanCode == 172:
-                    mediaKey = 'play'
-                    mediaKey_pressed = True
-                if event.ScanCode == 174:
-                    mediaKey = 'stop'
-                    mediaKey_pressed = True
-                if event.ScanCode == 173:
-                    mediaKey = 'back'
-                    mediaKey_pressed = True
-                if event.ScanCode == 171:
-                    mediaKey = 'forward'
-                    mediaKey_pressed = True
-                if mediaKey_pressed:
-                    gui.update = 1
-
-        hookman = pyxhook.HookManager()
-        hookman.KeyDown = kbevent
-        hookman.HookKeyboard()
-        hookman.start()
-        print("Hooked to X server to get media keys")
 
 
 class GStats:
@@ -5553,6 +5512,7 @@ if system == "linux":
             layout.set_text(text, -1)
 
             y_off = layout.get_baseline() / 1000
+            #print(y_off)
             # if b_off < 16:
             # print((y_off, text))
             # print(round(y_off - 16))
@@ -8210,6 +8170,7 @@ def get_lyric_fire(track_object):
         gui.message_box = False
         if not gui.showcase_mode:
             prefs.show_lyrics_side = True
+        lyrics_ren.lyrics_position = 0
     except:
         show_message("LyricWiki does not appear to have lyrics for this song")
 
@@ -9396,14 +9357,14 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Year → Old-New", 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub("Year → Old–New", 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub("Year → New-Old", 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub("Year → New–Old", 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -17766,7 +17727,7 @@ class ArtBox:
 
                 line = ""
                 line += showc[4]
-                line += " " +  str(showc[3][1]) + 'vr'
+                line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
                 xoff = 0
                 xoff = draw.text_calc(line, 12) + 12 * gui.scale
 
@@ -18486,6 +18447,7 @@ class Showcase:
         self.lastfm_artist = None
         self.artist_mode = False
 
+
     # def get_artist_info(self):
     #
     #     track = pctl.playing_object()
@@ -18964,7 +18926,7 @@ class DLMon:
                         self.watching[path] = size
 
 
-                elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done:
+                elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done and "encode-output" not in path:
                     size = get_folder_size(path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
