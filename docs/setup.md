@@ -1,8 +1,4 @@
 
-## Setup release on Windows
-
-Program should work after running setup installer exe. Otherwise ensure Visual C++ Runtime 2015 and DirectX are installed.
-
 ## Guide for manual setup on Linux (Generic)
 
 1) For convenience download and extract release zip package for Linux from the releases section, (i.e Tauon.Music.Box.v2.X.X.Linux.Bass.64bit.zip) which includes the following dependencies not included in the git repo:
@@ -41,7 +37,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
   - Python gi.repository/pygobject (Linux only)
   - Python pyCairo >= **1.10.1** (Linux only) https://github.com/pygobject/pycairo (refer to Ubuntu instructions below if you need to compile from source)
 
-4) Run using with python using ```python3 tauon.py```
+4) Run using with python using `python3 tauon.py`
  
 
 
@@ -49,7 +45,7 @@ Program should work after running setup installer exe. Otherwise ensure Visual C
 
 1. Install from AUR or install dependencies manually such as listed in the PKGBUILD.
 2. Copy program files or release package contents to a new folder.
-3. Run using ```python tauon.py```
+3. Run using `python tauon.py`
 
 ## Development setup on Ubuntu
 

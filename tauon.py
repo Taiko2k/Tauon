@@ -614,7 +614,7 @@ class Prefs:    # Used to hold any kind of settings
         self.windows_font_weight = 500
         self.windows_font_weight_bold = 600
 
-        self.linux_font = "Noto Sans"
+        self.linux_font = "Noto Sans" #"Liberation Sans"#
         #self.linux_font = "Sans"
         self.linux_bold_font = "Noto Sans Bold"
 
@@ -1535,26 +1535,27 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             # if 'font-extra=' in p:
             #     result = p.split('=')[1]
             #     light_font = result
-            if 'font-height-offset=' in p:
-                result = p.split('=')[1]
-                try:
-                    gui.universal_y_text_offset = int(result)
-                except:
-                    print("Expected number")
 
-            if 'linux-font-star-offset=' in p and system == 'linux':
-                result = p.split('=')[1]
-                try:
-                    gui.star_text_y_offset = int(result)
-                except:
-                    print("Expected number")
+            # if 'font-height-offset=' in p:
+            #     result = p.split('=')[1]
+            #     try:
+            #         gui.universal_y_text_offset = int(result)
+            #     except:
+            #         print("Expected number")
 
-            if 'windows-font-star-offset=' in p and system == 'windows':
-                result = p.split('=')[1]
-                try:
-                    gui.star_text_y_offset = int(result)
-                except:
-                    print("Expected number")
+            # if 'linux-font-star-offset=' in p and system == 'linux':
+            #     result = p.split('=')[1]
+            #     try:
+            #         gui.star_text_y_offset = int(result)
+            #     except:
+            #         print("Expected number")
+
+            # if 'windows-font-star-offset=' in p and system == 'windows':
+            #     result = p.split('=')[1]
+            #     try:
+            #         gui.star_text_y_offset = int(result)
+            #     except:
+            #         print("Expected number")
 
             if 'scroll-gallery-wheel=' in p:
                 result = p.split('=')[1]
@@ -1584,20 +1585,10 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
                 print('Encode output: ' + prefs.encoder_output)
 
-            # if 'windows-native-font-rendering=True' in p and system == 'windows':
-            #     gui.win_text = True
-            if 'windows-set-font-family=' in p:
-                result = p.split('=')[1]
-                prefs.windows_font_family = result
-            if 'windows-font-use-bold=True' in p:
-                result = p.split('=')[1]
-                prefs.windows_font_weight = 700
-                #prefs.windows_font_weight_bold = 700
-
-            if 'linux-font=' in p:
+            if 'standard-font=' in p:
                 result = p.split('=')[1]
                 prefs.linux_font = result
-            if 'linux-bold-font=' in p:
+            if 'bold-font=' in p:
                 result = p.split('=')[1]
                 prefs.linux_bold_font = result
 
@@ -5442,7 +5433,7 @@ if system == "linux":
             global ttc
 
             x = location[0]
-            y = location[1] + gui.universal_y_text_offset
+            y = location[1] #+ gui.universal_y_text_offset
 
             if key in ttc:
 
@@ -5512,35 +5503,12 @@ if system == "linux":
             layout.set_text(text, -1)
 
             y_off = layout.get_baseline() / 1000
-            #print(y_off)
-            # if b_off < 16:
-            # print((y_off, text))
-            # print(round(y_off - 16))
-            y_off = round(y_off - 16)
 
-
-
-            if y_off > 0:
-                #y_off = 1
-                pass
-            else:
-                y_off = 0
-
-            y_off -= self.f_dict[font][1]
-
-            #y_off = 0
-            y -= y_off
-
-
-            # te = layout.get_pixel_size()
-            # if te.height > 30:
-            #     print(te.height)
-
+            y_off = round(y_off) - 13 * gui.scale # 13 for compat with way text position used to work
+            if gui.scale == 2:
+                y_off -= 2
             #w, h = layout.get_pixel_size()
-
             #print(layout.get_extents())
-            # print(text)
-            # print(layout.get_pixel_extents()[1].y)
 
             PangoCairo.show_layout(context, layout)
 
@@ -5556,14 +5524,7 @@ if system == "linux":
             dst = SDL_Rect(x, y)
             dst.w = w
             dst.h = h
-
-            # if align == 1:
-            #     dst.x = location[0] - dst.w
-            #
-            # elif align == 2:
-            #     dst.x = dst.x - int(dst.w / 2)
-
-            #SDL_RenderCopy(renderer, c, None, dst)
+            dst.y = y - y_off
 
             ttc[key] = [dst, c, y_off]
             self.render(ttc[key], x, y, range_top, range_height, align)
@@ -5654,444 +5615,26 @@ def draw_text2(location, text, colour, font, maxx, field=0, index=0):
 
 def draw_text(location, text, colour, font, max=4000, bg=None, range_top=0, range_height=None):
 
+    if text == "":
+        return 0
+    if bg == None:
+        bg = gui.win_fore
+    if colour[3] != 255:
+        colour = alpha_blend(colour, bg)
+    align = 0
+    if len(location) > 2:
+        if location[2] == 1:
+            align = 1
+        if location[2] == 2:
+            align = 2
+        if location[2] == 4:
+            max_y = None
+            if len(location) > 4:
+                max_y = location[4]
+            return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True, range_top=range_top, range_height=range_height)
+
+    return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
 
-    if gui.win_text:
-
-        if text == "":
-            return 1  # im not suuure why this needs to be 1 for the highlighting to work
-        if bg == None:
-            bg = gui.win_fore
-
-        if colour[3] != 255:
-            colour = alpha_blend(colour, bg)
-
-        align = 0
-        if len(location) > 2:
-            if location[2] == 1:
-                align = 1
-            if location[2] == 2:
-                align = 2
-            if location[2] == 4:
-                max_y = None
-                if len(location) > 4:
-                    max_y = location[4]
-
-                pretty_text.draw(location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y, range_top, range_height)
-                return
-
-        if max < 1000:
-            text = trunc_line(text, font, max)
-
-        return pretty_text.draw(location[0], location[1], text, bg, colour, font, align)
-
-    elif gui.cairo_text:
-
-        if text == "":
-            return 0
-        if bg == None:
-            bg = gui.win_fore
-        if colour[3] != 255:
-            colour = alpha_blend(colour, bg)
-        align = 0
-        if len(location) > 2:
-            if location[2] == 1:
-                align = 1
-            if location[2] == 2:
-                align = 2
-            if location[2] == 4:
-                max_y = None
-                if len(location) > 4:
-                    max_y = location[4]
-                return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True, range_top=range_top, range_height=range_height)
-
-        # if max < 4000:
-        #     text = trunc_line(text, font, max)
-        return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
-    else:
-        print("draw sdl")
-        return draw_text_sdl(location, text, colour, font, max)
-
-# Pretty Text
-
-if system == 'windows':
-
-    class RECT(ctypes.Structure):
-        _fields_ = [('left', ctypes.c_long),
-                    ('top', ctypes.c_long),
-                    ('right', ctypes.c_long),
-                    ('bottom', ctypes.c_long)
-                    ]
-
-    def RGB(r, g, b):
-        return r | (g << 8) | (b << 16)
-
-    def Wcolour(colour):
-        return colour[0] | (colour[1] << 8) | (colour[2] << 16)
-
-    def native_bmp_to_sdl(hdc, bitmap_handle, width, height):
-
-        bmpheader = struct.pack("LHHHH", struct.calcsize("LHHHH"),
-                                width, height, 1, 24) #w,h, planes=1, bitcount)
-        c_bmpheader = ctypes.c_buffer(bmpheader)
-
-        #3 bytes per pixel, pad lines to 4 bytes
-        c_bits = ctypes.c_buffer(b" " * (height * ((width*3 + 3) & -4)))
-
-        res = ctypes.windll.gdi32.GetDIBits(
-            hdc, bitmap_handle, 0, height,
-            c_bits, c_bmpheader,
-            win32con.DIB_RGB_COLORS)
-        if not res:
-            raise IOError("native_bmp_to_pil failed: GetDIBits")
-
-        # We need to keep c_bits pass else it may be garbage collected
-        return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
-
-
-    class Win32Font:
-        def __init__(self, name, height, weight=win32con.FW_NORMAL,
-                     italic=False, underline=False):
-            self.font = win32ui.CreateFont({
-                'name': name, 'height': height,
-                'weight': weight, 'italic': italic, 'underline': underline,}) #'charset': win32con.MAC_CHARSET})
-
-            #create a compatible DC we can use to draw:
-            self.desktopHwnd = win32gui.GetDesktopWindow()
-            self.desktopDC = win32gui.GetWindowDC(self.desktopHwnd)
-
-            self.mfcDC = win32ui.CreateDCFromHandle(self.desktopDC)
-            self.drawDC = self.mfcDC.CreateCompatibleDC()
-
-            #initialize it
-            self.drawDC.SelectObject(self.font)
-
-        def get_metrics(self, text):
-
-            return self.drawDC.GetTextExtent(text)
-
-        def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
-
-            self.drawDC.SetTextColor(Wcolour(fg))
-            t = self.drawDC.GetSafeHdc()
-            win32gui.SetBkMode(t, win32con.TRANSPARENT)
-
-            #create the compatible bitmap:
-            w,h = self.drawDC.GetTextExtent(text)
-            #print(self.drawDC.GetTextFace())
-
-            w += 1
-
-            if wrap:
-                h = int((w / max_x) * h) + h
-                w = max_x + 1
-            if max_y != None:
-
-                h = max_y
-
-            saveBitMap = win32ui.CreateBitmap()
-            saveBitMap.CreateCompatibleBitmap(self.mfcDC, w, h)
-            self.drawDC.SelectObject(saveBitMap)
-
-            #draw it
-            br = win32ui.CreateBrush(win32con.BS_SOLID, Wcolour(bg), 0)
-            self.drawDC.FillRect((0, 0, w, h), br)
-
-            #self.drawDC.DrawText(text, (0, 0, w, h), win32con.DT_LEFT)
-            #windll.gdi32.TextOutW(t, 0, 0, "test", 5)
-
-            if wrap:
-
-                rect = RECT(0,0,0,0)
-                rect.left = 0
-                rect.right = max_x
-                rect.top = 0
-                rect.bottom = h
-
-                windll.User32.DrawTextW(t, text, len(text), rect, win32con.DT_WORDBREAK)
-
-            else:
-                windll.gdi32.TextOutW(t, 0, 0, text, len(text))
-
-            # rects = pointer(rect)
-            # print(rects)
-
-            #
-            #print(text)
-            #windll.gdi32.ExtTextOutW(t, 0, 0, None, rect, text, len(text), None)
-
-
-            #convert to SDL surface
-            im, c_bits = native_bmp_to_sdl(self.drawDC.GetSafeHdc(), saveBitMap.GetHandle(), w, h)
-
-            #clean-up
-            win32gui.DeleteObject(saveBitMap.GetHandle())
-
-            return im, c_bits
-
-        def __del__(self):
-            self.mfcDC.DeleteDC()
-            self.drawDC.DeleteDC()
-            win32gui.ReleaseDC(self.desktopHwnd, self.desktopDC)
-            win32gui.DeleteObject(self.font.GetSafeHandle())
-
-        def __del__(self):
-            win32gui.DeleteObject(self.font.GetSafeHandle())
-
-
-    class PrettyText:
-
-        def __init__(self):
-
-            self.f_dict = {}
-            self.y_offset_dict = {}
-
-            self.cache = {}
-            self.ca_li = []
-
-            self.source_r = SDL_Rect(0, 0, 100, 100)
-            self.dest_r = SDL_Rect(0, 0, 100, 100)
-
-        def prime_font(self, name, size, user_handle, weight=500, y_offset=0):
-
-            self.f_dict[user_handle] = Win32Font(name, size, weight)
-            self.y_offset_dict[user_handle] = y_offset
-
-        def text_xy(self, text, font):
-
-            if font == None or font not in self.f_dict:
-                print("Missing Font")
-                print(font)
-                return
-
-            return self.f_dict[font].get_metrics(text)
-
-        def draw(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
-
-            y += self.y_offset_dict[font]
-
-            key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[1], bg[2], bg[3])
-            if key in self.cache:
-
-                sd = self.cache[key]
-                sd[0].x = x
-                sd[0].y = y
-
-                if align == 1:
-                    sd[0].x = x - sd[0].w
-
-                elif align == 2:
-                    sd[0].x = sd[0].x - int(sd[0].w / 2)
-
-                #SDL_RenderCopy(renderer, sd[1], None, sd[0])
-                # print(range_height)
-                # if range_height is not None:
-                #
-                #     self.source_rect.y = sd[0].h - range_height - range_top
-                #     self.source_rect.w = sd[0].w
-                #     self.source_rect.h = range_height
-                #
-                #     self.dest_r.x = sd[0].x
-                #     self.dest_r.y = sd[0].y
-                #     self.dest_r.w = sd[0].w
-                #     self.dest_r.h = range_height
-                #
-                #     SDL_RenderCopyEx(renderer, sd[1], self.source_rect, self.dest_r, 0, None, SDL_FLIP_VERTICAL)
-                #     return sd[0].w
-
-                SDL_RenderCopyEx(renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
-
-                return sd[0].w
-
-            if font == None or font not in self.f_dict:
-                print("Missing Font")
-                print(font)
-                return 0
-
-            #perf_timer.set()
-
-            f = self.f_dict[font]
-
-            im, c_bits = f.renderText(text, bg, fg, wrap, max_x, max_y)
-            #buff = io.BytesIO()
-
-            #im.save(buff, format="BMP")
-            #buff.seek(0)
-            #wop = rw_from_object(buff)
-            #s_image = IMG_Load_RW(wop, 0)
-            s_image = im
-
-            ke = SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
-            SDL_SetColorKey(s_image, True, ke)
-
-            c = SDL_CreateTextureFromSurface(renderer, s_image)
-
-            tex_w = pointer(c_int(0))
-            tex_h = pointer(c_int(0))
-            SDL_QueryTexture(c, None, None, tex_w, tex_h)
-            dst = SDL_Rect(x, y)
-            dst.w = int(tex_w.contents.value)
-            dst.h = int(tex_h.contents.value)
-            SDL_FreeSurface(s_image)
-            #im.close()
-
-            if align == 1:
-                dst.x = x - dst.w
-
-            elif align == 2:
-                dst.x = dst.x - int(dst.w / 2)
-
-            #SDL_RenderCopy(renderer, c, None, dst)
-            SDL_RenderCopyEx(renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
-
-            #print(perf_timer.get())
-
-            self.cache[key] = [dst, c]
-            self.ca_li.append(key)
-            if len(self.ca_li) > 350:
-                SDL_DestroyTexture(self.cache[self.ca_li[0]][1])
-                del self.cache[self.ca_li[0]]
-                del self.ca_li[0]
-
-            return dst.w
-
-    pretty_text = PrettyText()
-
-    menu_font = "Meiryo UI"
-    if prefs.windows_font_family != None:
-        standard_font = prefs.windows_font_family
-    else:
-        #standard_font = 'Meiryo'
-        #standard_font = 'Koruri'
-        #standard_font = "Franklin Gothic Medium"
-        #if not os.path.isfile('C:\Windows\Fonts\meiryo.ttc'):
-        standard_font = 'Arial'
-        # standard_font = 'Tahoma'
-        # standard_font = 'Segoe UI'
-        # standard_font = 'Arial'
-
-
-    semibold_font = standard_font
-    standard_weight = prefs.windows_font_weight
-    bold_weight = prefs.windows_font_weight_bold
-
-    if standard_font == "Meiryo":
-
-        pretty_text.prime_font(standard_font, 10 + 6, 10, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 11 + 6, 11, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 12 + 6, 12, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 13 + 6, 13, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 14 + 6, 14, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 15 + 6, 15, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 16 + 6, 16, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 17 + 6, 17, weight=standard_weight, y_offset=1)
-
-        pretty_text.prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=-12)
-
-        pretty_text.prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
-        pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 16 + 4, 216, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
-
-        # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
-        # pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
-        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
-        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
-
-    elif standard_font == "Tahoma":
-
-        pretty_text.prime_font(standard_font, 10 + 4, 10, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 11 + 4, 11, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 12 + 4, 12, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 13 + 4, 13, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 14 + 4, 14, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 15 + 4, 15, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 16 + 4, 16, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 17 + 4, 17, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
-
-        pretty_text.prime_font(semibold_font, 10 + 2, 210, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 11 + 2, 211, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 2, 212, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
-
-        # pretty_text.prime_font("Meiryo UI", 14, 412, weight=500)
-        # pretty_text.prime_font("Meiryo UI", 15, 413, weight=500)
-        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
-        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
-
-        gui.pl_title_y_offset = -3
-        gui.pl_title_font_offset = -2
-
-
-    elif standard_font == "Arial":
-
-        pretty_text.prime_font(standard_font, 10 + 3, 10, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 11 + 3, 11, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 12 + 3, 12, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 13 + 3, 13, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 14 + 2, 14, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 15 + 2, 15, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 16 + 2, 16, weight=standard_weight, y_offset=1)
-        pretty_text.prime_font(standard_font, 17 + 2, 17, weight=standard_weight, y_offset=1)
-
-
-        pretty_text.prime_font(standard_font, 30 + 2, 30, weight=standard_weight, y_offset=-12)
-
-        pretty_text.prime_font(semibold_font, 10 + 3, 210, weight=600)
-        pretty_text.prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=0)
-        pretty_text.prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=2)
-        pretty_text.prime_font(semibold_font, 14 + 2, 214, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 15 + 2, 215, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 16 + 2, 216, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 28 + 2, 228, weight=bold_weight)
-
-
-
-        pretty_text.prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
-        pretty_text.prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
-
-        gui.pl_title_y_offset = -2
-        gui.pl_title_font_offset = -1
-
-    else: # Segoe UI
-
-
-        pretty_text.prime_font(standard_font, 10 + 5, 10, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 11 + 5, 11, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 12 + 5, 12, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 13 + 5, 13, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 14 + 5, 14, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 15 + 5, 15, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 16 + 5, 16, weight=standard_weight, y_offset=-1)
-        pretty_text.prime_font(standard_font, 17 + 5, 17, weight=standard_weight, y_offset=0)
-        pretty_text.prime_font(standard_font, 30 + 5, 30, weight=standard_weight, y_offset=-12)
-        pretty_text.prime_font(semibold_font, 10 + 5, 210, weight=600)
-
-        pretty_text.prime_font(semibold_font, 11 + 3, 211, weight=600, y_offset=1)
-        pretty_text.prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-        pretty_text.prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=0)
-        pretty_text.prime_font(semibold_font, 14 + 4, 214, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 15 + 4, 215, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 16 + 4, 216, weight=bold_weight)
-        pretty_text.prime_font(semibold_font, 28 + 4, 228, weight=bold_weight)
-
-        pretty_text.prime_font(standard_font, 14 + 3, 412, weight=500, y_offset=-1)
-        pretty_text.prime_font(standard_font, 15 + 4, 413, weight=500, y_offset=-1)
-
-        gui.pl_title_y_offset = -1
-        gui.pl_title_font_offset = -2
-
-    # pretty_text.prime_font(menu_font, 14, 412, weight=500)
-    # pretty_text.prime_font(menu_font, 15, 413, weight=500)
 
 
 class LyricsRenMini:
@@ -7792,7 +7335,7 @@ class ToolTip:
 
                 draw.rect_r((self.x, self.y, self.w, self.h), colours.menu_background, True)
                 draw.rect_r((self.x, self.y, self.w, self.h), colours.grey(45))
-                draw_text((self.x + int(self.w / 2), self.y + 2 * gui.scale, 2), self.text, colours.grey(235), self.font)
+                draw_text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.grey(235), self.font)
             else:
                 #gui.update += 1
                 pass
@@ -8061,7 +7604,7 @@ class Menu:
                             label = self.subs[self.sub_active][w][0]
 
                         # Render the items label
-                        draw_text((sub_pos[0] + 8, sub_pos[1] + 2 + w * self.h), label, fx[0],
+                        draw_text((sub_pos[0] + 8, sub_pos[1] + ytoff + w * self.h), label, fx[0],
                                   self.font, bg=bg)
 
                         # Render the menu outline
@@ -11513,7 +11056,7 @@ else:
 settings_icon.xoff = 0
 settings_icon.yoff = 2
 settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
-x_menu.add("Settings...", activate_info_box, icon=settings_icon)
+x_menu.add("Settings", activate_info_box, icon=settings_icon)
 x_menu.add_sub("Database...", 190)
 x_menu.br()
 
@@ -14710,7 +14253,7 @@ class Over:
             # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
-                rect = (x, y + 2 * gui.scale, 245 * gui.scale, 13)
+                rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
                 #draw.rect_r(rect, [0, 255, 0, 50])
 
                 if self.click and coll_point(mouse_position, rect):
@@ -14725,7 +14268,7 @@ class Over:
 
                 if pctl.set_device == item[4]: #item[3] > 0:
                     draw_text((x, y), line, [150, 150, 150, 255], 10)
-                    draw_text((x - 12 * gui.scale, y - 2 * gui.scale), ">", [140, 140, 140, 255], 213)
+                    draw_text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
                 else:
                     if coll_point(mouse_position, rect):
                         draw_text((x, y), line, [150, 150, 150, 255], 10)
@@ -14834,11 +14377,11 @@ class Over:
         fields.add(rect)
         if coll_point(mouse_position, rect):
             draw.rect_r(rect, [255, 255, 255, 15], True)
-            draw_text((x + int(w / 2), rect[1] + 2 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
+            draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
             if self.click:
                 plug()
         else:
-            draw_text((x + int(w / 2), rect[1] + 2 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
+            draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
 
     def toggle_square(self, x, y, function, text):
 
@@ -14918,21 +14461,21 @@ class Over:
         self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
         y += 42 * gui.scale
-        self.button(x, y, "Get user loves", lastfm.dl_love, width=110)
+        self.button(x, y, "Get user loves", lastfm.dl_love, width=110 * gui.scale)
 
         y += 26 * gui.scale
-        self.button(x, y, "Clear local loves", self.clear_local_loves, width=110)
+        self.button(x, y, "Clear local loves", self.clear_local_loves, width=110 * gui.scale)
 
 
 
         y += 36 * gui.scale
-        self.button(x, y, "Get friend loves", self.get_friend_love, width=110)
+        self.button(x, y, "Get friend loves", self.get_friend_love, width=110 * gui.scale)
         if lastfm.scanning_friends:
             draw_text((x + 120 * gui.scale, y), "scanning...",
                       colours.grey_blend_bg(111), 11)
 
         y += 26 * gui.scale
-        self.button(x, y, "Clear friend loves", lastfm.clear_friends_love, width=110)
+        self.button(x, y, "Clear friend loves", lastfm.clear_friends_love, width=110 * gui.scale)
 
     def clear_local_loves(self):
 
@@ -15122,7 +14665,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        draw_text((x, y), t_title, colours.grey(210), 216)
+        draw_text((x, y + 4 * gui.scale), t_title, colours.grey(210), 216)
         y += 32 * gui.scale
         draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
@@ -15448,9 +14991,9 @@ class Over:
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55 * gui.scale, box[1] + 6 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
+                draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
             else:
-                draw_text((box[0] + 55 * gui.scale, box[1] + 6 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
+                draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
 
             current_tab += 1
 
@@ -15543,7 +15086,7 @@ class TopPanel:
         self.tab_text_font = fonts.tabs #211 # 211
         self.tab_extra_width = 17 * gui.scale
         self.tab_text_start_space = 8 * gui.scale
-        self.tab_text_y_offset = 8 * gui.scale
+        self.tab_text_y_offset = 7 * gui.scale
         self.tab_spacing = 0
 
         # if gui.scale > 1:
@@ -16407,7 +15950,7 @@ class BottomBarType1:
             #     mx -= gui.panelBY - 10
 
             #line = trunc_line(line, 213, mx)
-            draw_text((x, self.seek_bar_position[1] + 22 * gui.scale), line, colours.bar_title_text,
+            draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title, max=mx)
             if (input.mouse_click or right_click) and coll_point(mouse_position, (
                         self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
@@ -16836,7 +16379,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     #draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
                     draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
                     draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    draw_text((xx + 5 * gui.scale, yy - 26 * gui.scale), "You", [250, 250, 250, 255], 13)
+                    draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
 
 
                 heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
@@ -16862,7 +16405,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     # draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
                     draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
                     draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    draw_text((xx + 5 * gui.scale, yy - 26 * gui.scale), name, [250, 250, 250, 255], 13)
+                    draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
                 count += 1
                 star_x += heart_row_icon.w + spacing + 2
 
@@ -17085,7 +16628,9 @@ class StandardPlaylist:
                     ex = left + highlight_left + highlight_width - 7 * gui.scale
 
                     gui.win_fore = colours.playlist_panel_background
-                    height = (gui.playlist_top + gui.playlist_row_height * w) + (gui.playlist_row_height - gui.pl_title_real_height) + gui.pl_title_y_offset
+                    height = (gui.playlist_top + gui.playlist_row_height * w) + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
+                    if gui.scale == 2:
+                        height += 1
 
                     # Draw highlight
                     if p_track in shift_selection and len(shift_selection) > 1:
@@ -17254,7 +16799,7 @@ class StandardPlaylist:
             # Highlight blue if track is being broadcast
             if default_playlist[
                 p_track] == pctl.broadcast_index and pctl.broadcast_active:
-                draw.rect(track_box, [40, 40, 190, 80], True)
+                draw.rect_r(track_box, [40, 40, 190, 80], True)
                 gui.win_fore = alpha_blend([40, 40, 190, 80], gui.win_fore)
 
             # Add to queue on middle click
@@ -17954,7 +17499,7 @@ class PlaylistBox:
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
             draw.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            draw_text((tab_start + 40 * gui.scale, yy + 3 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
+            draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
@@ -18121,7 +17666,7 @@ class MetaBox:
 
 
                 if title != "":
-                    draw_text((margin, block_y), title, colours.side_bar_line1, fonts.side_panel_line1, max=text_width)
+                    draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max=text_width)
                 if artist != "":
                     draw_text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max=text_width)
 
@@ -18356,9 +17901,10 @@ class ArtistInfoBox:
                     gui.pl_update += 1
                     w = draw.text_calc(item[0], 13)
                     xx = (right - w) - 17 * gui.scale
-                    draw.rect_r((xx - 1 * gui.scale, yy - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    draw.rect_r((xx, yy, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-                    draw_text((xx + 5, yy), item[0], [250, 250, 250, 255], 13)
+                    draw.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    draw.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [50, 50, 50, 255])
+
+                    draw_text((xx, yy), item[0], [250, 250, 250, 255], 13)
                     self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
                 # draw.rect_r(rect, [210, 80, 80, 255], True)
 
@@ -19288,15 +18834,21 @@ def update_layout_do():
     gui.playlist_row_height = prefs.playlist_row_height
     gui.playlist_text_offset = 0
     gui.row_font_size = prefs.playlist_font_size  # 13
-    gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
-    gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
-    gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
-    # To improve
-    if system == 'linux' and gui.scale == 1:
-        gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-        #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-    if system == 'windows':
-        gui.playlist_text_offset -= 1
+    # gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
+    # gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
+    # gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
+    # # To improve
+    # if system == 'linux' and gui.scale == 1:
+    #     gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+    #     #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+    # if system == 'windows':
+    #     gui.playlist_text_offset -= 1
+
+    gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
+    if gui.scale == 2:
+        gui.playlist_text_offset += 3
+
+    gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
     # if gui.scale > 1:
     #     #gui.playlist_text_offset += 17
@@ -20368,8 +19920,8 @@ while running:
 
         if key_F7:
 
-            show_message("Test error message", 'error', "------")
-            lastfm.artist_info(pctl.playing_object().artist)
+            show_message("Test error message 123", 'error', "hello text")
+            #lastfm.artist_info(pctl.playing_object().artist)
             #
             # lastfm.get_friends()
 
@@ -21662,9 +21214,9 @@ while running:
                 draw.rect((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
                 gui.win_fore = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 30 * gui.scale, colours.alpha_grey(180), width=220 * gui.scale)
+                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(180), width=220 * gui.scale)
 
-                draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(200), 12)
+                draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(210), 212)
 
                 if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not rect_in(rect)):
                     rename_playlist_box = False
@@ -21744,7 +21296,7 @@ while running:
                     else:
                         draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
-                    draw_text((x2, y1 - (3 * gui.scale)), pctl.master_library[r_menu_index].title
+                    draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].title
                               , colours.grey_blend_bg3(220), 15, max=w - 190 * gui.scale)
                     #y += 4
 
@@ -21758,7 +21310,7 @@ while running:
                         ex_colour = format_colours[line]
 
                     draw.rect_r(ext_rect, ex_colour, True)
-                    draw_text((x + w - 35 * gui.scale, y + 42 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
+                    draw_text((x + w - 35 * gui.scale, y + 41 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
 
                     if pctl.master_library[r_menu_index].is_cue:
                         ext_rect[1] += 16 * gui.scale
@@ -21766,7 +21318,7 @@ while running:
                         if pctl.master_library[r_menu_index].is_embed_cue:
                             colour = [252, 199, 55, 255]
                         draw.rect_r(ext_rect, colour, True)
-                        draw_text((x + w - 35 * gui.scale, y + (42 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+                        draw_text((x + w - 35 * gui.scale, y + (41 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
 
 
                     y1 += 16 * gui.scale
@@ -21783,7 +21335,7 @@ while running:
                     else:
                         draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x2, y1 - (2 * gui.scale)), pctl.master_library[r_menu_index].artist,
+                    draw_text((x2, y1 - (0 * gui.scale)), pctl.master_library[r_menu_index].artist,
                               colours.grey_blend_bg3(220), 13, max=420 * gui.scale)
 
                     y1 += 16 * gui.scale
@@ -21799,7 +21351,7 @@ while running:
                     else:
                         draw_text((x1, y1), "Album", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x2, y1 - 2), trunc_line(pctl.master_library[r_menu_index].album, 13, 420 * gui.scale),
+                    draw_text((x2, y1 - 1 * gui.scale), trunc_line(pctl.master_library[r_menu_index].album, 13, 420 * gui.scale),
                               colours.grey_blend_bg3(220),
                               13)
 
@@ -22036,7 +21588,7 @@ while running:
 
                 p = draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
 
-                rename_folder.draw(x + 14 * gui.scale, y + 40 * gui.scale, colours.alpha_grey(190), width=300)
+                rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
                 draw.rect((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
@@ -22105,7 +21657,7 @@ while running:
 
                 draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(195), 213)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-                rename_files.draw(x + 14 * gui.scale, y + 40 * gui.scale, colours.alpha_grey(150), width=300)
+                rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
                 # c_blink = 200
 
@@ -22379,10 +21931,10 @@ while running:
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
 
                 if len(gui.message_subtext) > 0:
-                    draw_text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, colours.grey(230), 15)
+                    draw_text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.grey(230), 15)
                     draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(230), 12)
                 else:
-                    draw_text((x + 62 * gui.scale, y + 18 * gui.scale), gui.message_text, colours.grey(230), 15)
+                    draw_text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.grey(230), 15)
 
             # SEARCH
             # if key_ctrl_down and key_v_press:

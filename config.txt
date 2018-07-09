@@ -1,77 +1,62 @@
-﻿# Tauon Music Box config file
+﻿## Tauon Music Box config file
 
-# --- Playback / Audio --------------------------------------------------------
-# Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
+## --- Playback / Audio --------------------------------------------------------
+## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
 
 pause-fade-time=400
 cross-fade-time=700
 
-# Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
+## Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
 #log-volume-scale=True
 
-# --- Media Keys -------------------------------------------------------------
+## --- Media Keys -------------------------------------------------------------
 
 mkey-enable=True
 linux-mpris-enable=True
 
-# --- Spectrogram ----------------------------------------------------------
-# Base colour is the background colour (such as when there is no sound). Are R,G,B int values. Must be from 0 to 255.
-# Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
+## --- Spectrogram ----------------------------------------------------------
+## Base colour is the background colour. Are R,G,B int values. Must be from 0 to 255.
+## Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
 
 vis-scroll=True
 #vis-base-colour=10,10,10
 #vis-colour-multiply=2,1.2,5
 
-# Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
-# Colours of the level meter cannot currently be configured
+## Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
+## Colours of the level meter cannot currently be configured
 
-# --- View -----------------------------------------------------------------
+## --- View -----------------------------------------------------------------
 
 scroll-gallery-row=True
 scroll-gallery-wheel=90
 
-# --- Template Defaults ----------------------------------------------------
-# See rename track box for
+## --- Template Defaults ----------------------------------------------------
+## See rename track box for reference
 
 rename-tracks-default=%n. %a - %t%x
 rename-folder-default=%a - %b
 
-# --- Windows Fonts --------------------------------------------------------
-# Currently optimised for Arial
-# ! Changing fonts is not fully supported
+## --- Linux Fonts -----------------------------------------------------------
 
-#windows-set-font-family=Arial
-#windows-font-use-bold=True
-#font-height-offset=0
-windows-font-star-offset=-1
+#standard-font=Noto Sans
+#bold-font=Noto Sans Bold
 
-# --- Linux Fonts -----------------------------------------------------------
-# Currently optimised for Noto
-# ! Changing fonts is not fully supported
+## --- Encoding ------------------------------------------------------------------
+## Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
 
-#linux-font=Noto Sans
-#linux-font-bold=Noto Sans Bold
-font-height-offset=0
-linux-font-star-offset=1
+#output-dir=/home/example/music/output
 
-# --- Encoding ------------------------------------------------------------------
-# Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
+#add_download_directory=/home/example/music/downloads
 
-#output-dir=C:\example
-
-# --- Broadcasting ------------------------------------------------------------------
+## --- Broadcasting ------------------------------------------------------------------
 
 broadcast-bitrate=128
 broadcast-port=8000
+## Changing this port breaks web server page
 
-# --- Tag Editor ----------------------------------------------------------------
-# External Tag editor loading. tag-editor-program is the binary name used on Linux, tag-editor-path is filepath to the exe used on Windows (exclude quotes). When program is closed, tags will be updated provided the filenames of tracks have not changed.
-# Note: Picard seems to have a problem with unicode filepaths on Windows. Works on Linux.
+## --- Tag Editor ----------------------------------------------------------------
+## External Tag editor loading. tag-editor-program is the binary name used on Linux, When program is closed, tags will be updated provided the filenames of tracks have not changed (filename changes are tracked with Picard)
 
 tag-editor-name=Picard
 tag-editor-program=picard
-tag-editor-path=C:/Program Files (x86)/MusicBrainz Picard/picard.exe
 
-#tag-editor-name=AIMP
-#tag-editor-program=
-#tag-editor-path=C:/Program Files (x86)/AIMP/AIMPate.exe
