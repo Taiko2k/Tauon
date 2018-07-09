@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v3.0.1
 
  - Added button to open app data folder
+ - Improved text positioning for customised font
  - Improved queue display indication
  - Fixed about title showing playlist name after using folder filter
  - Fixed scroll on top bar not respecting hidden playlist's
@@ -11,11 +12,15 @@ v3.0.1
  - Fixed UI slowdown when playing title is long
  - Fixed queue not working for end of track advancing
  - Fixed playing highlight to show only playing instance
+ - Fixed showcase lyrics not resetting scroll position after using lyric search
+ - Fixed crash on start broadcast (critical bug)
  - Partial fixes to 2x scaling
  - Partial fixes to auto theme mode
  - Tweaked tooltip display to be slightly larger
  - Tweaked layout setting defaults: CSD on, default window size, side panel on
  - Tweaked audio archive detection to be more relaxed
+ - Tweaked shift image metadata to show full resolution information
+ - Changed default audio encoder output directory to ~/Music/encode-output/
 
 v3.0.0
 
