@@ -12,13 +12,11 @@
  - *Bassflac* (optional)
  - *Bass_ape* (optional)
  - *Basstta* (optional)
- - *Basswma* (optional, windows only)
  - *Basswv* (optional)
  - *Bass_tta* (optional)
- - *Bass_aac* (optional, linux only)
+ - *Bass_aac* (optional)
  - *Bassalac* (optional)
  - *Python pysdl2*
- - *Python pyxhook* (Linux only, optional)
  - *Python pylyrics*
  
  2) (Optional) Overwrite extracted folder with contents of this git repo to get latest dev version (may be unstable)
@@ -32,10 +30,10 @@
   - Python Stagger (Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder)
   - Python hsaudiotag https://github.com/hsoft/hsaudiotag (Download or clone stagger https://github.com/lorentey/stagger and copy inner "stagger" folder to extracted tauon-music-box folder)
   - Python pylast (optional starting Tauon Music Box v2.6.4)
-  - Noto Fonts and Notos Fonts Emoji (Linux only)
-  - Python flask (optional)
-  - Python gi.repository/pygobject (Linux only)
-  - Python pyCairo >= **1.10.1** (Linux only) https://github.com/pygobject/pycairo (refer to Ubuntu instructions below if you need to compile from source)
+  - Noto Fonts and Notos Fonts Emoji
+  - Python flask
+  - Python gi.repository/pygobject
+  - Python pyCairo >= **1.10.1** https://github.com/pygobject/pycairo (refer to Ubuntu instructions below if you need to compile from source)
 
 4) Run using with python using `python3 tauon.py`
  
@@ -52,7 +50,7 @@
 Something like this:
 
 1. Download and extract the Tauon Music Box release package for linux from releases section.
-2. Install dependencies ```sudo apt-get install libsdl2-2.0-0 libsdl2-image-2.0-0 python3-pylast python3-xlib fonts-noto python3-pil python3-gi python3-bs4```
+2. Install dependencies ```sudo apt-get install libsdl2-2.0-0 libsdl2-image-2.0-0 python3-pylast fonts-noto python3-pil python3-gi python3-bs4```
 2. Build latest pycairo.
     1. Download or clone from https://github.com/pygobject/pycairo
     2. Install build deps. ```sudo apt-get install python3-dev libcairo2-dev```
