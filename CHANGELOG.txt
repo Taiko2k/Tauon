@@ -3,9 +3,12 @@ Changelog-------------------------------------
 
 v3.0.1
 
+ - Simplified last.fm scrobble settings
+ - Added ListenBrainz support
  - Added button to open app data folder
  - Improved text positioning for customised font
  - Improved queue display indication
+ - Improved artist bio link buttons to show hand cursor
  - Fixed about title showing playlist name after using folder filter
  - Fixed scroll on top bar not respecting hidden playlist's
  - Fixed last track in playlist not showing as playing in gallery
@@ -14,6 +17,7 @@ v3.0.1
  - Fixed playing highlight to show only playing instance
  - Fixed showcase lyrics not resetting scroll position after using lyric search
  - Fixed crash on start broadcast (critical bug)
+ - Fixed an issue where scrobbling could not be paused if a track had not yet been playing
  - Partial fixes to 2x scaling
  - Partial fixes to auto theme mode
  - Tweaked tooltip display to be slightly larger
