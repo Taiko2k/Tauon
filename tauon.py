@@ -236,7 +236,13 @@ from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
 
-locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
+def _(message): return message
+
+# import gettext
+# lang1 = gettext.translation('tauon', os.path.join(install_directory, "locale"), ["ja"])
+# lang1.install()
+
+#locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
 
 # Platform specific imports
 # if system == 'windows':
@@ -655,6 +661,9 @@ class Prefs:    # Used to hold any kind of settings
         self.monitor_downloads = True
         self.extract_to_music = False
 
+        self.enable_lb = False
+        self.lb_token = None
+
 prefs = Prefs()
 
 
@@ -718,8 +727,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.row_extra = 0
         self.test = False
-        self.cursor_mode = 0
-
         self.light_mode = False
         self.draw_frame = False
 
@@ -807,8 +814,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.main_art_box = (0, 0, 10, 10)
         self.gall_tab_enter = False
 
-        self.flag_special_cursor = False
-
         self.lightning_copy = False
 
         self.gallery_animate_highlight_on = 0
@@ -854,6 +859,13 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.artist_info_panel = False
 
         self.show_hearts = True
+
+        self.cursor_is = 0
+        self.cursor_want = 0
+        # 0 standard
+        # 1 drag horizontal
+        # 2 text
+        # 3 hand
 
 gui = GuiVar()
 
@@ -1335,6 +1347,10 @@ try:
         gui.artist_info_panel = save[77]
     if save[78] is not None:
         prefs.extract_to_music = save[78]
+    if save[79] is not None:
+        prefs.enable_lb = save[79]
+    if save[80] is not None:
+        prefs.lb_token = save[80]
     state_file.close()
     del save
 
@@ -2617,6 +2633,7 @@ class LastFMapi:
     scanning_username = ""
 
     network = None
+    tries = 0
 
     scanning_friends = False
 
@@ -2661,16 +2678,18 @@ class LastFMapi:
             print('Connection to lastfm appears successful')
             return True
         except Exception as e:
-
+            self.tries += 1
             show_message("Error connecting to Last.fm network", "warning", str(e))
             print(e)
+            if self.tries > 8:
+                prefs.auto_lfm = False
             return False
 
     def toggle(self):
-        if self.connected:
-            self.hold ^= True
-        else:
-            self.connect()
+        #if self.connected:
+        self.hold ^= True
+        #else:
+        #    self.connect()
 
     def details_ready(self):
         if len(lfm_username) > 1 and len(lfm_username) > 1 and prefs.auto_lfm:
@@ -2951,6 +2970,77 @@ def get_backend_time(path):
 
 lastfm = LastFMapi()
 
+class ListenBrainz:
+
+    def __init__(self):
+
+        self.key = prefs.lb_token
+        self.enable = prefs.enable_lb
+        self.hold = False
+        self.url = "https://api.listenbrainz.org/1/submit-listens"
+
+    def listen_full(self, title, artist, album):
+        if self.enable is False:
+            return
+        if self.hold is True:
+            return
+        if self.key is None:
+            show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
+        if title == "" or artist == "":
+            return
+
+        data = {"listen_type": "single", "payload": []}
+        metadata = {"track_name": title, "artist_name": artist}
+        data["payload"].append({"track_metadata": metadata})
+        data["payload"][0]["listened_at"] = int(time.time())
+
+
+        r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
+        if r.status_code != 200:
+            show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
+
+    def listen_playing(self, title, artist, album):
+        if self.enable is False:
+            return
+        if self.hold is True:
+            return
+        if self.key is None:
+            show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
+        if title == "" or artist == "":
+            return
+
+        data = {"listen_type": "playing_now", "payload": []}
+        metadata = {"track_name": title, "artist_name": artist}
+        data["payload"].append({"track_metadata": metadata})
+        #data["payload"][0]["listened_at"] = int(time.time())
+
+        print(self.key)
+        r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
+        if r.status_code != 200:
+            show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
+            print("error")
+            print(r.status_code)
+            print(r.json())
+
+    def paste_key(self):
+
+        text = copy_from_clipboard()
+        if text == "":
+            show_message("There is no text in the clipboard", "error")
+            return
+        if len(text) == 36 and text[8] == "-":
+            self.key = text
+        else:
+            show_message("That is not a valid token", "error")
+
+    def clear_key(self):
+
+        self.key = None
+        self.enable = False
+
+
+lb = ListenBrainz()
+
 def get_love(track_object):
 
     star = star_store.full_get(track_object.index)
@@ -2991,11 +3081,11 @@ def love(set=True, index=None):
     if set is False:
         return loved
 
-    global lfm_username
-    if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
-        show_message("You have a last.fm account ready but are not connected.", 'info',
-                     'Either connect, enable auto connect, or select clear to remove the account.')
-        return
+    # global lfm_username
+    # if len(lfm_username) > 0 and not lastfm.connected and not prefs.auto_lfm:
+    #     show_message("You have a last.fm account ready but it is not enabled.", 'info',
+    #                  'Either connect, enable auto connect, or remove the account.')
+    #     return
 
     if star is None:
         star = [0, ""]
@@ -3047,12 +3137,26 @@ class LastScrob:
                 mini_t.daemon = True
                 mini_t.start()
 
+            if lb.enable:
+                mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
+                                                                      pctl.master_library[self.a_index].artist,
+                                                                      pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+
         if pctl.a_time > 10 and self.a_pt:
             pctl.b_time += add_time
             if pctl.b_time > 20:
                 pctl.b_time = 0
                 if lastfm.connected or lastfm.details_ready():
                     mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
+                                                                          pctl.master_library[self.a_index].artist,
+                                                                          pctl.master_library[self.a_index].album))
+                    mini_t.daemon = True
+                    mini_t.start()
+
+                if lb.enable:
+                    mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
                                                                           pctl.master_library[self.a_index].artist,
                                                                           pctl.master_library[self.a_index].album))
                     mini_t.daemon = True
@@ -3073,6 +3177,13 @@ class LastScrob:
                 mini_t.daemon = True
                 mini_t.start()
 
+            if lb.enable:
+                mini_t = threading.Thread(target=lb.listen_full, args=(pctl.master_library[self.a_index].title,
+                                                                      pctl.master_library[self.a_index].artist,
+                                                                      pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             if lastfm.connected or lastfm.details_ready():
                 gui.pl_update = 1
@@ -3085,6 +3196,14 @@ class LastScrob:
                                                                         pctl.master_library[self.a_index].album))
                 mini_t.daemon = True
                 mini_t.start()
+
+            if lb.enable:
+                mini_t = threading.Thread(target=lb.listen_full, args=(pctl.master_library[self.a_index].title,
+                                                                      pctl.master_library[self.a_index].artist,
+                                                                      pctl.master_library[self.a_index].album))
+                mini_t.daemon = True
+                mini_t.start()
+
             self.a_sc = True
 
 lfm_scrobbler = LastScrob()
@@ -5864,13 +5983,8 @@ class TextBox:
 
             # draw.rect_r(rect, [255, 50, 50, 80], True)
             if coll_point(mouse_position, rect) and not field_menu.active:
-                gui.cursor_mode = 4
-                SDL_SetCursor(cursor_text)
-            elif gui.cursor_mode == 4:
-                SDL_SetCursor(cursor_standard)
+                gui.cursor_want = 2
 
-            if gui.cursor_mode == 4:
-                gui.flag_special_cursor = True
 
             fields.add(rect)
 
@@ -11038,15 +11152,15 @@ add_icon.xoff = 3
 add_icon.yoff = 0
 add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
-x_menu.add("New Playlist", new_playlist, icon=add_icon)
+x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
 extra_tab_menu = Menu(130, show_icons=True)
 
-extra_tab_menu.add("New Playlist", new_playlist, icon=add_icon)
+extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 if default_player == 1:
-    x_menu.add("Open Stream...", activate_radio_box, bass_features_deco)
+    x_menu.add("Open Stream…", activate_radio_box, bass_features_deco)
 x_menu.br()
 
 if gui.scale == 2:
@@ -11057,7 +11171,7 @@ settings_icon.xoff = 0
 settings_icon.yoff = 2
 settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
 x_menu.add("Settings", activate_info_box, icon=settings_icon)
-x_menu.add_sub("Database...", 190)
+x_menu.add_sub("Database…", 190)
 x_menu.br()
 
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
@@ -11440,20 +11554,24 @@ def advance_theme():
     themeChange = True
 
 def last_fm_menu_deco():
-    if lastfm.connected:
-        line = 'Stop Last.fm Scrobbling'
+    # if lastfm.connected:
+    #     line = 'Stop Last.fm Scrobbling'
+    #     bg = colours.menu_background
+    # else:
+    #     line = 'Start Last.fm Scrobbling'
+    #     bg = colours.menu_background
+    if lastfm.hold:
+        line = "Scrobbling is Paused"
         bg = colours.menu_background
     else:
-        line = 'Start Last.fm Scrobbling'
+        line = "Scrobbling is Active"
         bg = colours.menu_background
-    if lastfm.hold:
-        line = "Start Last.fm Scrobbling"
-        bg = colours.menu_background
+
     return [colours.menu_text, bg, line]
 
 
 def lastfm_colour():
-    if lastfm.connected and not lastfm.hold:
+    if not lastfm.hold:
         return [250, 50, 50, 255]
     else:
         return None
@@ -11470,8 +11588,14 @@ lastfm_icon.yoff = 1
 lastfm_icon.colour = [249, 70, 70, 255]#[250, 60, 60, 255]
 lastfm_icon.colour_callback = lastfm_colour
 
+def lastfm_menu_test(a):
+
+    if prefs.auto_lfm and lfm_username != "":
+        return True
+    return False
+
 if last_fm_enable:
-    x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon)
+    x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon, show_test=lastfm_menu_test)
 
 
 def discord_loop():
@@ -14014,24 +14138,27 @@ def toggle_scrobble_mark(mode=0):
         return prefs.scrobble_mark
     prefs.scrobble_mark ^= True
 
+
 def toggle_lfm_auto(mode=0):
     if mode == 1:
         return prefs.auto_lfm
     prefs.auto_lfm ^= True
+    if prefs.auto_lfm:
+        lastfm.hold = False
+    else:
+        lastfm.hold = True
 
-
-
-# def toggle_cache(mode=0):
-#     if mode == 1:
-#         return prefs.cache_gallery
-#     if not prefs.cache_gallery:
-#         prefs.cache_gallery = True
-#         direc = os.path.join(user_directory, 'cache')
-#         if not os.path.exists(direc):
-#             os.makedirs(direc)
-#     else:
-#         prefs.cache_gallery = False
-
+def toggle_lb(mode=0):
+    if mode == 1:
+        return lb.enable
+    if not lb.enable and lb.key is None:
+        show_message("You can't enable this if there's no token.", 'warning')
+        return
+    lb.enable ^= True
+    if lb.enable:
+        lb.hold = False
+    else:
+        lb.hold = True
 
 def toggle_ex_del(mode=0):
     if mode == 1:
@@ -14216,7 +14343,7 @@ class Over:
             ["Playlist", self.config_v],
             ["View", self.config_b],
             ["Transcode", self.codec_config],
-            ["Last.fm", self.last_fm_box],
+            ["Accounts", self.last_fm_box],
             ["Stats", self.stats],
             ["About", self.about]
         ]
@@ -14305,21 +14432,19 @@ class Over:
             fields.add(link_rect2)
 
             if coll_point(mouse_position, link_rect):
-                if gui.cursor_mode == 0 and not self.click:
-                    SDL_SetCursor(cursor_hand)
-                    gui.cursor_mode = 1
+                if not self.click:
+                    gui.cursor_want = 3
+
                 if self.click:
                     webbrowser.open(link_pa[2], new=2, autoraise=True)
 
             elif coll_point(mouse_position, link_rect2):
-                if gui.cursor_mode == 0 and not self.click:
-                    SDL_SetCursor(cursor_hand)
-                    gui.cursor_mode = 1
+                if not self.click:
+                    gui.cursor_want = 3
+
                 if self.click:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
-            elif gui.cursor_mode == 1:
-                gui.cursor_mode = 0
-                SDL_SetCursor(cursor_standard)
+
 
         y += 25 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections")
@@ -14397,13 +14522,14 @@ class Over:
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
-        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm account', colours.grey_blend_bg(180), 11)
+        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
+        self.toggle_square(x + 170 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
         if lfm_username != "":
-            line = "Current user: " + lfm_username
-            draw_text((x + 130 * gui.scale, y - 3 * gui.scale), line, colours.grey_blend_bg(70), 11)
+            line = "User: " + lfm_username
+            draw_text((x + 375 * gui.scale, y - 3 * gui.scale, 2), line, colours.grey_blend_bg(160), 213)
 
-        rect = [x + 20 * gui.scale, y + 40 * gui.scale, 210 * gui.scale, 16 * gui.scale]
-        rect2 = [x + 20 * gui.scale, y + 80 * gui.scale, 210 * gui.scale, 16 * gui.scale]
+        rect = [x + 20 * gui.scale, y + 30 * gui.scale, 210 * gui.scale, 16 * gui.scale]
+        rect2 = [x + 20 * gui.scale, y + 60 * gui.scale, 210 * gui.scale, 16 * gui.scale]
         if self.click:
             if coll_point(mouse_position, rect):
                 self.lastfm_input_box = 0
@@ -14419,20 +14545,22 @@ class Over:
             else:
                 self.lastfm_input_box = 0
 
-        draw.rect_r(rect, colours.alpha_grey(10), True)
-        draw.rect_r(rect2, colours.alpha_grey(10), True)
+
 
         bg = alpha_blend(colours.alpha_grey(10), colours.sys_background)
 
+
+        draw.rect_r(rect, colours.alpha_grey(10), True)
+        draw.rect_r(rect2, colours.alpha_grey(10), True)
         if last_fm_user_field.text == "":
-            draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(40), 11, bg=bg)
+            draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(60), 11, bg=bg)
         if last_fm_pass_field.text == "":
-            draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(40), 11, bg=bg)
+            draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(60), 11, bg=bg)
 
         if self.lastfm_input_box == 0:
-            last_fm_user_field.draw(x + 25 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg(180), active=True, font=12, width=210, click=self.click, selection_height=16)
+            last_fm_user_field.draw(x + 25 * gui.scale, y + 30 * gui.scale, colours.grey_blend_bg(180), active=True, font=13, width=210, click=self.click, selection_height=16)
         else:
-            last_fm_user_field.draw(x + 25 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg(180), False, font=12)
+            last_fm_user_field.draw(x + 25 * gui.scale, y + 30 * gui.scale, colours.grey_blend_bg(180), False, font=13)
 
         if self.lastfm_input_box == 1:
             last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), active=True, secret=True)
@@ -14442,40 +14570,69 @@ class Over:
         if key_return_press:
             self.update_lfm()
 
-        y += 120 * gui.scale
+
+        y += 95 * gui.scale
 
         self.button(x + 50 * gui.scale, y, "Update", self.update_lfm, 65 * gui.scale)
         self.button(x + 130 * gui.scale, y, "Clear", self.clear_lfm, 65 * gui.scale)
 
-        if not prefs.auto_lfm:
-            x = self.box_x + 50 * gui.scale + int(self.w / 2)
-            y += 85 * gui.scale
-            draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
+        # if not prefs.auto_lfm:
+        #     x = self.box_x + 50 * gui.scale + int(self.w / 2)
+        #     y += 85 * gui.scale
+        #     draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
-        x = self.box_x + self.item_x_offset + 300 * gui.scale
-        y = self.box_y + 35 * gui.scale
+        x = self.box_x + self.item_x_offset + 260 * gui.scale
+        y = self.box_y + 45 * gui.scale
 
-        self.toggle_square(x, y, toggle_lfm_auto, "Auto connect")
-        y += 26 * gui.scale
 
-        self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
+        # y += 26 * gui.scale
+        #
+        # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
-        y += 42 * gui.scale
         self.button(x, y, "Get user loves", lastfm.dl_love, width=110 * gui.scale)
 
         y += 26 * gui.scale
         self.button(x, y, "Clear local loves", self.clear_local_loves, width=110 * gui.scale)
 
+        y = self.box_y + 45 * gui.scale
+        x = self.box_x + self.item_x_offset + 385 * gui.scale
 
-
-        y += 36 * gui.scale
         self.button(x, y, "Get friend loves", self.get_friend_love, width=110 * gui.scale)
-        if lastfm.scanning_friends:
-            draw_text((x + 120 * gui.scale, y), "scanning...",
-                      colours.grey_blend_bg(111), 11)
+        # if lastfm.scanning_friends:
+        #     draw_text((x + 120 * gui.scale, y), "scanning...",
+        #               colours.grey_blend_bg(111), 11)
 
         y += 26 * gui.scale
         self.button(x, y, "Clear friend loves", lastfm.clear_friends_love, width=110 * gui.scale)
+
+
+        y = self.box_y + 130 * gui.scale
+        x = self.box_x + self.item_x_offset + 310 * gui.scale
+        self.toggle_square(x, y, toggle_scrobble_mark, "Show threshold marker")
+
+        x = self.box_x + 40 * gui.scale + self.item_x_offset
+        y = self.box_y + 170 * gui.scale
+        draw_text((x - 20 * gui.scale, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
+        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
+        y += 30 * gui.scale
+        self.button(x, y, "Paste Token", lb.paste_key)
+        self.button(x + 85 * gui.scale, y, "Clear", lb.clear_key)
+        if lb.key != None:
+            line = lb.key
+            draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(160), 212)
+
+        y += 20 * gui.scale
+        link_pa2 = draw_linked_text((x + 235 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
+        link_rect2 = [x + 235 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+        fields.add(link_rect2)
+
+        if coll_point(mouse_position, link_rect2):
+            if not self.click:
+                gui.cursor_want = 3
+
+            if self.click:
+                webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
 
     def clear_local_loves(self):
 
@@ -14674,14 +14831,11 @@ class Over:
         link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
         link_rect = [x, y, link_pa[1], 18 * gui.scale]
         if coll_point(mouse_position, link_rect):
-            if gui.cursor_mode == 0 and not self.click:
-                SDL_SetCursor(cursor_hand)
-                gui.cursor_mode = 1
+            if not self.click:
+                gui.cursor_want = 3
             if self.click:
                 webbrowser.open(link_pa[2], new=2, autoraise=True)
-        elif gui.cursor_mode == 1:
-            gui.cursor_mode = 0
-            SDL_SetCursor(cursor_standard)
+
         fields.add(link_rect)
 
         x = self.box_x + self.w - 115 * gui.scale
@@ -15727,7 +15881,7 @@ class BottomBarType1:
 
         # Scrobble marker
 
-        if prefs.scrobble_mark and lastfm.hold is False and lastfm.connected and pctl.playing_length > 0:
+        if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
@@ -15742,7 +15896,7 @@ class BottomBarType1:
                     l_x = self.scrob_stick
                 else:
                     self.scrob_stick = l_x
-                draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2, self.seek_bar_size[1]), [255, 0, 0, 70], True)
+                draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2 * gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80], True)
 
 
         # # MINI ALBUM ART
@@ -17896,6 +18050,8 @@ class ArtistInfoBox:
                 fields.add(rect)
                 self.mini_box.render(right, yy, item[1])
                 if coll_point(mouse_position, rect):
+                    if not input.mouse_click:
+                        gui.cursor_want = 3
                     if input.mouse_click:
                         webbrowser.open(item[0], new=2, autoraise=True)
                     gui.pl_update += 1
@@ -18210,7 +18366,7 @@ class ViewBox:
         self.lyrics_colour = ColourPulse(0.7)
         self.gallery2_colour = ColourPulse(0.65)
         self.col_colour = ColourPulse(0.14)
-        self.artist_colour = ColourPulse(0.07)
+        self.artist_colour = ColourPulse(0.8)
 
         self.on_colour = [255, 190, 50, 255]
         self.over_colour = [255, 190, 50, 255]
@@ -19091,8 +19247,8 @@ def save_state():
             prefs.monitor_downloads, # 76
             gui.artist_info_panel,   # 77
             prefs.extract_to_music,  # 78
-            None,
-            None,
+            lb.enable,
+            lb.key,
             None,
             None,
             None]
@@ -20362,7 +20518,7 @@ while running:
         # perf_timer.set()
 
         fields.clear()
-        gui.flag_special_cursor = False
+        gui.cursor_want = 0
 
         if GUI_Mode == 1 or GUI_Mode == 2:
 
@@ -20405,13 +20561,8 @@ while running:
                 if input.mouse_click:
                     side_drag = True
 
-                if gui.cursor_mode == 0 and not quick_drag:
-                    gui.cursor_mode = 2
-                    SDL_SetCursor(cursor_shift)
-
-            elif not side_drag and gui.cursor_mode == 2 and not mouse_down:
-                SDL_SetCursor(cursor_standard)
-                gui.cursor_mode = 0
+                if not quick_drag:
+                    gui.cursor_want = 1
 
             # side drag update
             if side_drag is True:
@@ -20941,13 +21092,8 @@ while running:
                         gui.set_label_hold = -1
                     # print(in_grip)
                     if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active:
-                        if gui.cursor_mode == 0 or True:
-                            gui.cursor_mode = 2
-                            SDL_SetCursor(cursor_shift)
-                    else:
-                        if gui.cursor_mode == 2 and mouse_position[1] < 50 and not mouse_down:
-                            SDL_SetCursor(cursor_standard)
-                            gui.cursor_mode = 0
+                        gui.cursor_want = 1
+
 
                 # heart field test
                 if gui.heart_fields:
@@ -21231,9 +21377,7 @@ while running:
             if track_box:
                 if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
                     track_box = False
-                    if gui.cursor_mode == 1:
-                        gui.cursor_mode = 0
-                        SDL_SetCursor(cursor_standard)
+
                     key_return_press = False
 
                 if gui.level_2_click:
@@ -21268,10 +21412,6 @@ while running:
 
                 if input.mouse_click and not rect_in([x, y, w, h]):
                     track_box = False
-                    if gui.cursor_mode == 1:
-                        gui.cursor_mode = 0
-                        SDL_SetCursor(cursor_standard)
-
 
                 else:
                     art_size = 115 * gui.scale
@@ -21533,30 +21673,16 @@ while running:
                         if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
                                 tc.comment, 12) < 335 * gui.scale:
 
-                            # line1, line2 = tc.comment.split("\n")
-                            #
-                            # if len(line2) > 0:
-                            #
-                            #     link_pa = draw_linked_text((x2, y1 + 13 * gui.scale), line1, colours.grey_blend_bg3(200), 12)
-                            #     link_rect2 = [x + 98 * gui.scale + link_pa[0], y1 + 13 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
-
                             link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
                             fields.add(link_rect)
                             if coll_point(mouse_position, link_rect):
-                                if gui.cursor_mode == 0 and not input.mouse_click:
-                                    SDL_SetCursor(cursor_hand)
-                                    gui.cursor_mode = 1
+                                if not input.mouse_click:
+                                    gui.cursor_want = 3
                                 if input.mouse_click:
-                                    # if gui.cursor_mode == 1:
-                                    #     gui.cursor_mode = 0
-                                    #     SDL_SetCursor(cursor_standard)
                                     webbrowser.open(link_pa[2], new=2, autoraise=True)
                                     track_box = True
-                            elif gui.cursor_mode == 1:
-                                gui.cursor_mode = 0
-                                SDL_SetCursor(cursor_standard)
 
                         elif comment_mode == 1:
                             draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, colours.grey_blend_bg3(220), 12)
@@ -22191,9 +22317,21 @@ while running:
 
         tool_tip.render()
 
-        if gui.cursor_mode == 4 and gui.flag_special_cursor is False:
-            gui.cursor_mode = 0
-            SDL_SetCursor(cursor_standard)
+
+        if gui.cursor_is != gui.cursor_want:
+
+            if not (gui.cursor_is == 1 and gui.cursor_want == 0 and mouse_down):
+
+                gui.cursor_is = gui.cursor_want
+
+                if gui.cursor_is == 0:
+                    SDL_SetCursor(cursor_standard)
+                elif gui.cursor_is == 1:
+                    SDL_SetCursor(cursor_shift)
+                elif gui.cursor_is == 2:
+                    SDL_SetCursor(cursor_text)
+                elif gui.cursor_is == 3:
+                    SDL_SetCursor(cursor_hand)
 
         if draw_border:
 
