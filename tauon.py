@@ -14152,7 +14152,7 @@ def toggle_lb(mode=0):
     if mode == 1:
         return lb.enable
     if not lb.enable and lb.key is None:
-        show_message("You can't enable this if there's no token.", 'warning')
+        show_message("Can't enable this if there's no token.", 'warning')
         return
     lb.enable ^= True
     if lb.enable:
@@ -14670,8 +14670,9 @@ class Over:
         lfm_hash = ""
         last_fm_pass_field.text = ""
         self.lastfm_input_box = 3
-        # if lastfm.connect() is False:
-        #     lfm_password = ""
+
+        if lastfm.connected:
+            show_message("You will need to restart app for new account to take effect.")
 
     def codec_config(self):
 
