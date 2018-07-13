@@ -28,7 +28,7 @@ For __Other Linux distributions__, you can try an experiemental **flatpak** pack
  
  1. If you have not already, make sure you have correctly installed and configured flatpak for your distro. See https://flatpak.org/setup/.
  
- 2. After downloading tauon.flatpak from lastest release in [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `flatpak install tauon.flatpak`. To uninstall run `flatpak uninstall com.github.taiko2k.tauonmb`
+ 2. After downloading tauon.flatpak from lastest release in [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `sudo flatpak install tauon.flatpak`. To uninstall run `sudo flatpak uninstall com.github.taiko2k.tauonmb`
  
      >**Note:** This standalone flatpak package won't auto update. You'll need to check back here for updates.
 
