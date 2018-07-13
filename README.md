@@ -3,7 +3,7 @@
 <img src="https://user-images.githubusercontent.com/17271572/41101848-6ccf4ed0-6ab9-11e8-8ce8-7f62060b39c9.png" align="left" height="50px" hspace="0px" vspace="20px">
 
 A desktop music player for playback of local audio files.
-Designed to be simple and streamlined while putting the user in control of their music library.
+Designed to be simple and streamlined while putting the user in control of their music collection.
 
 ### Screenshot
 
@@ -29,6 +29,8 @@ For __Other Linux distributions__, you can try an experiemental **flatpak** pack
  1. If you have not already, make sure you have correctly installed and configured flatpak for your distro. See https://flatpak.org/setup/.
  
  2. After downloading tauon.flatpak from lastest release in [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `flatpak install tauon.flatpak`. To uninstall run `flatpak uninstall com.github.taiko2k.tauonmb`
+ 
+     >**Note:** This standalone flatpak package won't auto update. You'll need to check back here for updates.
 
 ___
 
