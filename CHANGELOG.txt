@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+
+v3.0.2
+
+ - Fixed low quality thumbnail caching
+ - Fixed an issue where a drag and drop action could trigger on track load
+
 v3.0.1
 
  - Simplified last.fm scrobble settings
