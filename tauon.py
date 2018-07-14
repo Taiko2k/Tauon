@@ -1539,39 +1539,6 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'tag-editor-name=' in p:
                 result = p.split('=')[1]
                 prefs.tag_editor_name = result
-            # if 'font-regular=' in p:
-            #     result = p.split('=')[1]
-            #     main_font = result
-            # if 'font-fallback=' in p:
-            #     result = p.split('=')[1]
-            #     alt_font = result
-            # if 'font-bold=' in p:
-            #     result = p.split('=')[1]
-            #     gui_font = result
-            # if 'font-extra=' in p:
-            #     result = p.split('=')[1]
-            #     light_font = result
-
-            # if 'font-height-offset=' in p:
-            #     result = p.split('=')[1]
-            #     try:
-            #         gui.universal_y_text_offset = int(result)
-            #     except:
-            #         print("Expected number")
-
-            # if 'linux-font-star-offset=' in p and system == 'linux':
-            #     result = p.split('=')[1]
-            #     try:
-            #         gui.star_text_y_offset = int(result)
-            #     except:
-            #         print("Expected number")
-
-            # if 'windows-font-star-offset=' in p and system == 'windows':
-            #     result = p.split('=')[1]
-            #     try:
-            #         gui.star_text_y_offset = int(result)
-            #     except:
-            #         print("Expected number")
 
             if 'scroll-gallery-wheel=' in p:
                 result = p.split('=')[1]
@@ -1589,11 +1556,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 if result.isdigit() and 50 < int(result) < 3000:
                     prefs.cross_fade_time = int(result)
-            # if 'scrobble-mark=True' in p:
-            #     scrobble_mark = True
 
             if 'output-dir=' in p:
-
                 prefs.encoder_output = p.split('=')[1]
                 prefs.encoder_output = prefs.encoder_output.replace('\\', '/')
                 if prefs.encoder_output[-1] != "/":
@@ -1658,10 +1622,6 @@ except:
 
 if prefs.prefer_side is False:
     gui.rsp = False
-
-# get_len = 0
-# get_len_filepath = ""
-
 
 
 def get_global_mouse():
@@ -6210,7 +6170,7 @@ class GallClass:
                 im.save(g, 'BMP')
                 if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                     # print("no old found")
-                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG')
+                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=85)
 
                 g.seek(0)
 
@@ -6414,7 +6374,7 @@ def clear_img_cache(delete_disk=True):
     gall_ren.gall = {}
 
     if prefs.cache_gallery and delete_disk:
-        direc = os.path.join(user_directory, 'cache')
+        direc = os.path.join(cache_directory)
         if os.path.isdir(direc):
             shutil.rmtree(direc)
         os.makedirs(direc)
@@ -11756,11 +11716,6 @@ def switch_playlist(number, cycle=False):
         reload_albums(True)
         goto_album(playlist_position)
 
-    # if gui.combo_mode:
-    #     reload_albums()
-        # combo_pl_render.pl_pos_px = 0
-        # combo_pl_render.prep(True)
-
 
 def view_tracks():
     # if gui.show_playlist is False:
@@ -11887,17 +11842,6 @@ def toggle_playlist_break():
     pctl.multi_playlist[pctl.playlist_active][4] ^= 1
     gui.pl_update = 1
 
-# view_menu.add("Return to Standard", view_standard, standard_view_deco)
-# view_menu.add("Toggle Library Mode", toggle_library_mode, library_deco)
-# view_menu.add("Toggle Playlist Breaks", toggle_playlist_break, break_deco, hint="F1")
-# view_menu.br()
-# view_menu.add("Tracks", view_tracks, hint="MB5")
-# view_menu.add("Tracks + Side Panel", view_standard_meta)
-# #view_menu.add("Tracks + Full Art", view_standard_full)
-# view_menu.add("Tracks + Gallery", force_album_view, hint="MB4")
-# view_menu.add("Gallery Only", gallery_only_view)
-# view_menu.add("Art + Tracks", toggle_combo_view)
-# view_menu.add("Lyrics", switch_showcase)
 # ---------------------------------------------------------------------------------------
 
 core_use = 0
@@ -14357,7 +14301,7 @@ class Over:
 
             #draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
             # draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
-            draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [170, 170, 170, 255], 213)
+            draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [220, 220, 220, 255], 213)
 
             y = self.box_y + 70 * gui.scale
             x = self.box_x + 130 * gui.scale
@@ -14720,9 +14664,9 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        draw_text((x, y), "Gallery art size", colours.grey(180), 11)
+        draw_text((x, y), "Gallery art size", colours.grey(210), 11)
 
-        x += 110 * gui.scale
+        x += 95 * gui.scale
 
 
         album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, img_slide_update_gall)
@@ -15049,7 +14993,7 @@ class Over:
         x += 33 * gui.scale
 
         draw.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
-        draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(180), 11)
+        draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(200), 11)
 
         x += 58 * gui.scale
 
@@ -16819,6 +16763,8 @@ class StandardPlaylist:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
                             click_time -= 1.5
                             pctl.jump(default_playlist[p_track], p_track)
+                            line_hit = False
+                            input.mouse_click = False
 
                             if album_mode:
                                 goto_album(pctl.playlist_playing)
@@ -16933,6 +16879,7 @@ class StandardPlaylist:
                 quick_drag = False
                 mouse_down = False
                 mouse_up = False
+                line_hit = False
 
                 if album_mode:
                     goto_album(pctl.playlist_playing)
@@ -16961,15 +16908,6 @@ class StandardPlaylist:
             if middle_click and line_hit:
                 pctl.force_queue.append((default_playlist[p_track],
                                          p_track, pctl.playlist_active))
-
-            # Highlight green if track in queue
-            # for item in pctl.force_queue:
-            #     if default_playlist[p_track] == item[0] and item[1] == p_track:
-            #         # draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
-            #         #           (gui.playlist_width, gui.playlist_row_height - 1), [130, 220, 130, 30],
-            #         #           True)
-            #         draw.rect_r(track_box, [130, 220, 130, 30], True)
-            #         gui.win_fore = alpha_blend([130, 220, 130, 30], gui.win_fore)
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -19856,6 +19794,12 @@ while running:
             mouse_up = True
             quick_drag = False
 
+    # print(window_size)
+    # if window_size[0] / window_size[1] == 16 / 9:
+    #     print('OK')
+    # if window_size[0] / window_size[1] > 16 / 9:
+    #     print("A")
+
     if k_input:
 
         if input.mouse_click or right_click:
@@ -19883,40 +19827,7 @@ while running:
                 SDL_SetWindowBordered(t_window, SDL_FALSE)
 
         if key_F8:
-            show_message("This function has been replaced")
-            #
-            # found = False
-            #
-            # for downloads in download_directories:
-            #
-            #     for item in os.listdir(downloads):
-            #
-            #         path = os.path.join(downloads, item)
-            #         # print(path)
-            #         min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
-            #         if os.path.isfile(path) and item[-3:] in Archive_Formats:
-            #             if os.path.getsize(path) < 0.9e+9:
-            #                 load_order = LoadClass()
-            #                 load_order.target = path
-            #                 load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-            #                 load_orders.append(copy.deepcopy(load_order))
-            #                 found = True
-            #             else:
-            #                 show_message("One or more archives seemed a bit too large")
-            #
-            #         if min_age < 120 and os.path.isdir(path) and path not in quick_import_done:
-            #             if os.path.getsize(path) < 1.1e+9:
-            #                 load_order = LoadClass()
-            #                 load_order.target = path
-            #                 load_order.playlist = pctl.multi_playlist[pctl.playlist_active][6]
-            #                 load_orders.append(copy.deepcopy(load_order))
-            #                 quick_import_done.append(path)
-            #                 found = True
-            #             else:
-            #                 show_message("One or more folders seemed a bit too large")
-            #
-            # if not found:
-            #     show_message("No recent archives or folders found")
+            show_message("This doesn't do anything")
 
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
@@ -21782,7 +21693,7 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(195), 213)
+                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(210), 213)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(150), width=300)
                 NRN = rename_files.text
