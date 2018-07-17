@@ -51,7 +51,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.0.1"
+t_version = "v3.0.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -141,36 +141,6 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 if os.path.isfile('.gitignore') or os.path.isfile('multiinstance'):
     print("Dev mode, ignoring single instancing")
 else:
-    # if system == 'windows':
-    #     from win32event import CreateMutex
-    #     from win32api import CloseHandle, GetLastError
-    #     from winerror import ERROR_ALREADY_EXISTS
-    #
-    #
-    #     class singleinstance:
-    #         """ Limits application to single instance """
-    #
-    #         def __init__(self):
-    #             self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
-    #             self.mutex = CreateMutex(None, False, self.mutexname)
-    #             self.lasterror = GetLastError()
-    #
-    #         def aleradyrunning(self):
-    #             return (self.lasterror == ERROR_ALREADY_EXISTS)
-    #
-    #         def __del__(self):
-    #             if self.mutex:
-    #                 CloseHandle(self.mutex)
-    #
-    #     lock = singleinstance()
-    #
-    #     if lock.aleradyrunning():
-    #         print("Program is already running")
-    #         pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-    #         sys.exit()
-    #
-    # elif system == 'linux':
-
     import fcntl
     pid_file = os.path.join(user_directory, 'program.pid')
     fp = open(pid_file, 'w')
@@ -236,32 +206,35 @@ from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
 
-def _(message): return message
+locale.setlocale(locale.LC_ALL, "")
+#locale.setlocale(locale.LC_ALL, ("ja_JP", "UTF-8"))
 
-# import gettext
-# lang1 = gettext.translation('tauon', os.path.join(install_directory, "locale"), ["ja"])
-# lang1.install()
+lc = locale.getlocale()
+if 'en' not in lc[0]:
+    try:
 
-#locale.setlocale(locale.LC_ALL, "")  # Fixes some formatting issue with datetime stuff
+        print("Locale detected: ", end="")
+        print(lc)
 
-# Platform specific imports
-# if system == 'windows':
-#     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
-#     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
-#     import win32con, win32api, win32gui, win32ui, atexit  # win32clipboard, pythoncom
-# elif system == 'linux':
+        import gettext
+        lang = gettext.translation('tauon', os.path.join(install_directory, "locale"), lc)
+        lang.install()
+
+    except:
+        def _(message):
+            return message
+else:
+    def _(message):
+        return message
+
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
 import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify
 
-
-
-
 Notify.init("Hello World")
 g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                 "Transcoding has finished.")
-
 
 # Other imports
 from sdl2 import *
@@ -5280,10 +5253,8 @@ def coll_point(l, r):
     # rect point collision detection
     return r[0] <= l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
-
-def rect_in(rect):
-    return coll_point(mouse_position, rect)
-
+def coll(r):
+    return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
 class Drawing:
     def __init__(self):
@@ -5360,7 +5331,7 @@ class Drawing:
         if press is None:
             press = input.mouse_click
 
-        if rect_in(rect):
+        if coll(rect):
             draw.rect_r(rect, fg, True)
             draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, fore_text, font,
                       bg=fg)
@@ -5888,7 +5859,7 @@ class TextBox:
             rect = (x - 3, y - 2, width - 3, 21)
 
             # Activate Menu
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 if right_click or level_2_right_click:
                     field_menu.activate(self)
 
@@ -5942,7 +5913,7 @@ class TextBox:
 
 
             # draw.rect_r(rect, [255, 50, 50, 80], True)
-            if coll_point(mouse_position, rect) and not field_menu.active:
+            if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
 
@@ -5969,7 +5940,7 @@ class TextBox:
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
 
-            if rect_in((x - 15, y, width + 16, 19)):
+            if coll((x - 15, y, width + 16, 19)):
                 if click:
                     pre = 0
                     post = 0
@@ -6169,8 +6140,7 @@ class GallClass:
 
                 im.save(g, 'BMP')
                 if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                    # print("no old found")
-                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=85)
+                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
 
                 g.seek(0)
 
@@ -7982,7 +7952,7 @@ def extract_image_deco():
     return [line_colour, colours.menu_background, None]
 
 
-picture_menu.add("Open Image", open_image, open_image_deco)
+picture_menu.add(_("Open Image"), open_image, open_image_deco)
 
 
 def cycle_image_deco():
@@ -8004,12 +7974,12 @@ def cycle_offset():
 def cycle_offset_b():
     album_art_gen.cycle_offset_reverse(pctl.track_queue[pctl.queue_step])
 
+# Next and previous pictures
+picture_menu.add(_("Next"), cycle_offset, cycle_image_deco)
+picture_menu.add(_("Previous"), cycle_offset_b, cycle_image_deco)
 
-picture_menu.add("Next", cycle_offset, cycle_image_deco)
-picture_menu.add("Previous", cycle_offset_b, cycle_image_deco)
-
-
-picture_menu.add('Extract Image', save_embed_img, extract_image_deco)
+# Extract embedded artwork from file
+picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco)
 
 
 def remove_embed_deco():
@@ -8064,8 +8034,8 @@ def remove_embed_picture(index):
         pctl.revert()
     clear_img_cache()
 
-
-picture_menu.add('Folder Purge Embedded', remove_embed_picture, remove_embed_deco, pass_ref=True)
+# Delete all embedded album artwork from all files in the same folder as this track
+picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
 
 def toggle_gimage(mode=0):
     if mode == 1:
@@ -8087,7 +8057,7 @@ def ser_gimage(index):
     line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
     webbrowser.open(line, new=2, autoraise=True)
 
-picture_menu.add('Search Google for Image', ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+picture_menu.add(_('Search Google for Image'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
 
 
 def append_here():
@@ -8105,9 +8075,9 @@ def paste_deco():
 
     if gui.lightning_copy:
         if key_shift_down:
-            line = "Move to This Library"
-        else:
-            line = "Copy to This Library"
+            line = "Phycially Move Folder Here"
+        # else:
+        #     line = "Copy to This Library"
 
     return [line_colour, colours.menu_background, line]
 
@@ -8115,7 +8085,7 @@ def copy_deco():
     line = "Copy"
 
     if key_shift_down:
-        line = "Copy Folder From Library"
+        line = "Copy" #Folder From Library"
     else:
         line = "Copy"
 
@@ -8184,7 +8154,7 @@ def rename_playlist(index):
     rename_text_area.set_text(pctl.multi_playlist[index][0])
 
 
-tab_menu.add('Rename', rename_playlist, pass_ref=True, hint="Ctrl+R")
+tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
 def export_xspf(pl):
@@ -8309,7 +8279,8 @@ def get_folder_tracks_local(pl_in):
     return selection
 
 
-tab_menu.add('Clear', clear_playlist, pass_ref=True)
+# Clear playlist
+tab_menu.add(_('Clear'), clear_playlist, pass_ref=True)
 
 
 def move_playlist(source, dest):
@@ -8612,13 +8583,13 @@ def pl_toggle_playlist_break(ref):
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
-tab_menu.add('Delete', delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
+tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
 
 tab_menu.br()
 
-tab_menu.add_sub("Generate / Sort...", 133)
-tab_menu.add("Sort by Filepath", standard_sort, pass_ref=True)
-tab_menu.add("Sort Year per Artist", year_sort, pass_ref=True)
+tab_menu.add_sub(_("Sort…"), 133)
+tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
+tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 # tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
@@ -8626,21 +8597,21 @@ tab_menu.add("Sort Year per Artist", year_sort, pass_ref=True)
 # tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 #tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
-tab_menu.add('Paste', s_append, pass_ref=True)
-tab_menu.add("Append Playing", append_current_playing, pass_ref=True)
+tab_menu.add(_('Paste'), s_append, pass_ref=True)
+tab_menu.add(_("Append Playing"), append_current_playing, pass_ref=True)
 tab_menu.br()
 # tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
-tab_menu.add_sub("Misc...", 145)
+tab_menu.add_sub(_("Misc…"), 145)
 
 
-tab_menu.add_to_sub("Export Playlist Stats", 1, export_stats, pass_ref=True)
-tab_menu.add_to_sub('Transcode All', 1, convert_playlist, pass_ref=True)
-tab_menu.add_to_sub('Rescan Tags', 1, rescan_tags, pass_ref=True)
-tab_menu.add_to_sub('Re-Import Last Folder', 1, re_import, pass_ref=True)
-tab_menu.add_to_sub('Export XSPF', 1, export_xspf, pass_ref=True)
-tab_menu.add_to_sub("Toggle Breaks", 1, pl_toggle_playlist_break, pass_ref=True)
+tab_menu.add_to_sub(_("Export Playlist Stats"), 1, export_stats, pass_ref=True)
+tab_menu.add_to_sub(_('Transcode All'), 1, convert_playlist, pass_ref=True)
+tab_menu.add_to_sub(_('Rescan Tags'), 1, rescan_tags, pass_ref=True)
+tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
+tab_menu.add_to_sub(_('Export XSPF'), 1, export_xspf, pass_ref=True)
+tab_menu.add_to_sub(_("Toggle Breaks"), 1, pl_toggle_playlist_break, pass_ref=True)
 
 
 
@@ -8703,7 +8674,7 @@ def gen_top_100(index):
     #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
 
 
-tab_menu.add_to_sub("Top Played Tracks", 0, gen_top_100, pass_ref=True)
+tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
 
 
 
@@ -8758,7 +8729,7 @@ def gen_folder_top(pl, get_sets=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Top Played Albums", 0, gen_folder_top, pass_ref=True)
+tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -8788,7 +8759,7 @@ def gen_last_modified(index):
 
 
 
-tab_menu.add_to_sub("File modified", 0, gen_last_modified, pass_ref=True)
+tab_menu.add_to_sub(_("File modified"), 0, gen_last_modified, pass_ref=True)
 
 def gen_love(pl):
     playlist = []
@@ -8880,7 +8851,7 @@ def gen_sort_len(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Duration", 0, gen_sort_len, pass_ref=True)
+tab_menu.add_to_sub(_("Duration"), 0, gen_sort_len, pass_ref=True)
 
 
 def gen_folder_duration(pl, get_sets=False):
@@ -8923,7 +8894,7 @@ def gen_folder_duration(pl, get_sets=False):
                                       hide_title=0))
 
 
-tab_menu.add_to_sub("Album Duration", 0, gen_folder_duration, pass_ref=True)
+tab_menu.add_to_sub(_("Album Duration"), 0, gen_folder_duration, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
@@ -8974,14 +8945,14 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Year → Old–New", 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub(_("Year → Old–New"), 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub("Year → New–Old", 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub(_("Year → New–Old"), 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -8999,7 +8970,7 @@ def gen_500_random(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub("Shuffled Tracks", 0, gen_500_random, pass_ref=True)
+tab_menu.add_to_sub(_("Shuffled Tracks"), 0, gen_500_random, pass_ref=True)
 
 
 def gen_folder_shuffle(index):
@@ -9026,7 +8997,7 @@ def gen_folder_shuffle(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub("Shuffled Folders", 0, gen_folder_shuffle, pass_ref=True)
+tab_menu.add_to_sub(_("Shuffled Folders"), 0, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -9051,7 +9022,7 @@ def gen_best_random(index):
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=1))
 
-tab_menu.add_to_sub("Lucky Random", 0, gen_best_random, pass_ref=True)
+tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 
 
 def gen_reverse(index):
@@ -9065,7 +9036,7 @@ def gen_reverse(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
-tab_menu.add_to_sub("Inverted", 0, gen_reverse, pass_ref=True)
+tab_menu.add_to_sub(_("Invert"), 0, gen_reverse, pass_ref=True)
 
 
 def gen_dupe(index):
@@ -9083,7 +9054,7 @@ def gen_dupe(index):
                                       hide_title=pctl.multi_playlist[index][4],
                                       selected=pctl.multi_playlist[index][5]))
 
-tab_menu.add_to_sub("Duplicate", 0, gen_dupe, pass_ref=True)
+tab_menu.add_to_sub(_("Duplicate"), 0, gen_dupe, pass_ref=True)
 
 
 def gen_sort_path(index):
@@ -9137,9 +9108,9 @@ def gen_sort_album(index):
 
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
-tab_menu.add_to_sub("Has Love", 0, gen_love, pass_ref=True)
-tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
-tab_menu.add_to_sub("Has Lyrics", 0, gen_lyrics, pass_ref=True)
+tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
+#tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 
 
 
@@ -9357,15 +9328,6 @@ def temp_copy_folder(ref):
     cargo = []
     transfer(ref, args=[1, 2])
 
-
-# Create combo album menu
-combo_menu = Menu(130)
-combo_menu.add('Open Folder', open_folder, pass_ref=True)
-
-combo_menu.add("Copy Folder", temp_copy_folder, pass_ref=True)
-combo_menu.add("Remove Folder", remove_folder, pass_ref=True)
-
-
 def activate_track_box(index):
     global track_box
     global r_menu_index
@@ -9375,43 +9337,12 @@ def activate_track_box(index):
 def menu_paste(position):
     paste(None, position)
 
-
-# if system == 'windows':
-#     class DROPFILES(ctypes.Structure):
-#         _fields_ = (('pFiles', ctypes.wintypes.DWORD),
-#                     ('pt', ctypes.wintypes.POINT),
-#                     ('fNC', ctypes.wintypes.BOOL),
-#                     ('fWide', ctypes.wintypes.BOOL))
-#
-#
-#     def clip_files(file_list):
-#         offset = ctypes.sizeof(DROPFILES)
-#         length = sum(len(p) + 1 for p in file_list) + 1
-#         size = offset + length * ctypes.sizeof(ctypes.c_wchar)
-#         buf = (ctypes.c_char * size)()
-#         df = DROPFILES.from_buffer(buf)
-#         df.pFiles, df.fWide = offset, True
-#         for path in file_list:
-#             array_t = ctypes.c_wchar * (len(path) + 1)
-#             path_buf = array_t.from_buffer(buf, offset)
-#             path_buf.value = path
-#             offset += ctypes.sizeof(path_buf)
-#         stg = pythoncom.STGMEDIUM()
-#         stg.set(pythoncom.TYMED_HGLOBAL, buf)
-#         win32clipboard.OpenClipboard()
-#         win32clipboard.EmptyClipboard()
-#         try:
-#             win32clipboard.SetClipboardData(win32clipboard.CF_HDROP,
-#                                             stg.data)
-#         finally:
-#             win32clipboard.CloseClipboard()
-
 def s_copy():
 
     # Copy tracks to internal clipboard
-    gui.lightning_copy = False
-    if key_shift_down:
-        gui.lightning_copy = True
+    # gui.lightning_copy = False
+    # if key_shift_down:
+    gui.lightning_copy = True
 
     global cargo
     cargo = []
@@ -9497,11 +9428,16 @@ def directory_size(path):
 def lightning_paste():
 
     move = True
-    if not key_shift_down:
-        move = False
+    # if not key_shift_down:
+    #     move = False
 
     move_track = pctl.g(cargo[0])
     move_path = move_track.parent_folder_path
+
+    for item in cargo:
+        if move_path != pctl.g(item).parent_folder_path:
+            show_message("More than one folder is in the clipboard", 'info', 'This function can only move one folder at a time.')
+            return
 
     match_track = pctl.g(default_playlist[shift_selection[0]])
     match_path = match_track.parent_folder_path
@@ -9564,10 +9500,8 @@ def lightning_paste():
                 artist = artist.replace(c, '')
 
             if artist == "":
-                show_message("The track needs to have an artist name for this.")
+                show_message("The track needs to have an artist name.")
                 return
-
-
 
             artist_folder = os.path.join(upper, artist)
 
@@ -9592,8 +9526,6 @@ def lightning_paste():
 
             load_order.playlist_position = insert
 
-
-
             move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
 
             break
@@ -9601,15 +9533,20 @@ def lightning_paste():
         show_message("Could not find a folder with the artist's name to match level at.")
         return
 
+    # for file in os.listdir(artist_folder):
+    #
+
     if album_mode:
         prep_gal()
         reload_albums()
 
     cargo.clear()
+    gui.lightning_copy = False
 
 def paste(playlist=None, position=None):
 
-    if gui.lightning_copy:
+    if key_shift_down and gui.lightning_copy:
+
         try:
             lightning_paste()
         except OSError as e:
@@ -9772,8 +9709,8 @@ def show_in_gal(track):
 # Create track context menu
 track_menu = Menu(195, show_icons=True) #175
 
-track_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
-track_menu.add('Track Info...', activate_track_box, pass_ref=True, icon=info_icon)
+track_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
+track_menu.add(_('Track Info…'), activate_track_box, pass_ref=True, icon=info_icon)
 
 
 def last_fm_test(ignore):
@@ -9803,9 +9740,9 @@ def love_decox():
     global r_menu_index
 
     if love(False, r_menu_index):
-        return [colours.menu_text, colours.menu_background, "Un-Love Track"]
+        return [colours.menu_text, colours.menu_background, _("Un-Love Track")]
     else:
-        return [colours.menu_text, colours.menu_background, "Love Track"]
+        return [colours.menu_text, colours.menu_background, _("Love Track")]
 
 
 def love_index():
@@ -9816,17 +9753,18 @@ def love_index():
     shoot_love.daemon = True
     shoot_love.start()
 
+# Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
-track_menu.add('Show  in Gallery', show_in_gal, pass_ref=True, show_test=test_show)
+track_menu.add(_('Show  in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
 
-track_menu.add_sub("Meta...", 150)
+track_menu.add_sub(_("Meta…"), 150)
 
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
 #track_menu.add('Remove', del_selected)
-track_menu.add('Copy', s_copy, copy_deco, pass_ref=False)
-track_menu.add('Paste', menu_paste, paste_deco, pass_ref=True)
+track_menu.add(_('Copy'), s_copy, copy_deco, pass_ref=False)
+track_menu.add(_('Paste'), menu_paste, paste_deco, pass_ref=True)
 track_menu.br()
 
 #track_menu.add_sub("Shift...", 135)
@@ -9844,7 +9782,7 @@ def rename_tracks(index):
     input_text = ""
 
 
-track_menu.add_to_sub("Rename Tracks...", 0, rename_tracks, pass_ref=True)
+track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True)
 
 
 def delete_folder(index):
@@ -10008,7 +9946,7 @@ def rename_folders(index):
     quick_drag = False
     playlist_hold = False
 
-track_menu.add_to_sub("Modify Folder...", 0, rename_folders, pass_ref=True)
+track_menu.add_to_sub(_("Modify Folder…"), 0, rename_folders, pass_ref=True)
 
 
 def move_folder_up(index, do=False):
@@ -10255,7 +10193,7 @@ def launch_editor_selection(index):
     mini_t.start()
 
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
-track_menu.add_to_sub("Reload Metadata", 0, reload_metadata, pass_ref=True)
+track_menu.add_to_sub(_("Reload Metadata"), 0, reload_metadata, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
@@ -10365,9 +10303,7 @@ def intel_moji(index):
         show_message("Autodetect failed")
 
 
-track_menu.add_to_sub("Fix Mojibake", 0, intel_moji, pass_ref=True)
-#track_menu.add_to_sub("Fix Mojibake Manual...", 0, activate_encoding_box, pass_ref=True)
-
+track_menu.add_to_sub(_("Fix Mojibake"), 0, intel_moji, pass_ref=True)
 
 # class Samples:
 #     def __init__(self):
@@ -10450,7 +10386,7 @@ def clip_title(index):
 selection_menu = Menu(190, show_icons=False)
 folder_menu = Menu(190, show_icons=True)
 
-folder_menu.add('Open Folder', open_folder, pass_ref=True, icon=folder_icon)
+folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 if gui.scale == 2:
     mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
@@ -10461,9 +10397,9 @@ mod_folder_icon.colour = [229, 98, 98, 255]
 
 
 
-folder_menu.add("Modify Folder...", rename_folders, pass_ref=True, icon=mod_folder_icon)
+folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
-folder_menu.add("Rename Tracks...", rename_tracks, pass_ref=True)
+folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True)
 
 if prefs.tag_editor_name != "":
 
@@ -10502,28 +10438,30 @@ else:
 
 transcode_icon.colour = [239, 74, 157, 255]
 
-folder_menu.add('Reload Metadata', reload_metadata_selection)
-folder_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+folder_menu.add(_('Reload Metadata'), reload_metadata_selection)
+folder_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
-folder_menu.add('Copy Album Title', clip_title, pass_ref=True)
-#selection_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
-folder_menu.add('Copy Artist', clip_ar, pass_ref=True)
-#selection_menu.br()
-selection_menu.add('Reload Metadata', reload_metadata_selection)
+# Copy album title text to clipboard
+folder_menu.add(_('Copy "Album Title"'), clip_title, pass_ref=True)
+# Copy artist name text to clipboard
+folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
+
+selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
 
 selection_menu.br()
 folder_menu.br()
-#selection_menu.add('Copy Selection', sel_to_car)
-folder_menu.add('Copy Folder From Library', lightning_copy)
 
-selection_menu.add('Copy', s_copy)
-selection_menu.add('Cut', s_cut)
-selection_menu.add('Remove', del_selected)
+# It's complicated
+# folder_menu.add(_('Copy Folder From Library'), lightning_copy)
 
-folder_menu.add('Copy', s_copy)
-folder_menu.add('Cut', s_cut)
-folder_menu.add('Remove', del_selected)
+selection_menu.add(_('Copy'), s_copy)
+selection_menu.add(_('Cut'), s_cut)
+selection_menu.add(_('Remove'), del_selected)
+
+folder_menu.add(_('Copy'), s_copy)
+folder_menu.add(_('Cut'), s_cut)
+folder_menu.add(_('Remove'), del_selected)
 
 def toggle_rym(mode=0):
     if mode == 1:
@@ -10582,13 +10520,9 @@ def ser_wiki(index):
     webbrowser.open(line, new=2, autoraise=True)
 
 
+track_menu.add(_('Search Artist on Wikipedia'), ser_wiki, pass_ref=True, show_test=toggle_wiki)
 
-
-#track_menu.add('Search Images on Google', ser_gimage, pass_ref=True, show_test=toggle_gimage)
-
-track_menu.add('Search Artist on Wikipedia', ser_wiki, pass_ref=True, show_test=toggle_wiki)
-
-track_menu.add('Search Track on Genius', ser_gen, pass_ref=True, show_test=toggle_gen)
+track_menu.add(_('Search Track on Genius'), ser_gen, pass_ref=True, show_test=toggle_gen)
 
 if gui.scale == 2:
     son_icon = MenuIcon(LoadImageAsset('/gui/2x/sonemic-g.png'))
@@ -10597,11 +10531,7 @@ else:
     son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
     son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
 son_icon.xoff = 1
-track_menu.add('Search Artist on Sonemic', ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
-
-
-# track_menu.add('Copy "Artist - Album"', clip_ar_al, pass_ref=True)
-
+track_menu.add(_('Search Artist on Sonemic'), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
 
 def clip_ar_tr(index):
@@ -10610,9 +10540,10 @@ def clip_ar_tr(index):
 
     SDL_SetClipboardText(line.encode('utf-8'))
 
-
-track_menu.add('Copy "Artist - Album"', clip_aar_al, pass_ref=True)
-track_menu.add('Copy "Artist - Track"', clip_ar_tr, pass_ref=True)
+# Copy metadata to clipboard
+track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
+# Copy metadata to clipboard
+track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
 
 def queue_deco():
@@ -10651,10 +10582,10 @@ if prefs.enable_transcode or default_player == 1:
     track_menu.br()
 
 
-track_menu.add('Transcode Folder', convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+track_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
 if default_player == 1:
-    track_menu.add('Broadcast This', broadcast_select_track, broadcast_feature_deco, pass_ref=True)
+    track_menu.add(_('Broadcast This'), broadcast_select_track, broadcast_feature_deco, pass_ref=True)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -10675,15 +10606,18 @@ def field_paste(text_field):
 def field_clear(text_field):
     text_field.clear()
 
-field_menu.add("Copy", field_copy, pass_ref=True)
-field_menu.add("Paste", field_paste, pass_ref=True)
-field_menu.add("Clear", field_clear, pass_ref=True)
+# Copy text
+field_menu.add(_("Copy"), field_copy, pass_ref=True)
+# Paste text
+field_menu.add(_("Paste"), field_paste, pass_ref=True)
+# Clear text
+field_menu.add(_("Clear"), field_clear, pass_ref=True)
 
 
 def vis_off():
     gui.vis = 0
     gui.turbo = False
-vis_menu.add("Off", vis_off)
+vis_menu.add(_("Off"), vis_off)
 
 def level_on():
     if gui.vis == 1 and gui.turbo is True:
@@ -10693,37 +10627,19 @@ def level_on():
 
     gui.vis = 1
     gui.turbo = True
-vis_menu.add("Level Meter", level_on)
+vis_menu.add(_("Level Meter"), level_on)
 
 def spec_on():
     gui.vis = 2
     gui.turbo = True
-vis_menu.add("Spectrum Visualizer", spec_on)
+vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 def spec2_def():
     gui.vis = 3
     gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
-vis_menu.add("Spectrogram", spec2_def)
-
-# def spec2_1():
-#     gui.vis = 3
-#     prefs.spec2_colour_setting = 'horizon'
-#     gui.update_layout()
-# vis_menu.add("Spectrogram: Horizon", spec2_1)
-#
-# def spec2_2():
-#     gui.vis = 3
-#     prefs.spec2_colour_setting = 'plasma'
-#     gui.update_layout()
-# vis_menu.add("Spectrogram: Plasma", spec2_2)
-#
-# def spec2_3():
-#     gui.vis = 3
-#     prefs.spec2_colour_setting = 'grey'
-#     gui.update_layout()
-# vis_menu.add("Spectrogram: Grey", spec2_3)
+vis_menu.add(_("Spectrogram"), spec2_def)
 
 def sa_remove(h):
     if len(gui.pl_st) > 1:
@@ -11120,7 +11036,7 @@ extra_tab_menu = Menu(130, show_icons=True)
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 if default_player == 1:
-    x_menu.add("Open Stream…", activate_radio_box, bass_features_deco)
+    x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
 x_menu.br()
 
 if gui.scale == 2:
@@ -11130,8 +11046,8 @@ else:
 settings_icon.xoff = 0
 settings_icon.yoff = 2
 settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
-x_menu.add("Settings", activate_info_box, icon=settings_icon)
-x_menu.add_sub("Database…", 190)
+x_menu.add(_("Settings"), activate_info_box, icon=settings_icon)
+x_menu.add_sub(_("Database…"), 190)
 x_menu.br()
 
 # x_menu.add('Toggle Side panel', toggle_combo_view, combo_deco)
@@ -11266,11 +11182,11 @@ def scan_rym():
             show_message("Sorry, something went wrong there", 'warning')
 
 
-x_menu.add_to_sub("Export as CSV", 0, export_database)
+x_menu.add_to_sub(_("Export as CSV"), 0, export_database)
 # if prefs.show_rym:
 #     x_menu.add_to_sub("Scan Playlist with RYM DB", 0, scan_rym)
-x_menu.add_to_sub("Play History to Playlist", 0, q_to_playlist)
-x_menu.add_to_sub("Reset Image Cache", 0, clear_img_cache)
+x_menu.add_to_sub(_("Play History to Playlist"), 0, q_to_playlist)
+x_menu.add_to_sub(_("Reset Image Cache"), 0, clear_img_cache)
 
 
 def reset_missing_flags():
@@ -11286,10 +11202,10 @@ def clean_db():
     cm_clean_db = True
 
 
-x_menu.add_to_sub("Find and Remove Dead Tracks", 0, clean_db)
+x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 
 # x_menu.add('Reset Missing Flags', reset_missing_flags)
-x_menu.add_to_sub("Mark Missing as Found", 0, reset_missing_flags)
+x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
 
 
 def toggle_broadcast():
@@ -11340,7 +11256,7 @@ if default_player == 1 and os.path.isfile(os.path.join(config_directory, "config
         broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
     broadcast_icon.colour = [171, 102, 249, 255]#[182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
     broadcast_icon.colour_callback = broadcast_colour
-    x_menu.add("Start Broadcast", toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+    x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
 
 def clear_queue():
@@ -11663,7 +11579,7 @@ def exit_func():
     running = False
 
 
-x_menu.add("Exit", exit_func, hint="Alt+F4")
+x_menu.add(_("Exit"), exit_func, hint="Alt+F4")
 
 
 def switch_playlist(number, cycle=False):
@@ -12292,7 +12208,7 @@ class SearchOverlay:
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
+                    if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
@@ -12343,7 +12259,7 @@ class SearchOverlay:
                         # Mouse Selection
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
                         fields.add(rect)
-                        if coll_point(mouse_position, rect) and mouse_change:
+                        if coll(rect) and mouse_change:
                             if self.force_select != p:
                                 self.force_select = p
                                 gui.update = 2
@@ -12367,7 +12283,7 @@ class SearchOverlay:
                         # Mouse Selection
                         rect = (30, yy, 600, 20)
                         fields.add(rect)
-                        if coll_point(mouse_position, rect) and mouse_change:
+                        if coll(rect) and mouse_change:
                             if self.force_select != p:
                                 self.force_select = p
                                 gui.update = 2
@@ -12402,7 +12318,7 @@ class SearchOverlay:
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
+                    if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
@@ -12429,7 +12345,7 @@ class SearchOverlay:
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
-                    if coll_point(mouse_position, rect) and mouse_change:
+                    if coll(rect) and mouse_change:
                         if self.force_select != p:
                             self.force_select = p
                             gui.update = 2
@@ -14282,14 +14198,14 @@ class Over:
         self.tab_active = 2
         self.tabs = [
             #["Folder Import", self.files],
-            ["Function", self.funcs],
-            ["Audio", self.audio],
-            ["Playlist", self.config_v],
-            ["View", self.config_b],
-            ["Transcode", self.codec_config],
-            ["Accounts", self.last_fm_box],
-            ["Stats", self.stats],
-            ["About", self.about]
+            [_("Function"), self.funcs],
+            [_("Audio"), self.audio],
+            [_("Playlist"), self.config_v],
+            [_("View"), self.config_b],
+            [_("Transcode"), self.codec_config],
+            [_("Accounts"), self.last_fm_box],
+            [_("Stats"), self.stats],
+            [_("About"), self.about]
         ]
     def audio(self):
 
@@ -14327,7 +14243,7 @@ class Over:
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
                 #draw.rect_r(rect, [0, 255, 0, 50])
 
-                if self.click and coll_point(mouse_position, rect):
+                if self.click and coll(rect):
                     pctl.set_device = item[4]
                     prefs.last_device = item[0]
                     pctl.playerCommandReady = True
@@ -14341,7 +14257,7 @@ class Over:
                     draw_text((x, y), line, [150, 150, 150, 255], 10)
                     draw_text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
                 else:
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         draw_text((x, y), line, [150, 150, 150, 255], 10)
                     else:
                         draw_text((x, y), line, [100, 100, 100, 255], 10)
@@ -14375,14 +14291,14 @@ class Over:
             link_rect2 = [x + 280 * gui.scale, y + 21 * gui.scale, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
 
-            if coll_point(mouse_position, link_rect):
+            if coll(link_rect):
                 if not self.click:
                     gui.cursor_want = 3
 
                 if self.click:
                     webbrowser.open(link_pa[2], new=2, autoraise=True)
 
-            elif coll_point(mouse_position, link_rect2):
+            elif coll(link_rect2):
                 if not self.click:
                     gui.cursor_want = 3
 
@@ -14444,7 +14360,7 @@ class Over:
         rect = (x, y, w, 20 * gui.scale)
         draw.rect_r(rect, colours.alpha_grey(11), True)
         fields.add(rect)
-        if coll_point(mouse_position, rect):
+        if coll(rect):
             draw.rect_r(rect, [255, 255, 255, 15], True)
             draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
             if self.click:
@@ -14457,7 +14373,7 @@ class Over:
         le = draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
         draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
         draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
-        if self.click and coll_point(mouse_position, (x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
+        if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             function()
         if function(1):
             draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
@@ -14475,10 +14391,10 @@ class Over:
         rect = [x + 20 * gui.scale, y + 30 * gui.scale, 210 * gui.scale, 16 * gui.scale]
         rect2 = [x + 20 * gui.scale, y + 60 * gui.scale, 210 * gui.scale, 16 * gui.scale]
         if self.click:
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 self.lastfm_input_box = 0
 
-            elif coll_point(mouse_position, rect2):
+            elif coll(rect2):
                 self.lastfm_input_box = 1
 
         if key_tab:
@@ -14570,7 +14486,7 @@ class Over:
         link_rect2 = [x + 235 * gui.scale, y, link_pa2[1], 20 * gui.scale]
         fields.add(link_rect2)
 
-        if coll_point(mouse_position, link_rect2):
+        if coll(link_rect2):
             if not self.click:
                 gui.cursor_want = 3
 
@@ -14775,7 +14691,7 @@ class Over:
         y += 21 * gui.scale
         link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
         link_rect = [x, y, link_pa[1], 18 * gui.scale]
-        if coll_point(mouse_position, link_rect):
+        if coll(link_rect):
             if not self.click:
                 gui.cursor_want = 3
             if self.click:
@@ -14857,7 +14773,7 @@ class Over:
 
                 block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
                 fields.add(block_rect)
-                if coll_point(mouse_position, block_rect):
+                if coll(block_rect):
                     xx = block_rect[0] + int(block_rect[2] / 2)
                     if xx < x + 30 * gui.scale:
                         xx = x + 30 * gui.scale
@@ -14884,7 +14800,7 @@ class Over:
             draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
             draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
-            if self.click and coll_point(mouse_position, (x - 20, y - 5, 220, 24)):
+            if self.click and coll((x - 20, y - 5, 220, 24)):
                 k[1]()
             if k[1](1) is True:
                 draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
@@ -14974,7 +14890,7 @@ class Over:
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
-        if coll_point(mouse_position, rect):
+        if coll(rect):
 
             if self.click:
                 if value > lower_limit:
@@ -15001,7 +14917,7 @@ class Over:
         fields.add(rect)
         draw.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
-        if coll_point(mouse_position, rect):
+        if coll(rect):
 
             if self.click:
                 if value < upper_limit:
@@ -15026,7 +14942,7 @@ class Over:
 
     def inside(self):
 
-        return coll_point(mouse_position, (self.box_x, self.box_y, self.w, self.h))
+        return coll((self.box_x, self.box_y, self.w, self.h))
 
     def init2(self):
 
@@ -15073,7 +14989,7 @@ class Over:
             fields.add(box2)
             # draw.rect_r(box, colours.tab_background, True)
 
-            if self.click and coll_point(mouse_position, box2):
+            if self.click and coll(box2):
                 self.tab_active = current_tab
 
             if current_tab == self.tab_active:
@@ -15085,7 +15001,7 @@ class Over:
                 gui.win_fore = colours.sys_tab_bg
                 draw.rect_r(box, colours.sys_tab_bg, True)
 
-            if coll_point(mouse_position, box2):
+            if coll(box2):
                 draw.rect_r(box, [255, 255, 255, 10], True)
 
             # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
@@ -15132,7 +15048,7 @@ class Fields:
         self.id = []
 
         for f in self.field_array:
-            if coll_point(mouse_position, f[0]):
+            if coll(f[0]):
                 self.id.append(1)  # += "1"
                 if f[1] is not None:  # Call callback if present
                     f[1]()
@@ -15234,7 +15150,7 @@ class TopPanel:
         rect = (9 * gui.scale, 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
 
-        if coll_point(mouse_position, rect):
+        if coll(rect):
             if input.mouse_click:
                 gui.lsp ^= True
                 global update_layout
@@ -15344,7 +15260,7 @@ class TopPanel:
 
             # Detect mouse over and add tab to mouse over detection
             f_rect = [x, y + 1, tab_width - 1, self.height - 1]
-            tab_hit = coll_point(mouse_position, f_rect)
+            tab_hit = coll(f_rect)
 
             # Tab functions
             if tab_hit:
@@ -15418,7 +15334,7 @@ class TopPanel:
             # Detect mouse over and add tab to mouse over detection
             f_rect = [x, y + 1, tab_width - 1, self.height - 1]
             fields.add(f_rect)
-            tab_hit = coll_point(mouse_position, f_rect)
+            tab_hit = coll(f_rect)
             playing_hint = False
             active = False
 
@@ -15551,7 +15467,7 @@ class TopPanel:
         word = "MENU"
         word_length = draw.text_calc(word, 212)
         rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
-        hit = coll_point(mouse_position, rect)
+        hit = coll(rect)
         fields.add(rect)
 
         if x_menu.active or hit:
@@ -15579,7 +15495,7 @@ class TopPanel:
             rect = (x - 5, y - 2, 30, 23)
             fields.add(rect)
 
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 if dl > 0:
                     colour = [230, 230, 230, 255]
                     if right_click:
@@ -15610,6 +15526,7 @@ class TopPanel:
                         input.mouse_click = False
                         show_message("It looks like something is being downloaded...", 'info', "Let's check back later...")
 
+
             else:
                 colour = [60, 60, 60, 255]
 
@@ -15638,7 +15555,7 @@ class TopPanel:
                 text = "Extracting Archive..."
             else:
                 text = "Importing...  " + str(to_got) + "/" + str(to_get)
-                if right_click and coll_point(mouse_position, [x, y, 180 * gui.scale, 18 * gui.scale]):
+                if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
                     cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
         elif move_in_progress:
             text = "File copy in progress..."
@@ -15654,7 +15571,7 @@ class TopPanel:
             # if key_ctrl_down and key_c_press:
             #     del transcode_list[1:]
             #     gui.tc_cancel = True
-            if right_click and coll_point(mouse_position, [x, y, 180 * gui.scale, 18 * gui.scale]):
+            if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
                 cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 
             text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
@@ -15698,7 +15615,7 @@ class TopPanel:
             draw.rect((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
             draw.rect((x, y + 4), (100, 9), colours.grey(30))
 
-            if input.mouse_click and coll_point(mouse_position, (x, y, 100, 11)):
+            if input.mouse_click and coll((x, y, 100, 11)):
                 newtime = ((mouse_position[0] - x) / 100) * pctl.master_library[pctl.broadcast_index].length
                 pctl.broadcast_time = newtime
                 pctl.playerCommand = 'encseek'
@@ -15710,7 +15627,7 @@ class TopPanel:
 
             self.drag_zone_start_x = x + 21 * gui.scale
 
-            if input.mouse_click and coll_point(mouse_position, (x-5, y-5, 20, 24)):
+            if input.mouse_click and coll((x-5, y-5, 20, 24)):
                 line = ""
                 input.mouse_click = False
                 for client in pctl.broadcast_clients:
@@ -15868,7 +15785,7 @@ class BottomBarType1:
                 pctl.play()
 
         fields.add(self.seek_bar_position + self.seek_bar_size)
-        if coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size):
+        if coll(self.seek_bar_position + self.seek_bar_size):
 
             if middle_click and pctl.playing_state > 0:
                 gui.seek_cur_show = True
@@ -15900,7 +15817,7 @@ class BottomBarType1:
                 self.seek_hit = True
 
 
-        if (mouse_up and coll_point(mouse_position, self.seek_bar_position + self.seek_bar_size)
+        if (mouse_up and coll(self.seek_bar_position + self.seek_bar_size)
             and coll_point(click_location,
                            self.seek_bar_position + self.seek_bar_size)) or mouse_up and self.volume_hit or self.seek_hit:
 
@@ -15929,7 +15846,7 @@ class BottomBarType1:
 
         if gui.seek_cur_show:
 
-            if coll_point(mouse_position, [self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
+            if coll([self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
                 if mouse_position[0] > self.seek_bar_position[0] - 1:
                     cur = [mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
                     draw.rect_r(cur, colours.grey(15), True)
@@ -15946,7 +15863,7 @@ class BottomBarType1:
         # Volume Bar --------------------------------------------------------
 
 
-        if input.mouse_click and coll_point(mouse_position, (
+        if input.mouse_click and coll((
             self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
             self.volume_bar_size[1] + 4)) or \
                         self.volume_bar_being_dragged is True:
@@ -15995,7 +15912,7 @@ class BottomBarType1:
             pctl.player_volume = int(pctl.player_volume)
             pctl.set_volume()
 
-        if right_click and coll_point(mouse_position, (
+        if right_click and coll((
                     self.volume_bar_position[0] - 15 * gui.scale, self.volume_bar_position[1] - 10 * gui.scale, self.volume_bar_size[0] + 30 * gui.scale,
                     self.volume_bar_size[1] + 20 * gui.scale)):
             if pctl.player_volume > 0:
@@ -16014,7 +15931,7 @@ class BottomBarType1:
 
 
         fields.add(self.volume_bar_position + self.volume_bar_size)
-        if pctl.active_replaygain != 0 and (coll_point(mouse_position, (
+        if pctl.active_replaygain != 0 and (coll((
                     self.volume_bar_position[0], self.volume_bar_position[1], self.volume_bar_size[0],
                     self.volume_bar_size[1])) or self.volume_bar_being_dragged):
 
@@ -16051,7 +15968,7 @@ class BottomBarType1:
             #line = trunc_line(line, 213, mx)
             draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title, max=mx)
-            if (input.mouse_click or right_click) and coll_point(mouse_position, (
+            if (input.mouse_click or right_click) and coll((
                         self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
                 if pctl.playing_state == 3:
                     copy_to_clipboard(pctl.tag_meta)
@@ -16069,7 +15986,7 @@ class BottomBarType1:
 
         rect = (x - 8 * gui.scale - right_offset, y - 3 * gui.scale, 60 * gui.scale + right_offset, 27 * gui.scale)
         # draw.rect_r(rect, [255, 0, 0, 40], True)
-        if input.mouse_click and rect_in(rect):
+        if input.mouse_click and coll(rect):
             gui.display_time_mode += 1
             if gui.display_time_mode > 3:
                 gui.display_time_mode = 0
@@ -16173,7 +16090,7 @@ class BottomBarType1:
 
             rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 play_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.play()
@@ -16191,7 +16108,7 @@ class BottomBarType1:
 
             rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 pause_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.pause()
@@ -16207,7 +16124,7 @@ class BottomBarType1:
             x = 125 * gui.scale + buttons_x_offset
             rect = (x - 14 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 stop_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.stop()
@@ -16222,7 +16139,7 @@ class BottomBarType1:
             # FORWARD---
             rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 forward_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.advance()
@@ -16239,7 +16156,7 @@ class BottomBarType1:
             # BACK---
             rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 back_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.back()
@@ -16261,7 +16178,7 @@ class BottomBarType1:
             rpbc = colours.mode_button_off
             rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 if not extra_menu.active:
                     tool_tip.test(x, y - 28 * gui.scale, "Playback menu")
                 rpbc = colours.mode_button_over
@@ -16286,7 +16203,7 @@ class BottomBarType1:
                 fields.add(rect)
 
                 rpbc = colours.mode_button_off
-                if (input.mouse_click or right_click) and coll_point(mouse_position, rect):
+                if (input.mouse_click or right_click) and coll(rect):
                     pctl.random_mode ^= True
 
                     if pctl.random_mode is False:
@@ -16295,8 +16212,8 @@ class BottomBarType1:
                 if pctl.random_mode:
                     rpbc = colours.mode_button_active
 
-                elif coll_point(mouse_position, rect):
-                    tool_tip.test(x, y - 28 * gui.scale, "Shuffle")
+                elif coll(rect):
+                    tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
                     if self.random_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.random_mode is True:
@@ -16321,7 +16238,7 @@ class BottomBarType1:
 
                 rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
-                if (input.mouse_click or right_click) and coll_point(mouse_position, rect):
+                if (input.mouse_click or right_click) and coll(rect):
                     pctl.repeat_mode ^= True
 
                     if pctl.repeat_mode is False:
@@ -16330,8 +16247,8 @@ class BottomBarType1:
                 if pctl.repeat_mode:
                     rpbc = colours.mode_button_active
 
-                elif coll_point(mouse_position, rect):
-                    tool_tip.test(x, y - 28 * gui.scale, "Repeat")
+                elif coll(rect):
+                    tool_tip.test(x, y - 28 * gui.scale, _("Repeat"))
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.repeat_mode is True:
@@ -16471,7 +16388,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
-                if coll_point(mouse_position, rect):
+                if coll(rect):
                     gui.pl_update += 1
                     w = draw.text_calc("You", 13)
                     xx = (x - w) - 5 * gui.scale
@@ -16496,7 +16413,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
-                if coll_point(mouse_position, rect):
+                if coll(rect):
                     gui.pl_update += 1
                     w = draw.text_calc(name, 13)
                     xx = (x - w) - 5 * gui.scale
@@ -16639,7 +16556,7 @@ class StandardPlaylist:
 
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
-                and not (coll_point(mouse_position, pl_rect)) and not (
+                and not (coll(pl_rect)) and not (
             key_shift_down and track_box) and not search_over.active:
 
             if False: #album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
@@ -16749,7 +16666,7 @@ class StandardPlaylist:
 
                     gui.win_fore = colours.playlist_panel_background
 
-                    if playlist_hold is True and coll_point(mouse_position, (
+                    if playlist_hold is True and coll((
                             left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
                             gui.playlist_row_height)):
 
@@ -16757,7 +16674,7 @@ class StandardPlaylist:
                             move_on_title = True
 
                     # Detect folder title click
-                    if (input.mouse_click or right_click) and coll_point(mouse_position, input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+                    if (input.mouse_click or right_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
@@ -16818,7 +16735,7 @@ class StandardPlaylist:
 
 
                     # Draw blue highlight insert line
-                    if mouse_down and playlist_hold and coll_point(mouse_position, track_box) and p_track not in shift_selection:  # playlist_hold_position != p_track:
+                    if mouse_down and playlist_hold and coll(track_box) and p_track not in shift_selection:  # playlist_hold_position != p_track:
 
                         if len(shift_selection) > 1 or key_shift_down:
 
@@ -16856,7 +16773,7 @@ class StandardPlaylist:
 
             # Test if line hit
             line_over = False
-            if coll_point(mouse_position, input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+            if coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
                 line_over = True
                 if (input.mouse_click or right_click or middle_click):
                     line_hit = True
@@ -16943,7 +16860,7 @@ class StandardPlaylist:
                 #     shift_selection = [playlist_selected]
 
             # Shift Move Selection
-            if (move_on_title) or mouse_up and playlist_hold is True and coll_point(mouse_position, (
+            if (move_on_title) or mouse_up and playlist_hold is True and coll((
                     left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width, gui.playlist_row_height)):
 
                 if len(shift_selection) > 1 or key_shift_down:
@@ -16992,7 +16909,7 @@ class StandardPlaylist:
                             gui.pl_update = 1
 
             # Blue drop line
-            if mouse_down and playlist_hold and coll_point(mouse_position, track_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
+            if mouse_down and playlist_hold and coll(track_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
 
                 if len(shift_selection) > 1 or key_shift_down:
                     draw.rect_r(
@@ -17308,15 +17225,15 @@ class ArtBox:
         if len(pctl.track_queue) > 0:
 
             # Cycle images on click
-            if coll_point(mouse_position, gui.main_art_box) and input.mouse_click is True:
+            if coll(gui.main_art_box) and input.mouse_click is True:
                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
         # Activate picture context menu on right click
-        if right_click and coll_point(mouse_position, rect):
+        if right_click and coll(rect):
             picture_menu.activate(in_reference=pctl.playing_object().index)
 
         # Draw picture metadata
-        if showc is not None and coll_point(mouse_position, rect) \
+        if showc is not None and coll(rect) \
                 and renamebox is False \
                 and radiobox is False \
                 and pref_box.enabled is False \
@@ -17402,11 +17319,9 @@ class ScrollBox():
         if max_value < 2:
             return 0
 
-
-
         bar_height = 90
 
-        draw.rect_r((x, y, w, h), [255, 255, 255, 10], True)
+        draw.rect_r((x, y, w, h), [255, 255, 255, 7], True)
 
         half = bar_height // 2
 
@@ -17418,9 +17333,9 @@ class ScrollBox():
 
         position = int(round(distance * ratio))
 
-        if coll_point(mouse_position, (x, y, w, h)):
+        if coll((x, y, w, h)):
 
-            if coll_point(mouse_position, (x, mi + position - half, w, bar_height)):
+            if coll((x, mi + position - half, w, bar_height)):
                 if input.mouse_click:
                     self.held = True
 
@@ -17468,8 +17383,13 @@ class ScrollBox():
             ratio = position / distance
             value = int(round(max_value * ratio))
 
+        colour = [255, 255, 255, 15]
+        rect = (x, mi + position - half, w, bar_height)
+        fields.add(rect)
+        if coll(rect) or self.held:
+            colour = [255, 255, 255, 30]
 
-        draw.rect_r((x, mi + position - half, w, bar_height), [255, 255, 255, 10], True)
+        draw.rect_r(rect, colour, True)
 
         return value
 
@@ -17500,7 +17420,7 @@ class PlaylistBox:
         show_scroll = False
         tab_start = x + 10 * gui.scale
 
-        if mouse_wheel != 0 and coll_point(mouse_position, (x, y, w, h)):
+        if mouse_wheel != 0 and coll((x, y, w, h)):
             self.scroll_on -= mouse_wheel
 
         if self.scroll_on > len(pctl.multi_playlist) - max_tabs + 1:
@@ -17539,13 +17459,13 @@ class PlaylistBox:
 
 
 
-            if coll_point(mouse_position, (tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, 26 * gui.scale)):
+            if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, 26 * gui.scale)):
                 if input.mouse_click:
                     switch_playlist(i)
                     self.drag_on = i
                     self.drag = True
 
-            if coll_point(mouse_position, (tab_start, yy - 1, tab_width, 26  * gui.scale)):
+            if coll((tab_start, yy - 1, tab_width, 26  * gui.scale)):
                 if right_click:
                     tab_menu.activate(i, mouse_position)
 
@@ -17573,7 +17493,7 @@ class PlaylistBox:
 
 
             # Toggle hidden flag on click
-            if input.mouse_click and coll_point(mouse_position, (tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25, 26  * gui.scale)):
+            if input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25, 26  * gui.scale)):
                 pl[8] ^= True
 
             name = pl[0]
@@ -17586,7 +17506,7 @@ class PlaylistBox:
             if i == pctl.playlist_active or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 14]
 
-            if coll_point(mouse_position, (tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26  * gui.scale)) and quick_drag:
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26  * gui.scale)) and quick_drag:
                 bg = [255, 255, 255, 15]
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
@@ -17601,7 +17521,7 @@ class PlaylistBox:
             draw.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
 
-            if coll_point(mouse_position, (tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26 * gui.scale)):
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26 * gui.scale)):
                 if quick_drag:
 
                     draw.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 200, 180, 255], True)
@@ -17636,7 +17556,7 @@ class PlaylistBox:
             yy += 27 * gui.scale
 
         # Create new playlist if drag in blank space after tabs
-        if coll_point(mouse_position, (x, yy, w, h - (yy - y))):
+        if coll((x, yy, w, h - (yy - y))):
             if quick_drag:
 
                 draw.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
@@ -17666,7 +17586,7 @@ class MetaBox:
             return
 
         # Test for show lyric menu on right ckick
-        if coll_point(mouse_position, (x + 10, y, w - 10, h)):
+        if coll((x + 10, y, w - 10, h)):
             if right_click and 3 > pctl.playing_state > 0:
                 gui.force_showcase_index = -1
                 showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
@@ -17676,7 +17596,7 @@ class MetaBox:
                     and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and h > 45 and w > 200:
 
             # Test for scroll wheel input
-            if mouse_wheel != 0 and coll_point(mouse_position, (x + 10, y, w - 10, h)):
+            if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
                 lyrics_ren_mini.lyrics_position += mouse_wheel * 30 * gui.scale
                 if lyrics_ren_mini.lyrics_position > 0:
                     lyrics_ren_mini.lyrics_position = 0
@@ -17726,7 +17646,7 @@ class MetaBox:
 
             gui.win_fore = colours.side_panel_background
 
-            if coll_point(mouse_position, (x + 10, y, w - 10, h)):
+            if coll((x + 10, y, w - 10, h)):
                 # Click area to jump to current track
                 if input.mouse_click:
                     pctl.show_current()
@@ -17963,7 +17883,7 @@ class ArtistInfoBox:
 
             scroll_max = self.th - (h - 26)
 
-            if coll_point(mouse_position, (x, y, w, h)):
+            if coll((x, y, w, h)):
                 self.scroll_y += mouse_wheel * -20
             if self.scroll_y < 0:
                 self.scroll_y = 0
@@ -17988,7 +17908,7 @@ class ArtistInfoBox:
 
                 fields.add(rect)
                 self.mini_box.render(right, yy, item[1])
-                if coll_point(mouse_position, rect):
+                if coll(rect):
                     if not input.mouse_click:
                         gui.cursor_want = 3
                     if input.mouse_click:
@@ -18140,7 +18060,7 @@ class Showcase:
 
 
             album_art_gen.display(index, (x, y), (box, box))
-            if coll_point(mouse_position, (x, y, box, box)) and input.mouse_click is True:
+            if coll((x, y, box, box)) and input.mouse_click is True:
                 album_art_gen.cycle_offset(index)
 
             if track.lyrics == "":
@@ -18358,7 +18278,7 @@ class ViewBox:
 
         fun = None
         col = False
-        if coll_point(mouse_position, rect):
+        if coll(rect):
 
             tool_tip.test(x + asset.w + 10 * gui.scale, y - 15 * gui.scale, name)
 
@@ -18571,7 +18491,7 @@ class DLMon:
                     size = get_folder_size(path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
-                        if size == self.watching[path] and size != 0:
+                        if size == self.watching[path]:
                             del self.watching[path]
                             if folder_file_scan(path, DA_Formats) > 0.5:
 
@@ -19787,7 +19707,7 @@ while running:
             auto_play_import = True
 
 
-    if mouse_down and not rect_in((2, 2, window_size[0] - 4, window_size[1] - 4)):
+    if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
         if SDL_GetGlobalMouseState(None, None) == 0:
 
             mouse_down = False
@@ -20070,7 +19990,7 @@ while running:
             h = 240
             x = int(window_size[0] / 2) - int(w / 2)
             y = int(window_size[1] / 2) - int(h / 2)
-            if rect_in([x, y, w, h]):
+            if coll([x, y, w, h]):
                 input.mouse_click = False
                 gui.level_2_click = True
 
@@ -20101,9 +20021,6 @@ while running:
 
         if right_click and (radiobox or renamebox or rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
-
-        if combo_menu.active and right_click:
-            combo_menu.active = False
 
         if mouse_wheel != 0:
             gui.update += 1
@@ -20446,7 +20363,7 @@ while running:
                             window_size[1] - gui.panelY - gui.panelBY)
             fields.add(rect)
 
-            if (coll_point(mouse_position, rect) or side_drag is True) \
+            if (coll(rect) or side_drag is True) \
                     and renamebox is False \
                     and radiobox is False \
                     and rename_playlist_box is False \
@@ -20593,7 +20510,7 @@ while running:
                 # draw.rect_r(rect, [255,0,0,5], True)
 
                 fields.add(rect)
-                if coll_point(mouse_position, rect):
+                if coll(rect):
                     draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
                               alpha_mod(colours.side_bar_line2, 150), 13)
                     draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
@@ -20601,7 +20518,7 @@ while running:
 
                 if right_click:
 
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
                         if per > 100:
                             per = 100
@@ -20611,7 +20528,7 @@ while running:
 
                 if mouse_down:
                     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         # if mouse_position[1] > window_size[1] / 2:
                         #     album_pos_px += 30
                         # else:
@@ -20664,7 +20581,7 @@ while running:
                                 if gui.gallery_show_text:
                                     extend = 40
 
-                                if coll_point(mouse_position, (
+                                if coll((
                                         x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)) and gui.panelY < mouse_position[
                                     1] < window_size[1] - gui.panelBY:
 
@@ -20919,7 +20836,7 @@ while running:
             if gui.show_playlist:
 
                 # playlist hit test
-                if coll_point(mouse_position, (
+                if coll((
                 gui.playlist_left, gui.playlist_top, gui.plw, window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
                                             input.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
                     gui.pl_update = 1
@@ -20954,7 +20871,7 @@ while running:
                         fields.add(m_grip)
 
 
-                        if coll_point(mouse_position, l_grip):
+                        if coll(l_grip):
                             if mouse_up and gui.set_label_hold != -1:
                                 if h != gui.set_label_hold:
                                     dest = h
@@ -20978,7 +20895,7 @@ while running:
                                 set_menu.activate(h)
 
                         if h != 0:
-                            if coll_point(mouse_position, m_grip):
+                            if coll(m_grip):
                                 in_grip = True
                                 if input.mouse_click:
 
@@ -21074,7 +20991,7 @@ while running:
                     x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
 
                 fields.add(gui.scroll_hide_box)
-                if (coll_point(mouse_position, gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
+                if (coll(gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
                     scroll_opacity = 255
 
                     if not gui.combo_mode:
@@ -21089,7 +21006,7 @@ while running:
                             sbl = 105 * gui.scale
 
                         fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-                        if coll_point(mouse_position, (x, top, 28 * gui.scale, ey - top)) and (
+                        if coll((x, top, 28 * gui.scale, ey - top)) and (
                             mouse_down or right_click) \
                                 and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
 
@@ -21148,32 +21065,31 @@ while running:
                                 per = playlist_position / len(default_playlist)
                                 sbp = int((ey - top - sbl) * per) + top + 1
 
-                        # if (coll_point(mouse_position, (2, sbp, 20, sbl)) and mouse_position[
+                        # if (coll((2, sbp, 20, sbl)) and mouse_position[
                         #     0] != 0) or scroll_hold:
                         #     scroll_opacity = 255
                         draw.rect((x, top), (18 * gui.scale, window_size[1] - top - gui.panelBY), [18, 18, 18, 255], True)
                         draw.rect((x + 1, sbp), (15 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
 
-                        if (coll_point(mouse_position, (x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
+                        if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
                             draw.rect((x + 1 * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
 
 
                 # Switch Vis:
-                if right_click and coll_point(mouse_position, (window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
+                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
-                if input.mouse_click and coll_point(mouse_position, (window_size[0] - 130 * gui.scale  - gui.offset_extra, 0, 120 * gui.scale , gui.panelY)):
-                    if gui.vis == 0:
-                        gui.vis = 1
-                        gui.turbo = True
-                    elif gui.vis == 1:
-                        gui.vis = 2
-                    elif gui.vis == 2:
-                        gui.vis = 3
-                    elif gui.vis == 3:
-                        gui.vis = 0
-                        gui.turbo = False
-
+                # if input.mouse_click and coll((window_size[0] - 130 * gui.scale  - gui.offset_extra, 0, 120 * gui.scale , gui.panelY)):
+                #     if gui.vis == 0:
+                #         gui.vis = 1
+                #         gui.turbo = True
+                #     elif gui.vis == 1:
+                #         gui.vis = 2
+                #     elif gui.vis == 2:
+                #         gui.vis = 3
+                #     elif gui.vis == 3:
+                #         gui.vis = 0
+                #         gui.turbo = False
 
                 edge_playlist.render(gui.playlist_left, gui.panelY + 1, gui.plw, 2 * gui.scale)
                 bottom_playlist.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 2 * gui.scale)
@@ -21276,7 +21192,7 @@ while running:
 
                 draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(210), 212)
 
-                if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not rect_in(rect)):
+                if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not coll(rect)):
                     rename_playlist_box = False
                     if len(rename_text_area.text) > 0:
                         pctl.multi_playlist[rename_index][0] = rename_text_area.text
@@ -21322,7 +21238,7 @@ while running:
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
                 gui.win_fore = colours.sys_background_3
 
-                if input.mouse_click and not rect_in([x, y, w, h]):
+                if input.mouse_click and not coll([x, y, w, h]):
                     track_box = False
 
                 else:
@@ -21339,7 +21255,7 @@ while running:
 
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
@@ -21378,7 +21294,7 @@ while running:
 
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Artist", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
@@ -21394,7 +21310,7 @@ while running:
 
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
@@ -21411,7 +21327,7 @@ while running:
 
                     rect = [x1, y1 + 2, 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
@@ -21444,7 +21360,7 @@ while running:
                         x += 170 * gui.scale
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
-                        if rect_in(rect):
+                        if coll(rect):
                             draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
@@ -21461,7 +21377,7 @@ while running:
 
                     rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
@@ -21503,7 +21419,7 @@ while running:
 
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
@@ -21519,7 +21435,7 @@ while running:
 
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
-                    if rect_in(rect):
+                    if coll(rect):
                         draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
@@ -21547,7 +21463,7 @@ while running:
 
                     rect = [x1, y1, 150, 14]
 
-                    if rect_in(rect) and key_shift_down and mouse_wheel != 0:
+                    if coll(rect) and key_shift_down and mouse_wheel != 0:
                         star_store.add(r_menu_index, 60 * mouse_wheel)
 
                     line = time.strftime('%H:%M:%S',
@@ -21572,7 +21488,7 @@ while running:
                         rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
                         #draw.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
                         fields.add(rect)
-                        if rect_in(rect):
+                        if coll(rect):
                             draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
@@ -21589,7 +21505,7 @@ while running:
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
                             fields.add(link_rect)
-                            if coll_point(mouse_position, link_rect):
+                            if coll(link_rect):
                                 if not input.mouse_click:
                                     gui.cursor_want = 3
                                 if input.mouse_click:
@@ -21621,7 +21537,7 @@ while running:
                 draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
                 p = draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
@@ -21679,7 +21595,7 @@ while running:
                 draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or ((input.mouse_click or right_click) and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     renamebox = False
 
                 r_todo = []
@@ -21815,7 +21731,7 @@ while running:
                 draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
                 draw.rect((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or (gui.level_2_click and not coll_point(mouse_position, (x, y, w, h))):
+                if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
                     radiobox = False
 
                 draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.grey(200), 213)
@@ -21828,7 +21744,7 @@ while running:
 
                 for i, item in enumerate(pctl.save_urls):
                     rect = (x + 13 * gui.scale, y, 380 * gui.scale, s1-1 * gui.scale)
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         if gui.level_2_click:
                             pass
 
@@ -21836,7 +21752,7 @@ while running:
 
                     rect = (x + (17 + 330) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
                     fields.add(rect)
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         draw.rect_r(rect, [40, 40, 40, 60], True)
                         if gui.level_2_click:
                             to_del = i
@@ -21847,7 +21763,7 @@ while running:
 
                     rect = (x + (17 + 380) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
                     fields.add(rect)
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         draw.rect_r(rect, [40, 40, 40, 60], True)
                         if gui.level_2_click:
                             radio_field.text = item
@@ -21876,7 +21792,7 @@ while running:
 
                 if (input.level_2_enter or (
                             gui.level_2_click and
-                            coll_point(mouse_position, (x + (8 + 380 + 10) *
+                            coll((x + (8 + 380 + 10) *
                                 gui.scale, y + 38 * gui.scale, 40 * gui.scale, 22 * gui.scale)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
@@ -21909,7 +21825,7 @@ while running:
 
                 if pctl.playing_state == 3:
 
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         if gui.level_2_click:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
@@ -21923,7 +21839,7 @@ while running:
                         draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
                         draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
                 else:
-                    if coll_point(mouse_position, rect):
+                    if coll(rect):
                         if gui.level_2_click:
                             radiobox = False
                             show_message("A stream needs to be playing first.")
@@ -22253,7 +22169,7 @@ while running:
             rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
             draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
                 draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                           [160, 160, 160, 160], True)
@@ -22269,7 +22185,7 @@ while running:
             rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
             draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
-            if coll_point(mouse_position, rect):
+            if coll(rect):
                 draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [80, 80, 80, 120], True)
                 top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
                 if input.mouse_click or ab_click:

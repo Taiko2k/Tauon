@@ -6,6 +6,11 @@ v3.0.2
 
  - Fixed low quality thumbnail caching
  - Fixed an issue where a drag and drop action could trigger on track load
+ - Fixed an issue where an empty folder would cause the download indicator to stay on
+ - Fixed clicking next to minimize button changing visualiser
+ - Improved some scroll-bars to highlight on mouse over
+ - Changed folder copy/move function to move only. Removed some menu entries.
+ - Added preliminary support for multi-language / translations
 
 v3.0.1
 
