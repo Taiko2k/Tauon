@@ -373,7 +373,7 @@ renamebox = False
 pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
-theme = 0
+theme = 6
 themeChange = True
 
 scroll_enable = True
@@ -448,7 +448,7 @@ cargo = []
 # ---------------------------------------------------------------------
 # Player variables
 
-pl_follow = False
+# pl_follow = False
 
 # List of encodings to check for with the fix mojibake function
 encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']  # These are the most common for Japanese
@@ -1583,7 +1583,7 @@ try:
     prefs.prefer_side = view_prefs['side-panel']
     prefs.dim_art = False #view_prefs['dim-art']
     gui.turbo = view_prefs['level-meter']
-    pl_follow = view_prefs['pl-follow']
+    # pl_follow = view_prefs['pl-follow']
     scroll_enable = view_prefs['scroll-enable']
     break_enable = view_prefs['break-enable']
     dd_index = view_prefs['dd-index']
@@ -7465,10 +7465,10 @@ class Menu:
         self.sub_number += 1
         self.subs.append([])
 
-    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None):
+    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None, icon=None):
         if render_func is None:
             render_func = self.deco
-        item = [title, False, func, render_func, no_exit, pass_ref, args]
+        item = [title, False, func, render_func, no_exit, pass_ref, args, icon]
         self.subs[sub].append(item)
 
     def test_item_active(self, item):
@@ -7477,6 +7477,33 @@ class Menu:
             if item[8](1) is False:
                 return False
         return True
+
+    def render_icon(self, x, y, icon, selected):
+
+        if icon is not None:
+
+            x += icon.xoff * gui.scale
+            y += icon.yoff * gui.scale
+
+            if icon.base_asset is None:
+                # Colourise mode
+
+                colour = [50, 50, 50, 255]
+
+                if icon.colour_callback is not None and icon.colour_callback() is not None:
+                    colour = icon.colour_callback()
+
+                elif selected:
+                    colour = icon.colour
+
+                icon.asset.render(x, y, colour)
+
+            else:
+                # Pre-rendered mode
+                if selected:
+                    icon.asset.render(x, y)
+                else:
+                    icon.base_asset.render(x, y)
 
     def render(self):
         if self.active:
@@ -7558,26 +7585,27 @@ class Menu:
                 if self.items[i][1] is False and self.show_icons:
 
                     icon = self.items[i][7]
-                    if icon is not None:
-                        if icon.base_asset is None:
-                            # Colourise mode
-
-                            colour = [50, 50, 50, 255]
-
-                            if icon.colour_callback is not None and icon.colour_callback() is not None:
-                                colour = icon.colour_callback()
-
-                            elif selected:
-                                colour = icon.colour
-
-                            icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale, colour)
-
-                        else:
-                            # Pre-rendered mode
-                            if selected:
-                                icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
-                            else:
-                                icon.base_asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
+                    self.render_icon(self.pos[0] + x , y_run + 5 * gui.scale, icon, selected)
+                    # if icon is not None:
+                    #     if icon.base_asset is None:
+                    #         # Colourise mode
+                    #
+                    #         colour = [50, 50, 50, 255]
+                    #
+                    #         if icon.colour_callback is not None and icon.colour_callback() is not None:
+                    #             colour = icon.colour_callback()
+                    #
+                    #         elif selected:
+                    #             colour = icon.colour
+                    #
+                    #         icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale, colour)
+                    #
+                    #     else:
+                    #         # Pre-rendered mode
+                    #         if selected:
+                    #             icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
+                    #         else:
+                    #             icon.base_asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -7609,6 +7637,11 @@ class Menu:
                     sub_w = self.items[i][4]
                     fx = self.deco()
 
+                    xoff = 0
+                    for i in self.subs[self.sub_active]:
+                        if i[7] is not None:
+                            xoff = 24 * gui.scale
+
                     for w in range(len(self.subs[self.sub_active])):
 
                         # Item background
@@ -7618,6 +7651,7 @@ class Menu:
                         # Detect if mouse is over this item
                         rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
                         fields.add(rect)
+                        this_select = False
                         bg = colours.menu_background
                         if coll_point(mouse_position,
                                       (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
@@ -7625,6 +7659,7 @@ class Menu:
                                       colours.menu_highlight_background,
                                       True)
                             bg = alpha_blend(colours.menu_highlight_background, bg)
+                            this_select = True
 
                             # Call Callback
                             if self.clicked:
@@ -7647,9 +7682,17 @@ class Menu:
                         else:
                             label = self.subs[self.sub_active][w][0]
 
+                        # Render sub items icon
+                        icon = self.subs[self.sub_active][w][7]
+                        self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select)
+
                         # Render the items label
-                        draw_text((sub_pos[0] + 8, sub_pos[1] + ytoff + w * self.h), label, fx[0],
+                        draw_text((sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0],
                                   self.font, bg=bg)
+
+                        # Draw tab
+                        draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h),
+                                  colours.grey(30), True)
 
                         # Render the menu outline
                         # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
@@ -7745,13 +7788,13 @@ def toggle_lyrics(track_object):
     if prefs.show_lyrics_side and track_object.lyrics == "":
         show_message("No lyrics for this track")
 
-showcase_menu.add('Toggle Lyrics', toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
+showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
 
 
 def get_lyric_fire(track_object):
 
     print("Query Lyric Wiki...")
-    show_message("Searching...")
+    show_message(_("Searching..."))
     try:
         track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
         gui.message_box = False
@@ -7779,7 +7822,7 @@ def get_bio(track_object):
     if track_object.artist != "":
         lastfm.get_bio(track_object.artist)
 
-showcase_menu.add('Search LyricWiki', get_lyric_wiki, pass_ref=True)
+showcase_menu.add(_('Search LyricWiki'), get_lyric_wiki, pass_ref=True)
 
 
 def paste_lyrics_deco():
@@ -7801,7 +7844,7 @@ def paste_lyrics(track_object):
     else:
         print('NO TEXT TO PASTE')
 
-showcase_menu.add('Paste Lyrics', paste_lyrics, paste_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
 
 def copy_lyrics_deco():
@@ -7823,7 +7866,7 @@ def copy_lyrics_deco():
 def copy_lyrics(track_object):
     copy_to_clipboard(track_object.lyrics)
 
-showcase_menu.add('Copy Lyrics', copy_lyrics, copy_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Copy Lyrics'), copy_lyrics, copy_lyrics_deco, pass_ref=True)
 
 
 
@@ -7856,8 +7899,8 @@ def split_lyrics(track_object):
         pass
 
 
-showcase_menu.add('Clear Lyrics', clear_lyrics, clear_lyrics_deco, pass_ref=True)
-showcase_menu.add('Split Lines', split_lyrics, clear_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True)
 
 
 def save_embed_img():
@@ -9758,7 +9801,7 @@ track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
 track_menu.add(_('Show  in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
 
-track_menu.add_sub(_("Meta…"), 150)
+track_menu.add_sub(_("Meta…"), 160)
 
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
@@ -9946,7 +9989,15 @@ def rename_folders(index):
     quick_drag = False
     playlist_hold = False
 
-track_menu.add_to_sub(_("Modify Folder…"), 0, rename_folders, pass_ref=True)
+
+if gui.scale == 2:
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
+else:
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
+
+mod_folder_icon.colour = [229, 98, 98, 255]
+
+track_menu.add_to_sub(_("Modify Folder…"), 0, rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 
 def move_folder_up(index, do=False):
@@ -10139,24 +10190,36 @@ def editor(index):
         file_line += pctl.master_library[track].fullpath
         file_line += '"'
 
-    if system == 'windows':
-        file_line = file_line.replace("/", "\\")
-
     extra = ""
-    if system != 'windows' and prefs.tag_editor_target == 'picard':
+    if prefs.tag_editor_target == 'picard':
         extra = " --d "
 
-    if system == 'windows':
-        file_line = '"' + prefs.tag_editor_path.replace("/", "\\") + '"' + file_line
-    else:
-        file_line = prefs.tag_editor_target + extra + file_line
+
+    file_line = prefs.tag_editor_target + extra + file_line
+
+    ok = False
+
+    if flatpak_mode and prefs.tag_editor_target == 'picard':
+        complete = subprocess.run(shlex.split("flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        r = complete.stderr.decode()
+        if "org.musicbrainz.Picard" in r:
+            file_line = "flatpak run org.musicbrainz.Picard" + extra + file_line
+            ok = True
+
+    if shutil.which(prefs.tag_editor_target) is not None:
+        ok = True
+
+    if not ok:
+        show_message(_("Tag editior app does not appear to be installed."), 'warning')
+
+
 
     show_message(prefs.tag_editor_name + " launched.", 'arrow', "Fields will be updated once application is closed.")
     gui.update = 1
 
     complete = subprocess.run(shlex.split(file_line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if system != 'windows' and prefs.tag_editor_target == 'picard':
+    if prefs.tag_editor_target == 'picard':
         r = complete.stderr.decode()
         for line in r.split("\n"):
             if 'file._rename' in line and ' Moving file ' in line:
@@ -10182,7 +10245,6 @@ def editor(index):
 
 
 def launch_editor(index):
-    print(index)
     mini_t = threading.Thread(target=editor, args=[index])
     mini_t.daemon = True
     mini_t.start()
@@ -10195,14 +10257,20 @@ def launch_editor_selection(index):
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
 track_menu.add_to_sub(_("Reload Metadata"), 0, reload_metadata, pass_ref=True)
 
-if prefs.tag_editor_name != "":
+if gui.scale == 2:
+    mbp_icon = MenuIcon(LoadImageAsset('/gui/2x/mbp-g.png'))
+    mbp_icon.base_asset = LoadImageAsset('/gui/2x/mbp-gs.png')
+else:
+    mbp_icon = MenuIcon(LoadImageAsset('/gui/mbp-g.png'))
+    mbp_icon.base_asset = LoadImageAsset('/gui/mbp-gs.png')
+mbp_icon.xoff = 2
+mbp_icon.yoff = -1
 
+edit_icon = None
+if prefs.tag_editor_name == "Picard":
+    edit_icon = mbp_icon
 
-    if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
-        track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
-
-    elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
-        track_menu.add_to_sub("Edit tags with " + prefs.tag_editor_name, 0, launch_editor, pass_ref=True)
+track_menu.add_to_sub(_("Edit with ") + prefs.tag_editor_name, 0, launch_editor, pass_ref=True, icon=edit_icon)
 
 
 def recode(text, enc):
@@ -10388,37 +10456,18 @@ folder_menu = Menu(190, show_icons=True)
 
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
-if gui.scale == 2:
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
-else:
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
-
-mod_folder_icon.colour = [229, 98, 98, 255]
-
-
-
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True)
 
-if prefs.tag_editor_name != "":
 
-    edit_icon = None
-    # if prefs.tag_editor_name == "Picard":
     #     edit_icon = MenuIcon(LoadImageAsset('/gui/pic-l.png'))
     #     edit_icon.base_asset = LoadImageAsset('/gui/pic-d.png')
     #     edit_icon.xoff = 1
     #     edit_icon.yoff = -1
 
-    if system == 'windows' and len(prefs.tag_editor_path) > 1 and os.path.isfile(prefs.tag_editor_path):
-        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
-        folder_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
-                           icon=edit_icon)
-
-    elif system != 'windows' and len(prefs.tag_editor_target) > 1 and shutil.which(prefs.tag_editor_target) is not None:
-        selection_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True, icon=edit_icon)
-        folder_menu.add("Edit tags with " + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
-                           icon=edit_icon)
+folder_menu.add(_("Edit with ") + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
+                   icon=edit_icon)
 
 def lightning_copy():
     s_copy()
@@ -10545,6 +10594,24 @@ track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
 # Copy metadata to clipboard
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
+
+def drop_tracks_to_new_playlist(track_list):
+    pl = new_playlist(False)
+    albums = []
+    artists = []
+    for item in track_list:
+        albums.append(pctl.g(default_playlist[item]).album)
+        artists.append(pctl.g(default_playlist[item]).artist)
+        pctl.multi_playlist[pl][2].append(default_playlist[item])
+
+
+    if len(track_list) > 1:
+        if len(albums) > 0 and albums.count(albums[0]) == len(albums):
+            track = pctl.g(default_playlist[track_list[0]])
+            artist = track.artist
+            if track.album_artist != "":
+                artist = track.album_artist
+            pctl.multi_playlist[pl][0] = artist + " - " + albums[0][:50]
 
 def queue_deco():
     if len(pctl.force_queue) > 0:
@@ -11597,8 +11664,8 @@ def switch_playlist(number, cycle=False):
     if quick_search_mode:
         gui.force_search = True
 
-    if pl_follow:
-        pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
+    # if pl_follow:
+    #     pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
 
     if gui.showcase_mode and gui.combo_mode:
         view_standard()
@@ -11621,10 +11688,10 @@ def switch_playlist(number, cycle=False):
     playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
     playlist_selected = pctl.multi_playlist[pctl.playlist_active][5]
 
-    if pl_follow:
-        pctl.playlist_playing = playlist_selected  # pctl.multi_playlist[pctl.playlist_active][1]
-        pctl.playlist_playing = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][1])
-        pctl.active_playlist_playing = pctl.playlist_active
+    # if pl_follow:
+    #     pctl.playlist_playing = playlist_selected  # pctl.multi_playlist[pctl.playlist_active][1]
+    #     pctl.playlist_playing = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][1])
+    #     pctl.active_playlist_playing = pctl.playlist_active
 
     shift_selection = [playlist_selected]
 
@@ -13456,13 +13523,6 @@ def reload_albums(quiet=False):
                 current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
                 album_dex.append(i)
 
-    # if quiet is False:
-    #     if album_mode:
-    #         gui.rspw = window_size[0] - 300
-    #         gui.playlist_width = album_playlist_width
-    #     else:
-    #         gui.rspw = old_side_pos
-
     gui.update += 2
     gui.pl_update = 1
     update_layout = True
@@ -13868,7 +13928,7 @@ def toggle_scale(mode=0):
         prefs.ui_scale = 1
 
     if prefs.ui_scale != gui.scale:
-        show_message("Change will be applied on restart.")
+        show_message(_("Change will be applied on restart."))
 
     pref_box.small_preset()
 
@@ -13893,9 +13953,10 @@ def toggle_borderless(mode=0):
 
 
 config_items = [
-    ['Show playtime lines', star_line_toggle],
-    ['Show playtime stars', star_toggle],
-    ['Show love hearts', heart_toggle],
+    [_('Show playtime lines'), star_line_toggle],
+    [_('Show playtime stars'), star_toggle],
+    None,
+    [_('Show love hearts'), heart_toggle],
     None
 ]
 
@@ -13935,16 +13996,16 @@ def toggle_scroll(mode=0):
         update_layout = True
 
 
-def toggle_follow(mode=0):
-    global pl_follow
-
-    if mode == 1:
-        return pl_follow
-    else:
-        pl_follow ^= True
-    if pl_follow is True:
-        if prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
-            prefs.end_setting = 'stop'
+# def toggle_follow(mode=0):
+#     global pl_follow
+#
+#     if mode == 1:
+#         return pl_follow
+#     else:
+#         pl_follow ^= True
+#     if pl_follow is True:
+#         if prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
+#             prefs.end_setting = 'stop'
 
 
 def toggle_append_date(mode=0):
@@ -14146,7 +14207,7 @@ config_items.append(['Use double digit track indices', toggle_dd])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
 
-config_items.append(['Playback advances to open playlist', toggle_follow])
+# config_items.append(['Playback advances to open playlist', toggle_follow])
 
 cursor = "|"
 c_time = 0
@@ -14847,15 +14908,15 @@ class Over:
         if mode == 1:
             return True if prefs.end_setting == "cycle" else False
         prefs.end_setting = 'cycle'
-        global pl_follow
-        pl_follow = False
+        # global pl_follow
+        # pl_follow = False
 
     def set_playlist_advance(self, mode=0):
         if mode == 1:
             return True if prefs.end_setting == "advance" else False
         prefs.end_setting = 'advance'
-        global pl_follow
-        pl_follow = False
+        # global pl_follow
+        # pl_follow = False
 
     def set_playlist_stop(self, mode=0):
         if mode == 1:
@@ -15407,9 +15468,8 @@ class TopPanel:
             draw.rect_r((x, y, 2, gui.panelY), [80, 200, 180, 255], True)
 
             if mouse_up:
-                pl = new_playlist(False)
-                for item in shift_selection:
-                    pctl.multi_playlist[pl][2].append(default_playlist[item])
+                drop_tracks_to_new_playlist(shift_selection)
+
 
         # -------------
         # Other input
@@ -16586,14 +16646,14 @@ class StandardPlaylist:
 
 
             draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
-                      "Playlist is empty", colour, 213, bg=colours.playlist_panel_background)
+                      _("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
             draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + (30 * gui.scale)), 2),
-                      "Drag and drop files to import", colour, 13, bg=colours.playlist_panel_background)
+                      _("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
             colour = alpha_mod(colours.index_text, 200)
-            draw_text((left + int(width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), "End of Playlist",
+            draw_text((left + int(width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), _("End of Playlist"),
                       colour, 213)
 
         # For every track in view
@@ -17561,9 +17621,7 @@ class PlaylistBox:
 
                 draw.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
                 if mouse_up:
-                    pl = new_playlist(False)
-                    for item in shift_selection:
-                        pctl.multi_playlist[pl][2].append(default_playlist[item])
+                    drop_tracks_to_new_playlist(shift_selection)
 
             if right_click:
                 extra_tab_menu.activate(pctl.playlist_active)
@@ -19012,12 +19070,12 @@ def save_state():
 
     print("Writing database to disk.")
 
-    #view_prefs['star-lines'] = star_lines
+    # view_prefs['star-lines'] = star_lines
     view_prefs['update-title'] = update_title
     view_prefs['side-panel'] = prefs.prefer_side
     view_prefs['dim-art'] = prefs.dim_art
     view_prefs['level-meter'] = gui.turbo
-    view_prefs['pl-follow'] = pl_follow
+    # view_prefs['pl-follow'] = pl_follow
     view_prefs['scroll-enable'] = scroll_enable
     view_prefs['break-enable'] = break_enable
     view_prefs['dd-index'] = dd_index
@@ -19626,7 +19684,6 @@ while running:
     #     power += 3
     # if side_drag:
     #     power += 2
-
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power = 500
