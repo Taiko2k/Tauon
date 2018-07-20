@@ -10,7 +10,13 @@ v3.0.2
  - Fixed clicking next to minimize button changing visualiser
  - Improved some scroll-bars to highlight on mouse over
  - Changed folder copy/move function to move only. Removed some menu entries.
+ - Changed theme default
+ - Tweaked sub-menu appearance
+ - Added menu icon for Picard
+ - Dropping an album onto playlist bar now gives the new playlist the title of the album
  - Added preliminary support for multi-language / translations
+ - Open tags with Picard function now detects flatpak installations
+ - Removed 'playback follows playlist' setting, now always off.
 
 v3.0.1
 
