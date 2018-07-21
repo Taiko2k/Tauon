@@ -15,7 +15,6 @@ v3.0.2
  - Added menu icon for Picard
  - Dropping an album onto playlist bar now gives the new playlist the title of the album
  - Added preliminary support for multi-language / translations
- - Open tags with Picard function now detects flatpak installations
  - Removed 'playback follows playlist' setting, now always off.
 
 v3.0.1

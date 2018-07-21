@@ -27,24 +27,6 @@
 
 # --------------------------------------------------------------------
 
-# INDEX -------------------------------
-
-# C-TC - TRACK CLASS + STATE LOADING
-# C-IS - INIT SDL
-# C-ML - MAIN LOOP START + INPUT HANDLING
-
-# C-UL - LAYOUT UPDATING
-# C-AR - ALBUM GALLERY RENDERING
-# C-BB - BOTTOM PANEL RENDER
-# C-TB - TOP PANEL RENDER CALL
-# C-TD - TOP PANEL RENDER
-# C-CM - ALBUM ART + TRACKS VIEW RENDER
-# C-PR - PLAYLIST RENDER CALL
-
-# C-PC - PLAYBACK CONTROL
-
-# ---------------------------------------
-
 import sys
 import os
 import pickle
@@ -7586,26 +7568,6 @@ class Menu:
 
                     icon = self.items[i][7]
                     self.render_icon(self.pos[0] + x , y_run + 5 * gui.scale, icon, selected)
-                    # if icon is not None:
-                    #     if icon.base_asset is None:
-                    #         # Colourise mode
-                    #
-                    #         colour = [50, 50, 50, 255]
-                    #
-                    #         if icon.colour_callback is not None and icon.colour_callback() is not None:
-                    #             colour = icon.colour_callback()
-                    #
-                    #         elif selected:
-                    #             colour = icon.colour
-                    #
-                    #         icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale, colour)
-                    #
-                    #     else:
-                    #         # Pre-rendered mode
-                    #         if selected:
-                    #             icon.asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
-                    #         else:
-                    #             icon.base_asset.render(self.pos[0] + x + icon.xoff * gui.scale, y_run + 5 * gui.scale + icon.yoff * gui.scale)
 
                 if self.show_icons:
                     x += 25 * gui.scale
@@ -10199,12 +10161,12 @@ def editor(index):
 
     ok = False
 
-    if flatpak_mode and prefs.tag_editor_target == 'picard':
-        complete = subprocess.run(shlex.split("flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        r = complete.stderr.decode()
-        if "org.musicbrainz.Picard" in r:
-            file_line = "flatpak run org.musicbrainz.Picard" + extra + file_line
-            ok = True
+    # if flatpak_mode and prefs.tag_editor_target == 'picard':
+    #     complete = subprocess.run(shlex.split("flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #     r = complete.stderr.decode()
+    #     if "org.musicbrainz.Picard" in r:
+    #         file_line = "flatpak run org.musicbrainz.Picard" + extra + file_line
+    #         ok = True
 
     if shutil.which(prefs.tag_editor_target) is not None:
         ok = True
@@ -21666,22 +21628,22 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(210), 213)
+                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(220), 213)
                 # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-                rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(150), width=300)
+                rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(170), width=300)
                 NRN = rename_files.text
                 # c_blink = 200
 
                 draw.rect((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
-
-                draw_text((x + 10 * gui.scale, y + 70 * gui.scale,), "%n - Track Number", colours.grey(175), 12)
-                draw_text((x + 10 * gui.scale, y + 82 * gui.scale,), "%a - Artist Name", colours.grey(175), 12)
-                draw_text((x + 10 * gui.scale, y + 94 * gui.scale,), "%t - Track Title", colours.grey(175), 12)
-                draw_text((x + 150 * gui.scale, y + 70 * gui.scale,), "%b - Album Title", colours.grey(175), 12)
-                draw_text((x + 150 * gui.scale, y + 82 * gui.scale,), "%d - Date/Year", colours.grey(175), 12)
-                draw_text((x + 150 * gui.scale, y + 94 * gui.scale,), "%u - Use Underscores", colours.grey(175), 12)
-                draw_text((x + 290 * gui.scale, y + 70 * gui.scale,), "%x - File Extension", colours.grey(175), 12)
+                colour = colours.grey(90)
+                draw_text((x + 10 * gui.scale, y + 70 * gui.scale,), "%n - Track Number", colour, 12)
+                draw_text((x + 10 * gui.scale, y + 82 * gui.scale,), "%a - Artist Name", colour, 12)
+                draw_text((x + 10 * gui.scale, y + 94 * gui.scale,), "%t - Track Title", colour, 12)
+                draw_text((x + 150 * gui.scale, y + 70 * gui.scale,), "%b - Album Title", colour, 12)
+                draw_text((x + 150 * gui.scale, y + 82 * gui.scale,), "%d - Date/Year", colour, 12)
+                draw_text((x + 150 * gui.scale, y + 94 * gui.scale,), "%u - Use Underscores", colour, 12)
+                draw_text((x + 290 * gui.scale, y + 70 * gui.scale,), "%x - File Extension", colour, 12)
 
                 afterline = ""
                 warn = False
@@ -21698,26 +21660,26 @@ while running:
                     if item == rename_index:
                         break
 
-                draw_text((x + 10 * gui.scale, y + 120 * gui.scale), "BEFORE", colours.grey(120), 12)
+                draw_text((x + 10 * gui.scale, y + 120 * gui.scale), "BEFORE", colours.grey(100), 12)
                 line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
-                draw_text((x + 67 * gui.scale, y + 120 * gui.scale), line, colours.grey(170), 12)
+                draw_text((x + 67 * gui.scale, y + 120 * gui.scale), line, colours.grey(210), 12)
 
-                draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "AFTER", colours.grey(120), 12)
-                draw_text((x + 67 * gui.scale, y + 135 * gui.scale,), trunc_line(afterline, 12, 335), colours.grey(170), 12)
+                draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "AFTER", colours.grey(100), 12)
+                draw_text((x + 67 * gui.scale, y + 135 * gui.scale,), trunc_line(afterline, 12, 335), colours.grey(210), 12)
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
-                    draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 100, 100, 255],
+                    draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
                               13)
 
                 if '%t' not in NRN and '%n' not in NRN:
-                    draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 100, 100, 255],
+                    draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
                               13)
                 if warn:
-                    draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 100, 100, 255], 13)
+                    draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 90, 90, 255], 13)
                 if warncue:
                     draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Error: Folder contains tracks from a CUE sheet",
-                              [245, 100, 100, 255], 13)
+                              [245, 90, 90, 255], 13)
 
 
                 label = "Write (" + str(len(r_todo)) + ")"
@@ -21771,8 +21733,6 @@ while running:
 
                     else:
                         show_message("Rename complete.", 'done', str(total_todo) + "/" + str(len(r_todo)) + " filenames were written.")
-
-
 
 
             if radiobox:
