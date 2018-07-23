@@ -219,6 +219,7 @@ g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                 "Transcoding has finished.")
 
 # Other imports
+import gi
 from sdl2 import *
 from sdl2.sdlimage import *
 from PIL import Image
@@ -248,12 +249,10 @@ if discord_allow:
 default_player = 1
 running = True
 
-
 # Check if BASS is present and fall back to Gstreamer if not
 if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-gst' in sys.argv):
     print("BASS not found")
     try:
-        import gi
         gi.require_version('Gst', '1.0')
         from gi.repository import GObject, Gst
         default_player = 2
@@ -261,14 +260,6 @@ if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.s
     except:
         print("ERROR: gi.repository not found")
         default_player = 0
-
-if system == 'linux':
-    import cairo
-    import gi
-    gi.require_version('Pango', '1.0')
-    gi.require_version('PangoCairo', '1.0')
-    from gi.repository import Pango
-    from gi.repository import PangoCairo
 
 
 # Setting various timers
@@ -726,7 +717,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
             self.win_text = True
         elif system == "linux":
             self.cairo_text = True
-        self.win_fore = [255, 255, 255, 255]
 
         self.trunk_end = "..." # "…"
         self.temp_themes = {}
@@ -5089,7 +5079,6 @@ t_window = SDL_CreateWindow(window_title,
 #                              flags)
 
 # print(SDL_GetError())
-# print(SDL_GetError())
 
 if system == 'windows':
     sss = SDL_SysWMinfo()
@@ -5130,7 +5119,7 @@ if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
 
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-
+SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
@@ -5150,23 +5139,6 @@ gui.pl_update = 2
 
 SDL_SetWindowMinimumSize(t_window, 560, 330)
 
-# SDL_SetRenderTarget(renderer, None)
-# SDL_SetRenderDrawColor(renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-#                        colours.top_panel_background[2], colours.top_panel_background[3])
-# SDL_RenderClear(renderer)
-# SDL_RenderPresent(renderer)
-
-# SDL_SetWindowOpacity(t_window, 0.98)
-
-# m_surface = SDL_CreateRGBSurface(0, window_size[0], window_size[1], 32,0,0,0,0);
-# #SDL_SetSurfaceBlendMode(m_surface, SDL_BLENDMODE_BLEND)
-# #
-# mode = SDL_WindowShapeMode()
-# mode.mode = ShapeModeColorKey
-# #
-# mode.parameters.colorKey = SDL_Color(0, 0, 0)
-
-
 if default_player == 1:
 
     playerThread = threading.Thread(target=player)
@@ -5180,61 +5152,6 @@ elif default_player == 2:
     playerThread.start()
 
 
-if system == 'windows' and taskbar_progress:
-
-    class WinTask:
-
-        def __init__(self, ):
-            self.start = time.time()
-            self.updated_state = 0
-            self.window_id = gui.window_id
-            import comtypes.client as cc
-            cc.GetModule("TaskbarLib.tlb")
-            import comtypes.gen.TaskbarLib as tbl
-            self.taskbar = cc.CreateObject(
-                "{56FDF344-FD6D-11d0-958A-006097C9A090}",
-                interface=tbl.ITaskbarList3)
-            self.taskbar.HrInit()
-
-            self.d_timer = Timer()
-
-        def update(self, force=False):
-            if self.d_timer.get() > 2 or force:
-                self.d_timer.set()
-
-                if pctl.playing_state == 1 and self.updated_state != 1:
-                    self.taskbar.SetProgressState(self.window_id, 0x2)
-
-                if pctl.playing_state == 1:
-                    self.updated_state = 1
-                    if pctl.playing_length > 2:
-                        perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
-                        if perc < 2:
-                            perc = 1
-                        elif perc > 100:
-                            prec = 100
-                    else:
-                        perc = 0
-
-                    self.taskbar.SetProgressValue(self.window_id, perc, 100)
-
-                elif pctl.playing_state == 2 and self.updated_state != 2:
-                    self.updated_state = 2
-                    self.taskbar.SetProgressState(self.window_id, 0x8)
-
-                elif pctl.playing_state == 0 and self.updated_state != 0:
-                    self.updated_state = 0
-                    self.taskbar.SetProgressState(self.window_id, 0x2)
-                    self.taskbar.SetProgressValue(self.window_id, 0, 100)
-
-
-    if os.path.isfile("TaskbarLib.tlb"):
-        windows_progress = WinTask()
-    else:
-        taskbar_progress = False
-        print("Could not find TaskbarLib.tlb")
-
-
 # ---------------------------------------------------------------------------------------------
 # ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
 
@@ -5246,56 +5163,12 @@ def coll_point(l, r):
 def coll(r):
     return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
+from t_draw import TDraw
+
+ddt = TDraw(renderer)
+ddt.scale = gui.scale
+
 class Drawing:
-    def __init__(self):
-        self.sdl_rect = SDL_Rect(10, 10, 10, 10)
-        self.text_width_p = pointer(c_int(0))
-        self.text_calc_cache = {}
-
-    def fast_fill_rect(self, x, y, w, h):
-        self.sdl_rect.x = x
-        self.sdl_rect.y = y
-        self.sdl_rect.w = w
-        self.sdl_rect.h = h
-        SDL_RenderFillRect(renderer, self.sdl_rect)
-
-    def rect(self, location, wh, colour, fill=False, target=renderer):
-
-        self.sdl_rect.x = location[0]
-        self.sdl_rect.y = location[1]
-        self.sdl_rect.w = wh[0]
-        self.sdl_rect.h = wh[1]
-
-        if fill is True:
-            SDL_SetRenderDrawColor(target, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderFillRect(target, self.sdl_rect)
-        else:
-            SDL_SetRenderDrawColor(target, colour[0], colour[1], colour[2], colour[3])
-            SDL_RenderDrawRect(target, self.sdl_rect)
-
-    def rect_r(self, rect, colour, fill=False, target=renderer):
-        self.rect((rect[0], rect[1]), (rect[2], rect[3]), colour, fill, target)
-
-    def line(self, x1, y1, x2, y2, colour):
-
-        SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-        SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
-
-    def text_calc(self, text, font, cache=True, height=False):
-
-        if gui.win_text:
-            xy = pretty_text.text_xy(text, font)
-            if height:
-                return xy[1]
-            else:
-                return xy[0]
-
-        if gui.cairo_text:
-            x, y = cairo_text.wh(text, font, 1000)
-            if height:
-                return y
-            else:
-                return x
 
     def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None):
 
@@ -5322,359 +5195,82 @@ class Drawing:
             press = input.mouse_click
 
         if coll(rect):
-            draw.rect_r(rect, fg, True)
-            draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, fore_text, font,
+            ddt.rect_r(rect, fg, True)
+            ddt.draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, fore_text, font,
                       bg=fg)
             if press:
                 click = True
         else:
-            draw.rect_r(rect, bg, True)
-            draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, back_text, font,
+            ddt.rect_r(rect, bg, True)
+            ddt.draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, back_text, font,
                       bg=bg)
         return click
 
 
 draw = Drawing()
 
-
-#def track_box_entry(x, y, field_title, field_reference)
-
-
-text_cache = []  # location, text, dst(sdl rect), c(texture)
-calc_cache = []
-ttc = {}
-ttl = []
-
-
-# m_renderer = SDL_CreateSoftwareRenderer(m_surface)
-# draw.rect((0, 0), (window_size[0], window_size[1]), [255,255,255,255], True, m_renderer)
-# draw.rect((0, 0), (8, 15), [0,0,0,0], True, m_renderer)
-#
-# SDL_SetWindowShape(t_window, m_surface, mode)
-
-
-# m_surface = SDL_CreateRGBSurface(0, 500, 500, 32,0,0,0,0)
-#
-# s_renderer = SDL_CreateSoftwareRenderer(m_surface)
-# print(SDL_GetError())
-#
-# #SDL_SetRenderTarget(renderer, m_surface)
-# draw.rect_r((0,0,100,50), (0,0,0,0), True, target=s_renderer)
-# draw.rect_r((0,50,100,50), (255,255,255,50), True, target=s_renderer)
-# draw.rect_r((0,150,100,50), (0,0,0,255), True, target=s_renderer)
-# draw.rect_r((0,200,100,50), (255,255,255,255), True, target=s_renderer)
-# draw.rect_r((0,250,100,50), (255,255,255,0), True, target=s_renderer)
-# #SDL_SetRenderTarget(renderer, None)
-#
-# mode = SDL_WindowShapeMode()
-# mode.mode = ShapeModeDefault
-# #mode.shape = m_surface
-# #mode.parameters.colorKey = SDL_Color(0, 0, 0)
-# print(SDL_GetError())
-# SDL_SetWindowShape(t_window, m_surface, mode)
-#
-# print(SDL_GetError())
-
-# Draw text function with enhanced performance via given search reference values
-def clear_text_cache():
-    global ttc
-    global ttl
-
-    for i in range(len(ttl)):
-        key = ttl[i]
-        so = ttc[key]
-        SDL_DestroyTexture(so[1])
-
-    del ttc
-    del ttl
-    ttc = {}
-    ttl = []
-
-
 if system == "linux":
-    class CT:
-
-        def __init__(self):
-
-            self.source_rect = SDL_Rect(0, 0, 0, 0)
-            self.dest_rect = SDL_Rect(0, 0, 0, 0)
-
-            self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
-            self.context = cairo.Context(self.surf)
-            self.layout = PangoCairo.create_layout(self.context)
-            self.pctx = self.layout.get_context()
-            fo = cairo.FontOptions()
-            fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-
-            PangoCairo.context_set_font_options(self.pctx, fo)
-
-            self.f_dict = {}
-
-            #self.test_layout = PangoCairo.create_layout(self.context)
-
-        def prime_font(self, name, size, user_handle, y_off=0):
-
-            self.f_dict[user_handle] = (name + " " + str(size), y_off)
-
-        def wh(self, text, font, max_x, wrap=False):
-
-            self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-            self.layout.set_ellipsize(Pango.EllipsizeMode.END)
-            self.layout.set_width(max_x * 1000)
-            if wrap:
-                self.layout.set_height(3000 * 1000)
-            else:
-                self.layout.set_height(0)
-            self.layout.set_text(text, -1)
-
-
-            return self.layout.get_pixel_size()
-
-        def render(self, key, x, y, range_top, range_height, align):
-            sd = key
-
-
-            if align == 1:
-                sd[0].x = x - sd[0].w
-
-            elif align == 2:
-                sd[0].x = sd[0].x - int(sd[0].w / 2)
-
-            if range_height is not None and range_height < sd[0].h:
-
-                if range_top < 0:
-                    range_top = 0
-
-                if range_top > sd[0].h - range_height:
-                    range_top = sd[0].h - range_height
-
-                self.source_rect.y = range_top
-                self.source_rect.w = sd[0].w
-                self.source_rect.h = range_height
-
-                self.dest_rect.x = sd[0].x
-                self.dest_rect.y = sd[0].y
-                self.dest_rect.w = sd[0].w
-                self.dest_rect.h = range_height
-
-                SDL_RenderCopyEx(renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
-                return
-
-            SDL_RenderCopy(renderer, sd[1], None, sd[0])
-
-        def draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
-
-            max_x += 12  # HACKY
-
-            if len(text) == 0:
-                return 0
-
-            key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
-            global ttc
-
-            x = location[0]
-            y = location[1] #+ gui.universal_y_text_offset
-
-            if key in ttc:
-
-                sd = ttc[key]
-                sd[0].x = x
-                sd[0].y = y - sd[2]
-                self.render(sd, x, y, range_top, range_height, align)
-
-
-                if wrap:
-                    return sd[0].h
-                return sd[0].w
-
-            w, h = self.wh(text, font, max_x, wrap)
-            #w += 100
-
-            if w < 1:
-                return 0
-
-            h += 4  # Compensate for characters that drop past the baseline, pango dosent seem to allow for this
-
-
-
-            if wrap:
-                #h = int((w / max_x) * h) + h
-                w = max_x + 1
-            # if max_y != None:
-            #     h = max_y
-
-            #perf_timer.set()
-
-            data = ctypes.c_buffer(b" " * (h * (w * 4)))
-            surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
-
-            context = cairo.Context(surf)
-            layout = PangoCairo.create_layout(context)
-            #pctx = layout.get_context()
-
-
-            if max_y != None:
-                layout.set_ellipsize(Pango.EllipsizeMode.END)
-                layout.set_width(max_x * 1000)
-                layout.set_height(max_y * 1000)
-            else:
-                layout.set_ellipsize(Pango.EllipsizeMode.END)
-                layout.set_width(max_x * 1000)
-
-            # Antialias settings here dont any effect, fontconfg settings override it
-
-            #fo = cairo.FontOptions()
-            #fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-            #fo.set_antialias(cairo.ANTIALIAS_GRAY)
-            #fo.set_subpixel_order(cairo.SUBPIXEL_ORDER_RGB)
-            #PangoCairo.context_set_font_options(pctx, fo)
-
-            context.rectangle(0, 0, w, h)
-            context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
-            context.fill()
-            context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
-            #context.translate(0,0)
-
-            if font not in self.f_dict:
-                print("Font not loaded: " + str(font))
-                return 10
-
-            layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-            layout.set_text(text, -1)
-
-            y_off = layout.get_baseline() / 1000
-
-            y_off = round(y_off) - 13 * gui.scale # 13 for compat with way text position used to work
-            if gui.scale == 2:
-                y_off -= 2
-            #w, h = layout.get_pixel_size()
-            #print(layout.get_extents())
-
-            PangoCairo.show_layout(context, layout)
-
-            surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_RGB888)
-
-            # Here the background colour is keyed out allowing lines to overlap slightly
-            ke = SDL_MapRGB(surface.contents.format, bg[0], bg[1], bg[2])
-            SDL_SetColorKey(surface, True, ke)
-
-            c = SDL_CreateTextureFromSurface(renderer, surface)
-            SDL_FreeSurface(surface)
-
-            dst = SDL_Rect(x, y)
-            dst.w = w
-            dst.h = h
-            dst.y = y - y_off
-
-            ttc[key] = [dst, c, y_off]
-            self.render(ttc[key], x, y, range_top, range_height, align)
-            ttl.append(key)
-            if len(ttl) > 350:
-                key = ttl[0]
-                so = ttc[key]
-                SDL_DestroyTexture(so[1])
-                del ttc[key]
-                del ttl[0]
-            if wrap:
-                return dst.h
-            return dst.w
-
-
-
-    cairo_text = CT()
 
     if gui.scale == 1:
 
         standard_font = prefs.linux_font #"Noto Sans"
-        cairo_text.prime_font(standard_font, 10 - 2, 9)
-        cairo_text.prime_font(standard_font, 10 - 2, 10)
-        cairo_text.prime_font(standard_font, 11 - 2.5, 11)
-        cairo_text.prime_font(standard_font, 12 - 3, 12)
-        cairo_text.prime_font(standard_font, 13 - 3, 13)
-        cairo_text.prime_font(standard_font, 14 - 4, 14)
-        cairo_text.prime_font(standard_font, 15 - 4, 15)
-        cairo_text.prime_font(standard_font, 16 - 4, 16)
-        cairo_text.prime_font(standard_font, 17 - 5, 17)
-        cairo_text.prime_font(standard_font, 18 - 6, 18)
+        ddt.prime_font(standard_font, 10 - 2, 9)
+        ddt.prime_font(standard_font, 10 - 2, 10)
+        ddt.prime_font(standard_font, 11 - 2.5, 11)
+        ddt.prime_font(standard_font, 12 - 3, 12)
+        ddt.prime_font(standard_font, 13 - 3, 13)
+        ddt.prime_font(standard_font, 14 - 4, 14)
+        ddt.prime_font(standard_font, 15 - 4, 15)
+        ddt.prime_font(standard_font, 16 - 4, 16)
+        ddt.prime_font(standard_font, 17 - 5, 17)
+        ddt.prime_font(standard_font, 18 - 6, 18)
 
-        cairo_text.prime_font(standard_font, 30 - 6, 30)
+        ddt.prime_font(standard_font, 30 - 6, 30)
 
-        cairo_text.prime_font(standard_font, 12 - 3, 412)
-        cairo_text.prime_font(standard_font, 13 - 3, 413)
+        ddt.prime_font(standard_font, 12 - 3, 412)
+        ddt.prime_font(standard_font, 13 - 3, 413)
 
         standard_font = prefs.linux_bold_font #"Noto Sans Bold"
-        cairo_text.prime_font(standard_font, 9 - 3, 209)
-        cairo_text.prime_font(standard_font, 10 - 3, 210)
-        cairo_text.prime_font(standard_font, 11 - 3, 211)
-        cairo_text.prime_font(standard_font, 12 - 3, 212)
-        cairo_text.prime_font(standard_font, 13 - 3, 213)
-        cairo_text.prime_font(standard_font, 14 - 3, 214)
-        cairo_text.prime_font(standard_font, 15 - 3, 215)
-        cairo_text.prime_font(standard_font, 16 - 3, 216)
-        cairo_text.prime_font(standard_font, 17 - 3, 217)
-        cairo_text.prime_font(standard_font, 28 - 3, 228)
+        ddt.prime_font(standard_font, 9 - 3, 209)
+        ddt.prime_font(standard_font, 10 - 3, 210)
+        ddt.prime_font(standard_font, 11 - 3, 211)
+        ddt.prime_font(standard_font, 12 - 3, 212)
+        ddt.prime_font(standard_font, 13 - 3, 213)
+        ddt.prime_font(standard_font, 14 - 3, 214)
+        ddt.prime_font(standard_font, 15 - 3, 215)
+        ddt.prime_font(standard_font, 16 - 3, 216)
+        ddt.prime_font(standard_font, 17 - 3, 217)
+        ddt.prime_font(standard_font, 28 - 3, 228)
 
     else:
         standard_font = prefs.linux_font  # "Noto Sans"
-        cairo_text.prime_font(standard_font, 19 - 2, 9, 12)
-        cairo_text.prime_font(standard_font, 20 - 2, 10, 12)
-        cairo_text.prime_font(standard_font, 21 - 2.5, 11, 12)
-        cairo_text.prime_font(standard_font, 22 - 3, 12, 12)
-        cairo_text.prime_font(standard_font, 23 - 3, 13, 17)
-        cairo_text.prime_font(standard_font, 24 - 4, 14, 17)
-        cairo_text.prime_font(standard_font, 25 - 4, 15, 17)
-        cairo_text.prime_font(standard_font, 26 - 4, 16, 17)
-        cairo_text.prime_font(standard_font, 27 - 5, 17, 17)
-        cairo_text.prime_font(standard_font, 28 - 6, 18, 17)
+        ddt.prime_font(standard_font, 19 - 2, 9, 12)
+        ddt.prime_font(standard_font, 20 - 2, 10, 12)
+        ddt.prime_font(standard_font, 21 - 2.5, 11, 12)
+        ddt.prime_font(standard_font, 22 - 3, 12, 12)
+        ddt.prime_font(standard_font, 23 - 3, 13, 17)
+        ddt.prime_font(standard_font, 24 - 4, 14, 17)
+        ddt.prime_font(standard_font, 25 - 4, 15, 17)
+        ddt.prime_font(standard_font, 26 - 4, 16, 17)
+        ddt.prime_font(standard_font, 27 - 5, 17, 17)
+        ddt.prime_font(standard_font, 28 - 6, 18, 17)
 
-        cairo_text.prime_font(standard_font, 50 - 6, 30, 17)
+        ddt.prime_font(standard_font, 50 - 6, 30, 17)
 
-        cairo_text.prime_font(standard_font, 22 - 3, 412, 13)
-        cairo_text.prime_font(standard_font, 23 - 3, 413, 13)
+        ddt.prime_font(standard_font, 22 - 3, 412, 13)
+        ddt.prime_font(standard_font, 23 - 3, 413, 13)
 
         standard_font = prefs.linux_bold_font  # "Noto Sans Bold"
-        cairo_text.prime_font(standard_font, 19 - 3, 209, 12)
-        cairo_text.prime_font(standard_font, 20 - 3, 210, 12)
-        cairo_text.prime_font(standard_font, 21 - 3, 211, 12)
-        cairo_text.prime_font(standard_font, 22 - 3, 212, 12)
-        cairo_text.prime_font(standard_font, 23 - 3, 213, 12)
-        cairo_text.prime_font(standard_font, 24 - 3, 214, 12)
-        cairo_text.prime_font(standard_font, 25 - 3, 215, 12)
-        cairo_text.prime_font(standard_font, 26 - 3, 216, 12)
-        cairo_text.prime_font(standard_font, 27 - 3, 217, 12)
-        cairo_text.prime_font(standard_font, 48 - 3, 228, 12)
-
-    # standard_font = "Noto Sans Medium" #prefs.linux_bold_font
-    # cairo_text.prime_font(standard_font, 13 - 3, 313)
-
-
-def draw_text2(location, text, colour, font, maxx, field=0, index=0):
-
-    return draw_text(location, text, colour, font, maxx)
-
-
-def draw_text(location, text, colour, font, max=4000, bg=None, range_top=0, range_height=None):
-
-    if text == "":
-        return 0
-    if bg == None:
-        bg = gui.win_fore
-    if colour[3] != 255:
-        colour = alpha_blend(colour, bg)
-    align = 0
-    if len(location) > 2:
-        if location[2] == 1:
-            align = 1
-        if location[2] == 2:
-            align = 2
-        if location[2] == 4:
-            max_y = None
-            if len(location) > 4:
-                max_y = location[4]
-            return cairo_text.draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_y, wrap=True, range_top=range_top, range_height=range_height)
-
-    return cairo_text.draw_text_cairo(location, text, colour, font, max, bg, align)
-
+        ddt.prime_font(standard_font, 19 - 3, 209, 12)
+        ddt.prime_font(standard_font, 20 - 3, 210, 12)
+        ddt.prime_font(standard_font, 21 - 3, 211, 12)
+        ddt.prime_font(standard_font, 22 - 3, 212, 12)
+        ddt.prime_font(standard_font, 23 - 3, 213, 12)
+        ddt.prime_font(standard_font, 24 - 3, 214, 12)
+        ddt.prime_font(standard_font, 25 - 3, 215, 12)
+        ddt.prime_font(standard_font, 26 - 3, 216, 12)
+        ddt.prime_font(standard_font, 27 - 3, 217, 12)
+        ddt.prime_font(standard_font, 48 - 3, 228, 12)
 
 
 class LyricsRenMini:
@@ -5698,9 +5294,9 @@ class LyricsRenMini:
             self.index = index
             self.generate(index, w)
 
-        draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 15, w, colours.side_panel_background)
+        ddt.draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 15, w, colours.side_panel_background)
 
-# if gui.win_text or gui.cairo_text:
+
 lyrics_ren_mini = LyricsRenMini()
 
 class LyricsRenWin:
@@ -5723,7 +5319,7 @@ class LyricsRenWin:
             self.index = index
             self.generate(index, w)
 
-        draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
+        ddt.draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
 
 lyrics_ren = LyricsRenWin()
@@ -5746,21 +5342,21 @@ def draw_linked_text(location, text, colour, font):
             else:
                 link_text += text[i]
 
-    left = draw.text_calc(base, font)
-    right = draw.text_calc(base + link_text, font)
+    left = ddt.get_text_w(base, font)
+    right = ddt.get_text_w(base + link_text, font)
 
     x = location[0]
     y = location[1]
 
-    draw_text((x, y), base, colour, font)
-    draw_text((x + left, y), link_text, colours.link_text, font)
-    draw_text((x + right, y), rest, colour, font)
+    ddt.draw_text((x, y), base, colour, font)
+    ddt.draw_text((x + left, y), link_text, colours.link_text, font)
+    ddt.draw_text((x + right, y), rest, colour, font)
     if gui.win_text:
         y += 1
     if gui.scale == 2:
         font *= 2
         font += 4
-    draw.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
+    ddt.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
 
@@ -5902,7 +5498,7 @@ class TextBox:
                     self.eliminate_selection()
 
 
-            # draw.rect_r(rect, [255, 50, 50, 80], True)
+            # ddt.rect_r(rect, [255, 50, 50, 80], True)
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
@@ -5938,7 +5534,7 @@ class TextBox:
                         self.cursor_position = len(self.text)
                     else:
                         for i in range(len(self.text)):
-                            post = draw.text_calc(self.text[0:i+1], font)
+                            post = ddt.get_text_w(self.text[0:i+1], font)
                             # pre_half = int((post - pre) / 2)
 
                             if x + pre - 0 <= mouse_position[0] <= x + post + 0:
@@ -5967,7 +5563,7 @@ class TextBox:
                 else:
 
                     for i in range(len(self.text)):
-                        post = draw.text_calc(self.text[0:i + 1], font)
+                        post = ddt.get_text_w(self.text[0:i + 1], font)
                         # pre_half = int((post - pre) / 2)
 
                         if x + pre - 0 <= mouse_position[0] <= x + post + 0:
@@ -5985,36 +5581,36 @@ class TextBox:
                     else:
                         self.selection = 0
 
-            a = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
+            a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
             # print("")
             # print(self.selection)
             # print(self.cursor_position)
 
-            b = draw.text_calc(self.text[0: len(self.text) - self.selection], font)
+            b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
 
             #rint((a, b))
-            draw.rect_r([x + a, y, b - a, selection_height], [40, 120, 180, 255], True)
+            ddt.rect_r([x + a, y, b - a, selection_height], [40, 120, 180, 255], True)
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
                 if not gui.cairo_text:
                     inf_comp = 1
-                space = draw_text((x, y), self.get_selection(0), colour, font)
-                space += draw_text((x + space - inf_comp, y), self.get_selection(1), [240,240,240,255], font, bg=[40, 120, 180, 255],)
-                draw_text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
+                space = ddt.draw_text((x, y), self.get_selection(0), colour, font)
+                space += ddt.draw_text((x + space - inf_comp, y), self.get_selection(1), [240,240,240,255], font, bg=[40, 120, 180, 255],)
+                ddt.draw_text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
             else:
-                draw_text((x, y), self.text, colour, font)
+                ddt.draw_text((x, y), self.text, colour, font)
 
-            space = draw.text_calc(self.text[0: len(self.text) - self.cursor_position], font)
+            space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
 
             if TextBox.cursor and self.selection == self.cursor_position:
-                #draw.line(x + space, y + 2, x + space, y + 15, colour)
+                #ddt.line(x + space, y + 2, x + space, y + 15, colour)
 
                 if big:
-                    #draw.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
-                    draw.rect_r((x + space, y - 10 * gui.scale + 2, 2 * gui.scale, 27 * gui.scale), colour, True)
+                    #ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
+                    ddt.rect_r((x + space, y - 10 * gui.scale + 2, 2 * gui.scale, 27 * gui.scale), colour, True)
                 else:
-                    draw.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
+                    ddt.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
 
             if click:
                 self.selection = self.cursor_position
@@ -6030,21 +5626,21 @@ class TextBox:
                     self.paste()
 
             if secret:
-                space = draw_text((x, y), '●' * len(self.text), colour, font)
+                space = ddt.draw_text((x, y), '●' * len(self.text), colour, font)
             else:
-                space = draw_text((x, y), self.text, colour, font)
+                space = ddt.draw_text((x, y), self.text, colour, font)
 
             if active and TextBox.cursor:
                 xx = x + space + 1
                 yy = y + 3
                 if big:
-                    draw.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
+                    ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
                 else:
-                    draw.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
+                    ddt.rect_r((xx, yy, 1 * gui.scale, 14 * gui.scale), colour, True)
 
         if active and editline != "" and editline != input_text:
-            ex = draw_text((x + space + 4, y), editline, [240, 230, 230, 255], font)
-            #draw.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
+            ex = ddt.draw_text((x + space + 4, y), editline, [240, 230, 230, 255], font)
+            #ddt.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
 
         animate_monitor_timer.set()
 
@@ -6934,18 +6530,18 @@ album_art_gen = AlbumArt()
 
 def trunc_line(line, font, px, dots=True):  # This old function is slow and should be avoided
 
-    if draw.text_calc(line, font) < px + 10:
+    if ddt.get_text_w(line, font) < px + 10:
         return line
 
     if dots:
-        while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+        while ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px:
             if len(line) == 0:
                 return gui.trunk_end
             line = line[:-1]
         return line.rstrip(" ") + gui.trunk_end
 
     else:
-        while draw.text_calc(line, font) > px:
+        while ddt.get_text_w(line, font) > px:
 
             line = line[:-1]
             if len(line) < 2:
@@ -6955,18 +6551,18 @@ def trunc_line(line, font, px, dots=True):  # This old function is slow and shou
 
 def right_trunc(line, font, px, dots=True):
 
-    if draw.text_calc(line, font) < px + 10:
+    if ddt.get_text_w(line, font) < px + 10:
         return line
 
     if dots:
-        while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+        while ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px:
             if len(line) == 0:
                 return gui.trunk_end
             line = line[1:]
         return gui.trunk_end + line.rstrip(" ")
 
     else:
-        while draw.text_calc(line, font) > px:
+        while ddt.get_text_w(line, font) > px:
             # trunk = True
             line = line[1:]
             if len(line) < 2:
@@ -6977,16 +6573,16 @@ def right_trunc(line, font, px, dots=True):
 
 # def trunc_line2(line, font, px):
 #     trunk = False
-#     p = draw.text_calc(line, font)
+#     p = ddt.get_text_w(line, font)
 #     if p == 0 or p < px + 15:
 #         return line
 #
 #     tl = line[0:(int(px / p * len(line)) + 3)]
 #
-#     if draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px:
+#     if ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px:
 #         line = tl
 #
-#     while draw.text_calc(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
+#     while ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
 #         trunk = True
 #         line = line[:-1]
 #         if len(line) < 1:
@@ -7352,7 +6948,7 @@ class ToolTip:
 
             self.x = x
             self.y = y
-            self.w = draw.text_calc(text, self.font) + 20
+            self.w = ddt.get_text_w(text, self.font) + 20
 
         self.called = True
 
@@ -7367,9 +6963,9 @@ class ToolTip:
 
             if self.timer.get() > self.trigger:
 
-                draw.rect_r((self.x, self.y, self.w, self.h), colours.menu_background, True)
-                draw.rect_r((self.x, self.y, self.w, self.h), colours.grey(45))
-                draw_text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.grey(235), self.font)
+                ddt.rect_r((self.x, self.y, self.w, self.h), colours.menu_background, True)
+                ddt.rect_r((self.x, self.y, self.w, self.h), colours.grey(45))
+                ddt.draw_text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.grey(235), self.font)
             else:
                 #gui.update += 1
                 pass
@@ -7515,12 +7111,12 @@ class Menu:
             for i in range(len(self.items)):
                 if self.items[i] is None:
 
-                    draw.rect((self.pos[0], y_run), (self.w, self.break_height),
+                    ddt.rect_a((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
-                    draw.rect((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
+                    ddt.rect_a((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
                               [255, 255, 255, 13], True)
                     # Draw tab
-                    draw.rect((self.pos[0], y_run), (4 * gui.scale, self.break_height),
+                    ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.break_height),
                               colours.grey(30), True)
                     y_run += self.break_height
                     continue
@@ -7539,7 +7135,7 @@ class Menu:
                     label = self.items[i][0]
 
                 # Draw item background, black by default
-                draw.rect((self.pos[0], y_run), (self.w, self.h),
+                ddt.rect_a((self.pos[0], y_run), (self.w, self.h),
                           fx[1], True)
                 bg = fx[1]
 
@@ -7550,7 +7146,7 @@ class Menu:
 
                 if coll_point(mouse_position,
                               (self.pos[0], y_run, self.w, self.h - 1)):
-                    draw.rect((self.pos[0], y_run), (self.w, self.h),
+                    ddt.rect_a((self.pos[0], y_run), (self.w, self.h),
                               colours.menu_highlight_background,
                               True)  # [15, 15, 15, 255]
                     selected = True
@@ -7567,7 +7163,7 @@ class Menu:
                             self.sub_active = self.items[i][2]
 
                 # Draw tab
-                draw.rect((self.pos[0], y_run), (4 * gui.scale, self.h),
+                ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.h),
                           colours.grey(30), True)
 
                 # Draw Icon
@@ -7590,12 +7186,12 @@ class Menu:
                     self.sub_arrow.asset.render(self.pos[0] + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
                 # Render the items label
-                draw_text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
+                ddt.draw_text((self.pos[0] + x, y_run + ytoff), label, fx[0], self.font, bg=bg)
 
                 # Render the items hint
                 if len(self.items[i]) > 6 and self.items[i][6] != None:
                     colo = alpha_blend([255, 255, 255, 50], bg)
-                    draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
+                    ddt.draw_text((self.pos[0] + self.w - 5, y_run + ytoff, 1), self.items[i][6],
                               colo, self.font, bg=bg)
 
                 y_run += self.h
@@ -7616,7 +7212,7 @@ class Menu:
 
                         # Item background
                         fx = self.subs[self.sub_active][w][3]()
-                        draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
+                        ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
 
                         # Detect if mouse is over this item
                         rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
@@ -7625,7 +7221,7 @@ class Menu:
                         bg = colours.menu_background
                         if coll_point(mouse_position,
                                       (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
-                            draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
+                            ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h),
                                       colours.menu_highlight_background,
                                       True)
                             bg = alpha_blend(colours.menu_highlight_background, bg)
@@ -7657,15 +7253,15 @@ class Menu:
                         self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select)
 
                         # Render the items label
-                        draw_text((sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0],
+                        ddt.draw_text((sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0],
                                   self.font, bg=bg)
 
                         # Draw tab
-                        draw.rect((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h),
+                        ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h),
                                   colours.grey(30), True)
 
                         # Render the menu outline
-                        # draw.rect(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+                        # ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
 
             # Process Click Actions
@@ -7683,7 +7279,7 @@ class Menu:
 
 
                 # Render the menu outline
-                # draw.rect(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+                # ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
 
@@ -12139,15 +11735,15 @@ class SearchOverlay:
                 mouse_change = True
             # mouse_change = True
 
-            draw.rect_r((x, y, w, h), [5,5,5,230], True)
+            ddt.rect_r((x, y, w, h), [5,5,5,230], True)
 
             if self.sip:
                 pass
-                draw.rect_r((15,15,7,7), [100,80,240,255], True)
-                draw.rect_r((27,15,7,7), [100,80,240,255], True)
-                draw.rect_r((39,15,7,7), [100,80,240,255], True)
+                ddt.rect_r((15,15,7,7), [100,80,240,255], True)
+                ddt.rect_r((27,15,7,7), [100,80,240,255], True)
+                ddt.rect_r((39,15,7,7), [100,80,240,255], True)
             elif not self.results and len(self.search_text.text) > 2:
-                draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
+                ddt.draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
             self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click)
 
@@ -12223,7 +11819,7 @@ class SearchOverlay:
                 # Block separating lower search results
                 if item[4] < 4 and not sec:
                     if i != 0:
-                        draw.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
+                        ddt.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
                         yy += 20 * gui.scale
 
                     sec = True
@@ -12236,12 +11832,12 @@ class SearchOverlay:
                     cl = [250, 140, 190, int(255 * fade)]
                     text = "Artist"
                     yy += 3 * gui.scale
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
-                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
 
                     if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -12270,7 +11866,7 @@ class SearchOverlay:
                 if item[0] == 1:
 
                     yy += 5 * gui.scale
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
                     artist = pctl.master_library[item[2]].album_artist
                     if artist == "":
@@ -12278,20 +11874,20 @@ class SearchOverlay:
 
                     if full_count < 6:
 
-                        draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
-                        xx += draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += ddt.draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                        draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
+                        ddt.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
                         gall_ren.render(item[2], (50 * gui.scale, yy + 5), 50 * gui.scale)
                         if fade != 1:
-                            draw.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
+                            ddt.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
                         full = True
                         full_count += 1
 
                         if fade == 1:
-                            draw.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
+                            ddt.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
 
                         # Mouse Selection
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
@@ -12312,10 +11908,10 @@ class SearchOverlay:
                                 self.search_text.text = ""
                     else:
 
-                        draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
-                        xx += draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                        xx += ddt.draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         # Mouse Selection
                         rect = (30, yy, 600, 20)
@@ -12342,16 +11938,16 @@ class SearchOverlay:
                 if item[0] == 2:
                     cl = [250, 220, 190, int(255 * fade)]
                     text = "Track"
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
+                    xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                    draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    ddt.draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                     xx += 8 * gui.scale
                     artist = pctl.master_library[item[2]].artist
-                    xx += draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+                    xx += ddt.draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
-                    draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -12374,11 +11970,11 @@ class SearchOverlay:
                 if item[0] == 3:
                     cl = [240, 240, 160, int(255 * fade)]
                     text = "Genre"
-                    xx = draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
 
-                    draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        draw.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -14246,14 +13842,14 @@ class Over:
             y = self.box_y + 35 * gui.scale
             x = self.box_x + 130 * gui.scale
 
-            #draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
-            # draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
-            draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [220, 220, 220, 255], 213)
+            #ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
+            # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
+            ddt.draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [220, 220, 220, 255], 213)
 
             y = self.box_y + 70 * gui.scale
             x = self.box_x + 130 * gui.scale
 
-            draw_text((x, y - 22 * gui.scale), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
+            ddt.draw_text((x, y - 22 * gui.scale), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
 
             y += 7 * gui.scale
             x += 10 * gui.scale
@@ -14267,12 +13863,12 @@ class Over:
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
 
-            draw_text((x, y - 22 * gui.scale), "Set audio output device", [170, 170, 170, 255], 212)
-            # draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
+            ddt.draw_text((x, y - 22 * gui.scale), "Set audio output device", [170, 170, 170, 255], 212)
+            # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
-                #draw.rect_r(rect, [0, 255, 0, 50])
+                #ddt.rect_r(rect, [0, 255, 0, 50])
 
                 if self.click and coll(rect):
                     pctl.set_device = item[4]
@@ -14285,23 +13881,23 @@ class Over:
                 fields.add(rect)
 
                 if pctl.set_device == item[4]: #item[3] > 0:
-                    draw_text((x, y), line, [150, 150, 150, 255], 10)
-                    draw_text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
+                    ddt.draw_text((x, y), line, [150, 150, 150, 255], 10)
+                    ddt.draw_text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
                 else:
                     if coll(rect):
-                        draw_text((x, y), line, [150, 150, 150, 255], 10)
+                        ddt.draw_text((x, y), line, [150, 150, 150, 255], 10)
                     else:
-                        draw_text((x, y), line, [100, 100, 100, 255], 10)
+                        ddt.draw_text((x, y), line, [100, 100, 100, 255], 10)
                 y += 14 * gui.scale
 
             y = self.box_y + 225 * gui.scale
-            draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
+            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
 
         elif default_player == 2:
 
             y = self.box_y + 120 * gui.scale
             x = self.box_x + 375 * gui.scale
-            draw_text((x, y - 22 * gui.scale, 2), "Gstreamer", [170, 170, 170, 255], 214)
+            ddt.draw_text((x, y - 22 * gui.scale, 2), "Gstreamer", [170, 170, 170, 255], 214)
 
     def funcs(self):
 
@@ -14353,7 +13949,7 @@ class Over:
         x += 280 * gui.scale
 
         y += 38 * gui.scale
-        draw_text((x, y), "Show in context menus:", colours.grey(100), 11)
+        ddt.draw_text((x, y), "Show in context menus:", colours.grey(100), 11)
         y += 23 * gui.scale
 
         self.toggle_square(x, y, toggle_wiki, "Search artist on Wikipedia")
@@ -14387,37 +13983,37 @@ class Over:
 
         w = width
         if w == 0:
-            w = draw.text_calc(text, 211) + 10 * gui.scale
+            w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-        draw.rect_r(rect, colours.alpha_grey(11), True)
+        ddt.rect_r(rect, colours.alpha_grey(11), True)
         fields.add(rect)
         if coll(rect):
-            draw.rect_r(rect, [255, 255, 255, 15], True)
-            draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
+            ddt.rect_r(rect, [255, 255, 255, 15], True)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
             if self.click:
                 plug()
         else:
-            draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
 
     def toggle_square(self, x, y, function, text):
 
-        le = draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
-        draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
-        draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
+        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
+        ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
+        ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
         if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             function()
         if function(1):
-            draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
+            ddt.rect_a((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
 
     def last_fm_box(self):
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
-        draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
+        ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
         self.toggle_square(x + 170 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
         if lfm_username != "":
             line = "User: " + lfm_username
-            draw_text((x + 375 * gui.scale, y - 3 * gui.scale, 2), line, colours.grey_blend_bg(160), 213)
+            ddt.draw_text((x + 375 * gui.scale, y - 3 * gui.scale, 2), line, colours.grey_blend_bg(160), 213)
 
         rect = [x + 20 * gui.scale, y + 30 * gui.scale, 210 * gui.scale, 16 * gui.scale]
         rect2 = [x + 20 * gui.scale, y + 60 * gui.scale, 210 * gui.scale, 16 * gui.scale]
@@ -14441,12 +14037,12 @@ class Over:
         bg = alpha_blend(colours.alpha_grey(10), colours.sys_background)
 
 
-        draw.rect_r(rect, colours.alpha_grey(10), True)
-        draw.rect_r(rect2, colours.alpha_grey(10), True)
+        ddt.rect_r(rect, colours.alpha_grey(10), True)
+        ddt.rect_r(rect2, colours.alpha_grey(10), True)
         if last_fm_user_field.text == "":
-            draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(60), 11, bg=bg)
+            ddt.draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(60), 11, bg=bg)
         if last_fm_pass_field.text == "":
-            draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(60), 11, bg=bg)
+            ddt.draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(60), 11, bg=bg)
 
         if self.lastfm_input_box == 0:
             last_fm_user_field.draw(x + 25 * gui.scale, y + 30 * gui.scale, colours.grey_blend_bg(180), active=True, font=13, width=210, click=self.click, selection_height=16)
@@ -14470,7 +14066,7 @@ class Over:
         # if not prefs.auto_lfm:
         #     x = self.box_x + 50 * gui.scale + int(self.w / 2)
         #     y += 85 * gui.scale
-        #     draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
+        #     ddt.draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
         x = self.box_x + self.item_x_offset + 260 * gui.scale
         y = self.box_y + 45 * gui.scale
@@ -14490,7 +14086,7 @@ class Over:
 
         self.button(x, y, "Get friend loves", self.get_friend_love, width=110 * gui.scale)
         # if lastfm.scanning_friends:
-        #     draw_text((x + 120 * gui.scale, y), "scanning...",
+        #     ddt.draw_text((x + 120 * gui.scale, y), "scanning...",
         #               colours.grey_blend_bg(111), 11)
 
         y += 26 * gui.scale
@@ -14503,14 +14099,14 @@ class Over:
 
         x = self.box_x + 40 * gui.scale + self.item_x_offset
         y = self.box_y + 170 * gui.scale
-        draw_text((x - 20 * gui.scale, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
+        ddt.draw_text((x - 20 * gui.scale, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
         self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
         y += 30 * gui.scale
         self.button(x, y, "Paste Token", lb.paste_key)
         self.button(x + 85 * gui.scale, y, "Clear", lb.clear_key)
         if lb.key != None:
             line = lb.key
-            draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(160), 212)
+            ddt.draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(160), 212)
 
         y += 20 * gui.scale
         link_pa2 = draw_linked_text((x + 235 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
@@ -14595,7 +14191,7 @@ class Over:
             x += 280 * gui.scale
             if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
                     system != 'windows' and shutil.which('ffmpeg') is None):
-                draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
+                ddt.draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
 
 
@@ -14611,7 +14207,7 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        draw_text((x, y), "Gallery art size", colours.grey(210), 11)
+        ddt.draw_text((x, y), "Gallery art size", colours.grey(210), 11)
 
         x += 95 * gui.scale
 
@@ -14625,7 +14221,7 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        #draw_text((x, y), "Playlist art size", colours.grey(180), 11)
+        #ddt.draw_text((x, y), "Playlist art size", colours.grey(180), 11)
 
         x += 110 * gui.scale
 
@@ -14637,7 +14233,7 @@ class Over:
         x = self.box_x + self.item_x_offset
         y1 = y
 
-        draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
         y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_borderless, "Draw own window decorations")
@@ -14663,7 +14259,7 @@ class Over:
         y += 28 * gui.scale
 
 
-        draw_text((x, y), "Gallery", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), "Gallery", colours.grey_blend_bg(100), 12)
 
         # y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
@@ -14672,7 +14268,7 @@ class Over:
         y += 28 * gui.scale
         y += 28 * gui.scale
         y += 28 * gui.scale
-        draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
 
         y += 28 * gui.scale
 
@@ -14701,7 +14297,7 @@ class Over:
 
         x = self.box_x + int(self.w * 0.3) + 65 * gui.scale  # 110 + int((self.w - 110) / 2)
         y = self.box_y + 81 * gui.scale
-        gui.win_fore = colours.sys_background
+        ddt.text_background_colour = colours.sys_background
 
         if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
             self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
@@ -14714,11 +14310,11 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        draw_text((x, y + 4 * gui.scale), t_title, colours.grey(210), 216)
+        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(210), 216)
         y += 32 * gui.scale
-        draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
+        ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
         y += 20 * gui.scale
-        draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
+        ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
         y += 21 * gui.scale
         link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
         link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -14744,11 +14340,11 @@ class Over:
         x2 = x1 + 120 * gui.scale
         y1 = y + 40 * gui.scale
 
-        draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
-        draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(190), 12)
+        ddt.draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(190), 12)
         y1 += 20 * gui.scale
 
-        draw_text((x1, y1), "Playlist length", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), "Playlist length", colours.grey_blend_bg(100), 12)
 
         playlist_time = 0
         for item in default_playlist:
@@ -14756,13 +14352,13 @@ class Over:
 
         line = str(datetime.timedelta(seconds=int(playlist_time)))
 
-        draw_text((x2, y1), line, colours.grey_blend_bg(190), 12)
+        ddt.draw_text((x2, y1), line, colours.grey_blend_bg(190), 12)
         y1 += 35 * gui.scale
-        draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
-        draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(190), 12)
+        ddt.draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(190), 12)
         y1 += 20 * gui.scale
-        draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
-        draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
+        ddt.draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(190), 14)
 
 
@@ -14799,7 +14395,7 @@ class Over:
                 block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
 
 
-                draw.rect_r(block_rect, colour, True)
+                ddt.rect_r(block_rect, colour, True)
                 d += h
 
                 block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
@@ -14810,7 +14406,7 @@ class Over:
                         xx = x + 30 * gui.scale
                     if xx > self.box_x + self.w - 30 * gui.scale:
                         xx = self.box_x + self.w - 30 * gui.scale
-                    draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(190), 13)
+                    ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(190), 13)
 
 
     def config_v(self):
@@ -14828,13 +14424,13 @@ class Over:
             if k is None:
                 y += 25 * gui.scale
                 continue
-            draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
-            draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
-            draw.rect((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
+            ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
+            ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
+            ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
             if self.click and coll((x - 20, y - 5, 220, 24)):
                 k[1]()
             if k[1](1) is True:
-                draw.rect((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
+                ddt.rect_a((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
 
             y += 25 * gui.scale
 
@@ -14861,7 +14457,7 @@ class Over:
         y += 50 * gui.scale
         x -= 90 * gui.scale
 
-        draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
 
         y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_stop, "Stop playback")
@@ -14914,12 +14510,12 @@ class Over:
     def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
 
         if label is not None:
-            draw_text((x, y), label, colours.grey_blend_bg(170), 12)
+            ddt.draw_text((x, y), label, colours.grey_blend_bg(170), 12)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
+        ddt.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
         if coll(rect):
 
@@ -14939,14 +14535,14 @@ class Over:
 
         x += 33 * gui.scale
 
-        draw.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
-        draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(200), 11)
+        ddt.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
+        ddt.draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(200), 11)
 
         x += 58 * gui.scale
 
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
-        draw.rect_r(rect, [255, 255, 255, 20], True)
+        ddt.rect_r(rect, [255, 255, 255, 20], True)
         abg = colours.grey(80)
         if coll(rect):
 
@@ -14998,11 +14594,11 @@ class Over:
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
-        draw.rect((self.box_x - 5 * gui.scale, self.box_y - 5 * gui.scale), (self.w + 10 * gui.scale, self.h + 10 * gui.scale), colours.grey(50), True)
-        draw.rect((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
-        draw.rect((self.box_x, self.box_y), (110 * gui.scale, self.h), colours.sys_background_2, True)
+        ddt.rect_a((self.box_x - 5 * gui.scale, self.box_y - 5 * gui.scale), (self.w + 10 * gui.scale, self.h + 10 * gui.scale), colours.grey(50), True)
+        ddt.rect_a((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
+        ddt.rect_a((self.box_x, self.box_y), (110 * gui.scale, self.h), colours.sys_background_2, True)
 
-        # draw.rect((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
+        # ddt.rect_a((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
         # temp
         if len(self.drives) < 1 and system == 'windows':
@@ -15018,7 +14614,7 @@ class Over:
             box = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 30 * gui.scale]
             box2 = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 29 * gui.scale]
             fields.add(box2)
-            # draw.rect_r(box, colours.tab_background, True)
+            # ddt.rect_r(box, colours.tab_background, True)
 
             if self.click and coll(box2):
                 self.tab_active = current_tab
@@ -15026,31 +14622,31 @@ class Over:
             if current_tab == self.tab_active:
                 colour = copy.deepcopy(colours.sys_tab_hl)
                 #colour[3] = 190
-                gui.win_fore = colour
-                draw.rect_r(box, colour, True)
+                ddt.text_background_colour = colour
+                ddt.rect_r(box, colour, True)
             else:
-                gui.win_fore = colours.sys_tab_bg
-                draw.rect_r(box, colours.sys_tab_bg, True)
+                ddt.text_background_colour = colours.sys_tab_bg
+                ddt.rect_r(box, colours.sys_tab_bg, True)
 
             if coll(box2):
-                draw.rect_r(box, [255, 255, 255, 10], True)
+                ddt.rect_r(box, [255, 255, 255, 10], True)
 
-            # draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
+            # ddt.draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], gui.win_fore), 213)
+                ddt.draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
             else:
-                draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], gui.win_fore), 213)
+                ddt.draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
 
             current_tab += 1
 
-        # draw.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
+        # ddt.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
 
         self.tabs[self.tab_active][1]()
 
         self.click = False
         self.right_click = False
 
-        gui.win_fore = colours.sys_background
+        ddt.text_background_colour = colours.sys_background
 
 
 
@@ -15176,7 +14772,7 @@ class TopPanel:
             gui.pl_update = 1
 
         # Draw the background
-        draw.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
+        ddt.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
 
         rect = (9 * gui.scale, 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
@@ -15206,7 +14802,7 @@ class TopPanel:
 
             # if item[8] is True:
             #     continue
-            le = draw.text_calc(pctl.multi_playlist[i][0], self.tab_text_font)
+            le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
             left_space_es += le + self.tab_extra_width + self.tab_spacing
 
@@ -15247,7 +14843,7 @@ class TopPanel:
             p_text = pctl.tag_meta
 
         if pctl.playing_state > 0 and not pctl.broadcast_active and window_size[0] < 820:
-            p_text_len = draw.text_calc(p_text, 11)
+            p_text_len = ddt.get_text_w(p_text, 11)
         else:
             p_text_len = 0
 
@@ -15340,7 +14936,7 @@ class TopPanel:
         self.tab_text_spaces = []
         left_space_es = 0
         for i, item in enumerate(pctl.multi_playlist):
-            le = draw.text_calc(pctl.multi_playlist[i][0], self.tab_text_font)
+            le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
             left_space_es += le + self.tab_extra_width + self.tab_spacing
 
@@ -15382,9 +14978,9 @@ class TopPanel:
                 bg = colours.tab_background
 
             # Draw tab background
-            draw.rect_r(rect, bg, True)
+            ddt.rect_r(rect, bg, True)
             if playing_hint:
-                draw.rect_r(rect, [255, 255, 255, 7], True)
+                ddt.rect_r(rect, [255, 255, 255, 7], True)
 
             # Determine text colour
             if active:
@@ -15393,7 +14989,7 @@ class TopPanel:
                 fg = colours.tab_text
 
             # Draw tab text
-            draw_text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
+            ddt.draw_text((x + self.tab_text_start_space, y + self.tab_text_y_offset), tab[0], fg, self.tab_text_font, bg=bg)
 
             # Drop pulse
             if gui.pl_pulse and playlist_target == i:
@@ -15405,15 +15001,15 @@ class TopPanel:
                 if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
 
                     if key_shift_down:
-                        draw.rect_r((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255], True)
+                        ddt.rect_r((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255], True)
                     else:
                         if self.tab_hold_index < i:
-                            draw.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                            ddt.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
                         else:
-                            draw.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                            ddt.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
 
                 elif quick_drag is True:
-                    draw.rect_r((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
+                    ddt.rect_r((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
 
             if len(self.adds) > 0:
                 for k in reversed(range(len(self.adds))):
@@ -15424,7 +15020,7 @@ class TopPanel:
                             ay = y + 4
                             ay -= 6 * self.adds[k][2].get() / 0.3
 
-                            draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
                             gui.update += 1
 
 
@@ -15434,8 +15030,8 @@ class TopPanel:
 
         # Quick drag single track onto bar to create new playlist
         if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-            #draw_text((x + 5, y - 3), '+', [200, 20, 40, 255], 12)
-            draw.rect_r((x, y, 2, gui.panelY), [80, 200, 180, 255], True)
+            #ddt.draw_text((x + 5, y - 3), '+', [200, 20, 40, 255], 12)
+            ddt.rect_r((x, y, 2, gui.panelY), [80, 200, 180, 255], True)
 
             if mouse_up:
                 drop_tracks_to_new_playlist(shift_selection)
@@ -15490,12 +15086,12 @@ class TopPanel:
         #y += 7
 
 
-        gui.win_fore = colours.top_panel_background
+        ddt.text_background_colour = colours.top_panel_background
 
         # MENU -----------------------------
 
         word = "MENU"
-        word_length = draw.text_calc(word, 212)
+        word_length = ddt.get_text_w(word, 212)
         rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
         hit = coll(rect)
         fields.add(rect)
@@ -15504,7 +15100,7 @@ class TopPanel:
             bg = colours.status_text_over
         else:
             bg = colours.status_text_normal
-        draw_text((x, y), word, bg, 212)
+        ddt.draw_text((x, y), word, bg, 212)
 
         if hit and input.mouse_click:
             if x_menu.active:
@@ -15562,7 +15158,7 @@ class TopPanel:
 
             self.dl_button.render(x, y + 1, colour)
             if dl > 0:
-                draw_text((x + 18, y - 2), str(dl), [244, 223, 66, 255] , 209)
+                ddt.draw_text((x + 18, y - 2), str(dl), [244, 223, 66, 255] , 209)
                 # [166, 244, 179, 255]
 
 
@@ -15625,25 +15221,25 @@ class TopPanel:
 
 
         if status:
-            x += draw_text((x, y), text, bg, 11)
-            # x += draw.text_calc(text, 11)
+            x += ddt.draw_text((x, y), text, bg, 11)
+            # x += ddt.get_text_w(text, 11)
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
-            draw_text((x, y), text, [95, 110, 230, 255], 11) # [70, 85, 230, 255]
-            x += draw.text_calc(text, 11) + 6
+            ddt.draw_text((x, y), text, [95, 110, 230, 255], 11) # [70, 85, 230, 255]
+            x += ddt.get_text_w(text, 11) + 6
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
             trunc = window_size[0] - x - 150
             #text = trunc_line(text, 11, trunc)
-            draw_text((x, y), text, colours.grey(130), 11, max=trunc)
-            x += draw.text_calc(text, 11) + 6
+            ddt.draw_text((x, y), text, colours.grey(130), 11, max=trunc)
+            x += ddt.get_text_w(text, 11) + 6
 
             x += 7
             progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100)
-            draw.rect((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
-            draw.rect((x, y + 4), (100, 9), colours.grey(30))
+            ddt.rect_a((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
+            ddt.rect_a((x, y + 4), (100, 9), colours.grey(30))
 
             if input.mouse_click and coll((x, y, 100, 11)):
                 newtime = ((mouse_position[0] - x) / 100) * pctl.master_library[pctl.broadcast_index].length
@@ -15653,7 +15249,7 @@ class TopPanel:
 
 
             x += 110
-            draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
+            ddt.draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
 
             self.drag_zone_start_x = x + 21 * gui.scale
 
@@ -15674,7 +15270,7 @@ class TopPanel:
 
 
         if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
-            draw_text2((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12,
+            ddt.draw_text((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12,
                        window_size[0] - offset - x)
 
 
@@ -15748,9 +15344,9 @@ class BottomBarType1:
         global clicked
         global right_click
 
-        draw.rect((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour, True)
+        ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour, True)
 
-        draw.rect(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
+        ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
 
 
         right_offset = 0
@@ -15758,18 +15354,18 @@ class BottomBarType1:
             right_offset = 22 * gui.scale
 
         # if gui.light_mode:
-        #     draw.line(0, window_size[1] - gui.panelBY, window_size[0], window_size[1] - gui.panelBY, colours.art_box)
+        #     ddt.line(0, window_size[1] - gui.panelBY, window_size[0], window_size[1] - gui.panelBY, colours.art_box)
 
         #FRAME
         # if gui.draw_frame:
-        #     draw.line(0, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY, colours.bb_line)
-        #     draw.line(299, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY + self.seek_bar_size[1],
+        #     ddt.line(0, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY, colours.bb_line)
+        #     ddt.line(299, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY + self.seek_bar_size[1],
         #               colours.bb_line)
-        #     draw.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
+        #     ddt.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
         #               window_size[1] - gui.panelBY + self.seek_bar_size[1], colours.bb_line)
 
         # rect = [0, window_size[1] - gui.panelBY, self.seek_bar_position[0], gui.panelBY]
-        # draw.rect_r(rect, [255, 255, 255, 5], True)
+        # ddt.rect_r(rect, [255, 255, 255, 5], True)
 
         # Scrobble marker
 
@@ -15788,17 +15384,17 @@ class BottomBarType1:
                     l_x = self.scrob_stick
                 else:
                     self.scrob_stick = l_x
-                draw.rect_r((self.scrob_stick, self.seek_bar_position[1], 2 * gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80], True)
+                ddt.rect_r((self.scrob_stick, self.seek_bar_position[1], 2 * gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80], True)
 
 
         # # MINI ALBUM ART
         # if gui.bb_show_art:
         #     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
-        #     draw.rect_r(rect, [255, 255, 255, 8], True)
+        #     ddt.rect_r(rect, [255, 255, 255, 8], True)
         #     if 3 > pctl.playing_state > 0:
         #         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
-            #draw.rect_r(rect, [255, 255, 255, 20])
+            #ddt.rect_r(rect, [255, 255, 255, 20])
 
         # SEEK BAR------------------
         if pctl.playing_time < 1:
@@ -15829,7 +15425,7 @@ class BottomBarType1:
             gui.update += 1
 
             # fields.add([mouse_position[0] - 1, mouse_position[1] - 1, 1, 1])
-            # draw.rect_r([mouse_position[0] - 1, mouse_position[1] - 1, 1, 1], [255,0,0,180], True)
+            # ddt.rect_r([mouse_position[0] - 1, mouse_position[1] - 1, 1, 1], [255,0,0,180], True)
 
 
             bargetX = mouse_position[0]
@@ -15869,7 +15465,7 @@ class BottomBarType1:
             self.seek_time = pctl.playing_time
 
         if pctl.playing_length > 0:
-            draw.rect((self.seek_bar_position[0], self.seek_bar_position[1]),
+            ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1]),
                       (int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
                        self.seek_bar_size[1]),
                       colours.seek_bar_fill, True)
@@ -15879,12 +15475,12 @@ class BottomBarType1:
             if coll([self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
                 if mouse_position[0] > self.seek_bar_position[0] - 1:
                     cur = [mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
-                    draw.rect_r(cur, colours.grey(15), True)
-                    # draw.rect_r(cur, colours.grey(80))
-                    draw_text((mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time, colours.grey(180), 213,
+                    ddt.rect_r(cur, colours.grey(15), True)
+                    # ddt.rect_r(cur, colours.grey(80))
+                    ddt.draw_text((mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time, colours.grey(180), 213,
                               bg=colours.grey(15))
 
-                    draw.rect_r([mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
+                    ddt.rect_r([mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
                                 [100, 100, 20, 255], True)
 
             else:
@@ -15953,9 +15549,9 @@ class BottomBarType1:
 
             pctl.set_volume()
 
-        draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size,
+        ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size,
                   colours.volume_bar_background, True)  # 22
-        draw.rect((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
+        ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
                   (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
                   colours.volume_bar_fill, True)
 
@@ -15967,10 +15563,10 @@ class BottomBarType1:
 
 
             if pctl.player_volume > 50:
-                draw_text((self.volume_bar_position[0] + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
+                ddt.draw_text((self.volume_bar_position[0] + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
                        11, bg=colours.volume_bar_fill)
             else:
-                draw_text((self.volume_bar_position[0] + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
+                ddt.draw_text((self.volume_bar_position[0] + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
                        11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
@@ -15996,7 +15592,7 @@ class BottomBarType1:
             #     mx -= gui.panelBY - 10
 
             #line = trunc_line(line, 213, mx)
-            draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
+            ddt.draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title, max=mx)
             if (input.mouse_click or right_click) and coll((
                         self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
@@ -16015,7 +15611,7 @@ class BottomBarType1:
         y = window_size[1] - 29 * gui.scale
 
         rect = (x - 8 * gui.scale - right_offset, y - 3 * gui.scale, 60 * gui.scale + right_offset, 27 * gui.scale)
-        # draw.rect_r(rect, [255, 0, 0, 40], True)
+        # ddt.rect_r(rect, [255, 0, 0, 40], True)
         if input.mouse_click and coll(rect):
             gui.display_time_mode += 1
             if gui.display_time_mode > 3:
@@ -16023,30 +15619,30 @@ class BottomBarType1:
 
         if gui.display_time_mode == 0:
             text_time = get_display_time(pctl.playing_time)
-            draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
+            ddt.draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
         elif gui.display_time_mode == 1:
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             else:
                 text_time = get_display_time(pctl.playing_length - pctl.playing_time)
-            draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
+            ddt.draw_text((x + 1 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-            draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
+            ddt.draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
                       fonts.bottom_panel_time)
         elif gui.display_time_mode == 2:
             x -= 4
             text_time = get_display_time(pctl.playing_time)
-            draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
+            ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-            draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
+            ddt.draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
-            draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
+            ddt.draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
                       fonts.bottom_panel_time)
 
         elif gui.display_time_mode == 3:
@@ -16071,16 +15667,16 @@ class BottomBarType1:
 
             x -= 4
             text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
-            draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
+            ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-            draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
+            ddt.draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(gui.dtm3_total)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
-            draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
+            ddt.draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
                       fonts.bottom_panel_time)
 
 
@@ -16130,7 +15726,7 @@ class BottomBarType1:
                 #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Play")
 
             self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
-            # draw.rect_r(rect,[255,0,0,255], True)
+            # ddt.rect_r(rect,[255,0,0,255], True)
 
             # PAUSE---
             x = (75 * gui.scale) + buttons_x_offset
@@ -16146,9 +15742,9 @@ class BottomBarType1:
                 #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Pause")
 
 
-            # draw.rect_r(rect,[255,0,0,255], True)
-            draw.rect((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
-            draw.rect((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+            # ddt.rect_r(rect,[255,0,0,255], True)
+            ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+            ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
 
             # STOP---
             x = 125 * gui.scale + buttons_x_offset
@@ -16163,8 +15759,8 @@ class BottomBarType1:
                 # tool_tip.test(x + gui.scale + 25 * gui.scale,
                 #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Stop")
 
-            draw.rect((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
-            # draw.rect_r(rect,[255,0,0,255], True)
+            ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
+            # ddt.rect_r(rect,[255,0,0,255], True)
 
             # FORWARD---
             rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
@@ -16181,7 +15777,7 @@ class BottomBarType1:
 
             self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
 
-            # draw.rect_r(rect,[255,0,0,255], True)
+            # ddt.rect_r(rect,[255,0,0,255], True)
 
             # BACK---
             rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
@@ -16198,7 +15794,7 @@ class BottomBarType1:
                 #              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Back")
 
             self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
-            # draw.rect_r(rect,[255,0,0,255], True)
+            # ddt.rect_r(rect,[255,0,0,255], True)
 
 
             # menu button
@@ -16217,11 +15813,11 @@ class BottomBarType1:
             if extra_menu.active:
                 rpbc = colours.mode_button_active
 
-            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
+            ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
             y += 5 * gui.scale
-            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
+            ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
             y += 5 * gui.scale
-            draw.rect((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
+            ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
 
             if window_size[0] > 630 * gui.scale and self.mode == 0:
 
@@ -16255,10 +15851,10 @@ class BottomBarType1:
 
                 y += 3 * gui.scale
 
-                draw.rect((x, y), (25 * gui.scale, 3 * gui.scale), rpbc, True)
+                ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 y += 5 * gui.scale
-                draw.rect((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
+                ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 # REPEAT
                 x = window_size[0] - 380 * gui.scale - right_offset
@@ -16291,9 +15887,9 @@ class BottomBarType1:
                 y += 3 * gui.scale
                 w = 3 * gui.scale
 
-                draw.rect((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
-                draw.rect((x + 4 * gui.scale, y + 5 * gui.scale), (46 * gui.scale, w), rpbc, True)
-                draw.rect((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
+                ddt.rect_a((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
+                ddt.rect_a((x + 4 * gui.scale, y + 5 * gui.scale), (46 * gui.scale, w), rpbc, True)
+                ddt.rect_a((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
 
 
 bottom_bar1 = BottomBarType1()
@@ -16352,14 +15948,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             if n_track.artist != "":
                 line0 = n_track.artist
-                artistoffset = draw_text2((start_x + 27  * gui.scale,
-                                           y),
-                                          line0,
-                                          alpha_mod(artistc, album_fade),
-                                          gui.row_font_size,
-                                          int(width / 2),
-                                          1,
-                                          default_playlist[p_track])
+                artistoffset = ddt.draw_text((start_x + 27  * gui.scale,
+                                         y),
+                                         line0,
+                                         alpha_mod(artistc, album_fade),
+                                         gui.row_font_size,
+                                         int(width / 2),
+                                         )
 
                 line = n_track.title
             else:
@@ -16385,7 +15980,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
                 if gui.playlist_row_height > 17 * gui.scale:
                     sp -= 1
-                draw.rect_r([width + start_x - star_x - 45 * gui.scale - offset_font_extra,
+                ddt.rect_r([width + start_x - star_x - 45 * gui.scale - offset_font_extra,
                              sp,
                              star_x + 3 * gui.scale,
                              1
@@ -16397,7 +15992,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             stars = star_count(total, pctl.master_library[index].length)
             starl = "★" * stars
-            star_x = draw_text((width + start_x - 42 * gui.scale - offset_font_extra,
+            star_x = ddt.draw_text((width + start_x - 42 * gui.scale - offset_font_extra,
                        y + gui.star_text_y_offset, 1), starl,
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
@@ -16420,12 +16015,12 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 fields.add(rect, update_playlist_call)
                 if coll(rect):
                     gui.pl_update += 1
-                    w = draw.text_calc("You", 13)
+                    w = ddt.get_text_w("You", 13)
                     xx = (x - w) - 5 * gui.scale
-                    #draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
-                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
+                    #ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+                    ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
 
 
                 heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
@@ -16445,13 +16040,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 fields.add(rect, update_playlist_call)
                 if coll(rect):
                     gui.pl_update += 1
-                    w = draw.text_calc(name, 13)
+                    w = ddt.get_text_w(name, 13)
                     xx = (x - w) - 5 * gui.scale
-                    # draw.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    # draw.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
-                    draw.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
+                    # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+                    # ddt.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
+                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+                    ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
                 count += 1
                 star_x += heart_row_icon.w + spacing + 2
 
@@ -16480,40 +16075,39 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                     li = "R"
 
             # rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
-            # draw.rect_r(rect, [100, 200, 100, 255], True)
+            # ddt.rect_r(rect, [100, 200, 100, 255], True)
             if len(marks) > 1:
                 li += " " + ("." * (len(marks) - 1))
                 li = li[:5]
 
-            draw_text((start_x + 5 * gui.scale,
+            ddt.draw_text((start_x + 5 * gui.scale,
                        y, 2), li,
                       [244, 200, 66, 255], gui.row_font_size + 200 - 1)
 
         else:
             if len(indexLine) > 2:
 
-                draw_text((start_x + 5 * gui.scale,
+                ddt.draw_text((start_x + 5 * gui.scale,
                            y, 2), indexLine,
                           alpha_mod(indexc, album_fade), gui.row_font_size)
             else:
 
-                draw_text((start_x,
+                ddt.draw_text((start_x,
                            y), indexLine,
                           alpha_mod(indexc, album_fade), gui.row_font_size)
 
 
-        draw_text2((start_x + 33 * gui.scale + artistoffset,
+        ddt.draw_text((start_x + 33 * gui.scale + artistoffset,
                     y),
                    line,
                    alpha_mod(titlec, album_fade),
                    gui.row_font_size,
                    width - 71 * gui.scale - artistoffset - star_x - 20 * gui.scale,
-                   2,
-                   default_playlist[p_track])
+                   )
 
         line = get_display_time(n_track.length)
 
-        draw_text((width + start_x - 36 * gui.scale - offset_font_extra,
+        ddt.draw_text((width + start_x - 36 * gui.scale - offset_font_extra,
                    y + num_y_offset, 0), line,
                   alpha_mod(timec, album_fade), gui.row_font_size)
 
@@ -16581,8 +16175,11 @@ class StandardPlaylist:
 
         # Draw the background
         SDL_SetRenderTarget(renderer, gui.ttext)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_RenderClear(renderer)
+
         rect = (left, gui.panelY, width, window_size[1])
-        draw.rect_r(rect, colours.playlist_panel_background, True)
+        ddt.rect_r(rect, colours.playlist_panel_background, True)
 
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
@@ -16615,15 +16212,15 @@ class StandardPlaylist:
             colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
 
 
-            draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
                       _("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
-            draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + (30 * gui.scale)), 2),
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + (30 * gui.scale)), 2),
                       _("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
 
         # Show notice if at end of playlist
         elif playlist_position > len(default_playlist) - 1:
             colour = alpha_mod(colours.index_text, 200)
-            draw_text((left + int(width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), _("End of Playlist"),
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), _("End of Playlist"),
                       colour, 213)
 
         # For every track in view
@@ -16673,28 +16270,28 @@ class StandardPlaylist:
 
                     ex = left + highlight_left + highlight_width - 7 * gui.scale
 
-                    gui.win_fore = colours.playlist_panel_background
+                    ddt.text_background_colour = colours.playlist_panel_background
                     height = (gui.playlist_top + gui.playlist_row_height * w) + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
                     if gui.scale == 2:
                         height += 1
 
                     # Draw highlight
                     if p_track in shift_selection and len(shift_selection) > 1:
-                        gui.win_fore = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-                        draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                        ddt.text_background_colour = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
+                        ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
                                   (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
 
 
                     # Draw folder title
-                    draw_text2((ex,
+                    ddt.draw_text((ex,
                                 height, 1), line,
                                alpha_mod(colours.folder_title, album_fade),
                                gui.row_font_size + gui.pl_title_font_offset, left + highlight_width)
 
                     # Draw separation line below title
-                    draw.rect_r((left + highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_width, 1 * gui.scale), colours.folder_line, True)
+                    ddt.rect_r((left + highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_width, 1 * gui.scale), colours.folder_line, True)
 
-                    gui.win_fore = colours.playlist_panel_background
+                    ddt.text_background_colour = colours.playlist_panel_background
 
                     if playlist_hold is True and coll((
                             left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
@@ -16760,7 +16357,7 @@ class StandardPlaylist:
 
                     # # Shade ever other line for folder row
                     # if True and #row_alt and w % 2 == 0:
-                    #     draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+                    #     ddt.rect_a((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
                     #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
 
 
@@ -16769,7 +16366,7 @@ class StandardPlaylist:
 
                         if len(shift_selection) > 1 or key_shift_down:
 
-                            draw.rect_r(
+                            ddt.rect_r(
                                 [left + highlight_left, -1 + gui.playlist_top + gui.playlist_row_height * w + gui.playlist_row_height - 1,
                                  highlight_width, 3],
                                 [135, 145, 190, 255], True)
@@ -16795,11 +16392,11 @@ class StandardPlaylist:
             input_box = (track_box[0] + 30, track_box[1] + 1, track_box[2] - 36, track_box[3] - 1)
             # Shade ever other line if option set
             # if (row_alt or True) and w % 2 == 0:
-            #     draw.rect((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
+            #     ddt.rect_a((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
             #               (gui.playlist_width, gui.playlist_row_height - 1), [0, 0, 0, 20], True)
 
             # Get background colours for fonts
-            gui.win_fore = colours.playlist_panel_background
+            ddt.text_background_colour = colours.playlist_panel_background
 
             # Test if line hit
             line_over = False
@@ -16840,16 +16437,16 @@ class StandardPlaylist:
 
                 if p_track == pctl.playlist_playing and pctl.playlist_active == pctl.active_playlist_playing:
 
-                    draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                    ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
                               (highlight_width, gui.playlist_row_height - 1), colours.row_playing_highlight, True)
                     this_line_playing = True
-                    gui.win_fore = alpha_blend(colours.row_playing_highlight, gui.win_fore)
+                    ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
 
             # Highlight blue if track is being broadcast
             if default_playlist[
                 p_track] == pctl.broadcast_index and pctl.broadcast_active:
-                draw.rect_r(track_box, [40, 40, 190, 80], True)
-                gui.win_fore = alpha_blend([40, 40, 190, 80], gui.win_fore)
+                ddt.rect_r(track_box, [40, 40, 190, 80], True)
+                ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
             # Add to queue on middle click
             if middle_click and line_hit:
@@ -16881,10 +16478,10 @@ class StandardPlaylist:
 
             if (input.mouse_click and key_shift_down is False and line_hit or
                         playlist_selected == p_track):
-                draw.rect_r(track_box, colours.row_select_highlight, True)
+                ddt.rect_r(track_box, colours.row_select_highlight, True)
                 playlist_selected = p_track
                 this_line_selected = True
-                gui.win_fore = alpha_blend(colours.row_select_highlight, gui.win_fore)
+                ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
                 # if not key_shift_down:
                 #     shift_selection = [playlist_selected]
@@ -16942,7 +16539,7 @@ class StandardPlaylist:
             if mouse_down and playlist_hold and coll(track_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
 
                 if len(shift_selection) > 1 or key_shift_down:
-                    draw.rect_r(
+                    ddt.rect_r(
                         [left + highlight_left, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, highlight_width, 3],
                         [135, 145, 190, 255], True)
 
@@ -16966,10 +16563,10 @@ class StandardPlaylist:
 
             # Multi Select Highlight
             if p_track in shift_selection and p_track != playlist_selected:
-                draw.rect((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
+                ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
                           (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
                 this_line_selected = True
-                gui.win_fore = alpha_blend(colours.row_select_highlight, gui.win_fore)
+                ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
             if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10:
 
@@ -17035,7 +16632,7 @@ class StandardPlaylist:
 
                                 # re = 0
                                 # if get_love(n_track):
-                                #     re = draw_text((run + 6, y + gui.star_text_y_offset),
+                                #     re = ddt.draw_text((run + 6, y + gui.star_text_y_offset),
                                 #           "❤",
                                 #           [220, 90, 90, 255],
                                 #           gui.row_font_size,
@@ -17051,7 +16648,7 @@ class StandardPlaylist:
                                 if this_line_playing is True:
                                     colour = colours.index_playing
                                 text = trunc_line(text, gui.row_font_size, wid + 7 * gui.scale, False)
-                                draw_text((run + 6 * gui.scale, y + gui.star_text_y_offset),
+                                ddt.draw_text((run + 6 * gui.scale, y + gui.star_text_y_offset),
                                           text,
                                           colour,
                                           gui.row_font_size,
@@ -17064,8 +16661,8 @@ class StandardPlaylist:
                                     if star_x > wid:
                                         star_x = wid
                                     sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
-                                    draw.rect_r((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colours.star_line)
-                                    # draw.line(run + 4, sy, run + star_x + 4, sy,
+                                    ddt.rect_r((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colours.star_line)
+                                    # ddt.line(run + 4, sy, run + star_x + 4, sy,
                                     #           colours.star_line)
 
                     else:
@@ -17176,7 +16773,7 @@ class StandardPlaylist:
 
                         #text = trunc_line(text, gui.row_font_size, wid)
                         #text = trunc_line2(text, gui.row_font_size, wid)
-                        draw_text((run + 6, y + y_off),
+                        ddt.draw_text((run + 6, y + y_off),
                                   text,
                                   colour,
                                   font,
@@ -17223,7 +16820,7 @@ class ArtBox:
     def draw(self, x, y, w, h):
 
         # Draw a background for whole area
-        draw.rect_r((x, y, w ,h), colours.side_panel_background, True)
+        ddt.rect_r((x, y, w ,h), colours.side_panel_background, True)
 
         # We need to find the size of the inner square for the artwork
         box = min(w, h)
@@ -17243,11 +16840,11 @@ class ArtBox:
             showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
         # Draw faint border on album art
-        draw.rect_r(rect, colours.art_box)
+        ddt.rect_r(rect, colours.art_box)
 
         # Draw image downloading indicator
         if gui.image_downloading:
-            draw_text((x + int(box / 2), 38 * gui.scale + int(box / 2), 2), "Fetching image...", colours.side_bar_line1,
+            ddt.draw_text((x + int(box / 2), 38 * gui.scale + int(box / 2), 2), "Fetching image...", colours.side_bar_line1,
                       14)
             gui.update = 2
 
@@ -17283,12 +16880,12 @@ class ArtBox:
                 y = box + 11 * gui.scale
 
                 xoff = 0
-                xoff = draw.text_calc(line, 12) + 12 * gui.scale
+                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
 
-                draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
             else:   # Extended metadata
 
@@ -17301,12 +16898,12 @@ class ArtBox:
                 y = 36 * gui.scale + box - 61 * gui.scale
 
                 xoff = 0
-                xoff = draw.text_calc(line, 12) + 12 * gui.scale
+                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
 
-                draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
@@ -17314,11 +16911,11 @@ class ArtBox:
                 line += showc[4]
                 line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
                 xoff = 0
-                xoff = draw.text_calc(line, 12) + 12 * gui.scale
+                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
+                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
                           bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
@@ -17326,11 +16923,11 @@ class ArtBox:
                 line = ""
                 line += str(showc[2] + 1) + "/" + str(showc[1])
                 xoff = 0
-                xoff = draw.text_calc(line, 12) + 12 * gui.scale
+                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                draw.rect((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
+                ddt.draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
                           bg=[30, 30, 30, 255])
 
 
@@ -17351,7 +16948,7 @@ class ScrollBox():
 
         bar_height = 90
 
-        draw.rect_r((x, y, w, h), [255, 255, 255, 7], True)
+        ddt.rect_r((x, y, w, h), [255, 255, 255, 7], True)
 
         half = bar_height // 2
 
@@ -17419,7 +17016,7 @@ class ScrollBox():
         if coll(rect) or self.held:
             colour = [255, 255, 255, 30]
 
-        draw.rect_r(rect, colour, True)
+        ddt.rect_r(rect, colour, True)
 
         return value
 
@@ -17442,7 +17039,7 @@ class PlaylistBox:
 
         global quick_drag
 
-        draw.rect_r((x, y, w, h), colours.side_panel_background, True)
+        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
         max_tabs = h // 27 * gui.scale
 
@@ -17541,30 +17138,30 @@ class PlaylistBox:
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
-            draw.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
+            ddt.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
+            ddt.draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
             if hidden:
                 indicator_colour = [60, 60, 60, 255]
-            draw.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
+            ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
 
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26 * gui.scale)):
                 if quick_drag:
 
-                    draw.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 200, 180, 255], True)
+                    ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 200, 180, 255], True)
 
                 # Draw tab move indicators
                 if self.drag and i != self.drag_on:
                     if key_shift_down:
-                        draw.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 160, 200, 255], True)
+                        ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 160, 200, 255], True)
                     else:
                         if i < self.drag_on:
-                            draw.rect_r((tab_start, yy - 3 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                            ddt.rect_r((tab_start, yy - 3 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
                         else:
-                            draw.rect_r((tab_start, yy + 23 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                            ddt.rect_r((tab_start, yy + 23 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
 
 
             # Draw effect of adding tracks to playlist
@@ -17577,10 +17174,10 @@ class PlaylistBox:
                             ay = yy + 4 * gui.scale
                             ay -= 6 * gui.scale * self.adds[k][2].get() / 0.3
 
-                            draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
                             gui.update += 1
 
-                            draw.rect_r((tab_start + tab_width, yy, 2 * gui.scale, 23 * gui.scale), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
+                            ddt.rect_r((tab_start + tab_width, yy, 2 * gui.scale, 23 * gui.scale), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
 
 
             yy += 27 * gui.scale
@@ -17589,7 +17186,7 @@ class PlaylistBox:
         if coll((x, yy, w, h - (yy - y))):
             if quick_drag:
 
-                draw.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                ddt.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
                 if mouse_up:
                     drop_tracks_to_new_playlist(shift_selection)
 
@@ -17605,7 +17202,7 @@ class MetaBox:
 
     def draw(self, x, y, w ,h):
 
-        draw.rect_r((x, y, w, h), colours.side_panel_background, True)
+        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
         if pctl.playing_state == 0:
             return
@@ -17662,7 +17259,7 @@ class MetaBox:
 
 
 
-            draw.rect_r((x, y + h - 1, w,
+            ddt.rect_r((x, y + h - 1, w,
                          1), colours.side_panel_background, True)
 
             lyric_side_top_pulse.render(x, y + 1, w - 17, 2)
@@ -17672,7 +17269,7 @@ class MetaBox:
         # Draw standard metadata
         elif pctl.playing_state > 0 and len(pctl.track_queue) > 0:
 
-            gui.win_fore = colours.side_panel_background
+            ddt.text_background_colour = colours.side_panel_background
 
             if coll((x + 10, y, w - 10, h)):
                 # Click area to jump to current track
@@ -17707,15 +17304,15 @@ class MetaBox:
 
 
                 if title != "":
-                    draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max=text_width)
+                    ddt.draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max=text_width)
                 if artist != "":
-                    draw_text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max=text_width)
+                    ddt.draw_text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max=text_width)
 
                 if h > 140 * gui.scale:
 
                     block_y = y + 80 * gui.scale
                     if artist != "":
-                        draw_text((margin, block_y), album, colours.side_bar_line2,
+                        ddt.draw_text((margin, block_y), album, colours.side_bar_line2,
                                   fonts.side_panel_line2, max=text_width)
 
                     if not genre == date == "":
@@ -17725,11 +17322,11 @@ class MetaBox:
                                 line += " | "
                             line += genre
 
-                        draw_text((margin, block_y + 20 * gui.scale), line, colours.side_bar_line2,
+                        ddt.draw_text((margin, block_y + 20 * gui.scale), line, colours.side_bar_line2,
                                   fonts.side_panel_line2, max=text_width)
 
                     if ext != "":
-                        draw_text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
+                        ddt.draw_text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
                                   fonts.side_panel_line2, max=text_width)
 
 
@@ -17825,7 +17422,7 @@ class ArtistInfoBox:
 
 
         backgound = [27, 27, 27, 255]
-        draw.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
+        ddt.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
 
         track = pctl.playing_object()
         if track is None:
@@ -17927,7 +17524,7 @@ class ArtistInfoBox:
                 text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            draw_text((x + 215, y + 14, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            ddt.draw_text((x + 215, y + 14, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -17942,19 +17539,19 @@ class ArtistInfoBox:
                     if input.mouse_click:
                         webbrowser.open(item[0], new=2, autoraise=True)
                     gui.pl_update += 1
-                    w = draw.text_calc(item[0], 13)
+                    w = ddt.get_text_w(item[0], 13)
                     xx = (right - w) - 17 * gui.scale
-                    draw.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
-                    draw.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [50, 50, 50, 255])
+                    ddt.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
+                    ddt.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [50, 50, 50, 255])
 
-                    draw_text((xx, yy), item[0], [250, 250, 250, 255], 13)
+                    ddt.draw_text((xx, yy), item[0], [250, 250, 250, 255], 13)
                     self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
-                # draw.rect_r(rect, [210, 80, 80, 255], True)
+                # ddt.rect_r(rect, [210, 80, 80, 255], True)
 
                 yy += 19
 
         else:
-            draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 13, bg=backgound)
+            ddt.draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 13, bg=backgound)
 
 
     def get_data(self, artist):
@@ -18045,7 +17642,7 @@ class Showcase:
 
     def render(self):
 
-        draw.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
+        ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
         box = int(window_size[1] * 0.4 + 120)
         x = int(window_size[0] * 0.15)
@@ -18063,7 +17660,7 @@ class Showcase:
             x = int((window_size[0]) / 2)
 
             y = int(window_size[1] / 2) - 60
-            draw_text2((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
+            ddt.draw_text((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
 
 
         else:
@@ -18100,14 +17697,14 @@ class Showcase:
 
                 if track.artist == "" and track.title == "":
 
-                    draw_text2((x, y, 2), track.filename, colours.side_bar_line1, 216, w)
+                    ddt.draw_text((x, y, 2), track.filename, colours.side_bar_line1, 216, w)
 
                 else:
 
-                    draw_text2((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
+                    ddt.draw_text((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
 
                     y += 45
-                    draw_text2((x, y, 2), track.title, colours.side_bar_line1, 228, w)
+                    ddt.draw_text((x, y, 2), track.title, colours.side_bar_line1, 228, w)
 
             else:
                 x += box + int(window_size[0] * 0.15) + 20
@@ -18410,8 +18007,8 @@ class ViewBox:
         x = self.x - 40 * gui.scale
 
         vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
-        draw.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), colours.grey(30), True)
-        draw.rect_r(vr, colours.menu_background, True)
+        ddt.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), colours.grey(30), True)
+        ddt.rect_r(vr, colours.menu_background, True)
 
         x = x + 7 * gui.scale
         y = gui.panelY + 14 * gui.scale
@@ -18664,7 +18261,7 @@ class Fader:
             self.a = min(1, self.a)
 
         rect = [0, 0, window_size[0], window_size[1]]
-        draw.rect_r(rect, [0, 0, 0, int(110 * self.a)], True)
+        ddt.rect_r(rect, [0, 0, 0, int(110 * self.a)], True)
 
         if not (self.a == 0 or self.a == 1):
             gui.update += 1
@@ -18693,7 +18290,7 @@ class EdgePulse:
         time = self.timer.get()
         if time < self.ani_duration:
             alpha = 255 - int(255 * (time / self.ani_duration))
-            draw.rect_r((x, y, w, h), [r, g, b, alpha], True)
+            ddt.rect_r((x, y, w, h), [r, g, b, alpha], True)
             gui.update = 2
             return True
         else:
@@ -18878,8 +18475,8 @@ def update_layout_do():
     gui.playlist_row_height = prefs.playlist_row_height
     gui.playlist_text_offset = 0
     gui.row_font_size = prefs.playlist_font_size  # 13
-    # gui.pl_text_real_height = draw.text_calc("Testあ9", gui.row_font_size, False, True)
-    # gui.pl_title_real_height = draw.text_calc("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
+    # gui.pl_text_real_height = ddt.get_text_w("Testあ9", gui.row_font_size, False, True)
+    # gui.pl_title_real_height = ddt.get_text_w("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
     # gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
     # # To improve
     # if system == 'linux' and gui.scale == 1:
@@ -18987,10 +18584,10 @@ def update_layout_do():
         SDL_RenderClear(renderer)
 
         SDL_DestroyTexture(gui.main_texture)
-        gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+        gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
                                              gui.max_window_tex)
 
-        SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_NONE)
+        SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_BLEND)
         SDL_SetRenderTarget(renderer, gui.main_texture)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
         SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -19007,15 +18604,15 @@ SDL_ShowWindow(t_window)
 # Clear spectogram texture
 SDL_SetRenderTarget(renderer, gui.spec2_tex)
 SDL_RenderClear(renderer)
-draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+ddt.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
 
 SDL_SetRenderTarget(renderer, gui.spec1_tex)
 SDL_RenderClear(renderer)
-draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+ddt.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
 
 SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 SDL_RenderClear(renderer)
-draw.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
+ddt.rect_r((0, 0, 1000, 1000), [7, 7, 7, 255], True)
 
 SDL_SetRenderTarget(renderer, None)
 
@@ -20366,7 +19963,7 @@ while running:
             colours.post_config()
 
         themeChange = False
-        gui.win_fore = colours.playlist_panel_background
+        ddt.text_background_colour = colours.playlist_panel_background
 
     # ---------------------------------------------------------------------------------------------------------
     # GUI DRAWING------
@@ -20382,6 +19979,7 @@ while running:
                                colours.top_panel_background[2], colours.top_panel_background[3])
         SDL_RenderClear(renderer)
         SDL_SetRenderTarget(renderer, gui.main_texture)
+        SDL_RenderClear(renderer)
 
         # perf_timer.set()
 
@@ -20391,7 +19989,7 @@ while running:
         if GUI_Mode == 1 or GUI_Mode == 2:
 
             #if gui.win_text:
-            gui.win_fore = colours.playlist_panel_background
+            ddt.text_background_colour = colours.playlist_panel_background
 
             # Side Bar Draging----------
 
@@ -20500,7 +20098,7 @@ while running:
                 # if not gui.show_playlist:
                 #     rect = [0, gui.panelY, window_size[0],
                 #             window_size[1] - gui.panelY - gui.panelBY - 0]
-                #     draw.rect_r(rect, colours.side_panel_background, True)
+                #     ddt.rect_r(rect, colours.side_panel_background, True)
                 # else:
 
                 w = gui.rspw
@@ -20508,7 +20106,10 @@ while running:
                 h = window_size[1] - gui.panelY - gui.panelBY
 
                 rect = [x, gui.panelY, w, h]
-                draw.rect_r(rect, colours.side_panel_background, True)
+                ddt.rect_r(rect, colours.side_panel_background, True)
+
+                rect = [x, gui.panelY, w, h]
+                ddt.rect_r(rect, colours.side_panel_background, True)
 
                 area_x = w + 38 * gui.scale
 
@@ -20523,7 +20124,7 @@ while running:
                 r_area = w
                 c_area = r_area // 2 + l_area
 
-                gui.win_fore = colours.side_panel_background
+                ddt.text_background_colour = colours.side_panel_background
 
                 if row_len == 0:
                     row_len = 1
@@ -20546,13 +20147,13 @@ while running:
                 # ----
                 rect = (
                 window_size[0] - (33 * gui.scale if not gui.maximized else 32 * gui.scale), gui.panelY, 31 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-                # draw.rect_r(rect, [255,0,0,5], True)
+                # ddt.rect_r(rect, [255,0,0,5], True)
 
                 fields.add(rect)
                 if coll(rect):
-                    draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
+                    ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
                               alpha_mod(colours.side_bar_line2, 150), 13)
-                    draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
+                    ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
                               alpha_mod(colours.side_bar_line2, 150), 13)
 
                 if right_click:
@@ -20698,9 +20299,9 @@ while running:
 
 
                             if info[0] == 1 and pctl.playing_state != 0:
-                                draw.rect((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           colours.gallery_highlight, True)
-                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
+                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
 
                             # Draw selection
@@ -20708,9 +20309,9 @@ while running:
 
                                 c = colours.gallery_highlight
                                 c = [c[1], c[2], c[0], c[3]]
-                                draw.rect((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           c, True) #[150, 80, 222, 255]
-                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
+                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
 
                             # Draw selection animation
@@ -20727,24 +20328,24 @@ while running:
 
 
                                 c = [c[1], c[2], c[0], a]
-                                draw.rect((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
+                                ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
                                           c, True) #[150, 80, 222, 255]
-                                draw.rect((x, y), (album_mode_art_size, album_mode_art_size),
+                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
                                 gui.update += 1
 
 
                             # Draw back colour
-                            draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
+                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
 
                             # Draw faint outline
-                            draw.rect((x - 1 * gui.scale, y - 1 * gui.scale), (album_mode_art_size + 2 * gui.scale, album_mode_art_size + 2 * gui.scale),
+                            ddt.rect_a((x - 1 * gui.scale, y - 1 * gui.scale), (album_mode_art_size + 2 * gui.scale, album_mode_art_size + 2 * gui.scale),
                                       [255, 255, 255, 11])
 
                             # Draw album art
                             if gall_ren.render(default_playlist[album_dex[album_on]], (x, y)) is False and gui.gallery_show_text is False:
 
-                                draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
+                                ddt.draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
                                            pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
                                            colours.gallery_artist_line,
                                            13,
@@ -20753,12 +20354,12 @@ while running:
 
                             if gui.album_tab_mode:
                                 if info[2] is False and info[0] != 1:
-                                    draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                     albumtitle = colours.grey(150)
 
                             else:
                                 if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-                                    draw.rect((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                     albumtitle = colours.grey(150)
 
 
@@ -20794,32 +20395,26 @@ while running:
 
                                 if line2 == "":
 
-                                    draw_text2((x, y + album_mode_art_size + 9 * gui.scale),
+                                    ddt.draw_text((x, y + album_mode_art_size + 9 * gui.scale),
                                                line,
                                                colours.gallery_artist_line,
                                                11,
                                                album_mode_art_size - 5 * gui.scale,
-                                               3,
-                                               default_playlist[album_dex[album_on]]
                                                )
                                 else:
 
-                                    draw_text2((x, y + album_mode_art_size + 8 * gui.scale),
+                                    ddt.draw_text((x, y + album_mode_art_size + 8 * gui.scale),
                                                line2,
                                                albumtitle,
                                                212,
                                                album_mode_art_size,
-                                               3,
-                                               default_playlist[album_dex[album_on]]
                                                )
 
-                                    draw_text2((x, y + album_mode_art_size + (10 + 14)  * gui.scale),
+                                    ddt.draw_text((x, y + album_mode_art_size + (10 + 14)  * gui.scale),
                                                line,
                                                colours.gallery_artist_line,
                                                11,
                                                album_mode_art_size - 5 * gui.scale,
-                                               3,
-                                               default_playlist[album_dex[album_on]]
                                                )
 
                             album_on += 1
@@ -20828,13 +20423,13 @@ while running:
                             break
                         render_pos += album_mode_art_size + album_v_gap
 
-                draw.rect((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
+                ddt.rect_a((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
                 # if gui.show_playlist is False:
                 #     album_card.render()
 
                 # if gui.album_tab_mode:
-                #     draw.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
+                #     ddt.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
 
 
             # End of gallery view
@@ -21000,18 +20595,18 @@ while running:
 
 
                     rect = [x, top, gui.plw, gui.set_height]
-                    draw.rect_r(rect, [30, 30, 30, 255], True)
+                    ddt.rect_r(rect, [30, 30, 30, 255], True)
 
                     start = x + 16 * gui.scale
                     run = 0
                     for item in gui.pl_st:
                         box = (start + run, rect[1], item[1], rect[3])
                         grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-                        draw.rect_r(grip, [255, 255, 255, 14], True)
+                        ddt.rect_r(grip, [255, 255, 255, 14], True)
 
                         line = trunc_line(item[0], 12, box[2] - 13 * gui.scale, False)
-                        gui.win_fore = [30, 30, 30, 255]
-                        draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 12)
+                        ddt.text_background_colour = [30, 30, 30, 255]
+                        ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 12)
                         run += box[2]
 
                 # ------------------------------------------------
@@ -21107,11 +20702,11 @@ while running:
                         # if (coll((2, sbp, 20, sbl)) and mouse_position[
                         #     0] != 0) or scroll_hold:
                         #     scroll_opacity = 255
-                        draw.rect((x, top), (18 * gui.scale, window_size[1] - top - gui.panelBY), [18, 18, 18, 255], True)
-                        draw.rect((x + 1, sbp), (15 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
+                        ddt.rect_a((x, top), (18 * gui.scale, window_size[1] - top - gui.panelBY), [18, 18, 18, 255], True)
+                        ddt.rect_a((x + 1, sbp), (15 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
 
                         if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                            draw.rect((x + 1 * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
+                            ddt.rect_a((x + 1 * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
 
 
                 # Switch Vis:
@@ -21157,14 +20752,14 @@ while running:
 
                     # Draw Highlight when mouse over
                     if draw_sep_hl:
-                        draw.line(window_size[0] - gui.rspw + 1 * gui.scale, gui.panelY + 1 * gui.scale,
+                        ddt.line(window_size[0] - gui.rspw + 1 * gui.scale, gui.panelY + 1 * gui.scale,
                                   window_size[0] - gui.rspw + 1 * gui.scale,
                                   window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
                         draw_sep_hl = False
 
                 # Normal Drawing
                 if gui.rsp and gui.draw_frame:
-                    draw.line(gui.playlist_width + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
+                    ddt.line(gui.playlist_width + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
                               colours.sep_line)
 
 
@@ -21197,7 +20792,7 @@ while running:
             # BOTTOM BAR!
             # C-BB
 
-            gui.win_fore = colours.bottom_panel_colour
+            ddt.text_background_colour = colours.bottom_panel_colour
 
             bottom_bar1.render()
 
@@ -21205,7 +20800,7 @@ while running:
             # C-TBR
 
             if gui.draw_frame:
-                draw.line(0, gui.panelY, window_size[0], gui.panelY, colours.tb_line)
+                ddt.line(0, gui.panelY, window_size[0], gui.panelY, colours.tb_line)
 
             if GUI_Mode == 1:
                 top_panel.render()
@@ -21222,14 +20817,14 @@ while running:
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect[1] = int(window_size[1] / 2) - rect[3]
 
-                draw.rect((rect[0] - 2 * gui.scale, rect[1] - 2 * gui.scale), (rect[2] + 4 * gui.scale, rect[3] + 4 * gui.scale), colours.grey(60), True)
-                draw.rect_r(rect, colours.sys_background_3, True)
-                draw.rect((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
-                gui.win_fore = colours.sys_background_3
+                ddt.rect_a((rect[0] - 2 * gui.scale, rect[1] - 2 * gui.scale), (rect[2] + 4 * gui.scale, rect[3] + 4 * gui.scale), colours.grey(60), True)
+                ddt.rect_r(rect, colours.sys_background_3, True)
+                ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
+                ddt.text_background_colour = colours.sys_background_3
 
                 rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(180), width=220 * gui.scale)
 
-                draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(210), 212)
+                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(210), 212)
 
                 if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not coll(rect)):
                     rename_playlist_box = False
@@ -21260,7 +20855,7 @@ while running:
                 if len(tc.comment) > 0:
                     h += 22 * gui.scale
                     w += 25 * gui.scale
-                    if draw.text_calc(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
+                    if ddt.get_text_w(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
                         h += 80 * gui.scale
                         w += 30 * gui.scale
                         comment_mode = 1
@@ -21273,9 +20868,9 @@ while running:
 
 
 
-                draw.rect((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
-                gui.win_fore = colours.sys_background_3
+                ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
+                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+                ddt.text_background_colour = colours.sys_background_3
 
                 if input.mouse_click and not coll([x, y, w, h]):
                     track_box = False
@@ -21295,15 +20890,15 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].title)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
-                    draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].title
+                    ddt.draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].title
                               , colours.grey_blend_bg3(220), 15, max=w - 190 * gui.scale)
                     #y += 4
 
@@ -21316,16 +20911,16 @@ while running:
                     if line in format_colours:
                         ex_colour = format_colours[line]
 
-                    draw.rect_r(ext_rect, ex_colour, True)
-                    draw_text((x + w - 35 * gui.scale, y + 41 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
+                    ddt.rect_r(ext_rect, ex_colour, True)
+                    ddt.draw_text((x + w - 35 * gui.scale, y + 41 * gui.scale), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
 
                     if pctl.master_library[r_menu_index].is_cue:
                         ext_rect[1] += 16 * gui.scale
                         colour = [218, 222, 73, 255]
                         if pctl.master_library[r_menu_index].is_embed_cue:
                             colour = [252, 199, 55, 255]
-                        draw.rect_r(ext_rect, colour, True)
-                        draw_text((x + w - 35 * gui.scale, y + (41 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+                        ddt.rect_r(ext_rect, colour, True)
+                        ddt.draw_text((x + w - 35 * gui.scale, y + (41 + 16) * gui.scale), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
 
 
                     y1 += 16 * gui.scale
@@ -21334,15 +20929,15 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Artist", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].artist)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x2, y1 - (0 * gui.scale)), pctl.master_library[r_menu_index].artist,
+                    ddt.draw_text((x2, y1 - (0 * gui.scale)), pctl.master_library[r_menu_index].artist,
                               colours.grey_blend_bg3(220), 13, max=420 * gui.scale)
 
                     y1 += 16 * gui.scale
@@ -21350,15 +20945,15 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 350 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].album)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Album", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Album", colours.grey_blend_bg3(140), 212)
 
-                    draw_text((x2, y1 - 1 * gui.scale), trunc_line(pctl.master_library[r_menu_index].album, 13, 420 * gui.scale),
+                    ddt.draw_text((x2, y1 - 1 * gui.scale), trunc_line(pctl.master_library[r_menu_index].album, 13, 420 * gui.scale),
                               colours.grey_blend_bg3(220),
                               13)
 
@@ -21367,32 +20962,32 @@ while running:
                     rect = [x1, y1 + 2, 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].fullpath)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Path", colours.grey_blend_bg3(140), 212)
-                    draw_text((x2, y1), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425 * gui.scale),
+                        ddt.draw_text((x1, y1), "Path", colours.grey_blend_bg3(140), 212)
+                    ddt.draw_text((x2, y1), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425 * gui.scale),
                               colours.grey_blend_bg3(190), 210)
 
                     y1 += 15 * gui.scale
 
                     if pctl.master_library[r_menu_index].samplerate != 0:
-                        draw_text((x1, y1), "Samplerate", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Samplerate", colours.grey_blend_bg3(140), 212)
                         line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
-                        draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
+                        ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(200), 12)
 
                     y1 += 15 * gui.scale
 
                     if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
-                        draw_text((x1, y1), "Bitrate", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Bitrate", colours.grey_blend_bg3(140), 212)
                         line = str(pctl.master_library[r_menu_index].bitrate)
                         if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
                         line += " kbps"
-                        draw_text((x2, y1), line, colours.grey_blend_bg3(220), 12)
+                        ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
@@ -21400,14 +20995,14 @@ while running:
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if coll(rect):
-                            draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].album_artist)
                                 input.mouse_click = False
                         else:
-                            draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + (8 + 90)  * gui.scale, y1),
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1),
                                   trunc_line(pctl.master_library[r_menu_index].album_artist, 212, 270 * gui.scale),
                                   colours.grey_blend_bg3(220), 12)
                         x -= 170 * gui.scale
@@ -21417,31 +21012,31 @@ while running:
                     rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
                             show_message("Duration copied to clipboard")
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Duration", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Duration", colours.grey_blend_bg3(140), 212)
                     line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    draw_text((x2, y1), line, colours.grey_blend_bg3(220), 12)
+                    ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220), 12)
 
                     # -----------
                     if pctl.master_library[r_menu_index].track_total not in ("", "0"):
                         x += 170 * gui.scale
                         line = str(pctl.master_library[r_menu_index].track_number) + " of " + str(
                             pctl.master_library[r_menu_index].track_total)
-                        draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + (8 + 90)  * gui.scale, y1), line,
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1), line,
                                   colours.grey_blend_bg3(220), 12)
                         x -= 170 * gui.scale
 
                     y1 += 15 * gui.scale
                     #print(pctl.master_library[r_menu_index].size)
                     if pctl.master_library[r_menu_index].size != 0:
-                        draw_text((x1, y1), "File size", colours.grey_blend_bg3(140), 212)
-                        draw_text((x2, y1), get_filesize_string(pctl.master_library[r_menu_index].size),
+                        ddt.draw_text((x1, y1), "File size", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x2, y1), get_filesize_string(pctl.master_library[r_menu_index].size),
                                   colours.grey_blend_bg3(220), 12)
 
                     # -----------
@@ -21449,8 +21044,8 @@ while running:
                         x += 170 * gui.scale
                         line = str(pctl.master_library[r_menu_index].disc_number) + " of " + str(
                             pctl.master_library[r_menu_index].disc_total)
-                        draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", colours.grey_blend_bg3(140), 212)
-                        draw_text((x + (8 + 90) * gui.scale, y1), line,
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x + (8 + 90) * gui.scale, y1), line,
                                   colours.grey_blend_bg3(220), 12)
                         x -= 170 * gui.scale
 
@@ -21459,15 +21054,15 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].genre)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Genre", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Genre", colours.grey_blend_bg3(140), 212)
                     line = trunc_line(pctl.master_library[r_menu_index].genre, 12, 290)
-                    draw_text((x2, y1), line, colours.grey_blend_bg3(220),
+                    ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220),
                               12)
 
                     y1 += 15 * gui.scale
@@ -21475,14 +21070,14 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
                             copy_to_clipboard(pctl.master_library[r_menu_index].date)
                             input.mouse_click = False
                     else:
-                        draw_text((x1, y1), "Date", colours.grey_blend_bg3(140), 212)
-                    draw_text((x2, y1), str(pctl.master_library[r_menu_index].date),
+                        ddt.draw_text((x1, y1), "Date", colours.grey_blend_bg3(140), 212)
+                    ddt.draw_text((x2, y1), str(pctl.master_library[r_menu_index].date),
                               colours.grey_blend_bg3(220), 12)
 
 
@@ -21495,8 +21090,8 @@ while running:
                         r_menu_index].length != 0:
                         ratio = total / pctl.master_library[r_menu_index].length
 
-                    draw_text((x1, y1), "Play count", colours.grey_blend_bg3(140), 212)
-                    draw_text((x2, y1), str(int(ratio)), colours.grey_blend_bg3(220), 12)
+                    ddt.draw_text((x1, y1), "Play count", colours.grey_blend_bg3(140), 212)
+                    ddt.draw_text((x2, y1), str(int(ratio)), colours.grey_blend_bg3(220), 12)
 
                     y1 += 15 * gui.scale
 
@@ -21508,8 +21103,8 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    draw_text((x1, y1), "Play time", colours.grey_blend_bg3(140), 212)
-                    draw_text((x2, y1), str(line), colours.grey_blend_bg3(220), 12)
+                    ddt.draw_text((x1, y1), "Play time", colours.grey_blend_bg3(140), 212)
+                    ddt.draw_text((x2, y1), str(line), colours.grey_blend_bg3(220), 12)
 
 
 
@@ -21525,19 +21120,19 @@ while running:
                     if len(tc.comment) > 0:
                         y1 += 20 * gui.scale
                         rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
-                        #draw.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
+                        #ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
                         fields.add(rect)
                         if coll(rect):
-                            draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
+                            ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
                                 copy_to_clipboard(pctl.master_library[r_menu_index].comment)
                                 input.mouse_click = False
                         else:
-                            draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 212)
-                        # draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 12)
+                            ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 212)
+                        # ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 12)
 
-                        if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and draw.text_calc(
+                        if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and ddt.get_text_w(
                                 tc.comment, 12) < 335 * gui.scale:
 
                             link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
@@ -21552,14 +21147,14 @@ while running:
                                     track_box = True
 
                         elif comment_mode == 1:
-                            draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, colours.grey_blend_bg3(220), 12)
+                            ddt.draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, colours.grey_blend_bg3(220), 12)
                         else:
-                            draw_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
+                            ddt.draw_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
 
             fader.render()
             if pref_box.enabled:
                 # rect = [0, 0, window_size[0], window_size[1]]
-                # draw.rect_r(rect, [0, 0, 0, 90], True)
+                # ddt.rect_r(rect, [0, 0, 0, 90], True)
                 pref_box.render()
 
             if gui.rename_folder_box:
@@ -21573,17 +21168,17 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
+                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
 
                 rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
-                draw.rect((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
                 if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale) or input.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
@@ -21606,18 +21201,18 @@ while running:
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 
-                draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
+                ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
-                draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(170), 211)
+                ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(170), 211)
 
-                draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
+                ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
                 line = pctl.master_library[rename_index].parent_folder_name
-                draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
 
-                draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
+                ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
                 line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
-                draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
 
 
             if renamebox:
@@ -21631,8 +21226,8 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
+                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     renamebox = False
@@ -21648,22 +21243,22 @@ while running:
                         else:
                             r_todo.append(item)
 
-                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(220), 213)
-                # draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(220), 213)
+                # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(170), width=300)
                 NRN = rename_files.text
                 # c_blink = 200
 
-                draw.rect((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
                 colour = colours.grey(90)
-                draw_text((x + 10 * gui.scale, y + 70 * gui.scale,), "%n - Track Number", colour, 12)
-                draw_text((x + 10 * gui.scale, y + 82 * gui.scale,), "%a - Artist Name", colour, 12)
-                draw_text((x + 10 * gui.scale, y + 94 * gui.scale,), "%t - Track Title", colour, 12)
-                draw_text((x + 150 * gui.scale, y + 70 * gui.scale,), "%b - Album Title", colour, 12)
-                draw_text((x + 150 * gui.scale, y + 82 * gui.scale,), "%d - Date/Year", colour, 12)
-                draw_text((x + 150 * gui.scale, y + 94 * gui.scale,), "%u - Use Underscores", colour, 12)
-                draw_text((x + 290 * gui.scale, y + 70 * gui.scale,), "%x - File Extension", colour, 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 70 * gui.scale,), "%n - Track Number", colour, 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 82 * gui.scale,), "%a - Artist Name", colour, 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 94 * gui.scale,), "%t - Track Title", colour, 12)
+                ddt.draw_text((x + 150 * gui.scale, y + 70 * gui.scale,), "%b - Album Title", colour, 12)
+                ddt.draw_text((x + 150 * gui.scale, y + 82 * gui.scale,), "%d - Date/Year", colour, 12)
+                ddt.draw_text((x + 150 * gui.scale, y + 94 * gui.scale,), "%u - Use Underscores", colour, 12)
+                ddt.draw_text((x + 290 * gui.scale, y + 70 * gui.scale,), "%x - File Extension", colour, 12)
 
                 afterline = ""
                 warn = False
@@ -21680,25 +21275,25 @@ while running:
                     if item == rename_index:
                         break
 
-                draw_text((x + 10 * gui.scale, y + 120 * gui.scale), "BEFORE", colours.grey(100), 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 120 * gui.scale), "BEFORE", colours.grey(100), 12)
                 line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
-                draw_text((x + 67 * gui.scale, y + 120 * gui.scale), line, colours.grey(210), 12)
+                ddt.draw_text((x + 67 * gui.scale, y + 120 * gui.scale), line, colours.grey(210), 12)
 
-                draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "AFTER", colours.grey(100), 12)
-                draw_text((x + 67 * gui.scale, y + 135 * gui.scale,), trunc_line(afterline, 12, 335), colours.grey(210), 12)
+                ddt.draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "AFTER", colours.grey(100), 12)
+                ddt.draw_text((x + 67 * gui.scale, y + 135 * gui.scale,), trunc_line(afterline, 12, 335), colours.grey(210), 12)
 
                 if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
                     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
-                    draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
+                    ddt.draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
                               13)
 
                 if '%t' not in NRN and '%n' not in NRN:
-                    draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
+                    ddt.draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
                               13)
                 if warn:
-                    draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 90, 90, 255], 13)
+                    ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 90, 90, 255], 13)
                 if warncue:
-                    draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Error: Folder contains tracks from a CUE sheet",
+                    ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Error: Folder contains tracks from a CUE sheet",
                               [245, 90, 90, 255], 13)
 
 
@@ -21765,14 +21360,14 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
+                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
                     radiobox = False
 
-                draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.grey(200), 213)
-                #gui.win_fore = colours.sys_background_3
+                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.grey(200), 213)
+                #ddt.text_background_colour = colours.sys_background_3
 
                 y1 = y
                 y += 30 * gui.scale
@@ -21785,29 +21380,29 @@ while running:
                         if gui.level_2_click:
                             pass
 
-                    draw_text((x + 13 * gui.scale, y), item, colours.grey(150), 12, 330 * gui.scale)
+                    ddt.draw_text((x + 13 * gui.scale, y), item, colours.grey(150), 12, 330 * gui.scale)
 
                     rect = (x + (17 + 330) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
                     fields.add(rect)
                     if coll(rect):
-                        draw.rect_r(rect, [40, 40, 40, 60], True)
+                        ddt.rect_r(rect, [40, 40, 40, 60], True)
                         if gui.level_2_click:
                             to_del = i
 
-                    draw.rect_r(rect, [50, 50, 50, 75], True)
-                    draw_text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Del", colours.grey(180), 211)
+                    ddt.rect_r(rect, [50, 50, 50, 75], True)
+                    ddt.draw_text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Del", colours.grey(180), 211)
 
 
                     rect = (x + (17 + 380) * gui.scale, y, 40 * gui.scale, 14 * gui.scale)
                     fields.add(rect)
                     if coll(rect):
-                        draw.rect_r(rect, [40, 40, 40, 60], True)
+                        ddt.rect_r(rect, [40, 40, 40, 60], True)
                         if gui.level_2_click:
                             radio_field.text = item
 
 
-                    draw.rect_r(rect, [50, 50, 50, 75], True)
-                    draw_text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Sel", colours.grey(180), 211)
+                    ddt.rect_r(rect, [50, 50, 50, 75], True)
+                    ddt.draw_text((rect[0] + 20 * gui.scale, rect[1] + -1 * gui.scale, 2), "Sel", colours.grey(180), 211)
 
 
                     y += s1
@@ -21820,7 +21415,7 @@ while running:
 
                 radio_field.draw(x + 14 * gui.scale, y + 40 * gui.scale, colours.grey_blend_bg3(170), width=380 * gui.scale, click=gui.level_2_click)
 
-                draw.rect((x + 8 * gui.scale, y + 38 * gui.scale), (380 * gui.scale, 22 * gui.scale), colours.grey(50))
+                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (380 * gui.scale, 22 * gui.scale), colours.grey(50))
 
                 draw.button("GO", x + (8 + 380 + 10) * gui.scale, y + 38 * gui.scale, 40 * gui.scale)
 
@@ -21866,24 +21461,24 @@ while running:
                         if gui.level_2_click:
                             pctl.playerCommand = 'record'
                             pctl.playerCommandReady = True
-                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
+                        ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 20],
                                                                                       colours.sys_background_3), True)
-                        draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
-                        draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
+                        ddt.draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(210), 212)
+                        ddt.draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [230, 20, 20, 255], 212)
                     else:
-                        draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
+                        ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 9],
                                                                                       colours.sys_background_3), True)
-                        draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
-                        draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
+                        ddt.draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(190), 212)
+                        ddt.draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [220, 20, 20, 255], 212)
                 else:
                     if coll(rect):
                         if gui.level_2_click:
                             radiobox = False
                             show_message("A stream needs to be playing first.")
-                    draw.rect((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
+                    ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), alpha_blend([255, 255, 255, 7],
                                                                                   colours.sys_background_3), True)
-                    draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
-                    draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
+                    ddt.draw_text((rect[0] + 7 * gui.scale, rect[1] + 3 * gui.scale), "Rec", colours.grey(150), 212)
+                    ddt.draw_text((rect[0] + 34 * gui.scale, rect[1] + 2 * gui.scale), "●", [200, 15, 15, 255], 212)
 
                 gui.level_2_click = False
 
@@ -21895,8 +21490,8 @@ while running:
 
 
 
-                w1 = draw.text_calc(gui.message_text, 15) + 74 * gui.scale
-                w2 = draw.text_calc(gui.message_subtext, 12) + 74 * gui.scale
+                w1 = ddt.get_text_w(gui.message_text, 15) + 74 * gui.scale
+                w2 = ddt.get_text_w(gui.message_subtext, 12) + 74 * gui.scale
                 w = max(w1, w2)
 
                 if w < 210 * gui.scale:
@@ -21906,9 +21501,9 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                draw.rect((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
                           colours.grey(55), True)
-                draw.rect((x, y), (w, h), colours.sys_background_3, True)
+                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 if gui.message_mode == 'info':
                     message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
@@ -21922,10 +21517,10 @@ while running:
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
 
                 if len(gui.message_subtext) > 0:
-                    draw_text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.grey(230), 15)
-                    draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(230), 12)
+                    ddt.draw_text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.grey(230), 15)
+                    ddt.draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.grey(230), 12)
                 else:
-                    draw_text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.grey(230), 15)
+                    ddt.draw_text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.grey(230), 15)
 
             # SEARCH
             # if key_ctrl_down and key_v_press:
@@ -21952,10 +21547,10 @@ while running:
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect2[0] = rect[0]
 
-                draw.rect_r((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), [200,90,2,255], True)
+                ddt.rect_r((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), [200,90,2,255], True)
 
-                gui.win_fore = colours.sys_background_4
-                draw.rect_r(rect, colours.sys_background_4, True)
+                ddt.text_background_colour = colours.sys_background_4
+                ddt.rect_r(rect, colours.sys_background_4, True)
 
                 if len(input_text) > 0:
                     search_index = -1
@@ -21968,15 +21563,15 @@ while running:
                     #     line = "last.fm loved tracks from user. Format: /love <username>"
                     # else:
                     line = "Folder filter mode. Enter path segment."
-                    draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(110), 12)
+                    ddt.draw_text((rect[0] + 23 * gui.scale, window_size[1] - 84 * gui.scale), line, colours.grey(110), 12)
                 else:
                     line = "Use UP / DOWN to navigate results. SHIFT + RETURN to show all."
                     if len(search_text.text) == 0:
                         line = "Find in current playlist"
-                    draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
+                    ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
                               colours.grey(110), 12)
 
-                    # draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
+                    # ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
                     #           colours.grey(90), 214)
 
                 # if len(pctl.track_queue) > 0:
@@ -21986,8 +21581,8 @@ while running:
                     #     input_text = ""
 
                 if gui.search_error:
-                    draw.rect_r([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255], True)
-                    gui.win_fore = [180, 40, 40, 255] #alpha_blend([255,0,0,25], gui.win_fore)
+                    ddt.rect_r([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255], True)
+                    ddt.text_background_colour = [180, 40, 40, 255] #alpha_blend([255,0,0,25], ddt.text_background_colour)
                 # if key_backspace_press:
                 #     gui.search_error = False
 
@@ -22204,11 +21799,11 @@ while running:
             fields.add(rect)
 
             rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
-            draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [0, 0, 0, 50], True)
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll(rect):
-                draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
-                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
+                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                           [160, 160, 160, 160], True)
                 if input.mouse_click or ab_click:
                     SDL_MinimizeWindow(t_window)
@@ -22216,14 +21811,14 @@ while running:
                     input.mouse_click = False
                     drag_mode = False
             else:
-                draw.rect((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                           [120, 120, 120, 45], True)
 
             rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
-            draw.rect((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), [0, 0, 0, 50], True)
             fields.add(rect)
             if coll(rect):
-                draw.rect((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [80, 80, 80, 120], True)
+                ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [80, 80, 80, 120], True)
                 top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
                 if input.mouse_click or ab_click:
                     running = False
@@ -22235,10 +21830,10 @@ while running:
                 corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
 
                 colour = [30, 30, 30, 255]
-                draw.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
-                draw.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
-                draw.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
-                draw.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
+                ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
+                ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
+                ddt.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
+                ddt.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
 
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
@@ -22246,9 +21841,9 @@ while running:
             gui.drag_source_position = [0, 0]
             if window_size[1] - gui.panelBY > i_y > gui.panelY:
                 if len(shift_selection) == 1:
-                    draw.rect_r((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
+                    ddt.rect_r((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
                 else:
-                    draw.rect_r((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
+                    ddt.rect_r((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
 
             gui.update += 1
 
@@ -22307,7 +21902,7 @@ while running:
                 SDL_SetRenderTarget(renderer, gui.spec2_tex)
                 for i, value in enumerate(gui.spec2_buffers[0]):
 
-                    draw.rect_r([gui.spec2_position, i, 1, 1],
+                    ddt.rect_r([gui.spec2_position, i, 1, 1],
                                 [min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
                                  min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
                                  min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
@@ -22350,7 +21945,7 @@ while running:
                 SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
             if pref_box.enabled:
-                draw.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
+                ddt.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
 
         if gui.vis == 2 and gui.spec is not None:
 
@@ -22406,8 +22001,8 @@ while running:
 
                 SDL_SetRenderTarget(renderer, gui.spec1_tex)
 
-                # draw.rect_r(gui.spec_rect, colours.top_panel_background, True)
-                draw.rect_r((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg, True)
+                # ddt.rect_r(gui.spec_rect, colours.top_panel_background, True)
+                ddt.rect_r((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg, True)
 
                 # xx = 0
                 gui.bar.x = 0
@@ -22443,7 +22038,7 @@ while running:
                     gui.bar.x += 4 * gui.scale
 
                 if pref_box.enabled:
-                    draw.rect_r((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90], True)
+                    ddt.rect_r((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90], True)
 
                 SDL_SetRenderTarget(renderer, None)
                 SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
@@ -22460,7 +22055,7 @@ while running:
             y = 0
 
             gui.spec_level_rec.x = x - 70 * gui.scale
-            draw.rect((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10),
+            ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10),
                       True)
 
             x = gui.level_ww - 9 * gui.scale
@@ -22530,7 +22125,7 @@ while running:
                             cc = colours.level_3_bg
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
-                draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
+                ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
             y -= 7 * gui.scale
             for t in range(12):
@@ -22591,7 +22186,7 @@ while running:
 
                 if gui.level > 0 and pctl.playing_state > 0:
                     pass
-                draw.rect(((x - (w * t) - (s * t)), y), (w, w), cc, True)
+                ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc, True)
 
             SDL_SetRenderTarget(renderer, None)
             SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
@@ -22715,7 +22310,7 @@ SDL_DestroyTexture(gui.ttext)
 SDL_DestroyTexture(gui.spec2_tex)
 SDL_DestroyTexture(gui.spec1_tex)
 SDL_DestroyTexture(gui.spec_level_tex)
-clear_text_cache()
+ddt.clear_text_cache()
 clear_img_cache(False)
 
 IMG_Quit()
