@@ -711,13 +711,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.set_load_old = False
 
-        self.win_text = False
-        self.cairo_text = False
-        if system == 'windows':
-            self.win_text = True
-        elif system == "linux":
-            self.cairo_text = True
-
         self.trunk_end = "..." # "…"
         self.temp_themes = {}
         self.theme_temp_current = -1
@@ -5173,7 +5166,7 @@ class Drawing:
     def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None):
 
         if w is None:
-            w = self.text_calc(text, font) + 18 * gui.scale
+            w = ddt.get_text_w(text, font) + 18 * gui.scale
         if h is None:
             h = 22 * gui.scale
 
@@ -5351,8 +5344,6 @@ def draw_linked_text(location, text, colour, font):
     ddt.draw_text((x, y), base, colour, font)
     ddt.draw_text((x + left, y), link_text, colours.link_text, font)
     ddt.draw_text((x + right, y), rest, colour, font)
-    if gui.win_text:
-        y += 1
     if gui.scale == 2:
         font *= 2
         font += 4
@@ -5593,8 +5584,6 @@ class TextBox:
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
-                if not gui.cairo_text:
-                    inf_comp = 1
                 space = ddt.draw_text((x, y), self.get_selection(0), colour, font)
                 space += ddt.draw_text((x + space - inf_comp, y), self.get_selection(1), [240,240,240,255], font, bg=[40, 120, 180, 255],)
                 ddt.draw_text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
@@ -17231,7 +17220,7 @@ class MetaBox:
 
             if system == 'linux':
 
-                tw, th = cairo_text.wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30, True)
+                tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30, True)
 
                 oth = th
 
@@ -17501,7 +17490,7 @@ class ArtistInfoBox:
                         else:
                             self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
 
-                tw, th = cairo_text.wh(text, 14, w - 245, True)
+                tw, th = ddt.get_text_wh(text, 14, w - 245, True)
                 self.th = th
 
                 self.processed_text = text
@@ -19988,7 +19977,6 @@ while running:
 
         if GUI_Mode == 1 or GUI_Mode == 2:
 
-            #if gui.win_text:
             ddt.text_background_colour = colours.playlist_panel_background
 
             # Side Bar Draging----------
