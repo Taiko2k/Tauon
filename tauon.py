@@ -5120,8 +5120,16 @@ SDL_SetWindowIcon(t_window, icon)
 
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
+gui.max_window_tex = 1000
+if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
 
-gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+    while window_size[0] > gui.max_window_tex:
+        gui.max_window_tex += 1000
+    while window_size[1] > gui.max_window_tex:
+        gui.max_window_tex += 1000
+
+
+gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
@@ -5131,13 +5139,13 @@ gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_T
 
 SDL_SetRenderTarget(renderer, None)
 
-gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, window_size[0], window_size[1])
+gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 
 SDL_SetRenderTarget(renderer, gui.main_texture)
 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
 SDL_RenderClear(renderer)
 
-gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
+gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 gui.pl_update = 2
 
 SDL_SetWindowMinimumSize(t_window, 560, 330)
@@ -6211,7 +6219,7 @@ class GallClass:
             self.key_list.append((index, size))
 
             # Remove old images to conserve RAM usage
-            if len(self.key_list) > 500:
+            if len(self.key_list) > 100:
                 key = self.key_list[0]
                 while key in self.queue:
                     self.queue.remove(key)
@@ -18826,6 +18834,7 @@ elif default_player == 0:
 def update_layout_do():
 
     #input.mouse_click = False
+    global renderer
 
     if not gui.maximized:
         gui.save_size = copy.deepcopy(window_size)
@@ -18949,34 +18958,45 @@ def update_layout_do():
     else:
         gui.compact_bar = False
 
-    gui.abc = SDL_Rect(0, 0, window_size[0], window_size[1])
-
-
-
-    SDL_DestroyTexture(gui.ttext)
     gui.pl_update = 1
 
+
+    if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+
+        while window_size[0] > gui.max_window_tex:
+            gui.max_window_tex += 1000
+        while window_size[1] > gui.max_window_tex:
+            gui.max_window_tex += 1000
+
+
+
+        gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+
+        SDL_DestroyTexture(gui.ttext)
+        SDL_RenderClear(renderer)
+        gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                      gui.max_window_tex)
+
+        SDL_SetRenderTarget(renderer, gui.ttext)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_RenderClear(renderer)
+        SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+
+        SDL_RenderClear(renderer)
+
+        SDL_DestroyTexture(gui.main_texture)
+        gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                             gui.max_window_tex)
+
+        SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_NONE)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+        SDL_RenderClear(renderer)
+
     update_set()
-
-    SDL_DestroyTexture(gui.main_texture)
-
-    gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
-                              window_size[1])
-
-    SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
-    SDL_SetRenderTarget(renderer, gui.ttext)
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-    SDL_RenderClear(renderer)
-
-    gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, window_size[0],
-                              window_size[1])
-    SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_NONE)
-    SDL_SetRenderTarget(renderer, gui.main_texture)
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-    SDL_SetRenderTarget(renderer, gui.main_texture)
-    SDL_RenderClear(renderer)
-
-
 
 SDL_SetRenderTarget(renderer, None)
 SDL_RenderClear(renderer)
