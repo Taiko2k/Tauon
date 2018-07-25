@@ -1,25 +1,6 @@
 Files for /lib
 
-Windows:
-
-bass.dll
-base_ape.dll
-bass_tta.dll
-bassenc.dll
-bassflac.dll
-bassmix.dll
-bassopus.dll
-bass_fx.dll
-bassenc_opus.dll
-libfreetype-6.dll
-libjpeg-9.dll
-libpng16-16.dll
-SDL2.dll
-SDL2_image.dll
-SDL2_ttf.dll
-zlib1.dll
-
-Linux:
+BASS:
 
 libbass.so
 libbass_aac.so
