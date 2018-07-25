@@ -3,7 +3,12 @@ Changelog-------------------------------------
 
 v3.0.3
 
+ - Ctrl-Z function can now undo multiple playlist deletes.
+ - Changed transcode files opus extension to use '.opus.ogg'
  - Fixed a VRAM memory leak.
+ - Fixed gallery not updating on inplace sort functions.
+ - Fixed a stall on importing some XSPF playlist's
+ - Fixed a crash when holding shift and scrolling
 
 v3.0.2
 

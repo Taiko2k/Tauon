@@ -33,7 +33,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.0.2"
+t_version = "v3.0.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -315,8 +315,7 @@ row_len = 5
 last_row = 0
 album_v_gap = 66
 album_h_gap = 30
-album_mode_art_size = 160
-combo_mode_art_size = 190
+album_mode_art_size = 200
 albums_to_render = 0
 
 album_pos_px = 1
@@ -1190,8 +1189,8 @@ try:
         prefs.enable_transcode = save[29]
     if save[30] is not None:
         prefs.show_rym = save[30]
-    if save[31] is not None:
-        combo_mode_art_size = save[31]
+    # if save[31] is not None:
+    #     combo_mode_art_size = save[31]
     if save[32] is not None:
         gui.maximized = save[32]
     if save[33] is not None:
@@ -5174,9 +5173,9 @@ class Drawing:
         fields.add(rect)
 
         if fore_text is None:
-            fore_text = colours.grey(210)
+            fore_text = colours.grey(240)
         if back_text is None:
-            back_text = colours.grey(190)
+            back_text = colours.grey(220)
         if bg is None:
             bg = alpha_blend([255, 255, 255, 9], colours.sys_background_3)
         if fg is None:
@@ -5877,21 +5876,6 @@ class ThumbTracks:
 thumb_tracks = ThumbTracks()
 
 
-
-def img_slide_update_combo(value):
-    global combo_mode_art_size
-    combo_mode_art_size = value
-    clear_img_cache()
-
-    # Update sizes
-    if not gui.combo_mode:
-        gall_ren.size = album_mode_art_size
-    else:
-        gall_ren.size = combo_mode_art_size
-        combo_pl_render.prep()
-        update_layout = True
-        gui.pl_update = 1
-
 def img_slide_update_gall(value):
 
     global album_mode_art_size
@@ -5899,13 +5883,8 @@ def img_slide_update_gall(value):
     clear_img_cache()
 
     # Update sizes
-    if not gui.combo_mode:
-        gall_ren.size = album_mode_art_size
-    else:
-        gall_ren.size = combo_mode_art_size
-        combo_pl_render.prep()
-        update_layout = True
-        gui.pl_update = 1
+    gall_ren.size = album_mode_art_size
+
 
 def clear_img_cache(delete_disk=True):
     global album_art_gen
@@ -6819,7 +6798,7 @@ def load_xspf(path):
             if 'title' in track:
                 nt.title = track['title']
             if 'duration' in track:
-                nt.length = int(int(track['duration']) / 1000)
+                nt.length = int(float((track['duration'])) / 1000)
             if 'album' in track:
                 nt.album = track['album']
             nt.is_cue = False
@@ -7813,7 +7792,7 @@ def reload():
 def clear_playlist(index):
     global default_playlist
 
-    pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[index])
+    pctl.playlist_backup.apppend(copy.deepcopy(pctl.multi_playlist[index]))
 
     del pctl.multi_playlist[index][2][:]
     if pctl.playlist_active == index:
@@ -7941,7 +7920,7 @@ def delete_playlist(index):
         playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
 
     pctl.active_playlist_playing = pctl.playlist_active
-    pctl.playlist_backup = pctl.multi_playlist[index]
+    pctl.playlist_backup.append(pctl.multi_playlist[index])
     del pctl.multi_playlist[index]
     reload()
 
@@ -8108,6 +8087,7 @@ def export_stats(pl):
 def standard_sort(pl):
     sort_path_pl(pl)
     sort_track_2(pl)
+    reload_albums()
 
 
 
@@ -8167,12 +8147,14 @@ def year_sort(pl):
 
     # We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
     pctl.multi_playlist[pl][2][:] = pl2[:]
+    reload_albums()
 
 
 if gui.scale == 2:
     delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
 else:
     delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
+
 
 def pl_toggle_playlist_break(ref):
     pctl.multi_playlist[ref][4] ^= 1
@@ -10472,8 +10454,6 @@ def toggle_side_panel(mode=0):
         gui.rsp = True
     else:
         gui.rsp = False
-        # if gui.rsp:
-        #     gui.combo_mode = False
 
     if prefs.prefer_side:
         gui.rspw = gui.pref_rspw
@@ -10501,25 +10481,18 @@ def toggle_combo_view(mode=0, showcase=False, off=False):
         gui.combo_mode = True
         reload_albums()
 
-        # clear_img_cache()
-        gall_ren.size = combo_mode_art_size
-        #combo_pl_render.prep(True)
-
         if album_mode:
             toggle_album_mode()
         if gui.rsp:
             gui.rsp = False
     else:
         gui.combo_mode = False
-        # clear_img_cache()
+
         gall_ren.size = album_mode_art_size
         if prefs.prefer_side:
             gui.rsp = True
         gui.rspw = old_side_pos
     update_layout = True
-
-
-# x_menu.add('Toggle Side panel', toggle_side_panel)
 
 
 def standard_size():
@@ -11464,7 +11437,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     print("done")
     if codec == "opus" and prefs.transcode_opus_as:
-        codec = 'ogg'
+        codec = 'opus.ogg'
 
     print(target_out)
     if manual_name is None:
@@ -11863,7 +11836,7 @@ class SearchOverlay:
 
                     if full_count < 6:
 
-                        ddt.draw_text((125 * gui.scale, yy + 28 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.draw_text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
                         xx += ddt.draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
@@ -11897,7 +11870,7 @@ class SearchOverlay:
                                 self.search_text.text = ""
                     else:
 
-                        ddt.draw_text((120 + xx + 11 * gui.scale, yy + 3), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                        ddt.draw_text((120 + xx + 11 * gui.scale, yy), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
 
                         xx += ddt.draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
@@ -11929,7 +11902,7 @@ class SearchOverlay:
                     text = "Track"
                     xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                    ddt.draw_text((xx + (120 + 11) * gui.scale, yy + 3 * gui.scale), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
+                    ddt.draw_text((xx + (120 + 11) * gui.scale, yy), "BY", [250, 160, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                     xx += 8 * gui.scale
                     artist = pctl.master_library[item[2]].artist
                     xx += ddt.draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
@@ -13978,11 +13951,11 @@ class Over:
         fields.add(rect)
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(200), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
             if self.click:
                 plug()
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(170), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
 
     def toggle_square(self, x, y, function, text):
 
@@ -14187,7 +14160,6 @@ class Over:
     def config_b(self):
 
         global album_mode_art_size
-        global combo_mode_art_size
         global update_layout
 
         x = self.box_x + self.item_x_offset - 10 * gui.scale
@@ -14210,12 +14182,7 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        #ddt.draw_text((x, y), "Playlist art size", colours.grey(180), 11)
-
         x += 110 * gui.scale
-
-        #combo_mode_art_size = self.slide_control(x, y, None, "px", combo_mode_art_size, 50, 600, 10, img_slide_update_combo)
-
 
         y += 35 * gui.scale
 
@@ -14893,7 +14860,7 @@ class TopPanel:
 
                     if key_shift_down:
                         pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
-                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.tab_hold_index])
+                        pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.tab_hold_index]))
                         delete_playlist(self.tab_hold_index)
                     else:
                         move_playlist(self.tab_hold_index, i)
@@ -15085,7 +15052,7 @@ class TopPanel:
         hit = coll(rect)
         fields.add(rect)
 
-        if x_menu.active or hit:
+        if (x_menu.active or hit) and not tab_menu.active:
             bg = colours.status_text_over
         else:
             bg = colours.status_text_normal
@@ -15145,9 +15112,9 @@ class TopPanel:
             else:
                 colour = [60, 60, 60, 255]
 
-            self.dl_button.render(x, y + 1, colour)
+            self.dl_button.render(x, y + 1 * gui.scale, colour)
             if dl > 0:
-                ddt.draw_text((x + 18, y - 2), str(dl), [244, 223, 66, 255] , 209)
+                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), [244, 223, 66, 255] , 209)
                 # [166, 244, 179, 255]
 
 
@@ -16172,28 +16139,25 @@ class StandardPlaylist:
 
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
-                and not (coll(pl_rect)) and not (
-            key_shift_down and track_box) and not search_over.active:
+                and not (coll(pl_rect)) and not search_over.active:
 
-            if False: #album_mode and mouse_position[0] > gui.playlist_width + 34 * gui.scale:
-                pass
-            else:
-                mx = 4
-                if gui.playlist_view_length < 25:
-                    mx = 3
-                # if thick_lines:
-                #     mx = 3
-                playlist_position -= mouse_wheel * mx
-                # if gui.playlist_view_length > 15:
-                #     playlist_position -= mouse_wheel
-                if gui.playlist_view_length > 40:
-                    playlist_position -= mouse_wheel
 
-                if playlist_position > len(default_playlist):
-                    playlist_position = len(default_playlist)
-                if playlist_position < 1:
-                    playlist_position = 0
-                    edge_playlist.pulse()
+            mx = 4
+            if gui.playlist_view_length < 25:
+                mx = 3
+            # if thick_lines:
+            #     mx = 3
+            playlist_position -= mouse_wheel * mx
+            # if gui.playlist_view_length > 15:
+            #     playlist_position -= mouse_wheel
+            if gui.playlist_view_length > 40:
+                playlist_position -= mouse_wheel
+
+            if playlist_position > len(default_playlist):
+                playlist_position = len(default_playlist)
+            if playlist_position < 1:
+                playlist_position = 0
+                edge_playlist.pulse()
 
         # Show notice if playlist empty
 
@@ -16351,7 +16315,7 @@ class StandardPlaylist:
 
 
                     # Draw blue highlight insert line
-                    if mouse_down and playlist_hold and coll(track_box) and p_track not in shift_selection:  # playlist_hold_position != p_track:
+                    if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection:  # playlist_hold_position != p_track:
 
                         if len(shift_selection) > 1 or key_shift_down:
 
@@ -16525,12 +16489,12 @@ class StandardPlaylist:
                             gui.pl_update = 1
 
             # Blue drop line
-            if mouse_down and playlist_hold and coll(track_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
+            if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
 
                 if len(shift_selection) > 1 or key_shift_down:
                     ddt.rect_r(
                         [left + highlight_left, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, highlight_width, 3],
-                        [135, 145, 190, 255], True)
+                        [125, 105, 215, 255], True)
 
             # Shift click actions
             if input.mouse_click and line_hit: # and key_shift_down:
@@ -17093,7 +17057,7 @@ class PlaylistBox:
 
                     if key_shift_down:
                         pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
-                        pctl.playlist_backup = copy.deepcopy(pctl.multi_playlist[self.drag_on])
+                        pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.drag_on]))
                         delete_playlist(self.drag_on)
                     else:
                         move_playlist(self.drag_on, i)
@@ -18022,7 +17986,7 @@ class ViewBox:
             func = test
 
         y += 50 * gui.scale
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase lyrics", False)
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics View", False)
         if test is not None:
             func = test
 
@@ -18684,7 +18648,7 @@ def save_state():
             prefs.expose_web,
             prefs.enable_transcode,
             prefs.show_rym,
-            combo_mode_art_size,
+            None,  # was combo mode art size
             gui.maximized,
             prefs.prefer_bottom_title,
             gui.display_time_mode,
@@ -19519,10 +19483,11 @@ while running:
             #show_message("This function has been removed", 'info')
 
         if key_ctrl_down and key_z_press:
-            if pctl.playlist_backup != []:
-                pctl.multi_playlist.append(pctl.playlist_backup)
-                pctl.playlist_backup = []
-                # show_message("There is no undo, sorry.")
+            if pctl.playlist_backup:
+                pctl.multi_playlist.append(pctl.playlist_backup.pop())
+            else:
+                show_message("There are no more playlists to un-delete.")
+
         if key_F9:
             open_encode_out()
 
@@ -20005,6 +19970,7 @@ while running:
                     and not selection_menu.active\
                     and not view_box.active \
                     and not folder_menu.active \
+                    and not set_menu.active \
                     and not artist_info_scroll.held:
 
                 #update_layout = True
@@ -20542,7 +20508,7 @@ while running:
                     if not mouse_down:
                         gui.set_label_hold = -1
                     # print(in_grip)
-                    if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active:
+                    if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
                         gui.cursor_want = 1
 
 
