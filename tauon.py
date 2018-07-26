@@ -7902,22 +7902,29 @@ def delete_playlist(index):
         pctl.playlist_playing = 0
         default_playlist = []
         playlist_position = 0
+
     elif index == pctl.playlist_active and index > 0:
         for i, pl in enumerate(pctl.multi_playlist):
             if pl[6] == gui.previous_playlist_id and i < index:
-                pctl.playlist_active = i
+                #pctl.playlist_active = i
+                switch_playlist(i)
                 break
         else:
-            pctl.playlist_active -= 1
-        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
-        default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
-        playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
+            switch_playlist(pctl.playlist_active - 1)
+        #     pctl.playlist_active -= 1
+        #
+        # pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
+        # default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
+        # playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
+
     elif index < pctl.playlist_active and pctl.playlist_active > 0:
-        pctl.playlist_active -= 1
+        #pctl.playlist_active -= 1
+        switch_playlist(pctl.playlist_active - 1)
     elif index == pctl.playlist_active == 0 and len(pctl.multi_playlist) > 1:
-        pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active + 1][1]
-        default_playlist = pctl.multi_playlist[pctl.playlist_active + 1][2]
-        playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
+        switch_playlist(pctl.playlist_active + 1)
+        # pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active + 1][1]
+        # default_playlist = pctl.multi_playlist[pctl.playlist_active + 1][2]
+        # playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
 
     pctl.active_playlist_playing = pctl.playlist_active
     pctl.playlist_backup.append(pctl.multi_playlist[index])
