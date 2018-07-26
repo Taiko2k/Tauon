@@ -9,6 +9,7 @@ v3.0.3
  - Fixed gallery not updating on inplace sort functions.
  - Fixed a stall on importing some XSPF playlist's
  - Fixed a crash when holding shift and scrolling
+ - Fixed playlist switch on delete playlist not setting gallery position
 
 v3.0.2
 
