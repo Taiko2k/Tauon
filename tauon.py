@@ -33,7 +33,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.0.3"
+t_version = "v3.1.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -656,9 +656,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         #self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
 
-        self.spec_y = 5 * self.scale
-        self.spec_w = 80 * self.scale
-        self.spec_h = 20 * self.scale
+        self.spec_y = int(round(5 * self.scale))
+        self.spec_w = int(round(80 * self.scale))
+        self.spec_h = int(round(20 * self.scale))
         self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
 
         self.bar = SDL_Rect(10, 10, 3 * self.scale, 10)
@@ -723,8 +723,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.bb_show_art = False
         # self.show_stars = True
 
-        self.spec2_y = 22 * self.scale
-        self.spec2_w = 140 * self.scale
+        self.spec2_y = int(round(22 * self.scale))
+        self.spec2_w = int(round(140 * self.scale))
         self.spec2 = [0] * self.spec2_y
         self.spec2_phase = 0
         self.spec2_buffers = []
@@ -803,6 +803,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         # 1 drag horizontal
         # 2 text
         # 3 hand
+
+        self.power_bar = None
 
 gui = GuiVar()
 
@@ -1149,6 +1151,8 @@ try:
 
     if save[63] is not None:
         prefs.ui_scale = save[63]
+        # prefs.ui_scale = 2
+
         gui.__init__()
 
     master_library = save[0]
@@ -4700,7 +4704,7 @@ if True:
                             self.player_properties['Volume'] = pctl.player_volume / 100
                             changed['Volume'] = self.player_properties['Volume']
 
-                        if pctl.playing_object().index != self.playing_index:
+                        if pctl.playing_object() is not None and pctl.playing_object().index != self.playing_index:
                             track = pctl.playing_object()
                             self.playing_index = track.index
 
@@ -5201,68 +5205,37 @@ class Drawing:
 
 draw = Drawing()
 
-if system == "linux":
 
-    if gui.scale == 1:
+standard_font = prefs.linux_font
 
-        standard_font = prefs.linux_font #"Noto Sans"
-        ddt.prime_font(standard_font, 10 - 2, 9)
-        ddt.prime_font(standard_font, 10 - 2, 10)
-        ddt.prime_font(standard_font, 11 - 2.5, 11)
-        ddt.prime_font(standard_font, 12 - 3, 12)
-        ddt.prime_font(standard_font, 13 - 3, 13)
-        ddt.prime_font(standard_font, 14 - 4, 14)
-        ddt.prime_font(standard_font, 15 - 4, 15)
-        ddt.prime_font(standard_font, 16 - 4, 16)
-        ddt.prime_font(standard_font, 17 - 5, 17)
-        ddt.prime_font(standard_font, 18 - 6, 18)
+ddt.prime_font(standard_font, 8, 9)
+ddt.prime_font(standard_font, 8, 10)
+ddt.prime_font(standard_font, 8.5, 11)
+ddt.prime_font(standard_font, 9, 12)
+ddt.prime_font(standard_font, 10, 13)
+ddt.prime_font(standard_font, 10, 14)
+ddt.prime_font(standard_font, 11, 15)
+ddt.prime_font(standard_font, 12, 16)
+ddt.prime_font(standard_font, 12, 17)
+ddt.prime_font(standard_font, 12, 18)
+ddt.prime_font(standard_font, 24, 30)
 
-        ddt.prime_font(standard_font, 30 - 6, 30)
+ddt.prime_font(standard_font, 9, 412)
+ddt.prime_font(standard_font, 10, 413)
 
-        ddt.prime_font(standard_font, 12 - 3, 412)
-        ddt.prime_font(standard_font, 13 - 3, 413)
+standard_font = prefs.linux_bold_font
 
-        standard_font = prefs.linux_bold_font #"Noto Sans Bold"
-        ddt.prime_font(standard_font, 9 - 3, 209)
-        ddt.prime_font(standard_font, 10 - 3, 210)
-        ddt.prime_font(standard_font, 11 - 3, 211)
-        ddt.prime_font(standard_font, 12 - 3, 212)
-        ddt.prime_font(standard_font, 13 - 3, 213)
-        ddt.prime_font(standard_font, 14 - 3, 214)
-        ddt.prime_font(standard_font, 15 - 3, 215)
-        ddt.prime_font(standard_font, 16 - 3, 216)
-        ddt.prime_font(standard_font, 17 - 3, 217)
-        ddt.prime_font(standard_font, 28 - 3, 228)
+ddt.prime_font(standard_font, 6, 209)
+ddt.prime_font(standard_font, 7, 210)
+ddt.prime_font(standard_font, 8, 211)
+ddt.prime_font(standard_font, 9, 212)
+ddt.prime_font(standard_font, 10, 213)
+ddt.prime_font(standard_font, 11, 214)
+ddt.prime_font(standard_font, 12, 215)
+ddt.prime_font(standard_font, 13, 216)
+ddt.prime_font(standard_font, 14, 217)
+ddt.prime_font(standard_font, 25, 228)
 
-    else:
-        standard_font = prefs.linux_font  # "Noto Sans"
-        ddt.prime_font(standard_font, 19 - 2, 9, 12)
-        ddt.prime_font(standard_font, 20 - 2, 10, 12)
-        ddt.prime_font(standard_font, 21 - 2.5, 11, 12)
-        ddt.prime_font(standard_font, 22 - 3, 12, 12)
-        ddt.prime_font(standard_font, 23 - 3, 13, 17)
-        ddt.prime_font(standard_font, 24 - 4, 14, 17)
-        ddt.prime_font(standard_font, 25 - 4, 15, 17)
-        ddt.prime_font(standard_font, 26 - 4, 16, 17)
-        ddt.prime_font(standard_font, 27 - 5, 17, 17)
-        ddt.prime_font(standard_font, 28 - 6, 18, 17)
-
-        ddt.prime_font(standard_font, 50 - 6, 30, 17)
-
-        ddt.prime_font(standard_font, 22 - 3, 412, 13)
-        ddt.prime_font(standard_font, 23 - 3, 413, 13)
-
-        standard_font = prefs.linux_bold_font  # "Noto Sans Bold"
-        ddt.prime_font(standard_font, 19 - 3, 209, 12)
-        ddt.prime_font(standard_font, 20 - 3, 210, 12)
-        ddt.prime_font(standard_font, 21 - 3, 211, 12)
-        ddt.prime_font(standard_font, 22 - 3, 212, 12)
-        ddt.prime_font(standard_font, 23 - 3, 213, 12)
-        ddt.prime_font(standard_font, 24 - 3, 214, 12)
-        ddt.prime_font(standard_font, 25 - 3, 215, 12)
-        ddt.prime_font(standard_font, 26 - 3, 216, 12)
-        ddt.prime_font(standard_font, 27 - 3, 217, 12)
-        ddt.prime_font(standard_font, 48 - 3, 228, 12)
 
 
 class LyricsRenMini:
@@ -6850,8 +6823,8 @@ class LoadImageAsset:
         self.h = p_h.contents.value
 
     def render(self, x, y, colour=None):
-        self.rect.x = x
-        self.rect.y = y
+        self.rect.x = round(x)
+        self.rect.y = round(y)
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 class WhiteModImageAsset:
@@ -6871,8 +6844,8 @@ class WhiteModImageAsset:
         if colour != self.colour:
             SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
             self.colour = colour
-        self.rect.x = x
-        self.rect.y = y
+        self.rect.x = round(x)
+        self.rect.y = round(y)
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
@@ -9343,7 +9316,7 @@ def love_index():
 # Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
-track_menu.add(_('Show  in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
+track_menu.add(_('Show in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
 
 track_menu.add_sub(_("Meta…"), 160)
 
@@ -10945,7 +10918,7 @@ else:
     heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
 
 
-heart_colours = ColourGenCache(160, 255)
+heart_colours = ColourGenCache(0.7, 0.7)
 
 
 heart_icon.colour = [245, 60, 60, 255]
@@ -13038,6 +13011,26 @@ def gal_jump_select(up=False, num=1):
     if old_num > 1 and (playlist_selected >= len(default_playlist) - 1 or playlist_selected == 0):
         playlist_selected = old_selected
 
+
+power_tag_colours = ColourGenCache(0.5, 0.8)
+
+class PowerTag:
+
+    def __init__(self):
+
+        self.name = "BLANK"
+        self.position = 0
+        self.colour = None
+
+        self.peak_x = 0
+        self.ani_timer = Timer()
+        self.ani_timer.force_set(10)
+
+gui.pt_on = Timer()
+gui.pt_off = Timer()
+gui.pt = 0
+
+
 def reload_albums(quiet=False):
     global album_dex
     global update_layout
@@ -13062,6 +13055,68 @@ def reload_albums(quiet=False):
     gui.pl_update = 1
     update_layout = True
     goto_album(pctl.playlist_playing)
+
+
+    # Generate POWER BAR
+    run = 0
+    prev = None
+    h = []
+    l = ["a", 'b'] * 7
+
+    s = {}
+    done = []
+
+    cc = random.random()
+
+    for position in album_dex:
+
+        index = default_playlist[position]
+
+        tr = pctl.g(index)
+
+        li = tr.parent_folder_path.split("/")
+
+        for i, b in enumerate(li):
+
+            if i > 0 and ((tr.artist in b and tr.artist) or (tr.album in b and tr.album)):
+                a = li[i - 1]
+
+                l.append(a)
+                del l[0]
+
+                if not a in s:
+                    s[a] = position
+
+                o = None
+                if h:
+                    o = h[-1].name
+
+                if checkEqual(l) and a != o:
+                    if a not in done:
+                        t = PowerTag()
+                        t.name = a.upper()
+                        t.position = s[a]
+                        #t.colour = power_tag_colours.get(a)
+                        h.append(t)
+                        done.append(a)
+
+                break
+
+    cj = 0.03
+    if len(h) < 5:
+        cj = 0.11
+
+    cj = 0.5 / max(len(h), 2)
+
+    for item in h:
+        item.colour = hsl_to_rgb(cc, 0.8, 0.7)
+        cc += cj
+
+    gui.power_bar = h
+    gui.pt = 0
+
+
+
 
 
 # ------------------------------------------------------------------------------------
@@ -18426,10 +18481,10 @@ def update_layout_do():
 
 
     #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
-    gui.spec1_rec.x = window_size[0] - gui.offset_extra - 90 * gui.scale
+    gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
     #gui.spec_x = window_size[0] - gui.offset_extra - 90
 
-    gui.spec2_rec.x = window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra
+    gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
 
     gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
     gui.playlist_row_height = prefs.playlist_row_height
@@ -19506,6 +19561,10 @@ while running:
         if key_F7:
 
             show_message("Test error message 123", 'error', "hello text")
+
+
+
+
             #lastfm.artist_info(pctl.playing_object().artist)
             #
             # lastfm.get_friends()
@@ -20093,6 +20152,7 @@ while running:
 
                 render_pos = 0
                 album_on = 0
+
                 if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                     if prefs.gallery_row_scroll:
                         album_pos_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
@@ -20107,15 +20167,21 @@ while running:
 
                 # ----
                 rect = (
-                window_size[0] - (33 * gui.scale if not gui.maximized else 32 * gui.scale), gui.panelY, 31 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-                # ddt.rect_r(rect, [255,0,0,5], True)
+                window_size[0] - (33 * gui.scale if not gui.maximized else 32 * gui.scale), gui.panelY, 31 * gui.scale, h)
 
-                fields.add(rect)
-                if coll(rect):
-                    ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
-                              alpha_mod(colours.side_bar_line2, 150), 13)
-                    ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
-                              alpha_mod(colours.side_bar_line2, 150), 13)
+                excl_rect = (0,0,0,0)
+                if gui.power_bar is not None and len(gui.power_bar) > 2:
+
+                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, len(gui.power_bar * 28) + 2)
+
+                else:
+
+                    fields.add(rect)
+                    if coll(rect):
+                        ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
+                                  alpha_mod(colours.side_bar_line2, 150), 13)
+                        ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
+                                  alpha_mod(colours.side_bar_line2, 150), 13)
 
                 if right_click:
 
@@ -20129,7 +20195,7 @@ while running:
 
                 if mouse_down:
                     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
-                    if coll(rect):
+                    if coll(rect) and not coll(excl_rect):
                         # if mouse_position[1] > window_size[1] / 2:
                         #     album_pos_px += 30
                         # else:
@@ -20386,11 +20452,112 @@ while running:
 
                 ddt.rect_a((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
-                # if gui.show_playlist is False:
-                #     album_card.render()
 
-                # if gui.album_tab_mode:
-                #     ddt.rect_r([l_area - 4, gui.panelY, r_area + 4, 2], [80, 70, 220, 255], True)
+
+                # POWER TAG BAR --------------
+
+                if gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 2):
+
+                    top = gui.panelY
+                    run_y = top + 1
+
+                    hot_r = (window_size[0] - 44 * gui.scale, top, 42 * gui.scale, h)
+                    fields.add(hot_r)
+
+
+                    if gui.pt == 0:  # mouse moves in
+                        if coll(hot_r):
+                            gui.pt_on.set()
+                            gui.pt = 1
+                    elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
+                        if not coll(hot_r):
+                            gui.pt = 0
+                        elif gui.pt_on.get() > 0.15:
+                            gui.pt = 2
+
+                            off = 0
+                            for item in gui.power_bar:
+                                item.ani_timer.force_set(off)
+                                off -= 0.005
+
+                    elif gui.pt == 2: # wait to turn off
+
+                        if coll(hot_r):
+                            gui.pt_off.set()
+                        if gui.pt_off.get() > 0.5:
+                            gui.pt = 3
+
+                            off = 0
+                            for item in gui.power_bar:
+                                item.ani_timer.force_set(off)
+                                off -= 0.01
+
+                    done = True
+                    # Animate tages on
+                    if gui.pt == 2:
+                        for item in gui.power_bar:
+                            t = item.ani_timer.get()
+                            if t < 0:
+                                break
+                            if t > 0.2:
+                                item.peak_x = 9
+                            else:
+                                item.peak_x = (t / 0.2) * 9
+
+                    # Animate tags off
+                    if gui.pt == 3:
+                        for item in gui.power_bar:
+                            t = item.ani_timer.get()
+                            if t < 0:
+                                done = False
+                                break
+                            if t > 0.2:
+                                item.peak_x = 0
+                            else:
+                                item.peak_x = 9 - ((t / 0.2) * 9)
+                                done = False
+                        if done:
+                            gui.pt = 0
+
+                    # Keep draw loop running while on
+                    if gui.pt > 0:
+                        gui.update = 2
+
+
+                    # Draw tags
+                    if coll(hot_r) or gui.pt > 0:
+
+                        for i, item in enumerate(gui.power_bar):
+
+                            if run_y + 27 * gui.scale > top + h:
+                                break
+
+                            rect = [window_size[0] - item.peak_x, run_y, 7, 27]
+                            i_rect = [window_size[0] - 9 - 12, run_y, 19, 27]
+                            fields.add(i_rect)
+
+                            if coll(i_rect) and item.peak_x == 9:
+
+                                minx = 100 * gui.scale
+                                maxx = minx * 2
+
+                                ww = ddt.get_text_w(item.name, 213)
+
+                                w = max(minx, ww)
+                                w = min(maxx, w)
+
+
+                                ddt.rect_r((rect[0] - w - 25, run_y, w + 25, 27), [230, 230, 230, 255], True)
+                                ddt.draw_text((rect[0] - 10, run_y + 5, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+
+                                if input.mouse_click:
+                                    goto_album(item.position)
+
+
+                            ddt.rect_r(rect, item.colour, True)
+                            run_y += 28
+
+                # END POWER BAR ------------------------
 
 
             # End of gallery view
@@ -20570,105 +20737,102 @@ while running:
                         ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 12)
                         run += box[2]
 
-                # ------------------------------------------------
-                # Scroll Bar
-
-                # if not scroll_enable:
-                top = gui.panelY
-                if gui.artist_info_panel:
-                    top += 200
-                
-                x = 0
-                if gui.lsp:
-                    x = gui.lspw
-
-                gui.scroll_hide_box = (
-                    x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
-
-                fields.add(gui.scroll_hide_box)
-                if (coll(gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
-                    scroll_opacity = 255
-
-                    if not gui.combo_mode:
-                        sy = 31 * gui.scale
-                        ey = window_size[1] - (30 + 22) * gui.scale
-
-                        if len(default_playlist) < 50:
-                            sbl = 85 * gui.scale
-                            if len(default_playlist) == 0:
-                                sbp = top
-                        else:
-                            sbl = 105 * gui.scale
-
-                        fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-                        if coll((x, top, 28 * gui.scale, ey - top)) and (
-                            mouse_down or right_click) \
-                                and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
-
-                            gui.pl_update = 1
-                            if right_click:
-
-                                sbp = mouse_position[1] - int(sbl / 2)
-                                if sbp + sbl > ey:
-                                    sbp = ey - sbl
-                                elif sbp < top:
-                                    sbp = top
-                                per = (sbp - top) / (ey - top - sbl)
-                                playlist_position = int(len(default_playlist) * per)
-
-                                if playlist_position < 0:
-                                    playlist_position = 0
-
-                                # if playlist_position == len(default_playlist):
-                                #     print("END")
-
-                            elif mouse_position[1] < sbp:
-                                playlist_position -= 2
-                            elif mouse_position[1] > sbp + sbl:
-                                playlist_position += 2
-                            elif input.mouse_click:
-
-                                p_y = pointer(c_int(0))
-                                p_x = pointer(c_int(0))
-                                SDL_GetGlobalMouseState(p_x, p_y)
-
-                                scroll_hold = True
-                                scroll_point = p_y.contents.value  # mouse_position[1]
-                                scroll_bpoint = sbp
-
-                        if not mouse_down:
-                            scroll_hold = False
-
-
-                        if scroll_hold and not input.mouse_click:
-                            gui.pl_update = 1
-                            p_y = pointer(c_int(0))
-                            p_x = pointer(c_int(0))
-                            SDL_GetGlobalMouseState(p_x, p_y)
-
-                            sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
-                            if sbp + sbl > ey:
-                                sbp = ey - sbl
-                            elif sbp < top:
-                                sbp = top
-                            per = (sbp - top) / (ey - top - sbl)
-                            playlist_position = int(len(default_playlist) * per)
-
-
-                        else:
-                            if len(default_playlist) > 0:
-                                per = playlist_position / len(default_playlist)
-                                sbp = int((ey - top - sbl) * per) + top + 1
-
-                        # if (coll((2, sbp, 20, sbl)) and mouse_position[
-                        #     0] != 0) or scroll_hold:
-                        #     scroll_opacity = 255
-                        ddt.rect_a((x, top), (18 * gui.scale, window_size[1] - top - gui.panelBY), [18, 18, 18, 255], True)
-                        ddt.rect_a((x + 1, sbp), (15 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
-
-                        if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                            ddt.rect_a((x + 1 * gui.scale, sbp), (15 * gui.scale, sbl), [255, 255, 255, 11], True)
-
+                # # ------------------------------------------------
+                # # Scroll Bar
+                #
+                # # if not scroll_enable:
+                # top = gui.panelY
+                # if gui.artist_info_panel:
+                #     top += 200
+                #
+                # x = 0
+                # if gui.lsp:
+                #     x = gui.lspw
+                #
+                # gui.scroll_hide_box = (
+                #     x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
+                #
+                # fields.add(gui.scroll_hide_box)
+                # if (coll(gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
+                #     scroll_opacity = 255
+                #
+                #     if not gui.combo_mode:
+                #         sy = 31 * gui.scale
+                #         ey = window_size[1] - (30 + 22) * gui.scale
+                #
+                #         if len(default_playlist) < 50:
+                #             sbl = 85 * gui.scale
+                #             if len(default_playlist) == 0:
+                #                 sbp = top
+                #         else:
+                #             sbl = 105 * gui.scale
+                #
+                #         fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
+                #         if coll((x, top, 28 * gui.scale, ey - top)) and (
+                #             mouse_down or right_click) \
+                #                 and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
+                #
+                #             gui.pl_update = 1
+                #             if right_click:
+                #
+                #                 sbp = mouse_position[1] - int(sbl / 2)
+                #                 if sbp + sbl > ey:
+                #                     sbp = ey - sbl
+                #                 elif sbp < top:
+                #                     sbp = top
+                #                 per = (sbp - top) / (ey - top - sbl)
+                #                 playlist_position = int(len(default_playlist) * per)
+                #
+                #                 if playlist_position < 0:
+                #                     playlist_position = 0
+                #
+                #                 # if playlist_position == len(default_playlist):
+                #                 #     print("END")
+                #
+                #             elif mouse_position[1] < sbp:
+                #                 playlist_position -= 2
+                #             elif mouse_position[1] > sbp + sbl:
+                #                 playlist_position += 2
+                #             elif input.mouse_click:
+                #
+                #                 p_y = pointer(c_int(0))
+                #                 p_x = pointer(c_int(0))
+                #                 SDL_GetGlobalMouseState(p_x, p_y)
+                #
+                #                 scroll_hold = True
+                #                 scroll_point = p_y.contents.value  # mouse_position[1]
+                #                 scroll_bpoint = sbp
+                #
+                #         if not mouse_down:
+                #             scroll_hold = False
+                #
+                #
+                #         if scroll_hold and not input.mouse_click:
+                #             gui.pl_update = 1
+                #             p_y = pointer(c_int(0))
+                #             p_x = pointer(c_int(0))
+                #             SDL_GetGlobalMouseState(p_x, p_y)
+                #
+                #             sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
+                #             if sbp + sbl > ey:
+                #                 sbp = ey - sbl
+                #             elif sbp < top:
+                #                 sbp = top
+                #             per = (sbp - top) / (ey - top - sbl)
+                #             playlist_position = int(len(default_playlist) * per)
+                #
+                #
+                #         else:
+                #             if len(default_playlist) > 0:
+                #                 per = playlist_position / len(default_playlist)
+                #                 sbp = int((ey - top - sbl) * per) + top + 1
+                #
+                #         ddt.rect_a((x, top), (19 * gui.scale, window_size[1] - top - gui.panelBY), colours.grey(24), True)
+                #         ddt.rect_a((x + 1, sbp), (17 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
+                #
+                #         if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
+                #             ddt.rect_a((x + 1 * gui.scale, sbp), (17 * gui.scale, sbl), [255, 255, 255, 16], True)
+                #
 
                 # Switch Vis:
                 if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
@@ -20749,6 +20913,105 @@ while running:
 
             if gui.artist_info_panel and not gui.combo_mode:
                 artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, 200)
+
+            # ------------------------------------------------
+            # Scroll Bar
+
+            # if not scroll_enable:
+            top = gui.panelY
+            if gui.artist_info_panel:
+                top += 200
+
+            x = 0
+            if gui.lsp:
+                x = gui.lspw - 7 * gui.scale
+
+            gui.scroll_hide_box = (
+                x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
+
+            fields.add(gui.scroll_hide_box)
+            if (coll(
+                    gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
+                scroll_opacity = 255
+
+                if not gui.combo_mode:
+                    sy = 31 * gui.scale
+                    ey = window_size[1] - (30 + 22) * gui.scale
+
+                    if len(default_playlist) < 50:
+                        sbl = 85 * gui.scale
+                        if len(default_playlist) == 0:
+                            sbp = top
+                    else:
+                        sbl = 105 * gui.scale
+
+                    fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
+                    if coll((x, top, 28 * gui.scale, ey - top)) and (
+                            mouse_down or right_click) \
+                            and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
+
+                        gui.pl_update = 1
+                        if right_click:
+
+                            sbp = mouse_position[1] - int(sbl / 2)
+                            if sbp + sbl > ey:
+                                sbp = ey - sbl
+                            elif sbp < top:
+                                sbp = top
+                            per = (sbp - top) / (ey - top - sbl)
+                            playlist_position = int(len(default_playlist) * per)
+
+                            if playlist_position < 0:
+                                playlist_position = 0
+
+                            # if playlist_position == len(default_playlist):
+                            #     print("END")
+
+                        elif mouse_position[1] < sbp:
+                            playlist_position -= 2
+                        elif mouse_position[1] > sbp + sbl:
+                            playlist_position += 2
+                        elif input.mouse_click:
+
+                            p_y = pointer(c_int(0))
+                            p_x = pointer(c_int(0))
+                            SDL_GetGlobalMouseState(p_x, p_y)
+
+                            scroll_hold = True
+                            scroll_point = p_y.contents.value  # mouse_position[1]
+                            scroll_bpoint = sbp
+
+                    if not mouse_down:
+                        scroll_hold = False
+
+                    if scroll_hold and not input.mouse_click:
+                        gui.pl_update = 1
+                        p_y = pointer(c_int(0))
+                        p_x = pointer(c_int(0))
+                        SDL_GetGlobalMouseState(p_x, p_y)
+
+                        sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
+                        if sbp + sbl > ey:
+                            sbp = ey - sbl
+                        elif sbp < top:
+                            sbp = top
+                        per = (sbp - top) / (ey - top - sbl)
+                        playlist_position = int(len(default_playlist) * per)
+
+
+                    else:
+                        if len(default_playlist) > 0:
+                            per = playlist_position / len(default_playlist)
+                            sbp = int((ey - top - sbl) * per) + top + 1
+
+                    ddt.rect_a((x, top), (17 * gui.scale, window_size[1] - top - gui.panelBY), colours.grey(24),
+                               True)
+                    ddt.rect_a((x + 1, sbp), (16 * gui.scale, sbl),
+                               alpha_mod(colours.scroll_colour, scroll_opacity), True)
+
+                    if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
+                        0] != 0) or scroll_hold:
+                        ddt.rect_a((x + 1 * gui.scale, sbp), (16 * gui.scale, sbl), [255, 255, 255, 16], True)
 
             # BOTTOM BAR!
             # C-BB
@@ -21982,7 +22245,7 @@ while running:
                     item -= 1
 
                     if item < 1:
-                        gui.bar.x += 4 * gui.scale
+                        gui.bar.x += round(4 * gui.scale)
                         continue
 
                     if item > 20:
@@ -21996,7 +22259,7 @@ while running:
 
                     SDL_RenderFillRect(renderer, gui.bar)
 
-                    gui.bar.x += 4 * gui.scale
+                    gui.bar.x += round(4 * gui.scale)
 
                 if pref_box.enabled:
                     ddt.rect_r((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90], True)
@@ -22015,11 +22278,11 @@ while running:
 
             y = 0
 
-            gui.spec_level_rec.x = x - 70 * gui.scale
+            gui.spec_level_rec.x = round(x - 70 * gui.scale)
             ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10),
                       True)
 
-            x = gui.level_ww - 9 * gui.scale
+            x = round(gui.level_ww - 9 * gui.scale)
             y = 10 * gui.scale
 
             if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0) and pctl.playing_state != 1:

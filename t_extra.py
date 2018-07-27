@@ -26,6 +26,8 @@ import subprocess
 import os
 import shlex
 import zipfile
+import glob
+
 
 # A seconds based timer
 class Timer:
@@ -61,7 +63,6 @@ class TestTimer:
 
     def test(self):
         return self.timer.get() > self.time
-
 
 
 # Test given proximity between two 2d points to given square
@@ -154,6 +155,7 @@ def get_colour_from_line(cline):
 
     return colour
 
+
 # Checks if the numbers in a list are the same
 def checkEqual(lst):
     return not lst or lst.count(lst[0]) == len(lst)
@@ -186,34 +188,25 @@ def search_magic(terms, evaluate):
 def search_magic_any(terms, evaluate):
     return any(word in evaluate for word in terms.split())
 
-# def search_combine(terms, ev1, ev2):
-#
-#     if " " not in terms:
-#         return False
-#     b = []
-#     ev1 = ev1.lower()
-#
-#     one = False
-#     for word in terms.lower().split():
-#         if word in ev1:
-#             one = True
-#         else:
-#           b.append(word)
-#     if not one:
-#         return False
-#     ev2 = ev2.lower()
-#     for word in b:
-#         if word in ev2:
-#                 return True
-#     return False
+
+def random_colour(saturation, luminance):
+
+    h = round(random.random(), 2)
+    colour = colorsys.hls_to_rgb(h, luminance, saturation)
+    return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+
+
+def hsl_to_rgb(h, s, l):
+    colour = colorsys.hls_to_rgb(h, l, s)
+    return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
 
 class ColourGenCache:
 
-    def __init__(self, range_min, range_max):
+    def __init__(self, saturation, luminance):
 
-        self.range_min = range_min
-        self.range_max = range_max
+        self.saturation = saturation
+        self.luminance = luminance
         self.store = {}
 
     def get(self, key):
@@ -221,17 +214,12 @@ class ColourGenCache:
         if key in self.store:
             return self.store[key]
 
-        h = round(random.random(), 2)
-        s = 0.7
-        l = 0.7
-        colour = colorsys.hls_to_rgb(h, s, l)
-        colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+        colour = random_colour(self.saturation, self.luminance)
 
         self.store[key] = colour
         return colour
 
 
-import glob
 def folder_file_scan(path, extensions):
 
     match = 0
