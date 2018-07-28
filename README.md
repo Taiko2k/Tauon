@@ -10,17 +10,52 @@ Designed to be simple and streamlined while putting the user in control of their
 <img src="https://user-images.githubusercontent.com/17271572/41158620-b1819762-6b7d-11e8-94b7-42a45c0b499b.jpg" hspace="0px" vspace="60px">
 
 
-### Features :sparkles:
+## Features :sparkles:
 
-  - Plays most common codecs including MP3 and FLAC.
-  - Simple drag and drop track importing.
-  - Automatic CUE sheet detection.
-  - Easily [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone).
-  - Last.fm scrobbling with track love support.
+  - Import tracks and create playlist's by simple **drag and drop**. Ready to go out the box, no need for complicated setup.
+  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) to a single output folder for easy and compact copying to your phone or portable music player.
+  - Last.fm scrobbling with track love support..
   - Lyrics display with support for fetching lyrics from LyricWiki.
-  - Outbound [radio broadcasting](https://github.com/Taiko2k/tauonmb/wiki/Outbound-Broadcasting). Streams playlist in background without affecting local playback.
+  - Outbound [radio broadcasting](https://github.com/Taiko2k/tauonmb/wiki/Outbound-Broadcasting). Streams a playlist in the background without affecting local playback.
+  - Edit tags with MusicBrainz Picard (when also installed).
+  
+  <img src="https://user-images.githubusercontent.com/17271572/43353750-94d68a0e-9293-11e8-9a80-bd15146f06eb.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/40102029-768ed298-593d-11e8-9ec0-2d39873fd8a4.png" hspace="0px" vspace="0px" width="450"> | <img src="https://user-images.githubusercontent.com/17271572/43353964-d9725eec-9296-11e8-9a77-3de33040c9de.jpg" hspace="0px" vspace="0px" width="350">
+  --- | --- | ---
+  **Rich search. :mag: Find tracks, albums and artists at the speed of sound.** | **See your loved tracks, and your friends loves too!** :sparkling_heart: | **Download monitor. :doughnut: Import your downloaded music in one click!**
+  <img src="https://user-images.githubusercontent.com/17271572/43353986-8719114e-9297-11e8-8028-adb9e5ad1247.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43353819-f9f2e580-9294-11e8-9e00-1921de2e6442.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43354043-e5e718d2-9298-11e8-8a6d-8539f5a8d56c.jpg" hspace="0px" vspace="0px" width="320">
+  **Your music in your control, with built in folder renaming and deleting.** :pencil2: | **Navigate between your organised collections at lighting speed.** [<sup>?</sup>](https://github.com/Taiko2k/tauonmb/wiki/Category-Tags) :rocket: | **Jump in and out of the integrated album gallery**
 
-### Getting Started :dizzy:
+## File type compatibility
+
+#### Audio
+
+- [x] FLAC 
+- [x] MP3
+- [x] OGG
+- [x] OPUS
+- [x] M4A
+- [x] WV
+- [x] APE
+- [x] WAV
+- [ ] WMA
+- [ ] CD
+- [ ] MOD
+
+#### Automaic archive extraction
+
+- [x] ZIP
+- [x] RAR (requires unrar)
+- [ ] 7z
+
+#### Other
+
+- [x] XSPF
+- [x] CUE (automatic detection)
+- [ ] M3U
+- [ ] PLS
+
+
+## Getting Started :dizzy:
 
 For __Arch Linux__, install avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
 
