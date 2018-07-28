@@ -26,7 +26,7 @@ Designed to be simple and streamlined while putting the user in control of their
   --- | --- | ---
   **Rich search. :mag: Find tracks, albums and artists at the speed of sound.** [<sup>?</sup>](https://github.com/Taiko2k/tauonmb/wiki/Find-and-Search) | **See your loved tracks, and your friends loves too!** :sparkling_heart: | **Download monitor. :doughnut: Import your downloaded music in one click!**
   <img src="https://user-images.githubusercontent.com/17271572/43353986-8719114e-9297-11e8-8028-adb9e5ad1247.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43353819-f9f2e580-9294-11e8-9e00-1921de2e6442.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43354043-e5e718d2-9298-11e8-8a6d-8539f5a8d56c.jpg" hspace="0px" vspace="0px" width="320">
-  **Your music in your control, with built in folder renaming and deleting.** :pencil2: | **Navigate between your organised collections at lighting speed.** [<sup>?</sup>](https://github.com/Taiko2k/tauonmb/wiki/Category-Tags) :rocket: | **Jump in and out of the integrated album gallery.** :flower_playing_cards:
+  **Your music in your control, with built in folder renaming and deleting.** :pencil2: | **Navigate between your organised collections at lighting speed.** [<sup>?</sup>](https://github.com/Taiko2k/tauonmb/wiki/Category-Tags) :rocket: | **Jump in and out of the integrated album gallery.**
 
 ## File type compatibility :milky_way:
 
