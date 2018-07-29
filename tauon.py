@@ -506,8 +506,6 @@ volume = 75
 folder_image_offsets = {}
 db_version = 0.0
 
-media_key_mode = 0
-
 albums = []
 album_position = 0
 
@@ -9890,47 +9888,6 @@ def intel_moji(index):
 
 track_menu.add_to_sub(_("Fix Mojibake"), 0, intel_moji, pass_ref=True)
 
-# class Samples:
-#     def __init__(self):
-#         self.cache_directroy = os.path.join(user_directory, 'web') + "/"
-#         self.auth = {}
-#
-#     def create_sample(self, index):
-#
-#         show_message("Generating link...")
-#         if not os.path.exists(self.cache_directroy):
-#             os.makedirs(self.cache_directroy)
-#
-#         agg = [index]
-#         loaderThread = threading.Thread(target=self.next, args=agg)
-#         loaderThread.daemon = True
-#         loaderThread.start()
-#
-#     def next(self, index):
-#
-#         for key, value in self.auth.items():
-#             if value == index:
-#                 name = key
-#                 filename = samples.cache_directroy + key
-#                 if os.path.isfile(filename):
-#                     copy_to_clipboard("http://localhost:" + str(prefs.server_port) + "/sample/" + key)
-#                     show_message("Link copied to clipboard")
-#                     return
-#
-#         name = str(index) + "-" + str(random.randrange(11111, 99999))
-#         filename = samples.cache_directroy + name
-#         if os.path.isfile(filename):
-#             os.remove(filename)
-#
-#         self.auth[name] = index
-#         transcode_single(index, self.cache_directroy, name)
-#         copy_to_clipboard("http://localhost:7590/sample/" + name)
-#         show_message("Done, link copied to clipboard")
-#         if not prefs.expose_web:
-#             show_message(
-#                 "Done, link copied to clipboard. Note: Current configuration does not allow for external connections")
-
-
 def sel_to_car():
 
     global default_playlist
@@ -9976,12 +9933,6 @@ folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True)
-
-
-    #     edit_icon = MenuIcon(LoadImageAsset('/gui/pic-l.png'))
-    #     edit_icon.base_asset = LoadImageAsset('/gui/pic-d.png')
-    #     edit_icon.xoff = 1
-    #     edit_icon.yoff = -1
 
 folder_menu.add(_("Edit with ") + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
                    icon=edit_icon)
@@ -10593,7 +10544,7 @@ def activate_info_box():
 def activate_radio_box():
     global radiobox
     radiobox = True
-# x_menu.add("Go To Playing", pctl.show_current)
+
 
 if gui.scale == 2:
     add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
@@ -10649,9 +10600,6 @@ def export_database():
     for index, track in pctl.master_library.items():
 
         line = []
-        # print(str(pctl.master_library[num]))
-        # continue
-        # print(pctl.master_library[num])
         line.append(str(track.artist))
         line.append(str(track.title))
         line.append(str(track.album))
@@ -10694,72 +10642,7 @@ def q_to_playlist():
 
 
 
-def scan_rym():
-
-    data = copy_from_clipboard()
-
-    if data[0:9] != "RYM Album":
-        show_message("Could not find data in clipboard", 'info', 'You will need to copy the whole csv text from the RYM export data page')
-    else:
-        try:
-
-            lines = data.split("\n")
-            read = csv.DictReader(lines)
-            albums = gen_folder_top(pctl.playlist_active, True)
-            read = list(read)
-
-            found = []
-            not_found = []
-            spe1 = []
-            spe2 = []
-            spe3 = []
-
-            for album in albums:
-                tracks = album[0]
-                track = pctl.master_library[tracks[0]]
-
-                for row in read:
-                    o_name = (row[' First Name'] + " " + row['Last Name']).strip().replace("&amp;", '&')
-                    a_name = row["Title"].replace("&amp;", '&').strip()
-
-                    if o_name.lower() == track.artist.lower() and a_name.lower() in track.album.lower():
-                        found += tracks
-                        if album[1] > 60 * 60 * 1 and int(row['Rating']) < 5:
-                            spe1 += tracks
-                        elif album[1] > 60 * 60 * 2 and int(row['Rating']) < 6:
-                            spe2 += tracks
-                        elif album[1] > 60 * 60 * 4 and int(row['Rating']) < 7:
-                            spe3 += tracks
-                        break
-                else:
-                    not_found += tracks
-
-            pctl.multi_playlist.append(pl_gen(title="RYM FOUND",
-                                              playlist=copy.deepcopy(found),
-                                              hide_title=0))
-
-            pctl.multi_playlist.append(pl_gen(title="RYM NOT FOUND",
-                                              playlist=copy.deepcopy(not_found),
-                                              hide_title=0))
-            if len(spe1) > 0:
-                pctl.multi_playlist.append(pl_gen(title="UNDERRATED A",
-                                                  playlist=copy.deepcopy(spe1),
-                                                  hide_title=0))
-            if len(spe2) > 0:
-                pctl.multi_playlist.append(pl_gen(title="UNDERRATED B",
-                                                  playlist=copy.deepcopy(spe2),
-                                                  hide_title=0))
-            if len(spe3) > 0:
-                pctl.multi_playlist.append(pl_gen(title="UNDERRATED C",
-                                                  playlist=copy.deepcopy(spe3),
-                                                  hide_title=0))
-        except:
-            show_message("Sorry, something went wrong there", 'warning')
-
-
 x_menu.add_to_sub(_("Export as CSV"), 0, export_database)
-# if prefs.show_rym:
-#     x_menu.add_to_sub("Scan Playlist with RYM DB", 0, scan_rym)
 x_menu.add_to_sub(_("Play History to Playlist"), 0, q_to_playlist)
 x_menu.add_to_sub(_("Reset Image Cache"), 0, clear_img_cache)
 
@@ -10779,16 +10662,10 @@ def clean_db():
 
 x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 
-# x_menu.add('Reset Missing Flags', reset_missing_flags)
 x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
 
 
 def toggle_broadcast():
-    # if system == 'windows' and not os.path.isfile(install_directory + "/encoder/oggenc2.exe") and not \
-    #         os.path.isfile(user_directory + "/encoder/lame.exe") and not os.path.isfile(
-    #             install_directory + "/encoder/opusenc.exe"):
-    #     show_message("Missing Encoder. See documentation.")
-    #     return
 
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
@@ -10862,7 +10739,7 @@ def random_track():
     pctl.random_mode = old
 
 
-extra_menu.add('Random Track', random_track, hint='COLON')
+extra_menu.add(_('Random Track'), random_track, hint='COLON')
 
 
 def radio_random():
@@ -10875,7 +10752,7 @@ else:
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
 radiorandom_icon.colour = [153, 229, 133, 255]
-extra_menu.add('Radio Random', radio_random, hint='/', icon=radiorandom_icon)
+extra_menu.add(_('Radio Random'), radio_random, hint='/', icon=radiorandom_icon)
 
 if gui.scale == 2:
     revert_icon = MenuIcon(WhiteModImageAsset('/gui/2x/revert.png'))
@@ -10884,7 +10761,7 @@ else:
 revert_icon.xoff = 1
 revert_icon.yoff = 0
 revert_icon.colour = [229, 102, 59, 255]
-extra_menu.add('Revert', pctl.revert, hint='SHIFT + /', icon=revert_icon)
+extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
 
 
 def toggle_repeat():
@@ -10899,7 +10776,7 @@ def toggle_random():
 
 
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
-extra_menu.add('Clear Queue', clear_queue, queue_deco)
+extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
 
 
 def heart_menu_colour():
@@ -10928,12 +10805,12 @@ heart_icon.colour_callback = heart_menu_colour
 def love_deco():
 
     if love(False):
-        return [colours.menu_text, colours.menu_background, "Un-Love Track"]
+        return [colours.menu_text, colours.menu_background, _("Un-Love Track")]
     else:
         if pctl.playing_state == 1 or pctl.playing_state == 2:
-            return [colours.menu_text, colours.menu_background, "Love Track"]
+            return [colours.menu_text, colours.menu_background, _("Love Track")]
         else:
-            return [colours.menu_text_disabled, colours.menu_background, "Love Track"]
+            return [colours.menu_text_disabled, colours.menu_background, _("Love Track")]
 
 def bar_love():
     shoot_love = threading.Thread(target=love)
@@ -10951,12 +10828,12 @@ def toggle_search():
     #search_over.search_text.text = " "
     search_over.active = True
 
-extra_menu.add('Search All', toggle_search)
+extra_menu.add(_('Global Search'), toggle_search)
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
 
-extra_menu.add("Go To Playing", goto_playing_extra, hint="QUOTE")
+extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="QUOTE")
 
 
 def toggle_auto_theme(mode=0):
@@ -17233,7 +17110,7 @@ class MetaBox:
 
         # Draw lyrics if avaliable
         if prefs.show_lyrics_side and pctl.track_queue \
-                    and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and h > 45 and w > 200:
+                    and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
 
             # Test for scroll wheel input
             if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
@@ -17244,41 +17121,34 @@ class MetaBox:
 
                 gui.update += 1
 
-            if system == 'linux':
 
-                tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics, 15, w - 30, True)
+            tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics + "\n", 15, w - 30, True)
 
-                oth = th
+            oth = th
 
-                th -= h
-                th += 20
+            th -= h
+            th += 20 * gui.scale
 
-            else:
-                th = 1000
+            if lyrics_ren_mini.lyrics_position * -1 > th:
+                lyrics_ren_mini.lyrics_position = th * -1
+                if oth > h:
+                    lyric_side_bottom_pulse.pulse()
 
-            if system == 'linux':
-                if lyrics_ren_mini.lyrics_position * -1 > th:
-                    lyrics_ren_mini.lyrics_position = th * -1
-                    if oth > h:
-                        lyric_side_bottom_pulse.pulse()
 
-            if system == 'linux':
-                lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17, y, 15, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
+            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, 15 * gui.scale, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
 
 
 
             lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + 8 * gui.scale,
-                                   y + lyrics_ren_mini.lyrics_position + 5,
-                                   w - 30,
+                                   y + lyrics_ren_mini.lyrics_position + 11,
+                                   w - 30 * gui.scale,
                                    2000, 0)
-
-
 
             ddt.rect_r((x, y + h - 1, w,
                          1), colours.side_panel_background, True)
 
-            lyric_side_top_pulse.render(x, y + 1, w - 17, 2)
-            lyric_side_bottom_pulse.render(x, y + h - 2, w - 17, 2)
+            lyric_side_top_pulse.render(x, y, w - 17 * gui.scale, 2 * gui.scale)
+            lyric_side_bottom_pulse.render(x, y + h - 2 * gui.scale, w - 17 * gui.scale, 2 * gui.scale)
 
 
         # Draw standard metadata
@@ -18155,16 +18025,6 @@ class DLMon:
                         self.watching[path] = size
                 else:
                     self.done.add(path)
-
-
-
-        # print("READY: ", end="")
-        # print(len(self.ready))
-        # print("Watching: ", end="")
-        # print(len(self.watching))
-        # print("Ignore: ", end="")
-        # print(len(self.done))
-
 
         if len(self.ready) > 0:
             temp = set()
@@ -20172,7 +20032,7 @@ while running:
                 excl_rect = (0,0,0,0)
                 if gui.power_bar is not None and len(gui.power_bar) > 2:
 
-                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, len(gui.power_bar * 28) + 2)
+                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, len(gui.power_bar * 28 * gui.scale) + 2)
 
                 else:
 
@@ -20220,7 +20080,7 @@ while running:
                     goto_album(pctl.playlist_playing)
 
                 # Process inputs first
-                if input.mouse_click or right_click:
+                if (input.mouse_click or right_click) and default_playlist:
                     while render_pos < album_pos_px + window_size[1]:
 
                         if b_info_bar and render_pos > album_pos_px + b_info_y:
@@ -20291,7 +20151,7 @@ while running:
                 album_on = 0
 
                 # Render album grid
-                while render_pos < album_pos_px + window_size[1]:
+                while render_pos < album_pos_px + window_size[1] and default_playlist:
 
                     if b_info_bar and render_pos > album_pos_px + b_info_y:
                         break
@@ -20461,7 +20321,7 @@ while running:
                     top = gui.panelY
                     run_y = top + 1
 
-                    hot_r = (window_size[0] - 44 * gui.scale, top, 42 * gui.scale, h)
+                    hot_r = (window_size[0] - 47 * gui.scale, top, 46 * gui.scale, h)
                     fields.add(hot_r)
 
 
@@ -20484,7 +20344,7 @@ while running:
 
                         if coll(hot_r):
                             gui.pt_off.set()
-                        if gui.pt_off.get() > 0.5:
+                        if gui.pt_off.get() > 0.6:
                             gui.pt = 3
 
                             off = 0
@@ -20500,9 +20360,9 @@ while running:
                             if t < 0:
                                 break
                             if t > 0.2:
-                                item.peak_x = 9
+                                item.peak_x = 9 * gui.scale
                             else:
-                                item.peak_x = (t / 0.2) * 9
+                                item.peak_x = (t / 0.2) * 9 * gui.scale
 
                     # Animate tags off
                     if gui.pt == 3:
@@ -20514,7 +20374,7 @@ while running:
                             if t > 0.2:
                                 item.peak_x = 0
                             else:
-                                item.peak_x = 9 - ((t / 0.2) * 9)
+                                item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
                                 done = False
                         if done:
                             gui.pt = 0
@@ -20532,8 +20392,8 @@ while running:
                             if run_y + 27 * gui.scale > top + h:
                                 break
 
-                            rect = [window_size[0] - item.peak_x, run_y, 7, 27]
-                            i_rect = [window_size[0] - 9 - 12, run_y, 19, 27]
+                            rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, 27 * gui.scale]
+                            i_rect = [window_size[0] - 21 * gui.scale, run_y, 19 * gui.scale, 27 * gui.scale]
                             fields.add(i_rect)
 
                             if coll(i_rect) and item.peak_x == 9:
@@ -20547,15 +20407,15 @@ while running:
                                 w = min(maxx, w)
 
 
-                                ddt.rect_r((rect[0] - w - 25, run_y, w + 25, 27), [230, 230, 230, 255], True)
-                                ddt.draw_text((rect[0] - 10, run_y + 5, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+                                ddt.rect_r((rect[0] - w - 25 * gui.scale, run_y, w + 25 * gui.scale, 27 * gui.scale), [230, 230, 230, 255], True)
+                                ddt.draw_text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
 
                                 if input.mouse_click:
                                     goto_album(item.position)
 
 
                             ddt.rect_r(rect, item.colour, True)
-                            run_y += 28
+                            run_y += 28 * gui.scale
 
                 # END POWER BAR ------------------------
 
@@ -22541,10 +22401,6 @@ IMG_Quit()
 SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
 SDL_Quit()
 print("SDL unloaded")
-
-if system == "linux":
-    if media_key_mode == 2:
-        hookman.cancel()
 
 exit_timer = Timer()
 exit_timer.set()
