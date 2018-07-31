@@ -4,10 +4,13 @@ Changelog-------------------------------------
 v3.1.0
 
  - Added new 'folder tag' feature to gallery
+ - Added album counts to stats tab
  - Ctrl-Z function can now undo multiple playlist deletes.
  - Changed transcode files opus extension to use '.opus.ogg'
+ - Clicking play button while playing now jumps view to playing track
  - Tweaked playlist scroll bar appearance
  - Tweaked side panel lyrics positioning
+ - Tweaked settings to warn if LAME is not installed when selecting MP3
  - Fixed a VRAM memory leak.
  - Fixed gallery not updating on inplace sort functions.
  - Fixed a stall on importing some XSPF playlist's
@@ -15,6 +18,7 @@ v3.1.0
  - Fixed playlist switch on delete playlist not setting gallery position
  - Fixed a possible crash when changing volume with clean state
  - Fixed a crash when deleting final playlist with gallery open
+ - Removed option to hide transcode function from menu
 
 v3.0.2
 

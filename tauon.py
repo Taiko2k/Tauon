@@ -803,6 +803,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         # 3 hand
 
         self.power_bar = None
+        self.gallery_scroll_field_left = 50
 
 gui = GuiVar()
 
@@ -1187,8 +1188,8 @@ try:
         prefs.allow_remote = save[27]
     if save[28] is not None:
         prefs.expose_web = save[28]
-    if save[29] is not None:
-        prefs.enable_transcode = save[29]
+    # if save[29] is not None:
+    #     prefs.enable_transcode = save[29]
     if save[30] is not None:
         prefs.show_rym = save[30]
     # if save[31] is not None:
@@ -10369,6 +10370,13 @@ def toggle_galler_text(mode=0):
     gui.update += 1
     gui.update_layout()
 
+    # Jump to playing album
+    if album_mode:
+        if pctl.active_playlist_playing == pctl.playlist_active:
+            if playlist_playing < len(default_playlist):
+                goto_album(pctl.playlist_playing)
+
+
 def toggle_side_panel(mode=0):
     global update_layout
     global album_mode
@@ -13735,6 +13743,16 @@ class Over:
             [_("Stats"), self.stats],
             [_("About"), self.about]
         ]
+
+        self.stats_timer = Timer()
+        self.stats_timer.force_set(1000)
+        self.stats_pl_timer = Timer()
+        self.stats_pl_timer.force_set(1000)
+        self.total_albums = 0
+        self.stats_pl = 0
+        self.stats_pl_albums = 0
+        self.stats_pl_length = 0
+
     def audio(self):
 
 
@@ -13809,6 +13827,7 @@ class Over:
         self.toggle_square(x, y, toggle_enable_web,
                            "Web interface")
 
+        y -= 10 * gui.scale
         if toggle_enable_web(1):
 
             link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
@@ -13834,7 +13853,7 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
 
-        y += 25 * gui.scale
+        y += 35 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections")
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
@@ -14068,7 +14087,8 @@ class Over:
         y = self.box_y - 5 * gui.scale
 
         y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_transcode, "Show in context menu")
+        #self.toggle_square(x, y, toggle_transcode, "Show in context menu")
+        ddt.draw_text((x, y + 13 * gui.scale), "Output codec setting:", colours.grey(100), 11)
         self.button(x + 370 * gui.scale, y - 4 * gui.scale, "Open output folder", open_encode_out)
 
 
@@ -14081,7 +14101,9 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
-        self.toggle_square(x, y, switch_mp3, "MP3  [slow, requires Lame]")
+        self.toggle_square(x, y, switch_mp3, "MP3")
+        if prefs.transcode_codec == 'mp3' and not shutil.which("lame"):
+            ddt.draw_text((x + 90 * gui.scale, y - 3 * gui.scale), "LAME not detected!", [220, 110, 110, 255], 12)
 
         if prefs.transcode_codec != 'flac':
             y += 35 * gui.scale
@@ -14235,26 +14257,55 @@ class Over:
         x2 = x1 + 120 * gui.scale
         y1 = y + 40 * gui.scale
 
+        if self.stats_pl != pctl.multi_playlist[pctl.playlist_active][6] or self.stats_pl_timer.get() > 5:
+            self.stats_pl = pctl.multi_playlist[pctl.playlist_active][6]
+            self.stats_pl_timer.set()
+
+            album_names = set()
+            for tr in default_playlist:
+                album_names.add(pctl.g(tr).parent_folder_path)
+            self.stats_pl_albums = len(album_names)
+
+            self.stats_pl_length = 0
+            for item in default_playlist:
+                self.stats_pl_length += pctl.master_library[item].length
+
+        line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
+
         ddt.draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(190), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(200), 12)
         y1 += 20 * gui.scale
+        ddt.draw_text((x1, y1), "Albums in playlist", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(200), 12)
+        y1 += 20 * gui.scale
+        ddt.draw_text((x1, y1), "Playlist duration", colours.grey_blend_bg(100), 12)
 
-        ddt.draw_text((x1, y1), "Playlist length", colours.grey_blend_bg(100), 12)
 
-        playlist_time = 0
-        for item in default_playlist:
-            playlist_time += pctl.master_library[item].length
 
-        line = str(datetime.timedelta(seconds=int(playlist_time)))
+        ddt.draw_text((x2, y1), line, colours.grey_blend_bg(200), 12)
 
-        ddt.draw_text((x2, y1), line, colours.grey_blend_bg(190), 12)
-        y1 += 35 * gui.scale
+        if self.stats_timer.get() > 5:
+
+            album_names = set()
+            for pl in pctl.multi_playlist:
+                for tr in pl[2]:
+                    album_names.add(pctl.g(tr).parent_folder_path)
+            self.total_albums = len(album_names)
+            self.stats_timer.set()
+
+
+        y1 += 40 * gui.scale
         ddt.draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(190), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(200), 12)
+        y1 += 20 * gui.scale
+        ddt.draw_text((x1, y1), "Total albums", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(200), 12)
+
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
-                  colours.grey_blend_bg(190), 14)
+                  colours.grey_blend_bg(200), 15)
+
 
 
 
@@ -14471,11 +14522,6 @@ class Over:
         self.init2done = True
 
         pctl.total_playtime = star_store.get_total()
-
-        # Files
-        if len(self.drives) < 1 and system == 'windows':
-            raw_drives = win32api.GetLogicalDriveStrings()
-            self.drives = raw_drives.split('\000')[:-1]
 
     def render(self):
 
@@ -15614,7 +15660,11 @@ class BottomBarType1:
             if coll(rect):
                 play_colour = colours.media_buttons_over
                 if input.mouse_click:
-                    pctl.play()
+                    if pctl.playing_state == 1:
+                        pctl.show_current(highlight=True)
+                    else:
+                        pctl.play()
+
                 if right_click:
                     pctl.show_current(highlight=True)
                 # tool_tip.test(buttons_x_offset * gui.scale + 50 * gui.scale,
@@ -18441,7 +18491,6 @@ def update_layout_do():
             gui.max_window_tex += 1000
 
 
-
         gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 
         SDL_DestroyTexture(gui.ttext)
@@ -18568,7 +18617,7 @@ def save_state():
             prefs.enable_web,
             prefs.allow_remote,
             prefs.expose_web,
-            prefs.enable_transcode,
+            True, #prefs.enable_transcode
             prefs.show_rym,
             None,  # was combo mode art size
             gui.maximized,
@@ -19044,10 +19093,11 @@ while running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
-                gui.update += 1
+                gui.update = 2
                 window_size[0] = event.window.data1
                 window_size[1] = event.window.data2
                 update_layout = True
+
 
                 # print('resize')
 
@@ -20027,7 +20077,7 @@ while running:
 
                 # ----
                 rect = (
-                window_size[0] - (33 * gui.scale if not gui.maximized else 32 * gui.scale), gui.panelY, 31 * gui.scale, h)
+                           gui.gallery_scroll_field_left if not gui.maximized else gui.gallery_scroll_field_left - 1, gui.panelY, 5 + window_size[0] - gui.gallery_scroll_field_left, h)
 
                 excl_rect = (0,0,0,0)
                 if gui.power_bar is not None and len(gui.power_bar) > 2:
@@ -20176,13 +20226,15 @@ while running:
 
                             if album_dex[album_on] > len(default_playlist):
                                 break
+
                             info = get_album_info(album_dex[album_on])
 
 
                             #artisttitle = colours.side_bar_line2
                             albumtitle = colours.side_bar_line1  # grey(220)
 
-
+                            if a == row_len - 1:
+                                gui.gallery_scroll_field_left = x + album_mode_art_size
 
 
                             if info[0] == 1 and pctl.playing_state != 0:
