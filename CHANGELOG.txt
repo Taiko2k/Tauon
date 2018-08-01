@@ -23,6 +23,7 @@ v3.1.0
  - Fixed genres not showing in search results
  - Fixed 'sort year per artist' sort function truncating the end artist
  - Fixed XSPF inter-app compatibility
+ - Fixed track text in playlist not truncating if space was negative
  - Removed option to hide transcode function from menu
 
 v3.0.2
