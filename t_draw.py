@@ -66,10 +66,10 @@ class TDraw:
 
     def rect_a(self, location_xy, size_wh, colour, fill=False):
 
-        self.sdl_rect.x = location_xy[0]
-        self.sdl_rect.y = location_xy[1]
-        self.sdl_rect.w = size_wh[0]
-        self.sdl_rect.h = size_wh[1]
+        self.sdl_rect.x = round(location_xy[0])
+        self.sdl_rect.y = round(location_xy[1])
+        self.sdl_rect.w = round(size_wh[0])
+        self.sdl_rect.h = round(size_wh[1])
 
         if fill is True:
             SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
@@ -80,10 +80,10 @@ class TDraw:
 
     def rect_r(self, rectangle, colour, fill=False):
 
-        self.sdl_rect.x = rectangle[0]
-        self.sdl_rect.y = rectangle[1]
-        self.sdl_rect.w = rectangle[2]
-        self.sdl_rect.h = rectangle[3]
+        self.sdl_rect.x = round(rectangle[0])
+        self.sdl_rect.y = round(rectangle[1])
+        self.sdl_rect.w = round(rectangle[2])
+        self.sdl_rect.h = round(rectangle[3])
 
         SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 
@@ -95,7 +95,7 @@ class TDraw:
     def line(self, x1, y1, x2, y2, colour):
 
         SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-        SDL_RenderDrawLine(self.renderer, x1, y1, x2, y2)
+        SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
     def get_text_w(self, text, font, height=False):
 
@@ -114,9 +114,9 @@ class TDraw:
         self.ttc.clear()
         self.ttl.clear()
 
-    def prime_font(self, name, size, user_handle):
+    def prime_font(self, name, size, user_handle, offset=0):
 
-        self.f_dict[user_handle] = (name + " " + str(size), 0)
+        self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset)
 
     def get_text_wh(self, text, font, max_x, wrap=False):
 
@@ -165,14 +165,18 @@ class TDraw:
     def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
         max_x += 12  # Hack
+        max_x = round(max_x)
+
+        if max_y is not None:
+            max_y = round(max_y)
 
         if len(text) == 0:
             return 0
 
         key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
-        x = location[0]
-        y = location[1]
+        x = round(location[0])
+        y = round(location[1])
 
         if key in self.ttc:
 
@@ -222,7 +226,7 @@ class TDraw:
 
         y_off = layout.get_baseline() / 1000
 
-        y_off = round(y_off) - 13 * self.scale # 13 for compat with way text position used to work
+        y_off = round(round(y_off) - 13 * self.scale) # 13 for compat with way text position used to work
 
         if self.scale == 2:
             y_off -= 2
@@ -255,10 +259,12 @@ class TDraw:
             return dst.h
         return dst.w
 
-    def draw_text(self, location, text, colour, font, max=4000, bg=None, range_top=0, range_height=None):
+    def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
         if not text:
             return 0
+
+        max_w = max(1, max_w)
 
         if bg is None:
             bg = self.text_background_colour
@@ -278,5 +284,5 @@ class TDraw:
                 return self.__draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
                                               range_top=range_top, range_height=range_height)
 
-        return self.__draw_text_cairo(location, text, colour, font, max, bg, align)
+        return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align)
 

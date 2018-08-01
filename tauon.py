@@ -659,7 +659,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.spec_h = int(round(20 * self.scale))
         self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
 
-        self.bar = SDL_Rect(10, 10, 3 * self.scale, 10)
+        self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10)
 
         self.combo_mode = False
         self.showcase_mode = False
@@ -727,9 +727,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.spec2_phase = 0
         self.spec2_buffers = []
         self.spec2_tex = None
-        self.spec2_rec = SDL_Rect(1230, 4 * self.scale, self.spec2_w, self.spec2_y)
-        self.spec2_source = SDL_Rect(900, 4 * self.scale, self.spec2_w, self.spec2_y)
-        self.spec2_dest = SDL_Rect(900, 4 * self.scale, self.spec2_w, self.spec2_y)
+        self.spec2_rec = SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
+        self.spec2_source = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+        self.spec2_dest = SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
         self.spec2_position = 0
         self.spec2_timer = Timer()
         self.spec2_timer.set()
@@ -737,9 +737,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.level_w = 5 * self.scale
         self.level_y = 16 * self.scale
         self.level_s = 1 * self.scale
-        self.level_ww = 79 * self.scale
-        self.level_hh = 18 * self.scale
-        self.spec_level_rec = SDL_Rect(0, self.level_y - 10 * self.scale, self.level_ww, self.level_hh)
+        self.level_ww = round(79 * self.scale)
+        self.level_hh = round(18 * self.scale)
+        self.spec_level_rec = SDL_Rect(0, round(self.level_y - 10 * self.scale), round(self.level_ww), round(self.level_hh))
 
         self.rename_folder_box = False
 
@@ -1151,7 +1151,7 @@ try:
 
     if save[63] is not None:
         prefs.ui_scale = save[63]
-        # prefs.ui_scale = 2
+        #prefs.ui_scale = 1.3
 
         gui.__init__()
 
@@ -1296,7 +1296,7 @@ try:
     del save
 
 except:
-
+    raise
     print('Error loading save file')
     if os.path.exists(cache_directory):
         print("clearing old cache")
@@ -5721,6 +5721,9 @@ class GallClass:
 
     def render(self, index, location, size=None):
 
+        x = round(location[0])
+        y = round(location[1])
+
         # time.sleep(0.1)
         if size is None:
             size = self.size
@@ -5748,7 +5751,7 @@ class GallClass:
                 tex_w = pointer(c_int(size))
                 tex_h = pointer(c_int(size))
                 SDL_QueryTexture(c, None, None, tex_w, tex_h)
-                dst = SDL_Rect(location[0], location[1])
+                dst = SDL_Rect(x, y)
                 dst.w = int(tex_w.contents.value)
                 dst.h = int(tex_h.contents.value)
 
@@ -5761,8 +5764,8 @@ class GallClass:
             if order[0] == 3:
                 # ready
 
-                order[3].x = location[0]
-                order[3].y = location[1]
+                order[3].x = x
+                order[3].y = y
                 order[3].x = int((size - order[3].w) / 2) + order[3].x
                 order[3].y = int((size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
@@ -15139,7 +15142,7 @@ class TopPanel:
                 pctl.broadcast_index].title
             trunc = window_size[0] - x - 150
             #text = trunc_line(text, 11, trunc)
-            ddt.draw_text((x, y), text, colours.grey(130), 11, max=trunc)
+            ddt.draw_text((x, y), text, colours.grey(130), 11, max_w=trunc)
             x += ddt.get_text_w(text, 11) + 6
 
             x += 7
@@ -15499,7 +15502,7 @@ class BottomBarType1:
 
             #line = trunc_line(line, 213, mx)
             ddt.draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
-                      fonts.panel_title, max=mx)
+                      fonts.panel_title, max_w=mx)
             if (input.mouse_click or right_click) and coll((
                         self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
                 if pctl.playing_state == 3:
@@ -16684,7 +16687,7 @@ class StandardPlaylist:
                                   text,
                                   colour,
                                   font,
-                                  max=wid)
+                                  max_w=wid)
                     run += item[1]
 
 
@@ -17046,7 +17049,7 @@ class PlaylistBox:
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
             ddt.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            ddt.draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max=tab_width - 50 * gui.scale, bg=real_bg)
+            ddt.draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
@@ -17204,16 +17207,16 @@ class MetaBox:
 
 
                 if title != "":
-                    ddt.draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max=text_width)
+                    ddt.draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max_w=text_width)
                 if artist != "":
-                    ddt.draw_text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max=text_width)
+                    ddt.draw_text((margin, block_y + 23 * gui.scale), artist, colours.side_bar_line2, fonts.side_panel_line2, max_w=text_width)
 
                 if h > 140 * gui.scale:
 
                     block_y = y + 80 * gui.scale
                     if artist != "":
                         ddt.draw_text((margin, block_y), album, colours.side_bar_line2,
-                                  fonts.side_panel_line2, max=text_width)
+                                  fonts.side_panel_line2, max_w=text_width)
 
                     if not genre == date == "":
                         line = date
@@ -17223,11 +17226,11 @@ class MetaBox:
                             line += genre
 
                         ddt.draw_text((margin, block_y + 20 * gui.scale), line, colours.side_bar_line2,
-                                  fonts.side_panel_line2, max=text_width)
+                                  fonts.side_panel_line2, max_w=text_width)
 
                     if ext != "":
                         ddt.draw_text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
-                                  fonts.side_panel_line2, max=text_width)
+                                  fonts.side_panel_line2, max_w=text_width)
 
 
 
@@ -20047,7 +20050,7 @@ while running:
                 excl_rect = (0,0,0,0)
                 if gui.power_bar is not None and len(gui.power_bar) > 2:
 
-                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, len(gui.power_bar * 28 * gui.scale) + 2)
+                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
 
                 else:
 
@@ -21000,7 +21003,7 @@ while running:
                         ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
                     ddt.draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].title
-                              , colours.grey_blend_bg3(220), 15, max=w - 190 * gui.scale)
+                              , colours.grey_blend_bg3(220), 15, max_w=w - 190 * gui.scale)
                     #y += 4
 
 
@@ -21039,7 +21042,7 @@ while running:
                         ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
                     ddt.draw_text((x2, y1 - (0 * gui.scale)), pctl.master_library[r_menu_index].artist,
-                              colours.grey_blend_bg3(220), 13, max=420 * gui.scale)
+                              colours.grey_blend_bg3(220), 13, max_w=420 * gui.scale)
 
                     y1 += 16 * gui.scale
 
@@ -21309,11 +21312,11 @@ while running:
 
                 ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
                 line = pctl.master_library[rename_index].parent_folder_name
-                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max_w=420 * gui.scale)
 
                 ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
                 line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
-                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max_w=420 * gui.scale)
 
 
             if renamebox:
