@@ -901,6 +901,7 @@ class Input:    # Used to keep track of button states (or should be)
 
         self.mouse_click = False
         self.level_2_enter = False
+        self.key_return_press = False
 
 
 
@@ -6636,21 +6637,24 @@ def load_xspf(path):
         if 'track' in e[0][0].tag:
             for track in e[0]:
                 for item in track:
-                    if 'title' in item.tag:
+                    if 'title' in item.tag and item.text:
                         b['title'] = item.text
-                    if 'location' in item.tag:
-                        b['location'] = item.text
-                    if 'creator' in item.tag:
+                    if 'location' in item.tag and item.text:
+                        l = item.text
+                        if l[:5] == "file:":
+                            l = l.replace('file:', "")
+                            l = l.lstrip("/")
+                            l = "/" + l
+                        b['location'] = l
+                    if 'creator' in item.tag and item.text:
                         b['artist'] = item.text
-                    if 'album' in item.tag:
+                    if 'album' in item.tag and item.text:
                         b['album'] = item.text
-                    if 'duration' in item.tag:
+                    if 'duration' in item.tag and item.text:
                         b['duration'] = item.text
 
                 a.append(copy.deepcopy(b))
                 b = {}
-                #         print(b)
-                # print(a)
 
     except:
         show_message("Error importing XSPF playlist.", 'warning', "Sorry about that.")
@@ -6678,20 +6682,11 @@ def load_xspf(path):
 
     for track in a:
         found = False
-        # First checking for a full filepath match
-        # if 'location' in track and 'file:///' in track['location']:
-        #     location = track['location'][8:]
-        #     for key, value in pctl.master_library.items():
-        #         if value.fullpath == location:
-        #             if os.path.isfile(value.fullpath):
-        #                 playlist.append(key)
-        #                 found = True
-        #                 break
-        #     if found is True:
-        #         continue
-        if 'location' in track and 'file:///' == track['location'][:8]:
 
-            location = track['location'][8:]
+        # Check if we already have a track with full file path in database
+        if 'location' in track:
+
+            location = track['location']
             if location in location_dict:
                 playlist.append(location_dict[location])
                 found = True
@@ -6699,31 +6694,20 @@ def load_xspf(path):
             if found is True:
                 continue
 
-        # Then check for title, artist, album metadata and filename match
-        if 'location' in track and 'duration' in track and 'title' in track and 'artist' in track and 'album' in track:
+        # Then check for title, artist and filename match
+        if 'location' in track and 'duration' in track and 'title' in track and 'artist' in track:
             base = os.path.basename(track['location'])
             if base in base_names:
                 for index, bn in r_base_names.items():
                     va = pctl.master_library[index]
                     if va.artist == track['artist'] and va.title == track['title'] and \
-                                    va.album == track['album'] and os.path.isfile(va.fullpath) and \
+                                    os.path.isfile(va.fullpath) and \
                                     va.filename == base:
                         playlist.append(index)
                         found = True
                         break
                 if found is True:
                     continue
-
-        # Then check for title, artist and album metadata match
-        if 'title' in track and 'artist' in track and 'album' in track and track['title'] in titles:
-            for key, value in pctl.master_library.items():
-                if value.artist == track['artist'] and value.title == track['title'] and \
-                                value.album == track['album'] and os.path.isfile(value.fullpath):
-                    playlist.append(key)
-                    found = True
-                    break
-            if found is True:
-                continue
 
         # Then check for just title and artist match
         if 'title' in track and 'artist' in track and track['title'] in titles:
@@ -6735,26 +6719,13 @@ def load_xspf(path):
             if found is True:
                 continue
 
-        # As a last resort for a live track, match a duration to within 1 second and file name
-        if 'duration' in track and 'location' in track:
-            base = os.path.basename(track['location'])
-            for key, value in pctl.master_library.items():
-                if value.filename == base:
-                    if track['duration'].isdigit() and os.path.isfile(value.fullpath):
-                        if abs(int(int(track['duration']) / 1000) - value.length) < 2:
-                            playlist.append(key)
-                            found = True
-                            break
-            if found is True:
-                continue
-
-        if ('location' in track and 'file:///' in track['location']) or 'title' in track:
+        if 'location' in track or 'title' in track:
             nt = TrackClass()
             nt.index = master_count
             nt.found = False
 
-            if 'location' in track and 'file:///' in track['location']:
-                location = track['location'][8:]
+            if 'location' in track:
+                location = track['location']
                 nt.fullpath = location.replace('\\', '/')
                 nt.filename = os.path.basename(location)
                 nt.parent_folder_path = os.path.dirname(location.replace('\\', '/'))
@@ -6785,14 +6756,11 @@ def load_xspf(path):
 
     if missing > 0:
         show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
-    # pctl.multi_playlist.append([name, 0, playlist, 0, 0, 0])
+
     pctl.multi_playlist.append(pl_gen(title=name,
                                       playlist=playlist))
     gui.update = 1
 
-
-# gui.panelY = 30
-# gui.panelBY = 51
 
 bb_type = 0
 
@@ -7727,7 +7695,7 @@ def export_xspf(pl):
         if track.title != "":
             xport.write('      <title>' + escape(track.title) + '</title>\n')
         if track.is_cue is False and track.fullpath != "":
-            xport.write('      <location>file:///' + escape(track.fullpath) + '</location>\n')
+            xport.write('      <location>' + escape(track.fullpath) + '</location>\n')
         if track.artist != "":
             xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
         if track.album != "":
@@ -7738,20 +7706,13 @@ def export_xspf(pl):
     xport.write('</playlist>\n\n')
     xport.close()
 
-    if system == 'windows':
-        line = r'explorer /select,"%s"' % (
-            target.replace("/", "\\"))
-        subprocess.Popen(line)
+    line = direc
+    line += "/"
+    if system == 'mac':
+        subprocess.Popen(['open', line])
     else:
-        line = direc
-        line += "/"
-        if system == 'mac':
-            subprocess.Popen(['open', line])
-        else:
-            subprocess.Popen(['xdg-open', line])
+        subprocess.Popen(['xdg-open', line])
 
-
-# tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 
 def reload():
     if album_mode:
@@ -7784,9 +7745,6 @@ def convert_playlist(pl):
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(install_directory + '/encoder/oggenc2.exe'):
-        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
-        #     return
         if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
             show_message("Error: Missing lame.exe from '/encoder' directory")
             return
@@ -8094,7 +8052,7 @@ def year_sort(pl):
             pl2 += year_s(plt)
             plt = []
 
-        if p > len(playlist) - 2:
+        if p > len(playlist) - 1:
             break
 
         album = []
@@ -8123,6 +8081,10 @@ def year_sort(pl):
         plt.append((album, date, artist + " " + get_object(playlist[p]).album))
         p += len(album)
         # print(album)
+
+    if plt:
+        pl2 += year_s(plt)
+        plt = []
 
     # We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
     pctl.multi_playlist[pl][2][:] = pl2[:]
@@ -11491,8 +11453,8 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        global key_return_press
-        key_return_press = False
+        
+        input.key_return_press = False
 
     def click_genre(self, name):
 
@@ -11509,15 +11471,15 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        global key_return_press
-        key_return_press = False
+        
+        input.key_return_press = False
 
     def click_album(self, index):
 
         pctl.jump(index)
         pctl.show_current(playing=True)
-        global key_return_press
-        key_return_press = False
+        
+        input.key_return_press = False
 
     def render(self):
 
@@ -11604,12 +11566,14 @@ class SearchOverlay:
             if self.delay_enter and not self.sip:
                 enter = True
                 self.delay_enter = False
-            elif key_return_press:
+            elif input.key_return_press:
                 if self.sip:
                     self.delay_enter = True
                 else:
                     enter = True
                     self.delay_enter = False
+
+            input.key_return_press = False
 
 
             self.on = max(self.on, 0)
@@ -11756,7 +11720,8 @@ class SearchOverlay:
                                 self.active = False
                                 self.search_text.text = ""
                     if enter and fade == 1:
-                        self.click_album(item[2])
+                        #self.click_album(item[2])
+                        pctl.show_current(index=item[2])
                         self.active = False
                         self.search_text.text = ""
                     if full:
@@ -11875,8 +11840,16 @@ def worker2():
                         title = t.title.lower()
                         artist = t.artist.lower()
                         album = t.album.lower()
+                        genre = t.genre.lower()
                         filename = t.filename.lower()
 
+                        if s_text in genre:
+
+                            if t.genre in genres:
+                                genres[t.genre] += 1
+                            else:
+                                temp_results.append([3, t.genre, track, playlist[6], 0])
+                                genres[t.genre] = 1
 
                         if search_magic(s_text, title + artist + filename + album):
 
@@ -11927,7 +11900,7 @@ def worker2():
 
                                 if t not in tracks:
 
-                                    value = 1
+                                    value = 50
                                     if s_text == title:
                                         value = 2000
 
@@ -12561,11 +12534,9 @@ def worker1():
             gui.pl_update = 1
 
         # FOLDER ENC
-        if len(transcode_list) > 0:
+        if transcode_list:
 
             try:
-
-                print(8)
                 transcode_state = ""
                 gui.update += 1
 
@@ -12584,7 +12555,7 @@ def worker1():
 
                 for c in r'[]/\;,><&*:%=+@!#^()|?^.':
                     folder_name = folder_name.replace(c, '')
-                print(folder_name)
+                print("Transcoding folder: " + folder_name)
 
                 if os.path.isdir(prefs.encoder_output + folder_name):
                     shutil.rmtree(prefs.encoder_output + folder_name)
@@ -12605,144 +12576,144 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
-                if prefs.transcode_mode == 'single':  #  Previously there was a CUE option
+                # if prefs.transcode_mode == 'single':  #  Previously there was a CUE option
 
-                    if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
-                        global core_use
-                        cores = os.cpu_count()
+                if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
+                    global core_use
+                    cores = os.cpu_count()
 
-                        total = len(folder_items)
-                        q = 0
-                        while True:
+                    total = len(folder_items)
+                    q = 0
+                    while True:
 
-                            if core_use < cores and q < len(folder_items):
-                                core_use += 1
-                                agg = [[folder_items[q], folder_name]]
-                                loaderThread = threading.Thread(target=transcode_single, args=agg)
-                                loaderThread.daemon = True
-                                loaderThread.start()
-                                # transcode_single([folder_items[q], folder_name])
-                                q += 1
-                            time.sleep(0.5)
-                            if gui.tc_cancel:
-                                while core_use > 0:
-                                    time.sleep(1)
-                                break
-                            if q == len(folder_items) and core_use == 0:
-                                break
+                        if core_use < cores and q < len(folder_items):
+                            core_use += 1
+                            agg = [[folder_items[q], folder_name]]
+                            loaderThread = threading.Thread(target=transcode_single, args=agg)
+                            loaderThread.daemon = True
+                            loaderThread.start()
+                            # transcode_single([folder_items[q], folder_name])
+                            q += 1
+                        time.sleep(0.5)
+                        if gui.tc_cancel:
+                            while core_use > 0:
+                                time.sleep(1)
+                            break
+                        if q == len(folder_items) and core_use == 0:
+                            break
 
-                    else:
-                        for item in folder_items:
+                else:
+                    for item in folder_items:
 
-                            if os.path.isfile(full_wav_out_p):
-                                os.remove(full_wav_out_p)
-                            if os.path.isfile(full_target_out_p):
-                                os.remove(full_target_out_p)
+                        if os.path.isfile(full_wav_out_p):
+                            os.remove(full_wav_out_p)
+                        if os.path.isfile(full_target_out_p):
+                            os.remove(full_target_out_p)
 
-                            command = user_directory + "/encoder/ffmpeg "
+                        command = user_directory + "/encoder/ffmpeg "
+
+                        if system != 'windows':
+                            command = "ffmpeg "
+
+                        if not pctl.master_library[item].is_cue:
+                            command += '-i "'
+                            command += pctl.master_library[item].fullpath
+                            command += '" '
+                            command += full_wav_out
+                            # command += ' -'
+                        else:
+                            command += '-ss ' + str(pctl.master_library[item].start_time)
+                            command += ' -t ' + str(pctl.master_library[item].length)
+
+                            command += ' -i "'
+                            command += pctl.master_library[item].fullpath
+                            command += '" '
+                            command += full_wav_out
+
+                            # command += " -"
+
+                        transcode_state = "(Decoding)"
+                        gui.update += 1
+
+                        # print(shlex.split(command))
+                        startupinfo = None
+                        if system == 'windows':
+                            startupinfo = subprocess.STARTUPINFO()
+                            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
+                                        startupinfo=startupinfo)
+                        # out = subprocess.popen.communicate(shlex.split(command), stdout=subprocess.PIPE, shell=False,
+                        #                 startupinfo=startupinfo)
+                        # print(out)
+
+                        # print('Done transcoding track via ffmpeg')
+
+                        transcode_state = "(Encoding)"
+                        gui.update += 1
+
+                        if prefs.transcode_codec == 'mp3':
+
+                            #print("hit")
+
+                            command = user_directory + '/encoder/lame --silent --abr ' + str(
+                                prefs.transcode_bitrate) + ' '
 
                             if system != 'windows':
-                                command = "ffmpeg "
+                                command = 'lame --silent --abr ' + str(prefs.transcode_bitrate) + ' '
 
-                            if not pctl.master_library[item].is_cue:
-                                command += '-i "'
-                                command += pctl.master_library[item].fullpath
-                                command += '" '
-                                command += full_wav_out
-                                # command += ' -'
-                            else:
-                                command += '-ss ' + str(pctl.master_library[item].start_time)
-                                command += ' -t ' + str(pctl.master_library[item].length)
+                            if pctl.master_library[item].title != "":
+                                command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
 
-                                command += ' -i "'
-                                command += pctl.master_library[item].fullpath
-                                command += '" '
-                                command += full_wav_out
+                                                                                                               "") + '" '
 
-                                # command += " -"
+                            if len(str(pctl.master_library[item].track_number)) < 4 and str(
+                                    pctl.master_library[item].track_number).isdigit():
+                                command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
 
-                            transcode_state = "(Decoding)"
-                            gui.update += 1
+                            if len(str(pctl.master_library[item].date)) == 4 and str(
+                                    pctl.master_library[item].date).isdigit():
+                                command += '--ty ' + str(pctl.master_library[item].date) + ' '
+
+                            if pctl.master_library[item].artist != "":
+                                command += '--ta "' + pctl.master_library[item].artist.replace('"', "").replace("'",
+                                                                                                                "") + '" '
+
+                            if pctl.master_library[item].album != "":
+                                command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
+                                                                                                               "") + '" '
+
+                            command += full_wav_out + ' ' + full_target_out
 
                             print(shlex.split(command))
-                            startupinfo = None
-                            if system == 'windows':
-                                startupinfo = subprocess.STARTUPINFO()
-                                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
-                                            startupinfo=startupinfo)
-                            # out = subprocess.popen.communicate(shlex.split(command), stdout=subprocess.PIPE, shell=False,
-                            #                 startupinfo=startupinfo)
-                            # print(out)
+                            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
+                            print('done')
 
-                            print('Done transcoding track via ffmpeg')
+                            os.remove(full_wav_out_p)
+                            output_dir = prefs.encoder_output + folder_name + "/"
 
-                            transcode_state = "(Encoding)"
-                            gui.update += 1
+                            out_line = os.path.splitext(pctl.master_library[item].filename)[0]
+                            if pctl.master_library[item].is_cue:
+                                out_line = str(pctl.master_library[item].track_number) + ". "
+                                out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
 
-                            if prefs.transcode_codec == 'mp3':
+                            print(output_dir)
+                            shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
 
-                                #print("hit")
+                            #print(command)
 
-                                command = user_directory + '/encoder/lame --silent --abr ' + str(
-                                    prefs.transcode_bitrate) + ' '
-
-                                if system != 'windows':
-                                    command = 'lame --silent --abr ' + str(prefs.transcode_bitrate) + ' '
-
-                                if pctl.master_library[item].title != "":
-                                    command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
-
-                                                                                                                   "") + '" '
-
-                                if len(str(pctl.master_library[item].track_number)) < 4 and str(
-                                        pctl.master_library[item].track_number).isdigit():
-                                    command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
-
-                                if len(str(pctl.master_library[item].date)) == 4 and str(
-                                        pctl.master_library[item].date).isdigit():
-                                    command += '--ty ' + str(pctl.master_library[item].date) + ' '
-
-                                if pctl.master_library[item].artist != "":
-                                    command += '--ta "' + pctl.master_library[item].artist.replace('"', "").replace("'",
-                                                                                                                    "") + '" '
-
-                                if pctl.master_library[item].album != "":
-                                    command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
-                                                                                                                   "") + '" '
-
-                                command += full_wav_out + ' ' + full_target_out
-
-                                print(shlex.split(command))
-                                subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                                print('done')
-
-                                os.remove(full_wav_out_p)
-                                output_dir = prefs.encoder_output + folder_name + "/"
-
-                                out_line = os.path.splitext(pctl.master_library[item].filename)[0]
-                                if pctl.master_library[item].is_cue:
-                                    out_line = str(pctl.master_library[item].track_number) + ". "
-                                    out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
-
-                                print(output_dir)
-                                shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
-
-                                #print(command)
-
-                    output_dir = prefs.encoder_output + folder_name + "/"
-                    #album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
-                    album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
+                output_dir = prefs.encoder_output + folder_name + "/"
+                #album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
+                album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
 
                 del transcode_list[0]
                 transcode_state = ""
                 gui.update += 1
-            except:
 
+            except:
                 transcode_state = "Transcode Error"
                 show_message("Encode failed.", 'error', "An unknown error was encountered.")
                 gui.update += 1
-                time.sleep(2)
+                time.sleep(0.2)
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
@@ -12755,7 +12726,6 @@ def worker1():
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
                     show_message("Encoding complete.", 'done', line)
                     if system == 'linux' and not window_is_focused():
-
                         g_tc_notify.show()
 
         while len(to_scan) > 0:
@@ -13001,13 +12971,8 @@ def reload_albums(quiet=False):
     gui.pt = 0
 
 
-
-
-
 # ------------------------------------------------------------------------------------
 # WEBSERVER
-
-
 
 def webserv():
     if prefs.enable_web is False:
@@ -13974,7 +13939,7 @@ class Over:
         else:
             last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), False, True)
 
-        if key_return_press:
+        if input.key_return_press:
             self.update_lfm()
 
 
@@ -14157,7 +14122,7 @@ class Over:
 
         if system == "linux":
             y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_scale, "2x UI scaling")
+            self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
 
         y += 28 * gui.scale
         if not draw_border:
@@ -18699,7 +18664,7 @@ while running:
         input.mouse_click = False
         middle_click = False
         mouse_up = False
-        key_return_press = False
+        input.key_return_press = False
         key_ralt = False
         key_space_press = False
         key_down_press = False
@@ -18947,7 +18912,7 @@ while running:
             power += 5
             gui.update += 2
             if event.key.keysym.sym == SDLK_RETURN and len(editline) == 0:
-                key_return_press = True
+                input.key_return_press = True
             elif event.key.keysym.sym == SDLK_SPACE:
                 key_space_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
@@ -19426,8 +19391,8 @@ while running:
                     pctl.pause()
 
 
-        if key_return_press and (gui.rename_folder_box or renamebox or radiobox):
-            key_return_press = False
+        if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
+            input.key_return_press = False
             input.level_2_enter = True
 
         if key_F1:
@@ -20966,17 +20931,17 @@ while running:
                     rename_playlist_box = False
                     if len(rename_text_area.text) > 0:
                         pctl.multi_playlist[rename_index][0] = rename_text_area.text
-                elif key_return_press:
+                elif input.key_return_press:
                     rename_playlist_box = False
-                    key_return_press = False
+                    input.key_return_press = False
                     if len(rename_text_area.text) > 0:
                         pctl.multi_playlist[rename_index][0] = rename_text_area.text
 
             if track_box:
-                if key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                if input.key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
                     track_box = False
 
-                    key_return_press = False
+                    input.key_return_press = False
 
                 if gui.level_2_click:
                     input.mouse_click = True
@@ -21619,10 +21584,10 @@ while running:
                 gui.level_2_click = False
 
             if gui.message_box:
-                if input.mouse_click or key_return_press or right_click or key_esc_press or key_backspace_press \
+                if input.mouse_click or input.key_return_press or right_click or key_esc_press or key_backspace_press \
                         or key_backslash_press or (k_input and message_box_min_timer.get() > 1.2):
                     gui.message_box = False
-                    key_return_press = False
+                    input.key_return_press = False
 
 
 
@@ -21724,8 +21689,8 @@ while running:
 
                 search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 4 * gui.scale, colours.grey(230), font=213)
 
-                if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and key_return_press:
-                    key_return_press = False
+                if (key_shift_down or (len(search_text.text) > 0 and search_text.text[0] == '/')) and input.key_return_press:
+                    input.key_return_press = False
                     playlist = []
                     if len(search_text.text) > 0:
                         if search_text.text[0] == '/':
@@ -21851,7 +21816,7 @@ while running:
 
                         edge_playlist.pulse()
 
-                if key_return_press is True and search_index > -1:
+                if input.key_return_press is True and search_index > -1:
                     gui.pl_update = 1
                     pctl.jump(default_playlist[search_index], search_index)
                     if album_mode:
@@ -21890,7 +21855,7 @@ while running:
                     if playlist_selected < 0:
                         playlist_selected = 0
 
-                if key_return_press and not pref_box.enabled and not radiobox:
+                if input.key_return_press and not pref_box.enabled and not radiobox:
                     gui.pl_update = 1
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
@@ -22375,10 +22340,6 @@ while running:
     if pctl.broadcast_active and pctl.broadcast_time == 0:
         gui.pl_update = 1
 
-    # Update progress indicator on Windows task bar
-    if taskbar_progress and system == 'windows' and pctl.playing_state == 1:
-        windows_progress.update()
-
     # Update d-bus metadata on Linux
     if pctl.playing_state == 1 and pctl.mpris is not None:
         pctl.mpris.update_progress()
@@ -22389,29 +22350,6 @@ while running:
             pctl.last_playing_time = pctl.playing_time
             bottom_bar1.seek_time = pctl.playing_time
             gui.update = 1
-
-    if system == 'windows':
-
-        if mouse_down is False:
-            drag_mode = False
-
-        if input.mouse_click and mouse_down and 1 < mouse_position[1] < 30 and top_panel.drag_zone_start_x < \
-                mouse_position[0] < window_size[0] - 80 * gui.scale and drag_mode is False and clicked is False:
-            
-            drag_mode = True
-            lm = copy.deepcopy(mouse_position)
-
-        if mouse_up:
-            drag_mode = False
-
-        if drag_mode:
-            p_x = pointer(c_int(0))
-            p_y = pointer(c_int(0))
-            SDL_GetGlobalMouseState(p_x, p_y)
-            mp = [p_x.contents.value, p_y.contents.value]
-
-            time.sleep(0.005)
-            SDL_SetWindowPosition(t_window, mp[0] - lm[0], mp[1] - lm[1])
 
     # Auto save play times to disk
     if pctl.total_playtime - time_last_save > 600:
