@@ -3,7 +3,7 @@
 <img src="https://user-images.githubusercontent.com/17271572/41101848-6ccf4ed0-6ab9-11e8-8ce8-7f62060b39c9.png" align="left" height="50px" hspace="0px" vspace="20px">
 
 A desktop music player for playback of local audio files.
-Designed to be simple and streamlined while putting the user in control of their music collection.
+Designed to be simple and streamlined while putting the user in control of their music collection. Uses the proprietary BASS audio library for playback.
 
 ### Screenshot
 
