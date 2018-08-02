@@ -1296,7 +1296,7 @@ try:
     del save
 
 except:
-    raise
+
     print('Error loading save file')
     if os.path.exists(cache_directory):
         print("clearing old cache")
@@ -5727,6 +5727,8 @@ class GallClass:
         # time.sleep(0.1)
         if size is None:
             size = self.size
+
+        size = round(size)
 
         if (index, size) in self.gall:
             # print("old")
@@ -17551,7 +17553,7 @@ class Showcase:
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10
 
-        if draw.button("Return", 25, window_size[1] - gui.panelBY - 40, bg=colours.grey(30)):
+        if draw.button("Return", 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=colours.grey(30)):
             switch_showcase()
             if view_box.was_album:
                 force_album_view()
@@ -17559,10 +17561,10 @@ class Showcase:
 
         if pctl.playing_state == 3:
 
-            w = window_size[0] - (x + box) - 30
+            w = window_size[0] - (x + box) - 30 * gui.scale
             x = int((window_size[0]) / 2)
 
-            y = int(window_size[1] / 2) - 60
+            y = int(window_size[1] / 2) - 60 - gui.scale
             ddt.draw_text((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
 
 
@@ -17575,7 +17577,7 @@ class Showcase:
             #     pass
 
             if gui.force_showcase_index >= 0:
-                if draw.button("Show playing", 25, gui.panelY + 20, bg=colours.grey(30)):
+                if draw.button("Show playing", 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=colours.grey(30)):
                     gui.force_showcase_index = -1
 
 
@@ -17593,10 +17595,10 @@ class Showcase:
 
             if track.lyrics == "":
 
-                w = window_size[0] - (x + box) - 30
+                w = window_size[0] - (x + box) - 30 * gui.scale
                 x = int(x + box + (window_size[0] - x - box) / 2)
                 #x = int((window_size[0]) / 2)
-                y = int(window_size[1] / 2) - 60
+                y = int(window_size[1] / 2) - 60 * gui.scale
 
                 if track.artist == "" and track.title == "":
 
@@ -17606,32 +17608,32 @@ class Showcase:
 
                     ddt.draw_text((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
 
-                    y += 45
+                    y += 45 * gui.scale
                     ddt.draw_text((x, y, 2), track.title, colours.side_bar_line1, 228, w)
 
             else:
-                x += box + int(window_size[0] * 0.15) + 20
+                x += box + int(window_size[0] * 0.15) + 20 * gui.scale
 
                 #y = 80
-                x -= 100
-                w = window_size[0] - x - 30
+                x -= 100 * gui.scale
+                w = window_size[0] - x - 30 * gui.scale
 
 
                 if key_up_press:
-                    lyrics_ren.lyrics_position += 35
+                    lyrics_ren.lyrics_position += 35 * gui.scale
                 if key_down_press:
-                    lyrics_ren.lyrics_position -= 35
+                    lyrics_ren.lyrics_position -= 35 * gui.scale
 
                 lyrics_ren.render(index,
                                   x,
                                   y + lyrics_ren.lyrics_position,
                                   w,
-                                  int(window_size[1] - 100),
+                                  int(window_size[1] - 100 * gui.scale),
                                   0)
 
             if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                 if mouse_wheel != 0:
-                    lyrics_ren.lyrics_position += mouse_wheel * 35
+                    lyrics_ren.lyrics_position += mouse_wheel * 35 * gui.scale
                 if right_click:
                     # track = pctl.playing_object()
                     if track != None:
@@ -20341,7 +20343,7 @@ while running:
                     top = gui.panelY
                     run_y = top + 1
 
-                    hot_r = (window_size[0] - 47 * gui.scale, top, 46 * gui.scale, h)
+                    hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
                     fields.add(hot_r)
 
 
@@ -20352,7 +20354,7 @@ while running:
                     elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
                         if not coll(hot_r):
                             gui.pt = 0
-                        elif gui.pt_on.get() > 0.15:
+                        elif gui.pt_on.get() > 0.2:
                             gui.pt = 2
 
                             off = 0
@@ -20416,7 +20418,7 @@ while running:
                             i_rect = [window_size[0] - 21 * gui.scale, run_y, 19 * gui.scale, 27 * gui.scale]
                             fields.add(i_rect)
 
-                            if coll(i_rect) and item.peak_x == 9:
+                            if coll(i_rect) and item.peak_x == 9 * gui.scale:
 
                                 minx = 100 * gui.scale
                                 maxx = minx * 2
@@ -21002,7 +21004,7 @@ while running:
                     else:
                         ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
                         #
-                    ddt.draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].title
+                    ddt.draw_text((x2, y1 - (2 * gui.scale)), pctl.master_library[r_menu_index].title
                               , colours.grey_blend_bg3(220), 15, max_w=w - 190 * gui.scale)
                     #y += 4
 
@@ -21041,7 +21043,7 @@ while running:
                     else:
                         ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
 
-                    ddt.draw_text((x2, y1 - (0 * gui.scale)), pctl.master_library[r_menu_index].artist,
+                    ddt.draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].artist,
                               colours.grey_blend_bg3(220), 13, max_w=420 * gui.scale)
 
                     y1 += 16 * gui.scale
