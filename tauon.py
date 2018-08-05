@@ -33,7 +33,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.1.0"
+t_version = "v3.1.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -1135,6 +1135,8 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
 
 
 url_saves = []
+rename_files_previous = ""
+rename_folder_previous = ""
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
@@ -1292,6 +1294,11 @@ try:
         prefs.enable_lb = save[79]
     if save[80] is not None:
         prefs.lb_token = save[80]
+    if save[81] is not None:
+        rename_files_previous = save[81]
+    if save[82] is not None:
+        rename_folder_previous = save[82]
+
     state_file.close()
     del save
 
@@ -1459,6 +1466,7 @@ if os.path.isdir(os.path.expanduser("~/Downloads")):
     download_directories.append(os.path.expanduser("~/Downloads"))
 if os.path.isdir(os.path.expanduser("~/Music")):
     download_directories.append(os.path.expanduser("~/Music"))
+
 
 path = config_directory + "/config.txt"
 if os.path.isfile(os.path.join(config_directory, "config.txt")):
@@ -3478,11 +3486,12 @@ def player():   # BASS
 
     BASS_CONFIG_ASYNCFILE_BUFFER = 45
 
-    if system != 'windows':
-        open_flag = 0
-        BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 128000)
-    else:
-        open_flag = BASS_UNICODE
+    #if system != 'windows':
+    open_flag = 0
+    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 128000)
+    #else:
+    #    open_flag = BASS_UNICODE
+
     open_flag |= BASS_ASYNCFILE
     # open_flag |= BASS_STREAM_DECODE
     open_flag |= BASS_SAMPLE_FLOAT
@@ -3501,18 +3510,26 @@ def player():   # BASS
 
     def py_sync(handle, channel, data, user):
 
+        print(BASS_ErrorGetCode())
         print("SYNC")
         if bass_gap.gap_next is not None:
+            print(bass_gap.gap_next)
 
-            bass_gap.source = BASS_StreamCreateFile(False, bass_gap.gap_next, 0, 0, open_flag | BASS_STREAM_DECODE)
+            bass_gap.source = BASS_StreamCreateFile(False, bass_gap.gap_next, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
+            print(BASS_ErrorGetCode())
             BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
+            print(BASS_ErrorGetCode())
             BASS_ChannelSetPosition(bass_gap.mixer, 0, 0)
+            print(BASS_ErrorGetCode())
+            BASS_ChannelPlay(bass_gap.mixer, False)
             bass_gap.gap_next = None
         else:
             print("no next!")
         return 0
 
     EndSync = SyncProc(py_sync)
+
+    limit = 0
 
 
     if system == 'windows':
@@ -4262,14 +4279,14 @@ def player():   # BASS
 
             # -----------------------------------------------------------------------------
             # -----------------------------------------------------------------------------
-            # gap2
+            #gap2
             # if pctl.playerCommand == 'open' and pctl.target_open != '':
             #
             #     pctl.playerCommand = ""
-            #     if system != 'windows':
-            #         target_file = pctl.target_open.encode('utf-8')
-            #     else:
-            #         target_file = pctl.target_open
+            #     limit += 1
+            #     print("OPEN")
+            #     target_file = pctl.target_open.encode('utf-8')
+            #
             #
             #     if bass_gap.mixer is None:
             #         print(BASS_ErrorGetCode())
@@ -4277,15 +4294,15 @@ def player():   # BASS
             #         bass_gap.mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
             #
             #         print("set sync")
-            #         BASS_ChannelSetSync(bass_gap.mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, EndSync, 0)
+            #         BASS_ChannelSetSync(bass_gap.mixer, BASS_SYNC_END, 0, EndSync, 0)
             #         print(BASS_ErrorGetCode())
             #
             #         print("create source")
-            #         bass_gap.source = BASS_StreamCreateFile(False, target_file, 0, 0, open_flag | BASS_STREAM_DECODE)
+            #         bass_gap.source = BASS_StreamCreateFile(False, target_file, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
             #         print(BASS_ErrorGetCode())
             #
             #         print("add source to mixer")
-            #         BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE)
+            #         BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
             #         print(BASS_ErrorGetCode())
             #         print("play")
             #         BASS_ChannelPlay(bass_gap.mixer, False)
@@ -4294,7 +4311,9 @@ def player():   # BASS
             #         player1_status = p_playing
             #     else:
             #         print("existing mixer")
-            #         bass_gap.gap_next = target_file
+            #         if limit < 3:
+            #             print("set")
+            #             bass_gap.gap_next = target_file
             #
             #     player_timer.hit()
             #
@@ -4309,11 +4328,12 @@ def player():   # BASS
             #     BASS_ChannelSetPosition(bass_gap.source, bytes_position, 0)
             #     print(BASS_ErrorGetCode())
             #     print("play")
-            #     BASS_ChannelPlay(bass_gap.source, False)
+            #     #BASS_ChannelPlay(bass_gap.source, False)
             #     print(BASS_ErrorGetCode())
             #     pctl.playerCommand = ''
             #
-
+            # elif True:
+            #     print("huh?")
             # -----------------------------------------------------------------------------
 
             # OPEN COMMAND
@@ -5612,10 +5632,14 @@ last_fm_user_field = TextBox()
 last_fm_pass_field = TextBox()
 rename_files = TextBox()
 rename_files.text = prefs.rename_tracks_template
+if rename_files_previous:
+    rename_files.text = rename_files_previous
 radio_field = TextBox()
 radio_field.text = radio_field_text
 rename_folder = TextBox()
 rename_folder.text = prefs.rename_folder_template
+if rename_folder_previous:
+    rename_folder.text = rename_folder_previous
 
 temp_dest = SDL_Rect(0, 0)
 
@@ -6398,7 +6422,7 @@ class AlbumArt():
 
             SDL_QueryTexture(c, None, None, tex_w, tex_h)
 
-            dst = SDL_Rect(location[0], location[1])
+            dst = SDL_Rect(round(location[0]), round(location[1]))
             dst.w = int(tex_w.contents.value)
             dst.h = int(tex_h.contents.value)
 
@@ -6446,6 +6470,7 @@ class AlbumArt():
             return 1
         except:
             print("Image processing error")
+
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -6456,8 +6481,8 @@ class AlbumArt():
 
         rect = unit.rect
 
-        rect.x = int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0]
-        rect.y = int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1]
+        rect.x = round(int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0])
+        rect.y = round(int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1])
 
         SDL_RenderCopy(renderer, unit.texture, None, rect)
 
@@ -7730,7 +7755,7 @@ def reload():
 def clear_playlist(index):
     global default_playlist
 
-    pctl.playlist_backup.apppend(copy.deepcopy(pctl.multi_playlist[index]))
+    pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
 
     del pctl.multi_playlist[index][2][:]
     if pctl.playlist_active == index:
@@ -11492,8 +11517,8 @@ class SearchOverlay:
 
             if input_text != "" and \
                     not key_ctrl_down and not radiobox and not renamebox and \
-                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box and \
-                    input_text.isalnum():
+                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box \
+                    and not gui.rename_folder_box and input_text.isalnum():
 
                 self.active = True
                 self.old_mouse = copy.deepcopy(mouse_position)
@@ -17095,7 +17120,7 @@ class PlaylistBox:
             yy += 27 * gui.scale
 
         # Create new playlist if drag in blank space after tabs
-        if coll((x, yy, w, h - (yy - y))):
+        if coll((x, yy, w - 10 * gui.scale, h - (yy - y))):
             if quick_drag:
 
                 ddt.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
@@ -18639,8 +18664,8 @@ def save_state():
             prefs.extract_to_music,  # 78
             lb.enable,
             lb.key,
-            None,
-            None,
+            rename_files.text,
+            rename_folder.text,
             None]
 
     #print(prefs.last_device + "-----")
@@ -21282,6 +21307,11 @@ while running:
 
                 p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
 
+                if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
+                               70 * gui.scale):
+                    rename_folder.text = prefs.rename_folder_template
+
+
                 rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
@@ -21350,6 +21380,12 @@ while running:
                             r_todo.append(item)
 
                 ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(220), 213)
+
+                #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
+                if rename_files.text != prefs.rename_tracks_template and draw.button("Default", x + w - 85 * gui.scale, y + h - 35 * gui.scale,
+                               70 * gui.scale):
+                    rename_files.text = prefs.rename_tracks_template
+
                 # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(170), width=300)
                 NRN = rename_files.text
