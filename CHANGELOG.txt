@@ -3,7 +3,11 @@ Changelog-------------------------------------
 
 v3.1.1
 
+ - Fixed crash on clear playlist [critical]
  - Fixed queue not overriding repeat setting
+ - Fixed 'new playlist' menu appearing on scroll bar right click
+ - Fixed typing in rename folder box activating search overlay
+ - Improved rename files and folders, added 'default' button, now saves template on restart.
 
 v3.1.0
 
