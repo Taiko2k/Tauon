@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.1.1
+
+ - Fixed queue not overriding repeat setting
+
 v3.1.0
 
  - Added new 'folder tag' feature to gallery

@@ -2320,6 +2320,9 @@ class PlayerCtl:
                     gui.update += 2
                     pctl.auto_stop = False
 
+                elif self.force_queue:
+                    self.advance()
+
                 elif self.repeat_mode is True:
 
                     self.playing_time = 0
@@ -2331,9 +2334,6 @@ class PlayerCtl:
                     if lfm_scrobbler.a_sc:
                         lfm_scrobbler.a_sc = False
                         self.a_time = 0
-
-                elif self.force_queue:
-                    self.advance()
 
                 elif self.random_mode is False and len(default_playlist) > self.playlist_playing and \
                                 self.master_library[default_playlist[self.playlist_playing]].is_cue is True \
