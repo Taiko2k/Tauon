@@ -33,7 +33,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.1.1"
+t_version = "v3.1.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -803,7 +803,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         # 3 hand
 
         self.power_bar = None
-        self.gallery_scroll_field_left = 50
+        self.gallery_scroll_field_left = 1
 
 gui = GuiVar()
 
@@ -5339,6 +5339,9 @@ def draw_linked_text(location, text, colour, font):
     if gui.scale == 2:
         font *= 2
         font += 4
+    if gui.scale == 1.25:
+        font = round(font * 1.25)
+        font += 2
     ddt.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
@@ -6054,11 +6057,11 @@ class AlbumArt():
 
         unit = found_unit
 
-        temp_dest.x = location[0]
-        temp_dest.y = location[1]
+        temp_dest.x = round(location[0])
+        temp_dest.y = round(location[1])
 
-        temp_dest.w = box[0]
-        temp_dest.h = box[1]
+        temp_dest.w = round(box[0])
+        temp_dest.h = round(box[1])
 
         # correct aspect ratio if needed
         if unit.original_size[0] > unit.original_size[1]:
@@ -6852,6 +6855,12 @@ if gui.scale == 2:
     message_tick_icon = LoadImageAsset("/gui/2x/done.png")
     message_arrow_icon = LoadImageAsset("/gui/2x/ext.png")
     message_error_icon = LoadImageAsset("/gui/2x/error.png")
+elif gui.scale == 1.25:
+    message_info_icon = LoadImageAsset("/gui/1.25x/notice.png")
+    message_warning_icon = LoadImageAsset("/gui/1.25x/warning.png")
+    message_tick_icon = LoadImageAsset("/gui/1.25x/done.png")
+    message_arrow_icon = LoadImageAsset("/gui/1.25x/ext.png")
+    message_error_icon = LoadImageAsset("/gui/1.25x/error.png")
 else:
     message_info_icon = LoadImageAsset("/gui/notice.png")
     message_warning_icon = LoadImageAsset("/gui/warning.png")
@@ -6941,6 +6950,9 @@ class Menu:
         self.clicked = False
         self.pos = [0, 0]
         self.vertical_size = 22 * gui.scale#20
+        if gui.scale == 1.25:
+            self.vertical_size = 28
+
         self.h = self.vertical_size
         self.w = width * gui.scale
         if gui.scale == 2:
@@ -6953,13 +6965,16 @@ class Menu:
         self.down = False
         self.font = 412
         self.show_icons = show_icons
-        if gui.scale > 1:
+        if gui.scale == 2:
             self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/2x/sub.png"))
+        elif gui.scale == 1.25:
+            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/1.25x/sub.png"))
         else:
             self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
 
         self.id = Menu.count
-        self.break_height = 4 * gui.scale
+        self.break_height = round(4 * gui.scale)
+
         Menu.count += 1
 
         self.sub_number = 0
@@ -7037,7 +7052,7 @@ class Menu:
                 return
 
             ytoff = 3
-            y_run = self.pos[1]
+            y_run = round(self.pos[1])
             to_call = None
 
             if window_size[1] < 250 * gui.scale:
@@ -9240,9 +9255,13 @@ def del_selected():
 if gui.scale == 2:
     folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
     info_icon = MenuIcon(WhiteModImageAsset('/gui/2x/info.png'))
+elif gui.scale == 1.25:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/info.png'))
 else:
     folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
     info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
+
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
 
@@ -9279,8 +9298,22 @@ def heart_xmenu_colour():
 
 if gui.scale == 2:
     heartx_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
+elif gui.scale == 1.25:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/new.png'))
 else:
     heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
 
 heartx_icon.colour = [55, 55, 55, 255]
 heartx_icon.xoff = 1
@@ -9498,13 +9531,7 @@ def rename_folders(index):
     playlist_hold = False
 
 
-if gui.scale == 2:
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
-else:
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
-
 mod_folder_icon.colour = [229, 98, 98, 255]
-
 track_menu.add_to_sub(_("Modify Folder…"), 0, rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 
@@ -9941,10 +9968,6 @@ def toggle_transcode(mode=0):
         return prefs.enable_transcode
     prefs.enable_transcode ^= True
 
-if gui.scale == 2:
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
-else:
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
 
 transcode_icon.colour = [239, 74, 157, 255]
 
@@ -10546,10 +10569,6 @@ def activate_radio_box():
     radiobox = True
 
 
-if gui.scale == 2:
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
-else:
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
 add_icon.xoff = 3
 add_icon.yoff = 0
 add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
@@ -10565,10 +10584,6 @@ if default_player == 1:
     x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
 x_menu.br()
 
-if gui.scale == 2:
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
-else:
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
 settings_icon.xoff = 0
 settings_icon.yoff = 2
 settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
@@ -10704,6 +10719,8 @@ def broadcast_colour():
 if default_player == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
     if gui.scale == 2:
         broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/2x/broadcast.png'))
+    elif gui.scale == 1.25:
+        broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/broadcast.png'))
     else:
         broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
     broadcast_icon.colour = [171, 102, 249, 255]#[182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
@@ -10747,17 +10764,20 @@ def radio_random():
 
 if gui.scale == 2:
     radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/2x/radiorandom.png'))
+    revert_icon = MenuIcon(WhiteModImageAsset('/gui/2x/revert.png'))
+elif gui.scale == 1.25:
+    radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/radiorandom.png'))
+    revert_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/revert.png'))
 else:
     radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/radiorandom.png'))
+    revert_icon = MenuIcon(WhiteModImageAsset('/gui/revert.png'))
+
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
 radiorandom_icon.colour = [153, 229, 133, 255]
 extra_menu.add(_('Radio Random'), radio_random, hint='/', icon=radiorandom_icon)
 
-if gui.scale == 2:
-    revert_icon = MenuIcon(WhiteModImageAsset('/gui/2x/revert.png'))
-else:
-    revert_icon = MenuIcon(WhiteModImageAsset('/gui/revert.png'))
+
 revert_icon.xoff = 1
 revert_icon.yoff = 0
 revert_icon.colour = [229, 102, 59, 255]
@@ -10790,6 +10810,9 @@ def heart_menu_colour():
 if gui.scale == 2:
     heart_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
     heart_row_icon = WhiteModImageAsset('/gui/2x/heart-track.png')
+elif gui.scale == 1.25:
+    heart_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
+    heart_row_icon = WhiteModImageAsset('/gui/1.25x/heart-track.png')
 else:
     heart_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
     heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
@@ -10801,6 +10824,10 @@ heart_colours = ColourGenCache(0.7, 0.7)
 heart_icon.colour = [245, 60, 60, 255]
 heart_icon.xoff = 3
 heart_icon.yoff = 0
+
+if gui.scale == 1.25:
+    heart_icon.yoff = 1
+
 heart_icon.colour_callback = heart_menu_colour
 def love_deco():
 
@@ -10908,9 +10935,13 @@ def lastfm_colour():
 if gui.scale == 2:
     lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/2x/as.png'))
     lastfm_icon.xoff = 0
+elif gui.scale == 1.25:
+    lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/as.png'))
+    lastfm_icon.xoff = 0
 else:
     lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/as.png'))
     lastfm_icon.xoff = -1
+
 lastfm_icon.yoff = 1
 
 lastfm_icon.colour = [249, 70, 70, 255]#[250, 60, 60, 255]
@@ -13741,6 +13772,10 @@ class Over:
             self.about_image = LoadImageAsset('/gui/2x/v3-a.png')
             self.about_image2 = LoadImageAsset('/gui/2x/v3-b.png')
             self.about_image3 = LoadImageAsset('/gui/2x/v3-c.png')
+        elif gui.scale == 1.25:
+            self.about_image = LoadImageAsset('/gui/1.25x/v3-a.png')
+            self.about_image2 = LoadImageAsset('/gui/1.25x/v3-b.png')
+            self.about_image3 = LoadImageAsset('/gui/1.25x/v3-c.png')
         else:
             self.about_image = LoadImageAsset('/gui/v3-a.png')
             self.about_image2 = LoadImageAsset('/gui/v3-b.png')
@@ -13956,13 +13991,22 @@ class Over:
 
     def toggle_square(self, x, y, function, text):
 
+        x = round(x)
+        y = round(y)
+
+        space = round(3 * gui.scale)
+        inner = space * 2
+        outer = inner * 2
+
         le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
-        ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
-        ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
+
+        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
+        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
+
         if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
             function()
         if function(1):
-            ddt.rect_a((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
+            ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
 
     def last_fm_box(self):
 
@@ -14189,6 +14233,7 @@ class Over:
         x = self.box_x + self.item_x_offset
         y1 = y
 
+
         ddt.draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
         y += 25 * gui.scale
 
@@ -14203,13 +14248,15 @@ class Over:
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
         self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale125, "1¼x (Broken)")
+        self.toggle_square(x, y, scale125, "1¼x")
+
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale2, "2x (Maybe broken)")
+        self.toggle_square(x, y, scale2, "2x")
+        self.button(x + 268 * gui.scale, y + 5 * gui.scale, "Next Theme (F2)", advance_theme)
 
         y += 28 * gui.scale
         y += 10 * gui.scale
-        self.button(x + 80 * gui.scale, y, "Next Theme (F2)", advance_theme)
+
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
 
@@ -14409,17 +14456,23 @@ class Over:
         y += 25 * gui.scale
         y2 = y
         x2 = x
+
+
+        space = round(3 * gui.scale)
+        inner = space * 2
+        outer = inner * 2
+
         for k in config_items:
             if k is None:
                 y += 25 * gui.scale
                 continue
             ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
-            ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 13], True)
-            ddt.rect_a((x, y), (12 * gui.scale, 12 * gui.scale), [255, 255, 255, 16])
+            ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
+            ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
             if self.click and coll((x - 20, y - 5, 220, 24)):
                 k[1]()
             if k[1](1) is True:
-                ddt.rect_a((x + 3 * gui.scale, y + 3 * gui.scale), (6 * gui.scale, 6 * gui.scale), colours.toggle_box_on, True)
+                ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
 
             y += 25 * gui.scale
 
@@ -14706,11 +14759,11 @@ class TopPanel:
         self.height = gui.panelY
         self.ty = 0
 
-        self.start_space_left = 46 * gui.scale  # 9
+        self.start_space_left = round(46 * gui.scale)  # 9
         self.start_space_compact_left = 46 * gui.scale  # 25
 
         self.tab_text_font = fonts.tabs #211 # 211
-        self.tab_extra_width = 17 * gui.scale
+        self.tab_extra_width = round(17 * gui.scale)
         self.tab_text_start_space = 8 * gui.scale
         self.tab_text_y_offset = 7 * gui.scale
         self.tab_spacing = 0
@@ -14734,6 +14787,9 @@ class TopPanel:
         if gui.scale == 2:
             self.exit_button = WhiteModImageAsset('/gui/2x/ex.png')
             self.playlist_icon = WhiteModImageAsset('/gui/2x/playlist.png')
+        elif gui.scale == 1.25:
+            self.exit_button = WhiteModImageAsset('/gui/1.25x/ex.png')
+            self.playlist_icon = WhiteModImageAsset('/gui/1.25x/playlist.png')
         else:
             self.exit_button = WhiteModImageAsset('/gui/ex.png')
             self.playlist_icon = WhiteModImageAsset('/gui/playlist.png')
@@ -15285,6 +15341,10 @@ class BottomBarType1:
             self.play_button = WhiteModImageAsset('/gui/2x/play.png')
             self.forward_button = WhiteModImageAsset('/gui/2x/ff.png')
             self.back_button = WhiteModImageAsset('/gui/2x/bb.png')
+        elif gui.scale == 1.25:
+            self.play_button = WhiteModImageAsset('/gui/1.25x/play.png')
+            self.forward_button = WhiteModImageAsset('/gui/1.25x/ff.png')
+            self.back_button = WhiteModImageAsset('/gui/1.25x/bb.png')
         else:
 
             self.play_button = WhiteModImageAsset('/gui/play.png')
@@ -15632,7 +15692,7 @@ class BottomBarType1:
         elif gui.display_time_mode == 3:
 
             track = pctl.playing_object()
-            if track.index != gui.dtm3_index:
+            if track and track.index != gui.dtm3_index:
 
                 gui.dtm3_cum = 0
                 gui.dtm3_total = 0
@@ -15968,10 +16028,15 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
                 if gui.playlist_row_height > 17 * gui.scale:
                     sp -= 1
+
+                lh = 1
+                if gui.scale != 1:
+                    lh = 2
+
                 ddt.rect_r([width + start_x - star_x - 45 * gui.scale - offset_font_extra,
                              sp,
                              star_x + 3 * gui.scale,
-                             1
+                             lh
                              ], alpha_mod(colours.star_line, album_fade), True)
                 star_x += 5
 
@@ -15989,6 +16054,9 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             count = 0
             spacing = 6 * gui.scale
             xxx = star_x
+            yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
+            if gui.scale == 1.25:
+                yy += 1
             if xxx > 0:
                 xxx += 5 * gui.scale
             if love(False, index):
@@ -15997,7 +16065,6 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
-                yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
@@ -16012,14 +16079,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
 
                 heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
-                       ry + (gui.playlist_row_height // 2) - (5 * gui.scale), [244,100,100,255])
+                       yy, [244,100,100,255])
 
                 star_x += 18 * gui.scale
 
             for name in pctl.master_library[index].lfm_friend_likes:
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
-                yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                 heart_row_icon.render(x,
                                       yy, heart_colours.get(name))
 
@@ -17020,13 +17086,26 @@ class PlaylistBox:
 
         self.adds = []
 
+        # self.tab_h = 25 * gui.scale
+        # self.gap = 2 * gui.scale
+        self.indicate_w = round(2 * gui.scale)
+
+        #if gui.scale == 1.25:
+        self.tab_h = round(25 * gui.scale)
+        self.gap = round(2 * gui.scale)
+
+        self.text_offset = 2 * gui.scale
+        if gui.scale == 1.25:
+            self.text_offset = 3
+
+
     def draw(self, x, y, w, h):
 
         global quick_drag
 
         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
-        max_tabs = h // 27 * gui.scale
+        max_tabs = h // (self.gap + self.tab_h) * gui.scale
 
 
         show_scroll = False
@@ -17071,13 +17150,13 @@ class PlaylistBox:
 
 
 
-            if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, 26 * gui.scale)):
+            if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
                 if input.mouse_click:
                     switch_playlist(i)
                     self.drag_on = i
                     self.drag = True
 
-            if coll((tab_start, yy - 1, tab_width, 26  * gui.scale)):
+            if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
                     tab_menu.activate(i, mouse_position)
 
@@ -17105,7 +17184,7 @@ class PlaylistBox:
 
 
             # Toggle hidden flag on click
-            if input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25, 26  * gui.scale)):
+            if input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
                 pl[8] ^= True
 
             name = pl[0]
@@ -17118,13 +17197,13 @@ class PlaylistBox:
             if i == pctl.playlist_active or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 14]
 
-            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26  * gui.scale)) and quick_drag:
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
                 bg = [255, 255, 255, 15]
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
             ddt.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            ddt.draw_text((tab_start + 40 * gui.scale, yy + 2 * gui.scale), name, [230, 230, 230, 255], 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
+            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, [230, 230, 230, 255], 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
@@ -17133,20 +17212,20 @@ class PlaylistBox:
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
 
-            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, 26 * gui.scale)):
+            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))):
                 if quick_drag:
 
-                    ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 200, 180, 255], True)
+                    ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 200, 180, 255], True)
 
                 # Draw tab move indicators
                 if self.drag and i != self.drag_on:
                     if key_shift_down:
-                        ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, 2 * gui.scale, 23 * gui.scale), [80, 160, 200, 255], True)
+                        ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 160, 200, 255], True)
                     else:
                         if i < self.drag_on:
-                            ddt.rect_r((tab_start, yy - 3 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                            ddt.rect_r((tab_start, yy - self.indicate_w, tab_width, self.indicate_w), [80, 160, 200, 255], True)
                         else:
-                            ddt.rect_r((tab_start, yy + 23 * gui.scale, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                            ddt.rect_r((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255], True)
 
 
             # Draw effect of adding tracks to playlist
@@ -17162,16 +17241,16 @@ class PlaylistBox:
                             ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
                             gui.update += 1
 
-                            ddt.rect_r((tab_start + tab_width, yy, 2 * gui.scale, 23 * gui.scale), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
+                            ddt.rect_r((tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
 
 
-            yy += 27 * gui.scale
+            yy += self.tab_h + self.gap
 
         # Create new playlist if drag in blank space after tabs
         if coll((x, yy, w - 10 * gui.scale, h - (yy - y))):
             if quick_drag:
 
-                ddt.rect_r((tab_start, yy, tab_width, 2 * gui.scale), [80, 160, 200, 255], True)
+                ddt.rect_r((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255], True)
                 if mouse_up:
                     drop_tracks_to_new_playlist(shift_selection)
 
@@ -17358,14 +17437,14 @@ class PictureRender:
             tex_w = pointer(c_int(0))
             tex_h = pointer(c_int(0))
             SDL_QueryTexture(self.texture, None, None, tex_w, tex_h)
-            self.sdl_rect = SDL_Rect(x, y)
+            self.sdl_rect = SDL_Rect(round(x), round(y))
             self.sdl_rect.w = int(tex_w.contents.value)
             self.sdl_rect.h = int(tex_h.contents.value)
             self.image_data = None
 
         if self.texture is not None:
-            self.sdl_rect.x = x
-            self.sdl_rect.y = y
+            self.sdl_rect.x = round(x)
+            self.sdl_rect.y = round(y)
             SDL_RenderCopy(renderer, self.texture, None, self.sdl_rect)
 
 artist_picture_render = PictureRender()
@@ -17479,7 +17558,7 @@ class ArtistInfoBox:
                         else:
                             self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
 
-                tw, th = ddt.get_text_wh(text, 14, w - 245, True)
+                tw, th = ddt.get_text_wh(text, 14, w - 250 * gui.scale, True)
                 self.th = th
 
                 self.processed_text = text
@@ -17493,8 +17572,8 @@ class ArtistInfoBox:
             if self.scroll_y > scroll_max:
                 self.scroll_y = scroll_max
 
-            right = x + w - 25
-            text_max_w = w - 250
+            right = x + w - 25 * gui.scale
+            text_max_w = w - 250 * gui.scale
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max)
@@ -17502,7 +17581,7 @@ class ArtistInfoBox:
                 text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            ddt.draw_text((x + 215, y + 14, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -17544,7 +17623,7 @@ class ArtistInfoBox:
 
         if os.path.isfile(filepath):
             # print("Load cached bio")
-            artist_picture_render.load(filepath, 180)
+            artist_picture_render.load(filepath, round(180 * gui.scale))
             artist_picture_render.show = True
             if os.path.isfile(filepath2):
                 with open(filepath2) as f:
@@ -17586,7 +17665,7 @@ class ArtistInfoBox:
 
                     # print("written file, now loading...")
 
-                    artist_picture_render.load(filepath, 180)
+                    artist_picture_render.load(filepath, round(180 * gui.scale))
                     artist_picture_render.show = True
 
                     self.status = "Ready"
@@ -17811,6 +17890,15 @@ class ViewBox:
             self.gallery2_img = WhiteModImageAsset("/gui/gallery2.png")
             self.col_img = WhiteModImageAsset("/gui/col.png")
             self.artist_img = WhiteModImageAsset("/gui/artist.png")
+        elif gui.scale == 1.25:
+            self.tracks_img = WhiteModImageAsset("/gui/1.25x/tracks.png")
+            self.side_img = WhiteModImageAsset("/gui/1.25x/tracks+side.png")
+            self.gallery1_img = WhiteModImageAsset("/gui/1.25x/gallery1.png")
+            self.combo_img = WhiteModImageAsset("/gui/1.25x/combo.png")
+            self.lyrics_img = WhiteModImageAsset("/gui/1.25x/lyrics.png")
+            self.gallery2_img = WhiteModImageAsset("/gui/1.25x/gallery2.png")
+            self.col_img = WhiteModImageAsset("/gui/1.25x/col.png")
+            self.artist_img = WhiteModImageAsset("/gui/1.25x/artist.png")
         else:
             self.tracks_img = WhiteModImageAsset("/gui/2x/tracks.png")
             self.side_img = WhiteModImageAsset("/gui/2x/tracks+side.png")
@@ -17828,7 +17916,7 @@ class ViewBox:
         self.lyrics_colour = ColourPulse(0.7)
         self.gallery2_colour = ColourPulse(0.65)
         self.col_colour = ColourPulse(0.14)
-        self.artist_colour = ColourPulse(0.8)
+        self.artist_colour = ColourPulse(0.2)
 
         self.on_colour = [255, 190, 50, 255]
         self.over_colour = [255, 190, 50, 255]
@@ -18024,6 +18112,9 @@ class ViewBox:
 
 
         y += 41 * gui.scale
+
+        if gui.scale == 1.25:
+            x-= 1
 
         test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False)
         if test is not None:
@@ -18432,6 +18523,7 @@ def update_layout_do():
     else:
         album_v_gap = 25 * gui.scale
 
+    gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
     #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
     gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
@@ -18457,7 +18549,7 @@ def update_layout_do():
     if gui.scale == 2:
         gui.playlist_text_offset += 3
     if gui.scale == 1.25:
-        gui.playlist_text_offset += 1
+        gui.playlist_text_offset += 3
 
     gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
@@ -20121,10 +20213,10 @@ while running:
                 gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
 
                 # ----
-                rect = (
-                           gui.gallery_scroll_field_left if not gui.maximized else gui.gallery_scroll_field_left - 1, gui.panelY, 5 + window_size[0] - gui.gallery_scroll_field_left, h)
+                rect = (gui.gallery_scroll_field_left, gui.panelY, 5 + window_size[0] - gui.gallery_scroll_field_left, h)
 
                 excl_rect = (0,0,0,0)
+
                 if gui.power_bar is not None and len(gui.power_bar) > 2:
 
                     excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
@@ -20280,7 +20372,8 @@ while running:
                             albumtitle = colours.side_bar_line1  # grey(220)
 
                             if a == row_len - 1:
-                                gui.gallery_scroll_field_left = x + album_mode_art_size
+
+                                gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
 
 
                             if info[0] == 1 and pctl.playing_state != 0:
@@ -20870,7 +20963,7 @@ while running:
 
 
             if gui.artist_info_panel and not gui.combo_mode:
-                artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, 200)
+                artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
 
             # ------------------------------------------------
             # Scroll Bar
@@ -21004,9 +21097,9 @@ while running:
                 ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
                 ddt.text_background_colour = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(180), width=220 * gui.scale)
+                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(190), width=220 * gui.scale)
 
-                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(210), 212)
+                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(220), 212)
 
                 if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not coll(rect)):
                     rename_playlist_box = False

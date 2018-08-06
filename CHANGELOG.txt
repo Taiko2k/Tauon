@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+3.1.2
+
+ - Added 1.25x UI scaling option
+ - Fixed artist info panel not scaling with UI scaling setting (partial)
+ - Fixed 'next theme' button positioning
+ - Fixed crash on change time mode with clean slate
+ - Fixed scroll area on gallery being too large with few albums
+
 v3.1.1
 
  - Fixed crash on clear playlist [critical]
@@ -8,6 +16,7 @@ v3.1.1
  - Fixed 'new playlist' menu appearing on scroll bar right click
  - Fixed typing in rename folder box activating search overlay
  - Improved rename files and folders, added 'default' button, now saves template on restart.
+
 
 v3.1.0
 
