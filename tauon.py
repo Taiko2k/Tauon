@@ -13384,23 +13384,67 @@ def toggle_titlebar_line(mode=0):
     if update_title:
         update_title_do()
 
-def toggle_scale(mode=0):
+
+def scale1(mode=0):
 
     if mode == 1:
         if prefs.ui_scale == 1:
-            return False
-        else:
             return True
+        else:
+            return False
 
-    if prefs.ui_scale == 1:
-        prefs.ui_scale = 2
-    else:
-        prefs.ui_scale = 1
+    prefs.ui_scale = 1
+    pref_box.small_preset()
 
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
 
+
+def scale125(mode=0):
+    if mode == 1:
+        if prefs.ui_scale == 1.25:
+            return True
+        else:
+            return False
+
+    prefs.ui_scale = 1.25
     pref_box.small_preset()
+
+    if prefs.ui_scale != gui.scale:
+        show_message(_("Change will be applied on restart."))
+
+
+def scale2(mode=0):
+    if mode == 1:
+        if prefs.ui_scale == 2:
+            return True
+        else:
+            return False
+
+    prefs.ui_scale = 2
+    pref_box.small_preset()
+
+    if prefs.ui_scale != gui.scale:
+        show_message(_("Change will be applied on restart."))
+
+#
+# def toggle_scale(mode=0):
+#
+#     if mode == 1:
+#         if prefs.ui_scale == 1:
+#             return False
+#         else:
+#             return True
+#
+#     if prefs.ui_scale == 1:
+#         prefs.ui_scale = 2
+#     else:
+#         prefs.ui_scale = 1
+#
+#     if prefs.ui_scale != gui.scale:
+#         show_message(_("Change will be applied on restart."))
+#
+#     pref_box.small_preset()
 
 def toggle_borderless(mode=0):
     global draw_border
@@ -14150,14 +14194,18 @@ class Over:
 
         self.toggle_square(x, y, toggle_borderless, "Draw own window decorations")
 
-        if system == "linux":
-            y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
 
         y += 28 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
 
+        y += 28 * gui.scale
+        # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
+        self.toggle_square(x, y, scale1, "1x")
+        y += 25 * gui.scale
+        self.toggle_square(x, y, scale125, "1¼x (Broken)")
+        y += 25 * gui.scale
+        self.toggle_square(x, y, scale2, "2x (Maybe broken)")
 
         y += 28 * gui.scale
         y += 10 * gui.scale
@@ -14438,7 +14486,7 @@ class Over:
 
     def small_preset(self):
 
-        prefs.playlist_row_height = 22 * prefs.ui_scale
+        prefs.playlist_row_height = round(22 * prefs.ui_scale)
         prefs.playlist_font_size = 15
         gui.update_layout()
 
@@ -18408,6 +18456,8 @@ def update_layout_do():
     gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
     if gui.scale == 2:
         gui.playlist_text_offset += 3
+    if gui.scale == 1.25:
+        gui.playlist_text_offset += 1
 
     gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
@@ -21305,7 +21355,7 @@ while running:
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(195), 213)
+                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(220), 213)
 
                 if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
                                70 * gui.scale):
@@ -21429,21 +21479,24 @@ while running:
                     ddt.draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
                               13)
 
+                colour_warn = [143,186, 65, 255]
                 if '%t' not in NRN and '%n' not in NRN:
                     ddt.draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
                               13)
                 if warn:
                     ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 90, 90, 255], 13)
+                    colour_warn = [180, 60, 60, 255]
                 if warncue:
                     ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Error: Folder contains tracks from a CUE sheet",
                               [245, 90, 90, 255], 13)
+                    colour_warn = [180, 60, 60, 255]
 
 
                 label = "Write (" + str(len(r_todo)) + ")"
                 if warncue:
                     label = "ERROR"
 
-                if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale) or input.level_2_enter:
+                if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn) or input.level_2_enter:
                     input.mouse_click = False
                     total_todo = len(r_todo)
                     pre_state = 0
