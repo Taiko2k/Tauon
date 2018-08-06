@@ -20133,9 +20133,10 @@ while running:
 
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.25))), "▲",
+                        right = window_size[0] - 25 * gui.scale
+                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
                                   alpha_mod(colours.side_bar_line2, 150), 13)
-                        ddt.draw_text((rect[0] + 10 * gui.scale, (int((rect[1] + rect[3]) * 0.75))), "▼",
+                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
                                   alpha_mod(colours.side_bar_line2, 150), 13)
 
                 if right_click:
