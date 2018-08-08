@@ -4,11 +4,14 @@ Changelog-------------------------------------
 3.1.3
 
  - Added context menu to gallery album right click
- - Added sorting option "Reversed Folders"
+ - Added sorting option 'Reversed Folders'
+ - Improved error feedback for 'Start Broadcast'
  - Duplicated 'sort' sub menu to playlist side panel
  - Tweaked 'rename playlist' box size
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
+ - Fixed disabled error handling with last.fm love sync
+ - Fixed top bar metadata for small window positioning
  - Removed 'cut' menu option
 
 3.1.2

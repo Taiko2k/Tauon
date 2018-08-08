@@ -297,8 +297,6 @@ worker_save_state = False
 draw_border = True
 resize_mode = False
 
-block6 = False
-
 side_panel_text_align = 0
 
 album_mode = False
@@ -364,7 +362,6 @@ update_title = False
 playlist_hold_position = 0
 playlist_hold = False
 selection_stage = 0
-
 
 shift_selection = []
 # Control Variables--------------------------------------------------------------------------
@@ -559,12 +556,7 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_del_zip = False
         self.pl_thumb = False
 
-        self.windows_font_family = None
-        self.windows_font_weight = 500
-        self.windows_font_weight_bold = 600
-
         self.linux_font = "Noto Sans" #"Liberation Sans"#
-        #self.linux_font = "Sans"
         self.linux_bold_font = "Noto Sans Bold"
 
         self.spec2_scroll = False
@@ -1892,7 +1884,6 @@ class PlayerCtl:
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
 
-
     def playing_ready(self):
         return len(self.track_queue) > 0
 
@@ -1943,6 +1934,24 @@ class PlayerCtl:
             return self.master_library[self.track_queue[self.queue_step]]
         else:
             return None
+        
+    def title_text(self):
+
+        line = ""
+        if self.playing_state < 3:
+            title = self.master_library[self.track_queue[self.queue_step]].title
+            artist = self.master_library[self.track_queue[self.queue_step]].artist
+
+            if artist != "":
+                line += artist
+            if title != "":
+                if line != "":
+                    line += "  -  "
+                line += title
+        elif not gui.combo_mode:
+            line = self.tag_meta
+        
+        return line
 
     def show_current(self, select=True, playing=False, quiet=False, this_only=False, highlight=False, index=None):
 
@@ -2834,9 +2843,7 @@ class LastFMapi:
                 show_message("Of " + str(len(tracks)) + " loved tracks, no matches were found in local db")
                 return
         except:
-            raise
             show_message("This doesn't seem to be working :(", 'error')
-
 
 
 
@@ -6883,9 +6890,6 @@ class ToolTip:
         self.called = False
         self.a = False
 
-        self.ox = 0
-
-
     def test(self, x, y, text):
 
         if self.text != text:
@@ -10743,6 +10747,7 @@ def toggle_broadcast():
 
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
+            show_message("There are no tracks in this playlist to broadcast.", 'error')
             return 0
         pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][6])
         pctl.broadcast_position = 0
@@ -14903,74 +14908,53 @@ class TopPanel:
 
         # Need to test length
         self.tab_text_spaces = []
-        left_space_es = 0
+
         for i, item in enumerate(pctl.multi_playlist):
 
             # if item[8] is True:
             #     continue
             le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
-            left_space_es += le + self.tab_extra_width + self.tab_spacing
+
 
         x = self.start_space_left
         y = self.ty
 
 
         # Calculate position for playing text and text
-        offset = 15
+        offset = 15 * gui.scale
         if draw_border:
-            offset += 61
+            offset += 61 * gui.scale
         if gui.turbo:
-            offset += 90
+            offset += 90 * gui.scale
             if gui.vis == 3:
-                offset += 57
+                offset += 57 * gui.scale
 
-        # Generate title text if applicable
-        if len(pctl.track_queue) > 0:
-            index = pctl.track_queue[pctl.queue_step]
-            if index != self.index_playing:
-                line = ""
-                title = pctl.master_library[index].title
-                artist = pctl.master_library[index].artist
-                if artist != "":
-                    line += artist
-                if title != "":
-                    if line != "":
-                        line += " - "
-                    line += title
-                line = trunc_line(line, 12, window_size[0] - offset - 290)
-                self.playing_title = line
-        else:
-            self.playing_title = ""
 
-        if pctl.playing_state < 3:
-            p_text = self.playing_title
-        else:
-            p_text = pctl.tag_meta
+        if pctl.broadcast_active:
 
-        if pctl.playing_state > 0 and not pctl.broadcast_active and window_size[0] < 820:
-            p_text_len = ddt.get_text_w(p_text, 11)
+            p_text_len = ddt.get_text_w(pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
+                pctl.broadcast_index].title, 11)
+
+            p_text_len += ddt.get_text_w("Now Streaming:", 11)
+            p_text_len += 20 * gui.scale
+            p_text_len += 180 * gui.scale
+
+        elif gui.show_top_title:
+
+            p_text = trunc_line(pctl.title_text(), 12, window_size[0] - offset - 120 * gui.scale)
+            p_text_len = ddt.get_text_w(p_text, 12) + 70 * gui.scale
+
         else:
-            p_text_len = 0
+            p_text_len = 180 * gui.scale
 
         right_space_es = p_text_len + offset
 
-        if pctl.broadcast_active:
-            left_space_es += 300
 
-        elif loading_in_progress or len(transcode_list) > 0:
-            left_space_es += 180
-
-
-
-        # if window_size[0] - right_space_es - left_space_es < 190:
-        #     draw_alt = True
-        # else:
-        #     draw_alt = False
-        draw_alt = False
-
-        if draw_alt:
-            x = self.start_space_compact_left
+        # draw_alt = False
+        #
+        # if draw_alt:
+        #     x = self.start_space_compact_left
 
         x_start = x
 
@@ -14980,11 +14964,11 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
-            if window_size[0] - right_space_es - x < 190:
+            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
                 break
 
-            if draw_alt and i != pctl.playlist_active:
-                continue
+            # if draw_alt and i != pctl.playlist_active:
+            #     continue
 
             if tab[8] is True:
                 continue
@@ -15040,11 +15024,11 @@ class TopPanel:
 
         # Need to test length again
         self.tab_text_spaces = []
-        left_space_es = 0
+
         for i, item in enumerate(pctl.multi_playlist):
             le = ddt.get_text_w(pctl.multi_playlist[i][0], self.tab_text_font)
             self.tab_text_spaces.append(le)
-            left_space_es += le + self.tab_extra_width + self.tab_spacing
+
 
         # TAB DRAWING
         for i, tab in enumerate(pctl.multi_playlist):
@@ -15052,11 +15036,11 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
-            if window_size[0] - right_space_es - x < 190:
+            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
                 break
 
-            if draw_alt and i != pctl.playlist_active:
-                continue
+            # if draw_alt and i != pctl.playlist_active:
+            #     continue
 
             if tab[8] is True:
                 continue
@@ -15128,8 +15112,6 @@ class TopPanel:
 
                             ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
                             gui.update += 1
-
-
 
 
             x += tab_width + self.tab_spacing
@@ -15282,7 +15264,7 @@ class TopPanel:
             if to_got == 'xspf':
                 text = "Importing XSPF playlist"
             elif to_got == 'xspfl':
-                text = "Importing XSPF playlist. May take a while."
+                text = "Importing XSPF playlist..."
             elif to_got == 'ex':
                 text = "Extracting Archive..."
             else:
@@ -15333,22 +15315,22 @@ class TopPanel:
         elif pctl.broadcast_active:
             text = "Now Streaming:"
             ddt.draw_text((x, y), text, [95, 110, 230, 255], 11) # [70, 85, 230, 255]
-            x += ddt.get_text_w(text, 11) + 6
+            x += ddt.get_text_w(text, 11) + 6 * gui.scale
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
-            trunc = window_size[0] - x - 150
+            trunc = window_size[0] - x - 150 * gui.scale
             #text = trunc_line(text, 11, trunc)
             ddt.draw_text((x, y), text, colours.grey(130), 11, max_w=trunc)
-            x += ddt.get_text_w(text, 11) + 6
+            x += ddt.get_text_w(text, 11) + 6* gui.scale
 
             x += 7
-            progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100)
-            ddt.rect_a((x, y + 4), (progress, 9), [65, 80, 220, 255], True)
-            ddt.rect_a((x, y + 4), (100, 9), colours.grey(30))
+            progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100 * gui.scale)
+            ddt.rect_a((x, y + 4), (progress, 9 * gui.scale), [65, 80, 220, 255], True)
+            ddt.rect_a((x, y + 4), (100 * gui.scale, 9 * gui.scale), colours.grey(30))
 
-            if input.mouse_click and coll((x, y, 100, 11)):
-                newtime = ((mouse_position[0] - x) / 100) * pctl.master_library[pctl.broadcast_index].length
+            if input.mouse_click and coll((x, y, 100 * gui.scale, 11)):
+                newtime = ((mouse_position[0] - x) / (100 * gui.scale)) * pctl.master_library[pctl.broadcast_index].length
                 pctl.broadcast_time = newtime
                 pctl.playerCommand = 'encseek'
                 pctl.playerCommandReady = True
@@ -15376,8 +15358,7 @@ class TopPanel:
 
 
         if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
-            ddt.draw_text((window_size[0] - offset, y - 1, 1), p_text, colours.side_bar_line1, 12,
-                       window_size[0] - offset - x)
+            ddt.draw_text((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 12)
 
 
 top_panel = TopPanel()
@@ -15680,20 +15661,8 @@ class BottomBarType1:
                        11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
-            line = ""
-            if pctl.playing_state < 3:
-                title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
-                artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
 
-
-                if artist != "":
-                    line += artist
-                if title != "":
-                    if line != "":
-                        line += "  -  "
-                    line += title
-            elif not gui.combo_mode:
-                line = pctl.tag_meta
+            line = pctl.title_text()
 
             x = self.seek_bar_position[0] + 1
             mx = window_size[0] - 710 * gui.scale
@@ -20909,7 +20878,7 @@ while running:
             if album_mode:
                 gui.show_bottom_title = True
             elif gui.rsp:
-                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59:
+                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale:
                     gui.show_bottom_title = True
                     if window_size[0] < 820 * gui.scale:
                         gui.show_top_title = True
