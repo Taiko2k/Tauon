@@ -33,7 +33,7 @@ import pickle
 import shutil
 from gi.repository import GLib
 
-t_version = "v3.1.2"
+t_version = "v3.1.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -1898,9 +1898,9 @@ class PlayerCtl:
 
     def render_playlist(self):
 
-        if taskbar_progress and system == 'windows':
-            global windows_progress
-            windows_progress.update(True)
+        # if taskbar_progress and system == 'windows':
+        #     global windows_progress
+        #     windows_progress.update(True)
         gui.pl_update = 1
 
     def show_selected(self):
@@ -7268,7 +7268,17 @@ class Menu:
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
+gallery_menu = Menu(155, show_icons=True)
 
+def show_in_playlist():
+    global playlist_position
+
+    playlist_position = playlist_selected
+    shift_selection.clear()
+    shift_selection.append(playlist_selected)
+    pctl.render_playlist()
+
+gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 def cancel_import():
 
@@ -7762,9 +7772,9 @@ def export_xspf(pl):
 def reload():
     if album_mode:
         reload_albums(quiet=True)
-    elif gui.combo_mode:
-        reload_albums(quiet=True)
-        combo_pl_render.prep()
+    # elif gui.combo_mode:
+    #     reload_albums(quiet=True)
+    #     combo_pl_render.prep()
 
 
 def clear_playlist(index):
@@ -8146,14 +8156,58 @@ def pl_toggle_playlist_break(ref):
     pctl.multi_playlist[ref][4] ^= 1
     gui.pl_update = 1
 
+
+
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
 tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
 
+def new_playlist(switch=True):
+    ex = 1
+    title = "New Playlist"
+    while ex < 100:
+        for playlist in pctl.multi_playlist:
+            if playlist[0] == title:
+                ex += 1
+                title = "New Playlist (" + str(ex) + ")"
+                break
+        else:
+            break
+
+    pctl.multi_playlist.append(pl_gen(title=title))  # [title, 0, [], 0, 0, 0])
+    if switch:
+        switch_playlist(len(pctl.multi_playlist) - 1)
+    return len(pctl.multi_playlist) - 1
+
+if gui.scale == 2:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
+elif gui.scale == 1.25:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/new.png'))
+else:
+    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
+    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
+    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
+    settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
+    add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
+
 tab_menu.br()
 
+
+extra_tab_menu = Menu(155, show_icons=True)
+
+extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
+
 tab_menu.add_sub(_("Sort…"), 133)
+extra_tab_menu.add_sub(_("Sorted…"), 133)
 tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
 tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
@@ -8182,22 +8236,7 @@ tab_menu.add_to_sub(_("Toggle Breaks"), 1, pl_toggle_playlist_break, pass_ref=Tr
 
 
 
-def new_playlist(switch=True):
-    ex = 1
-    title = "New Playlist"
-    while ex < 100:
-        for playlist in pctl.multi_playlist:
-            if playlist[0] == title:
-                ex += 1
-                title = "New Playlist (" + str(ex) + ")"
-                break
-        else:
-            break
 
-    pctl.multi_playlist.append(pl_gen(title=title))  # [title, 0, [], 0, 0, 0])
-    if switch:
-        switch_playlist(len(pctl.multi_playlist) - 1)
-    return len(pctl.multi_playlist) - 1
 
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -8241,6 +8280,7 @@ def gen_top_100(index):
 
 
 tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
 
 
 
@@ -8296,6 +8336,7 @@ def gen_folder_top(pl, get_sets=False):
                                       hide_title=0))
 
 tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
 
 
 def gen_lyrics(pl):
@@ -8326,6 +8367,7 @@ def gen_last_modified(index):
 
 
 tab_menu.add_to_sub(_("File modified"), 0, gen_last_modified, pass_ref=True)
+extra_tab_menu.add_to_sub(_("File modified"), 0, gen_last_modified, pass_ref=True)
 
 def gen_love(pl):
     playlist = []
@@ -8418,6 +8460,7 @@ def gen_sort_len(index):
                                       hide_title=1))
 
 tab_menu.add_to_sub(_("Duration"), 0, gen_sort_len, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Duration"), 0, gen_sort_len, pass_ref=True)
 
 
 def gen_folder_duration(pl, get_sets=False):
@@ -8461,6 +8504,7 @@ def gen_folder_duration(pl, get_sets=False):
 
 
 tab_menu.add_to_sub(_("Album Duration"), 0, gen_folder_duration, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Album Duration"), 0, gen_folder_duration, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
@@ -8512,6 +8556,7 @@ def gen_sort_date(index, rev=False):
                                       hide_title=0))
 
 tab_menu.add_to_sub(_("Year → Old–New"), 0, gen_sort_date, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Year → Old–New"), 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
@@ -8519,6 +8564,7 @@ def gen_sort_date_new(index):
 
 
 tab_menu.add_to_sub(_("Year → New–Old"), 0, gen_sort_date_new, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Year → New–Old"), 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -8537,6 +8583,7 @@ def gen_500_random(index):
                                       hide_title=1))
 
 tab_menu.add_to_sub(_("Shuffled Tracks"), 0, gen_500_random, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Shuffled Tracks"), 0, gen_500_random, pass_ref=True)
 
 
 def gen_folder_shuffle(index):
@@ -8556,14 +8603,12 @@ def gen_folder_shuffle(index):
     for folder in folders:
         playlist += dick[folder]
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Shuffled Folders>", 0, copy.deepcopy(playlist), 0, 0, 0])
-
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled Folders>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
 tab_menu.add_to_sub(_("Shuffled Folders"), 0, gen_folder_shuffle, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Shuffled Folders"), 0, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -8589,6 +8634,7 @@ def gen_best_random(index):
                                           hide_title=1))
 
 tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 
 
 def gen_reverse(index):
@@ -8602,8 +8648,32 @@ def gen_reverse(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
-tab_menu.add_to_sub(_("Invert"), 0, gen_reverse, pass_ref=True)
+tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
 
+def gen_folder_reverse(index):
+    folders = []
+    dick = {}
+    for track in pctl.multi_playlist[index][2]:
+        parent = pctl.master_library[track].parent_folder_path
+        if parent not in folders:
+            folders.append(parent)
+        if parent not in dick:
+            dick[parent] = []
+        dick[parent].append(track)
+
+    folders = list(reversed(folders))
+    playlist = []
+
+    for folder in folders:
+        playlist += dick[folder]
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed Folders>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
+
+tab_menu.add_to_sub(_("Reverse Folders"), 0, gen_folder_reverse, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Reverse Folders"), 0, gen_folder_reverse, pass_ref=True)
 
 def gen_dupe(index):
     playlist = pctl.multi_playlist[index][2]
@@ -8621,6 +8691,7 @@ def gen_dupe(index):
                                       selected=pctl.multi_playlist[index][5]))
 
 tab_menu.add_to_sub(_("Duplicate"), 0, gen_dupe, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Duplicate"), 0, gen_dupe, pass_ref=True)
 
 
 def gen_sort_path(index):
@@ -8675,8 +8746,10 @@ def gen_sort_album(index):
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 #tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 
 
 
@@ -9296,24 +9369,7 @@ def heart_xmenu_colour():
     else:
         return None
 
-if gui.scale == 2:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
-elif gui.scale == 1.25:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/mod_folder.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/settings2.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/new.png'))
-else:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
+
 
 heartx_icon.colour = [55, 55, 55, 255]
 heartx_icon.xoff = 1
@@ -9951,6 +10007,7 @@ folder_menu = Menu(190, show_icons=True)
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
+gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True)
 
@@ -9973,6 +10030,7 @@ transcode_icon.colour = [239, 74, 157, 255]
 
 folder_menu.add(_('Reload Metadata'), reload_metadata_selection)
 folder_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+gallery_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
 # Copy album title text to clipboard
@@ -9993,8 +10051,10 @@ selection_menu.add(_('Cut'), s_cut)
 selection_menu.add(_('Remove'), del_selected)
 
 folder_menu.add(_('Copy'), s_copy)
-folder_menu.add(_('Cut'), s_cut)
+gallery_menu.add(_('Copy'), s_copy)
+# folder_menu.add(_('Cut'), s_cut)
 folder_menu.add(_('Remove'), del_selected)
+gallery_menu.add(_('Remove'), del_selected)
 
 def toggle_rym(mode=0):
     if mode == 1:
@@ -10576,9 +10636,8 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-extra_tab_menu = Menu(130, show_icons=True)
 
-extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
+
 
 if default_player == 1:
     x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
@@ -11071,6 +11130,10 @@ def switch_playlist(number, cycle=False):
     global playlist_selected
     global search_index
     global shift_selection
+
+    # Close any active menus
+    for instance in Menu.instances:
+        instance.active = False
 
     gui.previous_playlist_id = pctl.multi_playlist[pctl.playlist_active][6]
 
@@ -12953,7 +13016,8 @@ def reload_albums(quiet=False):
     global album_pos_px
     global old_album_pos
 
-    album_pos_px = old_album_pos
+    if not quiet:
+        album_pos_px = old_album_pos
 
     current_folder = ""
     album_dex = []
@@ -12970,7 +13034,9 @@ def reload_albums(quiet=False):
     gui.update += 2
     gui.pl_update = 1
     update_layout = True
-    goto_album(pctl.playlist_playing)
+
+    if not quiet:
+        goto_album(pctl.playlist_playing)
 
 
     # Generate POWER BAR
@@ -19474,7 +19540,11 @@ while running:
                         key_down_press = False
 
             if key_del:
+                # Close any active menus
+                for instance in Menu.instances:
+                    instance.active = False
                 del_selected()
+
 
             # Arrow keys to change playlist
             if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down and not search_over.active:
@@ -20316,16 +20386,19 @@ while running:
 
                                     else:
                                         playlist_selected = album_dex[album_on]
-                                        playlist_position = playlist_selected
+                                        #playlist_position = playlist_selected
                                         shift_selection = [playlist_selected]
-                                        if gui.show_playlist:
-                                            pctl.render_playlist()
-                                        # else:
-                                        #     acy = y
-                                        #     #acx = x + album_mode_art_size + 15 * gui.scale
-                                        #     acx = x + album_mode_art_size + 15 * gui.scale
-                                        #     album_card.activate(playlist_selected, acx, acy)
+                                        gallery_menu.activate(default_playlist[playlist_selected])
 
+                                        shift_selection = []
+                                        u = playlist_selected
+                                        while u < len(default_playlist) and pctl.master_library[
+                                                    default_playlist[u]].parent_folder_path == \
+                                                pctl.master_library[
+                                                    default_playlist[playlist_selected]].parent_folder_path:
+                                            shift_selection.append(u)
+                                            u += 1
+                                        pctl.render_playlist()
 
                                 album_on += 1
 
@@ -20383,7 +20456,7 @@ while running:
                                           colours.side_panel_background, True)
 
                             # Draw selection
-                            if gui.album_tab_mode and info[2] is True:
+                            if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
 
                                 c = colours.gallery_highlight
                                 c = [c[1], c[2], c[0], c[3]]
@@ -20430,7 +20503,7 @@ while running:
                                            album_mode_art_size - 10 * gui.scale,
                                            )
 
-                            if gui.album_tab_mode:
+                            if gui.album_tab_mode or gallery_menu.active:
                                 if info[2] is False and info[0] != 1:
                                     ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
                                     albumtitle = colours.grey(150)
@@ -20771,8 +20844,6 @@ while running:
                     if gui.lsp:
                         x = gui.lspw
 
-
-
                     rect = [x, top, gui.plw, gui.set_height]
                     ddt.rect_r(rect, [30, 30, 30, 255], True)
 
@@ -20788,118 +20859,11 @@ while running:
                         ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 12)
                         run += box[2]
 
-                # # ------------------------------------------------
-                # # Scroll Bar
-                #
-                # # if not scroll_enable:
-                # top = gui.panelY
-                # if gui.artist_info_panel:
-                #     top += 200
-                #
-                # x = 0
-                # if gui.lsp:
-                #     x = gui.lspw
-                #
-                # gui.scroll_hide_box = (
-                #     x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
-                #
-                # fields.add(gui.scroll_hide_box)
-                # if (coll(gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
-                #     scroll_opacity = 255
-                #
-                #     if not gui.combo_mode:
-                #         sy = 31 * gui.scale
-                #         ey = window_size[1] - (30 + 22) * gui.scale
-                #
-                #         if len(default_playlist) < 50:
-                #             sbl = 85 * gui.scale
-                #             if len(default_playlist) == 0:
-                #                 sbp = top
-                #         else:
-                #             sbl = 105 * gui.scale
-                #
-                #         fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-                #         if coll((x, top, 28 * gui.scale, ey - top)) and (
-                #             mouse_down or right_click) \
-                #                 and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
-                #
-                #             gui.pl_update = 1
-                #             if right_click:
-                #
-                #                 sbp = mouse_position[1] - int(sbl / 2)
-                #                 if sbp + sbl > ey:
-                #                     sbp = ey - sbl
-                #                 elif sbp < top:
-                #                     sbp = top
-                #                 per = (sbp - top) / (ey - top - sbl)
-                #                 playlist_position = int(len(default_playlist) * per)
-                #
-                #                 if playlist_position < 0:
-                #                     playlist_position = 0
-                #
-                #                 # if playlist_position == len(default_playlist):
-                #                 #     print("END")
-                #
-                #             elif mouse_position[1] < sbp:
-                #                 playlist_position -= 2
-                #             elif mouse_position[1] > sbp + sbl:
-                #                 playlist_position += 2
-                #             elif input.mouse_click:
-                #
-                #                 p_y = pointer(c_int(0))
-                #                 p_x = pointer(c_int(0))
-                #                 SDL_GetGlobalMouseState(p_x, p_y)
-                #
-                #                 scroll_hold = True
-                #                 scroll_point = p_y.contents.value  # mouse_position[1]
-                #                 scroll_bpoint = sbp
-                #
-                #         if not mouse_down:
-                #             scroll_hold = False
-                #
-                #
-                #         if scroll_hold and not input.mouse_click:
-                #             gui.pl_update = 1
-                #             p_y = pointer(c_int(0))
-                #             p_x = pointer(c_int(0))
-                #             SDL_GetGlobalMouseState(p_x, p_y)
-                #
-                #             sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
-                #             if sbp + sbl > ey:
-                #                 sbp = ey - sbl
-                #             elif sbp < top:
-                #                 sbp = top
-                #             per = (sbp - top) / (ey - top - sbl)
-                #             playlist_position = int(len(default_playlist) * per)
-                #
-                #
-                #         else:
-                #             if len(default_playlist) > 0:
-                #                 per = playlist_position / len(default_playlist)
-                #                 sbp = int((ey - top - sbl) * per) + top + 1
-                #
-                #         ddt.rect_a((x, top), (19 * gui.scale, window_size[1] - top - gui.panelBY), colours.grey(24), True)
-                #         ddt.rect_a((x + 1, sbp), (17 * gui.scale, sbl), alpha_mod(colours.scroll_colour, scroll_opacity), True)
-                #
-                #         if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[0] != 0) or scroll_hold:
-                #             ddt.rect_a((x + 1 * gui.scale, sbp), (17 * gui.scale, sbl), [255, 255, 255, 16], True)
-                #
 
                 # Switch Vis:
                 if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
-                # if input.mouse_click and coll((window_size[0] - 130 * gui.scale  - gui.offset_extra, 0, 120 * gui.scale , gui.panelY)):
-                #     if gui.vis == 0:
-                #         gui.vis = 1
-                #         gui.turbo = True
-                #     elif gui.vis == 1:
-                #         gui.vis = 2
-                #     elif gui.vis == 2:
-                #         gui.vis = 3
-                #     elif gui.vis == 3:
-                #         gui.vis = 0
-                #         gui.turbo = False
 
                 edge_playlist.render(gui.playlist_left, gui.panelY + 1, gui.plw, 2 * gui.scale)
                 bottom_playlist.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 2 * gui.scale)
@@ -20982,7 +20946,7 @@ while running:
 
             fields.add(gui.scroll_hide_box)
             if (coll(
-                    gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled:  # or scroll_opacity > 0:
+                    gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled and not extra_tab_menu.active:  # or scroll_opacity > 0:
                 scroll_opacity = 255
 
                 if not gui.combo_mode:
@@ -21088,18 +21052,18 @@ while running:
                     input.mouse_click = True
                 gui.level_2_click = False
 
-                rect = [0, 0, 250 * gui.scale, 60 * gui.scale]
+                rect = [0, 0, 350 * gui.scale, 60 * gui.scale]
                 rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
                 rect[1] = int(window_size[1] / 2) - rect[3]
 
                 ddt.rect_a((rect[0] - 2 * gui.scale, rect[1] - 2 * gui.scale), (rect[2] + 4 * gui.scale, rect[3] + 4 * gui.scale), colours.grey(60), True)
                 ddt.rect_r(rect, colours.sys_background_3, True)
-                ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (220 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
+                ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (320 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
                 ddt.text_background_colour = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(190), width=220 * gui.scale)
+                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(200), width=220 * gui.scale)
 
-                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(220), 212)
+                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(320), 212)
 
                 if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not coll(rect)):
                     rename_playlist_box = False
@@ -21449,7 +21413,7 @@ while running:
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(220), 213)
+                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(230), 213)
 
                 if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
                                70 * gui.scale):
@@ -21492,7 +21456,7 @@ while running:
 
                 ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
                 line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
-                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(170), 211, max_w=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(210), 211, max_w=420 * gui.scale)
 
 
             if renamebox:
