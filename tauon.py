@@ -120,7 +120,7 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 # -------------------------------
 # Single Instancing
 
-if os.path.isfile('.gitignore') or os.path.isfile('multiinstance'):
+if os.path.isfile('.gitignore'):
     print("Dev mode, ignoring single instancing")
 else:
     import fcntl
@@ -796,6 +796,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.power_bar = None
         self.gallery_scroll_field_left = 1
+        self.lyrics_was_album = False
 
 gui = GuiVar()
 
@@ -2179,6 +2180,7 @@ class PlayerCtl:
             self.play_target()
         else:
             print("BACK: NO CASE!")
+            self.show_current()
 
         if self.playlist_active == self.active_playlist_playing:
             self.show_current(False, True)
@@ -7272,7 +7274,7 @@ class Menu:
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
-gallery_menu = Menu(155, show_icons=True)
+gallery_menu = Menu(165, show_icons=True)
 
 def show_in_playlist():
     global playlist_position
@@ -7649,13 +7651,19 @@ def paste_deco():
     else:
         line_colour = colours.menu_text_disabled
 
-    if gui.lightning_copy:
-        if key_shift_down:
-            line = "Phycially Move Folder Here"
+    # if gui.lightning_copy:
+    #     if key_shift_down:
+    #         line = "Phycially Move Folder Here"
         # else:
         #     line = "Copy to This Library"
 
     return [line_colour, colours.menu_background, line]
+
+
+def lightning_move_test(discard):
+    return gui.lightning_copy
+
+
 
 def copy_deco():
     line = "Copy"
@@ -7874,50 +7882,70 @@ def delete_playlist(index):
     if rename_playlist_box:
         return
 
+    # Set screen to be redwarn
     gui.pl_update = 1
     gui.update += 1
 
-    if len(pctl.multi_playlist) < 2:
-        pctl.multi_playlist = []
-        # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+    # Backup the playlist to be deleted
+    pctl.playlist_backup.append(pctl.multi_playlist[index])
+
+    # If we're deleting the final playlist, delete it and create a blank one in place
+    if len(pctl.multi_playlist) == 1:
+        pctl.multi_playlist.clear()
         pctl.multi_playlist.append(pl_gen())
-        print(pl_gen())
-        print(pctl.multi_playlist)
         default_playlist = pctl.multi_playlist[0][2]
+        pctl.active_playlist_playing = 0
         return
 
-    if index == pctl.playlist_active and len(pctl.multi_playlist) == 1:
-        pctl.playlist_active = 0
-        pctl.playlist_playing = 0
-        default_playlist = []
-        playlist_position = 0
+    # Take note of the id of the playing playlist
+    old_playing_id = pctl.multi_playlist[pctl.active_playlist_playing][6]
 
-    elif index == pctl.playlist_active and index > 0:
+    # Take note of the id of the viewed open playlist
+    old_view_id = pctl.multi_playlist[pctl.playlist_active][6]
+
+    # Delete the requested playlist
+    del pctl.multi_playlist[index]
+
+
+    # Re-set the open viewed playlist number by uid
+    for i, pl in enumerate(pctl.multi_playlist):
+
+        if pl[6] == old_view_id:
+            pctl.active_playlist_playing = i
+            break
+    else:
+        print("Lost the viewed playlist!")
+        # Try find the playing playlist and make it the viewed playlist
         for i, pl in enumerate(pctl.multi_playlist):
-            if pl[6] == gui.previous_playlist_id and i < index:
-                #pctl.playlist_active = i
-                switch_playlist(i)
+            if pl[6] == old_playing_id:
+                pctl.playlist_active = i
                 break
         else:
-            switch_playlist(pctl.playlist_active - 1)
-        #     pctl.playlist_active -= 1
-        #
-        # pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active][1]
-        # default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
-        # playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
+            # Playing playlist was deleted, lets just move down one playlist
+            if pctl.playlist_active > 0:
+                pctl.playlist_active -= 1
 
-    elif index < pctl.playlist_active and pctl.playlist_active > 0:
-        #pctl.playlist_active -= 1
-        switch_playlist(pctl.playlist_active - 1)
-    elif index == pctl.playlist_active == 0 and len(pctl.multi_playlist) > 1:
-        switch_playlist(pctl.playlist_active + 1)
-        # pctl.playlist_playing = pctl.multi_playlist[pctl.playlist_active + 1][1]
-        # default_playlist = pctl.multi_playlist[pctl.playlist_active + 1][2]
-        # playlist_position = pctl.multi_playlist[pctl.playlist_active + 1][3]
+    # Re-initiate the now viewed playlist
+    default_playlist = pctl.multi_playlist[pctl.playlist_active][2]
+    playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
+    playlist_selected = pctl.multi_playlist[pctl.playlist_active][5]
+    shift_selection = [playlist_selected]
 
-    pctl.active_playlist_playing = pctl.playlist_active
-    pctl.playlist_backup.append(pctl.multi_playlist[index])
-    del pctl.multi_playlist[index]
+    if album_mode:
+        reload_albums(True)
+        goto_album(playlist_position)
+
+    # Re-set the playing playlist number by uid
+    for i, pl in enumerate(pctl.multi_playlist):
+
+        if pl[6] == old_playing_id:
+            pctl.active_playlist_playing = i
+            break
+    else:
+        print("Lost the playing playlist!")
+        pctl.active_playlist_playing = pctl.playlist_active
+        pctl.playlist_playing = -1
+
     reload()
 
 
@@ -8463,8 +8491,8 @@ def gen_sort_len(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
-tab_menu.add_to_sub(_("Duration"), 0, gen_sort_len, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Duration"), 0, gen_sort_len, pass_ref=True)
+tab_menu.add_to_sub(_("Longest Tracks"), 0, gen_sort_len, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Longest Tracks"), 0, gen_sort_len, pass_ref=True)
 
 
 def gen_folder_duration(pl, get_sets=False):
@@ -8507,8 +8535,8 @@ def gen_folder_duration(pl, get_sets=False):
                                       hide_title=0))
 
 
-tab_menu.add_to_sub(_("Album Duration"), 0, gen_folder_duration, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Album Duration"), 0, gen_folder_duration, pass_ref=True)
+tab_menu.add_to_sub(_("Longest Albums"), 0, gen_folder_duration, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Longest Albums"), 0, gen_folder_duration, pass_ref=True)
 
 
 def gen_sort_date(index, rev=False):
@@ -8611,8 +8639,8 @@ def gen_folder_shuffle(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub(_("Shuffled Folders"), 0, gen_folder_shuffle, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Shuffled Folders"), 0, gen_folder_shuffle, pass_ref=True)
+tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
 
 
 def gen_best_random(index):
@@ -8676,8 +8704,8 @@ def gen_folder_reverse(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub(_("Reverse Folders"), 0, gen_folder_reverse, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Reverse Folders"), 0, gen_folder_reverse, pass_ref=True)
+tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=True)
 
 def gen_dupe(index):
     playlist = pctl.multi_playlist[index][2]
@@ -9171,6 +9199,12 @@ def lightning_paste():
 
             move_jobs.append((move_path, os.path.join(artist_folder, move_track.parent_folder_name), move, move_track.parent_folder_name, load_order))
 
+            # Remove all tracks with the old paths
+            for pl in pctl.multi_playlist:
+                for i in reversed(range(len(pl[2]))):
+                    if pctl.g(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
+                        del pl[2][i]
+
             break
     else:
         show_message("Could not find a folder with the artist's name to match level at.")
@@ -9186,16 +9220,18 @@ def lightning_paste():
     cargo.clear()
     gui.lightning_copy = False
 
+
+
 def paste(playlist=None, position=None):
 
-    if key_shift_down and gui.lightning_copy:
-
-        try:
-            lightning_paste()
-        except OSError as e:
-            show_message("An error was encountered", 'error', str(e))
-
-        return
+    # if key_shift_down and gui.lightning_copy:
+    #
+    #     try:
+    #         lightning_paste()
+    #     except OSError as e:
+    #         show_message("An error was encountered", 'error', str(e))
+    #
+    #     return
     # items = None
     # if system == 'windows':
     #     clp = win32clipboard
@@ -9408,6 +9444,13 @@ track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
 #track_menu.add('Remove', del_selected)
 track_menu.add(_('Copy'), s_copy, copy_deco, pass_ref=False)
+
+
+
+track_menu.add(_('Drop Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
+
+
+
 track_menu.add(_('Paste'), menu_paste, paste_deco, pass_ref=True)
 track_menu.br()
 
@@ -10057,6 +10100,8 @@ selection_menu.add(_('Remove'), del_selected)
 folder_menu.add(_('Copy'), s_copy)
 gallery_menu.add(_('Copy'), s_copy)
 # folder_menu.add(_('Cut'), s_cut)
+folder_menu.add(_('Drop Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
+gallery_menu.add(_('Drop Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
 folder_menu.add(_('Remove'), del_selected)
 gallery_menu.add(_('Remove'), del_selected)
 
@@ -11172,11 +11217,6 @@ def switch_playlist(number, cycle=False):
     playlist_position = pctl.multi_playlist[pctl.playlist_active][3]
     playlist_selected = pctl.multi_playlist[pctl.playlist_active][5]
 
-    # if pl_follow:
-    #     pctl.playlist_playing = playlist_selected  # pctl.multi_playlist[pctl.playlist_active][1]
-    #     pctl.playlist_playing = copy.deepcopy(pctl.multi_playlist[pctl.playlist_active][1])
-    #     pctl.active_playlist_playing = pctl.playlist_active
-
     shift_selection = [playlist_selected]
 
     if album_mode:
@@ -11264,6 +11304,12 @@ def force_album_view():
     toggle_album_mode(True)
 
 def switch_showcase(index=-1):
+
+    if not gui.combo_mode:
+        gui.lyrics_was_album = album_mode
+    else:
+        if gui.lyrics_was_album:
+            force_album_view()
 
     if pctl.playing_object() is None or pctl.playing_object().index == index:
         pass
@@ -14994,7 +15040,7 @@ class TopPanel:
 
                     if key_shift_down:
                         pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
-                        pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.tab_hold_index]))
+                        # pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.tab_hold_index]))
                         delete_playlist(self.tab_hold_index)
                     else:
                         move_playlist(self.tab_hold_index, i)
@@ -17203,7 +17249,7 @@ class PlaylistBox:
 
                     if key_shift_down:
                         pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
-                        pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.drag_on]))
+                        # pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.drag_on]))
                         delete_playlist(self.drag_on)
                     else:
                         move_playlist(self.drag_on, i)
@@ -17742,7 +17788,7 @@ class Showcase:
 
         if draw.button("Return", 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=colours.grey(30)):
             switch_showcase()
-            if view_box.was_album:
+            if gui.lyrics_was_album:
                 force_album_view()
             return 0
 
@@ -17957,7 +18003,7 @@ class ViewBox:
         self.over_colour = [255, 190, 50, 255]
         self.off_colour = colours.grey(40)
 
-        self.was_album = False
+        gui.lyrics_was_album = False
 
     def activate(self, x):
         self.x = x
@@ -18055,11 +18101,11 @@ class ViewBox:
                    gui.showcase_mode is True
 
         if not gui.combo_mode:
-            self.was_album = album_mode
+            gui.lyrics_was_album = album_mode
             switch_showcase()
         else:
             switch_showcase()
-            if self.was_album:
+            if gui.lyrics_was_album:
                 force_album_view()
 
     def gallery2(self, hit=False):
@@ -19411,11 +19457,15 @@ while running:
             r_arg_queue = pickle.load(open(transfer_target, "rb"))
             os.remove(user_directory + "/transfer.p")
             arg_queue = []
+            i = 0
             for item in r_arg_queue:
                 if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
                     arg_queue.append(item)
-                    # SDL_RaiseWindow(t_window)
-                    # SDL_RestoreWindow(t_window)
+                    i += 1
+
+            if i == 0:
+                SDL_RaiseWindow(t_window)
+                SDL_RestoreWindow(t_window)
 
         if arg_queue:
             i = 0
@@ -21439,7 +21489,7 @@ while running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(50), True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):

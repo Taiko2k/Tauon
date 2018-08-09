@@ -6,12 +6,19 @@ Changelog-------------------------------------
  - Added context menu to gallery album right click
  - Added sorting option 'Reversed Folders'
  - Improved error feedback for 'Start Broadcast'
+ - Improved folder mover to remove old track entries
  - Duplicated 'sort' sub menu to playlist side panel
  - Tweaked 'rename playlist' box size
+ - Modified folder mover menu text and behavior
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
  - Fixed disabled error handling with last.fm love sync
  - Fixed top bar metadata for small window positioning
+ - Fixed window not raising on extra instance launch
+ - Fixed lyrics view not returning to gallery from track box button
+ - Fixed duplicate playlist undo backups
+ - Fixed possible losing track of playing playlist if a playlist was deleted
+ - Fixed a crash if a playlist was deleted and back button was pressed twice
  - Removed 'cut' menu option
 
 3.1.2
