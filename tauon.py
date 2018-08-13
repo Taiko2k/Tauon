@@ -34,7 +34,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.1.3"
+t_version = "v3.2.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -5258,6 +5258,20 @@ ddt.prime_font(standard_font, 24, 30)
 ddt.prime_font(standard_font, 9, 412)
 ddt.prime_font(standard_font, 10, 413)
 
+standard_font = "Noto Sans Medium"
+ddt.prime_font(standard_font, 8, 309)
+ddt.prime_font(standard_font, 8, 310)
+ddt.prime_font(standard_font, 8.5, 311)
+ddt.prime_font(standard_font, 9, 312)
+ddt.prime_font(standard_font, 10, 313)
+ddt.prime_font(standard_font, 10.5, 314)
+ddt.prime_font(standard_font, 11, 315)
+ddt.prime_font(standard_font, 12, 316)
+ddt.prime_font(standard_font, 12, 317)
+ddt.prime_font(standard_font, 12, 318)
+ddt.prime_font(standard_font, 24, 330)
+
+
 standard_font = prefs.linux_bold_font
 
 ddt.prime_font(standard_font, 6, 209)
@@ -5351,13 +5365,19 @@ def draw_linked_text(location, text, colour, font):
     ddt.draw_text((x, y), base, colour, font)
     ddt.draw_text((x + left, y), link_text, colours.link_text, font)
     ddt.draw_text((x + right, y), rest, colour, font)
+
+    tweak = font
+    while tweak > 100:
+        tweak -= 100
+
     if gui.scale == 2:
-        font *= 2
-        font += 4
+        tweak *= 2
+        tweak += 4
     if gui.scale == 1.25:
-        font = round(font * 1.25)
-        font += 2
-    ddt.line(x + left, y + font + 2, x + right, y + font + 2, alpha_mod(colours.link_text, 120))
+        tweak = round(tweak * 1.25)
+        tweak += 1
+
+    ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
 
     return left, right - left, link_text
 
@@ -6945,7 +6965,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
 
     y -= 10 * gui.scale
 
-    w =  ddt.get_text_w(text, 11) + 24 * gui.scale
+    w =  ddt.get_text_w(text, 312) + 24 * gui.scale
     h = 24 * gui.scale
 
     x = x - int(w / 2)
@@ -6953,7 +6973,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
     border = 1 * gui.scale
     ddt.rect_r((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
     ddt.rect_r((x, y, w, h), colours.menu_background, True)
-    ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.grey(235), 11)
+    ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.grey(235), 312)
 
 
 # Right click context menu generator
@@ -7670,19 +7690,13 @@ def append_here():
 
 
 def paste_deco():
-    line = "Paste"
+
     if len(cargo) > 0:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
-    # if gui.lightning_copy:
-    #     if key_shift_down:
-    #         line = "Phycially Move Folder Here"
-        # else:
-        #     line = "Copy to This Library"
-
-    return [line_colour, colours.menu_background, line]
+    return [line_colour, colours.menu_background, None]
 
 
 def lightning_move_test(discard):
@@ -8258,6 +8272,14 @@ else:
 
 tab_menu.br()
 
+def append_deco():
+
+    if pctl.playing_state > 0:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
 
 extra_tab_menu = Menu(155, show_icons=True)
 
@@ -8274,8 +8296,8 @@ tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 # tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 #tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
-tab_menu.add(_('Paste'), s_append, pass_ref=True)
-tab_menu.add(_("Append Playing"), append_current_playing, pass_ref=True)
+tab_menu.add(_('Paste'), s_append, paste_deco, pass_ref=True)
+tab_menu.add(_("Append Playing"), append_current_playing, append_deco, pass_ref=True)
 tab_menu.br()
 # tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
@@ -8409,6 +8431,26 @@ def gen_lyrics(pl):
                                           hide_title=0))
     else:
         show_message("No tracks with lyrics were found.")
+
+def gen_codec_pl(codec):
+
+    playlist = []
+
+    for pl in pctl.multi_playlist:
+        for item in pl[2]:
+            if pctl.master_library[item].file_ext == codec:
+                playlist.append(item)
+
+    playlist2 = []
+    for item in playlist:
+        if item not in playlist2:
+            playlist2.append(item)
+
+    if len(playlist) > 0:
+        pctl.multi_playlist.append(pl_gen(title="Codec: " + codec,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
 
 
 def gen_last_modified(index):
@@ -9363,7 +9405,7 @@ def s_cut():
     s_copy()
     del_selected()
 
-playlist_menu.add('Paste', paste)
+playlist_menu.add('Paste', paste, paste_deco)
 
 def del_selected():
     global shift_selection
@@ -14590,6 +14632,9 @@ class Over:
                         xx = self.box_x + self.w - 30 * gui.scale
                     ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(190), 13)
 
+                    if self.click:
+                        gen_codec_pl(key)
+
 
     def config_v(self):
 
@@ -15349,7 +15394,7 @@ class TopPanel:
             per = str(int(to_got / to_get * 100))
             text = "Cleaning db...  " + per + "%"
             bg = [100, 200, 100, 255]
-        elif len(to_scan) > 0:
+        elif to_scan:
             text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
             bg = [100, 200, 100, 255]
         elif transcode_list:
@@ -15836,8 +15881,6 @@ class BottomBarType1:
 
         if GUI_Mode == 1:
 
-            box = gui.panelBY - self.seek_bar_size[1]
-
             # PLAY---
             buttons_x_offset = 0
 
@@ -15862,8 +15905,6 @@ class BottomBarType1:
                     play_colour = [220, 50 ,50 , 255]
 
 
-
-
             rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
             fields.add(rect)
             if coll(rect):
@@ -15876,8 +15917,6 @@ class BottomBarType1:
 
                 if right_click:
                     pctl.show_current(highlight=True)
-                # tool_tip.test(buttons_x_offset * gui.scale + 50 * gui.scale,
-                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Play")
 
             self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
             # ddt.rect_r(rect,[255,0,0,255], True)
@@ -18146,13 +18185,13 @@ class ViewBox:
             if gui.lyrics_was_album:
                 force_album_view()
 
-    def gallery2(self, hit=False):
-
-        if hit is False:
-            return album_mode is True and \
-                   gui.combo_mode is False and \
-                   gui.show_playlist is False
-        gallery_only_view()
+    # def gallery2(self, hit=False):
+    #
+    #     if hit is False:
+    #         return album_mode is True and \
+    #                gui.combo_mode is False and \
+    #                gui.show_playlist is False
+    #     gallery_only_view()
 
     def col(self, hit=False):
 
@@ -21143,6 +21182,7 @@ while running:
                 gui.level_2_click = False
 
                 tc = pctl.master_library[r_menu_index]
+                
 
                 w = 540 * gui.scale
                 h = 240 * gui.scale
@@ -21162,7 +21202,12 @@ while running:
                 x1 = int(x + 18 * gui.scale)
                 x2 = int(x + 98 * gui.scale)
 
-
+                value_font = 312
+                if key_shift_down:
+                    value_font = 12
+                key_colour_off = colours.grey_blend_bg3(90)
+                key_colour_on = colours.grey_blend_bg3(240)
+                value_colour = colours.grey_blend_bg3(235)
 
                 ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
@@ -21185,7 +21230,7 @@ while running:
 
                     ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
 
-                    line = pctl.master_library[r_menu_index].file_ext
+                    line = tc.file_ext
                     ex_colour = [130, 130, 130, 255]
 
                     if line in format_colours:
@@ -21194,10 +21239,10 @@ while running:
                     ddt.rect_r(ext_rect, ex_colour, True)
                     ddt.draw_text((int(x + w - 35 * gui.scale), int(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
 
-                    if pctl.master_library[r_menu_index].is_cue:
+                    if tc.is_cue:
                         ext_rect[1] += 16 * gui.scale
                         colour = [218, 222, 73, 255]
-                        if pctl.master_library[r_menu_index].is_embed_cue:
+                        if tc.is_embed_cue:
                             colour = [252, 199, 55, 255]
                         ddt.rect_r(ext_rect, colour, True)
                         ddt.draw_text((int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE", alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
@@ -21206,19 +21251,19 @@ while running:
                     rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Title", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].title)
+                            copy_to_clipboard(tc.title)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Title", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Title", key_colour_off, 212)
                         #
-                    q = ddt.draw_text((x2, y1 - int(2 * gui.scale)), pctl.master_library[r_menu_index].title
-                              , colours.grey_blend_bg3(220), 214, max_w=w - 170 * gui.scale)
+                    q = ddt.draw_text((x2, y1 - int(2 * gui.scale)), tc.title
+                              , colours.grey_blend_bg3(220), 314, max_w=w - 170 * gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, pctl.master_library[r_menu_index].title, 214)
+                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.title, 314)
 
                     y1 += int(16 * gui.scale)
 
@@ -21226,94 +21271,94 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Artist", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].artist)
+                            copy_to_clipboard(tc.artist)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Artist", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Artist", key_colour_off, 212)
 
-                    q = ddt.draw_text((x2, y1 - (1 * gui.scale)), pctl.master_library[r_menu_index].artist,
-                              colours.grey_blend_bg3(220), 212, max_w=390 * gui.scale)
+                    q = ddt.draw_text((x2, y1 - (1 * gui.scale)), tc.artist,
+                              colours.grey_blend_bg3(220), value_font, max_w=390 * gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, pctl.master_library[r_menu_index].artist, 212)
+                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.artist, value_font)
 
                     y1 += int(16 * gui.scale)
 
                     rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Album", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Album", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].album)
+                            copy_to_clipboard(tc.album)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Album", colours.grey_blend_bg3(140), 212)
+                        ddt.draw_text((x1, y1), "Album", key_colour_off, 212)
 
-                    q = ddt.draw_text((x2, y1 - 1 * gui.scale), pctl.master_library[r_menu_index].album,
-                              colours.grey_blend_bg3(220),
-                              212, max_w=390*gui.scale)
+                    q = ddt.draw_text((x2, y1 - 1 * gui.scale), tc.album,
+                              value_colour,
+                                      value_font, max_w=390*gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, pctl.master_library[r_menu_index].album, 212)
+                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.album, value_font)
 
                     y1 += int(26 * gui.scale)
 
                     rect = [x1, y1 + 2, 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Path", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Path", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].fullpath)
+                            copy_to_clipboard(tc.fullpath)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Path", colours.grey_blend_bg3(140), 212)
-                    ddt.draw_text((x2, y1), trunc_line(pctl.master_library[r_menu_index].fullpath, 210, 425 * gui.scale),
-                              colours.grey_blend_bg3(190), 210)
+                        ddt.draw_text((x1, y1), "Path", key_colour_off, 212)
+                    ddt.draw_text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
+                              colours.grey_blend_bg3(190), 210, max_w=425*gui.scale )
 
                     y1 += int(15 * gui.scale)
 
-                    if pctl.master_library[r_menu_index].samplerate != 0:
-                        ddt.draw_text((x1, y1), "Samplerate", colours.grey_blend_bg3(140), 212)
+                    if tc.samplerate != 0:
+                        ddt.draw_text((x1, y1), "Samplerate", key_colour_off, 212)
 
-                        line = str(pctl.master_library[r_menu_index].samplerate) + " Hz"
+                        line = str(tc.samplerate) + " Hz"
 
 
-                        off = ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(200), 212)
+                        off = ddt.draw_text((x2, y1), line, value_colour, value_font)
 
-                        if pctl.master_library[r_menu_index].bit_depth > 0:
-                            line = str(pctl.master_library[r_menu_index].bit_depth) + " bit"
-                            ddt.draw_text((x2 + off + 9 * gui.scale, y1), line, colours.grey_blend_bg3(200), 211)
+                        if tc.bit_depth > 0:
+                            line = str(tc.bit_depth) + " bit"
+                            ddt.draw_text((x2 + off + 9 * gui.scale, y1), line, value_colour, 311)
 
                     y1 += int(15 * gui.scale)
 
-                    if pctl.master_library[r_menu_index].bitrate not in (0, "", "0"):
-                        ddt.draw_text((x1, y1), "Bitrate", colours.grey_blend_bg3(140), 212)
-                        line = str(pctl.master_library[r_menu_index].bitrate)
-                        if pctl.master_library[r_menu_index].file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
+                    if tc.bitrate not in (0, "", "0"):
+                        ddt.draw_text((x1, y1), "Bitrate", key_colour_off, 212)
+                        line = str(tc.bitrate)
+                        if tc.file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
                         line += " kbps"
-                        ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220), 212)
+                        ddt.draw_text((x2, y1), line, value_colour, 312)
 
                     # -----------
-                    if pctl.master_library[r_menu_index].artist != pctl.master_library[r_menu_index].album_artist != "":
+                    if tc.artist != tc.album_artist != "":
                         x += int(170 * gui.scale)
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if coll(rect):
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(200), 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_on, 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
-                                copy_to_clipboard(pctl.master_library[r_menu_index].album_artist)
+                                copy_to_clipboard(tc.album_artist)
                                 input.mouse_click = False
                         else:
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", colours.grey_blend_bg3(140), 212)
-                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1), pctl.master_library[r_menu_index].album_artist,
-                                  colours.grey_blend_bg3(220), 212, max_w=120 * gui.scale)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_off, 212)
+                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1), tc.album_artist,
+                                  value_colour, value_font, max_w=120 * gui.scale)
                         x -= int(170 * gui.scale)
 
                     y1 += int(15 * gui.scale)
@@ -21321,41 +21366,41 @@ while running:
                     rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Duration", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Duration", key_colour_on, 212)
                         if input.mouse_click:
-                            copy_to_clipboard(time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length)).lstrip("0"))
+                            copy_to_clipboard(time.strftime('%M:%S', time.gmtime(tc.length)).lstrip("0"))
                             show_message("Duration copied to clipboard")
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Duration", colours.grey_blend_bg3(140), 212)
-                    line = time.strftime('%M:%S', time.gmtime(pctl.master_library[r_menu_index].length))
-                    ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220), 212)
+                        ddt.draw_text((x1, y1), "Duration", key_colour_off, 212)
+                    line = time.strftime('%M:%S', time.gmtime(tc.length))
+                    ddt.draw_text((x2, y1), line, value_colour, value_font)
 
                     # -----------
-                    if pctl.master_library[r_menu_index].track_total not in ("", "0"):
+                    if tc.track_total not in ("", "0"):
                         x += int(170 * gui.scale)
-                        line = str(pctl.master_library[r_menu_index].track_number) + " of " + str(
-                            pctl.master_library[r_menu_index].track_total)
-                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", colours.grey_blend_bg3(140), 212)
+                        line = str(tc.track_number) + " of " + str(
+                            tc.track_total)
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", key_colour_off, 212)
                         ddt.draw_text((x + (8 + 90)  * gui.scale, y1), line,
-                                  colours.grey_blend_bg3(220), 212)
+                                  value_colour, value_font)
                         x -= int(170 * gui.scale)
 
                     y1 += int(15 * gui.scale)
-                    #print(pctl.master_library[r_menu_index].size)
-                    if pctl.master_library[r_menu_index].size != 0:
-                        ddt.draw_text((x1, y1), "File size", colours.grey_blend_bg3(140), 212)
-                        ddt.draw_text((x2, y1), get_filesize_string(pctl.master_library[r_menu_index].size),
-                                  colours.grey_blend_bg3(220), 212)
+                    #print(tc.size)
+                    if tc.size != 0:
+                        ddt.draw_text((x1, y1), "File size", key_colour_off, 212)
+                        ddt.draw_text((x2, y1), get_filesize_string(tc.size),
+                                  value_colour, value_font)
 
                     # -----------
-                    if pctl.master_library[r_menu_index].disc_total not in ("", "0", 0):
+                    if tc.disc_total not in ("", "0", 0):
                         x += int(170 * gui.scale)
-                        line = str(pctl.master_library[r_menu_index].disc_number) + " of " + str(
-                            pctl.master_library[r_menu_index].disc_total)
-                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", colours.grey_blend_bg3(140), 212)
+                        line = str(tc.disc_number) + " of " + str(
+                            tc.disc_total)
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", key_colour_off, 212)
                         ddt.draw_text((x + (8 + 90) * gui.scale, y1), line,
-                                  colours.grey_blend_bg3(220), 212)
+                                  value_colour, value_font)
                         x -= int(170 * gui.scale)
 
                     y1 += int(23 * gui.scale)
@@ -21363,31 +21408,30 @@ while running:
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Genre", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Genre", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].genre)
+                            copy_to_clipboard(tc.genre)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Genre", colours.grey_blend_bg3(140), 212)
-                    line = trunc_line(pctl.master_library[r_menu_index].genre, 12, 290)
-                    ddt.draw_text((x2, y1), line, colours.grey_blend_bg3(220),
-                              212)
+                        ddt.draw_text((x1, y1), "Genre", key_colour_off, 212)
+                    ddt.draw_text((x2, y1), line, value_colour,
+                              value_font, max_w=290 * gui.scale)
 
                     y1 += int(15 * gui.scale)
 
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Date", colours.grey_blend_bg3(200), 212)
+                        ddt.draw_text((x1, y1), "Date", key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
-                            copy_to_clipboard(pctl.master_library[r_menu_index].date)
+                            copy_to_clipboard(tc.date)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Date", colours.grey_blend_bg3(140), 212)
-                    ddt.draw_text((x2, y1), str(pctl.master_library[r_menu_index].date),
-                              colours.grey_blend_bg3(220), 212)
+                        ddt.draw_text((x1, y1), "Date", key_colour_off, 212)
+                    ddt.draw_text((x2, y1), str(tc.date),
+                              value_colour, value_font)
 
 
                     y1 += int(23 * gui.scale)
@@ -21397,10 +21441,10 @@ while running:
 
                     if total > 0 and pctl.master_library[
                         r_menu_index].length != 0:
-                        ratio = total / pctl.master_library[r_menu_index].length
+                        ratio = total / tc.length
 
-                    ddt.draw_text((x1, y1), "Play count", colours.grey_blend_bg3(140), 212)
-                    ddt.draw_text((x2, y1), str(int(ratio)), colours.grey_blend_bg3(220), 212)
+                    ddt.draw_text((x1, y1), "Play count", key_colour_off, 212)
+                    ddt.draw_text((x2, y1), str(int(ratio)), value_colour, value_font)
 
                     y1 += int(15 * gui.scale)
 
@@ -21412,13 +21456,13 @@ while running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    ddt.draw_text((x1, y1), "Play time", colours.grey_blend_bg3(140), 212)
-                    ddt.draw_text((x2, y1), str(line), colours.grey_blend_bg3(220), 212)
+                    ddt.draw_text((x1, y1), "Play time", key_colour_off, 212)
+                    ddt.draw_text((x2, y1), str(line), value_colour, value_font)
 
 
 
                     # -------
-                    if pctl.master_library[r_menu_index].lyrics != "":
+                    if tc.lyrics != "":
 
                         if draw.button("Lyrics", x1 + 200 * gui.scale, y1 - 10 * gui.scale):
                             track_box = False
@@ -21432,19 +21476,19 @@ while running:
                         #ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
                         fields.add(rect)
                         if coll(rect):
-                            ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(200), 212)
+                            ddt.draw_text((x1, y1), "Comment", key_colour_on, 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
-                                copy_to_clipboard(pctl.master_library[r_menu_index].comment)
+                                copy_to_clipboard(tc.comment)
                                 input.mouse_click = False
                         else:
-                            ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 212)
-                        # ddt.draw_text((x1, y1), "Comment", colours.grey_blend_bg3(140), 12)
+                            ddt.draw_text((x1, y1), "Comment", key_colour_off, 212)
+                        # ddt.draw_text((x1, y1), "Comment", key_colour_off, 12)
 
                         if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and ddt.get_text_w(
                                 tc.comment, 12) < 335 * gui.scale:
 
-                            link_pa = draw_linked_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
+                            link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 312)
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
                             fields.add(link_rect)
@@ -21456,9 +21500,9 @@ while running:
                                     track_box = True
 
                         elif comment_mode == 1:
-                            ddt.draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, colours.grey_blend_bg3(220), 12)
+                            ddt.draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, value_colour, 312)
                         else:
-                            ddt.draw_text((x2, y1), tc.comment, colours.grey_blend_bg3(220), 12)
+                            ddt.draw_text((x2, y1), tc.comment, value_colour, 312)
 
             fader.render()
             if pref_box.enabled:
