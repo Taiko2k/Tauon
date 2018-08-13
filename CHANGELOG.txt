@@ -1,32 +1,34 @@
 
 Changelog-------------------------------------
 
-v3.1.3
+v3.2.0
 
  - Added context menu to gallery album right click
  - Added sorting option 'Reversed Folders'
- - Added bit depth display to track box (FLAC, APE, TTA)
- - Added tool tips for truncated text in track info box
- - Added function to duplicate playlist by dragging to end
- - Improved error feedback for 'Start Broadcast'
+ - Added audio bit-depth display to track box (FLAC, APE, TTA)
+ - Added tool-tips for truncated text in track info box
+ - Added function to duplicate playlist by dragging tab to end
+ - Improved error feedback for 'Start Broadcast' when there are no tracks
  - Improved folder mover to remove old track entries
- - Duplicated 'sort' sub menu to playlist side panel
+ - Improved stat tab codec chart to generate a playlist on click
+ - Improved playlist side panel to include 'sort' sub menu
  - Tweaked 'rename playlist' box size
- - Tweaked track box metadata text fonts
- - Modified folder mover menu text and behavior
+ - Tweaked track box fonts and colour
+ - Tweaked folder mover menu text and behavior
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
- - Fixed disabled error handling with last.fm love sync
+ - Fixed error handling with last.fm love sync
  - Fixed top bar metadata for small window positioning
  - Fixed window not raising on extra instance launch
  - Fixed lyrics view not returning to gallery from track box button
  - Fixed duplicate playlist undo backups
- - Fixed possible losing track of playing playlist if a playlist was deleted
+ - Fixed possible losing focus of playing playlist if a playlist was deleted
  - Fixed a crash if a playlist was deleted then back button was pressed twice
  - Fixed album artist text in info box overlapping album art thumbnail
  - Fixed resulting album from search not aligning to top of playlist
  - Fixed tracks with no metadata showing as blank in search results
  - Fixed unstable text positioning in track box with fractional scaling
+ - Fixed some menu entries not greying out
  - Removed 'cut' menu option
 
 v3.1.2
