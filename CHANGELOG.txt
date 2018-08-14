@@ -29,6 +29,7 @@ v3.2.0
  - Fixed tracks with no metadata showing as blank in search results
  - Fixed unstable text positioning in track box with fractional scaling
  - Fixed some menu entries not greying out
+ - Fixed an issue with playing position after deleting tracks
  - Removed 'cut' menu option
 
 v3.1.2

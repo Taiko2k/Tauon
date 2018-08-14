@@ -1970,7 +1970,7 @@ class PlayerCtl:
         # print(highlight)
         # print("--------")
 
-        if len(self.track_queue) == 0:
+        if not self.track_queue:
             return 0
 
         track_index = self.track_queue[self.queue_step]
@@ -1985,15 +1985,13 @@ class PlayerCtl:
         if gui.playlist_view_length < 1:
             return 0
 
-
-        
         global playlist_selected
         global shift_selection
 
         for i in range(len(self.multi_playlist[self.active_playlist_viewing][2])):
-            if len(self.track_queue) > 0 and self.multi_playlist[self.active_playlist_viewing][2][i] == track_index:
+            if self.multi_playlist[self.active_playlist_viewing][2][i] == track_index:
 
-                if self.active_playlist_viewing == self.active_playlist_playing and track_index == \
+                if self.playlist_playing_position < len(self.multi_playlist[self.active_playlist_viewing][2]) and self.active_playlist_viewing == self.active_playlist_playing and track_index == \
                         self.multi_playlist[self.active_playlist_viewing][2][self.playlist_playing_position] and \
                         i != self.playlist_playing_position:
                     #continue
@@ -9414,10 +9412,10 @@ def del_selected():
     gui.update += 1
     gui.pl_update = 1
 
-    if len(shift_selection) == 0:
+    if not shift_selection:
         shift_selection = [playlist_selected]
 
-    if len(default_playlist) == 0:
+    if not default_playlist:
         return
 
     for item in reversed(shift_selection):
@@ -9431,6 +9429,16 @@ def del_selected():
         playlist_selected = len(default_playlist) - 1
 
     shift_selection = [playlist_selected]
+
+    # Refind playing index
+    if pctl.playing_ready():
+        for i, n in enumerate(default_playlist):
+            if pctl.track_queue[pctl.queue_step] == n:
+                pctl.playlist_playing_position = i
+                break
+
+
+
 
 if gui.scale == 2:
     folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
@@ -21207,7 +21215,7 @@ while running:
                     value_font = 12
                 key_colour_off = colours.grey_blend_bg3(90)
                 key_colour_on = colours.grey_blend_bg3(240)
-                value_colour = colours.grey_blend_bg3(235)
+                value_colour = colours.grey_blend_bg3(225)
 
                 ddt.rect_a((x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale), colours.grey(75), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
@@ -21318,7 +21326,7 @@ while running:
                     else:
                         ddt.draw_text((x1, y1), "Path", key_colour_off, 212)
                     ddt.draw_text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
-                              colours.grey_blend_bg3(190), 210, max_w=425*gui.scale )
+                              colours.grey_blend_bg3(200), 210, max_w=425*gui.scale )
 
                     y1 += int(15 * gui.scale)
 
@@ -21562,15 +21570,15 @@ while running:
                 ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
                 line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
                 line = right_trunc(line, 12, 420 * gui.scale)
-                ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(170), 211)
+                ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(200), 211)
 
                 ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
                 line = pctl.master_library[rename_index].parent_folder_name
-                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(170), 211, max_w=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
 
                 ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
                 line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
-                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(210), 211, max_w=420 * gui.scale)
+                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
 
 
             if renamebox:
