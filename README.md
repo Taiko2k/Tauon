@@ -21,6 +21,7 @@ Designed to be simple and streamlined while putting the user in control of their
   - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these as stars so you always know tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
+  - Auto extract archives on import.
   
   <img src="https://user-images.githubusercontent.com/17271572/43353750-94d68a0e-9293-11e8-9a80-bd15146f06eb.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/40102029-768ed298-593d-11e8-9ec0-2d39873fd8a4.png" hspace="0px" vspace="0px" width="450"> | <img src="https://user-images.githubusercontent.com/17271572/43353964-d9725eec-9296-11e8-9a77-3de33040c9de.jpg" hspace="0px" vspace="0px" width="350">
   --- | --- | ---
@@ -45,12 +46,6 @@ Designed to be simple and streamlined while putting the user in control of their
 - [ ] CD
 - [ ] MOD
 
-#### Archive extraction
-
-- [x] ZIP
-- [x] RAR (requires unrar)
-- [ ] 7z
-
 #### Other
 
 - [x] XSPF
@@ -61,19 +56,19 @@ Designed to be simple and streamlined while putting the user in control of their
 
 ## Download and Install :dizzy:
 
-For __Arch Linux__, install avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
+For __Arch Linux__, install is avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
 
-For __Other Linux distributions__, you can try an experiemental **flatpak** package.
+For __Other Linux distributions__, you can try an experiemental **Flatpak** package.
  
- 1. If you have not already, make sure you have correctly installed and configured flatpak for your distro. See https://flatpak.org/setup/.
+ 1. If you have not already, make sure you have correctly installed and configured Flatpak for your distro. See https://flatpak.org/setup/.
  
  2. After downloading tauon.flatpak from lastest release in [releases](https://github.com/Taiko2k/tauonmb/releases) section. Install using `sudo flatpak install tauon.flatpak`. To uninstall run `sudo flatpak uninstall com.github.taiko2k.tauonmb`
  
-     >**Note:** This standalone flatpak package won't auto update. You'll need to check back here for updates.
+     >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
 
 ___
 
 For further documentation see [tutorial](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Tutorial).
 
-Feel free to submit any issues or suggestions.
+Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
