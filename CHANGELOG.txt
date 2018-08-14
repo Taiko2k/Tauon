@@ -8,6 +8,7 @@ v3.2.0
  - Added audio bit-depth display to track box (FLAC, APE, TTA)
  - Added tool-tips for truncated text in track info box
  - Added function to duplicate playlist by dragging tab to end
+ - Added highlight for transcoded albums in gallery while transcoding
  - Improved error feedback for 'Start Broadcast' when there are no tracks
  - Improved folder mover to remove old track entries
  - Improved stat tab codec chart to generate a playlist on click
@@ -30,6 +31,8 @@ v3.2.0
  - Fixed unstable text positioning in track box with fractional scaling
  - Fixed some menu entries not greying out
  - Fixed an issue with playing position after deleting tracks
+ - Fixed an issue where submenus might not position within window
+ - Fixed search overlay 'show only' function sometimes showing the playing track instead
  - Removed 'cut' menu option
 
 v3.1.2

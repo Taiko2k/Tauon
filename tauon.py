@@ -31,6 +31,7 @@ import sys
 import os
 import pickle
 import shutil
+import fcntl
 import gi
 from gi.repository import GLib
 
@@ -46,19 +47,17 @@ print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 system = 'linux'
 
 # Find the directory we are running from
-install_directory = sys.path[0].replace('\\', '/')
+install_directory = sys.path[0]
 
 # Set data folders (portable mode)
 user_directory = install_directory
 config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
 
-
 # Detect if we are installed or running portably
 install_mode = False
 flatpak_mode = False
-if system == 'linux' and (install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/"):
-
+if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/":
     install_mode = True
     if install_directory[:5] == "/app/":
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
@@ -124,7 +123,6 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 if os.path.isfile('.gitignore'):
     print("Dev mode, ignoring single instancing")
 else:
-    import fcntl
     pid_file = os.path.join(user_directory, 'program.pid')
     fp = open(pid_file, 'w')
     try:
@@ -1970,6 +1968,9 @@ class PlayerCtl:
         # print(highlight)
         # print("--------")
 
+        global playlist_selected
+        global shift_selection
+
         if not self.track_queue:
             return 0
 
@@ -1985,8 +1986,7 @@ class PlayerCtl:
         if gui.playlist_view_length < 1:
             return 0
 
-        global playlist_selected
-        global shift_selection
+
 
         for i in range(len(self.multi_playlist[self.active_playlist_viewing][2])):
             if self.multi_playlist[self.active_playlist_viewing][2][i] == track_index:
@@ -2033,7 +2033,7 @@ class PlayerCtl:
                     if track_index in playlist[2]:
 
                         switch_playlist(i)
-                        self.show_current(select, playing, quiet, this_only=True)
+                        self.show_current(select, playing, quiet, this_only=True, index=track_index)
                         break
 
         if pctl.playlist_view_position < 0:
@@ -7205,6 +7205,9 @@ class Menu:
                     sub_w = self.items[i][4]
                     fx = self.deco()
 
+                    minY = window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
+                    sub_pos[1] = min(sub_pos[1], minY)
+
                     xoff = 0
                     for i in self.subs[self.sub_active]:
                         if i[7] is not None:
@@ -8279,12 +8282,12 @@ def append_deco():
 
     return [line_colour, colours.menu_background, None]
 
-extra_tab_menu = Menu(155, show_icons=True)
+extra_tab_menu = Menu(170, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 tab_menu.add_sub(_("Sort…"), 133)
-extra_tab_menu.add_sub(_("Sorted…"), 133)
+extra_tab_menu.add_sub(_("New from Current…"), 133)
 tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
 tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
@@ -8436,13 +8439,8 @@ def gen_codec_pl(codec):
 
     for pl in pctl.multi_playlist:
         for item in pl[2]:
-            if pctl.master_library[item].file_ext == codec:
+            if pctl.master_library[item].file_ext == codec and item not in playlist:
                 playlist.append(item)
-
-    playlist2 = []
-    for item in playlist:
-        if item not in playlist2:
-            playlist2.append(item)
 
     if len(playlist) > 0:
         pctl.multi_playlist.append(pl_gen(title="Codec: " + codec,
@@ -11922,25 +11920,8 @@ class SearchOverlay:
                         if fade == 1:
                             ddt.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
 
-                        # Mouse Selection
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
                         fields.add(rect)
-                        if coll(rect) and mouse_change:
-                            if self.force_select != p:
-                                self.force_select = p
-                                gui.update = 2
-
-                            if gui.level_2_click:
-                                self.click_album(item[2])
-                                pctl.playlist_view_position = playlist_selected
-                                self.active = False
-                                self.search_text.text = ""
-
-                            if level_2_right_click:
-                                pctl.show_current(index=item[2])
-                                pctl.playlist_view_position = playlist_selected
-                                self.active = False
-                                self.search_text.text = ""
                     else:
 
                         ddt.draw_text((120 + xx + 11 * gui.scale, yy), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
@@ -11948,29 +11929,32 @@ class SearchOverlay:
 
                         xx += ddt.draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                        # Mouse Selection
                         rect = (30, yy, 600, 20)
                         fields.add(rect)
-                        if coll(rect) and mouse_change:
-                            if self.force_select != p:
-                                self.force_select = p
-                                gui.update = 2
-                            if gui.level_2_click:
-                                self.click_album(item[2])
-                                pctl.playlist_view_position = playlist_selected
-                                self.active = False
-                                self.search_text.text = ""
-                            if level_2_right_click:
-                                pctl.show_current(index=item[2])
-                                pctl.playlist_view_position = playlist_selected
-                                self.active = False
-                                self.search_text.text = ""
+
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+                            self.click_album(item[2])
+                            pctl.playlist_view_position = playlist_selected
+                            self.active = False
+                            self.search_text.text = ""
+
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2])
+                            pctl.playlist_view_position = playlist_selected
+                            self.active = False
+                            self.search_text.text = ""
+
                     if enter and fade == 1:
                         #self.click_album(item[2])
                         pctl.show_current(index=item[2])
                         pctl.playlist_view_position = playlist_selected
                         self.active = False
                         self.search_text.text = ""
+
                     if full:
                         yy += 50 * gui.scale
 
@@ -12190,6 +12174,22 @@ def worker2():
                         temp_results[i][4] = genres[item[1]]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
+def encode_folder_name(track_object):
+
+    folder_name = track_object.artist + " - " + track_object.album
+
+    if folder_name == " - ":
+        folder_name = track_object.filename
+
+    "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+
+    if folder_name[-1:] == ' ':
+        folder_name = track_object.filename
+
+    for c in r'[]/\;,><&*:%=+@!#^()|?^.':
+        folder_name = folder_name.replace(c, '')
+
+    return folder_name
 
 
 def worker1():
@@ -12796,19 +12796,9 @@ def worker1():
 
                 folder_items = transcode_list[0]
 
-                folder_name = pctl.master_library[folder_items[0]].artist + " - " + pctl.master_library[
-                    folder_items[0]].album
+                folder_name = encode_folder_name(pctl.master_library[folder_items[0]])
 
-                if folder_name == " - ":
-                    folder_name = pctl.master_library[folder_items[0]].filename
 
-                "".join([c for c in folder_name if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
-
-                if folder_name[-1:] == ' ':
-                    folder_name = pctl.master_library[folder_items[0]].filename
-
-                for c in r'[]/\;,><&*:%=+@!#^()|?^.':
-                    folder_name = folder_name.replace(c, '')
                 print("Transcoding folder: " + folder_name)
 
                 if os.path.isdir(prefs.encoder_output + folder_name):
@@ -13068,7 +13058,7 @@ def get_album_info(position):
             break
         else:
             current += 1
-    if len(album) == 0:
+    if not album:
         album = [default_playlist[len(default_playlist) - 1]]
 
     return playing, album, select
@@ -19782,8 +19772,11 @@ while running:
         if key_F7:
 
             show_message("Test error message 123", 'error', "hello text")
-
-
+            #
+            # colours.playlist_panel_background = colours.grey(240)
+            # colours.side_panel_background = colours.grey(240)
+            # colours.top_panel_background = colours.grey(240)
+            # colours.bottom_panel_background = colours.grey(240)
 
 
             #lastfm.artist_info(pctl.playing_object().artist)
@@ -20559,6 +20552,26 @@ while running:
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
                                           colours.side_panel_background, True)
 
+                            # Draw transcode highlight
+                            if transcode_list:
+
+                                track = pctl.master_library[default_playlist[album_dex[album_on]]]
+                                tr = False
+
+                                if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
+                                    tr = True
+                                else:
+                                    for folder in transcode_list:
+                                        if pctl.g(folder[0]).parent_folder_path == track.parent_folder_path:
+                                            tr = True
+                                            break
+                                if tr:
+                                    c = [244, 212, 66, 255]
+                                    ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                              c, True)
+                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                              colours.side_panel_background, True)
+
                             # Draw selection
                             if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
 
@@ -21271,7 +21284,7 @@ while running:
                               , colours.grey_blend_bg3(220), 314, max_w=w - 170 * gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.title, 314)
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.title, 314)
 
                     y1 += int(16 * gui.scale)
 
@@ -21291,7 +21304,7 @@ while running:
                               colours.grey_blend_bg3(220), value_font, max_w=390 * gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.artist, value_font)
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font)
 
                     y1 += int(16 * gui.scale)
 
@@ -21311,7 +21324,7 @@ while running:
                                       value_font, max_w=390*gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 170 * gui.scale, y1, q, tc.album, value_font)
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album, value_font)
 
                     y1 += int(26 * gui.scale)
 
