@@ -59,7 +59,7 @@ Designed to be simple and streamlined while putting the user in control of their
 - [ ] PLS
 
 
-## Getting Started :dizzy:
+## Download and Install :dizzy:
 
 For __Arch Linux__, install avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
 
