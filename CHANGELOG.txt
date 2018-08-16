@@ -9,13 +9,17 @@ v3.2.0
  - Added tool-tips for truncated text in track info box
  - Added function to duplicate playlist by dragging tab to end
  - Added highlight for transcoded albums in gallery while transcoding
+ - Added cursor tab drag indicator
  - Improved error feedback for 'Start Broadcast' when there are no tracks
  - Improved folder mover to remove old track entries
  - Improved stat tab codec chart to generate a playlist on click
- - Improved playlist side panel to include 'sort' sub menu
+ - Improved playlist side panel to include the 'sort' sub menu
  - Tweaked 'rename playlist' box size
  - Tweaked track box fonts and colour
  - Tweaked folder mover menu text and behavior
+ - Tweaked 'duplicate playlist' function to modify the new title with a hint
+ - Tweaked playlist tabs to allow dragging between side panel and top panel
+ - Fixed gallery thumbnails to match side bar cycling without needing to reset (again)
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
  - Fixed error handling with last.fm love sync
@@ -33,6 +37,7 @@ v3.2.0
  - Fixed an issue with playing position after deleting tracks
  - Fixed an issue where submenus might not position within window
  - Fixed search overlay 'show only' function sometimes showing the playing track instead
+ - Fixed subsequent searches not resetting view to top
  - Removed 'cut' menu option
 
 v3.1.2
