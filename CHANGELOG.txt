@@ -19,6 +19,7 @@ v3.2.0
  - Tweaked folder mover menu text and behavior
  - Tweaked 'duplicate playlist' function to modify the new title with a hint
  - Tweaked playlist tabs to allow dragging between side panel and top panel
+ - Tweaked folder delete function to move to trash by default
  - Fixed gallery thumbnails to match side bar cycling without needing to reset (again)
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
