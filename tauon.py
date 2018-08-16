@@ -5723,7 +5723,7 @@ class GallClass:
                 del self.queue[0]
                 continue
 
-            img_name = str(size) + '-' + str(key[0]) + "-" + str(source[2])
+            img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0]) + "-" + str(source[2])
 
             try:
                 if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
@@ -5756,15 +5756,17 @@ class GallClass:
                 order = [2, g, None, None]
                 self.gall[key] = order
 
-                gui.update += 1
-                if gui.combo_mode:
-                    gui.pl_update = 1
+
                 del source
 
                 if not prefs.cache_gallery:
                     time.sleep(0.01)
                 else:
                     time.sleep(0.002)
+
+                gui.update += 1
+                if gui.combo_mode:
+                    gui.pl_update = 1
 
             except:
                 print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
@@ -5790,10 +5792,16 @@ class GallClass:
 
         size = round(size)
 
-        if (index, size) in self.gall:
+        #offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
+        if pctl.master_library[index].parent_folder_path in folder_image_offsets:
+            offset = folder_image_offsets[pctl.master_library[index].parent_folder_path]
+        else:
+            offset = 0
+
+        if (index, size, offset) in self.gall:
             # print("old")
 
-            order = self.gall[(index, size)]
+            order = self.gall[(index, size, offset)]
 
             if order[0] == 0:
                 # broken
@@ -5821,7 +5829,7 @@ class GallClass:
                 order[1] = None
                 order[2] = c
                 order[3] = dst
-                self.gall[(index, size)] = order
+                self.gall[(index, size, offset)] = order
 
             if order[0] == 3:
                 # ready
@@ -5836,9 +5844,9 @@ class GallClass:
         else:
             # Create new
             # stage, raw, texture, rect
-            self.gall[(index, size)] = [1, None, None, None]
-            self.queue.append((index, size))
-            self.key_list.append((index, size))
+            self.gall[(index, size, offset)] = [1, None, None, None]
+            self.queue.append((index, size, offset))
+            self.key_list.append((index, size, offset))
 
             # Remove old images to conserve RAM usage
             if len(self.key_list) > 100:
@@ -8235,17 +8243,28 @@ delete_icon.colour = [249, 70, 70, 255]
 
 tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
 
-def new_playlist(switch=True):
-    ex = 1
-    title = "New Playlist"
+def gen_unique_pl_title(base, extra="", start=1):
+
+    ex = start
+    title = base
     while ex < 100:
         for playlist in pctl.multi_playlist:
             if playlist[0] == title:
                 ex += 1
-                title = "New Playlist (" + str(ex) + ")"
+                if ex == 1:
+                    title = base + " (" + extra.rstrip(" ") + ")"
+                else:
+                    title = base + " (" + extra + str(ex) + ")"
                 break
         else:
             break
+
+    return title
+
+
+def new_playlist(switch=True):
+
+    title = gen_unique_pl_title("New Playlist")
 
     pctl.multi_playlist.append(pl_gen(title=title))  # [title, 0, [], 0, 0, 0])
     if switch:
@@ -8778,7 +8797,7 @@ def gen_dupe(index):
     #      pctl.multi_playlist[index][3], pctl.multi_playlist[index][4], pctl.multi_playlist[index][5]])
 
 
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0],
+    pctl.multi_playlist.append(pl_gen(title=gen_unique_pl_title(pctl.multi_playlist[index][0], "Duplicate ", 0),
                                       playing=pctl.multi_playlist[index][1],
                                       playlist=copy.deepcopy(playlist),
                                       position=pctl.multi_playlist[index][3],
@@ -11760,7 +11779,7 @@ class SearchOverlay:
                 self.search_text.text = ""
 
             mouse_change = False
-            if self.old_mouse != mouse_position:
+            if not point_proximity_test(self.old_mouse, mouse_position, 3):
                 mouse_change = True
             # mouse_change = True
 
@@ -12173,6 +12192,9 @@ def worker2():
                     if item[0] == 3:
                         temp_results[i][4] = genres[item[1]]
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+
+                search_over.on = 0
+                search_over.force_select = 0
 
 def encode_folder_name(track_object):
 
@@ -14966,9 +14988,9 @@ class TopPanel:
 
         # ---
         self.space_left = 0
-        self.tab_hold = False  # !!
+        #playlist_box.drag = False  # !!
         self.tab_text_spaces = []
-        self.tab_hold_index = 0
+        #playlist_box.drag_on = 0
         self.index_playing = -1
         self.playing_title = ""
         self.drag_zone_start_x = 300 * gui.scale
@@ -15020,7 +15042,7 @@ class TopPanel:
 
         self.playlist_icon.render(13 * gui.scale, 8 * gui.scale, colour)
 
-        if self.tab_hold:
+        if playlist_box.drag:
             drag_mode = False
 
         # Need to test length
@@ -15093,19 +15115,23 @@ class TopPanel:
                 # Click to change playlist
                 if input.mouse_click:
                     gui.pl_update = 1
-                    self.tab_hold = True
-                    self.tab_hold_index = i
+                    playlist_box.drag = True
+                    playlist_box.drag_on = i
                     switch_playlist(i)
+                    gui.drag_source_position = copy.deepcopy(mouse_position)
 
                 # Drag to move playlist
-                if mouse_up and i != self.tab_hold_index and self.tab_hold:
+                if mouse_up and i != playlist_box.drag_on and playlist_box.drag:
+
+                    # Reveal the tab in case it has been hidden
+                    pctl.multi_playlist[playlist_box.drag_on][8] = False
 
                     if key_shift_down:
-                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.tab_hold_index][2]
-                        delete_playlist(self.tab_hold_index)
+                        pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
+                        delete_playlist(playlist_box.drag_on)
                     else:
-                        move_playlist(self.tab_hold_index, i)
-                    self.tab_hold = False
+                        move_playlist(playlist_box.drag_on, i)
+                    playlist_box.drag = False
 
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and middle_click:
@@ -15128,12 +15154,12 @@ class TopPanel:
             x += tab_width + self.tab_spacing
 
         # Test dupelicate tab function
-        if self.tab_hold:
+        if playlist_box.drag:
             rect = (0, x, self.height, window_size[0])
             fields.add(rect)
-        if mouse_up and self.tab_hold and mouse_position[0] > x and mouse_position[1] < self.height:
-            gen_dupe(self.tab_hold_index)
-            self.tab_hold = False
+        if mouse_up and playlist_box.drag and mouse_position[0] > x and mouse_position[1] < self.height:
+            gen_dupe(playlist_box.drag_on)
+            playlist_box.drag = False
 
         # Need to test length again
         self.tab_text_spaces = []
@@ -15174,7 +15200,7 @@ class TopPanel:
             if i == pctl.active_playlist_viewing:
                 bg = colours.tab_background_active
                 active = True
-            elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit and not self.tab_hold:
+            elif (tab_menu.active is True and tab_menu.reference == i) or tab_menu.active is False and tab_hit and not playlist_box.drag:
                 bg = colours.tab_highlight
             elif i == pctl.active_playlist_playing:
                 bg = colours.tab_background
@@ -15203,12 +15229,12 @@ class TopPanel:
 
             # Drag to move playlist
             if tab_hit:
-                if mouse_down and i != self.tab_hold_index and self.tab_hold is True:
+                if mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
 
                     if key_shift_down:
                         ddt.rect_r((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255], True)
                     else:
-                        if self.tab_hold_index < i:
+                        if playlist_box.drag_on < i:
                             ddt.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
                         else:
                             ddt.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
@@ -15239,14 +15265,14 @@ class TopPanel:
                 drop_tracks_to_new_playlist(shift_selection)
 
         # Draw dupelicate tab function indicator
-        if self.tab_hold and mouse_position[0] > x and mouse_position[1] < gui.panelY:
+        if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
             ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [255, 180, 80, 255], True)
 
         # -------------
         # Other input
         if mouse_up:
             quick_drag = False
-            self.tab_hold = False
+            playlist_box.drag = False
 
         # Scroll anywhere on panel to cycle playlist
         # (This is a bit complicated because we need to skip over hidden playlists)
@@ -17298,6 +17324,7 @@ class PlaylistBox:
                     switch_playlist(i)
                     self.drag_on = i
                     self.drag = True
+                    gui.drag_source_position = copy.deepcopy(mouse_position)
 
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
@@ -17413,8 +17440,8 @@ class PlaylistBox:
                                [255, 180, 80, 255], True)
 
 
-        if not mouse_down:
-            self.drag = False
+        # if not mouse_down:
+        #     self.drag = False
 
 playlist_box = PlaylistBox()
 
@@ -22227,13 +22254,19 @@ while running:
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = [0, 0]
-            if window_size[1] - gui.panelBY > i_y > gui.panelY:
-                if len(shift_selection) == 1:
-                    ddt.rect_r((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
-                else:
-                    ddt.rect_r((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
+
+            if len(shift_selection) == 1:
+                ddt.rect_r((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
+            else:
+                ddt.rect_r((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
 
             gui.update += 1
+
+        # Drag pl tab next to cursor
+        if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10):
+            i_x, i_y = get_sdl_input.mouse()
+            gui.drag_source_position = (0, 0)
+            ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(45 * gui.scale), int(15 * gui.scale)), [40, 40, 40, 220], True)
 
         gui.update -= 1
         gui.present = True
