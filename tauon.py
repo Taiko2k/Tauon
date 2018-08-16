@@ -9556,7 +9556,7 @@ def rename_tracks(index):
 track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True)
 
 
-def delete_folder(index):
+def delete_folder(index, force=False):
 
     track = pctl.master_library[index]
 
@@ -9593,7 +9593,10 @@ def delete_folder(index):
                 pctl.master_library[pctl.track_queue[pctl.queue_step]].parent_folder_path) == os.path.normpath(old):
             pctl.stop(True)
 
-        shutil.rmtree(old)
+        if force:
+            shutil.rmtree(old)
+        else:
+            send2trash(old)
 
         for i in reversed(range(len(default_playlist))):
 
@@ -9601,7 +9604,10 @@ def delete_folder(index):
                 del default_playlist[i]
 
         if not os.path.exists(old):
-            show_message("Folder deleted.", 'done', old)
+            if force:
+                show_message("Folder deleted.", 'done', old)
+            else:
+                show_message("Folder sent to trash.", 'done', old)
         else:
             show_message("Hmm, its still there", 'error', old)
 
@@ -9610,8 +9616,10 @@ def delete_folder(index):
             reload_albums()
 
     except:
-        show_message("Unable to comply.", 'error', "Could not delete folder. Try check permissions.")
-
+        if force:
+            show_message("Unable to comply.", 'error', "Could not delete folder. Try check permissions.")
+        else:
+            show_message("Folder could not be trashed.", 'error', "Try again while holding shift to force delete.")
 
 def rename_parent(index, template):
 
@@ -19083,7 +19091,7 @@ while running:
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
-        #print(event.type)
+        # print(event.type)
 
         # if event.type == SDL_SYSWMEVENT:
         #      print(event.syswm.msg.contents) # Not implemented
@@ -21591,8 +21599,14 @@ while running:
                     gui.rename_folder_box = False
                     input.mouse_click = False
 
-                if draw.button("Delete", x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255]):
-                    delete_folder(rename_index)
+                text = "Trash"
+                if key_shift_down:
+                    text = "Delete"
+                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255]):
+                    if key_shift_down:
+                        delete_folder(rename_index, True)
+                    else:
+                        delete_folder(rename_index)
                     gui.rename_folder_box = False
                     input.mouse_click = False
 
