@@ -48,9 +48,9 @@ Designed to be simple and streamlined while putting the user in control of their
 
 ## Download and Install :dizzy:
 
-For __Arch Linux__, install is avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/)  
+For __Arch Linux__, install is avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
 
-For __Other Linux distributions__, a **Flatpak** package is availiable.
+For __Other Linux distributions__, a standalone **Flatpak** package is availiable.
  
  1. If you have not already, make sure you have correctly installed and configured Flatpak for your distro. See https://flatpak.org/setup/. Specificaly you will need to have the flatpak repo added:
  
