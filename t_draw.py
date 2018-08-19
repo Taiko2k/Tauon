@@ -116,7 +116,7 @@ class TDraw:
 
     def prime_font(self, name, size, user_handle, offset=0):
 
-        self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset)
+        self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size)
 
     def get_text_wh(self, text, font, max_x, wrap=False):
 
@@ -211,6 +211,12 @@ class TDraw:
         else:
             layout.set_ellipsize(Pango.EllipsizeMode.END)
             layout.set_width(max_x * 1000)
+            layout.set_height(h * 1000)
+
+        # Attributes don't seem to be implemented in gi?
+        # attrs = Pango.AttrList()
+        # attrs.insert(Pango.Attribute(Pango.Underline.SINGLE))
+        # layout.set_attributes(attrs)
 
         context.rectangle(0, 0, w, h)
         context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)

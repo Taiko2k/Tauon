@@ -20,6 +20,9 @@ v3.2.0
  - Tweaked 'duplicate playlist' function to modify the new title with a hint
  - Tweaked playlist tabs to allow dragging between side panel and top panel
  - Tweaked folder delete function to move to trash by default
+ - Tweaked download indicator to allow dismissal of watched items
+ - Tweaked scroll bars to highlight on click
+ - Fixed download indicator staying on if file was removed
  - Fixed gallery thumbnails to match side bar cycling without needing to reset (again)
  - Fixed delete option causing gallery to jump position to selected
  - Fixed possible unexpected behavior when modifying playlist with a menu open
@@ -39,6 +42,8 @@ v3.2.0
  - Fixed an issue where submenus might not position within window
  - Fixed search overlay 'show only' function sometimes showing the playing track instead
  - Fixed subsequent searches not resetting view to top
+ - Fixed scrobble marker show while player was paused
+ - Fixed lyrics display being truncated with long lyrics
  - Removed 'cut' menu option
 
 v3.1.2
