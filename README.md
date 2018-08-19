@@ -64,4 +64,4 @@ For further documentation see [tutorial](https://github.com/Taiko2k/tauonmb/wiki
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=flat-square&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases)  [![Say Thanks!](https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg?style=flat-square)](https://saythanks.io/to/Taiko2k) 
+[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=flat-square&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases)
