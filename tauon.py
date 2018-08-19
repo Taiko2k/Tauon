@@ -446,6 +446,16 @@ repeat_mode = False
 # Functions to generate empty playlist
 # Playlist is [Name, playing, playlist, position, hide folder title, selected, uid, last_folder, hidden(bool)]
 
+# 0 Name
+# 1 Playing
+# 2 PLaylist
+# 3 View Position
+# 4 hide tittle
+# 5 selected
+# 6 Unique id
+# 7 last folder import
+# 8 hidden
+
 def pl_uid_gen():
     return random.randrange(100, 10000000)
 
@@ -4591,71 +4601,6 @@ def player():   # BASS
 mediaKey = ''
 mediaKey_pressed = False
 
-
-def keyboard_hook():
-    from collections import namedtuple
-
-    KeyboardEvent = namedtuple('KeyboardEvent', ['event_type', 'key_code',
-                                                 'scan_code', 'alt_pressed',
-                                                 'time'])
-
-    handlers = []
-
-    def listen():
-        # Adapted from http://www.hackerthreads.org/Topic-42395
-
-        event_types = {win32con.WM_KEYDOWN: 'key down',
-                       win32con.WM_KEYUP: 'key up',
-                       0x104: 'key down',  # WM_SYSKEYDOWN, used for Alt key.
-                       0x105: 'key up',  # WM_SYSKEYUP, used for Alt key.
-                       }
-
-        def low_level_handler(nCode, wParam, lParam):
-            global mediaKey
-            global mediaKey_pressed
-
-            event = KeyboardEvent(event_types[wParam], lParam[0], lParam[1],
-                                  lParam[2] == 32, lParam[3])
-
-            if event[1] == 179 and event[0] == 'key down':
-                mediaKey = 'play'
-                mediaKey_pressed = True
-            elif event[1] == 178 and event[0] == 'key down':
-                mediaKey = 'stop'
-                mediaKey_pressed = True
-            elif event[1] == 177 and event[0] == 'key down':
-                mediaKey = 'back'
-                mediaKey_pressed = True
-            elif event[1] == 176 and event[0] == 'key down':
-                mediaKey = 'forward'
-                mediaKey_pressed = True
-            if mediaKey_pressed:
-                gui.update += 1
-            # Be a good neighbor and call the next hook.
-            return windll.user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
-
-        # Our low level handler signature.
-        CMPFUNC = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
-        # Convert the Python handler into C pointer.
-        pointer = CMPFUNC(low_level_handler)
-
-        # Hook both key up and key down events for common keys (non-system).
-        hook_id = windll.user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer,
-                                                  win32api.GetModuleHandle(None), 0)
-
-        # Register to remove the hook when the interpreter exits. Unfortunately a
-        # try/finally block doesn't seem to work here.
-        atexit.register(windll.user32.UnhookWindowsHookEx, hook_id)
-
-        while True:
-            msg = win32gui.GetMessage(None, 0, 0)
-            win32gui.TranslateMessage(byref(msg))
-            win32gui.DispatchMessage(byref(msg))
-            time.sleep(5)
-
-    listen()
-
-
 if True:
 
     def gnome():
@@ -5306,7 +5251,7 @@ class LyricsRenMini:
             self.index = index
             self.generate(index, w)
 
-        ddt.draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 15, w, colours.side_panel_background)
+        ddt.draw_text((x, y, 4, w), self.text, colours.lyrics, 15, w, colours.side_panel_background)
 
 
 lyrics_ren_mini = LyricsRenMini()
@@ -5331,7 +5276,7 @@ class LyricsRenWin:
             self.index = index
             self.generate(index, w)
 
-        ddt.draw_text((x, y, 4, w, 2000), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
+        ddt.draw_text((x, y, 4, w), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
 
 lyrics_ren = LyricsRenWin()
@@ -9562,17 +9507,13 @@ def delete_folder(index, force=False):
 
     old = track.parent_folder_path
 
-    # if not key_shift_down and not key_shiftr_down:
-    #     show_message("Are you sure you want to physically delete the folder? If so, press again while holding shift.")
-    #     return
-
 
     if len(old) < 5:
         show_message("This folder path seems short, I don't wanna try delete that", 'warning')
         return
 
     if not os.path.exists(old):
-        show_message("Error deleting folder. The folder seems to be missing.", 'error', "It's gone! just gone!")
+        show_message("Error deleting folder. The folder seems to be missing.", 'error', "It's gone! Just gone!")
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
@@ -14579,16 +14520,16 @@ class Over:
         line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
 
         ddt.draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(200), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), "Albums in playlist", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(200), 12)
+        ddt.draw_text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), "Playlist duration", colours.grey_blend_bg(100), 12)
 
 
 
-        ddt.draw_text((x2, y1), line, colours.grey_blend_bg(200), 12)
+        ddt.draw_text((x2, y1), line, colours.grey_blend_bg(220), 12)
 
         if self.stats_timer.get() > 5:
 
@@ -14602,17 +14543,15 @@ class Over:
 
         y1 += 40 * gui.scale
         ddt.draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(200), 12)
+        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), "Total albums", colours.grey_blend_bg(100), 12)
-        ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(200), 12)
+        ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(220), 12)
 
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
-                  colours.grey_blend_bg(200), 15)
-
-
+                  colours.grey_blend_bg(220), 15)
 
 
         # Ratio bar
@@ -15358,10 +15297,11 @@ class TopPanel:
             fields.add(rect)
 
             if coll(rect):
-                if dl > 0:
-                    colour = [230, 230, 230, 255]
+                colour = [230, 230, 230, 255]
+                if dl > 0 or watching > 0:
                     if right_click:
                         dl_menu.activate(position=(mouse_position[0], gui.panelY))
+                if dl > 0:
                     if input.mouse_click:
                         pln = 0
                         for item in dl_mon.ready:
@@ -15608,7 +15548,7 @@ class BottomBarType1:
 
         # Scrobble marker
 
-        if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0:
+        if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
@@ -17241,8 +17181,10 @@ class ScrollBox():
         colour = [255, 255, 255, 15]
         rect = (x, mi + position - half, w, bar_height)
         fields.add(rect)
-        if coll(rect) or self.held:
+        if coll(rect):
             colour = [255, 255, 255, 30]
+        if self.held:
+            colour = [255, 255, 255, 40]
 
         ddt.rect_r(rect, colour, True)
 
@@ -18350,26 +18292,40 @@ class DLMon:
             for item in os.listdir(downloads):
 
                 path = os.path.join(downloads, item)
+
                 if path in self.done:
                     continue
-                # print(path)
+
+                if path in self.ready and not os.path.exists(path):
+                    del self.ready[path]
+                    continue
+
+                if path in self.watching and not os.path.exists(path):
+                    del self.watching[path]
+                    continue
+
                 min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
                 ext = item[-3:]
 
                 if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
                     size = os.path.getsize(path)
+                    #print("Check: " + path)
                     if path in self.watching:
                         # Check if size is stable, then scan for audio files
+                        #print("watching...")
                         if size == self.watching[path] and size != 0:
+                            #print("scan")
                             del self.watching[path]
                             if archive_file_scan(path, DA_Formats) > 0.5:
                                 self.ready.add(path)
                                 gui.update += 1
                             self.done.add(path)
                         else:
+                            #print("update.")
                             self.watching[path] = size
                     else:
                         self.watching[path] = size
+                        #print("add.")
 
 
                 elif min_age < 60 and os.path.isdir(path) and path not in quick_import_done and "encode-output" not in path:
@@ -18420,6 +18376,9 @@ dl_mon = DLMon()
 
 def dismiss_dl():
     dl_mon.ready.clear()
+    dl_mon.done.update(dl_mon.watching)
+    dl_mon.watching.clear()
+
 
 dl_menu.add("Dismiss", dismiss_dl)
 
@@ -19029,6 +18988,7 @@ while running:
         mouse_up = False
         input.key_return_press = False
         key_ralt = False
+        key_lalt = False
         key_space_press = False
         key_down_press = False
         key_up_press = False
@@ -19286,6 +19246,8 @@ while running:
                 key_esc_press = True
             elif event.key.keysym.sym == SDLK_RALT:
                 key_ralt = True
+            elif event.key.keysym.sym == SDLK_LALT:
+                key_lalt = True
             elif event.key.keysym.sym == SDLK_F11:
                 key_F11 = True
             elif event.key.keysym.sym == SDLK_F12:
@@ -19389,6 +19351,11 @@ while running:
                 key_ctrl_down = False
             elif event.key.keysym.sym == SDLK_RSHIFT:
                 key_shiftr_down = False
+            elif event.key.keysym.sym == SDLK_RALT:
+                gui.album_tab_mode = False
+            elif event.key.keysym.sym == SDLK_LALT:
+                gui.album_tab_mode = False
+
         elif event.type == SDL_TEXTINPUT:
             k_input = True
             power += 5
@@ -19411,6 +19378,7 @@ while running:
 
                 focused = True
                 mouse_down = False
+                gui.album_tab_mode = False
                 gui.pl_update = 1
                 gui.update += 1
 
@@ -19645,7 +19613,7 @@ while running:
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
 
-            if key_tab:
+            if key_tab and not (key_ralt or key_lalt):
                 gui.album_tab_mode ^= True
                 if not album_mode:
                     toggle_album_mode()
@@ -21795,7 +21763,7 @@ while running:
                 if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
                     radiobox = False
 
-                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.grey(200), 213)
+                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.grey(220), 213)
                 #ddt.text_background_colour = colours.sys_background_3
 
                 y1 = y
