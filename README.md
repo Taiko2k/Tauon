@@ -56,9 +56,9 @@ For __Other Linux distributions__, a standalone **Flatpak** package is availiabl
  
      `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`
  
- 2. After downloading `tauon.flatpak` from lastest [release](https://github.com/Taiko2k/tauonmb/releases).    
+ 2. After downloading tauon.flatpak from lastest [release](https://github.com/Taiko2k/tauonmb/releases).    
      
-     Install using: `sudo flatpak install tauon.flatpak`. 
+     Install using: `sudo flatpak install tauon.flatpak`
          
      To uninstall run: `sudo flatpak uninstall com.github.taiko2k.tauonmb`
  
