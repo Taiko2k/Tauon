@@ -29,30 +29,22 @@ Designed to be simple and streamlined while putting the user in control of their
   <img src="https://user-images.githubusercontent.com/17271572/43353986-8719114e-9297-11e8-8028-adb9e5ad1247.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43353819-f9f2e580-9294-11e8-9e00-1921de2e6442.jpg" hspace="0px" vspace="0px" width="320"> | <img src="https://user-images.githubusercontent.com/17271572/43354043-e5e718d2-9298-11e8-8a6d-8539f5a8d56c.jpg" hspace="0px" vspace="0px" width="320">
   **Your music in your control, with built in folder renaming and deleting.** :pencil2: | **Navigate between your organised collections at lighting speed.** [<sup>?</sup>](https://github.com/Taiko2k/tauonmb/wiki/Category-Tags) :rocket: | **Jump in and out of the integrated album gallery.**
 
-## File type compatibility :milky_way:
+
+### File type compatibility :milky_way:
 
 #### Audio
 
 - [x] FLAC 
-- [x] MP3
-- [x] OGG
-- [x] OPUS
-- [x] M4A
-- [x] WV
-- [x] APE
-- [x] TTA
-- [x] WAV
-- [ ] WMA
-- [ ] CD
-- [ ] MOD
+- [x] APE, TTA, WV
+- [x] MP3, M4A
+- [x] OGG, OPUS
+- [ ] WMA, CD, MOD, AIFF
 
 #### Other
 
 - [x] XSPF
 - [x] CUE (automatic detection)
-- [ ] M3U
-- [ ] PLS
-
+- [ ] M3U, PLS
 
 ## Download and Install :dizzy:
 
@@ -72,3 +64,4 @@ For further documentation see [tutorial](https://github.com/Taiko2k/tauonmb/wiki
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
+[![Maintenance](https://img.shields.io/maintenance/yes/2018.svg?style=flat-square)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=flat-square&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases)  [![Say Thanks!](https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg?style=flat-square)](https://saythanks.io/to/Taiko2k) 
