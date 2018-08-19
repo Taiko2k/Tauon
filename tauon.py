@@ -14474,11 +14474,11 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(210), 216)
+        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(220), 216)
         y += 32 * gui.scale
-        ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(190), 13)
+        ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
         y += 20 * gui.scale
-        ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(190), 13)
+        ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
         y += 21 * gui.scale
         link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
         link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -14597,7 +14597,7 @@ class Over:
                         xx = x + 30 * gui.scale
                     if xx > self.box_x + self.w - 30 * gui.scale:
                         xx = self.box_x + self.w - 30 * gui.scale
-                    ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(190), 13)
+                    ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
 
                     if self.click:
                         gen_codec_pl(key)
