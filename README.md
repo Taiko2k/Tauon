@@ -52,7 +52,7 @@ For __Arch Linux__, install is avaliable from the [AUR](https://aur.archlinux.or
 
 For __Other Linux distributions__, a standalone **Flatpak** package is availiable.
  
- 1. If you have not already, make sure you have correctly installed and configured Flatpak for your distro. See https://flatpak.org/setup/. Specificaly you will need to have the flatpak repo added:
+ 1. If you have not already, make sure you have correctly installed and configured Flatpak for your distro. See https://flatpak.org/setup/. Specificaly you will need to have the flathub repo added:
  
      `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`
  
