@@ -27,7 +27,50 @@
 
 import struct
 import wave
+import io
 
+
+def parse_picture_block(f):
+    a = f.read(4)
+    a = int.from_bytes(a, byteorder='big')
+    # print("Picture type: " + str(a))
+
+    a = f.read(4)
+    b = int.from_bytes(a, byteorder='big')
+    # print("MIME len: " + str(b))
+
+    a = f.read(b)
+    # print(a)
+    # print("MIME: " + a.decode('ascii'))
+
+    a = f.read(4)
+    a = int.from_bytes(a, byteorder='big')
+    # print("Description len: " + str(a))
+
+    a = f.read(a)
+    # print("Description: " + a.decode('utf-8'))
+
+    a = f.read(4)
+    # a = int.from_bytes(a, byteorder='big')
+    # print("Width: " + str(a))
+
+    a = f.read(4)
+    # a = int.from_bytes(a, byteorder='big')
+    # print("Height: " + str(a))
+
+    a = f.read(4)
+    # a = int.from_bytes(a, byteorder='big')
+    # print("BPP: " + str(a))
+
+    a = f.read(4)
+    # a = int.from_bytes(a, byteorder='big')
+    # print("Index colour: " + str(a))
+
+    a = f.read(4)
+    a = int.from_bytes(a, byteorder='big')
+    # print("Bin len: " + str(a))
+
+    return f.read(a)
 
 class Flac:
 
@@ -56,9 +99,11 @@ class Flac:
         self.sample_rate = 48000
         self.bit_rate = 0
         self.length = 0
+        self.bit_depth = 0
 
         self.track_gain = None
         self.album_gain = None
+
 
     def read_vorbis(self, f):
 
@@ -147,7 +192,9 @@ class Flac:
 
         self.sample_rate = int(k[0:20], 2)
 
-        # bps = int(k[23:28], 2)
+        bps = int(k[23:28], 2)
+        self.bit_depth = bps + 1
+
         samples = int(k[28:64], 2)
 
         self.length = samples / self.sample_rate
@@ -191,47 +238,8 @@ class Flac:
 
             if z[1] == 6 and get_picture:
 
-                a = f.read(4)
-                a = int.from_bytes(a, byteorder='big')
-                # print("Picture type: " + str(a))
-
-                a = f.read(4)
-                b = int.from_bytes(a, byteorder='big')
-                # print("MIME len: " + str(b))
-
-                a = f.read(b)
-                # print(a)
-                # print("MIME: " + a.decode('ascii'))
-
-                a = f.read(4)
-                a = int.from_bytes(a, byteorder='big')
-                # print("Description len: " + str(a))
-
-                a = f.read(a)
-                # print("Description: " + a.decode('utf-8'))
-
-                a = f.read(4)
-                # a = int.from_bytes(a, byteorder='big')
-                # print("Width: " + str(a))
-
-                a = f.read(4)
-                # a = int.from_bytes(a, byteorder='big')
-                # print("Height: " + str(a))
-
-                a = f.read(4)
-                # a = int.from_bytes(a, byteorder='big')
-                # print("BPP: " + str(a))
-
-                a = f.read(4)
-                # a = int.from_bytes(a, byteorder='big')
-                # print("Index colour: " + str(a))
-
-                a = f.read(4)
-                a = int.from_bytes(a, byteorder='big')
-                # print("Bin len: " + str(a))
-
+                self.picture = parse_picture_block(f)
                 self.has_picture = True
-                self.picture = f.read(a)
 
             else:
                 f.read(z[2])
@@ -292,14 +300,34 @@ class Opus:
         self.bit_rate = 0
         self.length = 0
 
+    def get_more(self, f, v):
+
+        header = struct.unpack('<4sBBqIIiB', f.read(27))
+
+        segs = struct.unpack('B' * header[7], f.read(header[7]))
+        l = sum(segs)
+
+        o = v.tell()
+        v.seek(0, 2)
+        v.write(f.read(l))
+        v.seek(o)
+
+        return l
+
     def read(self):
 
         f = open(self.filepath, "rb")
 
         header = struct.unpack('<4sBBqIIiB', f.read(27))
+
         # print(header)
 
         segs = struct.unpack('B'*header[7], f.read(header[7]))
+
+        # l = sum(segs)
+        # print(f.read(l + 4))
+        # f.seek(l * -1)
+
         s = f.read(7)
 
         if s == b'OpusHea':
@@ -318,29 +346,44 @@ class Opus:
         for p in segs:
             f.read(p)
 
-        header = struct.unpack('<4sBBqIIiB', f.read(27))
+        v = io.BytesIO()
+        v.seek(0)
 
-        s = f.read(header[7])
-        s = f.read(7)
+        l = self.get_more(f, v)
+
+        s = v.read(7)
+        l -= 7
 
         if s == b"OpusTag":
-            f.read(1)
+            v.read(1)
+            l -= 1
         elif s == b"\x03vorbis":
             pass
         else:
             return
 
-        s = f.read(4)
+        s = v.read(4)
+        l -= 4
         a = int.from_bytes(s, byteorder='little')
-        s = f.read(a)
+        s = v.read(a)
+        l -= a
 
-        s = f.read(4)
+        s = v.read(4)
+        l -= 4
+
         number = int.from_bytes(s, byteorder='little')
 
         for i in range(number):
-            s = f.read(4)
+            s = v.read(4)
+            l -= 4
+
             length = int.from_bytes(s, byteorder='little')
-            s = f.read(length)
+
+            while l < length + 4:
+                l += self.get_more(f, v)
+
+            s = v.read(length)
+            l -= length
 
             position = 0
             while position < 40:
@@ -377,9 +420,11 @@ class Opus:
                         self.artist = b.decode("utf-8")
                     elif a == "metadata_block_picture":
 
-                        print("Tag Scanner: Found picture in OGG/OPUS file. Ignoring")
+                        print("Tag Scanner: Found picture in OGG/OPUS file.")
                         print("      In file: " + self.filepath)
                         self.has_picture = True
+                        self.picture = b
+                        #print(b)
 
                         # To do
 
@@ -399,6 +444,8 @@ class Opus:
                         print("      In file: " + self.filepath)
 
                     break
+
+        v.close()
 
         # Find the last Ogg page from end of file to get track length
         f.seek(-1, 2)
@@ -454,6 +501,7 @@ class Ape:
 
         self.sample_rate = 48000
         self.bit_rate = 0
+        self.bit_depth = 0
         self.length = 0
 
     def read(self):
@@ -609,8 +657,9 @@ class Ape:
             if version >= 3980:
 
                 audio_info = struct.unpack("<IIIHHI", start[56:76])
-                # print(audio_info)
+                #print(audio_info)
 
+                self.bit_depth = audio_info[3]
                 self.sample_rate = audio_info[5]
 
                 frames = audio_info[2] - 1
@@ -629,7 +678,8 @@ class Ape:
             if b"".join(header[0:3]) != b'TTA1':
 
                 self.sample_rate = header[7]
-                # bps = header[6]
+                bps = header[6]
+                self.bit_depth = bps
                 # channels = header[5]
                 self.length = header[8] / self.sample_rate
             elif b"".join(header[0:3]) != b'TTA2':
@@ -652,7 +702,6 @@ class Ape:
                     a.seek(-4, 1)
                     b = a.read(32)
                     header = struct.unpack("<4cIH2B5I", b)
-                    # print(header)
 
                     sample_rates = [6000, 8000, 9600, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000,
                                     88200, 96000, 192000]   # Adapted from example in WavPack/cli/wvparser.c
