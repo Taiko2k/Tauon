@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v3.2.1
+
+ - Added embedded picture for OGG and OPUS tags
+ - Improved error feedback when importing an archive
+ - Tweaked pre-import counter to favor speed over accuracy
+ - Tweaked track import sorting algorithm to better handle inconsistent disc number tagging
+
 v3.2.0
 
  - Added context menu to gallery album right click

@@ -33,7 +33,7 @@ import pickle
 import shutil
 import fcntl
 import gi
-from gi.repository import GLib
+from gi.repository import GLib #, Gtk, Gdk
 
 t_version = "v3.2.0"
 t_title = 'Tauon Music Box'
@@ -230,6 +230,7 @@ from t_tagscan import Opus
 from t_tagscan import Ape
 from t_tagscan import Wav
 from t_tagscan import M4a
+from t_tagscan import parse_picture_block
 from t_extra import *
 
 # Mute some stagger warnings
@@ -2785,7 +2786,7 @@ class LastFMapi:
 
         except:
             show_message("There was an error getting friends loves", 'warning')
-            raise
+
         self.scanning_friends = False
 
     def dl_love(self):
@@ -5971,6 +5972,14 @@ class AlbumArt():
                 if len(tt.data) > 30:
                     source_list.append([True, filepath])
 
+            elif ext == 'OGG' or ext == 'OPUS':
+
+                tt = Opus(filepath)
+                tt.read()
+                if tt.has_picture is True and len(tt.picture) > 30:
+                    source_list.append([True, filepath])
+
+
             elif ext == 'FLAC':
 
                 tt = Flac(filepath)
@@ -6153,10 +6162,15 @@ class AlbumArt():
             tag.read(True)
             return tag.picture
 
-            # elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
-            #     tag = Opus(filepath)
-            #     tag.read()
-            #     return tag.picture
+        elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
+            tag = Opus(filepath)
+            tag.read()
+            a = io.BytesIO(base64.b64decode(tag.picture))
+            a.seek(0)
+
+            image = parse_picture_block(a)
+            a.close()
+            return image
 
     def get_base64(self, index, size):
 
@@ -6459,7 +6473,6 @@ class AlbumArt():
             return 1
         except:
             print("Image processing error")
-
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -7949,7 +7962,7 @@ def rescan_tags(pl):
     for track in pctl.multi_playlist[pl][2]:
         if pctl.master_library[track].is_cue is False:
             to_scan.append(track)
-            # pctl.master_library[track] = tag_scan(pctl.master_library[track])
+
 
 def re_import(pl):
 
@@ -7986,16 +7999,27 @@ def tryint(s):
 
 def index_key(index):
     s = str(pctl.master_library[index].track_number)
-    #print(pctl.master_library[index].disc_number)
-    if pctl.master_library[index].disc_number != "":
-        if pctl.master_library[index].disc_number != "0":
-            s = str(pctl.master_library[index].disc_number) + "d" + s
-    if s == "":
+    d = str(pctl.master_library[index].disc_number)
+
+    # Add the disc number for sorting by CD, make it '1' if theres isnt one
+    if s or d:
+        if not d:
+            s = "1" + "d" + s
+        else:
+            s = d + "d" + s
+
+    # Use the filename if we dont have any metadata to sort by,
+    # since it could likely have the track number in it
+    else:
         s = pctl.master_library[index].filename
+
+    # This splits the line by groups of numbers, causing the sorting algorithum to sort
+    # by those numbers. Should work for filenames, even with the disc number in the name.
     try:
         return [tryint(c) for c in re.split('([0-9]+)', s)]
     except:
         return "a"
+
 
 def sort_track_2(pl, custom_list=None):
     current_folder = ""
@@ -8082,30 +8106,10 @@ def export_stats(pl):
         subprocess.call(["xdg-open", target])
 
 
-# def folder_year_sort(pl):
-#
-#     playlist = pctl.multi_playlist[pl][2]
-#
-#     current_folder = ""
-#     album = []
-#
-#     for item in playlist:
-#
-#         if current_folder != pctl.master_library[playlist[i]].parent_folder_name:
-#             current_folder = pctl.master_library[playlist[i]].parent_folder_name
-#
-#             album = []
-#
-#     print("done")
-#     print(top)
-
-
-
 def standard_sort(pl):
     sort_path_pl(pl)
     sort_track_2(pl)
     reload_albums()
-
 
 
 def year_s(plt):
@@ -12437,122 +12441,126 @@ def worker1():
             return 0
 
         if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
-            if prefs.auto_extract and os.path.splitext(path)[1][1:].lower() in Archive_Formats:
-                type = os.path.splitext(path)[1][1:].lower()
-                split = os.path.splitext(path)
-                target_dir = split[0]
-                if prefs.extract_to_music and music_folder is not None:
-                    target_dir = os.path.join(music_folder, os.path.basename(target_dir))
-                # print(os.path.getsize(path))
-                if os.path.getsize(path) > 2e+9:
-                    print("Archive file is large!")
-                    show_message("Skipping oversize zip file (>2GB)")
-                    return 1
-                if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
-                    if type == "zip":
-                        try:
+
+            if os.path.splitext(path)[1][1:].lower() in Archive_Formats:
+                if not prefs.auto_extract:
+                    show_message("You attempted to drop an archive.", 'info', 'However the "extract and trash" function is not enabled.')
+                else:
+                    type = os.path.splitext(path)[1][1:].lower()
+                    split = os.path.splitext(path)
+                    target_dir = split[0]
+                    if prefs.extract_to_music and music_folder is not None:
+                        target_dir = os.path.join(music_folder, os.path.basename(target_dir))
+                    # print(os.path.getsize(path))
+                    if os.path.getsize(path) > 2e+9:
+                        print("Archive file is large!")
+                        show_message("Skipping oversize zip file (>2GB)")
+                        return 1
+                    if not os.path.isdir(target_dir) and not os.path.isfile(target_dir):
+                        if type == "zip":
+                            try:
+                                b = to_got
+                                to_got = "ex"
+                                gui.update += 1
+                                zip_ref = zipfile.ZipFile(path, 'r')
+                                # matches = 0
+                                # count = 0
+                                # for fi in zip_ref.namelist():
+                                #     for ty in DA_Formats:
+                                #         if fi[len(ty) * -1:].lower() == ty:
+                                #             matches += 1
+                                #             break
+                                #     count += 1
+                                # if count == 0:
+                                #     print("Archive has no files")
+                                #     return
+                                # if count > 300:
+                                #     print("Zip archive has many files")
+                                #     return
+                                # if matches == 0:
+                                #     print("Zip archive does not appear to contain audio files")
+                                #     return
+                                zip_ref.extractall(target_dir)
+                                zip_ref.close()
+                            except RuntimeError as e:
+                                to_got = b
+                                if 'encrypted' in e:
+                                    show_message("Failed to extract zip archive.", 'warning',
+                                                 "The archive is encrypted. You'll need to extract it manually with the password.")
+                                else:
+                                    show_message("Failed to extract zip archive.", 'warning',
+                                                 "Maybe archive is corrupted? Does disk have enough space and have write permission?")
+                                return 1
+                            except:
+                                to_got = b
+                                show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
+                                return 1
+
+                        if type == 'rar':
                             b = to_got
-                            to_got = "ex"
-                            gui.update += 1
-                            zip_ref = zipfile.ZipFile(path, 'r')
-                            # matches = 0
-                            # count = 0
-                            # for fi in zip_ref.namelist():
-                            #     for ty in DA_Formats:
-                            #         if fi[len(ty) * -1:].lower() == ty:
-                            #             matches += 1
-                            #             break
-                            #     count += 1
-                            # if count == 0:
-                            #     print("Archive has no files")
-                            #     return
-                            # if count > 300:
-                            #     print("Zip archive has many files")
-                            #     return
-                            # if matches == 0:
-                            #     print("Zip archive does not appear to contain audio files")
-                            #     return
-                            zip_ref.extractall(target_dir)
-                            zip_ref.close()
-                        except RuntimeError as e:
-                            to_got = b
-                            if 'encrypted' in e:
-                                show_message("Failed to extract zip archive.", 'warning',
-                                             "The archive is encrypted. You'll need to extract it manually with the password.")
-                            else:
-                                show_message("Failed to extract zip archive.", 'warning',
-                                             "Maybe archive is corrupted? Does disk have enough space and have write permission?")
-                            return 1
-                        except:
-                            to_got = b
-                            show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
-                            return 1
-
-                    if type == 'rar':
-                        b = to_got
-                        try:
-                            # matches = 0
-                            # count = 0
-                            # line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
-                            # result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-                            # file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
-                            # # print(file_list)
-                            # for fi in file_list:
-                            #     for ty in DA_Formats:
-                            #         if fi[len(ty) * -1:].lower() == ty:
-                            #             matches += 1
-                            #             break
-                            #     count += 1
-                            # if count > 200:
-                            #     print("RAR archive has many files")
-                            #     return
-                            # if matches == 0:
-                            #     print("RAR archive does not appear to contain audio files")
-                            #     return
-                            # if count == 0:
-                            #     print("Archive has no files")
-                            #     return
-                            # #print(matches)
+                            try:
+                                # matches = 0
+                                # count = 0
+                                # line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                                # result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+                                # file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+                                # # print(file_list)
+                                # for fi in file_list:
+                                #     for ty in DA_Formats:
+                                #         if fi[len(ty) * -1:].lower() == ty:
+                                #             matches += 1
+                                #             break
+                                #     count += 1
+                                # if count > 200:
+                                #     print("RAR archive has many files")
+                                #     return
+                                # if matches == 0:
+                                #     print("RAR archive does not appear to contain audio files")
+                                #     return
+                                # if count == 0:
+                                #     print("Archive has no files")
+                                #     return
+                                # #print(matches)
 
 
-                            to_got = "ex"
-                            gui.update += 1
-                            line = "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
-                            result = subprocess.run(shlex.split(line))
-                            print(result)
-                        except:
-                            to_got = b
-                            show_message("Failed to extract rar archive.", 'warning')
+                                to_got = "ex"
+                                gui.update += 1
+                                line = "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                                result = subprocess.run(shlex.split(line))
+                                print(result)
+                            except:
+                                to_got = b
+                                show_message("Failed to extract rar archive.", 'warning')
 
-                            return 1
+                                return 1
 
-                    upper = os.path.dirname(target_dir)
-                    cont = os.listdir(target_dir)
-                    new = upper + "/temporaryfolderd"
-                    error = False
-                    if len(cont) == 1 and os.path.isdir(split[0] + "/" + cont[0]):
-                        print("one thing")
-                        os.rename(target_dir, new)
-                        try:
-                            shutil.move(new + "/" + cont[0], upper)
-                        except:
-                            error = True
-                        shutil.rmtree(new)
-                        print(new)
-                        target_dir = upper + "/" + cont[0]
-                        if not os.path.isdir(target_dir):
-                            print("Extract error, expected directory not found")
+                        upper = os.path.dirname(target_dir)
+                        cont = os.listdir(target_dir)
+                        new = upper + "/temporaryfolderd"
+                        error = False
+                        if len(cont) == 1 and os.path.isdir(split[0] + "/" + cont[0]):
+                            print("one thing")
+                            os.rename(target_dir, new)
+                            try:
+                                shutil.move(new + "/" + cont[0], upper)
+                            except:
+                                error = True
+                            shutil.rmtree(new)
+                            print(new)
+                            target_dir = upper + "/" + cont[0]
+                            if not os.path.isdir(target_dir):
+                                print("Extract error, expected directory not found")
 
-                    if True and not error:  # prefs.auto_del_zip
-                        print("Deleting archive file: " + path)
-                        try:
-                            send2trash(path)
-                        except:
-                            show_message("Could not move archive to trash", 'info', path)
+                        if True and not error:  # prefs.auto_del_zip
+                            print("Deleting archive file: " + path)
+                            try:
+                                send2trash(path)
+                            except:
+                                show_message("Could not move archive to trash", 'info', path)
 
-                    to_got = b
-                    gets(target_dir)
-                    quick_import_done.append(target_dir)
+                        to_got = b
+                        gets(target_dir)
+                        quick_import_done.append(target_dir)
 
             return 1
 
@@ -12604,6 +12612,7 @@ def worker1():
             pctl.jump(master_count - 1)
             auto_play_import = False
 
+    # Count the approx number of files to be imported, recursively
     def pre_get(direc):
         global DA_Formats
         global to_get
@@ -12612,15 +12621,19 @@ def worker1():
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])):
                 pre_get(os.path.join(direc, items_in_dir[q]))
+            else:
+                to_get += 1
+                gui.update += 1
             if gui.im_cancel:
                 return
-        for q in range(len(items_in_dir)):
-            if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
-                if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
-                    to_get += 1
-                    gui.update += 1
-            if gui.im_cancel:
-                return
+
+        # for q in range(len(items_in_dir)):
+        #     if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
+        #         if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
+        #             to_get += 1
+        #             gui.update += 1
+        #     if gui.im_cancel:
+        #         return
 
 
     def gets(direc):
@@ -19775,6 +19788,10 @@ while running:
         if key_F7:
 
             show_message("Test error message 123", 'error', "hello text")
+
+            # clip = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+            # print(clip.wait_for_text())
+
             #
             # colours.playlist_panel_background = colours.grey(240)
             # colours.side_panel_background = colours.grey(240)
