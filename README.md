@@ -66,7 +66,7 @@ For __Other Linux distributions__, a standalone **Flatpak** package is available
 
 ___
 
-For further documentation see [tutorial](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Tutorial).
+For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
