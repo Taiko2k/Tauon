@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v3.2.1
 
- - Added embedded picture for OGG and OPUS tags
+ - Added embedded picture support for OGG and OPUS tags
  - Improved error feedback when importing an archive
  - Tweaked pre-import counter to favor speed over accuracy
  - Tweaked track import sorting algorithm to better handle inconsistent disc number tagging
+ - Reverted some track info box fonts
+ - Fixed delayed gallery rendering when player was stopped
 
 v3.2.0
 
