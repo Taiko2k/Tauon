@@ -19523,7 +19523,7 @@ while running:
         SDL_Delay(30)
         # if gui.lowered:
         #     time.sleep(0.2)
-        if pctl.playing_state == 0 and len(load_orders) == 0 and gui.update == 0:
+        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue:
                 SDL_WaitEventTimeout(None, 1000)
 
         continue
@@ -21243,9 +21243,11 @@ while running:
                 x1 = int(x + 18 * gui.scale)
                 x2 = int(x + 98 * gui.scale)
 
-                value_font = 312
-                if key_shift_down:
-                    value_font = 12
+                value_font_a = 312
+                value_font = 12
+
+                # if key_shift_down:
+                #     value_font = 12
                 key_colour_off = colours.grey_blend_bg3(90)
                 key_colour_on = colours.grey_blend_bg3(240)
                 value_colour = colours.grey_blend_bg3(225)
@@ -21321,10 +21323,10 @@ while running:
                         ddt.draw_text((x1, y1), "Artist", key_colour_off, 212)
 
                     q = ddt.draw_text((x2, y1 - (1 * gui.scale)), tc.artist,
-                              colours.grey_blend_bg3(220), value_font, max_w=390 * gui.scale)
+                              colours.grey_blend_bg3(220), value_font_a, max_w=390 * gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font)
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font_a)
 
                     y1 += int(16 * gui.scale)
 
@@ -21341,10 +21343,10 @@ while running:
 
                     q = ddt.draw_text((x2, y1 - 1 * gui.scale), tc.album,
                               value_colour,
-                                      value_font, max_w=390*gui.scale)
+                                      value_font_a, max_w=390*gui.scale)
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album, value_font)
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album, value_font_a)
 
                     y1 += int(26 * gui.scale)
 
@@ -21529,7 +21531,7 @@ while running:
                         if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and ddt.get_text_w(
                                 tc.comment, 12) < 335 * gui.scale:
 
-                            link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 312)
+                            link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 12)
                             link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
                             fields.add(link_rect)
@@ -21541,9 +21543,9 @@ while running:
                                     track_box = True
 
                         elif comment_mode == 1:
-                            ddt.draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, value_colour, 312)
+                            ddt.draw_text((x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale), tc.comment, value_colour, 12)
                         else:
-                            ddt.draw_text((x2, y1), tc.comment, value_colour, 312)
+                            ddt.draw_text((x2, y1), tc.comment, value_colour, 12)
 
             fader.render()
             if pref_box.enabled:

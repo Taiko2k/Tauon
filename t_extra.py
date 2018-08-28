@@ -279,6 +279,7 @@ def archive_file_scan(path, extensions):
                     if fi[len(ty) * -1:].lower() == ty:
                         matches += 1
                         break
+
                 count += 1
             if count == 0:
                 print("Archive has no files")
