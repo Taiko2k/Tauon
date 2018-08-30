@@ -4,13 +4,16 @@ Changelog-------------------------------------
 v3.2.1
 
  - Added embedded picture support for OGG and OPUS tags
- - Added option to turn off crossfade when jumping tracks
+ - Added options to turn off crossfading
  - Improved error feedback when importing an archive
  - Tweaked pre-import counter to favor speed over accuracy
  - Tweaked track import sorting algorithm to better handle inconsistent disc number tagging
+ - Tweaked find box to close on backspace
+ - Tweaked search overlay to require more mouse movement before registering
  - Reverted some track info box fonts
  - Reverted album search return behavior to auto-play
  - Fixed delayed gallery rendering when player was stopped
+ - Fixed artist info links possibly containing a period
 
 v3.2.0
 
