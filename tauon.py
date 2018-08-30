@@ -609,6 +609,8 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_lb = False
         self.lb_token = None
 
+        self.use_jump_crossfade = False
+
 prefs = Prefs()
 
 
@@ -1302,6 +1304,8 @@ try:
         rename_files_previous = save[81]
     if save[82] is not None:
         rename_folder_previous = save[82]
+    if save[83] is not None:
+        prefs.use_jump_crossfade = save[83]
 
     state_file.close()
     del save
@@ -1850,6 +1854,7 @@ class PlayerCtl:
         self.start_time = 0
         self.b_start_time = 0
         self.playerCommand = ""
+        self.playerSubCommand = ""
         self.playerCommandReady = False
         self.playing_state = 0
         self.playing_length = 0
@@ -1891,8 +1896,8 @@ class PlayerCtl:
 
         self.bass_devices = []
         self.set_device = 0
-
         self.mpris = None
+
 
     def notify_update(self):
 
@@ -2118,6 +2123,8 @@ class PlayerCtl:
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         self.jump_time = random_start
         self.playerCommand = 'open'
+        if not prefs.use_jump_crossfade:
+            self.playerSubCommand = 'now'
         self.playerCommandReady = True
         self.playing_state = 1
 
@@ -2126,7 +2133,7 @@ class PlayerCtl:
         if update_title:
             update_title_do()
 
-    def play_target(self, gapless=False):
+    def play_target(self, gapless=False, jump=False):
 
         self.playing_time = 0
         # print(self.track_queue)
@@ -2135,6 +2142,8 @@ class PlayerCtl:
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
         if not gapless:
             self.playerCommand = 'open'
+            if jump and not prefs.use_jump_crossfade:
+                self.playerSubCommand = 'now'
             self.playerCommandReady = True
         else:
             self.playerCommand = 'gapless'
@@ -2161,7 +2170,7 @@ class PlayerCtl:
         self.track_queue.append(index)
         self.queue_step = len(self.track_queue) - 1
         playlist_hold = False
-        self.play_target()
+        self.play_target(jump=True)
 
         if pl_position is not None:
             self.playlist_playing_position = pl_position
@@ -2355,7 +2364,7 @@ class PlayerCtl:
                     pctl.auto_stop = False
 
                 elif self.force_queue:
-                    self.advance()
+                    self.advance(end=True)
 
                 elif self.repeat_mode is True:
 
@@ -2391,15 +2400,15 @@ class PlayerCtl:
                 else:
                     if False:  # self.playing_time < self.playing_length:
                         print("advance gapless")
-                        self.advance(quiet=True, gapless=True)
+                        self.advance(quiet=True, gapless=True, end=True)
                     else:
                         #print("advance normal")
-                        self.advance(quiet=True)
+                        self.advance(quiet=True, end=True)
 
                     self.playing_time = 0
 
 
-    def advance(self, rr=False, quiet=False, gapless=False, inplace=False):
+    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False):
 
         # Temporary Workaround
         quick_d_timer.set()
@@ -2438,7 +2447,7 @@ class PlayerCtl:
             self.playlist_playing_position = self.force_queue[0][1]
             self.track_queue.append(target_index)
             self.queue_step = len(self.track_queue) - 1
-            self.play_target()
+            self.play_target(jump= not end)
             del self.force_queue[0]
 
         # Don't do anything if playlist is empty
@@ -2455,7 +2464,7 @@ class PlayerCtl:
             if rr:
                 self.play_target_rr()
             else:
-                self.play_target()
+                self.play_target(jump= not end)
                 # if album_mode:
                 #     goto_album(self.playlist_playing)
 
@@ -2521,7 +2530,7 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                 self.queue_step = len(self.track_queue) - 1
-                self.play_target(gapless=gapless)
+                self.play_target(gapless=gapless, jump= not end)
 
         else:
             print("ADVANCE ERROR - NO CASE!")
@@ -3635,6 +3644,8 @@ def player():   # BASS
     handle1 = None
     handle2 = None
 
+    transition_instant = False
+
     # last_level = [0, 0]
 
     x = (ctypes.c_float * 512)()
@@ -3988,6 +3999,13 @@ def player():   # BASS
 
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
+            
+            if pctl.playerSubCommand == 'now':
+                transition_instant = True
+                pctl.playerSubCommand = ""
+            else:
+                transition_instant = False
+                
 
             if pctl.playerCommand == 'time':
 
@@ -4364,6 +4382,7 @@ def player():   # BASS
             if pctl.playerCommand == 'open' and pctl.target_open != '':
 
                 pctl.playerCommand = ""
+                
                 if system != 'windows':
                     pctl.target_open = pctl.target_open.encode('utf-8')
 
@@ -4426,28 +4445,48 @@ def player():   # BASS
 
                 elif player1_status != p_stopped and player2_status == p_stopped:
                     player1_status = p_stopping
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
 
+                    if not transition_instant:
+                        BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
+                    else:
+                        BASS_ChannelSetAttribute(handle1, 2, 0)
 
                     handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
 
                     replay_gain(handle2)
+
+                    if not transition_instant:
+                        BASS_ChannelSetAttribute(handle2, 2, 0)
+                    else:
+                        BASS_ChannelSetAttribute(handle2, 2, current_volume)
+
                     channel2 = BASS_ChannelPlay(handle2, True)
 
-                    BASS_ChannelSetAttribute(handle2, 2, 0)
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.cross_fade_time)
+                    if not transition_instant:
+                        BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.cross_fade_time)
+
                     player2_status = p_playing
+
                 elif player2_status != p_stopped and player1_status == p_stopped:
                     player2_status = p_stopping
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
 
+                    if not transition_instant:
+                        BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
+                    else:
+                        BASS_ChannelSetAttribute(handle2, 2, 0)
 
                     handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                     replay_gain(handle1)
-                    BASS_ChannelSetAttribute(handle1, 2, 0)
+
+                    if not transition_instant:
+                        BASS_ChannelSetAttribute(handle1, 2, 0)
+                    else:
+                        BASS_ChannelSetAttribute(handle1, 2, current_volume)
+
                     channel1 = BASS_ChannelPlay(handle1, True)
 
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.cross_fade_time)
+                    if not transition_instant:
+                        BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.cross_fade_time)
                     player1_status = p_playing
 
                 else:
@@ -4531,12 +4570,14 @@ def player():   # BASS
             elif pctl.playerCommand == 'stop':
                 if player1_status != p_stopped:
                     player1_status = p_stopped
+
                     BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.pause_fade_time)
                     time.sleep(prefs.pause_fade_time / 1000)
                     channel1 = BASS_ChannelStop(handle1)
                     BASS_StreamFree(handle1)
                 if player2_status != p_stopped:
                     player2_status = p_stopped
+
                     BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.pause_fade_time)
                     time.sleep(prefs.pause_fade_time / 1000)
                     channel2 = BASS_ChannelStop(handle2)
@@ -4566,13 +4607,15 @@ def player():   # BASS
             pctl.new_time = 0
             bytes_position = 0
             if player1_status == p_stopping:
-                time.sleep(prefs.cross_fade_time / 1000)
+                if not transition_instant:
+                    time.sleep(prefs.cross_fade_time / 1000)
                 BASS_StreamFree(handle1)
                 player1_status = p_stopped
                 # print('player1 stopped')
                 channel1 = BASS_ChannelStop(handle1)
             if player2_status == p_stopping:
-                time.sleep(prefs.cross_fade_time / 1000)
+                if not transition_instant:
+                    time.sleep(prefs.cross_fade_time / 1000)
                 BASS_StreamFree(handle2)
                 player2_status = p_stopped
                 channel2 = BASS_ChannelStop(handle2)
@@ -11921,7 +11964,7 @@ class SearchOverlay:
                             self.search_text.text = ""
 
                     if enter and fade == 1:
-                        #self.click_album(item[2])
+                        self.click_album(item[2])
                         pctl.show_current(index=item[2])
                         pctl.playlist_view_position = playlist_selected
                         self.active = False
@@ -13908,7 +13951,10 @@ def switch_rg_album(mode=0):
         return True if prefs.replay_gain == 2 else False
     prefs.replay_gain = 2
 
-
+def toggle_jump_crossfade(mode=0):
+    if mode == 1:
+        return True if prefs.use_jump_crossfade else False
+    prefs.use_jump_crossfade ^= True
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
@@ -14022,6 +14068,13 @@ class Over:
             self.toggle_square(x, y, switch_rg_track, "Track Gain")
             y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_album, "Album Gain")
+
+
+            x -= 10 * gui.scale
+            y += 90 * gui.scale
+
+            self.toggle_square(x, y, toggle_jump_crossfade, "Use crossfade when jumping tracks")
+
 
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
@@ -18971,6 +19024,10 @@ def save_state():
             lb.key,
             rename_files.text,
             rename_folder.text,
+            prefs.use_jump_crossfade,
+            None,
+            None,
+            None,
             None]
 
     #print(prefs.last_device + "-----")
