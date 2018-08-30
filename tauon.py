@@ -5241,15 +5241,17 @@ renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
+print("Configure window...")
+
 display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
 SDL_GetDisplayBounds(display_index, display_bounds)
 
 icon = IMG_Load(b_active_directory + b"/gui/icon.png")
-
 SDL_SetWindowIcon(t_window, icon)
-
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
+
+SDL_SetWindowMinimumSize(t_window, 560, 330)
 
 gui.max_window_tex = 1000
 if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
@@ -5259,6 +5261,7 @@ if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
     while window_size[1] > gui.max_window_tex:
         gui.max_window_tex += 1000
 
+print("Create base textures...")
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
@@ -5279,7 +5282,7 @@ SDL_RenderClear(renderer)
 gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 gui.pl_update = 2
 
-SDL_SetWindowMinimumSize(t_window, 560, 330)
+
 
 if default_player == 1:
 
@@ -5349,8 +5352,9 @@ class Drawing:
         return click
 
 
-draw = Drawing()
+print("Scanning fonts...")
 
+draw = Drawing()
 
 standard_font = prefs.linux_font
 
@@ -13170,6 +13174,7 @@ def worker1():
                     loaderCommandReady = False
                     break
 
+print("Starting worker threads...")
 
 worker1Thread = threading.Thread(target=worker1)
 worker1Thread.daemon = True
@@ -18796,6 +18801,8 @@ if system != 'windows':
 
 # MAIN LOOP---------------------------------------------------------------------------
 
+print("Almost done...")
+
 gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
 
 running = True
@@ -19006,6 +19013,8 @@ def update_layout_do():
         SDL_RenderClear(renderer)
 
     update_set()
+
+print("Flushing render target...")
 
 SDL_SetRenderTarget(renderer, None)
 SDL_RenderClear(renderer)
