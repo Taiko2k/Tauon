@@ -5182,6 +5182,8 @@ stats_gen = GStats()
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 
+print("Starting SDL...")
+
 SDL_Init(SDL_INIT_VIDEO)
 
 #TTF_Init()
@@ -5202,6 +5204,8 @@ if gui.maximized:
 
 if draw_border:
     flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
+
+print("Creating window...")
 
 t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -5228,6 +5232,9 @@ except:
 
 # get window surface and set up renderer
 #renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+
+print("Setting up renderer...")
+
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 
 # window_surface = SDL_GetWindowSurface(t_window)
@@ -19004,6 +19011,8 @@ SDL_SetRenderTarget(renderer, None)
 SDL_RenderClear(renderer)
 SDL_RenderPresent(renderer)
 
+print("Presenting Window...")
+
 SDL_ShowWindow(t_window)
 
 # Clear spectogram texture
@@ -19171,6 +19180,8 @@ if gui.restart_album_mode:
     toggle_album_mode(True)
 
 quick_import_done = []
+
+print("Setup done. Entering main loop")
 
 while running:
     # bm.get('main')
