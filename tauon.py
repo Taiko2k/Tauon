@@ -4499,7 +4499,7 @@ def player():   # BASS
                     # print(transition_instant)
                     # print(tlen - tpos)
                     
-                    if not prefs.use_transition_crossfade and not transition_instant and err == 0 and 0.05 < tlen - tpos < 2:
+                    if not prefs.use_transition_crossfade and not transition_instant and err == 0 and 0.1 < tlen - tpos < 1.7:
 
                         handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                         replay_gain(handle2)
@@ -4510,9 +4510,12 @@ def player():   # BASS
                         br_timer.set()
                         while st.syncing:
                             time.sleep(0.1)
-                            if br_timer.get() > 2:
+                            if br_timer.get() > 1.6:
                                 print("Sync taking too long!")
+                                BASS_ChannelStop(handle1)
+                                sync_end_transition(handle1, 0, 0, handle2)
                                 break
+
                         BASS_ChannelStop(handle1)
                         BASS_StreamFree(handle1)
                         st.player1_status = p_stopped
@@ -4557,7 +4560,7 @@ def player():   # BASS
                     bpos = BASS_ChannelGetPosition(handle2, 0)
                     tpos = BASS_ChannelBytes2Seconds(handle2, bpos)
 
-                    if not prefs.use_transition_crossfade and not transition_instant and BASS_ErrorGetCode() == 0 and 0.05 < tlen - tpos < 2:
+                    if not prefs.use_transition_crossfade and not transition_instant and BASS_ErrorGetCode() == 0 and 0.1 < tlen - tpos < 1.7:
 
                         handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
                         replay_gain(handle1)
@@ -4568,8 +4571,10 @@ def player():   # BASS
                         br_timer.set()
                         while st.syncing:
                             time.sleep(0.1)
-                            if br_timer.get() > 2:
+                            if br_timer.get() > 1.6:
                                 print("Sync taking too long!")
+                                BASS_ChannelStop(handle2)
+                                sync_end_transition(handle2, 0, 0, handle1)
                                 break
 
                         BASS_ChannelStop(handle2)
@@ -19259,6 +19264,8 @@ while running:
         input_text = ''
         input.level_2_enter = False
 
+        mouse_enter_window = False
+
 
     if not mouse_down:
         k_input = False
@@ -19594,6 +19601,7 @@ while running:
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
 
+                mouse_enter_window = True
                 focused = True
                 mouse_down = False
                 gui.album_tab_mode = False
@@ -19614,6 +19622,9 @@ while running:
 
 
                 # print('resize')
+            elif event.window.event == SDL_WINDOWEVENT_ENTER:
+
+                mouse_enter_window = True
 
             # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
             #
@@ -19800,6 +19811,9 @@ while running:
     #     print("A")
 
     if k_input:
+
+        if mouse_enter_window:
+            input.key_return_press = False
 
         if input.mouse_click or right_click:
             last_click_location = copy.deepcopy(click_location)
