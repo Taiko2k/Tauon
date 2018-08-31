@@ -14,6 +14,8 @@ v3.2.1
  - Reverted album search return behavior to auto-play
  - Fixed delayed gallery rendering when player was stopped
  - Fixed artist info links possibly containing a period
+ - Fixed enter key possibly registering when using a window switcher
+
 
 v3.2.0
 
