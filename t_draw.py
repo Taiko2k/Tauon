@@ -148,14 +148,14 @@ class TDraw:
             if range_top > sd[0].h - range_height:
                 range_top = sd[0].h - range_height
 
-            self.source_rect.y = range_top
+            self.source_rect.y = round(range_top)
             self.source_rect.w = sd[0].w
-            self.source_rect.h = range_height
+            self.source_rect.h = round(range_height)
 
             self.dest_rect.x = sd[0].x
             self.dest_rect.y = sd[0].y
             self.dest_rect.w = sd[0].w
-            self.dest_rect.h = range_height
+            self.dest_rect.h = round(range_height)
 
             SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
             return
