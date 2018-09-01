@@ -62,6 +62,13 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
     if install_directory[:5] == "/app/":
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
         print("Running as Flatpak")
+
+        shader_cache = os.path.join(os.path.expanduser('~'), ".var/app/com.github.taiko2k.tauonmb/cache/mesa_shader_cache")
+        if os.path.exists(shader_cache):
+            print("Removing shader cache as temporary workaround.")
+            shutil.rmtree(shader_cache)
+
+
         flatpak_mode = True
 
 # If we're installed, use home data locations rather than the portable mode locations
