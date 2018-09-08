@@ -3319,7 +3319,6 @@ def player():   # BASS
 
     player_timer = Timer()
     broadcast_timer = Timer()
-    current_volume = pctl.player_volume / 100
     has_bass_ogg = True
 
     if system == 'windows':
@@ -3674,11 +3673,11 @@ def player():   # BASS
     if prefs.log_vol:
         BASS_SetConfig(7, True)
 
-    st.player1_status = p_stopped
-    st.player2_status = p_stopped
+    # st.player1_status = p_stopped
+    # st.player2_status = p_stopped
 
-    handle1 = None
-    handle2 = None
+    # handle1 = None
+    # handle2 = None
 
     transition_instant = False
 
@@ -3741,6 +3740,200 @@ def player():   # BASS
 
     br_timer = Timer()
 
+    class BASS_Player():
+        
+        def __init__(self):
+            
+            self.channel = None
+            self.state = 'stopped'
+
+        def seek(self):
+
+            if self.state is not 'stopped':
+
+                bytes_position = BASS_ChannelSeconds2Bytes(self.channel, pctl.new_time + pctl.start_time)
+                BASS_ChannelSetPosition(self.channel, bytes_position, 0)
+                BASS_ChannelPlay(self.channel, False)
+
+        def update_time(self):
+
+            bpos = BASS_ChannelGetPosition(self.channel, 0)
+            tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
+            pctl.playing_time = tpos - pctl.start_time
+
+        def stop(self, end=False):
+
+            if self.state == 'stopped':
+                print("Already stopped")
+                return
+
+            if end:
+                time.sleep(1.5)
+            else:
+                BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
+                time.sleep(prefs.pause_fade_time / 1000)
+
+            BASS_ChannelStop(self.channel)
+            BASS_StreamFree(self.channel)
+            self.channel = None
+            self.state = 'stopped'
+
+        def set_volume(self, volume):
+
+            if self.channel is None: return
+            BASS_ChannelSlideAttribute(self.channel, 2, volume, prefs.change_volume_fade_time)
+
+        def pause(self):
+
+            if self.channel is None: return
+
+            if self.state == 'stopped':
+                print("Player already stopped")
+                return
+
+            if self.state == 'playing':
+
+                BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
+                time.sleep(prefs.pause_fade_time / 1000 / 0.7)
+                BASS_ChannelPause(self.channel)
+                self.state = 'paused'
+
+            elif self.state == 'paused':
+
+                BASS_ChannelPlay(self.channel, False)
+                BASS_ChannelSlideAttribute(self.channel, 2, pctl.player_volume / 100, prefs.pause_fade_time)
+                self.state = 'playing'
+
+        def start(self, instant=False):
+
+            print("open file...")
+
+            # Get the target filepath and convert to bytes
+            target = pctl.target_open.encode('utf-8')
+
+            # Check if the file exists, mark it as missing if not
+            if os.path.isfile(pctl.target_object.fullpath):
+                pctl.target_object.found = True
+            else:
+                pctl.target_object.found = False
+                gui.pl_update = 1
+                print("Missing File: " + pctl.target_object.fullpath)
+                pctl.playing_state = 0
+                pctl.advance(inplace=True)
+                return
+
+            # Load new stream
+            new_handle = BASS_StreamCreateFile(False, target, 0, 0, open_flag)
+
+            # Verify length if very short
+            if pctl.target_object.length < 1:
+                blen = BASS_ChannelGetLength(self.channel, 0)
+                tlen = BASS_ChannelBytes2Seconds(self.channel, blen)
+                pctl.target_object.length = tlen
+                pctl.playing_length = tlen
+
+            # Set the volume to 0 and set replay gain
+            BASS_ChannelSetAttribute(new_handle, 2, 0)
+            replay_gain(new_handle)
+
+            if self.state == 'paused':
+                BASS_ChannelStop(self.channel)
+                BASS_StreamFree(self.channel)
+                self.state = 'stopped'
+
+            if self.state == 'stopped':
+
+                # Set volume
+                BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
+
+                # Start playing
+                BASS_ChannelPlay(new_handle, True)
+                print("Play from rest")
+
+                # Set the starting position
+                if pctl.start_time > 0 or pctl.jump_time > 0:
+                    bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
+                    BASS_ChannelSetPosition(new_handle, bytes_position, 0)
+
+                self.channel = new_handle
+                self.state = 'playing'
+                return
+
+            elif self.state == 'playing':
+
+                self.state = 'playing'
+                pctl.playing_time = 0
+
+                # A track is already playing, so we need to transition it...
+
+                # Get the length and position of existing track
+                BASS_ErrorGetCode() # Flush any existing error
+                blen = BASS_ChannelGetLength(self.channel, 0)
+                tlen = BASS_ChannelBytes2Seconds(self.channel, blen)
+                bpos = BASS_ChannelGetPosition(self.channel, 0)
+                tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
+                err = BASS_ErrorGetCode()
+
+                print("Track transition...")
+                print("We are " + str(tlen - tpos)[:5] + " seconds from end")
+
+                # Try to transition without fade and and on time if possible and permitted
+                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 1.7:
+
+                    # set volume for new track
+                    BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
+
+                    # Start sync on end
+                    BASS_ChannelSetSync(self.channel, BASS_SYNC_END, 0, TransSync, new_handle)
+                    print("Set sync...")
+                    br_timer.set()
+
+                    while True:
+                        time.sleep(0.1)
+                        if br_timer.get() > 1.6:
+                            print("Sync taking too long!")
+                            BASS_ChannelStop(self.channel)
+                            sync_end_transition(0, 0, 0, new_handle)
+                            break
+
+                    BASS_ChannelStop(self.channel)
+                    BASS_StreamFree(self.channel)
+
+                    self.channel = new_handle
+                    return
+
+                else:
+
+                    print("Do slide transition")
+
+                    if instant:
+                        print("ok")
+                        BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
+
+                    BASS_ChannelPlay(new_handle, True)
+
+                    if not instant:
+                        # Fade in new track
+                        BASS_ChannelSlideAttribute(new_handle, 2, pctl.player_volume / 100, prefs.cross_fade_time)
+
+                        # Fade out old track
+                        BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.cross_fade_time)
+
+                    # Set the starting position
+                    if pctl.start_time > 0 or pctl.jump_time > 0:
+                        bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
+                        BASS_ChannelSetPosition(new_handle, bytes_position, 0)
+
+                    if not instant:
+                        time.sleep(prefs.cross_fade_time / 1000)
+
+                    BASS_ChannelStop(self.channel)
+                    BASS_StreamFree(self.channel)
+                    self.channel = new_handle
+
+
+
+    bass_player = BASS_Player()
 
     while True:
 
@@ -3755,10 +3948,9 @@ def player():   # BASS
                 # time.sleep(0.02)
                 time.sleep(0.02)
 
-
             if gui.turbo_next < 6 and pctl.playerCommandReady is not True:
 
-                if st.player1_status != p_playing and st.player2_status != p_playing:
+                if bass_player.state != 'playing':
                     gui.level = 0
                     continue
 
@@ -3771,12 +3963,7 @@ def player():   # BASS
                     if gui.lowered:
                         continue
 
-                    if st.player1_status == p_playing:
-                        sp_handle = handle1
-                    else:
-                        sp_handle = handle2
-
-                    BASS_ChannelGetData(sp_handle, x, 0x80000002)
+                    BASS_ChannelGetData(bass_player.channel, x, 0x80000002)
 
                     # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
                     # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
@@ -3824,12 +4011,8 @@ def player():   # BASS
                         continue
 
                     if pctl.playing_time > 0.0 and (pctl.playing_state == 1 or pctl.playing_state == 3):
-                        if st.player1_status == p_playing:
-                            sp_handle = handle1
-                        else:
-                            sp_handle = handle2
 
-                        BASS_ChannelGetData(sp_handle, x, 0x80000002)
+                        BASS_ChannelGetData(bass_player.channel, x, 0x80000002)
 
                         #p_spec = []
                         BANDS = gui.spec2_y + 5
@@ -3879,10 +4062,13 @@ def player():   # BASS
 
                 elif gui.vis == 1:
 
-                    if st.player1_status == p_playing:
-                        gui.level = BASS_ChannelGetLevel(handle1)
-                    elif st.player2_status == p_playing:
-                        gui.level = BASS_ChannelGetLevel(handle2)
+                    # if st.player1_status == p_playing:
+                    #     gui.level = BASS_ChannelGetLevel(handle1)
+                    # elif st.player2_status == p_playing:
+                    #     gui.level = BASS_ChannelGetLevel(handle2)
+                    if bass_player.state == "playing":
+                        gui.level = BASS_ChannelGetLevel(bass_player.channel)
+
 
                     ppp2 = gui.level & 0x0000FFFF
                     ppp1 = (gui.level & 0xFFFF0000) >> 16
@@ -3916,6 +4102,7 @@ def player():   # BASS
                     # if int(gui.level_peak[0]) != int(last_level[0]) or int(gui.level_peak[1]) != int(last_level[1]):
                     #     #gui.level_update = True
                     #     pass
+
                     gui.level_update = True
 
                     # last_level = copy.deepcopy(gui.level_peak)
@@ -3929,16 +4116,16 @@ def player():   # BASS
                     # gui.update += 1
                     gui.level_peak = [0, 0]
 
-        if pctl.playing_state == 3 and st.player1_status == p_playing:
+        if pctl.playing_state == 3 and bass_player.state == 'playing':
             if radio_meta_timer.get() > 3:
                 radio_meta_timer.set()
                 # print(BASS_ChannelGetTags(handle1,4 ))
 
-                meta = BASS_ChannelGetTags(handle1, 5)
+                meta = BASS_ChannelGetTags(bass_player.channel, 5)
                 if meta is not None:
                     meta = meta.decode('utf-8')
                 else:
-                    meta = BASS_ChannelGetTags(handle1, 2)
+                    meta = BASS_ChannelGetTags(bass_player.channel, 2)
                     if meta is not None:
                         meta = pctl.tag_meta.decode('utf-8', 'ignore')
                     else:
@@ -3955,10 +4142,10 @@ def player():   # BASS
 
                 # print(pctl.tag_meta)
 
-                if BASS_ChannelIsActive(handle1) == 0:
+                if BASS_ChannelIsActive(bass_player.channel) == 0:
                     pctl.playing_state = 0
                     show_message("Stream stopped.", "info", "The stream either ended or the connection was lost")
-                    st.player1_status = p_stopped
+                    bass_player.stop()
                     pctl.playing_time = 0
                     if pctl.record_stream:
                         pctl.record_stream = False
@@ -3985,7 +4172,7 @@ def player():   # BASS
                     else:
                         flag = 0x80000000
 
-                    rec_handle = BASS_Encode_OGG_StartFile(handle1, line, flag, file)
+                    rec_handle = BASS_Encode_OGG_StartFile(bass_player.channel, line, flag, file)
                     pctl.record_title = pctl.tag_meta
 
                     print(file)
@@ -4000,22 +4187,18 @@ def player():   # BASS
                 gui.update += 1
 
 
-        if st.player1_status == p_playing or st.player2_status == p_playing:
+        if bass_player.state == "playing":
 
             add_time = player_timer.hit()
             if add_time > 2 or add_time < 0:
                 add_time = 0
 
 
-            pctl.playing_time += add_time
-            # if not pctl.playerCommandReady:
-            #     if st.player1_status == p_playing:
-            #         bpos = BASS_ChannelGetPosition(handle1, 0)
-            #         tpos = BASS_ChannelBytes2Seconds(handle1, bpos)
-            #     else:
-            #         bpos = BASS_ChannelGetPosition(handle2, 0)
-            #         tpos = BASS_ChannelBytes2Seconds(handle2, bpos)
-            #     pctl.playing_time = tpos - pctl.start_time
+            #pctl.playing_time += add_time
+            if not pctl.playerCommandReady:
+                bass_player.update_time()
+
+
 
             if pctl.playing_state == 1:
 
@@ -4028,20 +4211,14 @@ def player():   # BASS
             pctl.test_progress()
 
 
-            if pctl.playing_state == 1 and len(pctl.track_queue) > 0 and 3 > add_time > 0:
+            if pctl.playing_state == 1 and len(pctl.track_queue) > 0 and 2 > add_time > 0:
                 star_store.add(pctl.track_queue[pctl.queue_step], add_time)
-                # index = pctl.track_queue[pctl.queue_step]
-                # key = pctl.master_library[index].title + pctl.master_library[index].filename
-                # if key in pctl.star_library:
-                #     if 3 > add_time > 0:
-                #         pctl.star_library[key] += add_time
-                # else:
-                #     pctl.star_library[key] = 0
 
-        elif pctl.playerCommandReady is False and pctl.playing_state == 1:
-            print("Missed play command, re-starting track")
-            pctl.stop()
-            pctl.play()
+
+        # elif pctl.playerCommandReady is False and pctl.playing_state == 1:
+        #     print("Missed play command, re-starting track")
+        #     pctl.stop()
+        #     pctl.play()
 
 
         if pctl.playerCommandReady:
@@ -4074,8 +4251,7 @@ def player():   # BASS
             elif pctl.playerCommand == "setdev":
 
                 BASS_Free()
-                st.player1_status = p_stopped
-                st.player2_status = p_stopped
+                bass_player.state = 'stopped'
                 pctl.playing_state = 0
                 pctl.playing_time = 0
                 print("Changing output device")
@@ -4091,20 +4267,13 @@ def player():   # BASS
             #     pass
 
             if pctl.playerCommand == "url":
-                if st.player1_status != p_stopped:
-                    BASS_ChannelStop(handle1)
-                    st.player1_status = p_stopped
-                    BASS_StreamFree(handle1)
-                if st.player2_status != p_stopped:
-                    BASS_ChannelStop(handle2)
-                    st.player2_status = p_stopped
-                    BASS_StreamFree(handle2)
+                bass_player.stop()
 
                 # fileline = str(datetime.datetime.now()) + ".ogg"
                 # print(BASS_ErrorGetCode())
                 # print(pctl.url)
                 bass_error = BASS_ErrorGetCode()
-                handle1 = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
+                bass_player.channel = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
                     show_message("Stream error.", "warning", "Connection timeout")
@@ -4123,9 +4292,11 @@ def player():   # BASS
                 elif bass_error != 0:
                     show_message("Stream error.", "warning", "Something went wrong... somewhere")
                 if bass_error == 0:
-                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                    BASS_ChannelPlay(handle1, True)
-                    st.player1_status = p_playing
+                    BASS_ChannelSetAttribute(bass_player.channel, 2, pctl.player_volume / 100)
+                    BASS_ChannelPlay(bass_player.channel, True)
+
+                    bass_player.state = 'playing'
+
                     pctl.playing_time = 0
                     pctl.last_playing_time = 0
                     player_timer.hit()
@@ -4160,7 +4331,7 @@ def player():   # BASS
                     print(file)
                     #print(BASS_ErrorGetCode())
 
-                    rec_handle = BASS_Encode_OGG_StartFile(handle1, line, flag, file)
+                    rec_handle = BASS_Encode_OGG_StartFile(bass_player.channel, line, flag, file)
                     #file.encode('utf-8')
 
                     #print(rec_handle)
@@ -4428,332 +4599,44 @@ def player():   # BASS
             # OPEN COMMAND
             if pctl.playerCommand == 'open' and pctl.target_open != '':
 
-                pctl.playerCommand = ""
-                
-                if system != 'windows':
-                    pctl.target_open = pctl.target_open.encode('utf-8')
+                pctl.playerCommand == ''
+                bass_player.start(transition_instant)
 
-                if os.path.isfile(pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath):
-                    pctl.master_library[pctl.track_queue[pctl.queue_step]].found = True
-                else:
-                    pctl.master_library[pctl.track_queue[pctl.queue_step]].found = False
-                    gui.pl_update = 1
-                    gui.update += 1
-                    print("Missing File: " + pctl.master_library[pctl.track_queue[pctl.queue_step]].fullpath)
-                    pctl.playerCommandReady = False
-                    pctl.playing_state = 0
-                    pctl.advance(inplace=True)
-                    continue
-
-                if pctl.join_broadcast and pctl.broadcast_active:
-
-                    if system != 'windows':
-                        pctl.target_open = pctl.target_open.encode('utf-8')
-                        flag = 0
-                    else:
-                        flag = 0x80000000
-                    flag |= 0x200000
-
-                    BASS_Mixer_ChannelRemove(handle3)
-                    BASS_StreamFree(handle3)
-                    handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-
-                    if pctl.b_start_time > 0:
-                        bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.b_start_time)
-                        BASS_ChannelSetPosition(handle3, bytes_position, 0)
-
-                    BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-                    channel1 = BASS_ChannelPlay(mhandle, True)
-
-                player_timer.hit()
-                # print(pctl.target_open)
-                # if system != 'windows':
-                #     pctl.target_open = pctl.target_open.encode('utf-8')
-                #     flag = 0
-                # else:
-                #     flag = 0x80000000
-
-                # BASS_ASYNCFILE = 0x40000000
-                # flag |= 0x40000000
-
-                if st.player1_status == p_stopped and st.player2_status == p_stopped:
-                    # print(BASS_ErrorGetCode())
-                    # print(pctl.target_open)
-                    handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-                    # print(BASS_ErrorGetCode())
-                    BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                    replay_gain(handle1)
-
-                    channel1 = BASS_ChannelPlay(handle1, True)
-                    if pctl.start_time > 0 or pctl.jump_time > 0:
-                        bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
-                        BASS_ChannelSetPosition(handle1, bytes_position, 0)
-                    st.player1_status = p_playing
-
-                elif st.player1_status != p_stopped and st.player2_status == p_stopped:
-                    
-
-                    BASS_ErrorGetCode()
-
-                    blen = BASS_ChannelGetLength(handle1, 0)
-                    tlen = BASS_ChannelBytes2Seconds(handle1, blen)
-
-                    bpos = BASS_ChannelGetPosition(handle1, 0)
-                    tpos = BASS_ChannelBytes2Seconds(handle1, bpos)
-
-                    err = BASS_ErrorGetCode()
-                    # print(err)
-                    # print(transition_instant)
-                    # print(tlen - tpos)
-                    
-                    if not prefs.use_transition_crossfade and not transition_instant and err == 0 and 0.1 < tlen - tpos < 1.7:
-
-                        handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-                        replay_gain(handle2)
-                        st.syncing = True
-                        BASS_ChannelSetAttribute(handle2, 2, current_volume)
-                        BASS_ChannelSetSync(handle1, BASS_SYNC_END, 0, TransSync, handle2)
-                        print("Set sync...")
-                        br_timer.set()
-                        while st.syncing:
-                            time.sleep(0.1)
-                            if br_timer.get() > 1.6:
-                                print("Sync taking too long!")
-                                BASS_ChannelStop(handle1)
-                                sync_end_transition(handle1, 0, 0, handle2)
-                                break
-
-                        BASS_ChannelStop(handle1)
-                        BASS_StreamFree(handle1)
-                        st.player1_status = p_stopped
-
-                    else:
-
-                        st.player1_status = p_stopping
-                        
-                        if not transition_instant:
-                            BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.cross_fade_time)
-                        else:
-                            BASS_ChannelSetAttribute(handle1, 2, 0)
-
-                        handle2 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-
-                        replay_gain(handle2)
-
-
-                        if not transition_instant:
-                            BASS_ChannelSetAttribute(handle2, 2, 0)
-                        else:
-                            BASS_ChannelSetAttribute(handle2, 2, current_volume)
-
-                        channel2 = BASS_ChannelPlay(handle2, True)
-
-                        if pctl.start_time > 0 or pctl.jump_time > 0:
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time + pctl.jump_time)
-                            BASS_ChannelSetPosition(handle2, bytes_position, 0)
-
-                        if not transition_instant:
-                            BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.cross_fade_time)
-
-                    st.player2_status = p_playing
-
-                elif st.player2_status != p_stopped and st.player1_status == p_stopped:
-
-                    BASS_ErrorGetCode()
-
-                    blen = BASS_ChannelGetLength(handle2, 0)
-                    tlen = BASS_ChannelBytes2Seconds(handle2, blen)
-
-                    bpos = BASS_ChannelGetPosition(handle2, 0)
-                    tpos = BASS_ChannelBytes2Seconds(handle2, bpos)
-
-                    if not prefs.use_transition_crossfade and not transition_instant and BASS_ErrorGetCode() == 0 and 0.1 < tlen - tpos < 1.7:
-
-                        handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-                        replay_gain(handle1)
-                        st.syncing = True
-                        BASS_ChannelSetAttribute(handle1, 2, current_volume)
-                        BASS_ChannelSetSync(handle2, BASS_SYNC_END, 0, TransSync, handle1)
-                        print("set sync")
-                        br_timer.set()
-                        while st.syncing:
-                            time.sleep(0.1)
-                            if br_timer.get() > 1.6:
-                                print("Sync taking too long!")
-                                BASS_ChannelStop(handle2)
-                                sync_end_transition(handle2, 0, 0, handle1)
-                                break
-
-                        BASS_ChannelStop(handle2)
-                        BASS_StreamFree(handle2)
-                        st.player2_status = p_stopped
-
-                    else:
-
-                        st.player2_status = p_stopping
-
-                        if not transition_instant:
-                            BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.cross_fade_time)
-                        else:
-                            BASS_ChannelSetAttribute(handle2, 2, 0)
-
-                        handle1 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, open_flag)
-                        replay_gain(handle1)
-
-                        if not transition_instant:
-                            BASS_ChannelSetAttribute(handle1, 2, 0)
-                        else:
-                            BASS_ChannelSetAttribute(handle1, 2, current_volume)
-
-                        channel1 = BASS_ChannelPlay(handle1, True)
-
-                        if pctl.start_time > 0 or pctl.jump_time > 0:
-                            bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
-                            BASS_ChannelSetPosition(handle1, bytes_position, 0)
-
-                        if not transition_instant:
-                            BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.cross_fade_time)
-
-                    st.player1_status = p_playing
-
-                else:
-                    print('no case')
-
-                if pctl.master_library[pctl.track_queue[pctl.queue_step]].length < 1:
-
-                    if st.player1_status == p_playing:
-                        blen = BASS_ChannelGetLength(handle1, 0)
-                        tlen = BASS_ChannelBytes2Seconds(handle1, blen)
-                        pctl.master_library[pctl.track_queue[pctl.queue_step]].length = tlen
-                        pctl.playing_length = tlen
-                    elif st.player2_status == p_playing:
-                        blen = BASS_ChannelGetLength(handle2, 0)
-                        tlen = BASS_ChannelBytes2Seconds(handle2, blen)
-                        pctl.master_library[pctl.track_queue[pctl.queue_step]].length = tlen
-                        pctl.playing_length = tlen
-
-
-                # if pctl.start_time > 0 or pctl.jump_time > 0:
-                #     if st.player1_status == p_playing:
-                #         bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.start_time + pctl.jump_time)
-                #         BASS_ChannelSetPosition(handle1, bytes_position, 0)
-                #     elif st.player2_status == p_playing:
-                #         bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.start_time + pctl.jump_time)
-                #         BASS_ChannelSetPosition(handle2, bytes_position, 0)
-
-                # print(BASS_ErrorGetCode())
-                # pctl.playing_time = 0
                 pctl.last_playing_time = 0
                 pctl.jump_time = 0
                 player_timer.hit()
 
-            # PAUSE COMMAND
+
             elif pctl.playerCommand == 'pause':
+                bass_player.pause()
                 player_timer.hit()
 
-                if pctl.join_broadcast and pctl.broadcast_active:
-                    if st.player1_status == p_playing or st.player2_status == p_playing:
-                        BASS_ChannelPause(mhandle)
-                    else:
-                        BASS_ChannelPlay(mhandle, True)
-
-                if st.player1_status == p_playing:
-                    st.player1_status = p_paused
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.pause_fade_time)
-                    time.sleep(prefs.pause_fade_time / 1000 / 0.7)
-                    channel1 = BASS_ChannelPause(handle1)
-                elif st.player1_status == p_paused:
-                    st.player1_status = p_playing
-                    channel1 = BASS_ChannelPlay(handle1, False)
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.pause_fade_time)
-                if st.player2_status == p_playing:
-                    st.player2_status = p_paused
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.pause_fade_time)
-                    time.sleep(prefs.pause_fade_time / 1000 / 0.7)
-                    channel2 = BASS_ChannelPause(handle2)
-                elif st.player2_status == p_paused:
-                    st.player2_status = p_playing
-                    channel2 = BASS_ChannelPlay(handle2, False)
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.pause_fade_time)
-
-
-
-            # CHANGE VOLUME COMMAND
             elif pctl.playerCommand == 'volume':
-                current_volume = pctl.player_volume / 100
-                if st.player1_status == p_playing:
-                    BASS_ChannelSlideAttribute(handle1, 2, current_volume, prefs.change_volume_fade_time)
-                if st.player2_status == p_playing:
-                    BASS_ChannelSlideAttribute(handle2, 2, current_volume, prefs.change_volume_fade_time)
-            # STOP COMMAND
+
+                bass_player.set_volume(pctl.player_volume / 100)
+
             elif pctl.playerCommand == 'runstop':
-                st.player1_status = p_stopped
-                st.player2_status = p_stopped
-                time.sleep(1.5)
-                if handle1 is not None:
-                    BASS_ChannelStop(handle1)
-                if handle2 is not None:
-                    BASS_ChannelStop(handle2)
+
+                bass_player.stop(True)
 
 
             elif pctl.playerCommand == 'stop':
-                if st.player1_status != p_stopped:
-                    st.player1_status = p_stopped
-
-                    BASS_ChannelSlideAttribute(handle1, 2, 0, prefs.pause_fade_time)
-                    time.sleep(prefs.pause_fade_time / 1000)
-                    channel1 = BASS_ChannelStop(handle1)
-                    BASS_StreamFree(handle1)
-                if st.player2_status != p_stopped:
-                    st.player2_status = p_stopped
-
-                    BASS_ChannelSlideAttribute(handle2, 2, 0, prefs.pause_fade_time)
-                    time.sleep(prefs.pause_fade_time / 1000)
-                    channel2 = BASS_ChannelStop(handle2)
-                    BASS_StreamFree(handle2)
+                bass_player.stop()
                 pctl.playerCommand = 'stopped'
-            # SEEK COMMAND
+
             elif pctl.playerCommand == 'seek':
 
-                if st.player1_status == p_playing or st.player1_status == p_paused:
-
-                    bytes_position = BASS_ChannelSeconds2Bytes(handle1, pctl.new_time + pctl.start_time)
-                    BASS_ChannelSetPosition(handle1, bytes_position, 0)
-                    BASS_ChannelPlay(handle1, False)
-                elif st.player2_status == p_playing or st.player2_status == p_paused:
-
-                    bytes_position = BASS_ChannelSeconds2Bytes(handle2, pctl.new_time + pctl.start_time)
-                    BASS_ChannelSetPosition(handle2, bytes_position, 0)
-                    BASS_ChannelPlay(handle2, False)
-
-                pctl.playerCommand = ''
-
-                if pctl.join_broadcast and pctl.broadcast_active:
-                    print('b seek')
-                    BASS_Mixer_ChannelSetPosition(handle3, bytes_position, 0)
-                    BASS_ChannelPlay(mhandle, False)
+                bass_player.seek()
 
             pctl.new_time = 0
             bytes_position = 0
-            if st.player1_status == p_stopping:
-                if not transition_instant:
-                    time.sleep(prefs.cross_fade_time / 1000)
-                BASS_StreamFree(handle1)
-                st.player1_status = p_stopped
-                # print('player1 stopped')
-                channel1 = BASS_ChannelStop(handle1)
-            if st.player2_status == p_stopping:
-                if not transition_instant:
-                    time.sleep(prefs.cross_fade_time / 1000)
-                BASS_StreamFree(handle2)
-                st.player2_status = p_stopped
-                channel2 = BASS_ChannelStop(handle2)
 
             # UNLOAD PLAYER COMMAND
             if pctl.playerCommand == 'unload':
                 BASS_Free()
                 print('BASS Unloaded')
                 break
+
 
     pctl.playerCommand = 'done'
 
@@ -19412,6 +19295,7 @@ while running:
             power += 5
             #print("edit text")
             editline = event.edit.text
+            #print(editline)
             editline = editline.decode("utf-8", 'ignore')
             k_input = True
             gui.update += 1
@@ -19594,7 +19478,7 @@ while running:
             input_text = event.text.text
             input_text = input_text.decode('utf-8')
             gui.update += 1
-            # print(input_text)
+            #print(input_text)
 
         elif event.type == SDL_MOUSEWHEEL:
             k_input = True
