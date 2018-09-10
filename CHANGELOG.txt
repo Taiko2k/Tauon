@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v3.2.2
+
+ - Added option to show desktop notifications for playing track
+ - Fixed player sometimes stalling on transition with fade off
+
 v3.2.1
 
  - Added embedded picture support for OGG and OPUS tags

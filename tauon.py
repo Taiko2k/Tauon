@@ -619,6 +619,8 @@ class Prefs:    # Used to hold any kind of settings
         self.use_jump_crossfade = False
         self.use_transition_crossfade = True
 
+        self.show_notifications = False
+
 prefs = Prefs()
 
 
@@ -1316,6 +1318,8 @@ try:
         prefs.use_jump_crossfade = save[83]
     if save[84] is not None:
         prefs.use_transition_crossfade = save[84]
+    if save[85] is not None:
+        prefs.show_notifications = save[85]
 
     state_file.close()
     del save
@@ -1914,6 +1918,7 @@ class PlayerCtl:
         if self.mpris is not None:
             self.mpris.update()
 
+
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
 
@@ -2143,6 +2148,7 @@ class PlayerCtl:
         if update_title:
             update_title_do()
 
+
     def play_target(self, gapless=False, jump=False):
 
         self.playing_time = 0
@@ -2165,6 +2171,7 @@ class PlayerCtl:
             update_title_do()
         self.notify_update()
 
+
     def jump(self, index, pl_position=None):
 
         if len(self.track_queue) > 0:
@@ -2184,6 +2191,7 @@ class PlayerCtl:
 
         if pl_position is not None:
             self.playlist_playing_position = pl_position
+
 
 
     def back(self):
@@ -2226,6 +2234,8 @@ class PlayerCtl:
 
         self.render_playlist()
         self.notify_update()
+        notify_song()
+
 
     def stop(self, block=False, run=False):
         self.playerCommand = 'stop'
@@ -2267,6 +2277,7 @@ class PlayerCtl:
         elif self.playing_state == 2:
             self.playerCommand = 'pause'
             self.playing_state = 1
+            notify_song()
         self.playerCommandReady = True
 
         self.render_playlist()
@@ -2286,6 +2297,7 @@ class PlayerCtl:
             self.pause()
         else:
             self.play()
+
 
     def seek_decimal(self, decimal):
 
@@ -2352,6 +2364,7 @@ class PlayerCtl:
 
         self.render_playlist()
         self.notify_update()
+
 
     def test_progress(self):
 
@@ -2556,6 +2569,7 @@ class PlayerCtl:
         self.render_playlist()
 
         self.notify_update()
+        notify_song()
 
 pctl = PlayerCtl()
 
@@ -2577,6 +2591,23 @@ def update_title_do():
         line = line.encode('utf-8')
         SDL_SetWindowTitle(t_window, line)
 
+song_notification = Notify.Notification.new("Hi")
+def notify_song():
+    if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
+        track = pctl.playing_object()
+        i_path = ""
+        try:
+            i_path = thumb_tracks.path(track)
+        except:
+            print("Thumbnail error")
+
+        top_line = (track.artist + " - " + track.title).strip("- ")
+
+        bottom_line = track.album
+
+        song_notification.update(top_line, bottom_line, i_path)
+
+        song_notification.show()
 
 # Last.FM -----------------------------------------------------------------
 class LastFMapi:
@@ -3584,19 +3615,6 @@ def player():   # BASS
     EndSync = SyncProc(py_sync)
 
 
-    def sync_end_transition(handle, channel, data, user):
-
-        print("Sync GO!")
-        BASS_ChannelPlay(user, True)
-        if pctl.start_time > 0 or pctl.jump_time > 0:
-            bytes_position = BASS_ChannelSeconds2Bytes(user, pctl.start_time + pctl.jump_time)
-            BASS_ChannelSetPosition(user, bytes_position, 0)
-        pctl.playing_time = 0
-        st.syncing = False
-
-    TransSync = SyncProc(sync_end_transition)
-
-
     limit = 0
 
 
@@ -3746,6 +3764,7 @@ def player():   # BASS
             
             self.channel = None
             self.state = 'stopped'
+            self.syncing = False
 
         def seek(self):
 
@@ -3886,11 +3905,13 @@ def player():   # BASS
                     # Start sync on end
                     BASS_ChannelSetSync(self.channel, BASS_SYNC_END, 0, TransSync, new_handle)
                     print("Set sync...")
+                    self.syncing = True
                     br_timer.set()
 
-                    while True:
-                        time.sleep(0.1)
-                        if br_timer.get() > 1.6:
+                    while self.syncing:
+                        time.sleep(0.001)
+                        if br_timer.get() > 1.6 and self.syncing:
+                            self.syncing = False
                             print("Sync taking too long!")
                             BASS_ChannelStop(self.channel)
                             sync_end_transition(0, 0, 0, new_handle)
@@ -3904,7 +3925,7 @@ def player():   # BASS
 
                 else:
 
-                    print("Do slide transition")
+                    print("Do transition")
 
                     if instant:
                         print("ok")
@@ -3931,9 +3952,22 @@ def player():   # BASS
                     BASS_StreamFree(self.channel)
                     self.channel = new_handle
 
-
-
     bass_player = BASS_Player()
+
+    def sync_end_transition(handle, channel, data, user):
+
+        bass_player.syncing = False
+        print("Sync GO!")
+
+        BASS_ChannelPlay(user, True)
+        if pctl.start_time > 0 or pctl.jump_time > 0:
+            bytes_position = BASS_ChannelSeconds2Bytes(user, pctl.start_time + pctl.jump_time)
+            BASS_ChannelSetPosition(user, bytes_position, 0)
+        pctl.playing_time = 0
+
+
+    TransSync = SyncProc(sync_end_transition)
+
 
     while True:
 
@@ -4220,18 +4254,20 @@ def player():   # BASS
         #     pctl.stop()
         #     pctl.play()
 
-
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
+            command = pctl.playerCommand
+            pctl.playerCommand = ''
             
             if pctl.playerSubCommand == 'now':
                 transition_instant = True
-                pctl.playerSubCommand = ""
+
             else:
                 transition_instant = False
-                
 
-            if pctl.playerCommand == 'time':
+            pctl.playerSubCommand = ""
+
+            if command == 'time':
 
                 pctl.target_open = pctl.time_to_get
                 if system != 'windows':
@@ -4248,7 +4284,7 @@ def player():   # BASS
                 BASS_StreamFree(handle9)
                 pctl.playerCommand = 'done'
 
-            elif pctl.playerCommand == "setdev":
+            elif command == "setdev":
 
                 BASS_Free()
                 bass_player.state = 'stopped'
@@ -4266,7 +4302,7 @@ def player():   # BASS
             # if pctl.playerCommand == "monitor":
             #     pass
 
-            if pctl.playerCommand == "url":
+            if command == "url":
                 bass_player.stop()
 
                 # fileline = str(datetime.datetime.now()) + ".ogg"
@@ -4303,7 +4339,7 @@ def player():   # BASS
                 else:
                     pctl.playing_status = 0
 
-            if pctl.playerCommand == 'record':
+            if command == 'record':
                 if pctl.playing_state != 3:
                     print("ERROR! Stream not active")
                 else:
@@ -4347,7 +4383,7 @@ def player():   # BASS
                         pctl.record_stream = False
 
 
-            if pctl.playerCommand == 'cast-next':
+            if command == 'cast-next':
                 print("Next Enc Rec")
 
                 if system != 'windows':
@@ -4387,7 +4423,7 @@ def player():   # BASS
                     BASS_StreamFree(handle3)
                     # BASS_StreamFree(oldhandle)
 
-            if pctl.playerCommand == 'encseek' and pctl.broadcast_active:
+            if command == 'encseek' and pctl.broadcast_active:
 
                 print("seek")
                 bytes_position = BASS_ChannelSeconds2Bytes(handle3, pctl.b_start_time + pctl.broadcast_time)
@@ -4395,7 +4431,7 @@ def player():   # BASS
 
                 #BASS_ChannelPlay(handle1, False)
 
-            if pctl.playerCommand == 'encpause' and pctl.broadcast_active:
+            if command == 'encpause' and pctl.broadcast_active:
 
                 # Pause broadcast
                 if pctl.encoder_pause == 0:
@@ -4413,14 +4449,14 @@ def player():   # BASS
                     #     BASS_Mixer_ChannelFlags(mhandle, 0, BASS_MIXER_PAUSE)
                     #     pctl.encoder_pause = 0
 
-            if pctl.playerCommand == "encstop":
+            if command == "encstop":
                 BASS_Encode_Stop(encoder)
                 BASS_ChannelStop(handle3)
                 BASS_StreamFree(handle3)
                 pctl.broadcast_active = False
 
 
-            if pctl.playerCommand == "encstart":
+            if command == "encstart":
 
                 port = "8000"
                 bitrate = "128"
@@ -4597,9 +4633,8 @@ def player():   # BASS
             # -----------------------------------------------------------------------------
 
             # OPEN COMMAND
-            if pctl.playerCommand == 'open' and pctl.target_open != '':
+            if command == 'open' and pctl.target_open != '':
 
-                pctl.playerCommand == ''
                 bass_player.start(transition_instant)
 
                 pctl.last_playing_time = 0
@@ -4607,24 +4642,24 @@ def player():   # BASS
                 player_timer.hit()
 
 
-            elif pctl.playerCommand == 'pause':
+            elif command == 'pause':
                 bass_player.pause()
                 player_timer.hit()
 
-            elif pctl.playerCommand == 'volume':
+            elif command == 'volume':
 
                 bass_player.set_volume(pctl.player_volume / 100)
 
-            elif pctl.playerCommand == 'runstop':
+            elif command == 'runstop':
 
                 bass_player.stop(True)
 
 
-            elif pctl.playerCommand == 'stop':
+            elif command == 'stop':
                 bass_player.stop()
                 pctl.playerCommand = 'stopped'
 
-            elif pctl.playerCommand == 'seek':
+            elif command == 'seek':
 
                 bass_player.seek()
 
@@ -4632,10 +4667,11 @@ def player():   # BASS
             bytes_position = 0
 
             # UNLOAD PLAYER COMMAND
-            if pctl.playerCommand == 'unload':
+            if command == 'unload':
                 BASS_Free()
                 print('BASS Unloaded')
                 break
+
 
 
     pctl.playerCommand = 'done'
@@ -11085,6 +11121,13 @@ def toggle_auto_theme(mode=0):
     global themeChange
     themeChange = True
 
+def toggle_notifications(mode=0):
+
+    if mode == 1:
+        return prefs.show_notifications
+
+    prefs.show_notifications ^= True
+
 
 def toggle_mini_lyrics(mode=0):
 
@@ -14531,7 +14574,7 @@ class Over:
         self.toggle_square(x, y, toggle_galler_text, "Show titles")
         y += 28 * gui.scale
         y += 28 * gui.scale
-        y += 28 * gui.scale
+
         ddt.draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
 
         y += 28 * gui.scale
@@ -14544,6 +14587,10 @@ class Over:
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
+        self.toggle_square(x, y, toggle_notifications, "Use notifications (when unfocused)")
+
+        y += 28 * gui.scale
+
 
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
 
@@ -19067,7 +19114,7 @@ def save_state():
             rename_folder.text,
             prefs.use_jump_crossfade,
             prefs.use_transition_crossfade,
-            None,
+            prefs.show_notifications,
             None,
             None]
 
@@ -22812,6 +22859,9 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 
 save_state()
 
+song_notification.close()
+Notify.uninit()
+
 print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
 SDL_DestroyTexture(gui.ttext)
@@ -22831,6 +22881,7 @@ exit_timer.set()
 while pctl.playerCommand != 'done':
     time.sleep(0.2)
     if exit_timer.get() > 3:
+        print("BASS unload timeout")
         break
 
 print("bye")
