@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib #, Gtk, Gdk
 
-t_version = "v3.2.1"
+t_version = "v3.2.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -619,7 +619,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_jump_crossfade = False
         self.use_transition_crossfade = True
 
-        self.show_notifications = False
+        self.show_notifications = True
 
 prefs = Prefs()
 
@@ -1887,7 +1887,7 @@ class PlayerCtl:
         self.time_to_get = []
         self.a_time = 0
         self.b_time = 0
-        self.playlist_backup = []
+        #self.playlist_backup = []
         self.active_replaygain = 0
         self.auto_stop = False
 
@@ -7900,7 +7900,17 @@ def reload():
 def clear_playlist(index):
     global default_playlist
 
-    pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
+    #pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
+    #undo.bk_playlist(index)
+    if not pctl.multi_playlist[index][2]:
+        print("Playlist is already empty")
+        return
+
+    li = []
+    for i, ref in enumerate(pctl.multi_playlist[index][2]):
+        li.append((i, ref))
+
+    undo.bk_tracks(index, li)
 
     del pctl.multi_playlist[index][2][:]
     if pctl.active_playlist_viewing == index:
@@ -7995,7 +8005,9 @@ def delete_playlist(index):
     gui.update += 1
 
     # Backup the playlist to be deleted
-    pctl.playlist_backup.append(pctl.multi_playlist[index])
+    #pctl.playlist_backup.append(pctl.multi_playlist[index])
+    #pctl.playlist_backup.append(pctl.multi_playlist[index])
+    undo.bk_playlist(index)
 
     # If we're deleting the final playlist, delete it and create a blank one in place
     if len(pctl.multi_playlist) == 1:
@@ -9486,11 +9498,16 @@ def del_selected():
     if not default_playlist:
         return
 
+    li = []
+
     for item in reversed(shift_selection):
         if item > len(default_playlist) - 1:
             return
+
+        li.append((item, default_playlist[item]))
         del default_playlist[item]
 
+    undo.bk_tracks(pctl.active_playlist_viewing, li)
     reload()
 
     if playlist_selected > len(default_playlist) - 1:
@@ -14587,7 +14604,7 @@ class Over:
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_notifications, "Use notifications (when unfocused)")
+        self.toggle_square(x, y, toggle_notifications, "Show track notifications")
 
         y += 28 * gui.scale
 
@@ -18786,6 +18803,59 @@ elif default_player == 0:
 #
 #     gui.pl_st[len(gui.pl_st) - 1][1] = gui.plw - 16 - total
 
+class Undo():
+
+    def __init__(self):
+
+        self.e = []
+
+    def undo(self):
+
+        if not self.e:
+            show_message("There are no more steps to undo.")
+            return
+
+        job = self.e.pop()
+
+        if job[0] == "playlist":
+            pctl.multi_playlist.append(job[1])
+            switch_playlist(len(pctl.multi_playlist) - 1)
+        elif job[0] == 'tracks':
+
+            uid = job[1]
+            li = job[2]
+
+            for i, playlist in enumerate(pctl.multi_playlist):
+                if playlist[6] == uid:
+                    pl = playlist[2]
+                    switch_playlist(i)
+                    break
+            else:
+                print("No matching playlist ID to restore tracks to")
+                return
+
+            for i, ref in reversed(li):
+
+                if i > len(pl):
+                    print("restore track error - playlist not correct length")
+                    continue
+                pl.insert(i, ref)
+
+                if not pctl.playlist_view_position < i < pctl.playlist_view_position + gui.playlist_view_length:
+                    pctl.playlist_view_position = i
+
+        gui.pl_update = 1
+
+    def bk_playlist(self, pl_index):
+
+        self.e.append(("playlist", pctl.multi_playlist[pl_index]))
+
+    def bk_tracks(self, pl_index, indis):
+
+        uid = pctl.multi_playlist[pl_index][6]
+        self.e.append(("tracks", uid, indis))
+
+undo = Undo()
 
 def update_layout_do():
 
@@ -19929,10 +19999,11 @@ while running:
             #show_message("This function has been removed", 'info')
 
         if key_ctrl_down and key_z_press:
-            if pctl.playlist_backup:
-                pctl.multi_playlist.append(pctl.playlist_backup.pop())
-            else:
-                show_message("There are no more playlists to un-delete.")
+            undo.undo()
+            # if pctl.playlist_backup:
+            #     pctl.multi_playlist.append(pctl.playlist_backup.pop())
+            # else:
+            #     show_message("There are no more playlists to un-delete.")
 
         if key_F9:
             open_encode_out()
@@ -21517,8 +21588,12 @@ while running:
                             input.mouse_click = False
                     else:
                         ddt.draw_text((x1, y1), "Path", key_colour_off, 212)
-                    ddt.draw_text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
+
+                    q = ddt.draw_text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
                               colours.grey_blend_bg3(200), 210, max_w=425*gui.scale )
+
+                    if coll(rect):
+                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.fullpath, 210)
 
                     y1 += int(15 * gui.scale)
 
