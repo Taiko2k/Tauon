@@ -7910,7 +7910,7 @@ def clear_playlist(index):
     for i, ref in enumerate(pctl.multi_playlist[index][2]):
         li.append((i, ref))
 
-    undo.bk_tracks(index, li)
+    undo.bk_tracks(index, list(reversed(li)))
 
     del pctl.multi_playlist[index][2][:]
     if pctl.active_playlist_viewing == index:

@@ -7,6 +7,7 @@ v3.2.2
  - Added ctrl+z undo steps for undoing track deletes
  - Fixed player sometimes stalling on transition with fade off
  - Fixed missing truncation tooltip for filepath in track box
+ - Fixed undo 'clear playlist' not restoring inplace
 
 v3.2.1
 
