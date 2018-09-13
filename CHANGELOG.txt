@@ -8,6 +8,7 @@ v3.2.2
  - Fixed player sometimes stalling on transition with fade off
  - Fixed missing truncation tooltip for filepath in track box
  - Fixed undo 'clear playlist' not restoring inplace
+ - Fixed artist bio scroll bar not recalculating on panel resize
 
 v3.2.1
 
