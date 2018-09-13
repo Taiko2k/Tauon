@@ -17763,6 +17763,7 @@ class ArtistInfoBox:
         self.process_text_artist = ""
         self.processed_text = ""
         self.th = 0
+        self.w = 0
 
         self.mini_box = WhiteModImageAsset("/gui/mini-box.png")
 
@@ -17856,10 +17857,17 @@ class ArtistInfoBox:
                         else:
                             self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
 
-                tw, th = ddt.get_text_wh(text, 14, w - 250 * gui.scale, True)
-                self.th = th
-
                 self.processed_text = text
+                self.w = -1  # trigger text recalc
+
+
+            if self.w != w:
+                tw, th = ddt.get_text_wh(self.processed_text, 14, w - 250 * gui.scale, True)
+                self.th = th
+                self.w = w
+
+
+
 
             scroll_max = self.th - (h - 26)
 
@@ -17879,7 +17887,7 @@ class ArtistInfoBox:
                 text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 4000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 14000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
