@@ -5,10 +5,14 @@ v3.2.2
 
  - Added option to show desktop notifications for playing track
  - Added ctrl+z undo steps for undoing track deletes
+ - Tweaked artist bio font size to be larger
+ - Tweaked artist bio fetching to have lower rate limit
  - Fixed player sometimes stalling on transition with fade off
  - Fixed missing truncation tooltip for filepath in track box
  - Fixed undo 'clear playlist' not restoring inplace
  - Fixed artist bio scroll bar not recalculating on panel resize
+ - [Flatpak] Fixed output audio device switching
+ - [Flatpak] Added workaround for poor font rendering
 
 v3.2.1
 
