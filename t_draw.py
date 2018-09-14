@@ -99,7 +99,7 @@ class TDraw:
 
     def get_text_w(self, text, font, height=False):
 
-        x, y = self.get_text_wh(text, font, 1000)
+        x, y = self.get_text_wh(text, font, 3000)
         if height:
             return y
         else:

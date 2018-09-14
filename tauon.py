@@ -53,6 +53,7 @@ install_directory = sys.path[0]
 user_directory = install_directory
 config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
+home_directory = os.path.join(os.path.expanduser('~'))
 
 # Detect if we are installed or running portably
 install_mode = False
@@ -63,11 +64,18 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
         t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
         print("Running as Flatpak")
 
+        # Clear shader cache as workaround for segfault on runtime update
         shader_cache = os.path.join(os.path.expanduser('~'), ".var/app/com.github.taiko2k.tauonmb/cache/mesa_shader_cache")
         if os.path.exists(shader_cache):
-            print("Removing shader cache as temporary workaround.")
+            print("-- Removing shader cache as temporary workaround.")
             shutil.rmtree(shader_cache)
 
+        # Copy fontconfig from host system as workaround for poor font rendering
+        if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
+            if os.path.exists(os.path.join(home_directory, ".config/fontconfig/fonts.conf")):
+                print("-- COPYING FONTCONFIG TO FLATPAK")
+                os.makedirs(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig"))
+                shutil.copy(os.path.join(home_directory, ".config/fontconfig/fonts.conf"), os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf"))
 
         flatpak_mode = True
 
@@ -4178,7 +4186,7 @@ def player():   # BASS
 
                 if BASS_ChannelIsActive(bass_player.channel) == 0:
                     pctl.playing_state = 0
-                    show_message("Stream stopped.", "info", "The stream either ended or the connection was lost")
+                    show_message("Stream stopped.", "info", "The stream either ended or the connection was lost.")
                     bass_player.stop()
                     pctl.playing_time = 0
                     if pctl.record_stream:
@@ -4211,7 +4219,7 @@ def player():   # BASS
 
                     print(file)
                     if BASS_ErrorGetCode() != 0:
-                        show_message("Recording error.", "warning", "An unknown error occurred when splitting the track")
+                        show_message("Recording error.", "warning", "An unknown error occurred when splitting the track.")
 
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
@@ -5295,6 +5303,7 @@ ddt.prime_font(standard_font, 8.5, 11)
 ddt.prime_font(standard_font, 9, 12)
 ddt.prime_font(standard_font, 10, 13)
 ddt.prime_font(standard_font, 10, 14)
+ddt.prime_font(standard_font, 10.2, 14.5)
 ddt.prime_font(standard_font, 11, 15)
 ddt.prime_font(standard_font, 12, 16)
 ddt.prime_font(standard_font, 12, 17)
@@ -7021,7 +7030,7 @@ class ToolTip:
         self.called = False
 
 tool_tip = ToolTip()
-
+track_box_path_tool_timer = Timer()
 
 def ex_tool_tip(x, y, text1_width, text, font):
 
@@ -7031,7 +7040,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
 
     y -= 10 * gui.scale
 
-    w =  ddt.get_text_w(text, 312) + 24 * gui.scale
+    w = ddt.get_text_w(text, 312) + 24 * gui.scale
     h = 24 * gui.scale
 
     x = x - int(w / 2)
@@ -7039,8 +7048,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
     border = 1 * gui.scale
     ddt.rect_r((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
     ddt.rect_r((x, y, w, h), colours.menu_background, True)
-    ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.grey(235), 312)
-
+    p = ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.grey(235), 312)
 
 # Right click context menu generator
 
@@ -8732,16 +8740,16 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub(_("Year → Old–New"), 0, gen_sort_date, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Year → Old–New"), 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub(_("Year → New–Old"), 0, gen_sort_date_new, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Year → New–Old"), 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date_new, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -17790,15 +17798,15 @@ class ArtistInfoBox:
             if artist == "":
                 return
 
-            if self.min_rq_timer.get() < 6:  # Limit rate
+            if self.min_rq_timer.get() < 5:  # Limit rate
                 if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
                     pass
                 else:
-                    self.status = "Changing too fast..."
+                    self.status = _("Changing too fast...")
                     wait = True
 
 
-            if pctl.playing_time < 3:
+            if pctl.playing_time < 1.5:
                 if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
                     pass
                 else:
@@ -17811,7 +17819,7 @@ class ArtistInfoBox:
 
                 self.artist_on = artist
                 self.scroll_y = 0
-                self.status = "Looking up..."
+                self.status = _("Looking up...")
 
                 shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
                 shoot_dl.daemon = True
@@ -17862,7 +17870,7 @@ class ArtistInfoBox:
 
 
             if self.w != w:
-                tw, th = ddt.get_text_wh(self.processed_text, 14, w - 250 * gui.scale, True)
+                tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
                 self.th = th
                 self.w = w
 
@@ -17887,7 +17895,7 @@ class ArtistInfoBox:
                 text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 14000), self.processed_text, [230, 230, 230, 255], 14, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -17945,7 +17953,7 @@ class ArtistInfoBox:
         if data[0] is False:
             self.text = ""
             artist_picture_render.show = False
-            self.status = "No artist bio found"
+            self.status = _("No artist bio found")
             return
         else:
             self.text = data[1]
@@ -21601,7 +21609,11 @@ while running:
                               colours.grey_blend_bg3(200), 210, max_w=425*gui.scale )
 
                     if coll(rect):
-                        ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.fullpath, 210)
+                        gui.frame_callback_list.append(TestTimer(0.21))
+                        if track_box_path_tool_timer.get() > 0.2:
+                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.fullpath, 210)
+                    else:
+                        track_box_path_tool_timer.set()
 
                     y1 += int(15 * gui.scale)
 
