@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<application>
+  <id type="desktop">com.github.taiko2k.tauonmb.desktop</id>
+  <name>Tauon Music Box</name>
+  <developer_name>Taiko2k</developer_name>
+  <summary>Play and manage your music collection</summary>
+  <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <url type="homepage">https://github.com/Taiko2k/tauonmb</url>
+  <url type="bugtracker">https://github.com/Taiko2k/tauonmb/issues</url>
+  <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/42132637-0dbf32ce-7d70-11e8-813a-83abf07facbe.png</icon>
+
+  <description>
+    <p>Tauon Music Box is a music player for playback of local audio files. Import music and create playlists by simple drag and drop. Navigate albums quickly by using the built in searching and sorting functions. Designed to be streamlined but powerful, putting the user in control of their music collection.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Simple drag and drop file importing</li>
+      <li>Built in CUE sheet detection</li>
+      <li>Groups tracks by folder</li>
+      <li>Easily create and manage playlists</li>
+      <li>Quick and powerful searching</li>
+      <li>Scrobble and love tracks to last.fm</li>
+      <li>Large album art and gallery views avaliable</li>
+    </ul>
+  </description>
+
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://user-images.githubusercontent.com/17271572/42672685-785555ba-86bb-11e8-9e2c-dab6e3dc360d.png</image>
+      <caption>Main window showing playlist and album art</caption>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+  </categories>
+
+  <releases>
+    <release version="3.2.1" date="2018-09-06"/>
+  </releases>
+
+  <suggests>
+    <id>org.gnome.Lollypop</id>
+  </suggests>
+
+  <translation type="gettext">tauon</translation>
+
+  <content_rating type="oars-1.1" />
+
+  <update_contact>captain.gxj_AT_gmail.com</update_contact>
+</application>
