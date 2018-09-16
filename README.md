@@ -64,10 +64,6 @@ For __Other Linux distributions__, a standalone **Flatpak** package is available
  
      >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
 
-  3. As a workaround to improve font rendering, you may want to copy your fontconfig to the flatpak environment (Optional)
-  
-     - `mkdir ~/.var/app/com.github.taiko2k.tauonmb/config/fontconfig`
-     - `cp ~/.config/fontconfig/fonts.conf ~/.var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf`
 ___
 
 For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
