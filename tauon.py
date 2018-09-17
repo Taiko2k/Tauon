@@ -74,7 +74,11 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
             if os.path.exists(os.path.join(home_directory, ".config/fontconfig/fonts.conf")):
                 print("-- COPYING FONTCONFIG TO FLATPAK")
-                os.makedirs(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig"))
+
+                fontcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
+
+                if not os.path.exists(fontcfg):
+                    os.makedirs(fontcfg)
                 shutil.copy(os.path.join(home_directory, ".config/fontconfig/fonts.conf"), os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf"))
 
         flatpak_mode = True
