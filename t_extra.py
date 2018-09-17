@@ -65,6 +65,7 @@ class TestTimer:
         return self.timer.get() > self.time
 
 
+
 # Test given proximity between two 2d points to given square
 def point_proximity_test(a, b, p):
     return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p

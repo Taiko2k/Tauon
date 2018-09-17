@@ -54,10 +54,10 @@ class TDraw:
         self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
         self.context = cairo.Context(self.surf)
         self.layout = PangoCairo.create_layout(self.context)
-        self.layout_context = self.layout.get_context()
-        fo = cairo.FontOptions()
-        fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-        PangoCairo.context_set_font_options(self.layout_context, fo)
+        # self.layout_context = self.layout.get_context()
+        # fo = cairo.FontOptions()
+        # fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+        # PangoCairo.context_set_font_options(self.layout_context, fo)
 
         self.text_background_colour = [0, 0, 0, 255]
         self.f_dict = {}
@@ -214,6 +214,7 @@ class TDraw:
             layout.set_height(h * 1000)
 
         # Attributes don't seem to be implemented in gi?
+
         # attrs = Pango.AttrList()
         # attrs.insert(Pango.Attribute(Pango.Underline.SINGLE))
         # layout.set_attributes(attrs)
