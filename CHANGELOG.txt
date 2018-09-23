@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v3.2.3
+
+ - Fixed transcode stalling on filepaths containing double-quotes
+
+
 v3.2.2
 
  - Added option to show desktop notifications for playing track

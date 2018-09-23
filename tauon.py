@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib #, Gtk, Gdk
 
-t_version = "v3.2.2"
+t_version = "v3.2.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -11819,18 +11819,18 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
     command = user_directory + "/encoder/ffmpeg "
 
-    if system != 'windows':
-        command = "ffmpeg "
+    # if system != 'windows':
+    command = "ffmpeg "
 
     if not pctl.master_library[track].is_cue:
         command += '-i "'
-        command += pctl.master_library[track].fullpath
     else:
         command += '-ss ' + str(pctl.master_library[track].start_time)
         command += ' -t ' + str(pctl.master_library[track].length)
 
         command += ' -i "'
-        command += pctl.master_library[track].fullpath
+
+    command += pctl.master_library[track].fullpath.replace('"', '\\"')
 
     command += '" '
 
@@ -11849,10 +11849,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if codec != 'flac':
         command += " -b:a " + str(bitrate) + "k -vn "
 
-    command += '"' + target_out + '"'
-
-    # command += full_wav_out
-
+    command += '"' + target_out.replace('"', '\\"') + '"'
 
     print(shlex.split(command))
     startupinfo = None
@@ -11862,7 +11859,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
-    print("done")
+    print("ffmpeg finished")
     if codec == "opus" and prefs.transcode_opus_as:
         codec = 'opus.ogg'
 
