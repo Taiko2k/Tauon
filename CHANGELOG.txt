@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v3.2.3
 
- - Add album repeat function
+ - Added album repeat mode
+ - Added album shuffle mode
  - Fixed transcode stalling on filepaths containing double-quotes
-
+ - Fixed possible issue and crash when playing CUE sheet tracks and switching playlist
 
 v3.2.2
 
@@ -1068,9 +1069,8 @@ v0.7
 - Implemented text cursor animation
 - Small performance tweaks
 
-v0.6.5
+v0.6.5 (First public release)
 
 - Fixed bug with not being able to rearrange playlists
 - Improved theme loading
 
-- First public release
