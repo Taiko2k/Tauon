@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.2.3
 
+ - Add album repeat function
  - Fixed transcode stalling on filepaths containing double-quotes
 
 

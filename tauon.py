@@ -1887,6 +1887,7 @@ class PlayerCtl:
         self.jump_time = 0
         self.random_mode = random_mode
         self.repeat_mode = repeat_mode
+        self.album_repeat_mode = False
         self.last_playing_time = 0
         self.multi_playlist = multi_playlist
         self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
@@ -2204,7 +2205,7 @@ class PlayerCtl:
         if pl_position is not None:
             self.playlist_playing_position = pl_position
 
-
+        gui.pl_update = 1
 
     def back(self):
 
@@ -2403,15 +2404,45 @@ class PlayerCtl:
 
                 elif self.repeat_mode is True:
 
-                    self.playing_time = 0
-                    self.new_time = 0
-                    self.playerCommand = 'seek'
-                    self.playerCommandReady = True
+                    if self.album_repeat_mode:
 
-                    # Reload lastfm for rescrobble
-                    if lfm_scrobbler.a_sc:
-                        lfm_scrobbler.a_sc = False
-                        self.a_time = 0
+                        re = False
+                        ti = self.g(default_playlist[self.playlist_playing_position])
+
+                        i = self.playlist_playing_position
+
+                        # Test if next track is in same folder
+                        if i + 1 < len(default_playlist):
+                            nt = self.g(default_playlist[i + 1])
+                            if ti.parent_folder_path == nt.parent_folder_path:
+                                # The next track is in the same folder
+                                # so advance normaly
+                                self.advance(quiet=True, end=True)
+                                return
+
+                        # We need to backtrack to see where the folder begins
+                        i -= 1
+                        while i >= 0:
+                            nt = self.g(default_playlist[i])
+                            if ti.parent_folder_path != nt.parent_folder_path:
+                                i += 1
+                                break
+                            i -= 1
+                        if i < 0:
+                            i = 0
+                        self.jump(default_playlist[i], i)
+
+                    else:
+
+                        self.playing_time = 0
+                        self.new_time = 0
+                        self.playerCommand = 'seek'
+                        self.playerCommandReady = True
+
+                        # Reload lastfm for rescrobble
+                        if lfm_scrobbler.a_sc:
+                            lfm_scrobbler.a_sc = False
+                            self.a_time = 0
 
                 elif self.random_mode is False and len(default_playlist) > self.playlist_playing_position and \
                                 self.master_library[default_playlist[self.playlist_playing_position]].is_cue is True \
@@ -16425,7 +16456,8 @@ class BottomBarType1:
 
                 if pctl.random_mode:
                     rpbc = colours.mode_button_active
-
+                    if coll(rect):
+                        tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
                 elif coll(rect):
                     tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
                     if self.random_click_off is True:
@@ -16453,16 +16485,26 @@ class BottomBarType1:
                 rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
                 fields.add(rect)
                 if (input.mouse_click or right_click) and coll(rect):
-                    pctl.repeat_mode ^= True
 
-                    if pctl.repeat_mode is False:
-                        self.repeat_click_off = True
+                    if input.mouse_click:
+                        pctl.repeat_mode ^= True
+                        if pctl.repeat_mode is False:
+                            self.repeat_click_off = True
+                    else: # right click
+                        pctl.album_repeat_mode ^= True
 
                 if pctl.repeat_mode:
                     rpbc = colours.mode_button_active
-
+                    if coll(rect):
+                        if pctl.album_repeat_mode:
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
+                        else:
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
                 elif coll(rect):
-                    tool_tip.test(x, y - 28 * gui.scale, _("Repeat"))
+                    if pctl.album_repeat_mode:
+                        tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
+                    else:
+                        tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.repeat_mode is True:
@@ -16474,6 +16516,9 @@ class BottomBarType1:
 
                 y += 3 * gui.scale
                 w = 3 * gui.scale
+
+                if pctl.album_repeat_mode:
+                    ddt.rect_a((x + 4 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
 
                 ddt.rect_a((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
                 ddt.rect_a((x + 4 * gui.scale, y + 5 * gui.scale), (46 * gui.scale, w), rpbc, True)
