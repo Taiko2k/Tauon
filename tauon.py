@@ -2394,6 +2394,8 @@ class PlayerCtl:
                 pass
             else:
 
+                pp = self.playing_playlist()
+
                 if pctl.auto_stop:
                     self.stop(run=True)
                     gui.update += 2
@@ -2406,14 +2408,14 @@ class PlayerCtl:
 
                     if self.album_repeat_mode:
 
-                        re = False
-                        ti = self.g(default_playlist[self.playlist_playing_position])
+
+                        ti = self.g(pp[self.playlist_playing_position])
 
                         i = self.playlist_playing_position
 
                         # Test if next track is in same folder
-                        if i + 1 < len(default_playlist):
-                            nt = self.g(default_playlist[i + 1])
+                        if i + 1 < len(pp):
+                            nt = self.g(pp[i + 1])
                             if ti.parent_folder_path == nt.parent_folder_path:
                                 # The next track is in the same folder
                                 # so advance normaly
@@ -2423,14 +2425,14 @@ class PlayerCtl:
                         # We need to backtrack to see where the folder begins
                         i -= 1
                         while i >= 0:
-                            nt = self.g(default_playlist[i])
+                            nt = self.g(pp[i])
                             if ti.parent_folder_path != nt.parent_folder_path:
                                 i += 1
                                 break
                             i -= 1
                         if i < 0:
                             i = 0
-                        self.jump(default_playlist[i], i)
+                        self.jump(pp[i], i)
 
                     else:
 
@@ -2444,17 +2446,16 @@ class PlayerCtl:
                             lfm_scrobbler.a_sc = False
                             self.a_time = 0
 
-                elif self.random_mode is False and len(default_playlist) > self.playlist_playing_position and \
-                                self.master_library[default_playlist[self.playlist_playing_position]].is_cue is True \
-                        and self.master_library[default_playlist[self.playlist_playing_position + 1]].filename == \
-                                self.master_library[default_playlist[self.playlist_playing_position]].filename and int(
-                    self.master_library[default_playlist[self.playlist_playing_position]].track_number) == int(
-                    self.master_library[default_playlist[self.playlist_playing_position + 1]].track_number) - 1:
+                elif self.random_mode is False and len(pp) > self.playlist_playing_position and \
+                                self.master_library[pp[self.playlist_playing_position]].is_cue is True \
+                        and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
+                                self.master_library[pp[self.playlist_playing_position]].filename and int(
+                    self.master_library[pp[self.playlist_playing_position]].track_number) == int(
+                    self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
                     print("CUE Gap-less")
                     self.playlist_playing_position += 1
                     self.queue_step += 1
-                    self.track_queue.append(default_playlist[self.playlist_playing_position])
-
+                    self.track_queue.append(pp[self.playlist_playing_position])
                     self.playing_state = 1
                     self.playing_time = 0
                     self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
@@ -2524,9 +2525,33 @@ class PlayerCtl:
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0:
             self.queue_step += 1
             if self.queue_step == len(self.track_queue):
-                random_jump = random.randrange(len(self.playing_playlist()))
-                self.playlist_playing_position = random_jump
-                self.track_queue.append(self.playing_playlist()[random_jump])
+
+                if self.album_repeat_mode and self.repeat_mode:
+                    # Album shuffle mode
+                    pp = self.playing_playlist()
+                    k = self.playlist_playing_position
+                    ti = self.g(pp[k])
+
+                    matches = []
+                    for i, p in enumerate(pp):
+
+                        if self.g(p).parent_folder_path == ti.parent_folder_path:
+                            matches.append((i, p))
+
+                    if matches:
+                        # Avoid a repeat of same track
+                        if len(matches) > 1 and (k, ti.index) in matches:
+                            matches.remove((k, ti.index))
+
+                        i, p = random.choice(matches)
+                        self.playlist_playing_position = i
+                        self.track_queue.append(p)
+
+                else:
+                    # Normal select from playlist
+                    random_jump = random.randrange(len(self.playing_playlist()))
+                    self.playlist_playing_position = random_jump
+                    self.track_queue.append(self.playing_playlist()[random_jump])
             if rr:
                 self.play_target_rr()
             else:
@@ -3797,6 +3822,7 @@ def player():   # BASS
             self.syncing = False
 
             self.stall_timer = Timer()
+            self.stall_timer.force_set(10)
 
         def seek(self):
 
@@ -3812,12 +3838,12 @@ def player():   # BASS
             tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
 
             # If we reach end of track without pctl telling us what to do next, we need to handle that.
-            if tpos - pctl.start_time < 0 and not pctl.playerCommandReady:
+            # if tpos - pctl.start_time < 0 and not pctl.playerCommandReady:
+            #     pass
+                # if pctl.playing_length - pctl.playing_time > 3:
+                #     show_message("Track ended abruptly. File possibly is corrupt.", 'info', pctl.target_object.filename)
 
-                if pctl.playing_length - pctl.playing_time > 3:
-                    show_message("Track ended abruptly. File possibly is corrupt.", 'info', pctl.target_object.filename)
-
-                pctl.advance(inplace=True)
+                # pctl.advance(inplace=True)
 
             pctl.playing_time = tpos - pctl.start_time
 
@@ -16492,6 +16518,8 @@ class BottomBarType1:
                             self.repeat_click_off = True
                     else: # right click
                         pctl.album_repeat_mode ^= True
+                        if not pctl.repeat_mode:
+                            self.repeat_click_off = True
 
                 if pctl.repeat_mode:
                     rpbc = colours.mode_button_active
