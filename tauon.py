@@ -468,7 +468,7 @@ repeat_mode = False
 
 # 0 Name
 # 1 Playing
-# 2 PLaylist
+# 2 list
 # 3 View Position
 # 4 hide tittle
 # 5 selected
@@ -632,6 +632,8 @@ class Prefs:    # Used to hold any kind of settings
         self.use_transition_crossfade = True
 
         self.show_notifications = True
+
+        self.true_shuffle = True
 
 prefs = Prefs()
 
@@ -1332,6 +1334,9 @@ try:
         prefs.use_transition_crossfade = save[84]
     if save[85] is not None:
         prefs.show_notifications = save[85]
+    if save[86] is not None:
+        prefs.true_shuffle = save[86]
+
 
     state_file.close()
     del save
@@ -1861,6 +1866,8 @@ class PlayerCtl:
         self.master_library = master_library
         #self.star_library = star_library
 
+        self.shuffle_pools = {}
+
         # Misc player control
 
         self.url = ""
@@ -1980,6 +1987,11 @@ class PlayerCtl:
 
     def playing_object(self):
         if len(self.track_queue) > 0:
+
+            # if self.queue_step > len(self.track_queue) - 1:
+            #     self.queue_step = len(self.track_queue) - 1
+            #     print("The queue position was out of range!")
+
             return self.master_library[self.track_queue[self.queue_step]]
         else:
             return None
@@ -2517,8 +2529,9 @@ class PlayerCtl:
             self.play_target(jump= not end)
             del self.force_queue[0]
 
-        # Don't do anything if playlist is empty
+        # Stop if playlist is empty
         elif len(self.playing_playlist()) == 0:
+            self.stop()
             return 0
 
         # If random, jump to random track
@@ -2530,7 +2543,13 @@ class PlayerCtl:
                     # Album shuffle mode
                     pp = self.playing_playlist()
                     k = self.playlist_playing_position
-                    ti = self.g(pp[k])
+                    #ti = self.g(pp[k])
+                    ti = self.master_library[self.track_queue[self.queue_step - 1]]
+
+                    if ti.index not in pp:
+                        print("No tracks to repeat!")
+                        return 0
+
 
                     matches = []
                     for i, p in enumerate(pp):
@@ -2544,12 +2563,74 @@ class PlayerCtl:
                             matches.remove((k, ti.index))
 
                         i, p = random.choice(matches)
+
+                        if prefs.true_shuffle:
+
+                            id = ti.parent_folder_path
+
+                            while True:
+                                if id in pctl.shuffle_pools:
+
+                                     pool = pctl.shuffle_pools[id]
+
+                                     if not pool:
+                                         del pctl.shuffle_pools[id]  # Trigger a refill
+                                         continue
+
+                                     ref = random.choice(pool)
+                                     pool.remove(ref)
+
+                                     if ref[1] not in pp:  # Check track still in the live playlist
+                                         print("Track not in pool")
+                                         continue
+
+                                     i, p = ref  # Find position of reference in playlist
+                                     break
+
+                                else:
+                                     # Refill the pool
+                                     pctl.shuffle_pools[id] = matches
+                                     print("Refill folder shuffle pool")
+
+
                         self.playlist_playing_position = i
                         self.track_queue.append(p)
 
                 else:
                     # Normal select from playlist
-                    random_jump = random.randrange(len(self.playing_playlist()))
+
+                    if prefs.true_shuffle:
+                        # True shuffle avoides repeats by using a pool
+
+                        pl = pctl.multi_playlist[pctl.active_playlist_playing]
+                        id = pl[6]
+
+                        while True:
+
+                            if id in pctl.shuffle_pools:
+
+                                pool = pctl.shuffle_pools[id]
+
+                                if not pool:
+                                    del pctl.shuffle_pools[id]  # Trigger a refill
+                                    continue
+
+                                ref = random.choice(pool)
+                                pool.remove(ref)
+
+                                if ref not in pl[2]:  # Check track still in the live playlist
+                                    continue
+
+                                random_jump = pl[2].index(ref)  # Find position of reference in playlist
+                                break
+
+                            else:
+                                # Refill the pool
+                                pctl.shuffle_pools[id] = copy.deepcopy(pl[2])
+                                print("Refill shuffle pool")
+
+                    else:
+                        random_jump = random.randrange(len(self.playing_playlist()))
                     self.playlist_playing_position = random_jump
                     self.track_queue.append(self.playing_playlist()[random_jump])
             if rr:
@@ -3849,11 +3930,11 @@ def player():   # BASS
 
             if pctl.playing_time < 0 and not pctl.playerCommandReady:
 
-                if self.stall_timer.get() > 5:
+                if self.stall_timer.get() > 4:
                     self.stall_timer.set()
 
-                if self.stall_timer.get() > 3:
-                    show_message("Track ended abruptly. File is possibly corrupt.", 'info', pctl.target_object.filename)
+                if self.stall_timer.get() > 2:
+                    # show_message("Track ended abruptly. File is possibly corrupt.", 'info', pctl.target_object.filename)
                     pctl.advance(inplace=True)
 
         def stop(self, end=False):
@@ -3901,8 +3982,6 @@ def player():   # BASS
 
         def start(self, instant=False):
 
-            print("open file...")
-
             # Get the target filepath and convert to bytes
             target = pctl.target_open.encode('utf-8')
 
@@ -3943,7 +4022,6 @@ def player():   # BASS
 
                 # Start playing
                 BASS_ChannelPlay(new_handle, True)
-                print("Play from rest")
 
                 # Set the starting position
                 if pctl.start_time > 0 or pctl.jump_time > 0:
@@ -3969,7 +4047,7 @@ def player():   # BASS
                 tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
                 err = BASS_ErrorGetCode()
 
-                print("Track transition...")
+                # print("Track transition...")
                 print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
@@ -3980,7 +4058,7 @@ def player():   # BASS
 
                     # Start sync on end
                     BASS_ChannelSetSync(self.channel, BASS_SYNC_END, 0, TransSync, new_handle)
-                    print("Set sync...")
+                    print("Begin synced transition...")
                     self.syncing = True
                     br_timer.set()
 
@@ -4001,10 +4079,10 @@ def player():   # BASS
 
                 else:
 
-                    print("Do transition")
+                    print("Do transition now")
 
                     if instant:
-                        print("ok")
+                        print("...skipping crossfade.")
                         BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
 
                     BASS_ChannelPlay(new_handle, True)
@@ -14173,6 +14251,11 @@ def toggle_append_date(mode=0):
     gui.pl_update = 1
     gui.update += 1
 
+def toggle_true_shuffle(mode=0):
+    if mode == 1:
+        return prefs.true_shuffle
+    prefs.true_shuffle ^= True
+
 
 def toggle_enable_web(mode=0):
     if mode == 1:
@@ -14373,6 +14456,8 @@ config_items.append(['Use double digit track indices', toggle_dd])
 # config_items.append(['Always use folder name as title', toggle_use_title])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
+
+config_items.append(['Shuffle avoids repeats', toggle_true_shuffle])
 
 # config_items.append(['Playback advances to open playlist', toggle_follow])
 
@@ -19525,7 +19610,7 @@ def save_state():
             prefs.use_jump_crossfade,
             prefs.use_transition_crossfade,
             prefs.show_notifications,
-            None,
+            prefs.true_shuffle,
             None]
 
     #print(prefs.last_device + "-----")
@@ -20357,44 +20442,11 @@ while running:
 
             show_message("Test error message 123", 'error', "hello text")
 
-            # clip = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-            # print(clip.wait_for_text())
-
-            #
             # colours.playlist_panel_background = colours.grey(240)
             # colours.side_panel_background = colours.grey(240)
             # colours.top_panel_background = colours.grey(240)
             # colours.bottom_panel_background = colours.grey(240)
 
-
-            #lastfm.artist_info(pctl.playing_object().artist)
-            #
-            # lastfm.get_friends()
-
-            # gallery_jumper.calculate()
-
-            # colours.level_1_bg = [0, 6, 30, 255]
-            # colours.level_2_bg = [0, 6, 30, 255]
-            # colours.level_3_bg = [0, 6, 30, 255]
-            # colours.level_green = [10, 100, 255, 255]
-            # colours.level_yellow = [10, 100, 255, 255]
-            # colours.level_red = [110, 85, 255, 255]
-
-
-            # gd = {}
-            #
-            # for item in default_playlist:
-            #     genre = pctl.g(item).genre
-            #     if genre != "":
-            #         if genre in gd:
-            #             gd[genre] += 1
-            #         else:
-            #             gd[genre] = 1
-            #
-            # gl = gd.items()
-            # gl = list(reversed(sorted(gl, key=lambda x: x[1])))
-            # print(gl)
-            # print(sum(x[1] for x in gl))
 
             key_F7 = False
 
