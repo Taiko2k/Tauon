@@ -5,8 +5,10 @@ v3.2.3
 
  - Added album repeat mode
  - Added album shuffle mode
+ - Add option for true shuffling
  - Fixed transcode stalling on filepaths containing double-quotes
  - Fixed possible issue and crash when playing CUE sheet tracks and switching playlist
+ - Removed file corruption warnings
 
 v3.2.2
 
