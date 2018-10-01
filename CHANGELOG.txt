@@ -4,11 +4,15 @@ Changelog-------------------------------------
 v3.2.3
 
  - Added album repeat mode
- - Added album shuffle mode
- - Add option for true shuffling
+ - Added shuffle within album mode
+ - Added option for true shuffling
+ - Added right click menu to close artist info panel
  - Fixed transcode stalling on filepaths containing double-quotes
  - Fixed possible issue and crash when playing CUE sheet tracks and switching playlist
- - Removed file corruption warnings
+ - Fixed 'hi' notification when track had no metadata
+ - Fixed some draw positioning in search overlay
+ - Added DE whitelist for notification support as workaround for mpris commands failing
+ - Removed file corruption warnings due to many false positives
 
 v3.2.2
 

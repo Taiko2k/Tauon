@@ -46,6 +46,9 @@ print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 # Previously there was Windows and Mac support, but these have been dropped.
 system = 'linux'
 
+desktop = os.environ.get('XDG_CURRENT_DESKTOP')
+de_nofity_support = desktop == 'GNOME' or desktop == 'KDE'
+
 # Find the directory we are running from
 install_directory = sys.path[0]
 
@@ -232,9 +235,11 @@ import gi
 gi.require_version('Notify', '0.7')
 from gi.repository import Notify
 
-Notify.init("Hello World")
-g_tc_notify = Notify.Notification.new("Tauon Music Box",
-                                "Transcoding has finished.")
+
+if de_nofity_support:
+    Notify.init("Hello World")
+    g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                    "Transcoding has finished.")
 
 # Other imports
 import gi
@@ -631,7 +636,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_jump_crossfade = False
         self.use_transition_crossfade = True
 
-        self.show_notifications = True
+        self.show_notifications = False
 
         self.true_shuffle = True
 
@@ -2740,10 +2745,20 @@ def update_title_do():
         line = line.encode('utf-8')
         SDL_SetWindowTitle(t_window, line)
 
-song_notification = Notify.Notification.new("Hi")
+if de_nofity_support:
+    song_notification = Notify.Notification.new("Next track notification")
+
 def notify_song():
+
+    if not de_nofity_support:
+        return
+
     if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
         track = pctl.playing_object()
+
+        if not (track.title or track.artist or track.album):
+            return  # only display if we have at least one piece of metadata avaliable
+
         i_path = ""
         try:
             i_path = thumb_tracks.path(track)
@@ -7785,6 +7800,16 @@ playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(165, show_icons=True)
+artist_info_menu = Menu(120)
+
+
+def artist_info_panel_close():
+
+    gui.artist_info_panel ^= True
+    gui.update_layout()
+
+
+artist_info_menu.add(_("Close panel"), artist_info_panel_close)
 
 def show_in_playlist():
     
@@ -8760,12 +8785,12 @@ def append_deco():
 
     return [line_colour, colours.menu_background, None]
 
-extra_tab_menu = Menu(170, show_icons=True)
+extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 tab_menu.add_sub(_("Sort…"), 133)
-extra_tab_menu.add_sub(_("New from Current…"), 133)
+extra_tab_menu.add_sub(_("From Current…"), 133)
 tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
 tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
@@ -11542,6 +11567,10 @@ def toggle_notifications(mode=0):
 
     prefs.show_notifications ^= True
 
+    if prefs.show_notifications:
+        if not de_nofity_support:
+            show_message("I'm not sure notifications are supported by this DE", 'warning', 'You should probably leave this disabled.')
+
 
 def toggle_mini_lyrics(mode=0):
 
@@ -12307,6 +12336,7 @@ class SearchOverlay:
 
             input.key_return_press = False
 
+            bar_colour = [140, 80, 240, 255]
 
             self.on = max(self.on, 0)
             self.on = min(len(self.results) - 1, self.on)
@@ -12342,7 +12372,7 @@ class SearchOverlay:
                 # Block separating lower search results
                 if item[4] < 4 and not sec:
                     if i != 0:
-                        ddt.rect_r((50, yy + 5, 300, 4), [50, 50, 50, 200], True)
+                        ddt.rect_r((50, yy + 5, 400, 4), [60, 60, 60, 210], True)
                         yy += 20 * gui.scale
 
                     sec = True
@@ -12360,7 +12390,7 @@ class SearchOverlay:
                     ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
 
                     if fade == 1:
-                        ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 23 * gui.scale), [235, 80, 90, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -12410,7 +12440,7 @@ class SearchOverlay:
                         full_count += 1
 
                         if fade == 1:
-                            ddt.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), [245, 90, 100, 255], True)
+                            ddt.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour, True)
 
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
                         fields.add(rect)
@@ -12466,9 +12496,9 @@ class SearchOverlay:
                         artist = track.artist
                         xx += ddt.draw_text((xx + (120 + 30) * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
-                    ddt.draw_text((65 * gui.scale, yy), text, cl, 14, bg=[12, 12, 12, 255])
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 314, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour, True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -12496,7 +12526,7 @@ class SearchOverlay:
 
                     ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
-                        ddt.rect_r((30 * gui.scale, yy + 4 * gui.scale, 4 * gui.scale, 17 * gui.scale), [245, 90, 100, 255], True)
+                        ddt.rect_r((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 20 * gui.scale), bar_colour, True)
 
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
@@ -13473,7 +13503,7 @@ def worker1():
                     if prefs.transcode_codec == 'flac':
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
                     show_message("Encoding complete.", 'done', line)
-                    if system == 'linux' and not window_is_focused():
+                    if system == 'linux' and not window_is_focused() and de_nofity_support:
                         g_tc_notify.show()
 
         while len(to_scan) > 0:
@@ -15005,7 +15035,8 @@ class Over:
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_notifications, "Show track notifications")
+        if desktop == 'GNOME' or desktop == 'KDE':
+            self.toggle_square(x, y, toggle_notifications, "Show track notifications")
 
         y += 28 * gui.scale
 
@@ -18192,6 +18223,8 @@ class ArtistInfoBox:
             gui.update_layout()
             return
 
+        if right_click and coll((x, y ,w, h)):
+            artist_info_menu.activate()
 
         backgound = [27, 27, 27, 255]
         ddt.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
@@ -23330,8 +23363,10 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 
 save_state()
 
-song_notification.close()
-Notify.uninit()
+if de_nofity_support:
+    song_notification.close()
+    Notify.uninit()
+
 
 print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
