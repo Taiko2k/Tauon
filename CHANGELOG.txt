@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v3.2.4
+
+ - Fixed app not starting if a locale had not been configured
+ - [Wayland native] Fixed files not importing on drag and drop
+
 v3.2.3
 
  - Added album repeat mode
