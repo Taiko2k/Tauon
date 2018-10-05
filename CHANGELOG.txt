@@ -11,6 +11,7 @@ v3.2.3
  - Fixed possible issue and crash when playing CUE sheet tracks and switching playlist
  - Fixed 'hi' notification when track had no metadata
  - Fixed some draw positioning in search overlay
+ - Tweaked playlist panel toggle to open on drag over
  - Added DE whitelist for notification support as workaround for mpris commands failing
  - Removed file corruption warnings due to many false positives
 
