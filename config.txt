@@ -3,8 +3,8 @@
 ## --- Playback / Audio --------------------------------------------------------
 ## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
 
-pause-fade-time=400
-cross-fade-time=700
+#pause-fade-time=400
+#cross-fade-time=700
 
 ## Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
 #log-volume-scale=True

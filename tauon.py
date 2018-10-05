@@ -15560,6 +15560,7 @@ class TopPanel:
 
         # C-TD
         global quick_drag
+        global update_layout
 
 
         if quick_drag is True:
@@ -15574,7 +15575,11 @@ class TopPanel:
         if coll(rect):
             if input.mouse_click:
                 gui.lsp ^= True
-                global update_layout
+
+                update_layout = True
+                gui.update += 1
+            if mouse_down and quick_drag:
+                gui.lsp = True
                 update_layout = True
                 gui.update += 1
 
