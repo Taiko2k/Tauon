@@ -213,7 +213,7 @@ locale.setlocale(locale.LC_ALL, "")
 #locale.setlocale(locale.LC_ALL, ("ja_JP", "UTF-8"))
 
 lc = locale.getlocale()
-if 'en' not in lc[0]:
+if lc[0] is not None and 'en' not in lc[0]:  # Remember to handle LANG potentionally being None
     try:
 
         print("Locale detected: ", end="")
@@ -19847,7 +19847,8 @@ while running:
 
             dropped_file_sdl = event.drop.file
             load_order = LoadClass()
-            load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8")))
+            load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
+
 
             if os.path.isdir(load_order.target):
                 quick_import_done.append(load_order.target)
