@@ -9154,14 +9154,14 @@ def gen_sort_date(index, rev=False):
                                       hide_title=0))
 
 tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date_new, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date_new, pass_ref=True)
 
 
