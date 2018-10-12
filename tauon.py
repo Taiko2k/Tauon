@@ -309,6 +309,9 @@ search_clear_timer = Timer()
 test_timer = Timer()
 lfm_dl_timer = Timer()
 lfm_dl_timer.force_set(60)
+gall_pl_switch_timer = Timer()
+gall_pl_switch_timer.force_set(999)
+
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -480,6 +483,7 @@ repeat_mode = False
 # 6 Unique id
 # 7 last folder import
 # 8 hidden
+
 
 def pl_uid_gen():
     return random.randrange(100, 10000000)
@@ -838,6 +842,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.power_bar = None
         self.gallery_scroll_field_left = 1
         self.lyrics_was_album = False
+
+        self.gallery_positions = {}
 
 gui = GuiVar()
 
@@ -5657,7 +5663,7 @@ ddt.scale = gui.scale
 
 class Drawing:
 
-    def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None):
+    def button(self, text, x, y, w=None, h=None, font=212, fore_text=None, back_text=None, bg=None, fg=None, press=None, tooltip=""):
 
         if w is None:
             w = ddt.get_text_w(text, font) + 18 * gui.scale
@@ -5682,6 +5688,8 @@ class Drawing:
             press = input.mouse_click
 
         if coll(rect):
+            if tooltip:
+                tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
             ddt.rect_r(rect, fg, True)
             ddt.draw_text((rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, fore_text, font,
                       bg=fg)
@@ -11769,6 +11777,7 @@ def switch_playlist(number, cycle=False):
     global playlist_selected
     global search_index
     global shift_selection
+    global album_pos_px
 
     # Close any active menus
     for instance in Menu.instances:
@@ -11792,6 +11801,14 @@ def switch_playlist(number, cycle=False):
     pctl.multi_playlist[pctl.active_playlist_viewing][3] = pctl.playlist_view_position
     pctl.multi_playlist[pctl.active_playlist_viewing][5] = playlist_selected
 
+    if gall_pl_switch_timer.get() > 120:
+        gui.gallery_positions.clear()
+    gall_pl_switch_timer.set()
+
+    if album_pos_px > 200:
+        gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
+
+
     if cycle:
         pctl.active_playlist_viewing += number
     else:
@@ -11810,7 +11827,12 @@ def switch_playlist(number, cycle=False):
 
     if album_mode:
         reload_albums(True)
-        goto_album(pctl.playlist_view_position)
+
+        id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if id in gui.gallery_positions:
+            album_pos_px = gui.gallery_positions[id]
+        else:
+            goto_album(pctl.playlist_view_position)
 
 
 def view_tracks():
@@ -22248,15 +22270,17 @@ while running:
 
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
-                if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale) or input.level_2_enter:
+                if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
                     input.mouse_click = False
 
                 text = "Trash"
+                tt = "Moves folder to system trash."
                 if key_shift_down:
                     text = "Delete"
-                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255]):
+                    tt = "Physically deletes folder from disk."
+                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
                     if key_shift_down:
                         delete_folder(rename_index, True)
                     else:
@@ -22265,13 +22289,13 @@ while running:
                     input.mouse_click = False
 
                 if move_folder_up(rename_index):
-                    if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale):
+                    if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder."):
                         move_folder_up(rename_index, True)
                         input.mouse_click = False
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
-                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale):
+                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes various typically unnecessary files from folder."):
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 

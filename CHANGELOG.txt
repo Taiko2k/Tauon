@@ -3,8 +3,10 @@ Changelog-------------------------------------
 
 v3.2.4
 
+ - Added tooltips to 'modify folder' buttons
  - Fixed app not starting if a locale had not been configured
  - Fixed year sorter menu labeling
+ - Improved gallery to remember view position when switching playlists quickly
  - [Wayland native] Fixed files not importing on drag and drop
 
 v3.2.3
