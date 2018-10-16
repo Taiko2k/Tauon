@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib #, Gtk, Gdk
 
-t_version = "v3.2.3"
+t_version = "v3.2.4"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -178,6 +178,7 @@ import time
 import ctypes
 import random
 import threading
+import logging
 import io
 import copy
 import subprocess
@@ -5631,10 +5632,20 @@ gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 gui.pl_update = 2
 
 
+def bass_player_thread():
+
+    logging.basicConfig(filename=user_directory + '/crash.log', level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s %(name)s %(message)s')
+
+    try:
+        player()
+    except:
+        logging.exception('Exception on player thread')
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
 
 if default_player == 1:
 
-    playerThread = threading.Thread(target=player)
+    playerThread = threading.Thread(target=bass_player_thread)
     playerThread.daemon = True
     playerThread.start()
 
@@ -10496,6 +10507,15 @@ if prefs.tag_editor_name == "Picard":
 
 track_menu.add_to_sub(_("Edit with ") + prefs.tag_editor_name, 0, launch_editor, pass_ref=True, icon=edit_icon)
 
+
+
+def show_lyrics_menu(index):
+    global track_box
+    track_box = False
+    switch_showcase(r_menu_index)
+    input.mouse_click = False
+
+track_menu.add_to_sub(_("Lyrics..."), 0, show_lyrics_menu, pass_ref=True)
 
 def recode(text, enc):
     return text.encode("Latin-1", 'ignore').decode(enc, 'ignore')
@@ -19344,6 +19364,17 @@ undo = Undo()
 
 def update_layout_do():
 
+    # w = window_size[0]
+    # h = window_size[1]
+    #
+    # if w / h == 16 / 9:
+    #     print("YEP")
+    # elif w / h < 16 / 9:
+    #     print("too low")
+    # else:
+    #     print("too high")
+    # print(w)
+
     #input.mouse_click = False
     global renderer
 
@@ -22295,7 +22326,7 @@ while running:
 
                 to_clean = clean_folder(rename_index)
                 if to_clean > 0:
-                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes various typically unnecessary files from folder."):
+                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder."):
                         clean_folder(rename_index, True)
                         input.mouse_click = False
 
