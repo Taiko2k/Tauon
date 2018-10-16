@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.2.4
 
+ - Added track menu function to view track in lyrics view
  - Added tooltips to 'modify folder' buttons
  - Fixed app not starting if a locale had not been configured
  - Fixed year sorter menu labeling
