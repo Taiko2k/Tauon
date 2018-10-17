@@ -22287,61 +22287,81 @@ while running:
                 ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
-                if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
-                    gui.rename_folder_box = False
 
-                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(230), 213)
+                hint_rect = (x + w - 17 * gui.scale, y + h - 21 * gui.scale, 17 * gui.scale, 17 * gui.scale)
+                #ddt.rect_r(hint_rect, [255, 0, 0, 50], True)
+                fields.add(hint_rect)
+                ddt.draw_text((hint_rect[0] + 4 * gui.scale, hint_rect[1] + 0 * gui.scale,), "?", colours.grey(50), 211)
 
-                if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
-                               70 * gui.scale):
-                    rename_folder.text = prefs.rename_folder_template
+                if coll(hint_rect):
+                    colour = colours.grey(230)
+                    ddt.draw_text((x + 10 * gui.scale, y + 10 * gui.scale,), "%n - Track Number", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 24 * gui.scale,), "%a - Artist Name", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 38 * gui.scale,), "%t - Track Title", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 10 * gui.scale,), "%b - Album Title", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 24 * gui.scale,), "%d - Date/Year", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 38 * gui.scale,), "%u - Use Underscores", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 52 * gui.scale,), "%x - File Extension", colour, 12)
+
+                else:
 
 
-                rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
-                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                    if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
+                        gui.rename_folder_box = False
 
-                if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
-                    rename_parent(rename_index, rename_folder.text)
-                    gui.rename_folder_box = False
-                    input.mouse_click = False
+                    p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(230), 213)
 
-                text = "Trash"
-                tt = "Moves folder to system trash."
-                if key_shift_down:
-                    text = "Delete"
-                    tt = "Physically deletes folder from disk."
-                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
+                    if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
+                                   70 * gui.scale):
+                        rename_folder.text = prefs.rename_folder_template
+
+
+                    rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
+
+                    ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+
+                    if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
+                        rename_parent(rename_index, rename_folder.text)
+                        gui.rename_folder_box = False
+                        input.mouse_click = False
+
+                    text = "Trash"
+                    tt = "Moves folder to system trash"
                     if key_shift_down:
-                        delete_folder(rename_index, True)
-                    else:
-                        delete_folder(rename_index)
-                    gui.rename_folder_box = False
-                    input.mouse_click = False
-
-                if move_folder_up(rename_index):
-                    if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder."):
-                        move_folder_up(rename_index, True)
+                        text = "Delete"
+                        tt = "Physically deletes folder from disk"
+                    if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
+                        if key_shift_down:
+                            delete_folder(rename_index, True)
+                        else:
+                            delete_folder(rename_index)
+                        gui.rename_folder_box = False
                         input.mouse_click = False
 
-                to_clean = clean_folder(rename_index)
-                if to_clean > 0:
-                    if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder."):
-                        clean_folder(rename_index, True)
-                        input.mouse_click = False
+                    if move_folder_up(rename_index):
+                        if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
+                            move_folder_up(rename_index, True)
+                            input.mouse_click = False
 
-                ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
-                line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
-                line = right_trunc(line, 12, 420 * gui.scale)
-                ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(200), 211)
+                    to_clean = clean_folder(rename_index)
+                    if to_clean > 0:
+                        if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
+                            clean_folder(rename_index, True)
+                            input.mouse_click = False
 
-                ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
-                line = pctl.master_library[rename_index].parent_folder_name
-                ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
+                    ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.grey(100), 212)
+                    line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
+                    line = right_trunc(line, 12, 420 * gui.scale)
+                    ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(200), 211)
 
-                ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
-                line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
-                ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
+                    ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.grey(100), 212)
+                    line = pctl.master_library[rename_index].parent_folder_name
+                    ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
+
+                    ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.grey(100), 212)
+                    line = parse_template(rename_folder.text, pctl.master_library[rename_index], up_ext=True)
+                    ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
 
 
             if renamebox:
@@ -22351,7 +22371,7 @@ while running:
                 gui.level_2_click = False
 
                 w = 420 * gui.scale
-                h = 210 * gui.scale
+                h = 155 * gui.scale
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -22361,131 +22381,140 @@ while running:
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     renamebox = False
 
-                r_todo = []
-                warncue = False
+                hint_rect = (x + w - 18 * gui.scale, y + 3 * gui.scale, 16 * gui.scale, 16 * gui.scale)
+                #ddt.rect_r(hint_rect, [255, 0, 0, 50], True)
+                fields.add(hint_rect)
+                ddt.draw_text((hint_rect[0] + 4 * gui.scale, hint_rect[1] + 0 * gui.scale,), "?", colours.grey(50), 211)
 
-                for item in default_playlist:
-                    if pctl.master_library[item].parent_folder_name == pctl.master_library[
-                                rename_index].parent_folder_name:
-                        if pctl.master_library[item].is_cue is True:
-                            warncue = True
-                        else:
-                            r_todo.append(item)
+                if coll(hint_rect):
+                    colour = colours.grey(230)
+                    ddt.draw_text((x + 10 * gui.scale, y + 10 * gui.scale,), "%n - Track Number", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 24 * gui.scale,), "%a - Artist Name", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 38 * gui.scale,), "%t - Track Title", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 10 * gui.scale,), "%b - Album Title", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 24 * gui.scale,), "%d - Date/Year", colour, 12)
+                    ddt.draw_text((x + 150 * gui.scale, y + 38 * gui.scale,), "%u - Use Underscores", colour, 12)
+                    ddt.draw_text((x + 10 * gui.scale, y + 52 * gui.scale,), "%x - File Extension", colour, 12)
 
-                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "File Renaming", colours.grey(220), 213)
-
-                #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
-                if rename_files.text != prefs.rename_tracks_template and draw.button("Default", x + w - 85 * gui.scale, y + h - 35 * gui.scale,
-                               70 * gui.scale):
-                    rename_files.text = prefs.rename_tracks_template
-
-                # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-                rename_files.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(170), width=300)
-                NRN = rename_files.text
-                # c_blink = 200
-
-                ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
-
-                colour = colours.grey(90)
-                ddt.draw_text((x + 10 * gui.scale, y + 70 * gui.scale,), "%n - Track Number", colour, 12)
-                ddt.draw_text((x + 10 * gui.scale, y + 82 * gui.scale,), "%a - Artist Name", colour, 12)
-                ddt.draw_text((x + 10 * gui.scale, y + 94 * gui.scale,), "%t - Track Title", colour, 12)
-                ddt.draw_text((x + 150 * gui.scale, y + 70 * gui.scale,), "%b - Album Title", colour, 12)
-                ddt.draw_text((x + 150 * gui.scale, y + 82 * gui.scale,), "%d - Date/Year", colour, 12)
-                ddt.draw_text((x + 150 * gui.scale, y + 94 * gui.scale,), "%u - Use Underscores", colour, 12)
-                ddt.draw_text((x + 290 * gui.scale, y + 70 * gui.scale,), "%x - File Extension", colour, 12)
-
-                afterline = ""
-                warn = False
-                underscore = False
-
-                for item in r_todo:
-
-                    if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
-                                    pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
-                        warn = True
-
-                    afterline = parse_template(NRN, pctl.master_library[item])
-
-                    if item == rename_index:
-                        break
-
-                ddt.draw_text((x + 10 * gui.scale, y + 120 * gui.scale), "BEFORE", colours.grey(100), 12)
-                line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
-                ddt.draw_text((x + 67 * gui.scale, y + 120 * gui.scale), line, colours.grey(210), 12)
-
-                ddt.draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "AFTER", colours.grey(100), 12)
-                ddt.draw_text((x + 67 * gui.scale, y + 135 * gui.scale,), trunc_line(afterline, 12, 335), colours.grey(210), 12)
-
-                if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
-                    pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
-                    ddt.draw_text((x + 10 * gui.scale, y + 155 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
-                              13)
-
-                colour_warn = [143,186, 65, 255]
-                if '%t' not in NRN and '%n' not in NRN:
-                    ddt.draw_text((x + 10 * gui.scale, y + 170 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
-                              13)
-                if warn:
-                    ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Warning: File has incomplete metadata", [245, 90, 90, 255], 13)
-                    colour_warn = [180, 60, 60, 255]
-                if warncue:
-                    ddt.draw_text((x + 10 * gui.scale, y + 185 * gui.scale,), "Error: Folder contains tracks from a CUE sheet",
-                              [245, 90, 90, 255], 13)
-                    colour_warn = [180, 60, 60, 255]
+                else:
 
 
-                label = "Write (" + str(len(r_todo)) + ")"
-                if warncue:
-                    label = "ERROR"
+                    r_todo = []
 
-                if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn) or input.level_2_enter:
-                    input.mouse_click = False
-                    total_todo = len(r_todo)
-                    pre_state = 0
+                    # Find matching folder tracks in playlist
+                    for item in default_playlist:
+                        if pctl.master_library[item].parent_folder_path == pctl.master_library[
+                                    rename_index].parent_folder_path:
+
+                            # Close and display error if any tracks are based on a CUE sheet
+                            if pctl.master_library[item].is_cue is True:
+                                renamebox = False
+                                show_message("This function does not support renaming CUE Sheet tracks.")
+                            else:
+                                r_todo.append(item)
+
+                    ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Track Renaming", colours.grey(230), 213)
+
+                    #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
+                    if rename_files.text != prefs.rename_tracks_template and draw.button("Default", x + w - 85 * gui.scale, y + h - 35 * gui.scale,
+                                   70 * gui.scale):
+                        rename_files.text = prefs.rename_tracks_template
+
+                    # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+                    rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
+                    NRN = rename_files.text
+                    # c_blink = 200
+
+                    ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+
+
+
+
+                    afterline = ""
+                    warn = False
+                    underscore = False
 
                     for item in r_todo:
 
-                        if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
-                            pre_state = pctl.stop(True)
+                        if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
+                                        pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
+                            warn = True
 
-                        afterline = parse_template(NRN, pctl.master_library[item])
+                        if item == rename_index:
+                            afterline = parse_template(NRN, pctl.master_library[item])
 
-                        oldname = pctl.master_library[item].filename
-                        oldpath = pctl.master_library[item].fullpath
+                    ddt.draw_text((x + 10 * gui.scale, y + 68 * gui.scale), "BEFORE", colours.grey(100), 212)
+                    line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
+                    ddt.draw_text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
 
-                        try:
-                            print('Renaming...')
+                    ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "AFTER", colours.grey(100), 212)
+                    ddt.draw_text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
 
-                            star = star_store.full_get(item)
-                            star_store.remove(item)
 
+
+                    if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
+                        pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4:
+                        ddt.draw_text((x + 10 * gui.scale, y + 108 * gui.scale,), "Warning: This will change the file extension", [245, 90, 90, 255],
+                                  13)
+
+                    colour_warn = [143,186, 65, 255]
+                    if '%t' not in NRN and '%n' not in NRN:
+                        ddt.draw_text((x + 10 * gui.scale, y + 123 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
+                                  13)
+                    if warn:
+                        ddt.draw_text((x + 10 * gui.scale, y + 135 * gui.scale,), "Warning: A track has incomplete metadata", [245, 90, 90, 255], 13)
+                        colour_warn = [180, 60, 60, 255]
+
+                    label = "Write (" + str(len(r_todo)) + ")"
+
+
+                    if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn) or input.level_2_enter:
+                        input.mouse_click = False
+                        total_todo = len(r_todo)
+                        pre_state = 0
+
+                        for item in r_todo:
+
+                            if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
+                                pre_state = pctl.stop(True)
+
+                            afterline = parse_template(NRN, pctl.master_library[item])
+
+                            oldname = pctl.master_library[item].filename
                             oldpath = pctl.master_library[item].fullpath
 
-                            oldsplit = os.path.split(oldpath)
+                            try:
+                                print('Renaming...')
 
-                            os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
+                                star = star_store.full_get(item)
+                                star_store.remove(item)
 
-                            pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
-                            pctl.master_library[item].filename = afterline
+                                oldpath = pctl.master_library[item].fullpath
 
-                            if star is not None:
-                                star_store.insert(item, star)
+                                oldsplit = os.path.split(oldpath)
 
-                        except:
-                            total_todo -= 1
+                                os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
 
-                    renamebox = False
-                    print('Done')
-                    if pre_state == 1:
-                        pctl.revert()
+                                pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
+                                pctl.master_library[item].filename = afterline
+
+                                if star is not None:
+                                    star_store.insert(item, star)
+
+                            except:
+                                total_todo -= 1
+
+                        renamebox = False
+                        print('Done')
+                        if pre_state == 1:
+                            pctl.revert()
 
 
-                    if total_todo != len(r_todo):
-                        show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
+                        if total_todo != len(r_todo):
+                            show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
 
-                    else:
-                        show_message("Rename complete.", 'done', str(total_todo) + "/" + str(len(r_todo)) + " filenames were written.")
+                        else:
+                            show_message("Rename complete.", 'done', str(total_todo) + "/" + str(len(r_todo)) + " filenames were written.")
 
 
             if radiobox:
