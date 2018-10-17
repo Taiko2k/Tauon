@@ -6,8 +6,12 @@ v3.2.4
  - Added track menu function to view track in lyrics view
  - Added tooltips to 'modify folder' buttons
  - Fixed app not starting if a locale had not been configured
- - Fixed year sorter menu labeling
+ - Fixed year sorter menu labeling being incorrect
+ - Fixed a bug with file rename function where unintended tracks from other folders could be modified
+ - Fixed file rename function sometimes failing to show warning on missing metadata
  - Improved gallery to remember view position when switching playlists quickly
+ - Tweaked file rename box appearance to better match folder modification box
+ - Moved rename template hints to hover over question mark
  - [Wayland native] Fixed files not importing on drag and drop
 
 v3.2.3
