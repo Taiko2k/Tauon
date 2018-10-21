@@ -3,15 +3,20 @@ Changelog-------------------------------------
 
 v3.2.4
 
- - Added track menu function to view track in lyrics view
+ - Added track menu shortcut to view track in lyrics view
  - Added tooltips to 'modify folder' buttons
+ - Added icon to rename tracks menu label
+ - Added warning protection to clear all loves button
  - Fixed app not starting if a locale had not been configured
  - Fixed year sorter menu labeling being incorrect
  - Fixed a bug with file rename function where unintended tracks from other folders could be modified
  - Fixed file rename function sometimes failing to show warning on missing metadata
+ - Fixed search result right click marking track as playing position
  - Improved gallery to remember view position when switching playlists quickly
  - Tweaked file rename box appearance to better match folder modification box
- - Moved rename template hints to hover over question mark
+ - Tweaked track notification text order
+ - Moved rename template hints to a hover over question mark
+ - Removed remains of broadcast sync feature
  - [Wayland native] Fixed files not importing on drag and drop
 
 v3.2.3

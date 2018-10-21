@@ -1926,7 +1926,7 @@ class PlayerCtl:
         # Broadcasting
 
         self.broadcast_active = False
-        self.join_broadcast = False
+        #self.join_broadcast = False
         self.broadcast_playlist = ""
         self.broadcast_position = 0
         self.broadcast_index = 0
@@ -2026,7 +2026,19 @@ class PlayerCtl:
         
         return line
 
-    def show_current(self, select=True, playing=False, quiet=False, this_only=False, highlight=False, index=None):
+
+    def show(self):
+
+        global playlist_selected
+        global shift_selection
+
+        if not self.track_queue:
+            return 0
+
+
+
+
+    def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None):
 
         # print("show------")
         # print(select)
@@ -2069,12 +2081,11 @@ class PlayerCtl:
                 if select:
                     playlist_selected = i
 
+
+                if playing:
                     # Make the found track the playing track
                     self.playlist_playing_position = i
                     self.active_playlist_playing = self.active_playlist_viewing
-
-                if playing:
-                    self.playlist_playing_position = i
 
                 if not (quiet and self.playing_object().length < 15):
 
@@ -2720,7 +2731,7 @@ class PlayerCtl:
             print("ADVANCE ERROR - NO CASE!")
 
         if self.active_playlist_viewing == self.active_playlist_playing:
-            self.show_current(playing=True, quiet=quiet)
+            self.show_current(quiet=quiet)
 
         # if album_mode:
         #     goto_album(self.playlist_playing)
@@ -2772,9 +2783,9 @@ def notify_song():
         except:
             print("Thumbnail error")
 
-        top_line = (track.artist + " - " + track.title).strip("- ")
+        bottom_line = (track.artist + " - " + track.title).strip("- ")
 
-        bottom_line = track.album
+        top_line = track.album
 
         song_notification.update(top_line, bottom_line, i_path)
 
@@ -3362,6 +3373,31 @@ class LastScrob:
             self.a_sc = True
 
 lfm_scrobbler = LastScrob()
+
+class AutoDownload():
+
+    def __init__(self):
+
+        self.link_queue = []
+
+    def run(self):
+
+        if not self.link_queue:
+            return
+
+        link = self.link_queue.pop()
+
+        if link[:4] != 'http':
+            show_message("Autodownload Error", 'warning', 'Not a link? (Must begin with http)')
+            return
+
+        if music_folder is None:
+            show_message("Autodownload Error", 'info', 'Could not find home music folder.')
+
+        show_message("This feature is not completed.", 'info', "Your clipboard text is: " + link)
+
+auto_download = AutoDownload()
+
 
 
 def player3():  # Gstreamer
@@ -7819,7 +7855,7 @@ playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(165, show_icons=True)
-artist_info_menu = Menu(120)
+artist_info_menu = Menu(117)
 
 
 def artist_info_panel_close():
@@ -7828,7 +7864,7 @@ def artist_info_panel_close():
     gui.update_layout()
 
 
-artist_info_menu.add(_("Close panel"), artist_info_panel_close)
+artist_info_menu.add(_("Close Panel"), artist_info_panel_close)
 
 def show_in_playlist():
     
@@ -8286,6 +8322,15 @@ def rename_playlist(index):
     rename_text_area.set_text(pctl.multi_playlist[index][0])
 
 
+if gui.scale == 2:
+    delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
+else:
+    delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
+#     rename_playlist_icon = MenuIcon(WhiteModImageAsset('/gui/pen.png'))
+#
+# rename_playlist_icon.colour = [149, 119, 255, 255]
+# rename_playlist_icon.xoff = 2
+
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
@@ -8729,10 +8774,7 @@ def year_sort(pl):
     reload_albums()
 
 
-if gui.scale == 2:
-    delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
-else:
-    delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
+
 
 
 def pl_toggle_playlist_break(ref):
@@ -8779,17 +8821,20 @@ if gui.scale == 2:
     transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
     mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
     settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
+    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/2x/pen.png'))
     add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
 elif gui.scale == 1.25:
     heartx_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
     transcode_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/transcode.png'))
     mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/mod_folder.png'))
+    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/pen.png'))
     settings_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/settings2.png'))
     add_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/new.png'))
 else:
     heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
     transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
     mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
+    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/pen.png'))
     settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
     add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
 
@@ -9180,8 +9225,8 @@ def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date_new, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Newest Year"), 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub(_("Latest Year"), 0, gen_sort_date_new, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Latest Year"), 0, gen_sort_date_new, pass_ref=True)
 
 
 def gen_500_random(index):
@@ -10062,7 +10107,10 @@ def rename_tracks(index):
     renamebox = True
     input_text = ""
 
-track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True)
+
+rename_tracks_icon.colour = [245, 170, 0, 255]
+rename_tracks_icon.xoff = 1
+track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
 
 def delete_folder(index, force=False):
@@ -10092,7 +10140,6 @@ def delete_folder(index, force=False):
         return
 
     try:
-
 
         if pctl.playing_state > 0 and os.path.normpath(
                 pctl.master_library[pctl.track_queue[pctl.queue_step]].parent_folder_path) == os.path.normpath(old):
@@ -10662,7 +10709,7 @@ folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
-folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True)
+folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
 folder_menu.add(_("Edit with ") + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
                    icon=edit_icon)
@@ -11821,7 +11868,7 @@ def switch_playlist(number, cycle=False):
     pctl.multi_playlist[pctl.active_playlist_viewing][3] = pctl.playlist_view_position
     pctl.multi_playlist[pctl.active_playlist_viewing][5] = playlist_selected
 
-    if gall_pl_switch_timer.get() > 120:
+    if gall_pl_switch_timer.get() > 240:
         gui.gallery_positions.clear()
     gall_pl_switch_timer.set()
 
@@ -12280,7 +12327,7 @@ class SearchOverlay:
     def click_album(self, index):
 
         pctl.jump(index)
-        pctl.show_current(playing=True)
+        pctl.show_current()
         
         input.key_return_press = False
 
@@ -12447,7 +12494,8 @@ class SearchOverlay:
                             self.search_text.text = ""
 
                         if level_2_right_click:
-                            pctl.show_current(index=item[2])
+
+                            pctl.show_current(index=item[2], playing=False)
                             self.active = False
                             self.search_text.text = ""
 
@@ -12507,7 +12555,7 @@ class SearchOverlay:
                             self.search_text.text = ""
 
                         if level_2_right_click:
-                            pctl.show_current(index=item[2])
+                            pctl.show_current(index=item[2], playing=False)
                             pctl.playlist_view_position = playlist_selected
                             self.active = False
                             self.search_text.text = ""
@@ -12553,7 +12601,7 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
                         if level_2_right_click:
-                            pctl.show_current(index=item[2])
+                            pctl.show_current(index=item[2], playing=False)
                             self.active = False
                             self.search_text.text = ""
                     if enter and fade == 1:
@@ -12581,7 +12629,7 @@ class SearchOverlay:
                             self.active = False
                             self.search_text.text = ""
                         if level_2_right_click:
-                            pctl.show_current(index=item[2])
+                            pctl.show_current(index=item[2], playing=False)
                             self.active = False
                             self.search_text.text = ""
                     if enter and fade == 1:
@@ -13279,6 +13327,8 @@ def worker1():
 
         if prefs.auto_extract and prefs.monitor_downloads:
             dl_mon.scan()
+
+        auto_download.run()
 
         # Folder moving
         if len(move_jobs) > 0:
@@ -14036,16 +14086,16 @@ def webserv():
             abort(403)
             return 0
         toggle_broadcast()
-        pctl.join_broadcast = False
+        # pctl.join_broadcast = False
         return "Done"
 
-    @app.route('/remote/sync-broadcast')
-    def remote_toggle_sync():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        pctl.join_broadcast = True
-        return "Done"
+    # @app.route('/remote/sync-broadcast')
+    # def remote_toggle_sync():
+    #     if not prefs.allow_remote:
+    #         abort(403)
+    #         return 0
+    #     pctl.join_broadcast = True
+    #     return "Done"
 
     @app.route('/remote/pl-up')
     def pl_up():
@@ -14646,7 +14696,7 @@ class Over:
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
 
-            ddt.draw_text((x, y - 22 * gui.scale), "Set audio output device", [170, 170, 170, 255], 212)
+            ddt.draw_text((x, y - 22 * gui.scale), "Set audio output device", [185, 185, 185, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
@@ -14916,6 +14966,10 @@ class Over:
 
     def clear_local_loves(self):
 
+        if not key_shift_down:
+            show_message("This will mark all tracks in local database as unloved!", 'warning', "Press button again while holding shift key if you're sure you want to do that.")
+            return
+
         for key, star in star_store.db.items():
             star = [star[0], star[1].strip("L")]
             star_store.db[key] = star
@@ -15101,10 +15155,10 @@ class Over:
         y = self.box_y + 81 * gui.scale
         ddt.text_background_colour = colours.sys_background
 
-        if pctl.playing_object() is not None and 'dream' in pctl.playing_object().genre.lower():
-            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
-        elif pctl.playing_object() is not None and 'gaze' in pctl.playing_object().genre.lower():
-            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
+        if pctl.playing_object() is not None and 'rock' in pctl.playing_object().genre.lower():
+            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
+        elif pctl.playing_object() is not None and 'metal' in pctl.playing_object().genre.lower():
+            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
         elif pctl.playing_object() is not None and 'ambient' in pctl.playing_object().genre.lower():
             self.about_image3.render(x - 100 * gui.scale, y - 10 * gui.scale)
         else:
@@ -15112,7 +15166,7 @@ class Over:
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(220), 216)
+        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(222), 216)
         y += 32 * gui.scale
         ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
         y += 20 * gui.scale
@@ -16026,9 +16080,9 @@ class TopPanel:
                 bg = colours.status_info_text
             else:
                 text = "Stopping transcode..."
-        elif pctl.join_broadcast and pctl.broadcast_active:
-            text = "Streaming Synced"
-            bg = [60, 75, 220, 255]  # colours.streaming_text
+        # elif pctl.join_broadcast and pctl.broadcast_active:
+        #     text = "Streaming Synced"
+        #     bg = [60, 75, 220, 255]  # colours.streaming_text
         elif pctl.encoder_pause == 1 and pctl.broadcast_active:
             text = "Streaming Paused"
             bg = colours.streaming_text
@@ -16844,7 +16898,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
-                if coll(rect):
+                if coll(rect) and not track_box:
                     gui.pl_update += 1
                     w = ddt.get_text_w("You", 13)
                     xx = (x - w) - 5 * gui.scale
@@ -16868,7 +16922,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
                 gui.heart_fields.append(rect)
                 fields.add(rect, update_playlist_call)
-                if coll(rect):
+                if coll(rect) and not track_box:
                     gui.pl_update += 1
                     w = ddt.get_text_w(name, 13)
                     xx = (x - w) - 5 * gui.scale
@@ -20503,8 +20557,9 @@ while running:
             # pctl.playerCommandReady = True
 
         if key_F6:
-            pctl.join_broadcast ^= True
-            print("Join brodcast commands:" + str(pctl.join_broadcast))
+            show_message("Broadcast sync feature was removed.")
+            # pctl.join_broadcast ^= True
+            # print("Join brodcast commands:" + str(pctl.join_broadcast))
 
         if key_F4:
             #standard_size()
@@ -20514,6 +20569,14 @@ while running:
                 input_text = pctl.playing_object().artist
 
             #show_message("This function has been removed", 'info')
+
+        if key_F12:
+
+            text = copy_from_clipboard()
+            if text:
+                auto_download.link_queue.append(text)
+            else:
+                show_message("Autodownload Error", 'info', 'Clipboard has no link.')
 
         if key_ctrl_down and key_z_press:
             undo.undo()
@@ -22468,7 +22531,7 @@ while running:
                     label = "Write (" + str(len(r_todo)) + ")"
 
 
-                    if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn) or input.level_2_enter:
+                    if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn, tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
                         input.mouse_click = False
                         total_todo = len(r_todo)
                         pre_state = 0
@@ -23379,7 +23442,7 @@ while running:
 
     # Broadcast control
     if pctl.broadcast_active and pctl.broadcast_time > pctl.master_library[
-            pctl.broadcast_index].length and not pctl.join_broadcast:
+            pctl.broadcast_index].length:
         pctl.broadcast_position += 1
         print('next')
 
@@ -23405,9 +23468,9 @@ while running:
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
             pctl.broadcast_index].title
 
-    elif pctl.join_broadcast and pctl.broadcast_active:
-        pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
-        pctl.broadcast_time = pctl.playing_time
+    # elif pctl.join_broadcast and pctl.broadcast_active:
+    #     pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
+    #     pctl.broadcast_time = pctl.playing_time
 
     if pctl.broadcast_active and pctl.broadcast_time != pctl.broadcast_last_time:
         pctl.broadcast_last_time = pctl.broadcast_time
