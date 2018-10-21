@@ -39,12 +39,8 @@
   </categories>
 
   <releases>
-    <release version="3.2.2" date="2018-09-14"/>
+    <release version="3.2.4" date="2018-09-16"/>
   </releases>
-
-  <suggests>
-    <id>org.gnome.Lollypop</id>
-  </suggests>
 
   <translation type="gettext">tauon</translation>
 
