@@ -46,6 +46,7 @@ print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 # Previously there was Windows and Mac support, but these have been dropped.
 system = 'linux'
 
+# Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 de_nofity_support = desktop == 'GNOME' or desktop == 'KDE'
 
@@ -86,7 +87,7 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
 
         flatpak_mode = True
 
-# If we're installed, use home data locations rather than the portable mode locations
+# If we're installed, use home data locations
 if install_mode:
 
     old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
@@ -210,6 +211,9 @@ from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
 
+# -----------------------------------------------------------
+# Detect locale for translations (currently none availiable)
+
 locale.setlocale(locale.LC_ALL, "")
 #locale.setlocale(locale.LC_ALL, ("ja_JP", "UTF-8"))
 
@@ -231,14 +235,15 @@ else:
     def _(message):
         return message
 
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title
+# ------------------------------------------------
+
+os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
 import gi
-gi.require_version('Notify', '0.7')
+gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
 from gi.repository import Notify
 
-
 if de_nofity_support:
-    Notify.init("Hello World")
+    Notify.init("Tauon Music Box Transcode Notification")
     g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                     "Transcoding has finished.")
 
@@ -263,6 +268,7 @@ warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 warnings.simplefilter('ignore', stagger.errors.Warning)
 
+# Check to see if Discord is running
 if discord_allow:
     if system == 'linux':
         pl = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE).communicate()[0]
@@ -318,7 +324,7 @@ vis_update = False
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
-GUI_Mode = 1  # For possible future skins
+GUI_Mode = 1  # For possible future skins, maybe
 
 worker_save_state = False
 
@@ -430,10 +436,8 @@ Archive_Formats = {'zip'}
 if shutil.which('unrar'):
     Archive_Formats.add("rar")
 
-if system == 'windows':
-    DA_Formats.add('wma')  # Bass on Linux does not support WMA
-
-
+# if system == 'windows':
+#     DA_Formats.add('wma')  # Bass on Linux does not support WMA
 
 p_stopped = 0
 p_playing = 1
@@ -930,8 +934,8 @@ class Fonts:    # Used to hold font sizes (I forget to use this)
 
         self.bottom_panel_time = 212
 
-        if system == 'windows':
-            self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
+        # if system == 'windows':
+        #     self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
 
 fonts = Fonts()
 
@@ -9846,7 +9850,7 @@ def lightning_paste():
 
     if album_mode:
         prep_gal()
-        reload_albums()
+        reload_albums(True)
 
     cargo.clear()
     gui.lightning_copy = False
@@ -12306,6 +12310,23 @@ class SearchOverlay:
         
         input.key_return_press = False
 
+    def click_meta(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if name in pctl.master_library[item].parent_folder_path:
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title=os.path.basename(name).upper(),
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+        input.key_return_press = False
+
     def click_genre(self, name):
 
         playlist = []
@@ -12515,7 +12536,7 @@ class SearchOverlay:
                     if artist == "":
                         artist = pctl.master_library[item[2]].artist
 
-                    if full_count < 6:
+                    if full_count < 7:
 
                         ddt.draw_text((125 * gui.scale, yy + 25 * gui.scale), "BY", [250, 240, 110, int(255 * fade)], 212, bg=[12, 12, 12, 255])
                         xx += 8 * gui.scale
@@ -12637,7 +12658,38 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
-                if i > 15:
+                if item[0] == 5:
+                    cl = [250, 100, 50, int(255 * fade)]
+                    text = "META"
+                    xx = ddt.draw_text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
+
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    if fade == 1:
+                        ddt.rect_r((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 20 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+                        if gui.level_2_click:
+                            self.click_meta(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+                        if level_2_right_click:
+                            pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+                    if enter and fade == 1:
+                        self.click_meta(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                if i > 40:
+                    break
+
+                if yy > window_size[1] - (100 * gui.scale):
                     break
 
                 yy += 22 * gui.scale
@@ -12665,6 +12717,7 @@ def worker2():
                 artists = {}
                 albums = {}
                 genres = {}
+                metas = {}
 
                 tracks = set()
 
@@ -12692,6 +12745,17 @@ def worker2():
                         album = t.album.lower()
                         genre = t.genre.lower()
                         filename = t.filename.lower()
+
+                        stem = os.path.dirname(t.parent_folder_path)
+                        # 5 = meta
+
+                        if s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
+
+                            if stem in metas:
+                                metas[stem] += 1
+                            else:
+                                temp_results.append([5, stem, track, playlist[6], 0])
+                                metas[stem] = 1
 
                         if s_text in genre:
 
@@ -12736,9 +12800,15 @@ def worker2():
                                     temp_results.append([1, t.album, track, playlist[6], 0])
                                     albums[t.album] = value
 
+                            if search_magic(s_text, artist) or search_magic(s_text, album):
 
-                            if search_magic_any(s_text, artist) and search_magic_any(s_text, album):
+                                if t.album in albums:
+                                    albums[t.album] += 3
+                                else:
+                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    albums[t.album] = 3
 
+                            elif search_magic_any(s_text, artist) and search_magic_any(s_text, album):
 
                                 if t.album in albums:
                                     albums[t.album] += 3
@@ -12776,7 +12846,7 @@ def worker2():
                 search_over.sip = False
                 search_over.on = 0
                 gui.update += 1
-                #
+
                 for i, item in enumerate(temp_results):
                     if item[0] == 0:
                         temp_results[i][4] = artists[item[1]]
@@ -12784,6 +12854,9 @@ def worker2():
                         temp_results[i][4] = albums[item[1]]
                     if item[0] == 3:
                         temp_results[i][4] = genres[item[1]]
+                    if item[0] == 5:
+                        temp_results[i][4] = metas[item[1]]
+
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
                 search_over.on = 0
