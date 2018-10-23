@@ -12752,10 +12752,10 @@ def worker2():
                         if s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
 
                             if stem in metas:
-                                metas[stem] += 1
+                                metas[stem] += 2
                             else:
                                 temp_results.append([5, stem, track, playlist[6], 0])
-                                metas[stem] = 1
+                                metas[stem] = 2
 
                         if s_text in genre:
 
@@ -12856,6 +12856,10 @@ def worker2():
                         temp_results[i][4] = genres[item[1]]
                     if item[0] == 5:
                         temp_results[i][4] = metas[item[1]]
+                        if metas[item[1]] < 42:
+                            temp_results[i] = None
+
+                temp_results[:] = [item for item in temp_results if item is not None]
 
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
@@ -13830,6 +13834,136 @@ gui.pt_off = Timer()
 gui.pt = 0
 
 
+def gen_power2():
+
+    tags = {}  # [tag name]: (first position, number of times we saw it)
+    tag_list = []
+
+    last = 'a'
+    noise = 0
+
+    def key(tag):
+        return tags[tag][1]
+
+    for position in album_dex:
+
+        index = default_playlist[position]
+        track = pctl.g(index)
+
+        crumbs = track.parent_folder_path.split("/")
+
+        for i, b in enumerate(crumbs):
+
+            if i > 0 and (track.artist in b and track.artist):
+                tag = crumbs[i - 1]
+
+                if tag != last:
+                    noise += 1
+                last = tag
+
+                if tag in tags:
+                    tags[tag][1] += 1
+                else:
+                    tags[tag] = [position, 1]
+                    tag_list.append(tag)
+                break
+
+    if noise > len(album_dex) / 2:
+        print("Playlist is too noisy for power bar.")
+        return []
+
+    tag_list_sort = sorted(tag_list, key=key, reverse=True)
+
+    max_tags = (window_size[1] - gui.panelY - gui.panelBY - 10) // 30 * gui.scale
+
+    tag_list_sort = tag_list_sort[:max_tags]
+
+    for i in reversed(range(len(tag_list))):
+        if tag_list[i] not in tag_list_sort:
+            del tag_list[i]
+
+    h = []
+
+    for tag in tag_list:
+
+        if tags[tag][1] > 2:
+
+            t = PowerTag()
+            t.name = tag.upper()
+            t.position = tags[tag][0]
+            h.append(t)
+
+    cc = random.random()
+    cj = 0.03
+    if len(h) < 5:
+        cj = 0.11
+
+    cj = 0.5 / max(len(h), 2)
+
+    for item in h:
+        item.colour = hsl_to_rgb(cc, 0.8, 0.7)
+        cc += cj
+
+    return h
+
+
+# def gen_power(threshold_variable):
+#
+#     run = 0
+#     prev = None
+#     h = []
+#     l = ["a", 'b'] * 7
+#
+#     s = {}
+#     done = []
+#
+#     cc = random.random()
+#
+#     for position in album_dex:
+#
+#         index = default_playlist[position]
+#         tr = pctl.g(index)
+#
+#         li = tr.parent_folder_path.split("/")
+#
+#         for i, b in enumerate(li):
+#
+#             if i > 0 and ((tr.artist in b and tr.artist) or (tr.album in b and tr.album)):
+#                 a = li[i - 1]
+#
+#                 l.append(a)
+#                 del l[0]
+#
+#                 if not a in s:
+#                     s[a] = position
+#
+#                 o = None
+#                 if h:
+#                     o = h[-1].name
+#                 if checkEqual(l) and a != o:
+#                     if a not in done:
+#                         t = PowerTag()
+#                         t.name = a.upper()
+#                         t.position = s[a]
+#                         #t.colour = power_tag_colours.get(a)
+#                         h.append(t)
+#                         done.append(a)
+#
+#                 break
+#
+#     cj = 0.03
+#     if len(h) < 5:
+#         cj = 0.11
+#
+#     cj = 0.5 / max(len(h), 2)
+#
+#     for item in h:
+#         item.colour = hsl_to_rgb(cc, 0.8, 0.7)
+#         cc += cj
+#
+#     return h
+
+
 def reload_albums(quiet=False):
     global album_dex
     global update_layout
@@ -13860,61 +13994,9 @@ def reload_albums(quiet=False):
 
 
     # Generate POWER BAR
-    run = 0
-    prev = None
-    h = []
-    l = ["a", 'b'] * 7
 
-    s = {}
-    done = []
 
-    cc = random.random()
-
-    for position in album_dex:
-
-        index = default_playlist[position]
-
-        tr = pctl.g(index)
-
-        li = tr.parent_folder_path.split("/")
-
-        for i, b in enumerate(li):
-
-            if i > 0 and ((tr.artist in b and tr.artist) or (tr.album in b and tr.album)):
-                a = li[i - 1]
-
-                l.append(a)
-                del l[0]
-
-                if not a in s:
-                    s[a] = position
-
-                o = None
-                if h:
-                    o = h[-1].name
-
-                if checkEqual(l) and a != o:
-                    if a not in done:
-                        t = PowerTag()
-                        t.name = a.upper()
-                        t.position = s[a]
-                        #t.colour = power_tag_colours.get(a)
-                        h.append(t)
-                        done.append(a)
-
-                break
-
-    cj = 0.03
-    if len(h) < 5:
-        cj = 0.11
-
-    cj = 0.5 / max(len(h), 2)
-
-    for item in h:
-        item.colour = hsl_to_rgb(cc, 0.8, 0.7)
-        cc += cj
-
-    gui.power_bar = h
+    gui.power_bar = gen_power2()
     gui.pt = 0
 
 
@@ -17205,8 +17287,8 @@ class StandardPlaylist:
 
             # Folder Break Row
 
-            if (p_track == 0 or n_track.parent_folder_name
-                != pctl.master_library[default_playlist[p_track - 1]].parent_folder_name) and \
+            if (p_track == 0 or n_track.parent_folder_path
+                != pctl.master_library[default_playlist[p_track - 1]].parent_folder_path) and \
                             pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
 
                 line = n_track.parent_folder_name
@@ -21565,7 +21647,7 @@ while running:
 
                 # POWER TAG BAR --------------
 
-                if gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 2):
+                if gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
 
                     top = gui.panelY
                     run_y = top + 1
