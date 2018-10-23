@@ -14,8 +14,10 @@ v3.2.4
  - Fixed file rename function sometimes failing to show warning on missing metadata
  - Fixed search result right click marking track as playing position
  - Fixed gallery position not staying when using move folder function
+ - Fixed a case where folder break would not distinguish between different folders with same name
  - Improved gallery to remember view position when switching playlists quickly
  - Improved search algorithm to better handle fragmented search terms for albums
+ - Improved power tag bar to better adapt to different library sizes and available window space
  - Tweaked file rename box appearance to better match folder modification box
  - Tweaked track notification text order
  - Tweaked search overlay to better fit results to window height
