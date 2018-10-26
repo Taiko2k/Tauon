@@ -850,6 +850,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.gallery_positions = {}
 
+        self.remember_library_mode = False
+
 gui = GuiVar()
 
 
@@ -1352,7 +1354,8 @@ try:
         prefs.show_notifications = save[85]
     if save[86] is not None:
         prefs.true_shuffle = save[86]
-
+    if save[87] is not None:
+        gui.remember_library_mode = save[87]
 
     state_file.close()
     del save
@@ -11041,7 +11044,8 @@ def key_genre(index):
     return pctl.master_library[index].genre
 
 def key_t(index):
-    return str(pctl.master_library[index].track_number)
+    #return str(pctl.master_library[index].track_number)
+    return index_key(index)
 
 def key_codec(index):
     return pctl.master_library[index].file_ext
@@ -19922,7 +19926,7 @@ def save_state():
             prefs.use_transition_crossfade,
             prefs.show_notifications,
             prefs.true_shuffle,
-            None]
+            gui.set_mode]
 
     #print(prefs.last_device + "-----")
 
@@ -19933,8 +19937,10 @@ def save_state():
 # SDL_EventState(SDL_SYSWMEVENT, 1)
 
 if gui.restart_album_mode:
-
     toggle_album_mode(True)
+
+if gui.remember_library_mode:
+    toggle_library_mode()
 
 quick_import_done = []
 
