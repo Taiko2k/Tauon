@@ -1655,6 +1655,9 @@ def tag_scan(nt):
 
     try:
         nt.modified_time = os.path.getmtime(nt.fullpath)
+
+        nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
+
         if nt.file_ext == "FLAC":
 
             # print("get opus")
@@ -2485,7 +2488,7 @@ class PlayerCtl:
                             lfm_scrobbler.a_sc = False
                             self.a_time = 0
 
-                elif self.random_mode is False and len(pp) > self.playlist_playing_position and \
+                elif self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
                                 self.master_library[pp[self.playlist_playing_position]].is_cue is True \
                         and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
                                 self.master_library[pp[self.playlist_playing_position]].filename and int(
@@ -2537,6 +2540,7 @@ class PlayerCtl:
         pctl.playing_time = 0
 
         gui.update_spec = 0
+        end = False
 
         old = self.queue_step
 
@@ -2681,6 +2685,7 @@ class PlayerCtl:
                     self.playing_state = 0
                     self.playerCommand = 'runstop'
                     self.playerCommandReady = True
+                    end = True
                 elif prefs.end_setting == 'advance':
 
                     if pctl.active_playlist_playing < len(pctl.multi_playlist) - 1 and \
@@ -2745,7 +2750,7 @@ class PlayerCtl:
         self.render_playlist()
 
         self.notify_update()
-        notify_song()
+        notify_song(end)
 
 pctl = PlayerCtl()
 
@@ -2770,7 +2775,7 @@ def update_title_do():
 if de_nofity_support:
     song_notification = Notify.Notification.new("Next track notification")
 
-def notify_song():
+def notify_song(notify_of_end=False):
 
     if not de_nofity_support:
         return
@@ -2783,13 +2788,18 @@ def notify_song():
 
         i_path = ""
         try:
-            i_path = thumb_tracks.path(track)
+            if not notify_of_end:
+                i_path = thumb_tracks.path(track)
         except:
             print("Thumbnail error")
 
         bottom_line = (track.artist + " - " + track.title).strip("- ")
 
         top_line = track.album
+
+        if notify_of_end:
+            bottom_line = "Tauon Music Box"
+            top_line = "End of playlist"
 
         song_notification.update(top_line, bottom_line, i_path)
 
@@ -10417,6 +10427,7 @@ def reload_metadata(index):
 
         print('Reloading Metadate for ' + pctl.master_library[track].filename)
         #key = pctl.master_library[track].title + pctl.master_library[track].filename
+
         star = star_store.full_get(track)
         star_store.remove(track)
 
@@ -12749,7 +12760,7 @@ def worker2():
                         stem = os.path.dirname(t.parent_folder_path)
                         # 5 = meta
 
-                        if s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
+                        if len(s_text) > 2 and s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
 
                             if stem in metas:
                                 metas[stem] += 2

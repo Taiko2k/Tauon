@@ -15,6 +15,9 @@ v3.2.4
  - Fixed search result right click marking track as playing position
  - Fixed gallery position not staying when using move folder function
  - Fixed a case where folder break would not distinguish between different folders with same name
+ - Fixed reload metadata function not detecting file extension changes
+ - Fixed notification display at end of playlist
+ - Fixed a crash when playing a CUE sheet track at the end of a playlist
  - Improved gallery to remember view position when switching playlists quickly
  - Improved search algorithm to better handle fragmented search terms for albums
  - Improved power tag bar to better adapt to different library sizes and available window space
