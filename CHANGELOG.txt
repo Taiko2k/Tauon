@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.2.4
 
+ - Added new theme Astro
  - Added meta folders to search overlay results
  - Added track menu shortcut to view track in lyrics view
  - Added tooltips to 'modify folder' buttons
@@ -21,9 +22,12 @@ v3.2.4
  - Fixed column mode not using natural sort for track numbers
  - Fixed UI not remembering being in column view on restart
  - Fixed column view not using new heart icons
+ - Fixed seek bar not updating while volume bar was held
+ - Fixed heart name text rendering with light playlist background colour
  - Improved gallery to remember view position when switching playlists quickly
  - Improved search algorithm to better handle fragmented search terms for albums
  - Improved power tag bar to better adapt to different library sizes and available window space
+ - Improved playlist tab panel text readability on light backgrounds
  - Tweaked file rename box appearance to better match folder modification box
  - Tweaked track notification text order
  - Tweaked search overlay to better fit results to window height
