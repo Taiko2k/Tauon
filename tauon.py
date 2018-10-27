@@ -1026,6 +1026,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.top_panel_background = self.grey(15)
         self.side_panel_background = self.grey(18)
+        self.gallery_background = self.side_panel_background
         self.playlist_panel_background = self.grey(21)
         self.bottom_panel_colour = self.grey(15)
 
@@ -1516,6 +1517,11 @@ if db_version > 0:
         print("Updating database to version 2.4")
         for key, value in master_library.items():
             setattr(master_library[key], 'bit_depth', 0)
+
+    if db_version <= 2.4:
+        if theme > 0:
+           theme += 1
+
 # Loading Config -----------------
 
 # main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
@@ -4123,23 +4129,23 @@ def player():   # BASS
                 err = BASS_ErrorGetCode()
 
                 # print("Track transition...")
-                print("We are " + str(tlen - tpos)[:5] + " seconds from end")
+                # print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
-                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 1.7:
+                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 1.8:
 
                     # set volume for new track
                     BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
 
                     # Start sync on end
                     BASS_ChannelSetSync(self.channel, BASS_SYNC_END, 0, TransSync, new_handle)
-                    print("Begin synced transition...")
+                    # print("Begin synced transition...")
                     self.syncing = True
                     br_timer.set()
 
                     while self.syncing:
                         time.sleep(0.001)
-                        if br_timer.get() > 1.6 and self.syncing:
+                        if br_timer.get() > 2 and self.syncing:
                             self.syncing = False
                             print("Sync taking too long!")
                             BASS_ChannelStop(self.channel)
@@ -4154,10 +4160,10 @@ def player():   # BASS
 
                 else:
 
-                    print("Do transition now")
+                    # print("Do transition now")
 
                     if instant:
-                        print("...skipping crossfade.")
+                        # print("...skipping crossfade.")
                         BASS_ChannelSetAttribute(new_handle, 2, pctl.player_volume / 100)
 
                     BASS_ChannelPlay(new_handle, True)
@@ -4699,10 +4705,8 @@ def player():   # BASS
 
 
             #pctl.playing_time += add_time
-            if not pctl.playerCommandReady:
+            if not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 bass_player.update_time()
-
-
 
             if pctl.playing_state == 1:
 
@@ -15285,7 +15289,7 @@ class Over:
         # y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, "Show titles")
+        self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
         y += 28 * gui.scale
         y += 28 * gui.scale
 
@@ -15302,7 +15306,7 @@ class Over:
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
         if desktop == 'GNOME' or desktop == 'KDE':
-            self.toggle_square(x, y, toggle_notifications, "Show track notifications")
+            self.toggle_square(x, y, toggle_notifications, "Show desktop notifications")
 
         y += 28 * gui.scale
 
@@ -18095,6 +18099,12 @@ class PlaylistBox:
 
         max_tabs = h // (self.gap + self.tab_h) * gui.scale
 
+        tab_title_colour = [230, 230, 230, 255]
+
+        light_mode = False
+        if test_lumi(colours.side_panel_background) < 0.55:
+            light_mode = True
+            tab_title_colour = [20, 20, 20, 255]
 
         show_scroll = False
         tab_start = x + 10 * gui.scale
@@ -18181,18 +18191,24 @@ class PlaylistBox:
 
 
             bg = [255, 255, 255, 6]
+            if light_mode:
+                bg = [0, 0, 0, 8]
 
             # Additional highlight reasons
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 14]
+                if light_mode:
+                    bg = [0, 0, 0, 15]
 
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
                 bg = [255, 255, 255, 15]
+                if light_mode:
+                    bg = [0, 0, 0, 16]
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
             ddt.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, [230, 230, 230, 255], 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
+            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
@@ -19442,7 +19458,7 @@ def display_you_heart(x, yy):
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
                    True)
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
+        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
     heart_row_icon.render(x,
                           yy, [244, 100, 100, 255])
@@ -19465,7 +19481,7 @@ def display_friend_heart(x, yy, name):
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
                    True)
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
+        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
 
 
@@ -19882,7 +19898,7 @@ def save_state():
             folder_image_offsets,
             lfm_username,
             lfm_hash,
-            2.4,  # Version, used for upgrading
+            2.5,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -21088,6 +21104,8 @@ while running:
                                     colours.top_panel_background = get_colour_from_line(p)
                                 if 'side panel' in p:
                                     colours.side_panel_background = get_colour_from_line(p)
+                                if 'gallery background' in p:
+                                    colours.gallery_background = get_colour_from_line(p)
                                 if 'playlist panel' in p:
                                     colours.playlist_panel_background = get_colour_from_line(p)
                                 if 'track line' in p:
@@ -21333,10 +21351,7 @@ while running:
                 h = window_size[1] - gui.panelY - gui.panelBY
 
                 rect = [x, gui.panelY, w, h]
-                ddt.rect_r(rect, colours.side_panel_background, True)
-
-                rect = [x, gui.panelY, w, h]
-                ddt.rect_r(rect, colours.side_panel_background, True)
+                ddt.rect_r(rect, colours.gallery_background, True)
 
                 area_x = w + 38 * gui.scale
 
@@ -21351,7 +21366,7 @@ while running:
                 r_area = w
                 c_area = r_area // 2 + l_area
 
-                ddt.text_background_colour = colours.side_panel_background
+                ddt.text_background_colour = colours.gallery_background
 
                 if row_len == 0:
                     row_len = 1
@@ -21543,7 +21558,7 @@ while running:
                                 ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           colours.gallery_highlight, True)
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                          colours.side_panel_background, True)
+                                           colours.gallery_background, True)
 
                             # Draw transcode highlight
                             if transcode_list:
@@ -21563,7 +21578,7 @@ while running:
                                     ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                               c, True)
                                     ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                              colours.side_panel_background, True)
+                                               colours.gallery_background, True)
 
                             # Draw selection
                             if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
@@ -21573,7 +21588,7 @@ while running:
                                 ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           c, True) #[150, 80, 222, 255]
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                          colours.side_panel_background, True)
+                                           colours.gallery_background, True)
 
                             # Draw selection animation
                             if gui.gallery_animate_highlight_on == album_dex[album_on] and gallery_select_animate_timer.get() < 1.5:
@@ -21592,7 +21607,7 @@ while running:
                                 ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
                                           c, True) #[150, 80, 222, 255]
                                 ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                          colours.side_panel_background, True)
+                                           colours.gallery_background, True)
                                 gui.update += 1
 
 
@@ -21605,6 +21620,9 @@ while running:
 
                             # Draw album art
                             if gall_ren.render(default_playlist[album_dex[album_on]], (x, y)) is False and gui.gallery_show_text is False:
+
+
+
 
                                 ddt.draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
                                            pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
