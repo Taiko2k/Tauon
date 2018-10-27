@@ -20,6 +20,7 @@ v3.2.4
  - Fixed a crash when playing a CUE sheet track at the end of a playlist
  - Fixed column mode not using natural sort for track numbers
  - Fixed UI not remembering being in column view on restart
+ - Fixed column view not using new heart icons
  - Improved gallery to remember view position when switching playlists quickly
  - Improved search algorithm to better handle fragmented search terms for albums
  - Improved power tag bar to better adapt to different library sizes and available window space

@@ -17051,9 +17051,12 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
 
         if gui.show_hearts:
+
+            xxx = star_x
+
             count = 0
             spacing = 6 * gui.scale
-            xxx = star_x
+
             yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
             if gui.scale == 1.25:
                 yy += 1
@@ -17065,43 +17068,17 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
-                rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
-                gui.heart_fields.append(rect)
-                fields.add(rect, update_playlist_call)
-                if coll(rect) and not track_box:
-                    gui.pl_update += 1
-                    w = ddt.get_text_w("You", 13)
-                    xx = (x - w) - 5 * gui.scale
-                    #ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
-                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
-
-
-                heart_row_icon.render(width - xxx + start_x - 52 * gui.scale - offset_font_extra,
-                       yy, [244,100,100,255])
+                display_you_heart(x, yy)
 
                 star_x += 18 * gui.scale
 
             for name in pctl.master_library[index].lfm_friend_likes:
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
-                heart_row_icon.render(x,
-                                      yy, heart_colours.get(name))
+                display_friend_heart(x, yy, name)
 
-                rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
-                gui.heart_fields.append(rect)
-                fields.add(rect, update_playlist_call)
-                if coll(rect) and not track_box:
-                    gui.pl_update += 1
-                    w = ddt.get_text_w(name, 13)
-                    xx = (x - w) - 5 * gui.scale
-                    # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-                    # ddt.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
-                    ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-                    ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
                 count += 1
+
                 star_x += heart_row_icon.w + spacing + 2
 
 
@@ -17785,18 +17762,27 @@ class StandardPlaylist:
                             if this_line_playing is True:
                                 colour = colours.time_text
                         elif item[0] == "❤":
+                            # col love
+                            u = 5 * gui.scale
+                            yy = y + (gui.playlist_row_height // 2) - (5 * gui.scale)
+                            if gui.scale == 1.25:
+                                yy += 1
+
                             if get_love(n_track):
-                                text = "❤"
-                                colour = [220, 90, 90, 255]
-                                if standard_font == "Segoe UI":
-                                    font -= 2
-                                elif standard_font == 'Noto Sans Bold':
-                                    y_off = 1
-                                    font += 1
-                            else:
-                                text = ""
-                            # if this_line_playing is True:
-                            #     colour = colours.artist_playing
+                                display_you_heart(run + 6 * gui.scale, yy)
+                                u += 18 * gui.scale
+
+                            count = 0
+                            for name in n_track.lfm_friend_likes:
+                                spacing = 6 * gui.scale
+                                if u + (heart_row_icon.w + spacing) * count > wid + 7 * gui.scale:
+                                    break
+
+                                x = run + u + (heart_row_icon.w + spacing) * count
+                                display_friend_heart(x, yy, name)
+                                count += 1
+
+
                         elif item[0] == "P":
                             #key = n_track.title + n_track.filename
                             ratio = 0
@@ -19441,6 +19427,46 @@ def download_img(link, target_folder):
 
         show_message("Image download failed.", 'warning')
         gui.image_downloading = False
+
+
+def display_you_heart(x, yy):
+
+    rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
+    gui.heart_fields.append(rect)
+    fields.add(rect, update_playlist_call)
+    if coll(rect) and not track_box:
+        gui.pl_update += 1
+        w = ddt.get_text_w("You", 13)
+        xx = (x - w) - 5 * gui.scale
+        # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
+                   True)
+        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13)
+
+    heart_row_icon.render(x,
+                          yy, [244, 100, 100, 255])
+
+
+def display_friend_heart(x, yy, name):
+
+    heart_row_icon.render(x,
+                          yy, heart_colours.get(name))
+
+    rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
+    gui.heart_fields.append(rect)
+    fields.add(rect, update_playlist_call)
+    if coll(rect) and not track_box:
+        gui.pl_update += 1
+        w = ddt.get_text_w(name, 13)
+        xx = (x - w) - 5 * gui.scale
+        # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+        # ddt.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
+        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
+                   True)
+        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13)
+
 
 
 
