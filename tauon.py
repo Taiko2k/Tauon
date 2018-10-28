@@ -1959,7 +1959,8 @@ class PlayerCtl:
         self.bass_devices = []
         self.set_device = 0
         self.mpris = None
-
+        self.eq = [0] * 2  # not used
+        self.enable_eq = True  # not used
 
     def notify_update(self):
 
@@ -3661,10 +3662,26 @@ def player():   # BASS
                     ('fVolume', ctypes.c_float)
                     ]
 
+    class BASS_DX8_PARAMEQ(ctypes.Structure):
+        _fields_ = [('fCenter', ctypes.c_int),
+                    ('fBandwidth', ctypes.c_float),
+                    ('fGain', ctypes.c_float),
+                    ]
+
+    fx_bandwidth = 24
+    eqs = [
+        BASS_DX8_PARAMEQ(110, fx_bandwidth, 0),
+        BASS_DX8_PARAMEQ(11000, fx_bandwidth, 0),
+
+    ]
+
 
     #BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_BFX_VOLUME))(
     BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_void_p)(
         ('BASS_FXSetParameters', bass_module))
+
+    BASS_FXGetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_void_p)(
+        ('BASS_FXGetParameters', bass_module))
 
     BASS_ChannelSetFX = function_type(ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_int)(
         ('BASS_ChannelSetFX', bass_module))
@@ -3972,6 +3989,24 @@ def player():   # BASS
 
             print("Using ReplayGain of " + str(gain))
             pctl.active_replaygain = round(gain, 2)
+
+        # if pctl.enable_eq:
+        #
+        #     print("Setting eq...")
+        #     print(pctl.eq)
+        #     BASS_FX_DX8_PARAMEQ = 7
+        #     fx_handle = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 1)
+        #
+        #     handles = [
+        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 0),
+        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 0),
+        #                ]
+        #
+        #     for i, st in enumerate(eqs):
+        #
+        #         BASS_FXSetParameters(handles[i], ctypes.pointer(st))
+        #         BASS_FXGetParameters(handles[i], ctypes.pointer(st))
+
 
     br_timer = Timer()
 
@@ -13893,7 +13928,7 @@ def gen_power2():
 
     tag_list_sort = sorted(tag_list, key=key, reverse=True)
 
-    max_tags = (window_size[1] - gui.panelY - gui.panelBY - 10) // 30 * gui.scale
+    max_tags = round((window_size[1] - gui.panelY - gui.panelBY - 10) // 30 * gui.scale)
 
     tag_list_sort = tag_list_sort[:max_tags]
 
@@ -17648,6 +17683,7 @@ class StandardPlaylist:
 
                     wid = item[1] - 20 * gui.scale
                     y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w
+                    ry = gui.playlist_top + gui.playlist_row_height * w
                     if run > end + 24 * gui.scale:
                         break
 
@@ -17768,7 +17804,7 @@ class StandardPlaylist:
                         elif item[0] == "❤":
                             # col love
                             u = 5 * gui.scale
-                            yy = y + (gui.playlist_row_height // 2) - (5 * gui.scale)
+                            yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
                             if gui.scale == 1.25:
                                 yy += 1
 
