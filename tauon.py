@@ -3323,6 +3323,8 @@ class LastScrob:
 
     def process_queue(self):
 
+        time.sleep(1)
+
         while self.queue:
             try:
                 tr = self.queue.pop()
@@ -3357,7 +3359,7 @@ class LastScrob:
             self.a_pt = False
             self.a_sc = False
 
-        if pctl.a_time > 8 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
+        if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
 
             if lastfm.connected or lastfm.details_ready():
@@ -3374,7 +3376,7 @@ class LastScrob:
                 mini_t.daemon = True
                 mini_t.start()
 
-        if pctl.a_time > 8 and self.a_pt:
+        if pctl.a_time > 6 and self.a_pt:
             pctl.b_time += add_time
             if pctl.b_time > 20:
                 pctl.b_time = 0
@@ -3401,6 +3403,7 @@ class LastScrob:
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
+            self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
                 self.queue.append((pctl.master_library[self.a_index].title, pctl.master_library[self.a_index].artist,
@@ -5737,7 +5740,7 @@ gui.pl_update = 2
 
 def bass_player_thread():
 
-    logging.basicConfig(filename=user_directory + '/crash.log', level=logging.DEBUG,
+    logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
     try:
@@ -7037,6 +7040,7 @@ class AlbumArt():
                     colours.star_line = [60, 60, 60, 255]
                     colours.row_select_highlight = [0, 0, 0, 30]
                     colours.row_playing_highlight = [0, 0, 0, 20]
+                    colours.gallery_background = hls_mod_add(colours.playlist_panel_background, 0, -0.03, 0)
                 else:
                     ce = alpha_blend([255, 255, 255, 160], colours.playlist_panel_background) #[165, 165, 165, 255]
                     colours.index_text = ce
@@ -7047,6 +7051,7 @@ class AlbumArt():
                     colours.star_line = ce #[150, 150, 150, 255]
                     colours.row_select_highlight = [255, 255, 255, 12]
                     colours.row_playing_highlight = [255, 255, 255, 8]
+                    colours.gallery_background = hls_mod_add(colours.playlist_panel_background, 0, 0.03, 0)
 
                 gui.temp_themes[pctl.master_library[index].album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
@@ -7103,11 +7108,13 @@ class AlbumArt():
 
 
         except OSError as error:
+
             print("Image processing error: " + str(error))
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
         except:
+
             print("Image processing error")
             self.current_wu = None
             del self.source_cache[index][offset]
@@ -11351,9 +11358,9 @@ def toggle_album_mode(force_on=False):
 
     gui.gall_tab_enter = False
 
-    if prefs.colour_from_image:
-        #prefs.colour_from_image = False
-        themeChange = True
+    # if prefs.colour_from_image:
+    #     #prefs.colour_from_image = False
+    #     themeChange = True
 
     # if gui.show_playlist is False:
     #     gui.show_playlist = True
@@ -17112,6 +17119,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 yy += 1
             if xxx > 0:
                 xxx += 5 * gui.scale
+
             if love(False, index):
 
                 count = 1
@@ -17123,6 +17131,15 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 star_x += 18 * gui.scale
 
             for name in pctl.master_library[index].lfm_friend_likes:
+
+                # Limit to number of hears to display
+                if gui.star_mode == 'none':
+                    if count > 6:
+                        break
+                else:
+                    if count > 4:
+                        break
+
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
                 display_friend_heart(x, yy, name)
@@ -18228,21 +18245,30 @@ class PlaylistBox:
             name = pl[0]
             hidden = pl[8]
 
+            semi_light = False
+            if not light_mode and test_lumi(colours.side_panel_background) < 0.85 and False:
+                semi_light = True
 
             bg = [255, 255, 255, 6]
             if light_mode:
                 bg = [0, 0, 0, 8]
+            if semi_light:
+                bg = [45, 45, 45, 255]
 
             # Additional highlight reasons
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 14]
                 if light_mode:
                     bg = [0, 0, 0, 15]
+                if semi_light:
+                    bg = [55, 55, 55, 255]
 
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
                 bg = [255, 255, 255, 15]
                 if light_mode:
                     bg = [0, 0, 0, 16]
+                if semi_light:
+                    bg = [52, 52, 52, 255]
 
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
