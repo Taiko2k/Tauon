@@ -4,6 +4,8 @@ Changelog-------------------------------------
 v3.2.5
 
  - Fixed scrobbles not waiting until end of track to be submitted
+ - Fixed no limit on number of friend hearts displayed
+ - Fixed auto theme not persisting in gallery view
 
 v3.2.4
 
