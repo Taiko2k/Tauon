@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.2.5
+
+ - Fixed scrobbles not waiting until end of track to be submitted
+
 v3.2.4
 
  - Added new theme Astro
