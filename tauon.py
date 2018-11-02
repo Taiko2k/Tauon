@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib #, Gtk, Gdk
 
-t_version = "v3.2.4"
+t_version = "v3.2.5"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -255,13 +255,15 @@ from PIL import Image
 from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
-from t_tagscan import Flac
-from t_tagscan import Opus
-from t_tagscan import Ape
-from t_tagscan import Wav
-from t_tagscan import M4a
-from t_tagscan import parse_picture_block
-from t_extra import *
+
+
+from modules.t_tagscan import Flac
+from modules.t_tagscan import Opus
+from modules.t_tagscan import Ape
+from modules.t_tagscan import Wav
+from modules.t_tagscan import M4a
+from modules.t_tagscan import parse_picture_block
+from modules.t_extra import *
 
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
@@ -2239,6 +2241,8 @@ class PlayerCtl:
 
     def jump(self, index, pl_position=None):
 
+        lfm_scrobbler.start_queue()
+
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
@@ -2300,6 +2304,7 @@ class PlayerCtl:
         self.render_playlist()
         self.notify_update()
         notify_song()
+        lfm_scrobbler.start_queue()
 
 
     def stop(self, block=False, run=False):
@@ -2331,6 +2336,7 @@ class PlayerCtl:
                     break
 
         self.notify_update()
+        lfm_scrobbler.start_queue()
         return previous_state
 
     def pause(self):
@@ -2512,6 +2518,7 @@ class PlayerCtl:
                     self.playing_time = 0
                     self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
                     self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
+                    lfm_scrobbler.start_queue()
 
                     gui.update += 1
                     gui.pl_update = 1
@@ -2760,6 +2767,7 @@ class PlayerCtl:
         self.render_playlist()
 
         self.notify_update()
+        lfm_scrobbler.start_queue()
         notify_song(end)
 
 pctl = PlayerCtl()
@@ -2923,13 +2931,15 @@ class LastFMapi:
         return False, "", ""
 
 
-    def scrobble(self, title, artist, album):
+    def scrobble(self, title, artist, album, timestamp=None):
         if self.hold:
             return 0
         if prefs.auto_lfm:
             self.connect(False)
 
-        timestamp = int(time.time())
+        if timestamp is None:
+            timestamp = int(time.time())
+
         # lastfm_user = self.network.get_user(self.username)
 
         # Act
@@ -3302,6 +3312,35 @@ class LastScrob:
         self.a_index = -1
         self.a_sc = False
         self.a_pt = False
+        self.queue = []
+
+
+    def start_queue(self):
+
+        mini_t = threading.Thread(target=self.process_queue)
+        mini_t.daemon = True
+        mini_t.start()
+
+    def process_queue(self):
+
+        while self.queue:
+            try:
+                tr = self.queue.pop()
+
+                gui.pl_update = 1
+                print("Submit Scrobble " + tr[0] + " - " + tr[1])
+
+                if lastfm.connected or lastfm.details_ready():
+                    lastfm.scrobble(tr[0], tr[1], tr[2])
+
+                if lb.enable:
+                    lb.listen_full(tr[0], tr[1], tr[2])
+
+                time.sleep(0.4)
+
+            except:
+                print("SCROBBLE QUEUE ERROR")
+
 
     def update(self, add_time):
 
@@ -3317,7 +3356,8 @@ class LastScrob:
             pctl.b_time = 0
             self.a_pt = False
             self.a_sc = False
-        if pctl.a_time > 10 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
+
+        if pctl.a_time > 8 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
 
             if lastfm.connected or lastfm.details_ready():
@@ -3334,7 +3374,7 @@ class LastScrob:
                 mini_t.daemon = True
                 mini_t.start()
 
-        if pctl.a_time > 10 and self.a_pt:
+        if pctl.a_time > 8 and self.a_pt:
             pctl.b_time += add_time
             if pctl.b_time > 20:
                 pctl.b_time = 0
@@ -3355,46 +3395,17 @@ class LastScrob:
         if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
                 * 0.50 and self.a_sc is False:
             self.a_sc = True
-            if lastfm.connected or lastfm.details_ready():
-                gui.pl_update = 1
-                print(
-                    "Scrobble " + pctl.master_library[self.a_index].title + " - " + pctl.master_library[
-                        self.a_index].artist)
+            if lastfm.connected or lastfm.details_ready() or lb.enable:
+                print("Queue Scrobble")
+                self.queue.append((pctl.master_library[self.a_index].title, pctl.master_library[self.a_index].artist, pctl.master_library[self.a_index].album))
 
-                mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[self.a_index].title,
-                                                                        pctl.master_library[self.a_index].artist,
-                                                                        pctl.master_library[self.a_index].album))
-                mini_t.daemon = True
-                mini_t.start()
-
-            if lb.enable:
-                mini_t = threading.Thread(target=lb.listen_full, args=(pctl.master_library[self.a_index].title,
-                                                                      pctl.master_library[self.a_index].artist,
-                                                                      pctl.master_library[self.a_index].album))
-                mini_t.daemon = True
-                mini_t.start()
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
-            if lastfm.connected or lastfm.details_ready():
-                gui.pl_update = 1
-                print(
-                    "Scrobble " + pctl.master_library[self.a_index].title + " - " + pctl.master_library[
-                        self.a_index].artist)
+            if lastfm.connected or lastfm.details_ready() or lb.enable:
+                print("Queue Scrobble")
+                self.queue.append((pctl.master_library[self.a_index].title, pctl.master_library[self.a_index].artist,
+                             pctl.master_library[self.a_index].album))
 
-                mini_t = threading.Thread(target=lastfm.scrobble, args=(pctl.master_library[self.a_index].title,
-                                                                        pctl.master_library[self.a_index].artist,
-                                                                        pctl.master_library[self.a_index].album))
-                mini_t.daemon = True
-                mini_t.start()
-
-            if lb.enable:
-                mini_t = threading.Thread(target=lb.listen_full, args=(pctl.master_library[self.a_index].title,
-                                                                      pctl.master_library[self.a_index].artist,
-                                                                      pctl.master_library[self.a_index].album))
-                mini_t.daemon = True
-                mini_t.start()
-
-            self.a_sc = True
 
 lfm_scrobbler = LastScrob()
 
@@ -5759,7 +5770,7 @@ def coll_point(l, r):
 def coll(r):
     return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
-from t_draw import TDraw
+from modules.t_draw import TDraw
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
@@ -18114,8 +18125,6 @@ class PlaylistBox:
 
         self.adds = []
 
-        # self.tab_h = 25 * gui.scale
-        # self.gap = 2 * gui.scale
         self.indicate_w = round(2 * gui.scale)
 
         #if gui.scale == 1.25:
@@ -18171,18 +18180,12 @@ class PlaylistBox:
             self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
 
-        # Inputs
-
-
-
         # Drawing
         yy = y + 5 * gui.scale
         for i, pl in enumerate(pctl.multi_playlist):
 
             if i < self.scroll_on:
                 continue
-
-
 
             if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
                 if input.mouse_click:
@@ -18287,8 +18290,6 @@ class PlaylistBox:
 
             yy += self.tab_h + self.gap
 
-
-
         # Create new playlist if drag in blank space after tabs
         rect = (x, yy, w - 10 * gui.scale, h - (yy - y))
         fields.add(rect)
@@ -18310,9 +18311,6 @@ class PlaylistBox:
                     ddt.rect_r((tab_start, yy, tab_width, self.indicate_w),
                                [255, 180, 80, 255], True)
 
-
-        # if not mouse_down:
-        #     self.drag = False
 
 playlist_box = PlaylistBox()
 
