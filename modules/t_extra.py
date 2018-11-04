@@ -201,6 +201,10 @@ def hsl_to_rgb(h, s, l):
     colour = colorsys.hls_to_rgb(h, l, s)
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
+def hls_mod_add(source, h=0, l=0, s=0):
+    c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
+    colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + l, 0), 1))
+    return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
 
 class ColourGenCache:
 
