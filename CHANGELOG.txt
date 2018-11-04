@@ -3,9 +3,14 @@ Changelog-------------------------------------
 
 v3.2.5
 
+ - Tweaked folder/album title text to truncate separately to date
+ - Tweaked playlist side bar text truncation
+ - Tweaked search to skip playlist's with angle brackets in name
+ - Fixed folder/album titles not truncating
  - Fixed scrobbles not waiting until end of track to be submitted
- - Fixed no limit on number of friend hearts displayed
+ - Fixed limit on number of friend hearts displayed
  - Fixed auto theme not persisting in gallery view
+ - Fixed gallery jumping to wrong position on playlist switch if position was at top
 
 v3.2.4
 

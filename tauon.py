@@ -11948,8 +11948,8 @@ def switch_playlist(number, cycle=False):
         gui.gallery_positions.clear()
     gall_pl_switch_timer.set()
 
-    if album_pos_px > 200:
-        gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
+
+    gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
 
 
     if cycle:
@@ -12804,6 +12804,10 @@ def worker2():
                 s_text = search_over.search_text.text.lower()
 
                 for playlist in pctl.multi_playlist:
+
+                    if "<" in playlist[0]:
+                        print("Skipping search on derivative playlist: " + playlist[0])
+                        continue
 
                     for track in playlist[2]:
 
@@ -17360,8 +17364,35 @@ class StandardPlaylist:
                     if len(line) < 6 and "CD" in line:
                         line = n_track.album
 
-                    if prefs.append_date and n_track.date != "" and "20" not in line and "19" not in line and "18" not in line and "17" not in line:
-                        line += " (" + n_track.date + ")"
+
+                    date = ""
+                    if prefs.append_date and re.match('.*([1-3][0-9]{3})', n_track.date):
+                        date = "(" + n_track.date + ")"
+
+
+                    if line.endswith(")"):
+                        b = line.split("(")
+                        if len(b) > 1 and len(b[1]) <= 11:
+
+                            match = re.match('.*([1-3][0-9]{3})', b[1])
+
+                            if match:
+                                line = b[0]
+                                date = "(" + b[1]
+                    elif line.startswith("("):
+
+                        b = line.split(")")
+                        if len(b) > 1 and len(b[0]) <= 11:
+
+                            match = re.match('.*([1-3][0-9]{3})', b[0])
+
+                            if match:
+                                line = b[1]
+                                date = b[0] + ")"
+
+
+                    if "(" in line and re.match('.*([1-3][0-9]{3})', line):
+                        date = ""
 
                     ex = left + highlight_left + highlight_width - 7 * gui.scale
 
@@ -17377,11 +17408,31 @@ class StandardPlaylist:
                                   (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
 
 
+                    date_w = 0
+                    if date:
+                        date_w = ddt.draw_text((ex, height, 1), date, alpha_mod(colours.folder_title, album_fade), gui.row_font_size + gui.pl_title_font_offset)
+                        date_w += 4 * gui.scale
+
+                    ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
+                    if ft_width > highlight_width - date_w - 13 * gui.scale:
+                        date_w += 19 * gui.scale
+                        ddt.draw_text((left + highlight_left + 8 * gui.scale, height), line,
+                                   alpha_mod(colours.folder_title, album_fade),
+                                   gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w)
+
+                    else:
+
+                        ddt.draw_text((ex - date_w, height, 1), line,
+                                   alpha_mod(colours.folder_title, album_fade),
+                                   gui.row_font_size + gui.pl_title_font_offset)
+
+
+
                     # Draw folder title
-                    ddt.draw_text((ex,
-                                height, 1), line,
-                               alpha_mod(colours.folder_title, album_fade),
-                               gui.row_font_size + gui.pl_title_font_offset, left + highlight_width)
+                    # ddt.draw_text((ex,
+                    #             height, 1), line,
+                    #            alpha_mod(colours.folder_title, album_fade),
+                    #            gui.row_font_size + gui.pl_title_font_offset, left + highlight_width)
 
                     # Draw separation line below title
                     ddt.rect_r((left + highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_width, 1 * gui.scale), colours.folder_line, True)
@@ -18273,7 +18324,7 @@ class PlaylistBox:
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
             ddt.rect_r((tab_start, yy, tab_width, 23 * gui.scale), bg, True)
-            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - 50 * gui.scale, bg=real_bg)
+            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - 55 * gui.scale, bg=real_bg)
 
 
             indicator_colour = [100, 200, 90, 255]
