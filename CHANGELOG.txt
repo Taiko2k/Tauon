@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v3.2.5
+v3.3.0
 
  - Added gapless playback
  - Tweaked folder/album title text to truncate separately to date
@@ -12,6 +12,8 @@ v3.2.5
  - Fixed limit on number of friend hearts displayed
  - Fixed auto theme not persisting in gallery view
  - Fixed gallery jumping to wrong position on playlist switch if position was at top
+ - Fixed a case where playlist would change vew position when deleting another playlist
+ - Fixed a possible issue where playback would stall at end of a long track
 
 v3.2.4
 
