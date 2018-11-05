@@ -645,7 +645,7 @@ class Prefs:    # Used to hold any kind of settings
         self.lb_token = None
 
         self.use_jump_crossfade = False
-        self.use_transition_crossfade = True
+        self.use_transition_crossfade = False
 
         self.show_notifications = False
 
@@ -4224,7 +4224,7 @@ def player():   # BASS
 
                 else:
 
-                    print("Do transition FADE")
+
 
                     # Create Mixer
                     new_mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
@@ -4253,9 +4253,10 @@ def player():   # BASS
                         BASS_ChannelSetPosition(new_mixer, bytes_position, 0)
 
                     if instant:
-                        print("ok")
+                        print("Do transition QUICK")
                         BASS_ChannelSetAttribute(new_mixer, 2, pctl.player_volume / 100)
-
+                    else:
+                        print("Do transition FADE")
 
                     if not instant:
                         # Fade in new track
@@ -14601,6 +14602,10 @@ def toggle_transition_crossfade(mode=0):
         return True if prefs.use_transition_crossfade else False
     prefs.use_transition_crossfade ^= True
 
+def toggle_transition_gapless(mode=0):
+    if mode == 1:
+        return False if prefs.use_transition_crossfade else True
+    prefs.use_transition_crossfade ^= True
 
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
@@ -14719,11 +14724,15 @@ class Over:
 
 
             x -= 10 * gui.scale
-            y += 70 * gui.scale
+            y += 40 * gui.scale
 
             self.toggle_square(x, y, toggle_transition_crossfade, "Use crossfade at end of tracks")
 
             y += 23 * gui.scale
+
+            self.toggle_square(x, y, toggle_transition_gapless, "Attempt gapless transitions")
+
+            y += 33 * gui.scale
 
             self.toggle_square(x, y, toggle_jump_crossfade, "Use crossfade when jumping tracks")
 
