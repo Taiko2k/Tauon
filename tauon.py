@@ -33,9 +33,9 @@ import pickle
 import shutil
 import fcntl
 import gi
-from gi.repository import GLib #, Gtk, Gdk
+from gi.repository import GLib
 
-t_version = "v3.2.5"
+t_version = "v3.3.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -2515,7 +2515,7 @@ class PlayerCtl:
                                 self.master_library[pp[self.playlist_playing_position]].filename and int(
                     self.master_library[pp[self.playlist_playing_position]].track_number) == int(
                     self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
-                    print("CUE Gap-less")
+                    print("Do transition CUE")
                     self.playlist_playing_position += 1
                     self.queue_step += 1
                     self.track_queue.append(pp[self.playlist_playing_position])
@@ -4168,8 +4168,8 @@ def player():   # BASS
 
                 # Set the starting position
                 if pctl.start_time > 0 or pctl.jump_time > 0:
-                    bytes_position = BASS_ChannelSeconds2Bytes(mixer, pctl.start_time + pctl.jump_time)
-                    BASS_ChannelSetPosition(mixer, bytes_position, 0)
+                    bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
+                    BASS_ChannelSetPosition(new_handle, bytes_position, 0)
 
                 self.channel = mixer
                 self.decode_channel = new_handle
@@ -4195,12 +4195,12 @@ def player():   # BASS
                 print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
-                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 1.7:
+                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 2:
 
                     # print(BASS_ErrorGetCode())
                     # Start sync on end
                     #print(self.channel)
-                    BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
+                    sync = BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
                     # print("Set sync...")
                     # print(BASS_ErrorGetCode())
                     self.syncing = True
@@ -4208,11 +4208,11 @@ def player():   # BASS
 
                     while self.syncing:
                         time.sleep(0.001)
-                        if br_timer.get() > 1.6 and self.syncing:
+                        if br_timer.get() > 2 and self.syncing:
                             self.syncing = False
                             print("Sync taking too long!")
                             # BASS_ChannelStop(self.channel)
-                            sync_end_transition(0, 0, 0, new_handle)
+                            sync_gapless_transition(sync, self.channel, 0, new_handle)
                             break
 
                     #BASS_ChannelStop(self.channel)
@@ -4249,8 +4249,8 @@ def player():   # BASS
 
                     # Set the starting position
                     if pctl.start_time > 0 or pctl.jump_time > 0:
-                        bytes_position = BASS_ChannelSeconds2Bytes(new_mixer, pctl.start_time + pctl.jump_time)
-                        BASS_ChannelSetPosition(new_mixer, bytes_position, 0)
+                        bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
+                        BASS_ChannelSetPosition(new_handle, bytes_position, 0)
 
                     if instant:
                         print("Do transition QUICK")
@@ -4557,9 +4557,12 @@ def player():   # BASS
             if add_time > 2 or add_time < 0:
                 add_time = 0
 
+            if not BASS_ChannelIsActive(bass_player.channel):
+                print("Playback stalled!")
+                pctl.playing_time += add_time
 
             #pctl.playing_time += add_time
-            if not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
+            elif not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 bass_player.update_time()
 
             if pctl.playing_state == 1:
@@ -8410,10 +8413,11 @@ def delete_playlist(index):
                 pctl.active_playlist_viewing -= 1
 
     # Re-initiate the now viewed playlist
-    default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
-    pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
-    playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
-    shift_selection = [playlist_selected]
+    if old_view_id != pctl.multi_playlist[pctl.active_playlist_viewing][6]:
+        default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+        pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
+        playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
+        shift_selection = [playlist_selected]
 
     if album_mode:
         reload_albums(True)
@@ -14882,7 +14886,7 @@ class Over:
         inner = space * 2
         outer = inner * 2
 
-        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(200), 12)
+        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(215), 12)
 
         ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
         ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
