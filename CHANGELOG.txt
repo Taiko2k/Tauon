@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.2.5
 
+ - Added gapless playback
  - Tweaked folder/album title text to truncate separately to date
  - Tweaked playlist side bar text truncation
  - Tweaked search to skip playlist's with angle brackets in name
