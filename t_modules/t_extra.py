@@ -31,10 +31,12 @@ import glob
 
 # A seconds based timer
 class Timer:
-    def __init__(self):
+    def __init__(self, force=None):
         self.start = 0
         self.end = 0
         self.set()
+        if force:
+            self.force_set(force)
 
     def set(self):  # Reset
         self.start = time.time()
