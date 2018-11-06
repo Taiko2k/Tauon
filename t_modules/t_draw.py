@@ -124,7 +124,7 @@ class TDraw:
         self.layout.set_ellipsize(Pango.EllipsizeMode.END)
         self.layout.set_width(max_x * 1000)
         if wrap:
-            self.layout.set_height(3000 * 1000)
+            self.layout.set_height(20000 * 1000)
         else:
             self.layout.set_height(0)
         self.layout.set_text(text, -1)
@@ -211,7 +211,12 @@ class TDraw:
         else:
             layout.set_ellipsize(Pango.EllipsizeMode.END)
             layout.set_width(max_x * 1000)
-            layout.set_height(h * 1000)
+
+            extra = 0
+            if wrap:  # Compensate for height measurement being 1-2 lines too short. Pango bug?
+                extra = round(400000 * self.scale)
+
+            layout.set_height(h * 1000 + extra)
 
         # Attributes don't seem to be implemented in gi?
 

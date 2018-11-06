@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v3.3.0
 
  - Added gapless playback
+ - Added secret credits page
  - Tweaked folder/album title text to truncate separately to date
  - Tweaked playlist side bar text truncation
  - Tweaked search to skip playlist's with angle brackets in name
@@ -14,6 +15,8 @@ v3.3.0
  - Fixed gallery jumping to wrong position on playlist switch if position was at top
  - Fixed a case where playlist would change vew position when deleting another playlist
  - Fixed a possible issue where playback would stall at end of a long track
+ - Fixed end lines possibly missing from lyrics views
+ - Fixed side panel closing if application restarted while in lyrics view
 
 v3.2.4
 

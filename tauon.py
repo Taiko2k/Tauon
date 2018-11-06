@@ -257,13 +257,13 @@ import stagger
 from stagger.id3 import *
 
 
-from modules.t_tagscan import Flac
-from modules.t_tagscan import Opus
-from modules.t_tagscan import Ape
-from modules.t_tagscan import Wav
-from modules.t_tagscan import M4a
-from modules.t_tagscan import parse_picture_block
-from modules.t_extra import *
+from t_modules.t_tagscan import Flac
+from t_modules.t_tagscan import Opus
+from t_modules.t_tagscan import Ape
+from t_modules.t_tagscan import Wav
+from t_modules.t_tagscan import M4a
+from t_modules.t_tagscan import parse_picture_block
+from t_modules.t_extra import *
 
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
@@ -3681,18 +3681,18 @@ def player():   # BASS
                     ('fVolume', ctypes.c_float)
                     ]
 
-    class BASS_DX8_PARAMEQ(ctypes.Structure):
-        _fields_ = [('fCenter', ctypes.c_int),
-                    ('fBandwidth', ctypes.c_float),
-                    ('fGain', ctypes.c_float),
-                    ]
-
-    fx_bandwidth = 24
-    eqs = [
-        BASS_DX8_PARAMEQ(110, fx_bandwidth, 0),
-        BASS_DX8_PARAMEQ(11000, fx_bandwidth, 0),
-
-    ]
+    # class BASS_DX8_PARAMEQ(ctypes.Structure):
+    #     _fields_ = [('fCenter', ctypes.c_int),
+    #                 ('fBandwidth', ctypes.c_float),
+    #                 ('fGain', ctypes.c_float),
+    #                 ]
+    #
+    # fx_bandwidth = 254
+    # eqs = [
+    #     BASS_DX8_PARAMEQ(510, fx_bandwidth, -15),
+    #     BASS_DX8_PARAMEQ(11000, fx_bandwidth, -15),
+    #
+    # ]
 
 
     #BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_BFX_VOLUME))(
@@ -4017,24 +4017,29 @@ def player():   # BASS
         # if pctl.enable_eq:
         #
         #     print("Setting eq...")
-        #     print(pctl.eq)
+        #     print(eqs)
         #     BASS_FX_DX8_PARAMEQ = 7
         #     fx_handle = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 1)
         #
         #     handles = [
-        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 0),
-        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 0),
+        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 1),
+        #         BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 2),
         #                ]
         #
         #     for i, st in enumerate(eqs):
         #
         #         BASS_FXSetParameters(handles[i], ctypes.pointer(st))
+        #
+        #     for i, st in enumerate(eqs):
+        #
         #         BASS_FXGetParameters(handles[i], ctypes.pointer(st))
-
+        #         print(st.fGain)
+        #
+        #     print(BASS_ErrorGetCode())
 
     br_timer = Timer()
 
-    # # GAPLESS -----------------------------------------------------
+
     class BASS_Player():
 
         def __init__(self):
@@ -4208,10 +4213,9 @@ def player():   # BASS
 
                     while self.syncing:
                         time.sleep(0.001)
-                        if br_timer.get() > 2 and self.syncing:
+                        if br_timer.get() > 4 and self.syncing:
                             self.syncing = False
                             print("Sync taking too long!")
-                            # BASS_ChannelStop(self.channel)
                             sync_gapless_transition(sync, self.channel, 0, new_handle)
                             break
 
@@ -4223,8 +4227,6 @@ def player():   # BASS
                     return
 
                 else:
-
-
 
                     # Create Mixer
                     new_mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
@@ -4277,6 +4279,7 @@ def player():   # BASS
 
     def sync_gapless_transition(handle, channel, data, user):
 
+        BASS_ChannelRemoveSync(channel, handle)
         bass_player.syncing = False
         # print("Sync GO!")
         print("Do transition GAPLESS")
@@ -4295,7 +4298,7 @@ def player():   # BASS
         # print("Set position")
         # print(BASS_ErrorGetCode())
 
-        BASS_ChannelRemoveSync(channel, handle)
+
 
     GapSync = SyncProc(sync_gapless_transition)
 
@@ -5581,7 +5584,7 @@ def coll_point(l, r):
 def coll(r):
     return r[0] <= mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
-from modules.t_draw import TDraw
+from t_modules.t_draw import TDraw
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
@@ -5704,7 +5707,7 @@ class LyricsRenMini:
 
 lyrics_ren_mini = LyricsRenMini()
 
-class LyricsRenWin:
+class LyricsRen:
 
     def __init__(self):
 
@@ -5727,7 +5730,7 @@ class LyricsRenWin:
         ddt.draw_text((x, y, 4, w), self.text, colours.lyrics, 17, w, colours.playlist_panel_background)
 
 
-lyrics_ren = LyricsRenWin()
+lyrics_ren = LyricsRen()
 
 
 def draw_linked_text(location, text, colour, font):
@@ -14700,6 +14703,11 @@ class Over:
         self.stats_pl_albums = 0
         self.stats_pl_length = 0
 
+        self.ani_cred = 0
+        self.cred_page = 0
+        self.ani_fade_on_timer = Timer(force=10)
+        self.ani_fade_off_timer = Timer(force=10)
+
     def audio(self):
 
 
@@ -14734,7 +14742,7 @@ class Over:
 
             y += 23 * gui.scale
 
-            self.toggle_square(x, y, toggle_transition_gapless, "Attempt gapless transitions")
+            self.toggle_square(x, y, toggle_transition_gapless, "Use gapless transitions")
 
             y += 33 * gui.scale
 
@@ -15199,9 +15207,12 @@ class Over:
 
     def about(self):
 
-        x = self.box_x + int(self.w * 0.3) + 65 * gui.scale  # 110 + int((self.w - 110) / 2)
+        x = self.box_x + int(self.w * 0.3) + 65 * gui.scale
         y = self.box_y + 81 * gui.scale
+
         ddt.text_background_colour = colours.sys_background
+
+        icon_rect = (x - 100 * gui.scale, y - 10 * gui.scale, self.about_image.w, self.about_image.h)
 
         if pctl.playing_object() is not None and 'rock' in pctl.playing_object().genre.lower():
             self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
@@ -15215,25 +15226,78 @@ class Over:
         y -= 10 * gui.scale
 
         ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(222), 216)
+
+
+        if self.click and coll(icon_rect) and self.ani_cred == 0:
+            self.ani_cred = 1
+            self.ani_fade_on_timer.set()
+
+        fade = 0
+
+        if self.ani_cred == 1:
+            t = self.ani_fade_on_timer.get()
+            fade = round(t / 0.7 * 255)
+            if fade > 255:
+                fade = 255
+
+            if t > 0.7:
+                self.ani_cred = 2
+                self.cred_page ^= 1
+                self.ani_fade_on_timer.set()
+
+            gui.update = 2
+
+        if self.ani_cred == 2:
+
+            t = self.ani_fade_on_timer.get()
+            fade = 255 - round(t / 0.7 * 255)
+            if fade < 0:
+                fade = 0
+            if t > 0.7:
+                self.ani_cred = 0
+
+            gui.update = 2
+
         y += 32 * gui.scale
-        ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
-        y += 20 * gui.scale
-        ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
-        y += 21 * gui.scale
-        link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
-        link_rect = [x, y, link_pa[1], 18 * gui.scale]
-        if coll(link_rect):
-            if not self.click:
-                gui.cursor_want = 3
-            if self.click:
-                webbrowser.open(link_pa[2], new=2, autoraise=True)
 
-        fields.add(link_rect)
+        block_y = y
 
-        x = self.box_x + self.w - 115 * gui.scale
+
+        if self.cred_page == 0:
+
+            ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
+            y += 20 * gui.scale
+            ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
+            y += 21 * gui.scale
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
+            link_rect = [x, y, link_pa[1], 18 * gui.scale]
+            if coll(link_rect):
+                if not self.click:
+                    gui.cursor_want = 3
+                if self.click:
+                    webbrowser.open(link_pa[2], new=2, autoraise=True)
+
+            fields.add(link_rect)
+
+        else:
+
+            y += 10 * gui.scale
+
+            ddt.draw_text((x, y + 1 * gui.scale), "Created by", colours.grey(90), 13)
+            ddt.draw_text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey(220), 13)
+
+            y += 22 * gui.scale
+
+            ddt.draw_text((x, y + 1 * gui.scale), "Aditional testing", colours.grey(90), 13)
+            ddt.draw_text((x +  120 * gui.scale, y + 1 * gui.scale), "Tyzmodo", colours.grey(220), 13)
+
+        ddt.rect_r((x, block_y, 340 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
+
+
+        x = self.box_x + self.w - 100 * gui.scale
         y = self.box_y + self.h - 35 * gui.scale
 
-        self.button(x, y, "License + Credits", open_license)
+        self.button(x, y, "Show License", open_license)
 
     def stats(self):
 
@@ -18245,7 +18309,7 @@ class MetaBox:
             oth = th
 
             th -= h
-            th += 20 * gui.scale
+            th += 25 * gui.scale  # Empty space buffer at end
 
             if lyrics_ren_mini.lyrics_position * -1 > th:
                 lyrics_ren_mini.lyrics_position = th * -1
@@ -18260,7 +18324,7 @@ class MetaBox:
             lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + 8 * gui.scale,
                                    y + lyrics_ren_mini.lyrics_position + 11,
                                    w - 30 * gui.scale,
-                                   2000, 0)
+                                   None, 0)
 
             ddt.rect_r((x, y + h - 1, w,
                          1), colours.side_panel_background, True)
@@ -18486,7 +18550,6 @@ class ArtistInfoBox:
 
                     lic = ex.split("</a>. ", 1)[1]
 
-                #text += "\n\n" + lic
                 text += "\n"
 
                 self.urls = [(link, [200, 60, 60, 255], "L")]
@@ -18516,9 +18579,6 @@ class ArtistInfoBox:
                 tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
                 self.th = th
                 self.w = w
-
-
-
 
             scroll_max = self.th - (h - 26)
 
@@ -19879,7 +19939,7 @@ def save_state():
             None,  # album_playlist_width
             prefs.transcode_opus_as,
             gui.star_mode,
-            gui.rsp,
+            prefs.prefer_side, #gui.rsp,
             gui.lsp,
             gui.rspw,
             gui.pref_gallery_w,
@@ -20743,6 +20803,7 @@ while running:
             # colours.side_panel_background = colours.grey(240)
             # colours.top_panel_background = colours.grey(240)
             # colours.bottom_panel_background = colours.grey(240)
+            # print(pctl.playing_object().lyrics)
 
 
             key_F7 = False
