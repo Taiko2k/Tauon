@@ -462,8 +462,7 @@ class Opus:
             if s == b"OggS":
                 f.seek(-4, 1)
                 header = struct.unpack('<4sBBqIIiB', f.read(27))
-                self.length = header[3] / 48000
-
+                self.length = header[3] / self.sample_rate
                 break
 
 # file = 'a.ogg'
