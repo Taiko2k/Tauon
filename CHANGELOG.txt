@@ -8,6 +8,7 @@ v3.3.0
  - Tweaked folder/album title text to truncate separately to date
  - Tweaked playlist side bar text truncation
  - Tweaked search to skip playlist's with angle brackets in name
+ - Fixed incorrect length calculation of ogg vorbis files
  - Fixed folder/album titles not truncating
  - Fixed scrobbles not waiting until end of track to be submitted
  - Fixed limit on number of friend hearts displayed

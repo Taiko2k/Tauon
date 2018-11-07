@@ -3318,10 +3318,11 @@ class LastScrob:
         self.a_sc = False
         self.a_pt = False
         self.queue = []
-
+        self.running = False
 
     def start_queue(self):
 
+        self.running = True
         mini_t = threading.Thread(target=self.process_queue)
         mini_t.daemon = True
         mini_t.start()
@@ -3347,6 +3348,8 @@ class LastScrob:
 
             except:
                 print("SCROBBLE QUEUE ERROR")
+
+        self.running = False
 
 
     def update(self, add_time):
@@ -23710,6 +23713,11 @@ while running:
     if gui.lowered:
         time.sleep(0.2)
 
+# Send scrobble if pending
+if lfm_scrobbler.queue and not lfm_scrobbler.running:
+    lfm_scrobbler.start_queue()
+    print("Sending scrobble before close...")
+
 SDL_DestroyWindow(t_window)
 
 pctl.playerCommand = "unload"
@@ -23742,10 +23750,10 @@ print("SDL unloaded")
 
 exit_timer = Timer()
 exit_timer.set()
-while pctl.playerCommand != 'done':
+while pctl.playerCommand != 'done' or lfm_scrobbler.running:
     time.sleep(0.2)
-    if exit_timer.get() > 3:
-        print("BASS unload timeout")
+    if exit_timer.get() > 3.5:
+        print("Unload timeout")
         break
 
 print("bye")
