@@ -1,7 +1,6 @@
 ﻿## Tauon Music Box config file
 
 ## --- Playback / Audio --------------------------------------------------------
-## Fade times in ms. Full gapless playback not supported (min 50ms, max 3000ms)
 
 #pause-fade-time=400
 #cross-fade-time=700
@@ -11,7 +10,7 @@
 
 ## --- Media Keys -------------------------------------------------------------
 
-mkey-enable=True
+mediakay=True  # (gnome media keys)
 linux-mpris-enable=True
 
 ## --- Spectrogram ----------------------------------------------------------
@@ -30,17 +29,6 @@ vis-scroll=True
 scroll-gallery-row=True
 scroll-gallery-wheel=90
 
-## --- Template Defaults ----------------------------------------------------
-## See rename track box for reference
-
-rename-tracks-default=%n. %a - %t%x
-rename-folder-default=%a - %b
-
-## --- Linux Fonts -----------------------------------------------------------
-
-#standard-font=Noto Sans
-#bold-font=Noto Sans Bold
-
 ## --- Encoding ------------------------------------------------------------------
 ## Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
 
@@ -52,7 +40,7 @@ rename-folder-default=%a - %b
 
 broadcast-bitrate=128
 broadcast-port=8000
-## Changing this port breaks web server page
+## Changing this port breaks player on web server radio page
 
 ## --- Tag Editor ----------------------------------------------------------------
 ## External Tag editor loading. tag-editor-program is the binary name used on Linux, When program is closed, tags will be updated provided the filenames of tracks have not changed (filename changes are tracked with Picard)
