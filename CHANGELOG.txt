@@ -5,6 +5,7 @@ v3.3.0
 
  - Added gapless playback
  - Added secret credits page
+ - Changed rename templates to full words with angle brackets
  - Tweaked folder/album title text to truncate separately to date
  - Tweaked playlist side bar text truncation
  - Tweaked search to skip playlist's with angle brackets in name
@@ -18,6 +19,10 @@ v3.3.0
  - Fixed a possible issue where playback would stall at end of a long track
  - Fixed end lines possibly missing from lyrics views
  - Fixed side panel closing if application restarted while in lyrics view
+ - Fixed fade time setting affecting gapless transition
+ - Fixed tag scan not forcing redraw on metadata update
+ - Removed rename box's template hints
+ - Removed template defaults from config file
 
 v3.2.4
 
