@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib
 
-t_version = "v3.3.1"
+t_version = "v3.3.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
