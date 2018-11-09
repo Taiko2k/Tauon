@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.3.2
+
+ - Fixed incorrect end of playlist notification
+
 v3.3.1
 
  - Fixed "Use crossfades when jumping tracks" being disabled causing gapless transitions to fail
