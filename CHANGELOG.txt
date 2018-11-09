@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.3.1
+
+ - Fixed "Use crossfades when jumping tracks" being disabled causing gapless transitions to fail
+
 v3.3.0
 
  - Added gapless playback
