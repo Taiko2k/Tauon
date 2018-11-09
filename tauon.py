@@ -2565,6 +2565,8 @@ class PlayerCtl:
 
         old = self.queue_step
 
+        end_of_playlist = False
+
         # Force queue (middle click on track)
         if len(self.force_queue) > 0:
 
@@ -2697,6 +2699,7 @@ class PlayerCtl:
                 self.queue_step -= 1
 
 
+
         # If not random mode, Step down 1 on the playlist
         elif self.random_mode is False and len(self.playing_playlist()) > 0:
 
@@ -2706,7 +2709,7 @@ class PlayerCtl:
                     self.playing_state = 0
                     self.playerCommand = 'runstop'
                     self.playerCommandReady = True
-                    end = True
+                    end_of_playlist = True
                 elif prefs.end_setting == 'advance':
 
                     if pctl.active_playlist_playing < len(pctl.multi_playlist) - 1 and \
@@ -2718,6 +2721,7 @@ class PlayerCtl:
                         self.playing_state = 0
                         self.playerCommand = 'runstop'
                         self.playerCommandReady = True
+                        end_of_playlist = True
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
@@ -2772,7 +2776,7 @@ class PlayerCtl:
 
         self.notify_update()
         lfm_scrobbler.start_queue()
-        notify_song(end)
+        notify_song(end_of_playlist)
 
 pctl = PlayerCtl()
 
