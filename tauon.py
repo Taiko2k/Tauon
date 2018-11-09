@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib
 
-t_version = "v3.3.0"
+t_version = "v3.3.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -644,7 +644,7 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_lb = False
         self.lb_token = None
 
-        self.use_jump_crossfade = False
+        self.use_jump_crossfade = True
         self.use_transition_crossfade = False
 
         self.show_notifications = False
@@ -2223,13 +2223,13 @@ class PlayerCtl:
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
-        if not gapless:
-            self.playerCommand = 'open'
-            if jump and not prefs.use_jump_crossfade:
-                self.playerSubCommand = 'now'
-            self.playerCommandReady = True
-        else:
-            self.playerCommand = 'gapless'
+        # if not gapless:
+        self.playerCommand = 'open'
+        if jump and not prefs.use_jump_crossfade:
+            self.playerSubCommand = 'now'
+        self.playerCommandReady = True
+        # else:
+        #     self.playerCommand = 'gapless'
         self.playing_state = 1
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.last_playing_time = 0
@@ -2562,7 +2562,6 @@ class PlayerCtl:
         pctl.playing_time = 0
 
         gui.update_spec = 0
-        end = False
 
         old = self.queue_step
 
@@ -2573,7 +2572,7 @@ class PlayerCtl:
             self.active_playlist_playing = self.force_queue[0][2]
             if target_index not in self.playing_playlist():
                 del self.force_queue[0]
-                self.advance()
+                self.advance(jump= not end)
                 return
 
             self.playlist_playing_position = self.force_queue[0][1]
@@ -2689,7 +2688,7 @@ class PlayerCtl:
             if rr:
                 self.play_target_rr()
             else:
-                self.play_target(jump= not end)
+                self.play_target(jump=not end)
                 # if album_mode:
                 #     goto_album(self.playlist_playing)
 
@@ -2714,7 +2713,7 @@ class PlayerCtl:
                             len(pctl.multi_playlist[pctl.active_playlist_playing + 1][2]) > 0:
                         pctl.active_playlist_playing += 1
                         pctl.playlist_playing_position = -1
-                        pctl.advance()
+                        pctl.advance(end=end)
                     else:
                         self.playing_state = 0
                         self.playerCommand = 'runstop'
@@ -2722,7 +2721,7 @@ class PlayerCtl:
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
-                    pctl.advance()
+                    pctl.advance(end=end)
 
                 elif prefs.end_setting == 'cycle':
 
@@ -2732,7 +2731,7 @@ class PlayerCtl:
                         pctl.active_playlist_playing = 0
 
                         pctl.playlist_playing_position = -1
-                        pctl.advance()
+                        pctl.advance(end=end)
                     else:
                         self.playing_state = 0
                         self.playerCommand = 'runstop'
@@ -2756,7 +2755,8 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                 self.queue_step = len(self.track_queue) - 1
-                self.play_target(gapless=gapless, jump= not end)
+
+                self.play_target(jump= not end)
 
         else:
             print("ADVANCE ERROR - NO CASE!")
@@ -2766,7 +2766,6 @@ class PlayerCtl:
 
         # if album_mode:
         #     goto_album(self.playlist_playing)
-
 
 
         self.render_playlist()
