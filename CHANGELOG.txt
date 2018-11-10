@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v3.3.3
+
+ - Partial fix for possible playback stall
+ - Fixed tag editor launching from Flatpak
+
 v3.3.2
 
  - Fixed incorrect end of playlist notification

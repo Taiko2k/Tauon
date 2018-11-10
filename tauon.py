@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib
 
-t_version = "v3.3.2"
+t_version = "v3.3.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -3356,6 +3356,10 @@ class LastScrob:
 
 
     def update(self, add_time):
+
+        if pctl.queue_step > len(pctl.track_queue) - 1:
+            print("Queue step error 1")
+            return
 
         if self.a_index != pctl.track_queue[pctl.queue_step]:
             pctl.a_time = 0
@@ -10391,20 +10395,13 @@ def reload_metadata(index):
 
     for track in todo:
 
-        print('Reloading Metadate for ' + pctl.master_library[track].filename)
-        #key = pctl.master_library[track].title + pctl.master_library[track].filename
+        print('Reloading Metadata for ' + pctl.master_library[track].filename)
 
         star = star_store.full_get(track)
         star_store.remove(track)
 
-        # if key in pctl.star_library:
-        #     star = pctl.star_library[key]
-        #     del pctl.star_library[key]
-
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        #key = pctl.master_library[track].title + pctl.master_library[track].filename
-        #pctl.star_library[key] = star
         if star is not None and star[0] > 0:
             star_store.insert(track, star)
 
@@ -10453,34 +10450,56 @@ def editor(index):
         file_line += pctl.master_library[track].fullpath
         file_line += '"'
 
-    extra = ""
-    if prefs.tag_editor_target == 'picard':
-        extra = " --d "
 
-
-    file_line = prefs.tag_editor_target + extra + file_line
+    prefix = ""
+    app = prefs.tag_editor_target
+    app_switch = ""
 
     ok = False
 
-    # if flatpak_mode and prefs.tag_editor_target == 'picard':
-    #     complete = subprocess.run(shlex.split("flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #     r = complete.stderr.decode()
-    #     if "org.musicbrainz.Picard" in r:
-    #         file_line = "flatpak run org.musicbrainz.Picard" + extra + file_line
-    #         ok = True
+    if flatpak_mode:
+        print("Finding app from within Flatpak...")
+        complete = subprocess.run(shlex.split("flatpak-spawn --host which " + prefs.tag_editor_target), stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
 
-    if shutil.which(prefs.tag_editor_target) is not None:
-        ok = True
+        print("Host which is:")
+        r = complete.stdout.decode()
+
+        if "bin/" + prefs.tag_editor_target in r:
+            ok = True
+            prefix = "flatpak-spawn --host "
+            print("Found app on host")
+
+        # elif prefs.tag_editor_target == 'picard':
+        #
+        #     print("App not found on host")
+        #     complete = subprocess.run(shlex.split("flatpak-spawn --host flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #     r = complete.stdout.decode()
+        #     print("Host Flatpak list is:")
+        #     print(r)
+        #
+        #     if "org.musicbrainz.Picard" in r:
+        #         ok = True
+        #         print("Found Picard Flatpak")
+        #         prefix = "flatpak-spawn --host "
+        #         app = "flatpak run org.musicbrainz.Picard"
+
+    elif shutil.which(prefs.tag_editor_target):
+            ok = True
 
     if not ok:
         show_message(_("Tag editior app does not appear to be installed."), 'warning')
+        return
 
+    if prefs.tag_editor_target == 'picard':
+        app_switch = " --d "
 
+    line = prefix + app + app_switch + file_line
 
     show_message(prefs.tag_editor_name + " launched.", 'arrow', "Fields will be updated once application is closed.")
     gui.update = 1
 
-    complete = subprocess.run(shlex.split(file_line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if prefs.tag_editor_target == 'picard':
         r = complete.stderr.decode()
