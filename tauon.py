@@ -35,7 +35,7 @@ import fcntl
 import gi
 from gi.repository import GLib
 
-t_version = "v3.3.3"
+t_version = "v3.3.4"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -2343,10 +2343,10 @@ class PlayerCtl:
         if self.playing_state == 3:
             return
         if self.playing_state == 1:
-            self.playerCommand = 'pause'
+            self.playerCommand = 'pauseon'
             self.playing_state = 2
         elif self.playing_state == 2:
-            self.playerCommand = 'pause'
+            self.playerCommand = 'pauseoff'
             self.playing_state = 1
             notify_song()
         self.playerCommandReady = True
@@ -2356,7 +2356,7 @@ class PlayerCtl:
 
     def pause_only(self):
         if self.playing_state == 1:
-            self.playerCommand = 'pause'
+            self.playerCommand = 'pauseon'
             self.playing_state = 2
 
             self.playerCommandReady = True
@@ -4914,67 +4914,6 @@ def player():   # BASS
 
                 print(BASS_ErrorGetCode())
 
-            # ----------------------------------------------------------------------------
-            # STANDARD PLAYBACK
-
-            # -----------------------------------------------------------------------------
-            # -----------------------------------------------------------------------------
-            #gap2
-            # if pctl.playerCommand == 'open' and pctl.target_open != '':
-            #
-            #     pctl.playerCommand = ""
-            #     limit += 1
-            #     print("OPEN")
-            #     target_file = pctl.target_open.encode('utf-8')
-            #
-            #
-            #     if bass_gap.mixer is None:
-            #         print(BASS_ErrorGetCode())
-            #         print("create mixer")
-            #         bass_gap.mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
-            #
-            #         print("set sync")
-            #         BASS_ChannelSetSync(bass_gap.mixer, BASS_SYNC_END, 0, EndSync, 0)
-            #         print(BASS_ErrorGetCode())
-            #
-            #         print("create source")
-            #         bass_gap.source = BASS_StreamCreateFile(False, target_file, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
-            #         print(BASS_ErrorGetCode())
-            #
-            #         print("add source to mixer")
-            #         BASS_Mixer_StreamAddChannel(bass_gap.mixer, bass_gap.source, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
-            #         print(BASS_ErrorGetCode())
-            #         print("play")
-            #         BASS_ChannelPlay(bass_gap.mixer, False)
-            #         print(BASS_ErrorGetCode())
-            #
-            #         st.player1_status = p_playing
-            #     else:
-            #         print("existing mixer")
-            #         if limit < 3:
-            #             print("set")
-            #             bass_gap.gap_next = target_file
-            #
-            #     player_timer.hit()
-            #
-            #
-            # # SEEK COMMAND
-            # elif pctl.playerCommand == 'seek':
-            #     print("seek")
-            #     print("get position")
-            #     bytes_position = BASS_ChannelSeconds2Bytes(bass_gap.source, pctl.new_time + pctl.start_time)
-            #     print(BASS_ErrorGetCode())
-            #     print('set position')
-            #     BASS_ChannelSetPosition(bass_gap.source, bytes_position, 0)
-            #     print(BASS_ErrorGetCode())
-            #     print("play")
-            #     #BASS_ChannelPlay(bass_gap.source, False)
-            #     print(BASS_ErrorGetCode())
-            #     pctl.playerCommand = ''
-            #
-            # elif True:
-            #     print("huh?")
-            # -----------------------------------------------------------------------------
 
             # OPEN COMMAND
 
@@ -4990,6 +4929,16 @@ def player():   # BASS
             elif command == 'pause':
                 bass_player.pause()
                 player_timer.hit()
+
+            elif command == 'pauseon':
+                if bass_player.state != "paused":
+                    bass_player.pause()
+                    player_timer.hit()
+
+            elif command == 'pauseoff':
+                if bass_player.state == "paused":
+                    bass_player.pause()
+                    player_timer.hit()
 
             elif command == 'volume':
 
@@ -9388,7 +9337,6 @@ def gen_sort_album(index):
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Album Sorted>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
-
 
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)

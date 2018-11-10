@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.3.4
+
+ - Fixed pause command de-syncing if clicked quickly
+
 v3.3.3
 
  - Partial fix for possible playback stall
