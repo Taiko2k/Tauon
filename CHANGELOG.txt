@@ -4,6 +4,9 @@ Changelog-------------------------------------
 v3.3.4
 
  - Fixed pause command de-syncing if clicked quickly
+ - Fixed area of rename playlist box not being selectable
+ - Fixed dragging to re-arrange tracks in playlist not correctly updating gallery
+ - Reverted heart toggle to be instant
 
 v3.3.3
 

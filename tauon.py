@@ -3302,13 +3302,13 @@ def love(set=True, index=None):
 
     if loved:
         star = [star[0], star[1] + "L"]
+        star_store.insert(index, star)
         lastfm.love(pctl.master_library[index].artist, pctl.master_library[index].title)
     else:
         star = [star[0], star[1].strip("L")]
+        star_store.insert(index, star)
         lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
 
-
-    star_store.insert(index, star)
     gui.pl_update = 2
     gui.pl_update = 2
 
@@ -15968,6 +15968,7 @@ class TopPanel:
                         if len(shift_selection) > 0:
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
 
+
             x += tab_width + self.tab_spacing
 
         # Test dupelicate tab function
@@ -17621,7 +17622,8 @@ class StandardPlaylist:
                                     default_playlist[b] = ref.pop(0)
 
                             playlist_selected = shift_selection[0]
-                            gui.pl_update = 1
+                            gui.pl_update += 1
+                    reload_albums(True)
 
             # Blue drop line
             if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
@@ -22239,7 +22241,7 @@ while running:
                 ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (320 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
                 ddt.text_background_colour = colours.sys_background_3
 
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(200), width=220 * gui.scale)
+                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(200), width=350 * gui.scale)
 
                 ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(320), 212)
 
