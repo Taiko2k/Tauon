@@ -65,8 +65,7 @@ For __Other Linux distributions__, a standalone **Flatpak** package is available
  
      >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
      
-     >**Note:** Only host Picard is supported. Tag editors also installed via flatpak are not currently supported.
-
+     >**Note:** Only host installed Picard/tag-editors are supported.
 ___
 
 For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
