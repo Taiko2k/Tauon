@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v3.3.4
 
+ - Added "Add to queue" to context menu
+ - Changed folder transfer to require enabling in settings with warning
  - Fixed pause command de-syncing if clicked quickly
  - Fixed area of rename playlist box not being selectable
  - Fixed dragging to re-arrange tracks in playlist not correctly updating gallery
- - Reverted heart toggle to be instant
+ - Improved love indicator to display immediately and revert if failed
 
 v3.3.3
 
