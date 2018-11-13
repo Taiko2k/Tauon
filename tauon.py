@@ -525,6 +525,7 @@ lfm_hash = ""
 # Playlist right click menu
 
 r_menu_index = 0
+r_menu_position = 0
 
 # Library and loader Variables--------------------------------------------------------
 master_library = {}
@@ -574,6 +575,8 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_transcode = True
         self.show_rym = False
         self.show_wiki = True
+        self.show_transfer = False
+        self.show_queue = True
         self.prefer_bottom_title = True
         self.append_date = True
 
@@ -1359,6 +1362,10 @@ try:
         prefs.true_shuffle = save[86]
     if save[87] is not None:
         gui.remember_library_mode = save[87]
+    if save[88] is not None:
+        prefs.show_queue = save[88]
+    if save[89] is not None:
+        prefs.show_transfer = save[89]
 
     state_file.close()
     del save
@@ -3303,11 +3310,22 @@ def love(set=True, index=None):
     if loved:
         star = [star[0], star[1] + "L"]
         star_store.insert(index, star)
-        lastfm.love(pctl.master_library[index].artist, pctl.master_library[index].title)
+        try:
+            lastfm.love(pctl.master_library[index].artist, pctl.master_library[index].title)
+        except:
+            print("Failed updating last.fm love status", 'warning')
+            star = [star[0], star[1].strip("L")]
+            star_store.insert(index, star)
+
     else:
         star = [star[0], star[1].strip("L")]
         star_store.insert(index, star)
-        lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
+        try:
+            lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
+        except:
+            print("Failed updating last.fm love status", 'warning')
+            star = [star[0], star[1] + "L"]
+            star_store.insert(index, star)
 
     gui.pl_update = 2
     gui.pl_update = 2
@@ -8089,7 +8107,7 @@ def paste_deco():
 
 
 def lightning_move_test(discard):
-    return gui.lightning_copy
+    return gui.lightning_copy and prefs.show_transfer
 
 
 
@@ -10014,7 +10032,21 @@ def love_index():
 # Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
+def add_to_queue(ref):
+
+    pctl.force_queue.append((ref,
+                             r_menu_position, pctl.active_playlist_viewing))
+
+def toggle_queue(mode=0):
+    if mode == 1:
+        return prefs.show_queue
+    prefs.show_queue ^= True
+
+
+track_menu.add(_('Add to Queue'), add_to_queue, pass_ref=True, show_test=toggle_queue, hint="MB3")
+
 track_menu.add(_('Show in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
+
 
 track_menu.add_sub(_("Meta…"), 160)
 
@@ -10673,6 +10705,15 @@ def toggle_transcode(mode=0):
         return prefs.enable_transcode
     prefs.enable_transcode ^= True
 
+def toggle_transfer(mode=0):
+    if mode == 1:
+        return prefs.show_transfer
+    prefs.show_transfer ^= True
+
+    if prefs.show_transfer:
+
+        show_message("Warning! This function allows moving of physical folders.", 'info', "This menu entry appears after selecting 'copy'. See manual (github wiki) for more info.")
+
 
 transcode_icon.colour = [239, 74, 157, 255]
 
@@ -10717,11 +10758,11 @@ def toggle_wiki(mode=0):
     prefs.show_wiki ^= True
 
 
-
 def toggle_gen(mode=0):
     if mode == 1:
         return prefs.show_gen
     prefs.show_gen ^= True
+
 
 def ser_rym(index):
     if len(pctl.master_library[index].artist) < 2:
@@ -14899,17 +14940,21 @@ class Over:
         y1 = y + 100 * gui.scale
         x += 280 * gui.scale
 
-        y += 38 * gui.scale
-        ddt.draw_text((x, y), "Show in context menus:", colours.grey(100), 11)
+        # y +=  * gui.scale
+        ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
         y += 23 * gui.scale
 
-        self.toggle_square(x, y, toggle_wiki, "Search artist on Wikipedia")
+        self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
         y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_rym, "Search artist on Sonemic")
+        self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
         y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_gimage, "Search images on Google")
+        self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
         y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_gen, "Search track on Genius")
+        self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_queue, _("Add to queue"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
 
         x = x1
         y = y1
@@ -14917,17 +14962,17 @@ class Over:
         y += 10 * gui.scale
         # self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         # y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_extract, "Extract and trash archives on import")
+        self.toggle_square(x, y, toggle_extract, _("Extract and trash archives on import"))
         y += 23 * gui.scale
         #self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
-        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, "Monitor download folders")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, "Always extract to ~/Music")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
 
         y = self.box_y + 190 * gui.scale
-        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open config file", open_config_file, 100 * gui.scale)
+        self.button(x + 410 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
         y += 26 * gui.scale
-        self.button(x + 410 * gui.scale, y - 4 * gui.scale, "Open data folder", open_data_directory, 100 * gui.scale)
+        self.button(x + 410 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
 
     def button(self, x, y, text, plug, width=0):
@@ -17665,7 +17710,9 @@ class StandardPlaylist:
                     selection_stage = 2
                 else:
                     global r_menu_index
+                    global r_menu_position
                     r_menu_index = default_playlist[p_track]
+                    r_menu_position = p_track
                     track_menu.activate(default_playlist[p_track])
                     gui.pl_update += 1
                     gui.update += 1
@@ -20019,7 +20066,12 @@ def save_state():
             prefs.use_transition_crossfade,
             prefs.show_notifications,
             prefs.true_shuffle,
-            gui.set_mode]
+            gui.set_mode,
+            prefs.show_queue, # 88
+            prefs.show_transfer,
+            None,
+            None,
+            None]
 
     #print(prefs.last_device + "-----")
 
