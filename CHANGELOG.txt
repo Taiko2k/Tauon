@@ -5,10 +5,12 @@ v3.3.4
 
  - Added "Add to queue" to context menu
  - Changed folder transfer to require enabling in settings with warning
+ - Fixed scroll bar jumping direction with few tracks, fixed possible crash
  - Fixed pause command de-syncing if clicked quickly
  - Fixed area of rename playlist box not being selectable
  - Fixed dragging to re-arrange tracks in playlist not correctly updating gallery
  - Improved love indicator to display immediately and revert if failed
+ - Restored rudimentary Windows support
 
 v3.3.3
 

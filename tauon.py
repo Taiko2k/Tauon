@@ -31,7 +31,7 @@ import sys
 import os
 import pickle
 import shutil
-import fcntl
+
 import gi
 from gi.repository import GLib
 
@@ -43,8 +43,13 @@ print(t_title)
 print(t_version)
 print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
 
-# Previously there was Windows and Mac support, but these have been dropped.
-system = 'linux'
+# Detect platform
+if sys.platform == 'win32':
+    system = 'windows'
+else:
+    system = 'linux'
+    import fcntl
+
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
@@ -143,18 +148,19 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 # -------------------------------
 # Single Instancing
 
-if os.path.isfile('.gitignore'):
-    print("Dev mode, ignoring single instancing")
-else:
-    pid_file = os.path.join(user_directory, 'program.pid')
-    fp = open(pid_file, 'w')
-    try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError:
-        # another instance is running
-        print("Program is already running")
-        pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
-        sys.exit()
+if system == 'linux':
+    if os.path.isfile('.gitignore'):
+        print("Dev mode, ignoring single instancing")
+    else:
+        pid_file = os.path.join(user_directory, 'program.pid')
+        fp = open(pid_file, 'w')
+        try:
+            fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            # another instance is running
+            print("Program is already running")
+            pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+            sys.exit()
 
 # ------------------------------------
 # Continue startup
@@ -239,13 +245,17 @@ else:
 
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
 import gi
-gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
-from gi.repository import Notify
 
-if de_nofity_support:
-    Notify.init("Tauon Music Box Transcode Notification")
-    g_tc_notify = Notify.Notification.new("Tauon Music Box",
-                                    "Transcoding has finished.")
+if system == 'windows':
+    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+else:
+    gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
+    from gi.repository import Notify
+
+    if de_nofity_support:
+        Notify.init("Tauon Music Box Transcode Notification")
+        g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                        "Transcoding has finished.")
 
 # Other imports
 import gi
@@ -15705,10 +15715,10 @@ class Over:
 
         # ddt.rect_a((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
-        # temp
-        if len(self.drives) < 1 and system == 'windows':
-            raw_drives = win32api.GetLogicalDriveStrings()
-            self.drives = raw_drives.split('\000')[:-1]
+        # # temp
+        # if len(self.drives) < 1 and system == 'windows':
+        #     raw_drives = win32api.GetLogicalDriveStrings()
+        #     self.drives = raw_drives.split('\000')[:-1]
 
         current_tab = 0
         for item in self.tabs:
@@ -22214,19 +22224,36 @@ while running:
                             # if playlist_position == len(default_playlist):
                             #     print("END")
 
-                        elif mouse_position[1] < sbp:
-                            pctl.playlist_view_position -= 2
-                        elif mouse_position[1] > sbp + sbl:
-                            pctl.playlist_view_position += 2
+                        # elif mouse_position[1] < sbp:
+                        #     pctl.playlist_view_position -= 2
+                        # elif mouse_position[1] > sbp + sbl:
+                        #     pctl.playlist_view_position += 2
                         elif input.mouse_click:
 
-                            p_y = pointer(c_int(0))
-                            p_x = pointer(c_int(0))
-                            SDL_GetGlobalMouseState(p_x, p_y)
+                            if mouse_position[1] < sbp:
+                                gui.scroll_direction = -1
+                            elif mouse_position[1] > sbp + sbl:
+                                gui.scroll_direction = 1
+                            else:
+                                p_y = pointer(c_int(0))
+                                p_x = pointer(c_int(0))
+                                SDL_GetGlobalMouseState(p_x, p_y)
 
-                            scroll_hold = True
-                            scroll_point = p_y.contents.value  # mouse_position[1]
-                            scroll_bpoint = sbp
+                                scroll_hold = True
+                                scroll_point = p_y.contents.value  # mouse_position[1]
+                                scroll_bpoint = sbp
+                        else:
+                            if sbp < mouse_position[1] < sbp + sbl:
+                                gui.scroll_direction = 0
+                            pctl.playlist_view_position += gui.scroll_direction * 2
+                            if pctl.playlist_view_position < 0:
+                                pctl.playlist_view_position
+                            if pctl.playlist_view_position > len(default_playlist):
+                                pctl.playlist_view_position = len(default_playlist)
+                            if sbp + sbl > ey:
+                                sbp = ey - sbl
+                            elif sbp < top:
+                                sbp = top
 
                     if not mouse_down:
                         scroll_hold = False
@@ -22250,6 +22277,7 @@ while running:
                         if len(default_playlist) > 0:
                             per = pctl.playlist_view_position / len(default_playlist)
                             sbp = int((ey - top - sbl) * per) + top + 1
+
 
                     ddt.rect_a((x, top), (17 * gui.scale, window_size[1] - top - gui.panelBY), colours.grey(24),
                                True)
