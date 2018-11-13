@@ -17347,6 +17347,7 @@ class StandardPlaylist:
                 album_fade = 150
 
             # Folder Break Row
+            print(p_track)
 
             if (p_track == 0 or n_track.parent_folder_path
                 != pctl.master_library[default_playlist[p_track - 1]].parent_folder_path) and \
@@ -22247,7 +22248,7 @@ while running:
                                 gui.scroll_direction = 0
                             pctl.playlist_view_position += gui.scroll_direction * 2
                             if pctl.playlist_view_position < 0:
-                                pctl.playlist_view_position
+                                pctl.playlist_view_position = 0
                             if pctl.playlist_view_position > len(default_playlist):
                                 pctl.playlist_view_position = len(default_playlist)
                             if sbp + sbl > ey:
