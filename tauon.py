@@ -2556,7 +2556,7 @@ class PlayerCtl:
                     self.playing_time = 0
 
 
-    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False):
+    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False):
 
         # Temporary Workaround
         quick_d_timer.set()
@@ -2571,7 +2571,7 @@ class PlayerCtl:
             self.left_index = self.track_queue[self.queue_step]
 
         # Test to register skip (not currently used for anything)
-        if self.playing_state == 1 and 1.2 < self.left_time < 45:
+        if self.playing_state == 1 and 1 < self.left_time < 45:
             pctl.master_library[self.left_index].skips += 1
             # print('skip registered')
 
@@ -2727,13 +2727,53 @@ class PlayerCtl:
                     self.playerCommand = 'runstop'
                     self.playerCommandReady = True
                     end_of_playlist = True
+
+
+                elif prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
+
+                    # If at end playlist and not cycle mode, stop playback
+                    if pctl.active_playlist_playing == len(pctl.multi_playlist) - 1 and not prefs.end_setting == 'cycle':
+                        self.playing_state = 0
+                        self.playerCommand = 'runstop'
+                        self.playerCommandReady = True
+                        end_of_playlist = True
+
+                    else:
+
+                        p = pctl.active_playlist_playing
+                        for i in range(len(pctl.multi_playlist)):
+
+                            k = (p + i + 1) %  len(pctl.multi_playlist)
+
+                            # Skip a playlist if empty
+                            if not (pctl.multi_playlist[k][2]):
+                                continue
+
+                            # Skip a playlist if hidden
+                            if pctl.multi_playlist[k][8]:
+                                continue
+
+                            # Set found playlist as playing and first track
+                            pctl.active_playlist_playing = k
+                            pctl.playlist_playing_position = -1
+                            pctl.advance(end=end, force=True)
+                            break
+
+                        else:
+                            # Restart current if no other eligible playlist found
+                            pctl.playlist_playing_position = -1
+                            pctl.advance(end=end, force=True)
+
+
+
+
                 elif prefs.end_setting == 'advance':
 
                     if pctl.active_playlist_playing < len(pctl.multi_playlist) - 1 and \
                             len(pctl.multi_playlist[pctl.active_playlist_playing + 1][2]) > 0:
                         pctl.active_playlist_playing += 1
                         pctl.playlist_playing_position = -1
-                        pctl.advance(end=end)
+                        pctl.advance(end=end, force=True)
                     else:
                         self.playing_state = 0
                         self.playerCommand = 'runstop'
@@ -2742,28 +2782,27 @@ class PlayerCtl:
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
-                    pctl.advance(end=end)
+                    pctl.advance(end=end, force=True)
 
                 elif prefs.end_setting == 'cycle':
 
-                    pctl.active_playlist_playing += 1
+                    # pctl.active_playlist_playing += 1
+                    pctl.active_playlist_playing = (pctl.active_playlist_playing + 1) % len(pctl.multi_playlist)
 
-                    if pctl.active_playlist_playing > len(pctl.multi_playlist) - 1:
-                        pctl.active_playlist_playing = 0
+                    pctl.playlist_playing_position = -1
+                    pctl.advance(end=end, force=True)
 
-                        pctl.playlist_playing_position = -1
-                        pctl.advance(end=end)
-                    else:
-                        self.playing_state = 0
-                        self.playerCommand = 'runstop'
-                        self.playerCommandReady = True
+
+                        # self.playing_state = 0
+                        # self.playerCommand = 'runstop'
+                        # self.playerCommandReady = True
 
                 gui.update += 3
             else:
                 if self.playlist_playing_position > len(self.playing_playlist()) - 1:
                     self.playlist_playing_position = 0
 
-                elif len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != self.track_queue[
+                elif not force and len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != self.track_queue[
                     self.queue_step]:
                     try:
                         self.playlist_playing_position = self.playing_playlist().index(self.track_queue[self.queue_step])
@@ -4251,7 +4290,7 @@ def player():   # BASS
 
                     while self.syncing:
                         time.sleep(0.001)
-                        if br_timer.get() > 4 and self.syncing:
+                        if br_timer.get() > 6 and self.syncing:
                             self.syncing = False
                             print("Sync taking too long!")
                             sync_gapless_transition(sync, self.channel, 0, new_handle)
@@ -15407,7 +15446,7 @@ class Over:
             ddt.draw_text((x, y + 1 * gui.scale), "Aditional testing", colours.grey(90), 13)
             ddt.draw_text((x +  120 * gui.scale, y + 1 * gui.scale), "Tyzmodo", colours.grey(220), 13)
 
-        ddt.rect_r((x, block_y, 340 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
+        ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
 
         x = self.box_x + self.w - 100 * gui.scale
@@ -17347,8 +17386,6 @@ class StandardPlaylist:
                 album_fade = 150
 
             # Folder Break Row
-            print(p_track)
-
             if (p_track == 0 or n_track.parent_folder_path
                 != pctl.master_library[default_playlist[p_track - 1]].parent_folder_path) and \
                             pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
@@ -19596,46 +19633,44 @@ def display_friend_heart(x, yy, name):
 
 
 # Set SDL window drag areas
-if system != 'windows':
+# if system != 'windows':
 
-    def hit_callback(win, point, data):
+def hit_callback(win, point, data):
 
-        if point.contents.y < 0 and point.contents.x > window_size[0]:
-            return SDL_HITTEST_RESIZE_TOPRIGHT
+    if point.contents.y < 0 and point.contents.x > window_size[0]:
+        return SDL_HITTEST_RESIZE_TOPRIGHT
 
-        elif point.contents.y < 0 and point.contents.x < 1:
-            return SDL_HITTEST_RESIZE_TOPLEFT
+    elif point.contents.y < 0 and point.contents.x < 1:
+        return SDL_HITTEST_RESIZE_TOPLEFT
 
-        elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
-            return SDL_HITTEST_RESIZE_TOP
+    elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
+        return SDL_HITTEST_RESIZE_TOP
 
-        elif point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+    elif point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
-            if tab_menu.active: # or pctl.broadcast_active:
-                return SDL_HITTEST_NORMAL
-
-            return SDL_HITTEST_DRAGGABLE
-        elif point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
-            return SDL_HITTEST_RESIZE_BOTTOMRIGHT
-        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
-            return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif point.contents.y > window_size[1] - 7:
-            return SDL_HITTEST_RESIZE_BOTTOM
-
-        elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
-            return SDL_HITTEST_RESIZE_RIGHT
-        elif point.contents.x < 5:
-            return SDL_HITTEST_RESIZE_LEFT
-
-        else:
+        if tab_menu.active: # or pctl.broadcast_active:
             return SDL_HITTEST_NORMAL
 
+        return SDL_HITTEST_DRAGGABLE
+    elif point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
+        return SDL_HITTEST_RESIZE_BOTTOMRIGHT
+    elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
+        return SDL_HITTEST_RESIZE_BOTTOMLEFT
+    elif point.contents.y > window_size[1] - 7:
+        return SDL_HITTEST_RESIZE_BOTTOM
 
-    c_hit_callback = SDL_HitTest(hit_callback)
-    SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
+    elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
+        return SDL_HITTEST_RESIZE_RIGHT
+    elif point.contents.x < 5:
+        return SDL_HITTEST_RESIZE_LEFT
+
+    else:
+        return SDL_HITTEST_NORMAL
+
+
+c_hit_callback = SDL_HitTest(hit_callback)
+SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------
-
 
 
 # MAIN LOOP---------------------------------------------------------------------------
@@ -19664,12 +19699,11 @@ for item in r_arg_queue:
         arg_queue.append(item)
 
 
-
 sv = SDL_version()
 SDL_GetVersion(sv)
 sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
 print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
-# time.sleep(13)
+
 # C-ML
 if default_player == 2:
     print("Using GStreamer as fallback. Some functions disabled")
