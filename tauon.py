@@ -1981,6 +1981,9 @@ class PlayerCtl:
         self.eq = [0] * 2  # not used
         self.enable_eq = True  # not used
 
+
+        self.t_lock = 0
+
     def notify_update(self):
 
         if self.mpris is not None:
@@ -2556,15 +2559,16 @@ class PlayerCtl:
                     self.playing_time = 0
 
 
-    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False):
+    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False):
 
-        # Temporary Workaround
+        # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
 
         # Trim the history if it gets too long
         while len(self.track_queue) > 250:
-            del self.track_queue[0]
             self.queue_step -= 1
+            del self.track_queue[0]
+
 
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
@@ -2591,7 +2595,7 @@ class PlayerCtl:
             self.active_playlist_playing = self.force_queue[0][2]
             if target_index not in self.playing_playlist():
                 del self.force_queue[0]
-                self.advance(jump= not end)
+                self.advance(jump= not end, nolock=True)
                 return
 
             self.playlist_playing_position = self.force_queue[0][1]
@@ -2607,15 +2611,17 @@ class PlayerCtl:
 
         # If random, jump to random track
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0:
-            self.queue_step += 1
-            if self.queue_step == len(self.track_queue):
+            #self.queue_step += 1
+            new_step = self.queue_step + 1
+
+            if new_step == len(self.track_queue):
 
                 if self.album_repeat_mode and self.repeat_mode:
                     # Album shuffle mode
                     pp = self.playing_playlist()
                     k = self.playlist_playing_position
                     #ti = self.g(pp[k])
-                    ti = self.master_library[self.track_queue[self.queue_step - 1]]
+                    ti = self.master_library[self.track_queue[self.queue_step]]
 
                     if ti.index not in pp:
                         print("No tracks to repeat!")
@@ -2704,17 +2710,17 @@ class PlayerCtl:
                         random_jump = random.randrange(len(self.playing_playlist()))
                     self.playlist_playing_position = random_jump
                     self.track_queue.append(self.playing_playlist()[random_jump])
+
+
+            if inplace and self.queue_step > 1:
+                del self.track_queue[self.queue_step]
+            else:
+                self.queue_step = new_step
+
             if rr:
                 self.play_target_rr()
             else:
                 self.play_target(jump=not end)
-                # if album_mode:
-                #     goto_album(self.playlist_playing)
-
-            if inplace and self.queue_step > 1:
-                del self.track_queue[old]
-                self.queue_step -= 1
-
 
 
         # If not random mode, Step down 1 on the playlist
@@ -2727,7 +2733,6 @@ class PlayerCtl:
                     self.playerCommand = 'runstop'
                     self.playerCommandReady = True
                     end_of_playlist = True
-
 
                 elif prefs.end_setting == 'advance' or prefs.end_setting == 'cycle':
 
@@ -2753,51 +2758,24 @@ class PlayerCtl:
                             if pctl.multi_playlist[k][8]:
                                 continue
 
-                            # Set found playlist as playing and first track
+                            # Set found playlist as playing the first track
                             pctl.active_playlist_playing = k
                             pctl.playlist_playing_position = -1
-                            pctl.advance(end=end, force=True)
+                            pctl.advance(end=end, force=True, nolock=True)
                             break
 
                         else:
                             # Restart current if no other eligible playlist found
                             pctl.playlist_playing_position = -1
-                            pctl.advance(end=end, force=True)
+                            pctl.advance(end=end, force=True, nolock=True)
 
-
-
-
-                elif prefs.end_setting == 'advance':
-
-                    if pctl.active_playlist_playing < len(pctl.multi_playlist) - 1 and \
-                            len(pctl.multi_playlist[pctl.active_playlist_playing + 1][2]) > 0:
-                        pctl.active_playlist_playing += 1
-                        pctl.playlist_playing_position = -1
-                        pctl.advance(end=end, force=True)
-                    else:
-                        self.playing_state = 0
-                        self.playerCommand = 'runstop'
-                        self.playerCommandReady = True
-                        end_of_playlist = True
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
-                    pctl.advance(end=end, force=True)
-
-                elif prefs.end_setting == 'cycle':
-
-                    # pctl.active_playlist_playing += 1
-                    pctl.active_playlist_playing = (pctl.active_playlist_playing + 1) % len(pctl.multi_playlist)
-
-                    pctl.playlist_playing_position = -1
-                    pctl.advance(end=end, force=True)
-
-
-                        # self.playing_state = 0
-                        # self.playerCommand = 'runstop'
-                        # self.playerCommandReady = True
+                    pctl.advance(end=end, force=True, nolock=True)
 
                 gui.update += 3
+
             else:
                 if self.playlist_playing_position > len(self.playing_playlist()) - 1:
                     self.playlist_playing_position = 0
@@ -2810,6 +2788,7 @@ class PlayerCtl:
                         pass
 
                 if len(self.playing_playlist()) == self.playlist_playing_position + 1:
+
                     return
 
                 self.playlist_playing_position += 1
@@ -2833,6 +2812,7 @@ class PlayerCtl:
         self.notify_update()
         lfm_scrobbler.start_queue()
         notify_song(end_of_playlist)
+
 
 pctl = PlayerCtl()
 
@@ -4199,7 +4179,7 @@ def player():   # BASS
                 gui.pl_update = 1
                 print("Missing File: " + pctl.target_object.fullpath)
                 pctl.playing_state = 0
-                pctl.advance(inplace=True)
+                pctl.advance(inplace=True, nolock=True)
                 return
 
             # print(BASS_ErrorGetCode())
@@ -4356,8 +4336,8 @@ def player():   # BASS
 
     def sync_gapless_transition(handle, channel, data, user):
 
-        BASS_ChannelRemoveSync(channel, handle)
         bass_player.syncing = False
+        BASS_ChannelRemoveSync(channel, handle)
         # print("Sync GO!")
         print("Do transition GAPLESS")
         BASS_ErrorGetCode()
@@ -4374,7 +4354,6 @@ def player():   # BASS
         BASS_ChannelSetPosition(channel, 0, 0)
         # print("Set position")
         # print(BASS_ErrorGetCode())
-
 
 
     GapSync = SyncProc(sync_gapless_transition)
@@ -4559,6 +4538,13 @@ def player():   # BASS
                 if pctl.playerCommand == 'open':
                     # gui.update += 1
                     gui.level_peak = [0, 0]
+
+        # Wait for lock release if lock requested
+        # if pctl.t_lock == 1:
+        #     pctl.t_lock = 2
+        #     while pctl.t_lock == 2:
+        #         time.sleep(0.01)
+
 
         if pctl.playing_state == 3 and bass_player.state == 'playing':
             if radio_meta_timer.get() > 3:
@@ -5584,7 +5570,11 @@ def bass_player_thread():
         player()
     except:
         logging.exception('Exception on player thread')
-        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
+        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
+        time.sleep(1)
+        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
+        time.sleep(1)
+        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
 
 if default_player == 1:
 
@@ -23890,7 +23880,7 @@ exit_timer = Timer()
 exit_timer.set()
 while pctl.playerCommand != 'done' or lfm_scrobbler.running:
     time.sleep(0.2)
-    if exit_timer.get() > 3.5:
+    if exit_timer.get() > 3:
         print("Unload timeout")
         break
 
