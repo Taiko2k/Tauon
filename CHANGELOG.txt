@@ -12,7 +12,8 @@ v3.3.4
  - Fixed dragging to re-arrange tracks in playlist not correctly updating gallery
  - Fixed cycle all playlist setting not having effect
  - Fixed possible race condition causing playback thread to crash
- - Improved love indicator to display immediately and revert if failed
+ - Fixed gallery moving relative position when toggling "Show titles in gallery"
+ - Improved love indicator to display in a constant time then revert if failed
  - Restored rudimentary Windows support
 
 v3.3.3
