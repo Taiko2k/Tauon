@@ -53,11 +53,7 @@ For __Arch Linux__, install is avaliable from the [AUR](https://aur.archlinux.or
 
 For __Other Linux distributions__, a standalone **Flatpak** package is available.
  
- 1. If you have not already, make sure you have correctly installed and configured Flatpak for your distro. See https://flatpak.org/setup/. Specificaly you will need to have the flathub repo added:
- 
-     `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`
- 
- 2. After downloading *tauon.flatpak* from lastest [release](https://github.com/Taiko2k/tauonmb/releases).    
+ - After downloading *tauon.flatpak* from lastest [release](https://github.com/Taiko2k/tauonmb/releases):    
      
      - Install using: `sudo flatpak install tauon.flatpak`
          
@@ -66,6 +62,8 @@ For __Other Linux distributions__, a standalone **Flatpak** package is available
      >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
      
      >**Note:** Only host installed Picard/tag-editors are supported.
+     
+     >**Troubleshooting:** If you're having issues installing, try make sure you have installed and configured Flatpak for your distro as described on https://flatpak.org/setup/. Make sure you have the flathub repo added using `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo` as this is needed to download the runtimes.
 ___
 
 For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
