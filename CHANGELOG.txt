@@ -6,6 +6,7 @@ v3.3.4
  - Added "Add to queue" to context menu
  - Changed folder transfer to require enabling in settings with warning
  - Changed 'cycle' and 'repeat' playlist functions to ignore hidden playlist's
+ - Changed clicking bottom row in gallery to bring row into full view
  - Fixed scroll bar jumping direction with few tracks, fixed possible crash
  - Fixed pause command de-syncing if clicked quickly
  - Fixed area of rename playlist box not being selectable
