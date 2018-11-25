@@ -7,7 +7,7 @@ Designed to be simple and streamlined while putting the user in control of their
 
 ### Screenshot
 
-<img src="https://user-images.githubusercontent.com/17271572/48309413-8912a100-e5de-11e8-9323-8a3713469419.jpg" hspace="0px" vspace="60px">
+<img src="https://user-images.githubusercontent.com/17271572/48976940-492ade00-f0f5-11e8-9e93-b8dcb9cdbd8c.jpg" hspace="0px" vspace="60px">
 
 
 ## Features :sparkles:
