@@ -867,6 +867,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.remember_library_mode = False
 
+        self.first_in_grid = None
+
 gui = GuiVar()
 
 
@@ -1980,9 +1982,6 @@ class PlayerCtl:
         self.mpris = None
         self.eq = [0] * 2  # not used
         self.enable_eq = True  # not used
-
-
-        self.t_lock = 0
 
     def notify_update(self):
 
@@ -3337,6 +3336,9 @@ def love(set=True, index=None):
     loved ^= True
 
     if loved:
+        time.sleep(0.3)
+        gui.update += 1
+        gui.pl_update += 1
         star = [star[0], star[1] + "L"]
         star_store.insert(index, star)
         try:
@@ -3347,6 +3349,9 @@ def love(set=True, index=None):
             star_store.insert(index, star)
 
     else:
+        time.sleep(0.3)
+        gui.update += 1
+        gui.pl_update += 1
         star = [star[0], star[1].strip("L")]
         star_store.insert(index, star)
         try:
@@ -4118,15 +4123,18 @@ def player():   # BASS
 
             bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
             tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
-            pctl.playing_time = tpos - pctl.start_time
+            if top >= 0:
+                pctl.playing_time = tpos - pctl.start_time
 
-        def stop(self, end=False):
+        def stop(self, end=False, now=False):
 
             if self.state == 'stopped':
                 print("Already stopped")
                 return
 
-            if end:
+            if now:
+                pass
+            elif end:
                 time.sleep(1.5)
             else:
                 BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
@@ -4257,7 +4265,7 @@ def player():   # BASS
                 print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
-                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 2:
+                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 2.5:
 
                     # print(BASS_ErrorGetCode())
                     # Start sync on end
@@ -4539,12 +4547,6 @@ def player():   # BASS
                     # gui.update += 1
                     gui.level_peak = [0, 0]
 
-        # Wait for lock release if lock requested
-        # if pctl.t_lock == 1:
-        #     pctl.t_lock = 2
-        #     while pctl.t_lock == 2:
-        #         time.sleep(0.01)
-
 
         if pctl.playing_state == 3 and bass_player.state == 'playing':
             if radio_meta_timer.get() > 3:
@@ -4623,12 +4625,30 @@ def player():   # BASS
             if add_time > 2 or add_time < 0:
                 add_time = 0
 
-            if not BASS_ChannelIsActive(bass_player.channel):
-                print("Playback stalled!")
+            status = BASS_ChannelIsActive(bass_player.channel)
+
+            if status == 1:
+                # Playing
+                pass
+            elif status == 3 or status == 0:
+                # Paused? Stopped? Try unpause
+                print("Channel not playing when should be, tring to restart")
+                BASS_ChannelPlay(bass_player.channel, False)
+
+            elif status == 2:
+                print("Channel has stalled")
                 pctl.playing_time += add_time
 
+                if pctl.playing_time > 10 and pctl.playing_state != 3:
+                    pctl.playing_time = 0
+                    print("Advancing")
+                    bass_player.stop(now=True)
+                    pctl.playing_time = 0
+                    pctl.advance(nolock=True)
+                    continue
+
             #pctl.playing_time += add_time
-            elif not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
+            if status == 1 and not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 bass_player.update_time()
 
             if pctl.playing_state == 1:
@@ -5570,11 +5590,11 @@ def bass_player_thread():
         player()
     except:
         logging.exception('Exception on player thread')
-        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
         time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
         time.sleep(1)
-        show_message(_("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted."))
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
 
 if default_player == 1:
 
@@ -11174,13 +11194,15 @@ def toggle_galler_text(mode=0):
 
     gui.gallery_show_text ^= True
     gui.update += 1
-    gui.update_layout()
+    update_layout_do()
 
     # Jump to playing album
-    if album_mode:
-        if pctl.active_playlist_playing == pctl.active_playlist_viewing:
-            if playlist_playing < len(default_playlist):
-                goto_album(pctl.playlist_playing_position)
+    if album_mode and gui.first_in_grid is not None:
+
+        if gui.first_in_grid < len(default_playlist):
+            goto_album(gui.first_in_grid, force=True)
+
+
 
 
 def toggle_side_panel(mode=0):
@@ -11258,7 +11280,10 @@ def standard_size():
     clear_img_cache()
 
 
-def goto_album(playlist_no, down=False):
+def goto_album(playlist_no, down=False, force=False):
+
+    # (down flag not curretly used)
+
     global album_pos_px
     global album_dex
 
@@ -11279,20 +11304,26 @@ def goto_album(playlist_no, down=False):
             px += album_mode_art_size + album_v_gap
 
 
+    # If the album is within the view port already, dont jump to it
+    # (unless we really want to with force)
+    if not force and album_pos_px - 20 < px < album_pos_px + window_size[1]:
 
-    if album_pos_px - 20 < px < album_pos_px + window_size[1]:
-        pass
+        # Dont chance the view since its alread in the view port
+        # But if the album is just out of view on the bottom, bring it into view on to bottom row
+        if down or True:
+            while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[
+                1] - 40:
+                album_pos_px += 1
+
     else:
+        # Set the view to the calculated position
         album_pos_px = px - 60
         album_pos_px += 10
 
         if album_pos_px < 0 - 55:
             album_pos_px = 0 - 55
 
-    if down:
-        while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[1] - 40:
 
-            album_pos_px += 1
 
     if len(album_dex) > 0:
         return album_dex[re]
@@ -21655,6 +21686,10 @@ while running:
                 render_pos = 0
                 album_on = 0
 
+                if not pref_box.enabled or mouse_wheel != 0:
+                    gui.first_in_grid = None
+                    print("reset")
+
                 # Render album grid
                 while render_pos < album_pos_px + window_size[1] and default_playlist:
 
@@ -21683,6 +21718,12 @@ while running:
                                 break
 
                             info = get_album_info(album_dex[album_on])
+
+                            if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
+                                gui.first_in_grid = album_dex[album_on]
+                                print(pctl.g(default_playlist[gui.first_in_grid]).title)
+                                print("MARK :" )
+                                print(album_dex[album_on])
 
 
                             #artisttitle = colours.side_bar_line2
