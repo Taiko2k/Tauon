@@ -4293,6 +4293,10 @@ def player():   # BASS
 
                 else:
 
+                    if not instant:
+                        # Fade out old track
+                        BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.cross_fade_time)
+
                     # Create Mixer
                     new_mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
 
@@ -4328,9 +4332,6 @@ def player():   # BASS
                     if not instant:
                         # Fade in new track
                         BASS_ChannelSlideAttribute(new_mixer, 2, pctl.player_volume / 100, prefs.cross_fade_time)
-
-                        # Fade out old track
-                        BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.cross_fade_time)
 
                     if not instant:
                         time.sleep(prefs.cross_fade_time / 1000)
@@ -7795,6 +7796,38 @@ def show_in_playlist():
     shift_selection.append(playlist_selected)
     pctl.render_playlist()
 
+
+
+
+if gui.scale == 2:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/2x/info.png'))
+elif gui.scale == 1.25:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/info.png'))
+else:
+    folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
+    info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
+
+folder_icon.colour = [244, 220, 66, 255]
+info_icon.colour = [61, 247, 163, 255]
+
+
+def open_folder(index):
+    if system == 'windows':
+        line = r'explorer /select,"%s"' % (
+            pctl.master_library[index].fullpath.replace("/", "\\"))
+        subprocess.Popen(line)
+    else:
+        line = pctl.master_library[index].parent_folder_path
+        line += "/"
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
+
+gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
+
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 def cancel_import():
@@ -9086,29 +9119,69 @@ def gen_comment(pl):
         show_message("Nothing of interest was found.")
 
 
-def gen_most_skip(pl):
-    playlist = []
-    for item in pctl.multi_playlist[pl][2]:
-        if pctl.master_library[item].skips > 0:
-            playlist.append(item)
-    if len(playlist) == 0:
-        show_message("Nothing to show right now.")
-        return
+# def gen_most_skip(pl):
+#     playlist = []
+#     for item in pctl.multi_playlist[pl][2]:
+#         if pctl.master_library[item].skips > 0:
+#             playlist.append(item)
+#     if len(playlist) == 0:
+#         show_message("Nothing to show right now.")
+#         return
+#
+#     def worst(index):
+#         return pctl.master_library[index].skips
+#
+#     playlist = sorted(playlist, key=worst, reverse=True)
+#
+#     # pctl.multi_playlist.append(
+#     #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
+#
+#
+#     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
+#                                       playlist=copy.deepcopy(playlist),
+#                                       hide_title=1))
 
-    def worst(index):
-        return pctl.master_library[index].skips
-
-    playlist = sorted(playlist, key=worst, reverse=True)
-
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
-
-
-    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
-                                      playlist=copy.deepcopy(playlist),
-                                      hide_title=1))
-
-#tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
+# def gen_most_skip(pl):
+#
+#
+#     folders = []
+#     dick = {}
+#     for track in pctl.multi_playlist[pl][2]:
+#         parent = pctl.master_library[track].parent_folder_path
+#         if parent not in folders:
+#             folders.append(parent)
+#         if parent not in dick:
+#             dick[parent] = []
+#         dick[parent].append(track)
+#
+#     for name, tracks in dick.items():
+#         pt = 0
+#         sk = 0
+#         for track in tracks:
+#             pt += int(star_store.get(track))
+#             sk += pctl.master_library[track].skips
+#
+#
+#         if sk > 4 and pt < 60 * 20:
+#             pass
+#         else:
+#             dick[name] = None
+#
+#     playlist = []
+#
+#     for folder in folders:
+#         if dick[folder] is not None:
+#             playlist += dick[folder]
+#
+#     # pctl.multi_playlist.append(
+#     #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
+#
+#
+#     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
+#                                       playlist=copy.deepcopy(playlist),
+#                                       hide_title=0))
+#
+# tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
 
 
 def gen_sort_len(index):
@@ -9496,20 +9569,6 @@ def open_encode_out():
         subprocess.Popen(line)
     else:
         line = prefs.encoder_output
-        line += "/"
-        if system == 'mac':
-            subprocess.Popen(['open', line])
-        else:
-            subprocess.Popen(['xdg-open', line])
-
-
-def open_folder(index):
-    if system == 'windows':
-        line = r'explorer /select,"%s"' % (
-            pctl.master_library[index].fullpath.replace("/", "\\"))
-        subprocess.Popen(line)
-    else:
-        line = pctl.master_library[index].parent_folder_path
         line += "/"
         if system == 'mac':
             subprocess.Popen(['open', line])
@@ -10020,18 +10079,6 @@ def del_selected():
 
 
 
-if gui.scale == 2:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/2x/info.png'))
-elif gui.scale == 1.25:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/info.png'))
-else:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
-
-folder_icon.colour = [244, 220, 66, 255]
-info_icon.colour = [61, 247, 163, 255]
 
 
 def test_show(dummy):
@@ -10771,7 +10818,7 @@ def toggle_transfer(mode=0):
 
     if prefs.show_transfer:
 
-        show_message("Warning! This function allows moving of physical folders.", 'info', "This menu entry appears after selecting 'copy'. See manual (github wiki) for more info.")
+        show_message("Warning! Using this function moves physical folders.", 'info', "This menu entry appears after selecting 'copy'. See manual (github wiki) for more info.")
 
 
 transcode_icon.colour = [239, 74, 157, 255]
@@ -11283,7 +11330,6 @@ def standard_size():
 def goto_album(playlist_no, down=False, force=False):
 
     # (down flag not curretly used)
-
     global album_pos_px
     global album_dex
 
@@ -15010,7 +15056,8 @@ class Over:
         y1 = y + 100 * gui.scale
         x += 280 * gui.scale
 
-        # y +=  * gui.scale
+        if toggle_enable_web(1):
+            y += 40 * gui.scale
         ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
         y += 23 * gui.scale
 
@@ -21638,8 +21685,8 @@ while running:
                                     break
 
                                 extend = 0
-                                if gui.gallery_show_text:
-                                    extend = 40
+                                # if gui.gallery_show_text:
+                                #     extend = 40
 
                                 if coll((
                                         x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)) and gui.panelY < mouse_position[
@@ -21682,13 +21729,11 @@ while running:
                             render_pos += album_mode_art_size + album_v_gap
 
 
-
                 render_pos = 0
                 album_on = 0
 
                 if not pref_box.enabled or mouse_wheel != 0:
                     gui.first_in_grid = None
-                    print("reset")
 
                 # Render album grid
                 while render_pos < album_pos_px + window_size[1] and default_playlist:
@@ -21721,10 +21766,6 @@ while running:
 
                             if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
                                 gui.first_in_grid = album_dex[album_on]
-                                print(pctl.g(default_playlist[gui.first_in_grid]).title)
-                                print("MARK :" )
-                                print(album_dex[album_on])
-
 
                             #artisttitle = colours.side_bar_line2
                             albumtitle = colours.side_bar_line1  # grey(220)
