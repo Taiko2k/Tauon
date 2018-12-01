@@ -740,6 +740,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.set_height = 25 * self.scale
         self.set_hold = -1
         self.set_label_hold = -1
+        self.set_label_point = (0, 0)
         self.set_point = 0
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
@@ -1286,9 +1287,9 @@ try:
     if save[42] is not None:
         gui.pl_st = save[42]
         gui.set_load_old = True
-    if save[43] is not None:
-        gui.set_mode = save[43]
-        gui.set_bar = gui.set_mode
+    # if save[43] is not None:
+    #     gui.set_mode = save[43]
+    #     gui.set_bar = gui.set_mode
     if save[45] is not None:
         prefs.playlist_row_height = save[45]
     if save[46] is not None:
@@ -20135,7 +20136,7 @@ def save_state():
             prefs.playlist_font_size,
             prefs.use_title,
             gui.pl_st,
-            gui.set_mode,
+            None, #gui.set_mode,
             None,
             prefs.playlist_row_height,
             prefs.show_wiki,
@@ -21504,15 +21505,6 @@ while running:
                 if gui.rspw < 120 * gui.scale:
                     gui.rspw = 120 * gui.scale
 
-            # if gui.rspw > window_size[1] - 77 * gui.scale and album_mode is not True:
-            #     gui.rspw = window_size[1] - 77 * gui.scale
-            #
-            #     if album_mode is True:
-            #         if gui.rspw > window_size[0] - 300 * gui.scale:
-            #             gui.rspw = window_size[0] - 300 * gui.scale
-            #         gui.playlist_width = window_size[0] - gui.rspw - 30 * gui.scale
-
-
                 update_layout_do()
 
                 # Remember size for this view mode
@@ -22102,7 +22094,7 @@ while running:
                         box = (start + run, rect[1], item[1], rect[3])
                         grip = (start + run, rect[1], 3 * gui.scale, rect[3])
                         m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
-                        l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 9 * gui.scale, grip[3])
+                        l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
                         fields.add(m_grip)
 
 
@@ -22119,13 +22111,14 @@ while running:
 
                                     gui.pl_update = 1
                                     gui.set_label_hold = -1
-                                    print("MOVE")
+                                    # print("MOVE")
                                     break
 
                                 gui.set_label_hold = -1
 
                             if input.mouse_click:
                                 gui.set_label_hold = h
+                                gui.set_label_point = copy.deepcopy(mouse_position)
                             if right_click:
                                 set_menu.activate(h)
 
@@ -22155,8 +22148,12 @@ while running:
                     if not mouse_down:
                         gui.set_label_hold = -1
                     # print(in_grip)
-                    if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
-                        gui.cursor_want = 1
+                    if gui.set_label_hold == -1:
+                        if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
+                            gui.cursor_want = 1
+                        if gui.set_hold != -1:
+                            gui.cursor_want = 1
+
 
 
                 # heart field test
@@ -22198,14 +22195,24 @@ while running:
 
                     start = x + 16 * gui.scale
                     run = 0
-                    for item in gui.pl_st:
+                    for i, item in enumerate(gui.pl_st):
                         box = (start + run, rect[1], item[1], rect[3])
                         grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+
+                        bg = [30, 30, 30, 255]
+                        if coll(box) and gui.set_label_hold != -1:
+                            bg = [39, 39, 39, 255]
+
+                        if i == gui.set_label_hold:
+                            bg = [22, 22, 22, 255]
+
+
+                        ddt.rect_r(box, bg, True)
                         ddt.rect_r(grip, [255, 255, 255, 14], True)
 
                         line = trunc_line(item[0], 12, box[2] - 13 * gui.scale, False)
-                        ddt.text_background_colour = [30, 30, 30, 255]
-                        ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 12)
+                        ddt.text_background_colour = bg
+                        ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312)
                         run += box[2]
 
 
@@ -23431,18 +23438,18 @@ while running:
 
         if gui.cursor_is != gui.cursor_want:
 
-            if not (gui.cursor_is == 1 and gui.cursor_want == 0 and mouse_down):
+            # if not (gui.cursor_is == 1 and gui.cursor_want == 0 and mouse_down):
 
-                gui.cursor_is = gui.cursor_want
+            gui.cursor_is = gui.cursor_want
 
-                if gui.cursor_is == 0:
-                    SDL_SetCursor(cursor_standard)
-                elif gui.cursor_is == 1:
-                    SDL_SetCursor(cursor_shift)
-                elif gui.cursor_is == 2:
-                    SDL_SetCursor(cursor_text)
-                elif gui.cursor_is == 3:
-                    SDL_SetCursor(cursor_hand)
+            if gui.cursor_is == 0:
+                SDL_SetCursor(cursor_standard)
+            elif gui.cursor_is == 1:
+                SDL_SetCursor(cursor_shift)
+            elif gui.cursor_is == 2:
+                SDL_SetCursor(cursor_text)
+            elif gui.cursor_is == 3:
+                SDL_SetCursor(cursor_hand)
 
         if draw_border:
 
@@ -23502,7 +23509,17 @@ while running:
         if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10):
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = (0, 0)
-            ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(45 * gui.scale), int(15 * gui.scale)), [40, 40, 40, 220], True)
+            ddt.rect_r((i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225], True)
+            #ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+            #ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+
+
+        if (gui.set_label_hold != -1) and mouse_down and not point_proximity_test(gui.set_label_point, mouse_position, 3):
+            i_x, i_y = get_sdl_input.mouse()
+
+            gui.set_label_point = (0, 0)
+            ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+            ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
         gui.update -= 1
         gui.present = True

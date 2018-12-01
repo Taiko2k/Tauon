@@ -16,7 +16,12 @@ v3.3.4
  - Fixed cycle all playlist setting not having effect
  - Fixed possible race condition causing playback thread to crash
  - Fixed gallery moving relative position when toggling "Show titles in gallery"
- - Tweak/Revert fade transition to not wait for IO
+ - Fixed column mode not showing after restart (for real this time)
+ - Fixed slide cursor showing after moving mouse past side bar while mouse down
+ - Fixed fade transition to not wait for IO
+ - Fixed column drag hit fields slightly overlapping
+ - Tweaked column title font
+ - Improved column dragging visual feedback
  - Improved love indicator to display in a constant time then revert if failed
  - Restored rudimentary Windows support
 
