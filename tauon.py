@@ -870,6 +870,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.first_in_grid = None
 
+        self.art_aspect_ratio = 1
+        self.art_unlock_ratio = False
+        self.art_max_ratio_lock = 1
+
 gui = GuiVar()
 
 
@@ -6543,16 +6547,31 @@ class AlbumArt():
         temp_dest.x = round(location[0])
         temp_dest.y = round(location[1])
 
-        temp_dest.w = round(box[0])
-        temp_dest.h = round(box[1])
+        temp_dest.w = unit.original_size[0]#round(box[0])
+        temp_dest.h = unit.original_size[1]#round(box[1])
 
-        # correct aspect ratio if needed
-        if unit.original_size[0] > unit.original_size[1]:
-            temp_dest.w = box[0]
-            temp_dest.h = int(temp_dest.h * (unit.original_size[1] / unit.original_size[0]))
-        elif unit.original_size[0] < unit.original_size[1]:
-            temp_dest.h = box[1]
+        bh = round(box[1])
+        bw = round(box[0])
+
+        # # correct aspect ratio if needed
+        # if unit.original_size[0] > unit.original_size[1]:
+        #     temp_dest.w = box[0]
+        #     temp_dest.h = int(temp_dest.h * (unit.original_size[1] / unit.original_size[0]))
+        # elif unit.original_size[0] < unit.original_size[1]:
+        #     temp_dest.h = box[1]
+        #     temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
+
+        # Constrain image to given box
+        if temp_dest.w > bw:
+            print("constraing width")
+            temp_dest.w = bw
+            temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
+
+        if temp_dest.h > bh:
+            print("constrain height")
+            temp_dest.h = bh
             temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
+
 
         # prevent scaling larger than original image size
         if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
@@ -6974,6 +6993,8 @@ class AlbumArt():
     def render(self, unit, location):
 
         rect = unit.rect
+
+        gui.art_aspect_ratio = unit.actual_size[0] / unit.actual_size[1]
 
         rect.x = round(int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0])
         rect.y = round(int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1])
@@ -18087,11 +18108,17 @@ class ArtBox:
         ddt.rect_r((x, y, w ,h), colours.side_panel_background, True)
 
         # We need to find the size of the inner square for the artwork
-        box = min(w, h)
-        box -= 17 * gui.scale  # Inset the square a bit
+        #box = min(w, h)
+
+        box_x = w
+        box_y = h
+
+
+        box_x -= 17 * gui.scale  # Inset the square a bit
+        box_y -= 17 * gui.scale  # Inset the square a bit
 
         # And position the square
-        rect = (x + ((w - box) // 2), y + ((h - box) // 2), box, box)
+        rect = (x + ((w - box_x) // 2), y + ((h - box_y) // 2), box_x, box_y)
         fields.add(rect)
         gui.main_art_box = rect
 
@@ -18099,7 +18126,7 @@ class ArtBox:
         showc = None
         if 3 > pctl.playing_state > 0:  # Only show if song playing or paused
 
-            album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (box, box), side_drag)
+            album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (box_x, box_y), side_drag)
 
             showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
@@ -18108,7 +18135,7 @@ class ArtBox:
 
         # Draw image downloading indicator
         if gui.image_downloading:
-            ddt.draw_text((x + int(box / 2), 38 * gui.scale + int(box / 2), 2), "Fetching image...", colours.side_bar_line1,
+            ddt.draw_text((x + int(box_x / 2), 38 * gui.scale + int(box_y / 2), 2), "Fetching image...", colours.side_bar_line1,
                       14)
             gui.update = 2
 
@@ -18141,15 +18168,15 @@ class ArtBox:
                     line += 'F '
 
                 line += str(showc[2] + 1) + "/" + str(showc[1])
-                y = box + 11 * gui.scale
+                y = box_y + 11 * gui.scale
 
                 xoff = 0
                 xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
 
-                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
             else:   # Extended metadata
 
@@ -18159,15 +18186,15 @@ class ArtBox:
                 else:
                     line += 'File'
 
-                y = 36 * gui.scale + box - 61 * gui.scale
+                y = 36 * gui.scale + box_y - 61 * gui.scale
 
                 xoff = 0
                 xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
 
-                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
@@ -18177,9 +18204,9 @@ class ArtBox:
                 xoff = 0
                 xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text((x + box - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
+                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
                           bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
@@ -18189,9 +18216,9 @@ class ArtBox:
                 xoff = 0
                 xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box - xoff, y), (xoff, 18 * gui.scale),
+                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text((x + box - 6, y, 1), line, [200, 200, 200, 255], 12,
+                ddt.draw_text((x + box_x - 6, y, 1), line, [200, 200, 200, 255], 12,
                           bg=[30, 30, 30, 255])
 
 
@@ -19925,18 +19952,34 @@ def update_layout_do():
     gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
 
 
+
+    box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
+
+    if gui.art_aspect_ratio > 1.2:
+        gui.art_unlock_ratio = True
+        if gui.art_aspect_ratio > gui.art_max_ratio_lock:
+            gui.art_max_ratio_lock = gui.art_aspect_ratio
+
+    # print("Avaliabe: " + str(box_r))
+    elif box_r <= 1:
+        gui.art_unlock_ratio = False
+        gui.art_max_ratio_lock = 1
+
+    if key_shift_down:
+        gui.art_unlock_ratio = True
+        gui.art_max_ratio_lock = box_r + 0.3
+
     # Limit the right side panel width to height of area
     if gui.rsp:
         if album_mode:
             pass
         else:
-            if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
-                gui.rspw = window_size[1] - gui.panelY - gui.panelBY
 
+            if not gui.art_unlock_ratio:
 
+                if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
+                    gui.rspw = window_size[1] - gui.panelY - gui.panelBY
 
-
-    #if gui.plw < 300:
 
     # Determine how wide the playlist need to be
     gui.plw = window_size[0]
@@ -21495,7 +21538,17 @@ while running:
 
             # side drag update
             if side_drag is True:
-                gui.rspw = window_size[0] - mouse_position[0]
+
+                target = window_size[0] - mouse_position[0]
+
+                if target > (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock:
+                    pass
+                else:
+                    gui.rspw = target
+
+                if album_mode:
+                    gui.rspw = target
+
                 if album_mode and gui.rspw < album_mode_art_size + 50 * gui.scale:
                     gui.rspw = album_mode_art_size + 50 * gui.scale
                 #gui.update_layout()
@@ -21504,6 +21557,7 @@ while running:
                 # Prevent side bar getting too small
                 if gui.rspw < 120 * gui.scale:
                     gui.rspw = 120 * gui.scale
+
 
                 update_layout_do()
 
@@ -22235,6 +22289,8 @@ while running:
 
                         meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
                                       window_size[1] - gui.panelY - gui.panelBY - boxh)
+
+                        boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
 
                         art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh)
 

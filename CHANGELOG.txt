@@ -5,6 +5,7 @@ v3.3.4
 
  - Added "Add to queue" to track context menu
  - Added "Open folder" to gallery context menu
+ - Added support for side bar extending on wide album art
  - Changed folder transfer to require enabling in settings with warning
  - Changed 'cycle' and 'repeat' playlist functions to ignore hidden playlist's
  - Changed clicking bottom row in gallery to bring row into full view
