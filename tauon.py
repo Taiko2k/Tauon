@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.3.4"
+t_version = "v3.4.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -775,7 +775,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.playlist_box_d_click = -1
 
-        self.gallery_show_text = False
+        self.gallery_show_text = True
         self.bb_show_art = False
         # self.show_stars = True
 
@@ -873,6 +873,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.art_aspect_ratio = 1
         self.art_unlock_ratio = False
         self.art_max_ratio_lock = 1
+        self.side_bar_drag_source = 0
+        self.side_bar_drag_original = 0
 
 gui = GuiVar()
 
@@ -6563,12 +6565,10 @@ class AlbumArt():
 
         # Constrain image to given box
         if temp_dest.w > bw:
-            print("constraing width")
             temp_dest.w = bw
             temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
 
         if temp_dest.h > bh:
-            print("constrain height")
             temp_dest.h = bh
             temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
@@ -11219,7 +11219,7 @@ def hide_set_bar():
     gui.pl_update = 1
 
 
-set_menu.add("Sort Acceding", sort_ass, pass_ref=True)
+set_menu.add("Sort Ascending", sort_ass, pass_ref=True)
 set_menu.add("Sort Decending", sort_dec, pass_ref=True)
 set_menu.br()
 set_menu.add("Hide bar", hide_set_bar)
@@ -19965,9 +19965,9 @@ def update_layout_do():
         gui.art_unlock_ratio = False
         gui.art_max_ratio_lock = 1
 
-    if key_shift_down:
+    if side_drag and key_shift_down:
         gui.art_unlock_ratio = True
-        gui.art_max_ratio_lock = box_r + 0.3
+        gui.art_max_ratio_lock = 5
 
     # Limit the right side panel width to height of area
     if gui.rsp:
@@ -21330,6 +21330,7 @@ while running:
         if theme > 0:
             theme_number = theme - 1
             try:
+
                 theme_files = os.listdir(install_directory + '/theme')
                 theme_files.sort()
                 #print(theme_files)
@@ -21468,6 +21469,7 @@ while running:
             colours.__init__()
             colours.post_config()
 
+        print(theme)
         themeChange = False
         ddt.text_background_colour = colours.playlist_panel_background
 
@@ -21532,6 +21534,8 @@ while running:
 
                 if input.mouse_click:
                     side_drag = True
+                    gui.side_bar_drag_source = mouse_position[0]
+                    gui.side_bar_drag_original = gui.rspw
 
                 if not quick_drag:
                     gui.cursor_want = 1
@@ -21539,10 +21543,13 @@ while running:
             # side drag update
             if side_drag is True:
 
-                target = window_size[0] - mouse_position[0]
+                offset = gui.side_bar_drag_source - mouse_position[0]
 
-                if target > (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock:
-                    pass
+                target = gui.side_bar_drag_original + offset #window_size[0] - mouse_position[0]
+
+                if not album_mode and offset > 0 and target > (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock:
+                    target = (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock
+                    gui.rspw = target
                 else:
                     gui.rspw = target
 
@@ -21655,29 +21662,8 @@ while running:
 
                 excl_rect = (0,0,0,0)
 
-                if gui.power_bar is not None and len(gui.power_bar) > 2:
-
-                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
-
-                else:
-
-                    fields.add(rect)
-                    if coll(rect):
-                        right = window_size[0] - 25 * gui.scale
-                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
-                                  alpha_mod(colours.side_bar_line2, 150), 13)
-                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
-                                  alpha_mod(colours.side_bar_line2, 150), 13)
-
-                if right_click:
-
-                    if coll(rect):
-                        per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
-                        if per > 100:
-                            per = 100
-                        if per < 0:
-                            per = 0
-                        album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50 * gui.scale
+                rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
+                rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
 
                 if mouse_down:
                     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
@@ -21693,12 +21679,53 @@ while running:
                         else:
                             mv = int(tt * 1500 * gui.scale)
                             if mv < 30:
-                                if mouse_position[1] > (rect[1] + rect[3]) * 0.5:
+                                if coll(rect_down):#mouse_position[1] > (rect[1] + rect[3]) * 0.5:
                                     album_pos_px += mv
                                 else:
                                     album_pos_px -= mv
                 else:
                     album_scroll_hold = False
+
+                if gui.power_bar is not None and len(gui.power_bar) > 2:
+
+                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
+
+                else:
+
+                    fields.add(rect)
+
+                    fields.add(rect_up)
+                    fields.add(rect_down)
+
+                    if coll(rect):
+                        right = window_size[0] - 25 * gui.scale
+
+                        colour = alpha_mod(colours.side_bar_line2, 100)
+                        if coll(rect_up):
+                            colour = alpha_mod(colours.side_bar_line2, 210)
+
+
+                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
+                                  colour, 13)
+
+                        colour = alpha_mod(colours.side_bar_line2, 100)
+                        if coll(rect_down):
+                            colour = alpha_mod(colours.side_bar_line2, 210)
+
+                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
+                                  colour, 13)
+
+                if right_click:
+
+                    if coll(rect):
+                        per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
+                        if per > 100:
+                            per = 100
+                        if per < 0:
+                            per = 0
+                        album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50 * gui.scale
+
+
 
                 if last_row != row_len:
                     last_row = row_len

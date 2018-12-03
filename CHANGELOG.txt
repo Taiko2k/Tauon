@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v3.3.4
+v3.4.0
 
  - Added "Add to queue" to track context menu
  - Added "Open folder" to gallery context menu
@@ -21,8 +21,11 @@ v3.3.4
  - Fixed slide cursor showing after moving mouse past side bar while mouse down
  - Fixed fade transition to not wait for IO
  - Fixed column drag hit fields slightly overlapping
+ - Fixed right side panel to drag by offset rather than absolute click position
  - Tweaked column title font
+ - Tweaked default gallery titles to on
  - Improved column dragging visual feedback
+ - Improved gallery scroll arrows to highlight on mouse over
  - Improved love indicator to display in a constant time then revert if failed
  - Restored rudimentary Windows support
 
