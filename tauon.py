@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.4.0"
+t_version = "v3.4.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -3629,6 +3629,16 @@ def player3():  # Gstreamer
                     elif self.play_state == 2:
                         self.pl.set_state(Gst.State.PLAYING)
                         self.play_state = 1
+
+                elif pctl.playerCommand == 'pauseon':
+                    player_timer.hit()
+                    self.play_state = 2
+                    self.pl.set_state(Gst.State.PAUSED)
+
+                elif pctl.playerCommand == 'pauseoff':
+                    player_timer.hit()
+                    self.pl.set_state(Gst.State.PLAYING)
+                    self.play_state = 1
 
                 pctl.playerCommandReady = False
 
@@ -21662,6 +21672,10 @@ while running:
 
                 excl_rect = (0,0,0,0)
 
+                if gui.power_bar is not None and len(gui.power_bar) > 2:
+
+                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
+
                 rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
                 rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
 
@@ -21688,7 +21702,7 @@ while running:
 
                 if gui.power_bar is not None and len(gui.power_bar) > 2:
 
-                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
+                    pass
 
                 else:
 
@@ -22358,6 +22372,8 @@ while running:
                     gui.show_top_title = True
 
             if gui.lsp and not gui.combo_mode:
+
+                # left side panel
 
                 half = int(round((window_size[1] - gui.panelY - gui.panelBY) / 2))
                 full = (window_size[1] - gui.panelY - gui.panelBY)
