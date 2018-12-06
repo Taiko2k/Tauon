@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+v3.4.1
+
+ - Fix power bar and scroll field overlapping
+ - Fix pausing with gstreamer fallback
+
+
 v3.4.0
 
  - Added "Add to queue" to track context menu
