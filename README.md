@@ -62,7 +62,8 @@ For __Other Linux distributions__, a standalone **Flatpak** package is available
      >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
      
      >**Troubleshooting:** If you're having issues installing, try make sure you have installed and configured Flatpak for your distro as described on https://flatpak.org/setup/. Make sure you have the flathub repo added using `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo` as this is needed to download the runtimes.
-     
+
+> **Note:** These packages are for x86_64 only
 ___
 
 For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
