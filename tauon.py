@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.4.1"
+t_version = "v3.5.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -2491,7 +2491,7 @@ class PlayerCtl:
 
                 pp = self.playing_playlist()
 
-                if pctl.auto_stop:
+                if pctl.auto_stop and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
                     self.stop(run=True)
                     gui.update += 2
                     pctl.auto_stop = False
@@ -2640,22 +2640,22 @@ class PlayerCtl:
 
                     # Check if we are at end of playlist
                     pl = pctl.multi_playlist[pctl.active_playlist_playing][2]
-                    if self.playlist_playing_position > len(pl) - 2:
+                    if self.playlist_playing_position > len(pl) - 3:
                         ok_continue = False
 
                     # Check next song is in album
                     if ok_continue:
-                        if self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+                        if self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(target_index).parent_folder_path:
                             ok_continue = False
 
-                    if ok_continue:
-                        # We seem to be still in the album. Step down one and play
-                        self.playlist_playing_position += 1
-                        self.track_queue.append(pl[self.playlist_playing_position])
-                        self.queue_step = len(self.track_queue) - 1
-                        self.play_target(jump=not end)
+                    #if ok_continue:
+                    # We seem to be still in the album. Step down one and play
+                    self.playlist_playing_position += 1
+                    self.track_queue.append(pl[self.playlist_playing_position])
+                    self.queue_step = len(self.track_queue) - 1
+                    self.play_target(jump=not end)
 
-                    else:
+                    if not ok_continue:
                         # It seems this item has expired, remove it and call advance again
                         print("Remove expired album from queue")
                         del self.force_queue[0]
@@ -2663,8 +2663,10 @@ class PlayerCtl:
                         if queue_box.scroll_position > 0:
                             queue_box.scroll_position -= 1
 
-                        self.advance()
-                        return
+                        #self.advance()
+                        #return
+
+
 
             else:
                 # This is track type
@@ -11723,6 +11725,7 @@ if default_player == 1 and os.path.isfile(os.path.join(config_directory, "config
 def clear_queue():
     pctl.force_queue = []
     gui.pl_update = 1
+    pctl.pause_queue = False
 
 
 #x_menu.add('Clear Queue', clear_queue, queue_deco)
@@ -18662,8 +18665,9 @@ class QueueBox:
         self.scroll_position = 0
         self.right_click_id = None
 
-        queue_menu.add("Remove This", self.right_remove_item, show_test=self.queue_remove_show)
+        queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
+        queue_menu.add(_("Clear Queue"), clear_queue)
 
 
     def queue_remove_show(self, id):
@@ -18754,7 +18758,7 @@ class QueueBox:
         # Draw top accent
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
-        ddt.draw_text((x + (10 * gui.scale), yy + 0 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
+        ddt.draw_text((x + (10 * gui.scale), yy + 1 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
 
         yy += 7 * gui.scale
 

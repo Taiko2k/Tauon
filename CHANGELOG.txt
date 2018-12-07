@@ -1,11 +1,12 @@
 
 Changelog-------------------------------------
 
-v3.4.1
+v3.5.0
 
  - Add folder/album queueing
  - Add queuing inspector to left side panel
  - Add option to pause force queue
+ - Changed "stop at end" to have lower priority than force queue
  - Fix power bar and scroll field overlapping
  - Fix pausing with gstreamer fallback
  - Fix crash when queued track is removed from playlist
