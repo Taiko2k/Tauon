@@ -2602,7 +2602,6 @@ class PlayerCtl:
         # Force queue (middle click on track)
         if len(self.force_queue) > 0:
 
-
             q = self.force_queue[0]
             target_index = q[0]
 
@@ -2616,7 +2615,6 @@ class PlayerCtl:
                     self.active_playlist_playing = q[2]
                     if target_index not in self.playing_playlist():
                         del self.force_queue[0]
-                        print("QUEUE TRACK MISSING")
                         self.advance(nolock=True)
                         return
 
@@ -2625,7 +2623,8 @@ class PlayerCtl:
                     self.queue_step = len(self.track_queue) - 1
                     self.play_target(jump=not end)
 
-                    self.force_queue[0] = (q[0], q[1], q[2], q[3], 1)  # Set the flag that we have entered the album
+                    #  Set the flag that we have entered the album
+                    self.force_queue[0][4] = 1
 
 
                 elif q[4] == 1:
@@ -10242,16 +10241,16 @@ track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
 def add_to_queue(ref):
 
-    # ref, postion-in-playlist, source-playlist, type(0 is track, 1 is album), album-stage
+    # ref, postion-in-playlist, source-playlist, type(0 is track, 1 is album), album-stage, UID
 
-    pctl.force_queue.append((ref,
-                             r_menu_position, pctl.active_playlist_viewing, 0, 0))
+    pctl.force_queue.append([ref,
+                             r_menu_position, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
 
 
 def add_album_to_queue(ref):
 
-    pctl.force_queue.append((ref,
-                             r_menu_position, pctl.active_playlist_viewing, 1, 0))
+    pctl.force_queue.append([ref,
+                             r_menu_position, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
 
 def toggle_queue(mode=0):
     if mode == 1:
@@ -17666,8 +17665,16 @@ class StandardPlaylist:
                         if mouse_up:  # and key_shift_down:
                             move_on_title = True
 
+
+
                     # Detect folder title click
-                    if (input.mouse_click or right_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+                    if (input.mouse_click or right_click or middle_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+
+
+                        # Add folder to queue if middle click
+                        if middle_click:
+                            pctl.force_queue.append([default_playlist[p_track],
+                                                     p_track, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
@@ -17694,6 +17701,7 @@ class StandardPlaylist:
                                     default_playlist[u]].parent_folder_path:
                                     shift_selection.append(u)
                                     u += 1
+
 
                         # Add folder to selection if clicked
                         if input.mouse_click and not (scroll_enable and mouse_position[0] < 30):
@@ -17817,8 +17825,8 @@ class StandardPlaylist:
 
             # Add to queue on middle click
             if middle_click and line_hit:
-                pctl.force_queue.append((default_playlist[p_track],
-                                         p_track, pctl.active_playlist_viewing, 0, 0))
+                pctl.force_queue.append([default_playlist[p_track],
+                                         p_track, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -18627,7 +18635,49 @@ class QueueBox:
 
     def __init__(self):
 
-        pass
+        self.dragging = None
+        self.fq = []
+        self.drag_start_y = 0
+        self.drag_start_top = 0
+        self.tab_h = 34 * gui.scale
+
+
+    def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False):
+
+        text_colour = [225, 225, 225, 255]
+
+        # if fq[i][3] == 0:
+
+        rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
+
+        if draw_back:
+            ddt.rect_r(rect, [20, 20, 20, 255], True)
+
+        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
+
+        ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 10], True)
+
+        line = track.album
+        if fqo[3] == 0:
+            line = track.title
+
+        artist_line = track.artist
+        if fqo[3] == 1 and track.album_artist:
+            artist_line = track.album_artist
+
+        ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [100, 100, 100, 155], 210,
+                      max_w=rect[2] - 60 * gui.scale)
+
+        ddt.draw_text((rect[0] + (40 * gui.scale), yy + 14 * gui.scale), line, text_colour, 211,
+                      max_w=rect[2] - 60 * gui.scale)
+
+        if fqo[3] == 1:
+            if fqo[4] == 0:
+                ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255],
+                           True)
+            else:
+                ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
+                           [140, 220, 20, 255], True)
 
     def draw(self, x, y, w, h):
 
@@ -18647,60 +18697,103 @@ class QueueBox:
 
         i = 0
 
-        fq = copy.deepcopy(pctl.force_queue)
+        if not self.dragging:
+            self.fq = copy.deepcopy(pctl.force_queue)
 
-        while i < len(fq):
+        if not mouse_down and not mouse_up:
+            self.dragging = None
+
+        fq = self.fq
+
+        list_top = yy
+
+        while i < len(fq) + 1:
+
+            h_rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h + 3 * gui.scale)
+            if i == len(fq):
+                h_rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h + 3 * gui.scale + 1000 * gui.scale)
+
+            if self.dragging and coll(h_rect) and mouse_up:
+
+                ob = None
+                for u in reversed(range(len(pctl.force_queue))):
+
+                    if pctl.force_queue[u][5] == self.dragging:
+                        ob = pctl.force_queue[u]
+                        pctl.force_queue[u] = None
+                        break
+
+                else:
+                    self.dragging = None
+
+                if self.dragging:
+                    print(ob)
+                    pctl.force_queue.insert(i, ob)
+                    self.dragging = None
+
+                for u in reversed(range(len(pctl.force_queue))):
+                    if pctl.force_queue[u] is None:
+                        del pctl.force_queue[u]
+                        gui.pl_update += 1
+                        continue
+
+                    # Reset album in flag if not first item
+                    if pctl.force_queue[u][4] == 1:
+                        if u != 0:
+                            pctl.force_queue[u][4] = 0
+
+                self.draw(x, y, w, h)
+                return
+
+            if i > len(fq) - 1:
+                break
 
             track = pctl.g(fq[i][0])
 
-            #print(fq)
 
-            text_colour = [225, 225, 225, 255]
+            if self.dragging and coll(h_rect):
+                yy += self.tab_h
+                yy += 4 * gui.scale
 
-            #if fq[i][3] == 0:
+            rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
+            if input.mouse_click and coll(rect):
+                self.dragging = fq[i][5]
+                self.drag_start_y = mouse_position[1]
+                self.drag_start_top = yy
 
-            th = 34 * gui.scale
+            if fq[i][5] == self.dragging:
+                # ddt.rect_r(rect, [22, 22, 22, 255], True)
+                pass
+            else:
 
-            rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, th)
-
-            #ddt.rect_r(rect, [22, 22, 22, 255], True)
-
-            gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
-
-            ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 10], True)
-
-            line = track.album
-            if fq[i][3] == 0:
-                line = track.title
-            #line = track.artist + " - " + track.title
-            #line = line.rstrip(" -").lstrip(" -")
-
-            #ddt.draw_text((rect[0] + (40 * gui.scale), yy + 7 * gui.scale), line, text_colour, 211)
-
-            artist_line = track.artist
-            if fq[i][3] == 1 and track.album_artist:
-                artist_line = track.album_artist
-
-            ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [100, 100, 100, 155], 210, max_w=rect[2] - 60 * gui.scale)
-
-            ddt.draw_text((rect[0] + (40 * gui.scale), yy + 14 * gui.scale), line, text_colour, 211, max_w=rect[2] - 60 * gui.scale)
-
-            if fq[i][3] == 1:
-                if fq[i][4] == 0:
-                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255], True)
-                else:
-                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
-                               [140, 220, 20, 255], True)
-
-
-            yy += th
-
-            yy += 4 * gui.scale
-
+                self.draw_card(x, y, w, h, yy, track, fq[i])
+                yy += self.tab_h
+                yy += 4 * gui.scale
 
 
             i += 1
+
+
+        if self.dragging:
+            print("hit1")
+
+            fqo = None
+            for item in fq:
+                if item[5] == self.dragging:
+                    fqo = item
+                    break
+            else:
+                self.dragging = False
+                print("hit2")
+
+            if self.dragging:
+                print("hit3")
+                yyy = self.drag_start_top + (mouse_position[1] - self.drag_start_y)
+                if yyy < list_top:
+                    yyy = list_top
+                track = pctl.g(fqo[0])
+                self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
 
 
