@@ -3,8 +3,11 @@ Changelog-------------------------------------
 
 v3.4.1
 
+ - Add folder/album queueing
+ - Add queuing inspector to left side panel
  - Fix power bar and scroll field overlapping
  - Fix pausing with gstreamer fallback
+ - Fix crash when queued track is removed from playlist
 
 
 v3.4.0

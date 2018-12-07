@@ -2269,6 +2269,11 @@ class PlayerCtl:
 
         lfm_scrobbler.start_queue()
 
+        if self.force_queue:
+            if self.force_queue[0][4] == 1:
+                if pctl.g(self.force_queue[0][0]).parent_folder_path != pctl.g(index).parent_folder_path:
+                    del self.force_queue[0]
+
         if len(self.track_queue) > 0:
             self.left_time = self.playing_time
             self.left_index = self.track_queue[self.queue_step]
@@ -2597,18 +2602,79 @@ class PlayerCtl:
         # Force queue (middle click on track)
         if len(self.force_queue) > 0:
 
-            target_index = self.force_queue[0][0]
-            self.active_playlist_playing = self.force_queue[0][2]
-            if target_index not in self.playing_playlist():
-                del self.force_queue[0]
-                self.advance(jump= not end, nolock=True)
-                return
 
-            self.playlist_playing_position = self.force_queue[0][1]
-            self.track_queue.append(target_index)
-            self.queue_step = len(self.track_queue) - 1
-            self.play_target(jump= not end)
-            del self.force_queue[0]
+            q = self.force_queue[0]
+            target_index = q[0]
+
+            if q[3] == 1:
+                # This is an album type
+
+                if q[4] == 0:
+                    # We have not started playing the album yet
+                    # So we go to that track
+                    # (This is a copy of the track code, but we don't delete the item)
+                    self.active_playlist_playing = q[2]
+                    if target_index not in self.playing_playlist():
+                        del self.force_queue[0]
+                        print("QUEUE TRACK MISSING")
+                        self.advance(nolock=True)
+                        return
+
+                    self.playlist_playing_position = q[1]
+                    self.track_queue.append(target_index)
+                    self.queue_step = len(self.track_queue) - 1
+                    self.play_target(jump=not end)
+
+                    self.force_queue[0] = (q[0], q[1], q[2], q[3], 1)  # Set the flag that we have entered the album
+
+
+                elif q[4] == 1:
+                    # We have previously started playing this album
+
+                    # Check to see if we still are:
+                    ok_continue = True
+
+                    if pctl.g(target_index).parent_folder_path != pctl.playing_object().parent_folder_path:
+                        # Remember to set jumper check this too
+                        ok_continue = False
+
+                    # Check if we are at end of playlist
+                    pl = pctl.multi_playlist[pctl.active_playlist_playing][2]
+                    if self.playlist_playing_position > len(pl) - 2:
+                        ok_continue = False
+
+                    # Check next song is in album
+                    if ok_continue:
+                        if self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+                            ok_continue = False
+
+                    if ok_continue:
+                        # We seem to be still in the album. Step down one and play
+                        self.playlist_playing_position += 1
+                        self.track_queue.append(pl[self.playlist_playing_position])
+                        self.queue_step = len(self.track_queue) - 1
+                        self.play_target(jump=not end)
+
+                    else:
+                        # It seems this item has expired, remove it and call advance again
+                        print("Remove expired album from queue")
+                        del self.force_queue[0]
+                        self.advance()
+                        return
+
+            else:
+                # This is track type
+                self.active_playlist_playing = q[2]
+                if target_index not in self.playing_playlist():
+                    del self.force_queue[0]
+                    self.advance(nolock=True)
+                    return
+
+                self.playlist_playing_position = q[1]
+                self.track_queue.append(target_index)
+                self.queue_step = len(self.track_queue) - 1
+                self.play_target(jump= not end)
+                del self.force_queue[0]
 
         # Stop if playlist is empty
         elif len(self.playing_playlist()) == 0:
@@ -6289,6 +6355,10 @@ class GallClass:
                 order[3].x = int((size - order[3].w) / 2) + order[3].x
                 order[3].y = int((size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
+
+                self.key_list.remove((index, size, offset))
+                self.key_list.append((index, size, offset))
+
                 return True
 
         else:
@@ -10172,8 +10242,16 @@ track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
 def add_to_queue(ref):
 
+    # ref, postion-in-playlist, source-playlist, type(0 is track, 1 is album), album-stage
+
     pctl.force_queue.append((ref,
-                             r_menu_position, pctl.active_playlist_viewing))
+                             r_menu_position, pctl.active_playlist_viewing, 0, 0))
+
+
+def add_album_to_queue(ref):
+
+    pctl.force_queue.append((ref,
+                             r_menu_position, pctl.active_playlist_viewing, 1, 0))
 
 def toggle_queue(mode=0):
     if mode == 1:
@@ -10825,6 +10903,7 @@ folder_menu = Menu(190, show_icons=True)
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
+folder_menu.add(_("Add Folder to Queue"), add_album_to_queue, pass_ref=True)
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
@@ -17297,20 +17376,22 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
         if pctl.force_queue:
 
-            this = (n_track.index, p_track, pctl.active_playlist_viewing)
-
-            marks = [i for i, j in enumerate(pctl.force_queue) if j == this]
+            marks = []
+            for i, item in enumerate(pctl.force_queue):
+                if item[0] == n_track.index and item[1] == p_track and item[2] == pctl.active_playlist_viewing:
+                    if item[3] == 0:  # Only show mark if track type
+                        marks.append(i)
 
             if marks:
                 display_queue = True
-
 
         if display_queue:
 
             li = str(marks[0] + 1)
             if li == '1':
                 li = "N"
-                if this == (pctl.track_queue[pctl.queue_step], pctl.playlist_playing_position, pctl.active_playlist_viewing):
+                # if item[0] == n_track.index and item[1] == p_track and item[2] == pctl.active_playlist_viewing
+                if n_track.index == pctl.track_queue[pctl.queue_step] and p_track == pctl.playlist_playing_position:
                     li = "R"
 
             # rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
@@ -17370,6 +17451,9 @@ class StandardPlaylist:
         global mouse_down
         global mouse_up
         global selection_stage
+
+        global r_menu_index
+        global r_menu_position
 
         left = gui.playlist_left
         width = gui.plw
@@ -17598,6 +17682,7 @@ class StandardPlaylist:
                         # Show selection menu if right clicked after select
                         if right_click:  # and len(shift_selection) > 1:
                             folder_menu.activate(default_playlist[p_track])
+                            r_menu_position = p_track
                             selection_stage = 2
                             gui.pl_update = 1
 
@@ -17733,7 +17818,7 @@ class StandardPlaylist:
             # Add to queue on middle click
             if middle_click and line_hit:
                 pctl.force_queue.append((default_playlist[p_track],
-                                         p_track, pctl.active_playlist_viewing))
+                                         p_track, pctl.active_playlist_viewing, 0, 0))
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -17857,8 +17942,6 @@ class StandardPlaylist:
                     selection_menu.activate(default_playlist[p_track])
                     selection_stage = 2
                 else:
-                    global r_menu_index
-                    global r_menu_position
                     r_menu_index = default_playlist[p_track]
                     r_menu_position = p_track
                     track_menu.activate(default_playlist[p_track])
@@ -18397,6 +18480,9 @@ class PlaylistBox:
         yy = y + 5 * gui.scale
         for i, pl in enumerate(pctl.multi_playlist):
 
+            if yy + self.tab_h > y + h:
+                break
+
             if i < self.scroll_on:
                 continue
 
@@ -18535,6 +18621,91 @@ class PlaylistBox:
 
 
 playlist_box = PlaylistBox()
+
+
+class QueueBox:
+
+    def __init__(self):
+
+        pass
+
+    def draw(self, x, y, w, h):
+
+        yy = y
+
+        yy += 4 * gui.scale
+
+        ddt.rect_r((x, y, w, 3 * gui.scale), [25, 25, 25, 255], True)
+
+        yy += 3 * gui.scale
+
+        ddt.rect_r((x, yy, w, h), [18, 18, 18, 255], True)
+
+        #ddt.draw_text((x + (5 * gui.scale), yy + 0 * gui.scale), "Queue", [40, 40, 40, 255], 212)
+
+        yy += 10 * gui.scale
+
+        i = 0
+
+        fq = copy.deepcopy(pctl.force_queue)
+
+        while i < len(fq):
+
+            track = pctl.g(fq[i][0])
+
+            #print(fq)
+
+            text_colour = [225, 225, 225, 255]
+
+            #if fq[i][3] == 0:
+
+
+            th = 34 * gui.scale
+
+            rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, th)
+
+            #ddt.rect_r(rect, [22, 22, 22, 255], True)
+
+            gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
+
+            ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 10], True)
+
+            line = track.album
+            if fq[i][3] == 0:
+                line = track.title
+            #line = track.artist + " - " + track.title
+            #line = line.rstrip(" -").lstrip(" -")
+
+            #ddt.draw_text((rect[0] + (40 * gui.scale), yy + 7 * gui.scale), line, text_colour, 211)
+
+            artist_line = track.artist
+            if fq[i][3] == 1 and track.album_artist:
+                artist_line = track.album_artist
+
+            ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [100, 100, 100, 155], 210, max_w=rect[2] - 60 * gui.scale)
+
+            ddt.draw_text((rect[0] + (40 * gui.scale), yy + 14 * gui.scale), line, text_colour, 211, max_w=rect[2] - 60 * gui.scale)
+
+            if fq[i][3] == 1:
+                if fq[i][4] == 0:
+                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255], True)
+                else:
+                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
+                               [140, 220, 20, 255], True)
+
+
+            yy += th
+
+            yy += 4 * gui.scale
+
+
+
+            i += 1
+
+
+
+
+queue_box = QueueBox()
 
 class MetaBox:
 
@@ -22375,10 +22546,25 @@ while running:
 
                 # left side panel
 
+                h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(pctl.multi_playlist)) + 10
+
                 half = int(round((window_size[1] - gui.panelY - gui.panelBY) / 2))
                 full = (window_size[1] - gui.panelY - gui.panelBY)
 
-                playlist_box.draw(0, gui.panelY, gui.lspw, full)
+                pl_box_h = full
+
+                if pctl.force_queue:
+
+                    if h_estimate < half:
+                        pl_box_h = h_estimate
+                    else:
+                        pl_box_h = half
+
+                playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+
+                if pctl.force_queue:
+
+                    queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
 
             if gui.artist_info_panel and not gui.combo_mode:
