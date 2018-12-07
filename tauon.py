@@ -1956,6 +1956,7 @@ class PlayerCtl:
         self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
         self.active_playlist_playing = playlist_active  # the playlist index that is playing from
         self.force_queue = []
+        self.pause_queue = False
         self.left_time = 0
         self.left_index = 0
         self.player_volume = volume
@@ -2269,7 +2270,7 @@ class PlayerCtl:
 
         lfm_scrobbler.start_queue()
 
-        if self.force_queue:
+        if self.force_queue and not pctl.pause_queue:
             if self.force_queue[0][4] == 1:
                 if pctl.g(self.force_queue[0][0]).parent_folder_path != pctl.g(index).parent_folder_path:
                     del self.force_queue[0]
@@ -2600,7 +2601,7 @@ class PlayerCtl:
         end_of_playlist = False
 
         # Force queue (middle click on track)
-        if len(self.force_queue) > 0:
+        if len(self.force_queue) > 0 and not self.pause_queue:
 
             q = self.force_queue[0]
             target_index = q[0]
@@ -2658,6 +2659,10 @@ class PlayerCtl:
                         # It seems this item has expired, remove it and call advance again
                         print("Remove expired album from queue")
                         del self.force_queue[0]
+
+                        if queue_box.scroll_position > 0:
+                            queue_box.scroll_position -= 1
+
                         self.advance()
                         return
 
@@ -2674,6 +2679,8 @@ class PlayerCtl:
                 self.queue_step = len(self.track_queue) - 1
                 self.play_target(jump= not end)
                 del self.force_queue[0]
+                if queue_box.scroll_position > 0:
+                    queue_box.scroll_position -= 1
 
         # Stop if playlist is empty
         elif len(self.playing_playlist()) == 0:
@@ -7670,6 +7677,7 @@ class Menu:
             for i in range(len(self.items)):
                 if self.items[i] is None:
 
+
                     ddt.rect_a((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
                     ddt.rect_a((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
@@ -7879,6 +7887,7 @@ showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(165, show_icons=True)
 artist_info_menu = Menu(117)
+queue_menu = Menu(130)
 
 
 def artist_info_panel_close():
@@ -10249,8 +10258,13 @@ def add_to_queue(ref):
 
 def add_album_to_queue(ref):
 
+    partway = 0
+    if not pctl.force_queue:
+        if pctl.g(ref).parent_folder_path == pctl.playing_object().parent_folder_path:
+            partway = 1
+
     pctl.force_queue.append([ref,
-                             r_menu_position, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
+                             r_menu_position, pctl.active_playlist_viewing, 1, partway, pl_uid_gen()])
 
 def toggle_queue(mode=0):
     if mode == 1:
@@ -15156,10 +15170,6 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
         y += 23 * gui.scale
-        # self.toggle_square(x + 10 * gui.scale, y, toggle_radio_lyrics, "Show lyrics on radio page")
-        #y += 35
-        # self.toggle_square(x, y, toggle_transcode, "Track Menu: Transcoding  (Folder to OPUS+CUE)*")
-        # self.button(x + 289, y-4, "Open output folder", open_encode_out)
 
         y -= (23 + 23 + 25) * gui.scale
         x1 = x
@@ -18630,6 +18640,15 @@ class PlaylistBox:
 
 playlist_box = PlaylistBox()
 
+def queue_pause_deco():
+
+    if pctl.pause_queue:
+        return [colours.menu_text, colours.menu_background, _("Resume Queue")]
+    else:
+        return [colours.menu_text, colours.menu_background, _('Pause Queue')]
+
+
+
 
 class QueueBox:
 
@@ -18640,7 +18659,35 @@ class QueueBox:
         self.drag_start_y = 0
         self.drag_start_top = 0
         self.tab_h = 34 * gui.scale
+        self.scroll_position = 0
+        self.right_click_id = None
 
+        queue_menu.add("Remove This", self.right_remove_item, show_test=self.queue_remove_show)
+        queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
+
+
+    def queue_remove_show(self, id):
+
+        if self.right_click_id is not None:
+            return True
+        return False
+
+    def right_remove_item(self):
+
+        if self.right_click_id is None:
+            show_message("Eh?")
+
+        for u in reversed(range(len(pctl.force_queue))):
+            if pctl.force_queue[u][5] == self.right_click_id:
+                del pctl.force_queue[u]
+                gui.pl_update += 1
+                break
+        else:
+            show_message("Looks like it's gone now anyway")
+
+    def toggle_pause(self):
+
+        pctl.pause_queue ^= True
 
     def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False):
 
@@ -18651,7 +18698,7 @@ class QueueBox:
         rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
         if draw_back:
-            ddt.rect_r(rect, [20, 20, 20, 255], True)
+            ddt.rect_r(rect, [23, 23, 23, 255], True)
 
         gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
 
@@ -18681,37 +18728,89 @@ class QueueBox:
 
     def draw(self, x, y, w, h):
 
+
         yy = y
 
         yy += 4 * gui.scale
 
+        # Draw background
         ddt.rect_r((x, y, w, 3 * gui.scale), [25, 25, 25, 255], True)
 
         yy += 3 * gui.scale
 
-        ddt.rect_r((x, yy, w, h), [18, 18, 18, 255], True)
+        box_rect = (x, yy, w, h)
 
-        #ddt.draw_text((x + (5 * gui.scale), yy + 0 * gui.scale), "Queue", [40, 40, 40, 255], 212)
+        qb_right_click = 0
+
+        if coll(box_rect):
+            # Update scroll position
+            self.scroll_position += mouse_wheel * -1
+            if self.scroll_position < 0:
+                self.scroll_position = 0
+
+            if right_click:
+                qb_right_click = 1
+
+        # Draw top accent
+        ddt.rect_r(box_rect, [18, 18, 18, 255], True)
+
+        ddt.draw_text((x + (10 * gui.scale), yy + 0 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
+
+        yy += 7 * gui.scale
+
+        if len(pctl.force_queue) < 3:
+            self.scroll_position = 0
+
+        # Draw square dots to indicate view has been scrolled down
+        if self.scroll_position > 0:
+
+            ds = 3 * gui.scale
+            gp = 4 * gui.scale
+
+            ddt.rect_r((x + int(w / 2), yy, ds, ds), [230, 190, 0, 255], True)
+            ddt.rect_r((x + int(w / 2), yy + gp, ds, ds), [230, 190, 0, 255], True)
+            ddt.rect_r((x + int(w / 2), yy + gp + gp, ds, ds), [230, 190, 0, 255], True)
+
+        # Draw pause icon
+        if pctl.pause_queue:
+            ddt.rect_r((x + w - 20 * gui.scale, yy, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
+            ddt.rect_r((x + w - 26 * gui.scale, yy, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
+
+        yy += 6 * gui.scale
 
         yy += 10 * gui.scale
 
         i = 0
 
+        # Get new copy of queue if not dragging
         if not self.dragging:
             self.fq = copy.deepcopy(pctl.force_queue)
 
+        # End drag if mouse not in correct state for it
         if not mouse_down and not mouse_up:
             self.dragging = None
+
+        if not queue_menu.active:
+            self.right_click_id = None
 
         fq = self.fq
 
         list_top = yy
 
+        i = self.scroll_position
+
         while i < len(fq) + 1:
 
+            # Stop drawing if past window
+            if yy > window_size[1]:
+                break
+
+            # Calculate drag collision box. Special case for first and last which extend out in y direction
             h_rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h + 3 * gui.scale)
             if i == len(fq):
                 h_rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h + 3 * gui.scale + 1000 * gui.scale)
+            if i == 0:
+                h_rect = (0, yy - 1000 * gui.scale, w - 28 * gui.scale + 10000, self.tab_h + 3 * gui.scale + 1000 * gui.scale)
 
             if self.dragging and coll(h_rect) and mouse_up:
 
@@ -18727,7 +18826,6 @@ class QueueBox:
                     self.dragging = None
 
                 if self.dragging:
-                    print(ob)
                     pctl.force_queue.insert(i, ob)
                     self.dragging = None
 
@@ -18762,21 +18860,31 @@ class QueueBox:
                 self.drag_start_y = mouse_position[1]
                 self.drag_start_top = yy
 
+            if qb_right_click and coll(rect):
+                self.right_click_id = fq[i][5]
+                qb_right_click = 2
+
+            if middle_click and coll(rect):
+
+                pctl.force_queue.remove(fq[i])
+                gui.pl_update += 1
+
             if fq[i][5] == self.dragging:
                 # ddt.rect_r(rect, [22, 22, 22, 255], True)
                 pass
             else:
 
-                self.draw_card(x, y, w, h, yy, track, fq[i])
+                db = False
+                if fq[i][5] == self.right_click_id:
+                    db = True
+
+                self.draw_card(x, y, w, h, yy, track, fq[i], db)
                 yy += self.tab_h
                 yy += 4 * gui.scale
 
-
             i += 1
 
-
         if self.dragging:
-            print("hit1")
 
             fqo = None
             for item in fq:
@@ -18785,16 +18893,30 @@ class QueueBox:
                     break
             else:
                 self.dragging = False
-                print("hit2")
 
             if self.dragging:
-                print("hit3")
                 yyy = self.drag_start_top + (mouse_position[1] - self.drag_start_y)
                 if yyy < list_top:
                     yyy = list_top
                 track = pctl.g(fqo[0])
                 self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
+        # Drag and drop tracks from main playlist into queue
+        if quick_drag and mouse_up and coll(box_rect) and shift_selection:
+
+            pp = shift_selection[0]
+            ti = default_playlist[pp]
+
+            if len(shift_selection) == 1:
+                pctl.force_queue.append([ti, pp, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
+            else:
+                pctl.force_queue.append([ti, pp, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
+
+        # Right click context menu in blank space
+        if qb_right_click:
+            if qb_right_click == 1:
+                self.right_click_id = None
+            queue_menu.activate(position=mouse_position)
 
 
 
