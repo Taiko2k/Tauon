@@ -7,6 +7,7 @@ v3.5.0
  - Add queuing inspector to left side panel
  - Add option to pause force queue
  - Changed "stop at end" to have lower priority than force queue
+ - Changed force queue to persist over restart
  - Fix power bar and scroll field overlapping
  - Fix pausing with gstreamer fallback
  - Fix crash when queued track is removed from playlist
