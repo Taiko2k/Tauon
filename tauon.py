@@ -330,6 +330,8 @@ lfm_dl_timer = Timer()
 lfm_dl_timer.force_set(60)
 gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
+d_click_timer = Timer()
+d_click_timer.force_set(10)
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -1210,6 +1212,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
 url_saves = []
 rename_files_previous = ""
 rename_folder_previous = ""
+p_force_queue = []
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
@@ -1385,6 +1388,8 @@ try:
         prefs.show_queue = save[88]
     if save[89] is not None:
         prefs.show_transfer = save[89]
+    if save[90] is not None:
+        p_force_queue = save[90]
 
     state_file.close()
     del save
@@ -1955,7 +1960,7 @@ class PlayerCtl:
         self.multi_playlist = multi_playlist
         self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
         self.active_playlist_playing = playlist_active  # the playlist index that is playing from
-        self.force_queue = []
+        self.force_queue = p_force_queue  # []
         self.pause_queue = False
         self.left_time = 0
         self.left_index = 0
@@ -2613,7 +2618,11 @@ class PlayerCtl:
                     # We have not started playing the album yet
                     # So we go to that track
                     # (This is a copy of the track code, but we don't delete the item)
-                    self.active_playlist_playing = q[2]
+
+                    pl = id_to_pl(q[2])
+                    if pl is not None:
+                        self.active_playlist_playing = pl
+
                     if target_index not in self.playing_playlist():
                         del self.force_queue[0]
                         self.advance(nolock=True)
@@ -2670,7 +2679,10 @@ class PlayerCtl:
 
             else:
                 # This is track type
-                self.active_playlist_playing = q[2]
+                pl = id_to_pl(q[2])
+                if pl is not None:
+                    self.active_playlist_playing = pl
+
                 if target_index not in self.playing_playlist():
                     del self.force_queue[0]
                     self.advance(nolock=True)
@@ -10250,12 +10262,24 @@ def love_index():
 # Mark track as 'liked'
 track_menu.add('Love', love_index, love_decox, icon=heartx_icon)
 
+def id_to_pl(id):
+
+    for i, item in enumerate(pctl.multi_playlist):
+        if item[6] == id:
+            return i
+    return None
+
+def pl_to_id(pl):
+
+    return pctl.multi_playlist[pl][6]
+
+
 def add_to_queue(ref):
 
-    # ref, postion-in-playlist, source-playlist, type(0 is track, 1 is album), album-stage, UID
+    # ref, postion-in-playlist, source-playlist-id, type(0 is track, 1 is album), album-stage, UID
 
     pctl.force_queue.append([ref,
-                             r_menu_position, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
+                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
 
 
 def add_album_to_queue(ref):
@@ -10266,7 +10290,7 @@ def add_album_to_queue(ref):
             partway = 1
 
     pctl.force_queue.append([ref,
-                             r_menu_position, pctl.active_playlist_viewing, 1, partway, pl_uid_gen()])
+                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
 
 def toggle_queue(mode=0):
     if mode == 1:
@@ -17687,7 +17711,7 @@ class StandardPlaylist:
                         # Add folder to queue if middle click
                         if middle_click:
                             pctl.force_queue.append([default_playlist[p_track],
-                                                     p_track, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
+                                                     p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
@@ -17839,7 +17863,7 @@ class StandardPlaylist:
             # Add to queue on middle click
             if middle_click and line_hit:
                 pctl.force_queue.append([default_playlist[p_track],
-                                         p_track, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
+                                         p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -18664,6 +18688,7 @@ class QueueBox:
         self.tab_h = 34 * gui.scale
         self.scroll_position = 0
         self.right_click_id = None
+        self.d_click_ref = None
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
@@ -18758,7 +18783,7 @@ class QueueBox:
         # Draw top accent
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
-        ddt.draw_text((x + (10 * gui.scale), yy + 1 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
+        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
 
         yy += 7 * gui.scale
 
@@ -18777,8 +18802,8 @@ class QueueBox:
 
         # Draw pause icon
         if pctl.pause_queue:
-            ddt.rect_r((x + w - 20 * gui.scale, yy, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
-            ddt.rect_r((x + w - 26 * gui.scale, yy, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
+            ddt.rect_r((x + w - 24 * gui.scale, yy + 2 * gui.scale, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
+            ddt.rect_r((x + w - 19 * gui.scale, yy + 2 * gui.scale, 3 * gui.scale, 9 * gui.scale), [230, 190, 0, 255], True)
 
         yy += 6 * gui.scale
 
@@ -18864,6 +18889,21 @@ class QueueBox:
                 self.drag_start_y = mouse_position[1]
                 self.drag_start_top = yy
 
+                if d_click_timer.get() < 1:
+                    if self.d_click_ref == fq[i][5]:
+
+                        pl = id_to_pl(fq[i][5])
+                        if pl is not None:
+                            switch_playlist(pl)
+
+                        pctl.show_current(playing=False, highlight=True, index=fq[i][0])
+                        self.d_click_ref = None
+                else:
+                    self.d_click_ref = fq[i][5]
+
+                d_click_timer.set()
+
+
             if qb_right_click and coll(rect):
                 self.right_click_id = fq[i][5]
                 qb_right_click = 2
@@ -18912,9 +18952,9 @@ class QueueBox:
             ti = default_playlist[pp]
 
             if len(shift_selection) == 1:
-                pctl.force_queue.append([ti, pp, pctl.active_playlist_viewing, 0, 0, pl_uid_gen()])
+                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
             else:
-                pctl.force_queue.append([ti, pp, pctl.active_playlist_viewing, 1, 0, pl_uid_gen()])
+                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
 
         # Right click context menu in blank space
         if qb_right_click:
@@ -20626,7 +20666,7 @@ def save_state():
             gui.set_mode,
             prefs.show_queue, # 88
             prefs.show_transfer,
-            None,
+            pctl.force_queue, # 90
             None,
             None]
 
