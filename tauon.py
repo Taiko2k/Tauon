@@ -878,6 +878,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.side_bar_drag_source = 0
         self.side_bar_drag_original = 0
 
+        self.scroll_direction = 0
+
 gui = GuiVar()
 
 
@@ -2487,6 +2489,9 @@ class PlayerCtl:
         else:
             gap_extra = prefs.cross_fade_time / 1000
 
+        if default_player == 2: # (gstreamber)
+            gap_extra = 2
+
         if self.playing_state == 1 and self.playing_time + gap_extra >= self.playing_length and self.playing_time > 0.2:
 
             if self.playing_length == 0 and self.playing_time < 4:
@@ -3010,15 +3015,13 @@ class LastFMapi:
             self.connected = True
             if m_notify:
                 show_message("Connection to Last.fm was successful.", 'done')
+
             print('Connection to lastfm appears successful')
             return True
+
         except Exception as e:
-            self.tries += 1
             show_message("Error connecting to Last.fm network", "warning", str(e))
             print(e)
-            if self.tries > 20:
-                prefs.auto_lfm = False
-                show_message("Disabling last.fm due to too many failed attempts.", "warning", str(e))
             return False
 
     def toggle(self):
@@ -3069,7 +3072,7 @@ class LastFMapi:
 
     def scrobble(self, title, artist, album, timestamp=None):
         if self.hold:
-            return 0
+            return
         if prefs.auto_lfm:
             self.connect(False)
 
@@ -3088,6 +3091,7 @@ class LastFMapi:
                 print('Scrobbled')
             else:
                 print("Not sent, incomplete metadata")
+
         except Exception as e:
 
             if 'retry' in str(e):
@@ -3097,12 +3101,13 @@ class LastFMapi:
                 try:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
                     print('Scrobbled')
-                    return 0
+                    return True
                 except:
                     pass
 
             show_message("Error: Could not scrobble. ", 'warning', str(e))
             print(e)
+            return False
 
     def get_bio(self, artist):
         #if self.connected:
@@ -3266,7 +3271,6 @@ class LastFMapi:
             show_message("This doesn't seem to be working :(", 'error')
 
 
-
     def update(self, title, artist, album):
         if self.hold:
             return 0
@@ -3315,7 +3319,8 @@ class ListenBrainz:
         self.hold = False
         self.url = "https://api.listenbrainz.org/1/submit-listens"
 
-    def listen_full(self, title, artist, album):
+    def listen_full(self, title, artist, album, time):
+
         if self.enable is False:
             return
         if self.hold is True:
@@ -3328,12 +3333,13 @@ class ListenBrainz:
         data = {"listen_type": "single", "payload": []}
         metadata = {"track_name": title, "artist_name": artist}
         data["payload"].append({"track_metadata": metadata})
-        data["payload"][0]["listened_at"] = int(time.time())
+        data["payload"][0]["listened_at"] = time
 
 
         r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
+            return False
 
     def listen_playing(self, title, artist, album):
         if self.enable is False:
@@ -3455,7 +3461,6 @@ def love(set=True, index=None):
             star_store.insert(index, star)
 
     gui.pl_update = 2
-    gui.pl_update = 2
 
 
 class LastScrob:
@@ -3486,13 +3491,19 @@ class LastScrob:
                 gui.pl_update = 1
                 print("Submit Scrobble " + tr[0] + " - " + tr[1])
 
+                an = True
+
                 if lastfm.connected or lastfm.details_ready():
-                    lastfm.scrobble(tr[0], tr[1], tr[2])
+                    an = lastfm.scrobble(tr[0], tr[1], tr[2], int(time.time()))
 
                 if lb.enable:
-                    lb.listen_full(tr[0], tr[1], tr[2])
+                    an = lb.listen_full(tr[0], tr[1], tr[2], int(time.time()))
 
-                time.sleep(0.4)
+                if an is False:
+                    print("Re-queue scrobble")
+                    self.queue.append(tr)
+
+                time.sleep(0.5)
 
             except:
                 print("SCROBBLE QUEUE ERROR")
@@ -3612,9 +3623,11 @@ def player3():  # Gstreamer
             self.play_state = 0
             self.pl = Gst.ElementFactory.make("playbin", "player")
 
-            GObject.timeout_add(500, self.test11)
+            GLib.timeout_add(500, self.test11)
 
             self.mainloop.run()
+
+            self.pl.connect("about-to-finish", self.about_to_finish)
 
         def check_duration(self):
 
@@ -3634,7 +3647,9 @@ def player3():  # Gstreamer
                         print("Updating track duration")
                         pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
 
-        # def about_to_finish(self, player):
+        def about_to_finish(self, player):
+            print("hello")
+
         #
         #     print("End of track callback triggered")
         #     self.play_state = 0
@@ -3654,11 +3669,24 @@ def player3():  # Gstreamer
 
             pctl.test_progress()
 
+            #print(self.pl.query_position(Gst.Format.TIME))
+
             if pctl.playerCommandReady:
                 if pctl.playerCommand == 'open' and pctl.target_open != '':
 
+                    current_time = self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND
+                    current_duration = self.pl.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
+                    print("We are " + str(current_duration - current_time) + " seconds from end.")
+                    # current_time = 1
+                    # current_duration = 1.5
+
+                    gapless = False
+                    if self.play_state == 1 and pctl.start_time == 0 and 0.2 < current_duration - current_time < 4.5:
+
+                        print("Use GStreamer Gapless transition")
+                        gapless = True
                     # Stop if playing or paused
-                    if self.play_state == 1 or self.play_state == 2:
+                    else:
                         self.pl.set_state(Gst.State.READY)
 
                     self.play_state = 1
@@ -3669,15 +3697,25 @@ def player3():  # Gstreamer
 
                     self.pl.set_state(Gst.State.PLAYING)
 
+                    pctl.playing_time = 0
+
                     time.sleep(0.1)
 
-                    self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                        pctl.start_time * Gst.SECOND)
+                    if pctl.start_time > 0:
+                        self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                                            pctl.start_time * Gst.SECOND)
+
+                    if gapless:
+                        t = 0
+                        while self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
+                            time.sleep(0.1)
+                            t += 1
+                            if t > 40:
+                                print("Gonna stop waiting...")
+                                break
 
                     time.sleep(0.15)
                     self.check_duration()
-
-                    # self.pl.connect("about-to-finish", self.about_to_finish)
 
                     player_timer.hit()
 
@@ -3731,7 +3769,9 @@ def player3():  # Gstreamer
             if self.play_state == 1:
                 # Progress main seek head
                 add_time = player_timer.hit()
+
                 pctl.playing_time += add_time
+                #pctl.playing_time = pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
 
                 lfm_scrobbler.update(add_time)
 
@@ -3755,7 +3795,7 @@ def player3():  # Gstreamer
                 pctl.playerCommand = 'done'
 
             else:
-                GObject.timeout_add(25, self.test11)
+                GLib.timeout_add(19, self.test11)
 
     GPlayer()
 
@@ -7899,7 +7939,7 @@ class Menu:
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
-gallery_menu = Menu(165, show_icons=True)
+gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(117)
 queue_menu = Menu(130)
 
@@ -7953,6 +7993,19 @@ def open_folder(index):
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
+
+
+def add_album_to_queue(ref):
+
+    partway = 0
+    if not pctl.force_queue:
+        if pctl.g(ref).parent_folder_path == pctl.playing_object().parent_folder_path:
+            partway = 1
+
+    pctl.force_queue.append([ref,
+                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
+
+gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 
 def cancel_import():
 
@@ -10282,15 +10335,7 @@ def add_to_queue(ref):
                              r_menu_position, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
 
 
-def add_album_to_queue(ref):
 
-    partway = 0
-    if not pctl.force_queue:
-        if pctl.g(ref).parent_folder_path == pctl.playing_object().parent_folder_path:
-            partway = 1
-
-    pctl.force_queue.append([ref,
-                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
 
 def toggle_queue(mode=0):
     if mode == 1:
@@ -10942,7 +10987,7 @@ folder_menu = Menu(190, show_icons=True)
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
-folder_menu.add(_("Add Folder to Queue"), add_album_to_queue, pass_ref=True)
+folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
@@ -13712,6 +13757,7 @@ def worker1():
         # Clean database
         if cm_clean_db is True:
             items_removed = 0
+
             #old_db = copy.deepcopy(pctl.master_library)
             to_got = 0
             to_get = len(pctl.master_library)
@@ -13725,14 +13771,22 @@ def worker1():
                     gui.update = 1
                 if not os.path.isfile(track.fullpath):
 
+                    # Remove from all playlists
                     for playlist in pctl.multi_playlist:
                         while index in playlist[2]:
                             album_dex.clear()
                             playlist[2].remove(index)
 
+                    # Remove from playback history
                     while index in pctl.track_queue:
                         pctl.track_queue.remove(index)
                         pctl.queue_step -= 1
+
+                    # Remove track from force queue
+                    for i in reversed(range(len(pctl.force_queue))):
+                        if pctl.force_queue[i][0] == index:
+                            del pctl.force_queue[i]
+
                     del pctl.master_library[index]
                     items_removed += 1
 
@@ -17414,7 +17468,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             marks = []
             for i, item in enumerate(pctl.force_queue):
-                if item[0] == n_track.index and item[1] == p_track and item[2] == pctl.active_playlist_viewing:
+                if item[0] == n_track.index and item[1] == p_track and item[2] == pl_to_id(pctl.active_playlist_viewing):
                     if item[3] == 0:  # Only show mark if track type
                         marks.append(i)
 
@@ -18689,6 +18743,8 @@ class QueueBox:
         self.scroll_position = 0
         self.right_click_id = None
         self.d_click_ref = None
+        self.bg = [25, 25, 25, 255]
+        self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
@@ -18720,18 +18776,20 @@ class QueueBox:
 
     def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False):
 
-        text_colour = [225, 225, 225, 255]
+        text_colour = [230, 230, 230, 255]
+        bg = self.bg
 
         # if fq[i][3] == 0:
 
         rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
         if draw_back:
-            ddt.rect_r(rect, [23, 23, 23, 255], True)
+            ddt.rect_r(rect, self.card_bg, True)
+            bg = self.card_bg
 
         gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
 
-        ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 10], True)
+        ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6], True)
 
         line = track.album
         if fqo[3] == 0:
@@ -18741,11 +18799,11 @@ class QueueBox:
         if fqo[3] == 1 and track.album_artist:
             artist_line = track.album_artist
 
-        ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [100, 100, 100, 155], 210,
-                      max_w=rect[2] - 60 * gui.scale)
+        ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [70, 70, 70, 255], 210,
+                      max_w=rect[2] - 60 * gui.scale, bg=bg)
 
         ddt.draw_text((rect[0] + (40 * gui.scale), yy + 14 * gui.scale), line, text_colour, 211,
-                      max_w=rect[2] - 60 * gui.scale)
+                      max_w=rect[2] - 60 * gui.scale, bg=bg)
 
         if fqo[3] == 1:
             if fqo[4] == 0:
@@ -18763,7 +18821,10 @@ class QueueBox:
         yy += 4 * gui.scale
 
         # Draw background
-        ddt.rect_r((x, y, w, 3 * gui.scale), [25, 25, 25, 255], True)
+
+        ddt.rect_r((x, y, w, 3 * gui.scale), self.bg, True)
+
+
 
         yy += 3 * gui.scale
 
@@ -18783,7 +18844,7 @@ class QueueBox:
         # Draw top accent
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
-        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [80, 80, 80, 255], 211)
+        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [80, 80, 80, 255], 211, bg=self.bg)
 
         yy += 7 * gui.scale
 
@@ -22177,7 +22238,7 @@ while running:
                     goto_album(pctl.playlist_playing_position)
 
                 # Process inputs first
-                if (input.mouse_click or right_click) and default_playlist:
+                if (input.mouse_click or right_click or middle_click) and default_playlist:
                     while render_pos < album_pos_px + window_size[1]:
 
                         if b_info_bar and render_pos > album_pos_px + b_info_y:
@@ -22222,6 +22283,20 @@ while running:
                                             pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
                                         pctl.show_current()
+
+                                    elif middle_click:
+                                        # Middle click to add album to queue
+                                        partway = 0
+                                        if not pctl.force_queue:
+                                            if pctl.g(
+                                                    default_playlist[album_dex[album_on]]).parent_folder_path == pctl.playing_object().parent_folder_path:
+                                                partway = 1
+
+                                        pctl.force_queue.append([default_playlist[album_dex[album_on]],
+                                                                 album_dex[album_on],
+                                                                 pl_to_id(pctl.active_playlist_viewing), 1, partway,
+                                                                 pl_uid_gen()])
+
 
                                     else:
                                         playlist_selected = album_dex[album_on]
