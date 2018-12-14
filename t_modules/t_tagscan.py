@@ -29,7 +29,6 @@ import struct
 import wave
 import io
 
-
 def parse_picture_block(f):
     a = f.read(4)
     a = int.from_bytes(a, byteorder='big')
