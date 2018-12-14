@@ -1119,7 +1119,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.time_sub = alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
         self.bar_title_text = self.side_bar_line1
 
-        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 130)
+        self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
         self.status_text_normal = self.grey(100)
         self.status_text_over = self.grey(220)
@@ -1349,7 +1349,6 @@ try:
         prefs.transcode_opus_as = save[68]
     if save[69] is not None:
         gui.star_mode = save[69]
-
     if save[70] is not None:
         gui.rsp = save[70]
     if save[71] is not None:
@@ -1386,8 +1385,8 @@ try:
         prefs.true_shuffle = save[86]
     if save[87] is not None:
         gui.remember_library_mode = save[87]
-    if save[88] is not None:
-        prefs.show_queue = save[88]
+    # if save[88] is not None:
+    #     prefs.show_queue = save[88]
     if save[89] is not None:
         prefs.show_transfer = save[89]
     if save[90] is not None:
@@ -1958,6 +1957,7 @@ class PlayerCtl:
         self.random_mode = random_mode
         self.repeat_mode = repeat_mode
         self.album_repeat_mode = False
+        self.album_shuffle_mode = False
         self.last_playing_time = 0
         self.multi_playlist = multi_playlist
         self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
@@ -2707,7 +2707,7 @@ class PlayerCtl:
             return 0
 
         # If random, jump to random track
-        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0:
+        elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
             #self.queue_step += 1
             new_step = self.queue_step + 1
 
@@ -2885,7 +2885,6 @@ class PlayerCtl:
                         pass
 
                 if len(self.playing_playlist()) == self.playlist_playing_position + 1:
-
                     return
 
                 self.playlist_playing_position += 1
@@ -2895,7 +2894,62 @@ class PlayerCtl:
                 self.play_target(jump= not end)
 
         else:
-            print("ADVANCE ERROR - NO CASE!")
+
+            if self.random_mode and self.album_shuffle_mode:
+
+                # Album shuffle mode
+                print("Album shuffle mode")
+
+                po = self.playing_object()
+
+                redraw = False
+
+                # Checks
+                if po is not None and len(self.playing_playlist()) > 0:
+
+                    # If we at end of playlist, we'll go to a new album
+                    if len(self.playing_playlist()) == self.playlist_playing_position + 1:
+                        redraw = True
+                    # If the next track is a new album, go to a new album
+                    elif po.parent_folder_path != pctl.g(self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
+                        redraw = True
+
+                    if not redraw:
+                        print("Trigger Pass")
+                        self.playlist_playing_position += 1
+                        self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
+                        self.queue_step = len(self.track_queue) - 1
+                        self.play_target(jump=not end)
+
+                    else:
+
+                        albums = []
+                        current_folder = ""
+                        for i in range(len(self.playing_playlist())):
+                            if i == 0:
+                                albums.append(i)
+                                current_folder = self.master_library[self.playing_playlist()[i]].parent_folder_path
+                            else:
+                                if pctl.master_library[self.playing_playlist()[i]].parent_folder_path != current_folder:
+                                    current_folder = self.master_library[self.playing_playlist()[i]].parent_folder_path
+                                    albums.append(i)
+
+                        random.shuffle(albums)
+
+                        for a in albums:
+
+                            if self.g(self.playing_playlist()[a]).parent_folder_path != self.playing_object().parent_folder_path:
+                                self.playlist_playing_position = a
+                                self.track_queue.append(self.playing_playlist()[a])
+                                self.queue_step = len(self.track_queue) - 1
+                                self.play_target(jump=not end)
+                                break
+                            else:
+                                print("THERS ONLY ONE ALBUM IN THE PLAYLIST")
+                                self.stop()
+
+            else:
+                print("ADVANCE ERROR - NO CASE!")
 
         if self.active_playlist_viewing == self.active_playlist_playing:
             self.show_current(quiet=quiet)
@@ -7942,7 +7996,40 @@ cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(117)
 queue_menu = Menu(130)
+repeat_menu = Menu(120)
+shuffle_menu = Menu(120)
 
+
+def menu_repeat_off():
+    pctl.repeat_mode = False
+
+def menu_set_repeat():
+    pctl.repeat_mode = True
+    pctl.album_repeat_mode = False
+
+def menu_album_repeat():
+    pctl.repeat_mode = True
+    pctl.album_repeat_mode = True
+
+repeat_menu.add("Repeat OFF", menu_repeat_off)
+repeat_menu.add("Repeat Track", menu_set_repeat)
+repeat_menu.add("Repeat Album", menu_album_repeat)
+
+
+def menu_shuffle_off():
+    pctl.random_mode = False
+
+def menu_set_random():
+    pctl.random_mode = True
+    pctl.album_shuffle_mode = False
+
+def menu_album_random():
+    pctl.random_mode = True
+    pctl.album_shuffle_mode = True
+
+shuffle_menu.add("Random OFF", menu_shuffle_off)
+shuffle_menu.add("Random Tracks", menu_set_random)
+shuffle_menu.add("Random Albums", menu_album_random)
 
 def artist_info_panel_close():
 
@@ -10337,13 +10424,14 @@ def add_to_queue(ref):
 
 
 
-def toggle_queue(mode=0):
-    if mode == 1:
-        return prefs.show_queue
-    prefs.show_queue ^= True
+# def toggle_queue(mode=0):
+#     if mode == 1:
+#         return prefs.show_queue
+#     prefs.show_queue ^= True
+#     prefs.show_queue ^= True
 
 
-track_menu.add(_('Add to Queue'), add_to_queue, pass_ref=True, show_test=toggle_queue, hint="MB3")
+track_menu.add(_('Add to Queue'), add_to_queue, pass_ref=True, hint="MB3")
 
 track_menu.add(_('Show in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
 
@@ -15269,8 +15357,8 @@ class Over:
         self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_queue, _("Add to queue"))
+        # y += 23 * gui.scale
+        # self.toggle_square(x, y, toggle_queue, _("Add to queue"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
 
@@ -15572,7 +15660,7 @@ class Over:
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
         self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale125, "1¼x")
+        self.toggle_square(x, y, scale125, "1.25x")
 
         y += 25 * gui.scale
         self.toggle_square(x, y, scale2, "2x")
@@ -17229,10 +17317,13 @@ class BottomBarType1:
 
                 rpbc = colours.mode_button_off
                 if (input.mouse_click or right_click) and coll(rect):
-                    pctl.random_mode ^= True
 
-                    if pctl.random_mode is False:
-                        self.random_click_off = True
+                    if input.mouse_click:
+                        pctl.random_mode ^= True
+                        if pctl.random_mode is False:
+                            self.random_click_off = True
+                    else:
+                        shuffle_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
 
                 if pctl.random_mode:
                     rpbc = colours.mode_button_active
@@ -17249,9 +17340,15 @@ class BottomBarType1:
                 else:
                     self.random_click_off = False
 
-                y += 3 * gui.scale
+                # Keep hover highlight on if menu is open
+                if shuffle_menu.active and not pctl.random_mode is True:
+                    rpbc = colours.mode_button_over
 
+                y += 3 * gui.scale
                 ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc, True)
+
+                if pctl.album_shuffle_mode:
+                    ddt.rect_a((x + 25 * gui.scale , y), (23 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 y += 5 * gui.scale
                 ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
@@ -17271,9 +17368,10 @@ class BottomBarType1:
                         if pctl.repeat_mode is False:
                             self.repeat_click_off = True
                     else: # right click
-                        pctl.album_repeat_mode ^= True
-                        if not pctl.repeat_mode:
-                            self.repeat_click_off = True
+                        repeat_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
+                        # pctl.album_repeat_mode ^= True
+                        # if not pctl.repeat_mode:
+                        #     self.repeat_click_off = True
 
                 if pctl.repeat_mode:
                     rpbc = colours.mode_button_active
@@ -17283,10 +17381,14 @@ class BottomBarType1:
                         else:
                             tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
                 elif coll(rect):
-                    if pctl.album_repeat_mode:
-                        tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
-                    else:
-                        tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
+
+                    # Tooltips. But don't show tooltips if menus open
+                    if not repeat_menu.active and not shuffle_menu.active:
+                        if pctl.album_repeat_mode:
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
+                        else:
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
+
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
                     elif pctl.repeat_mode is True:
@@ -17295,6 +17397,10 @@ class BottomBarType1:
                         rpbc = colours.mode_button_over
                 else:
                     self.repeat_click_off = False
+
+                # Keep hover highlight on if menu is open
+                if repeat_menu.active and not pctl.repeat_mode is True:
+                    rpbc = colours.mode_button_over
 
                 y += 3 * gui.scale
                 w = 3 * gui.scale
@@ -20725,7 +20831,7 @@ def save_state():
             prefs.show_notifications,
             prefs.true_shuffle,
             gui.set_mode,
-            prefs.show_queue, # 88
+            None, #prefs.show_queue, # 88
             prefs.show_transfer,
             pctl.force_queue, # 90
             None,
@@ -22447,12 +22553,12 @@ while running:
                             if gui.album_tab_mode or gallery_menu.active:
                                 if info[2] is False and info[0] != 1:
                                     ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(150)
+                                    albumtitle = colours.grey(160)
 
                             else:
                                 if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
                                     ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(150)
+                                    albumtitle = colours.grey(160)
 
 
                             c_index = default_playlist[album_dex[album_on]]
@@ -22490,7 +22596,7 @@ while running:
                                     ddt.draw_text((x, y + album_mode_art_size + 9 * gui.scale),
                                                line,
                                                colours.gallery_artist_line,
-                                               11,
+                                               311,
                                                album_mode_art_size - 5 * gui.scale,
                                                )
                                 else:
@@ -22505,7 +22611,7 @@ while running:
                                     ddt.draw_text((x, y + album_mode_art_size + (10 + 14)  * gui.scale),
                                                line,
                                                colours.gallery_artist_line,
-                                               11,
+                                               311,
                                                album_mode_art_size - 5 * gui.scale,
                                                )
 
