@@ -3,18 +3,22 @@ Changelog-------------------------------------
 
 v3.5.0
 
- - Add folder/album queueing
- - Add queuing inspector to left side panel
- - Add option to pause force queue
- - Add gallery wheel click to add album to queue
+ - Added folder/album queueing
+ - Added queuing inspector to left side panel
+ - Added option to pause force queue
+ - Added gallery wheel click to add album to queue
+ - Added menus to repeat and shuffle buttons for better usability
+ - Added random albums as playback mode
  - Changed "stop at end" to have lower priority than force queue
  - Changed force queue to persist over restart
  - Changed last.fm scrobbler to not disable on failure
+ - Tweaked gallery artist font
  - Fixed power bar and scroll field overlapping
  - Fixed pausing with gstreamer fallback
  - Fixed crash when queued track is removed from playlist
  - Fixed crash when queued track was removed using clean database function
- - Fixed a possible crash
+ - Fixed a possible crash caused by playlist scroll bar
+ - Removed option to toggle "Add to queue" in menus
 
 v3.4.0
 
