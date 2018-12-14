@@ -202,6 +202,11 @@ class TDraw:
         surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
         context = cairo.Context(surf)
+
+        # options = context.get_font_options()
+        # options.set_antialias(cairo.ANTIALIAS_GRAY)
+        # context.set_font_options(options)
+
         layout = PangoCairo.create_layout(context)
 
         if max_y is not None:
@@ -238,13 +243,13 @@ class TDraw:
 
         y_off = layout.get_baseline() / 1000
 
-        y_off = round(round(y_off) - 13 * self.scale) # 13 for compat with way text position used to work
+        y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
 
         if self.scale == 2:
             y_off -= 2
 
         PangoCairo.show_layout(context, layout)
-        sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_RGB888)
+        sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
 
         # Here the background colour is keyed out allowing lines to overlap slightly
         ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])

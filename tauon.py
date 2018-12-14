@@ -1958,6 +1958,8 @@ class PlayerCtl:
         self.repeat_mode = repeat_mode
         self.album_repeat_mode = False
         self.album_shuffle_mode = False
+        # self.album_shuffle_pool = []
+        # self.album_shuffle_id = ""
         self.last_playing_time = 0
         self.multi_playlist = multi_playlist
         self.active_playlist_viewing = playlist_active  # the playlist index that is being viewed
@@ -7989,6 +7991,14 @@ class Menu:
         self.active = True
 
 
+def menu_standard_or_grey(bool):
+    if bool:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
 # Create empty area menu
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
@@ -8002,6 +8012,7 @@ shuffle_menu = Menu(120)
 
 def menu_repeat_off():
     pctl.repeat_mode = False
+    pctl.album_repeat_mode = False
 
 def menu_set_repeat():
     pctl.repeat_mode = True
@@ -8018,6 +8029,7 @@ repeat_menu.add("Repeat Album", menu_album_repeat)
 
 def menu_shuffle_off():
     pctl.random_mode = False
+    pctl.album_shuffle_mode = False
 
 def menu_set_random():
     pctl.random_mode = True
@@ -8027,9 +8039,11 @@ def menu_album_random():
     pctl.random_mode = True
     pctl.album_shuffle_mode = True
 
-shuffle_menu.add("Random OFF", menu_shuffle_off)
-shuffle_menu.add("Random Tracks", menu_set_random)
+shuffle_menu.add("Shuffle OFF", menu_shuffle_off)
+shuffle_menu.add("Shuffle Tracks", menu_set_random)
 shuffle_menu.add("Random Albums", menu_album_random)
+
+
 
 def artist_info_panel_close():
 
@@ -11247,12 +11261,7 @@ def queue_deco():
 
 
 def broadcast_feature_deco():
-    if pctl.broadcast_active:
-        line_colour = colours.menu_text
-    else:
-        line_colour = colours.menu_text_disabled
-
-    return [line_colour, colours.menu_background, None]
+    return menu_standard_or_grey(pctl.broadcast_active)
 
 
 def broadcast_select_track(index):
