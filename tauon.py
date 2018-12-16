@@ -19061,11 +19061,13 @@ class QueueBox:
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
             if input.mouse_click and coll(rect):
+
                 self.dragging = fq[i][5]
                 self.drag_start_y = mouse_position[1]
                 self.drag_start_top = yy
 
                 if d_click_timer.get() < 1:
+
                     if self.d_click_ref == fq[i][5]:
 
                         pl = id_to_pl(fq[i][5])
@@ -19074,8 +19076,8 @@ class QueueBox:
 
                         pctl.show_current(playing=False, highlight=True, index=fq[i][0])
                         self.d_click_ref = None
-                else:
-                    self.d_click_ref = fq[i][5]
+                #else:
+                self.d_click_ref = fq[i][5]
 
                 d_click_timer.set()
 
@@ -21692,6 +21694,7 @@ while running:
             # colours.top_panel_background = colours.grey(240)
             # colours.bottom_panel_background = colours.grey(240)
             # print(pctl.playing_object().lyrics)
+
 
 
             key_F7 = False
