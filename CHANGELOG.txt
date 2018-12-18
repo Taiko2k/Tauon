@@ -3,6 +3,9 @@ Changelog-------------------------------------
 
 v3.5.1
 
+ - Enhanced re-import function, moved to main playlist menu
+ - Changed last.fm to submit album-artist on "feat." detect
+ - Add removing embedded images FLAC support
  - Fix return to maximized state on restart
 
 v3.5.0
