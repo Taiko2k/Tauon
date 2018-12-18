@@ -493,16 +493,15 @@ repeat_mode = False
 # Functions to generate empty playlist
 # Playlist is [Name, playing, playlist, position, hide folder title, selected, uid, last_folder, hidden(bool)]
 
-# 0 Name
-# 1 Playing
-# 2 list
-# 3 View Position
-# 4 hide tittle
-# 5 selected
-# 6 Unique id
-# 7 last folder import
-# 8 hidden
-
+# 0 Name (string)
+# 1 Playing (int)
+# 2 list  (list of int)
+# 3 View Position (int)
+# 4 hide tittle (bool)
+# 5 selected (int)
+# 6 Unique id (int)
+# 7 last folder import (string)
+# 8 hidden (bool)
 
 def pl_uid_gen():
     return random.randrange(100, 10000000)
@@ -1209,6 +1208,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
         self.tracks = []
         self.stage = 0
         self.playlist_position = None
+        self.replace_stem = False
 
 
 url_saves = []
@@ -3586,19 +3586,26 @@ class LastScrob:
             self.a_pt = False
             self.a_sc = False
 
+        artist_name = pctl.master_library[self.a_index].artist
+        if pctl.master_library[self.a_index].album_artist:
+            if "feat." in artist_name.lower() or " + " in artist_name or ", " in artist_name:
+                if pctl.master_library[self.a_index].album_artist.lower() != "va" and \
+                            pctl.master_library[self.a_index].album_artist.lower() != "various artists":
+                    artist_name = pctl.master_library[self.a_index].album_artist
+
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
 
             if lastfm.connected or lastfm.details_ready():
                 mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
-                                                                      pctl.master_library[self.a_index].artist,
+                                                                      artist_name,
                                                                       pctl.master_library[self.a_index].album))
                 mini_t.daemon = True
                 mini_t.start()
 
             if lb.enable:
                 mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
-                                                                      pctl.master_library[self.a_index].artist,
+                                                                          artist_name,
                                                                       pctl.master_library[self.a_index].album))
                 mini_t.daemon = True
                 mini_t.start()
@@ -3609,14 +3616,14 @@ class LastScrob:
                 pctl.b_time = 0
                 if lastfm.connected or lastfm.details_ready():
                     mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
-                                                                          pctl.master_library[self.a_index].artist,
+                                                                          artist_name,
                                                                           pctl.master_library[self.a_index].album))
                     mini_t.daemon = True
                     mini_t.start()
 
                 if lb.enable:
                     mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
-                                                                          pctl.master_library[self.a_index].artist,
+                                                                              artist_name,
                                                                           pctl.master_library[self.a_index].album))
                     mini_t.daemon = True
                     mini_t.start()
@@ -3626,14 +3633,14 @@ class LastScrob:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index].title, pctl.master_library[self.a_index].artist, pctl.master_library[self.a_index].album))
+                self.queue.append((pctl.master_library[self.a_index].title, artist_name, pctl.master_library[self.a_index].album))
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index].title, pctl.master_library[self.a_index].artist,
+                self.queue.append((pctl.master_library[self.a_index].title, artist_name,
                              pctl.master_library[self.a_index].album))
 
 
@@ -7714,10 +7721,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None, pass_ref_deco=False):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test, pass_ref_deco])
 
     def br(self):
         self.items.append(None)
@@ -7727,10 +7734,10 @@ class Menu:
         self.sub_number += 1
         self.subs.append([])
 
-    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None, icon=None):
+    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None, icon=None, pass_ref_deco=False):
         if render_func is None:
             render_func = self.deco
-        item = [title, False, func, render_func, no_exit, pass_ref, args, icon]
+        item = [title, False, func, render_func, no_exit, pass_ref, args, icon, pass_ref_deco]
         self.subs[sub].append(item)
 
     def test_item_active(self, item):
@@ -7805,7 +7812,12 @@ class Menu:
                 #         continue
 
                 # Get properties for menu item
-                fx = self.items[i][3]()
+
+                if len(self.items[i]) > 7 and self.items[i][9]:
+                    fx = self.items[i][3](self.reference)
+                else:
+                    fx = self.items[i][3]()
+
                 if fx[2] is not None:
                     label = fx[2]
                 else:
@@ -7890,8 +7902,13 @@ class Menu:
 
                     for w in range(len(self.subs[self.sub_active])):
 
+                        # Get item colours
+                        if len(self.subs[self.sub_active][w]) > 5 and self.subs[self.sub_active][w][8]:
+                            fx = self.subs[self.sub_active][w][3](self.reference)
+                        else:
+                            fx = self.subs[self.sub_active][w][3]()
+
                         # Item background
-                        fx = self.subs[self.sub_active][w][3]()
                         ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1], True)
 
                         # Detect if mouse is over this item
@@ -7921,8 +7938,7 @@ class Menu:
                                 else:
                                     self.subs[self.sub_active][w][2]()
 
-                        # Get properties for menu item
-                        fx = self.subs[self.sub_active][w][3]()
+
                         if fx[2] is not None:
                             label = fx[2]
                         else:
@@ -8388,7 +8404,7 @@ def remove_embed_deco():
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] is True and pctl.playing_object().file_ext == "MP3":
+    if pctl.playing_state > 0 and info[0] is True and (pctl.playing_object().file_ext == "MP3" or pctl.playing_object().file_ext == "FLAC"):
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -8400,6 +8416,7 @@ def remove_embed_picture(index):
     tracks = get_like_folder(index)
     removed = 0
     pr = pctl.stop(True)
+    processed = False
     for item in tracks:
         if "MP3" == pctl.master_library[item].file_ext:
             tag = stagger.read_tag(pctl.master_library[item].fullpath)
@@ -8422,14 +8439,30 @@ def remove_embed_picture(index):
                 tag.write()
                 removed += 1
 
+        if "FLAC" == pctl.master_library[item].file_ext:
+
+            command = 'metaflac --remove --block-type=PICTURE "' \
+                      + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
+
+            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
+            removed += 1
+            processed = True
+
+
+
     if removed == 0:
-        show_message("Image removal failed.", "error")
+        show_message(_("Image removal failed."), "error")
         return
     elif removed == 1:
-        show_message("Deleted embedded picture from file", 'done')
+        if processed:
+            show_message(_("Processed one FLAC files"), 'done')
+        else:
+            show_message(_("Deleted embedded picture from file"), 'done')
     else:
-        show_message("Deleted embedded picture from " + str(removed) + " files", 'done')
-
+        if processed:
+            show_message("Processed " + str(removed) + " files", 'done')
+        else:
+            show_message("Deleted embedded picture from " + str(removed) + " files", 'done')
     if pr == 1:
         pctl.revert()
     clear_img_cache()
@@ -8892,11 +8925,25 @@ def re_import(pl):
     for i in reversed(range(len(pctl.multi_playlist[pl][2]))):
         if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl][2][i]].parent_folder_path:
             del pctl.multi_playlist[pl][2][i]
+
     load_order = LoadClass()
+    load_order.replace_stem = True
     load_order.target = path
     load_order.playlist = pctl.multi_playlist[pl][6]
     load_orders.append(copy.deepcopy(load_order))
 
+
+def re_import2(pl):
+
+    path = pctl.multi_playlist[pl][7]
+    if path == "":
+        return
+    load_order = LoadClass()
+    load_order.replace_stem = True
+    load_order.target = path
+    load_order.playlist = pctl.multi_playlist[pl][6]
+    load_orders.append(copy.deepcopy(load_order))
+    show_message("Rescanning Folder...", 'info', path)
 
 def s_append(index):
     paste(playlist=index)
@@ -9170,6 +9217,19 @@ def append_deco():
 
     return [line_colour, colours.menu_background, None]
 
+
+def rescan_deco(pl):
+
+    if pctl.multi_playlist[pl][7]:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    #base = os.path.basename(pctl.multi_playlist[pl][7])
+
+    return [line_colour, colours.menu_background, None]
+
+
 extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
@@ -9185,6 +9245,9 @@ tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 # tab_menu.add('Export XSPF', export_xspf, pass_ref=True)
 tab_menu.br()
 #tab_menu.add('Paste Tracks', append_playlist, paste_deco, pass_ref=True)
+
+tab_menu.add(_('Rescan Folder'), re_import2, rescan_deco, pass_ref=True, pass_ref_deco=True)
+
 tab_menu.add(_('Paste'), s_append, paste_deco, pass_ref=True)
 tab_menu.add(_("Append Playing"), append_current_playing, append_deco, pass_ref=True)
 tab_menu.br()
@@ -9194,10 +9257,18 @@ tab_menu.br()
 tab_menu.add_sub(_("Misc…"), 145)
 
 
+def forget_pl_import_folder(pl):
+
+    pctl.multi_playlist[pl][7] = ""
+
+
+
+
 tab_menu.add_to_sub(_("Export Playlist Stats"), 1, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 1, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 1, rescan_tags, pass_ref=True)
-tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
+tab_menu.add_to_sub(_('Forget Import Folder'), 1, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
+# tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 1, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 1, pl_toggle_playlist_break, pass_ref=True)
 
@@ -9792,9 +9863,6 @@ def get_broadcast_line():
         return artist + " - " + title
     else:
         return 'No Title'
-
-
-
 
 
 def open_config():
@@ -21056,7 +21124,8 @@ while running:
             if os.path.isdir(load_order.target):
                 quick_import_done.append(load_order.target)
 
-            pctl.multi_playlist[playlist_target][7] = load_order.target
+                if not pctl.multi_playlist[playlist_target][7]:
+                    pctl.multi_playlist[playlist_target][7] = load_order.target
 
             load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
@@ -22774,9 +22843,16 @@ while running:
                         # print(order.tracks)
                         if order.playlist_position is not None:
                             print(order.playlist_position)
-                            #pctl.multi_playlist[target_pl][2] = order.tracks
                             pctl.multi_playlist[target_pl][2][order.playlist_position:order.playlist_position] = order.tracks
                         else:
+
+                            if order.replace_stem:
+
+                                for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
+                                    if pctl.g(id).parent_folder_path.startswith(order.target):
+                                        del pctl.multi_playlist[target_pl][2][ii]
+
+
                             pctl.multi_playlist[target_pl][2] += order.tracks
 
                         gui.update += 2
