@@ -3,9 +3,10 @@ Changelog-------------------------------------
 
 v3.5.1
 
+ - Added setting to disable fade of track pause
  - Enhanced re-import function, moved to main playlist menu
  - Changed last.fm to submit album-artist on "feat." detect
- - Add removing embedded images FLAC support
+ - Add removing embedded images support for FLAC
  - Fix return to maximized state on restart
 
 v3.5.0

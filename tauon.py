@@ -660,10 +660,12 @@ class Prefs:    # Used to hold any kind of settings
 
         self.use_jump_crossfade = True
         self.use_transition_crossfade = False
+        self.use_pause_fade = True
 
         self.show_notifications = False
 
         self.true_shuffle = True
+
 
 prefs = Prefs()
 
@@ -1391,6 +1393,8 @@ try:
         prefs.show_transfer = save[89]
     if save[90] is not None:
         p_force_queue = save[90]
+    if save[91] is not None:
+        prefs.use_pause_fade = save[91]
 
     state_file.close()
     del save
@@ -1602,11 +1606,11 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'pause-fade-time=' in p:
                 result = p.split('=')[1]
-                if result.isdigit() and 50 < int(result) < 3000:
+                if result.isdigit() and 49 < int(result) < 3000:
                     prefs.pause_fade_time = int(result)
             if 'cross-fade-time=' in p:
                 result = p.split('=')[1]
-                if result.isdigit() and 50 < int(result) < 3000:
+                if result.isdigit() and 49 < int(result) < 3000:
                     prefs.cross_fade_time = int(result)
 
             if 'output-dir=' in p:
@@ -4342,7 +4346,7 @@ def player():   # BASS
                 pass
             elif end:
                 time.sleep(1.5)
-            else:
+            elif prefs.use_pause_fade:
                 BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
                 time.sleep(prefs.pause_fade_time / 1000)
 
@@ -4367,15 +4371,17 @@ def player():   # BASS
 
             if self.state == 'playing':
 
-                BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
-                time.sleep(prefs.pause_fade_time / 1000 / 0.7)
+                if prefs.use_pause_fade:
+                    BASS_ChannelSlideAttribute(self.channel, 2, 0, prefs.pause_fade_time)
+                    time.sleep(prefs.pause_fade_time / 1000)
                 BASS_ChannelPause(self.channel)
                 self.state = 'paused'
 
             elif self.state == 'paused':
 
                 BASS_ChannelPlay(self.channel, False)
-                BASS_ChannelSlideAttribute(self.channel, 2, pctl.player_volume / 100, prefs.pause_fade_time)
+                if prefs.use_pause_fade:
+                    BASS_ChannelSlideAttribute(self.channel, 2, pctl.player_volume / 100, prefs.pause_fade_time)
                 self.state = 'playing'
 
         def start(self, instant=False):
@@ -15194,6 +15200,11 @@ def toggle_jump_crossfade(mode=0):
         return True if prefs.use_jump_crossfade else False
     prefs.use_jump_crossfade ^= True
 
+def toggle_pause_fade(mode=0):
+    if mode == 1:
+        return True if prefs.use_pause_fade else False
+    prefs.use_pause_fade ^= True
+
 def toggle_transition_crossfade(mode=0):
     if mode == 1:
         return True if prefs.use_transition_crossfade else False
@@ -15310,7 +15321,7 @@ class Over:
             # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
             ddt.draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [220, 220, 220, 255], 213)
 
-            y = self.box_y + 70 * gui.scale
+            y = self.box_y + 65 * gui.scale
             x = self.box_x + 130 * gui.scale
 
             ddt.draw_text((x, y - 22 * gui.scale), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
@@ -15326,18 +15337,19 @@ class Over:
 
 
             x -= 10 * gui.scale
-            y += 40 * gui.scale
+            y += 29 * gui.scale
 
-            self.toggle_square(x, y, toggle_transition_crossfade, "Use crossfade at end of tracks")
+            self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade at end of tracks"))
 
             y += 23 * gui.scale
 
-            self.toggle_square(x, y, toggle_transition_gapless, "Use gapless transitions")
+            self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless transitions"))
 
-            y += 33 * gui.scale
+            y += 29 * gui.scale
 
-            self.toggle_square(x, y, toggle_jump_crossfade, "Use crossfade when jumping tracks")
-
+            self.toggle_square(x, y, toggle_jump_crossfade, _("Use fade on track jump"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
 
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
@@ -20917,7 +20929,7 @@ def save_state():
             None, #prefs.show_queue, # 88
             prefs.show_transfer,
             pctl.force_queue, # 90
-            None,
+            prefs.use_pause_fade, #91
             None]
 
     #print(prefs.last_device + "-----")
