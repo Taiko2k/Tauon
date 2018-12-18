@@ -1275,8 +1275,8 @@ try:
         prefs.show_rym = save[30]
     # if save[31] is not None:
     #     combo_mode_art_size = save[31]
-    if save[32] is not None:
-        gui.maximized = save[32]
+    # if save[32] is not None:
+    #     gui.maximized = save[32]
     if save[33] is not None:
         prefs.prefer_bottom_title = save[33]
     if save[34] is not None:
@@ -5704,6 +5704,9 @@ if draw_border:
     flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
 
 print("Creating window...")
+
+print("!!! CREATING WINDOW WITH SIZE ", end="")
+print(window_size)
 
 t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -10846,6 +10849,8 @@ def editor(index):
 
         print("Host which is:")
         r = complete.stdout.decode()
+
+
 
         if "bin/" + prefs.tag_editor_target in r:
             ok = True
@@ -20501,8 +20506,14 @@ def update_layout_do():
     #input.mouse_click = False
     global renderer
 
+    #print("TEST")
     if not gui.maximized:
+        print("!!! NOTE SIZE OF WINDOW")
         gui.save_size = copy.deepcopy(window_size)
+        print(gui.save_size)
+    else:
+        print("!!! SIZE OF WINDOW NOT NOTED")
+
 
     bottom_bar1.update()
 
@@ -20753,6 +20764,9 @@ def save_state():
     # if album_mode:
     #     global album_playlist_width
     #     album_playlist_width = gui.playlist_width
+
+    print("!!! SAVE SIZE OF WINDOW")
+    print(gui.save_size)
 
     save = [pctl.master_library,
             master_count,
@@ -21287,9 +21301,14 @@ while running:
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
                 gui.update = 2
+                print("!!! THE WINDOW HAS BEEN RESIZED ", end="")
+                print(" from ", end="")
+                print(window_size, end="")
                 window_size[0] = event.window.data1
                 window_size[1] = event.window.data2
                 update_layout = True
+                print(" to ", end="")
+                print(window_size)
 
 
                 # print('resize')
@@ -21307,6 +21326,8 @@ while running:
                 gui.lowered = True
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
+
+                # print("RESTORE")
                 gui.lowered = False
                 gui.maximized = False
                 gui.pl_update = 1
@@ -21330,7 +21351,9 @@ while running:
             #     k_input = True
 
 
+
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
+                print("!!! THE WINDOW IS MAXIMIZED")
                 gui.maximized = True
                 update_layout = True
                 gui.pl_update = 1
