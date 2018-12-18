@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.5.1
+
+ - Fix return to maximized state on restart
+
 v3.5.0
 
  - Added folder/album queueing
