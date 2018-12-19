@@ -10,6 +10,7 @@ v3.5.1
  - Changed last.fm to submit album-artist on "feat." detect
  - Add removing embedded images support for FLAC
  - Fix return to maximized state on restart
+ - Tweaked window title drag zone to be closer to MENU
 
 v3.5.0
 
