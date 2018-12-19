@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.5.0"
+t_version = "v3.5.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -3597,7 +3597,7 @@ class LastScrob:
 
         artist_name = pctl.master_library[self.a_index].artist
         if pctl.master_library[self.a_index].album_artist:
-            if "feat." in artist_name.lower() or " + " in artist_name or ", " in artist_name:
+            if "feat." in artist_name.lower() or ", " in artist_name or "; " in artist_name:
                 if pctl.master_library[self.a_index].album_artist.lower() != "va" and \
                             pctl.master_library[self.a_index].album_artist.lower() != "various artists":
                     artist_name = pctl.master_library[self.a_index].album_artist
@@ -14976,7 +14976,7 @@ def toggle_borderless(mode=0):
 config_items = [
     [_('Show playtime lines'), star_line_toggle],
     [_('Show playtime stars'), star_toggle],
-    None,
+    #None,
     [_('Show love hearts'), heart_toggle],
     None
 ]
@@ -16073,9 +16073,9 @@ class Over:
 
             y += 25 * gui.scale
 
-            if y - y2 > 190 * gui.scale:
-                y = y2
-                x += 205 * gui.scale
+            # if y - y2 > 190 * gui.scale:
+            #     y = y2
+            #     x += 205 * gui.scale
 
 
         y = self.box_y + 25 * gui.scale
@@ -16788,7 +16788,7 @@ class TopPanel:
         # LAYOUT --------------------------------
         x += self.menu_space + word_length
 
-        self.drag_zone_start_x = x
+        self.drag_zone_start_x = x - 11 * gui.scale
         status = True
 
         if loading_in_progress:
