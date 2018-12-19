@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v3.5.1
 
+ - Added function to MENU for importing home music folder to new playlist
  - Added setting to disable fade of track pause
+ - Added option to show total folder duration in folder title
  - Enhanced re-import function, moved to main playlist menu
  - Changed last.fm to submit album-artist on "feat." detect
  - Add removing embedded images support for FLAC
