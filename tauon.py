@@ -665,6 +665,7 @@ class Prefs:    # Used to hold any kind of settings
         self.show_notifications = False
 
         self.true_shuffle = True
+        self.append_total_time = False
 
 
 prefs = Prefs()
@@ -880,6 +881,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.side_bar_drag_original = 0
 
         self.scroll_direction = 0
+        self.add_music_folder_ready = False
 
 gui = GuiVar()
 
@@ -1211,6 +1213,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
         self.stage = 0
         self.playlist_position = None
         self.replace_stem = False
+        self.notify = False
 
 
 url_saves = []
@@ -1395,6 +1398,8 @@ try:
         p_force_queue = save[90]
     if save[91] is not None:
         prefs.use_pause_fade = save[91]
+    if save[92] is not None:
+        prefs.append_total_time = save[92]
 
     state_file.close()
     del save
@@ -8912,6 +8917,7 @@ def delete_playlist(index):
         pctl.playlist_playing_position = -1
 
     reload()
+    test_show_add_home_music()
 
 
 to_scan = []
@@ -8947,9 +8953,10 @@ def re_import2(pl):
     load_order = LoadClass()
     load_order.replace_stem = True
     load_order.target = path
+    load_order.notify = True
     load_order.playlist = pctl.multi_playlist[pl][6]
     load_orders.append(copy.deepcopy(load_order))
-    show_message("Rescanning Folder...", 'info', path)
+    show_message("Rescanning folder...", 'info', path)
 
 def s_append(index):
     paste(playlist=index)
@@ -11812,11 +11819,28 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-
-
-
 if default_player == 1:
     x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
+
+
+def show_import_music(_):
+    return gui.add_music_folder_ready
+
+def import_music():
+
+    pl = pl_gen("Music")
+    pl[7] = music_folder
+    pctl.multi_playlist.append(pl)
+    load_order = LoadClass()
+    load_order.target = music_folder
+    load_order.playlist = pl[6]
+    load_orders.append(load_order)
+    switch_playlist(len(pctl.multi_playlist) - 1)
+    gui.add_music_folder_ready = False
+
+
+x_menu.add(_("Import  ~/Music"), import_music, show_test=show_import_music)
+
 x_menu.br()
 
 settings_icon.xoff = 0
@@ -15005,6 +15029,13 @@ def toggle_scroll(mode=0):
 #             prefs.end_setting = 'stop'
 
 
+def toggle_append_total_time(mode=0):
+    if mode == 1:
+        return prefs.append_total_time
+    prefs.append_total_time ^= True
+    gui.pl_update = 1
+    gui.update += 1
+
 def toggle_append_date(mode=0):
     if mode == 1:
         return prefs.append_date
@@ -15226,6 +15257,7 @@ config_items.append(['Use double digit track indices', toggle_dd])
 # config_items.append(['Always use folder name as title', toggle_use_title])
 
 config_items.append(['Add release year to folder title', toggle_append_date])
+config_items.append(['Add total duration to folder title', toggle_append_total_time])
 
 config_items.append(['Shuffle avoids repeats', toggle_true_shuffle])
 
@@ -17901,7 +17933,29 @@ class StandardPlaylist:
                     if "(" in line and re.match('.*([1-3][0-9]{3})', line):
                         date = ""
 
+                    qq = 0
+                    if prefs.append_total_time:
+                        q = p_track
+
+                        total_time = 0
+                        while q < len(default_playlist):
+
+                            if pctl.g(default_playlist[q]).parent_folder_path != n_track.parent_folder_path:
+                                break
+
+                            total_time += pctl.g(default_playlist[q]).length
+
+                            q += 1
+                            qq += 1
+
+                        if qq > 1:
+                            date += " [ " + get_display_time(total_time) + " ]"  # Hair space inside brackets for better visual spacing
+
+
                     ex = left + highlight_left + highlight_width - 7 * gui.scale
+
+                    if qq > 1:
+                        ex += 1 * gui.scale
 
                     ddt.text_background_colour = colours.playlist_panel_background
                     height = (gui.playlist_top + gui.playlist_row_height * w) + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
@@ -17919,6 +17973,8 @@ class StandardPlaylist:
                     if date:
                         date_w = ddt.draw_text((ex, height, 1), date, alpha_mod(colours.folder_title, album_fade), gui.row_font_size + gui.pl_title_font_offset)
                         date_w += 4 * gui.scale
+                        if qq > 1:
+                            date_w -= 1 * gui.scale
 
                     ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
                     if ft_width > highlight_width - date_w - 13 * gui.scale:
@@ -20929,7 +20985,11 @@ def save_state():
             None, #prefs.show_queue, # 88
             prefs.show_transfer,
             pctl.force_queue, # 90
-            prefs.use_pause_fade, #91
+            prefs.use_pause_fade, # 91
+            prefs.append_total_time, # 92
+            None,
+            None,
+            None,
             None]
 
     #print(prefs.last_device + "-----")
@@ -20939,6 +20999,22 @@ def save_state():
 # SDL_StartTextInput()
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 # SDL_EventState(SDL_SYSWMEVENT, 1)
+
+
+def test_show_add_home_music():
+
+    gui.add_music_folder_ready = True
+
+    if music_folder is None:
+        gui.add_music_folder_ready = False
+        return
+
+    for item in pctl.multi_playlist:
+        if item[7] == music_folder:
+            gui.add_music_folder_ready = False
+            break
+
+test_show_add_home_music()
 
 if gui.restart_album_mode:
     toggle_album_mode(True)
@@ -21998,9 +22074,7 @@ while running:
                     break
     elif loading_in_progress is True:
         loading_in_progress = False
-        #save_state()
         worker_save_state = True
-
 
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
@@ -22869,8 +22943,12 @@ while running:
 
                         gui.update += 2
                         gui.pl_update += 2
+                        if order.notify and gui.message_box:
+                            show_message("Rescan folder complete.", 'done', order.target)
                         reload()
                         del load_orders[i]
+                        if not load_orders:
+                            loading_in_progress = False
                         break
 
             if gui.show_playlist:
