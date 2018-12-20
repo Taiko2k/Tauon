@@ -8428,38 +8428,59 @@ def remove_embed_picture(index):
     removed = 0
     pr = pctl.stop(True)
     processed = False
-    for item in tracks:
-        if "MP3" == pctl.master_library[item].file_ext:
-            tag = stagger.read_tag(pctl.master_library[item].fullpath)
-            remove = False
-            try:
-                del tag[APIC]
-                print("Delete APIC successful")
-                remove = True
-            except:
-                print("No APIC found")
+    try:
+        for item in tracks:
+            if "MP3" == pctl.master_library[item].file_ext:
+                tag = stagger.read_tag(pctl.master_library[item].fullpath)
+                remove = False
+                try:
+                    del tag[APIC]
+                    print("Delete APIC successful")
+                    remove = True
+                except:
+                    print("No APIC found")
 
-            try:
-                del tag[PIC]
-                print("Delete PIC successful")
-                remove = True
-            except:
-                print("No PIC found")
+                try:
+                    del tag[PIC]
+                    print("Delete PIC successful")
+                    remove = True
+                except:
+                    print("No PIC found")
 
-            if remove is True:
-                tag.write()
+                if remove is True:
+                    tag.write()
+                    removed += 1
+
+            if "FLAC" == pctl.master_library[item].file_ext:
+
+                if flatpak_mode:
+                    print("Finding app from within Flatpak...")
+                    complete = subprocess.run(shlex.split("flatpak-spawn --host which metaflac"),
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE)
+
+                    r = complete.stdout.decode()
+
+                    if "/metaflac" in r:
+
+                        command = 'flatpak-spawn --host metaflac --remove --block-type=PICTURE "' \
+                                  + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
+
+                    else:
+                        show_message("Please install Flac on your host system for this.", 'info', "e.g. sudo apt install flac")
+
+
+                else:
+                    command = 'metaflac --remove --block-type=PICTURE "' \
+                              + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
+
+                subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
                 removed += 1
+                processed = True
 
-        if "FLAC" == pctl.master_library[item].file_ext:
-
-            command = 'metaflac --remove --block-type=PICTURE "' \
-                      + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
-
-            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
-            removed += 1
-            processed = True
-
-
+    except Exception as e:
+        show_message("Image remove error", 'error')
+        return
 
     if removed == 0:
         show_message(_("Image removal failed."), "error")
