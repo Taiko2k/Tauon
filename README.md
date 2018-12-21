@@ -37,15 +37,17 @@ Designed to be simple and streamlined while putting the user in control of their
 
 - [x] FLAC 
 - [x] APE, TTA, WV
-- [x] MP3, M4A
+- [x] MP3, M4A(aac, alac)
 - [x] OGG, OPUS
-- [ ] WMA, CD, MOD, AIFF
 
 #### Other
 
 - [x] XSPF
 - [x] CUE (automatic detection)
-- [ ] M3U, PLS
+
+#### Not supported
+
+- [ ] M3U, PLS, WMA, CD, MOD, AIFF
 
 ## Download and Install :dizzy:
 
