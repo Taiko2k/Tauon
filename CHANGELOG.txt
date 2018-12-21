@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v3.5.2
+
+ - Added setting to switch audio playback backend to GStreamer
+ - Fix escaping filepaths with gstreamer
+ - Fix last.fm scrobbling with gstreamer
+
+
 v3.5.1
 
  - Added function to MENU for importing home music folder to new playlist

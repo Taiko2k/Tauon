@@ -289,20 +289,19 @@ if discord_allow:
     else:
         discord_allow = False
 
-default_player = 1
 running = True
 
-# Check if BASS is present and fall back to Gstreamer if not
-if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-gst' in sys.argv):
-    print("BASS not found")
-    try:
-        gi.require_version('Gst', '1.0')
-        from gi.repository import GObject, Gst
-        default_player = 2
-        print("Using fallback GStreamer")
-    except:
-        print("ERROR: gi.repository not found")
-        default_player = 0
+# # Check if BASS is present and fall back to Gstreamer if not
+# if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-gst' in sys.argv):
+#     print("BASS not found")
+#     try:
+#         gi.require_version('Gst', '1.0')
+#         from gi.repository import GObject, Gst
+#         prefs.backend = 2
+#         print("Using fallback GStreamer")
+#     except:
+#         print("ERROR: gi.repository not found")
+#         prefs.backend = 0
 
 
 # Setting various timers
@@ -666,6 +665,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.true_shuffle = True
         self.append_total_time = False
+        self.backend = 1
 
 
 prefs = Prefs()
@@ -1400,6 +1400,8 @@ try:
         prefs.use_pause_fade = save[91]
     if save[92] is not None:
         prefs.append_total_time = save[92]
+    if save[93] is not None:
+        prefs.backend = save[93]
 
     state_file.close()
     del save
@@ -1412,6 +1414,17 @@ except:
         shutil.rmtree(cache_directory)
         time.sleep(0.01)
         os.makedirs(cache_directory)
+
+# Check is bass is present
+if prefs.backend == 1:
+    if not os.path.isfile(install_directory + '/lib/libbass.so'):
+        prefs.backend = 2
+
+if prefs.backend == 2:
+    gi.require_version('Gst', '1.0')
+    from gi.repository import GObject, Gst
+    print("Using GStreamer for playback")
+    DA_Formats.add('wma')
 
 # temporary
 if window_size is None:
@@ -2500,7 +2513,7 @@ class PlayerCtl:
         else:
             gap_extra = prefs.cross_fade_time / 1000
 
-        if default_player == 2: # (gstreamber)
+        if prefs.backend == 2: # (gstreamer)
             gap_extra = 2
 
         if self.playing_state == 1 and self.playing_time + gap_extra >= self.playing_length and self.playing_time > 0.2:
@@ -3763,7 +3776,7 @@ def player3():  # Gstreamer
 
                     self.play_state = 1
 
-                    self.pl.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
+                    self.pl.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
 
                     self.pl.set_property('volume', pctl.player_volume / 100)
 
@@ -3845,6 +3858,8 @@ def player3():  # Gstreamer
                 pctl.playing_time += add_time
                 #pctl.playing_time = pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
 
+                pctl.a_time += add_time
+                pctl.total_playtime += add_time
                 lfm_scrobbler.update(add_time)
 
                 # Update track play count
@@ -5261,13 +5276,13 @@ def player():   # BASS
 
     pctl.playerCommand = 'done'
 
-# if default_player == 'BASS':
+# if prefs.backend == 'BASS':
 #
 #     playerThread = threading.Thread(target=player)
 #     playerThread.daemon = True
 #     playerThread.start()
 #
-# elif default_player == 'GTK':
+# elif prefs.backend == 'GTK':
 #
 #     playerThread = threading.Thread(target=player3)
 #     playerThread.daemon = True
@@ -5814,13 +5829,13 @@ def bass_player_thread():
         time.sleep(1)
         show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
 
-if default_player == 1:
+if prefs.backend == 1:
 
     playerThread = threading.Thread(target=bass_player_thread)
     playerThread.daemon = True
     playerThread.start()
 
-elif default_player == 2:
+elif prefs.backend == 2:
 
     playerThread = threading.Thread(target=player3)
     playerThread.daemon = True
@@ -11382,13 +11397,13 @@ def broadcast_select_track(index):
         pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
                               pctl.master_library[pctl.broadcast_index].title
 
-if prefs.enable_transcode or default_player == 1:
+if prefs.enable_transcode or prefs.backend == 1:
     track_menu.br()
 
 
 track_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
-if default_player == 1:
+if prefs.backend == 1:
     track_menu.add(_('Broadcast This'), broadcast_select_track, broadcast_feature_deco, pass_ref=True)
 
 # Create top menu
@@ -11618,7 +11633,7 @@ set_menu.add("- Remove This", sa_remove, pass_ref=True)
 
 def bass_features_deco():
     line_colour = colours.menu_text
-    if default_player != 1:
+    if prefs.backend != 1:
         line_colour = colours.menu_text_disabled
     return [line_colour, colours.menu_background, None]
 
@@ -11840,7 +11855,7 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 
-if default_player == 1:
+if prefs.backend == 1:
     x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
 
 
@@ -11983,7 +11998,7 @@ def toggle_broadcast():
 
 def broadcast_deco():
     line_colour = colours.menu_text
-    if default_player != 1:
+    if prefs.backend != 1:
         line_colour = colours.grey(20)
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
@@ -11997,7 +12012,7 @@ def broadcast_colour():
         return None
 
 
-if default_player == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
+if prefs.backend == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
     if gui.scale == 2:
         broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/2x/broadcast.png'))
     elif gui.scale == 1.25:
@@ -12649,8 +12664,7 @@ added = []
 
 def cue_scan(content, tn):
     # Get length from backend
-    # if lasttime == 0 and default_player == 1:
-    #     lasttime = get_backend_time(filepath)
+
     lasttime = tn.length
 
     content = content.replace("\r", "")
@@ -13527,7 +13541,7 @@ def worker1():
                 return 1
 
             # Get length from backend
-            if lasttime == 0 and default_player == 1:
+            if lasttime == 0 and prefs.backend == 1:
                 lasttime = get_backend_time(filepath)
 
             LENGTH = 0
@@ -13912,7 +13926,6 @@ def worker1():
 
     global transcode_list
     global transcode_state
-    global default_player
     global album_art_gen
     global cm_clean_db
     global to_got
@@ -15240,12 +15253,13 @@ def switch_rg_off(mode=0):
 def switch_rg_track(mode=0):
     if mode == 1:
         return True if prefs.replay_gain == 1 else False
-    prefs.replay_gain = 1
+    prefs.replay_gain = 0 if prefs.replay_gain == 1 else 1
+    #prefs.replay_gain = 1
 
 def switch_rg_album(mode=0):
     if mode == 1:
         return True if prefs.replay_gain == 2 else False
-    prefs.replay_gain = 2
+    prefs.replay_gain = 0 if prefs.replay_gain == 2 else 2
 
 def toggle_jump_crossfade(mode=0):
     if mode == 1:
@@ -15290,6 +15304,20 @@ c_blink = 0
 key_shiftr_down = False
 key_ctrl_down = False
 
+
+def set_player_bass(mode=0):
+    if mode == 1:
+        return True if prefs.backend == 1 else False
+    if prefs.backend is not 1:
+        show_message("Please restart to apply change.")
+    prefs.backend = 1
+
+def set_player_gstreamer(mode=0):
+    if mode == 1:
+        return True if prefs.backend == 2 else False
+    if prefs.backend is not 2:
+        show_message("Please restart to apply change.", 'info', 'Note: GStreamer support incomplete. Some functions will be unavailable.')
+    prefs.backend = 2
 
 
 class Over:
@@ -15364,26 +15392,31 @@ class Over:
 
     def audio(self):
 
+        y = self.box_y + 40 * gui.scale
+        x = self.box_x + 150 * gui.scale
 
-        if default_player == 1:
+        # ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
+        # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
 
-            y = self.box_y + 35 * gui.scale
+        ddt.draw_text((x, y - 2 * gui.scale), "BASS Audio Library", [220, 220, 220, 255], 213)
+        self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                          ")
+
+        ddt.draw_text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
+        self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+
+
+        if prefs.backend == 1:
+
+            y = self.box_y + 87 * gui.scale
             x = self.box_x + 130 * gui.scale
 
-            #ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
-            # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
-            ddt.draw_text((x, y - 22 * gui.scale), "Bass Audio Library", [220, 220, 220, 255], 213)
+            ddt.draw_text((x, y - 22 * gui.scale), "ReplayGain", colours.grey_blend_bg(100), 12)
 
-            y = self.box_y + 65 * gui.scale
-            x = self.box_x + 130 * gui.scale
-
-            ddt.draw_text((x, y - 22 * gui.scale), "ReplayGain Mode", colours.grey_blend_bg(100), 12)
-
-            y += 7 * gui.scale
+            y += 6 * gui.scale
             x += 10 * gui.scale
 
-            self.toggle_square(x, y, switch_rg_off, "Off")
-            y += 23 * gui.scale
+            # self.toggle_square(x, y, switch_rg_off, "Off")
+            # y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_track, "Track Gain")
             y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_album, "Album Gain")
@@ -15437,11 +15470,6 @@ class Over:
             y = self.box_y + 225 * gui.scale
             ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
 
-        elif default_player == 2:
-
-            y = self.box_y + 120 * gui.scale
-            x = self.box_x + 375 * gui.scale
-            ddt.draw_text((x, y - 22 * gui.scale, 2), "Gstreamer", [170, 170, 170, 255], 214)
 
     def funcs(self):
 
@@ -15836,7 +15864,7 @@ class Over:
         y += 28 * gui.scale
 
 
-        if default_player == 1:
+        if prefs.backend == 1:
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
             y += 28 * gui.scale
 
@@ -20578,9 +20606,9 @@ sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
 print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
-if default_player == 2:
+if prefs.backend == 2:
     print("Using GStreamer as fallback. Some functions disabled")
-elif default_player == 0:
+elif prefs.backend == 0:
     show_message("ERROR: No backend found", 'error')
 
 # total = 0
@@ -21008,7 +21036,7 @@ def save_state():
             pctl.force_queue, # 90
             prefs.use_pause_fade, # 91
             prefs.append_total_time, # 92
-            None,
+            prefs.backend,
             None,
             None,
             None]
