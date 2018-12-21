@@ -2476,7 +2476,7 @@ class PlayerCtl:
 
         # Unpause if paused
         if self.playing_state == 2:
-            self.playerCommand = 'pause'
+            self.playerCommand = 'pauseoff'
             self.playerCommandReady = True
             self.playing_state = 1
 
@@ -3693,7 +3693,6 @@ class AutoDownload():
 auto_download = AutoDownload()
 
 
-
 def player3():  # Gstreamer
 
     player_timer = Timer()
@@ -3705,18 +3704,20 @@ def player3():  # Gstreamer
             Gst.init([])
             self.mainloop = GLib.MainLoop()
 
-            self.play_state = 0
+            self.play_state = 0  # 0 is stopped, 1 is playing, 2 is paused
             self.pl = Gst.ElementFactory.make("playbin", "player")
 
-            GLib.timeout_add(500, self.test11)
-
-            self.mainloop.run()
+            GLib.timeout_add(500, self.main_callback)
 
             self.pl.connect("about-to-finish", self.about_to_finish)
 
+            self.mainloop.run()
+
         def check_duration(self):
 
-            # If the duration of track is unknown, query gst for it
+            # This function is to be called when loading a track
+            # If the duration of track is very small such as 0, query the backend for the duration
+
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length < 1:
 
                 result = self.pl.query_duration(Gst.Format.TIME)
@@ -3724,7 +3725,7 @@ def player3():  # Gstreamer
                 if result[0] is True:
                     print("Updating track duration")
                     pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
-                else:
+                else:  # still loading? I guess we wait.
                     time.sleep(1.5)
                     result = self.pl.query_duration(Gst.Format.TIME)
                     print(result)
@@ -3733,28 +3734,11 @@ def player3():  # Gstreamer
                         pctl.master_library[pctl.track_queue[pctl.queue_step]].length = result[1] / Gst.SECOND
 
         def about_to_finish(self, player):
-            print("hello")
+            print("Track about to finish")
 
-        #
-        #     print("End of track callback triggered")
-        #     self.play_state = 0
-        #     if pctl.playerCommand == 'gapless':
-        #         player.set_property('uri', 'file://' + os.path.abspath(pctl.target_open))
-        #         pctl.playing_time = 0
-        #
-        #         time.sleep(0.05)
-        #         if pctl.start_time > 1:
-        #             self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-        #                                 pctl.start_time * Gst.SECOND)
-        #
-        #         time.sleep(0.15)
-        #         self.check_duration()
+        def main_callback(self):
 
-        def test11(self):
-
-            pctl.test_progress()
-
-            #print(self.pl.query_position(Gst.Format.TIME))
+            pctl.test_progress()  # This function triggers an advance if we are near end of track
 
             if pctl.playerCommandReady:
                 if pctl.playerCommand == 'open' and pctl.target_open != '':
@@ -3762,15 +3746,14 @@ def player3():  # Gstreamer
                     current_time = self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                     current_duration = self.pl.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                     print("We are " + str(current_duration - current_time) + " seconds from end.")
-                    # current_time = 1
-                    # current_duration = 1.5
 
                     gapless = False
+                    # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time == 0 and 0.2 < current_duration - current_time < 4.5:
-
                         print("Use GStreamer Gapless transition")
                         gapless = True
-                    # Stop if playing or paused
+
+                    # Otherwise we stop or if paused
                     else:
                         self.pl.set_state(Gst.State.READY)
 
@@ -3784,19 +3767,20 @@ def player3():  # Gstreamer
 
                     pctl.playing_time = 0
 
-                    time.sleep(0.1)
+                    time.sleep(0.1)  # Setting and querying position right away seems to fail, so wait a small moment
 
+                    # Due to CUE sheets, the position to start is not always the beginning of the file
                     if pctl.start_time > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             pctl.start_time * Gst.SECOND)
 
-                    if gapless:
+                    if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
                         while self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
                             time.sleep(0.1)
                             t += 1
                             if t > 40:
-                                print("Gonna stop waiting...")
+                                print("Gonna stop waiting...")  # Cant wait forever
                                 break
 
                     time.sleep(0.15)
@@ -3830,14 +3814,6 @@ def player3():  # Gstreamer
                     if self.play_state > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             (pctl.new_time + pctl.start_time) * Gst.SECOND)
-                elif pctl.playerCommand == 'pause':
-                    player_timer.hit()
-                    if self.play_state == 1:
-                        self.play_state = 2
-                        self.pl.set_state(Gst.State.PAUSED)
-                    elif self.play_state == 2:
-                        self.pl.set_state(Gst.State.PLAYING)
-                        self.play_state = 1
 
                 elif pctl.playerCommand == 'pauseon':
                     player_timer.hit()
@@ -3852,19 +3828,25 @@ def player3():  # Gstreamer
                 pctl.playerCommandReady = False
 
             if self.play_state == 1:
+
                 # Progress main seek head
                 add_time = player_timer.hit()
-
                 pctl.playing_time += add_time
+
+                # We could get the seek bar to absolutely what the backend gives us... causes problems?
+                # Like, if the playback stalls, the advance will never trigger, so we would need to detect that
+                # then manually progress the playing time or trigger an advance.
+                # This is what the BASS backend currently does.
+
                 #pctl.playing_time = pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
 
+                # Other things we need to progress such as scrobbling
                 pctl.a_time += add_time
                 pctl.total_playtime += add_time
                 lfm_scrobbler.update(add_time)
 
                 # Update track play count
                 if len(pctl.track_queue) > 0 and 3 > add_time > 0:
-
                     star_store.add(pctl.track_queue[pctl.queue_step], add_time)
 
             # if self.play_state == 3:   #  URL Mode
@@ -3882,7 +3864,7 @@ def player3():  # Gstreamer
                 pctl.playerCommand = 'done'
 
             else:
-                GLib.timeout_add(19, self.test11)
+                GLib.timeout_add(19, self.main_callback)
 
     GPlayer()
 
