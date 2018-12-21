@@ -3695,11 +3695,11 @@ auto_download = AutoDownload()
 
 def player3():  # Gstreamer
 
-    player_timer = Timer()
-
     class GPlayer:
 
         def __init__(self):
+
+            self.player_timer = Timer()  # This is used to keep track of time between callbacks to progress the seek bar etc
 
             Gst.init([])
             self.mainloop = GLib.MainLoop()
@@ -3786,7 +3786,7 @@ def player3():  # Gstreamer
                     time.sleep(0.15)
                     self.check_duration()
 
-                    player_timer.hit()
+                    self.player_timer.hit()
 
                     # elif pctl.playerCommand == 'url':
                     #
@@ -3799,7 +3799,7 @@ def player3():  # Gstreamer
                     #        self.pl.set_property('volume', pctl.player_volume / 100)
                     #        self.pl.set_state(Gst.State.PLAYING)
                     #        self.play_state = 3
-                    #        player_timer.hit()
+                    #        self.player_timer.hit()
 
                 elif pctl.playerCommand == 'volume':
                     if self.play_state == 1:
@@ -3816,12 +3816,12 @@ def player3():  # Gstreamer
                                             (pctl.new_time + pctl.start_time) * Gst.SECOND)
 
                 elif pctl.playerCommand == 'pauseon':
-                    player_timer.hit()
+                    self.player_timer.hit()
                     self.play_state = 2
                     self.pl.set_state(Gst.State.PAUSED)
 
                 elif pctl.playerCommand == 'pauseoff':
-                    player_timer.hit()
+                    self.player_timer.hit()
                     self.pl.set_state(Gst.State.PLAYING)
                     self.play_state = 1
 
@@ -3829,8 +3829,16 @@ def player3():  # Gstreamer
 
             if self.play_state == 1:
 
+                # Get jump in time since last call
+                add_time = self.player_timer.hit()
+
+                # Limit the jump. (A huge jump in time could come if the user changes the system clock.)
+                if add_time > 2:
+                    add_time = 2
+                if add_time < 0:
+                    add_time = 0
+
                 # Progress main seek head
-                add_time = player_timer.hit()
                 pctl.playing_time += add_time
 
                 # We could get the seek bar to absolutely what the backend gives us... causes problems?
@@ -3846,12 +3854,12 @@ def player3():  # Gstreamer
                 lfm_scrobbler.update(add_time)
 
                 # Update track play count
-                if len(pctl.track_queue) > 0 and 3 > add_time > 0:
+                if len(pctl.track_queue) > 0 and 2 > add_time > 0:
                     star_store.add(pctl.track_queue[pctl.queue_step], add_time)
 
             # if self.play_state == 3:   #  URL Mode
             #    # Progress main seek head
-            #    add_time = player_timer.hit()
+            #    add_time = self.player_timer.hit()
             #    pctl.playing_time += add_time
 
             if not running:
@@ -3868,6 +3876,7 @@ def player3():  # Gstreamer
 
     GPlayer()
 
+    # Notify main thread we have closed cleanly
     pctl.playerCommand = 'done'
 
 
