@@ -4,8 +4,13 @@ Changelog-------------------------------------
 v3.5.2
 
  - Added setting to switch audio playback backend to GStreamer
- - Fix escaping filepaths with gstreamer
- - Fix last.fm scrobbling with gstreamer
+ - Tweaked gallery jumping when only one item in view
+ - Tweaked mode buttons disappearing in small window
+ - Fixed gstreamer not loading some file paths
+ - Fixed last.fm not scrobbling in gstreamer mode
+ - Fixed replay gain indicator not offsetting position on full time indicator
+ - Fixed time indicator possibly updating irregularly
+ - Fixed min frame time not applying in some cases (Now imposes limit on scroll speed)
 
 
 v3.5.1

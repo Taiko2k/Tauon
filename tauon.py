@@ -50,7 +50,6 @@ else:
     system = 'linux'
     import fcntl
 
-
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 de_nofity_support = desktop == 'GNOME' or desktop == 'KDE'
@@ -288,20 +287,6 @@ if discord_allow:
             discord_allow = False
     else:
         discord_allow = False
-
-
-# # Check if BASS is present and fall back to Gstreamer if not
-# if system == 'linux' and (not os.path.isfile(install_directory + '/lib/libbass.so') or '-gst' in sys.argv):
-#     print("BASS not found")
-#     try:
-#         gi.require_version('Gst', '1.0')
-#         from gi.repository import GObject, Gst
-#         prefs.backend = 2
-#         print("Using fallback GStreamer")
-#     except:
-#         print("ERROR: gi.repository not found")
-#         prefs.backend = 0
-
 
 # Setting various timers
 
@@ -876,6 +861,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.scroll_direction = 0
         self.add_music_folder_ready = False
+
+        self.playlist_current_visible_tracks = 0
 
 gui = GuiVar()
 
@@ -2021,6 +2008,8 @@ class PlayerCtl:
         self.eq = [0] * 2  # not used
         self.enable_eq = True  # not used
 
+        self.playing_time_int = 0  # playing time but with no decimel
+
     def notify_update(self):
 
         if self.mpris is not None:
@@ -2178,7 +2167,7 @@ class PlayerCtl:
                         pctl.playlist_view_position = i
                         if i > 6:
                             pctl.playlist_view_position -= 5
-                        if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
+                        if i > gui.playlist_view_length and i + (gui.playlist_view_length * 2) < len(
                                 self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
                             pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
                 break
@@ -2506,6 +2495,11 @@ class PlayerCtl:
             lfm_scrobbler.a_sc = False
             self.a_time = 0
 
+        # Update the UI if playing time changes a whole number
+        next_round = int(pctl.playing_time)
+        if self.playing_time_int != next_round:
+            gui.update += 1
+            self.playing_time_int = next_round
 
         if not prefs.use_transition_crossfade:
             gap_extra = 0.9
@@ -3298,8 +3292,6 @@ class LastFMapi:
             if self.network is None:
                 self.no_user_connect()
 
-
-
             print("Lookup last.fm user " + username)
 
             lastfm_user = self.network.get_user(username)
@@ -3313,10 +3305,6 @@ class LastFMapi:
             for track in tracks:
                 title = track.track.title
                 artist = track.track.artist.name
-
-                #print("test")
-                #print(dir(artist))
-                #print(artist + " - " + title)
 
                 for index, tr in pctl.master_library.items():
                     if tr.title == title and tr.artist == artist:
@@ -3668,7 +3656,6 @@ class LastScrob:
 lfm_scrobbler = LastScrob()
 
 
-
 class Tauon:
 
     def __init__(self):
@@ -3678,6 +3665,11 @@ class Tauon:
         self.star_store = star_store
 
 tauon = Tauon()
+
+# Check if BASS is present and fall back to Gstreamer if not
+if prefs.backend == 1 and not os.path.isfile(install_directory + '/lib/libbass.so'):
+    print("BASS not found")
+    prefs.backend = 2
 
 if prefs.backend == 2:
     from t_modules.t_gstreamer import player3
@@ -10164,7 +10156,7 @@ def goto_album(playlist_no, down=False, force=False):
 
         # Dont chance the view since its alread in the view port
         # But if the album is just out of view on the bottom, bring it into view on to bottom row
-        if down or True:
+        if down or True and window_size[1] > (album_mode_art_size + album_v_gap) * 2:
             while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[
                 1] - 40:
                 album_pos_px += 1
@@ -15630,10 +15622,10 @@ class BottomBarType1:
 
 
             if pctl.player_volume > 50:
-                ddt.draw_text((self.volume_bar_position[0] + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
+                ddt.draw_text((self.volume_bar_position[0] - right_offset + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
                        11, bg=colours.volume_bar_fill)
             else:
-                ddt.draw_text((self.volume_bar_position[0] + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
+                ddt.draw_text((self.volume_bar_position[0] - right_offset + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
                        11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
@@ -15872,7 +15864,7 @@ class BottomBarType1:
             y += 5 * gui.scale
             ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
 
-            if window_size[0] > 630 * gui.scale and self.mode == 0:
+            if window_size[0] > 690 * gui.scale and self.mode == 0:
 
                 # shuffle button
                 x = window_size[0] - 318 * gui.scale - right_offset
@@ -16224,7 +16216,6 @@ class StandardPlaylist:
         if gui.lsp or gui.set_mode or gui.rsp:
             center_mode = False
 
-
         highlight_left = 0
         highlight_width = width
 
@@ -16233,30 +16224,21 @@ class StandardPlaylist:
 
         if gui.lsp and not gui.rsp:
             inset_width -= 10 * gui.scale
-            # highlight_left = gui.scale * int(pow((window_size[0] * 0.004), 2))
-            # highlight_width = highlight_width - (highlight_left * 2)
-            #
-            # inset_left = highlight_left
-            # inset_width = highlight_width
 
         if gui.lsp:
             inset_left -= 10 * gui.scale
             inset_width += 10 * gui.scale
 
         if center_mode:
-            # inset_left = left + 28 * gui.scale
-            # inset_width = width - 30 * gui.scale
-
             highlight_left = gui.scale * int(pow((window_size[0] * 0.01), 2))
             highlight_width = highlight_width - (highlight_left * 2)
 
             inset_left = highlight_left + 18 * gui.scale
             inset_width = highlight_width - 25 * gui.scale
 
-
-
         w = 0
         gui.row_extra = 0
+        cv = 0  # update gui.playlist_current_visible_tracks
 
         # Draw the background
         SDL_SetRenderTarget(renderer, gui.ttext)
@@ -16270,15 +16252,13 @@ class StandardPlaylist:
             1] > gui.panelY - 2 \
                 and not (coll(pl_rect)) and not search_over.active:
 
-
+            # Set scroll speed
             mx = 4
             if gui.playlist_view_length < 25:
                 mx = 3
-            # if thick_lines:
-            #     mx = 3
             pctl.playlist_view_position -= mouse_wheel * mx
-            # if gui.playlist_view_length > 15:
-            #     playlist_position -= mouse_wheel
+
+
             if gui.playlist_view_length > 40:
                 pctl.playlist_view_position -= mouse_wheel
 
@@ -16629,6 +16609,7 @@ class StandardPlaylist:
                 shift_selection = [p_track]
                 playlist_selected = p_track
                 gui.pl_update = 1
+                gui.update = 2
 
             if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
                 playlist_hold = True
@@ -16954,16 +16935,18 @@ class StandardPlaylist:
                     run += item[1]
 
 
-
-
             # -----------------------------------------------------------------
-
+            # if gui.playlist_top + gui.playlist_row_height * w > window_size[0] - gui.panelBY - gui.playlist_row_height:
+            #     pass
+            # else:
+            #     cv += 1
 
             w += 1
             if w > gui.playlist_view_length:
                 break
 
-        #
+        #gui.playlist_current_visible_tracks = cv
+        #gui.playlist_current_visible_tracks_id =
 
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
@@ -19538,8 +19521,8 @@ while pctl.running:
         mouse_enter_window = False
 
 
-    if not mouse_down:
-        k_input = False
+    #f not mouse_down:
+    k_input = False
 
     clicked = False
     focused = False
@@ -19690,12 +19673,6 @@ while pctl.running:
             mouse_moved = True
         elif event.type == SDL_MOUSEBUTTONDOWN:
 
-            # mouse_position[0] = event.motion.x
-            # mouse_position[1] = event.motion.y
-            # print(mouse_position)
-            #
-            # mouse_moved = True
-
             k_input = True
             focused = True
             power += 5
@@ -19706,8 +19683,8 @@ while pctl.running:
                 right_down = True
             elif event.button.button == SDL_BUTTON_LEFT:
 
-                if mouse_position[1] > 1 and mouse_position[0] > 1:
-                    mouse_down = True
+                # if mouse_position[1] > 1 and mouse_position[0] > 1:
+                #     mouse_down = True
 
                 input.mouse_click = True
 
@@ -19983,8 +19960,12 @@ while pctl.running:
         power = 1000
 
 
-    if mouse_wheel != 0 or k_input or gui.update > 0 or mouse_down or len(top_panel.adds) > 0: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds: # or mouse_moved:
         power = 1000
+
+    if mouse_down:
+        power = 1000
+
 
     # if resize_mode or scroll_hold or album_scroll_hold:
     #     power += 3
@@ -20016,7 +19997,7 @@ while pctl.running:
         SDL_Delay(30)
         # if gui.lowered:
         #     time.sleep(0.2)
-        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue:
+        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
                 SDL_WaitEventTimeout(None, 1000)
 
         continue
@@ -20024,13 +20005,17 @@ while pctl.running:
     else:
         power = 0
 
+    if mouse_down and not k_input: # and gui.update == 0:
+        time.sleep(0.006)
+        gui.update = 1
+
     if gui.pl_update > 2:
         gui.pl_update = 2
 
     new_playlist_cooldown = False
 
-    if not k_input:
-        time.sleep(0.006)
+    # if not k_input:
+    #     time.sleep(0.006)
     # print(k_input)
 
 
@@ -20700,6 +20685,9 @@ while pctl.running:
     # GUI DRAWING------
     # print(gui.update)
     # print(gui.lowered)
+    if gui.pl_update and not gui.update:
+        gui.update = 1
+
 
     if gui.update > 0 and gui.lowered != True and not resize_mode:
         if gui.update > 2:
@@ -21064,6 +21052,10 @@ while pctl.running:
                         y = render_pos - album_pos_px
 
                         row_x = 0
+
+                        if y > window_size[1] - gui.panelBY - 30 * gui.scale and window_size[1] < 340 * gui.scale:
+                            break
+                        # if y >
 
                         for a in range(row_len):
 
@@ -21709,6 +21701,7 @@ while pctl.running:
                                 scroll_point = p_y.contents.value  # mouse_position[1]
                                 scroll_bpoint = sbp
                         else:
+                            #gui.update += 1
                             if sbp < mouse_position[1] < sbp + sbl:
                                 gui.scroll_direction = 0
                             pctl.playlist_view_position += gui.scroll_direction * 2
@@ -22874,6 +22867,8 @@ while pctl.running:
             ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
         gui.update -= 1
+        if gui.update > 1:
+            gui.update = 1
         gui.present = True
 
 
