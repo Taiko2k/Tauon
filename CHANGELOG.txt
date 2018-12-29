@@ -4,8 +4,11 @@ Changelog-------------------------------------
 v3.5.2
 
  - Added setting to switch audio playback backend to GStreamer
+ - Added hidden function to restore lost playtimes (Hold shift in folder menu)
  - Tweaked gallery jumping when only one item in view
  - Tweaked mode buttons disappearing in small window
+ - Tweaked rename playlist box to open with text highlighted
+ - Fixed 'open with picard' losing track of playtimes if filename was changed
  - Fixed gstreamer not loading some file paths
  - Fixed last.fm not scrobbling in gstreamer mode
  - Fixed replay gain indicator not offsetting position on full time indicator
