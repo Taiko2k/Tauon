@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.5.1"
+t_version = "v3.5.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -4476,6 +4476,11 @@ class TextBox:
     def clear(self):
         self.text = ""
 
+    def highlight_all(self):
+
+        self.selection = len(self.text)
+        self.cursor_position = 0
+
     def eliminate_selection(self):
         if self.selection != self.cursor_position:
             if self.selection > self.cursor_position:
@@ -4599,7 +4604,8 @@ class TextBox:
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
 
-            if coll((x - 15, y, width + 16, 19)):
+            if coll((x - 15, y, width + 16, selection_height + 1)):
+                #ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
                 if click:
                     pre = 0
                     post = 0
@@ -4662,7 +4668,12 @@ class TextBox:
             b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
 
             #rint((a, b))
-            ddt.rect_r([x + a, y, b - a, selection_height], [40, 120, 180, 255], True)
+
+            top = y
+            if big:
+                top -= 12 * gui.scale
+
+            ddt.rect_r([x + a, top, b - a, selection_height], [40, 120, 180, 255], True)
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
@@ -4679,7 +4690,7 @@ class TextBox:
 
                 if big:
                     #ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
-                    ddt.rect_r((x + space, y - 10 * gui.scale + 2, 2 * gui.scale, 27 * gui.scale), colour, True)
+                    ddt.rect_r((x + space, y - 15 * gui.scale + 2, 1 * gui.scale, 30 * gui.scale), colour, True)
                 else:
                     ddt.rect_r((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
 
@@ -7109,6 +7120,7 @@ def rename_playlist(index):
     rename_playlist_box = True
     rename_index = index
     rename_text_area.set_text(pctl.multi_playlist[index][0])
+    rename_text_area.highlight_all()
 
 
 if gui.scale == 2:
@@ -9271,8 +9283,48 @@ def get_like_folder(index):
     return tracks
 
 
+def vacuum_playtimes(index):
+
+    todo = []
+    for k in default_playlist:
+        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
+            todo.append(k)
+
+    for track in todo:
+
+        tr = pctl.g(track)
+
+        total_playtime = 0
+        flags = ""
+
+        to_del = []
+
+        for key, value in star_store.db.items():
+            if key[0].lower() == tr.artist.lower() and tr.artist and key[1].lower().replace(" ", "") == tr.title.lower().replace(" ", "") and tr.title:
+                to_del.append(key)
+                total_playtime += value[0]
+                flags = "".join(set(flags + value[1]))
+
+        for key in to_del:
+            del star_store.db[key]
+
+        key = star_store.object_key(tr)
+        value = [total_playtime, flags]
+        if key not in star_store.db:
+            print("Saving value")
+            star_store.db[key] = value
+        else:
+            print("ERROR KEY ALREADY HERE?")
+
+
+
+
 def reload_metadata(index):
     global todo
+
+    # vacuum_playtimes(index)
+    # return
+
 
     todo = []
     for k in default_playlist:
@@ -9331,6 +9383,16 @@ def editor(index):
             if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
                 if pctl.master_library[k].is_cue == False:
                     todo.append(k)
+
+    # Keep copy of play times
+    old_stars = []
+    for track in todo:
+        item = []
+        item.append(pctl.g(track))
+        item.append(star_store.key(track))
+        item.append(star_store.full_get(track))
+        old_stars.append(item)
+
 
     file_line = ""
     for track in todo:
@@ -9412,6 +9474,34 @@ def editor(index):
 
     gui.message_box = False
     reload_metadata(index)
+
+    # Re apply playtime data in case file names change
+    for item in old_stars:
+
+        old_key = item[1]
+        old_value = item[2]
+
+        if not old_value:  # ignore if there was no old playcount metadata
+            continue
+
+        new_key = star_store.object_key(item[0])
+        new_value = star_store.full_get(item[0].index)
+
+        if old_key == new_key:
+            continue
+
+        if new_value is None:
+            new_value = [0, ""]
+
+        new_value[0] += old_value[0]
+        new_value[1] = "".join(set(new_value[1] + old_value[1]))
+
+        if old_key in star_store.db:
+            del star_store.db[old_key]
+
+        star_store.db[new_key] = new_value
+
+
     gui.pl_update = 1
     gui.update = 1
 
@@ -9628,7 +9718,12 @@ def toggle_transfer(mode=0):
 
 transcode_icon.colour = [239, 74, 157, 255]
 
-folder_menu.add(_('Reload Metadata'), reload_metadata_selection)
+def test_shift(_):
+    return key_shift_down
+
+
+folder_menu.add(_('Reload Metadata'), reload_metadata, pass_ref=True)
+folder_menu.add(_('Vacuum Playtimes'), vacuum_playtimes, pass_ref=True, show_test=test_shift)
 folder_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 gallery_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
@@ -11313,19 +11408,24 @@ class SearchOverlay:
                 mouse_change = True
             # mouse_change = True
 
-            ddt.rect_r((x, y, w, h), [5,5,5,230], True)
+            ddt.rect_r((x, y, w, h), [3,3,3,235], True)
 
             if self.sip:
-                pass
-                ddt.rect_r((15,15,7,7), [100,80,240,255], True)
-                ddt.rect_r((27,15,7,7), [100,80,240,255], True)
-                ddt.rect_r((39,15,7,7), [100,80,240,255], True)
+
+                si = 7 * gui.scale
+                gap = 5 * gui.scale
+                left = 15 * gui.scale
+
+                ddt.rect_r((left, left, si, si), [100,80,240,255], True)
+                ddt.rect_r((left + gap + si, left, si, si), [100,80,240,255], True)
+                ddt.rect_r((left + (gap + si) * 2, left, si, si), [100,80,240,255], True)
+
             elif not self.results and len(self.search_text.text) > 2:
-                ddt.draw_text((130, 200), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
+                ddt.draw_text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
-            self.search_text.draw(100, 80, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click)
+            self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
-            yy = 130
+            yy = 110 * gui.scale
 
             if key_down_press:
 
@@ -11400,7 +11500,7 @@ class SearchOverlay:
                 # Block separating lower search results
                 if item[4] < 4 and not sec:
                     if i != 0:
-                        ddt.rect_r((50, yy + 5, 400, 4), [60, 60, 60, 210], True)
+                        ddt.rect_r((50 * gui.scale, yy + 5 * gui.scale, 400 * gui.scale, 4 * gui.scale), [255, 255, 255, 40], True)
                         yy += 20 * gui.scale
 
                     sec = True
@@ -11480,7 +11580,7 @@ class SearchOverlay:
 
                         xx += ddt.draw_text((120 + xx + 30 * gui.scale, yy), artist, [255, 255, 255, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
-                        rect = (30, yy, 600, 20)
+                        rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                         fields.add(rect)
 
                     if coll(rect) and mouse_change:
@@ -19527,6 +19627,7 @@ while pctl.running:
     clicked = False
     focused = False
     mouse_moved = False
+    gui.level_2_click = False
 
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
