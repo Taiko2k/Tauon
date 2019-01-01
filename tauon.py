@@ -2,7 +2,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2018, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ t_id = 'tauonmb'
 
 print(t_title)
 print(t_version)
-print('Copyright 2015-2018 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
 # Detect platform
 if sys.platform == 'win32':
@@ -17107,7 +17107,7 @@ class ArtBox:
         # Draw image downloading indicator
         if gui.image_downloading:
             ddt.draw_text((x + int(box_x / 2), 38 * gui.scale + int(box_y / 2), 2), "Fetching image...", colours.side_bar_line1,
-                      14)
+                      14, bg=colours.side_panel_background)
             gui.update = 2
 
         # Input for album art
@@ -19008,8 +19008,6 @@ def display_friend_heart(x, yy, name):
         ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
 
-
-
 # Set SDL window drag areas
 # if system != 'windows':
 
@@ -19744,7 +19742,6 @@ while pctl.running:
             load_order.playlist = pctl.multi_playlist[playlist_target][6]
             load_orders.append(copy.deepcopy(load_order))
 
-
             # print('dropped: ' + str(dropped_file))
             gui.update += 1
 
@@ -19973,9 +19970,6 @@ while pctl.running:
                 window_size[1] = event.window.data2
                 update_layout = True
 
-
-
-                # print('resize')
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
 
                 mouse_enter_window = True
@@ -20006,8 +20000,6 @@ while pctl.running:
                 gui.pl_update = 1
                 gui.update += 1
 
-
-
             # elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
             #
             #     input.mouse_enter_event = True
@@ -20033,18 +20025,16 @@ while pctl.running:
 
     # ----------------
     # This section of code controls the internal processing speed or 'frame-rate'.
-    # It's a complete mess. And doesn't work the best. It's just hack on top of hack.
+    # It's pretty messy.
 
     power += 1
 
     if gui.frame_callback_list:
         i = len(gui.frame_callback_list) - 1
         while i >= 0:
-            #print(gui.frame_callback_list[i])
             if gui.frame_callback_list[i].test():
                 gui.update = 1
                 power = 1000
-                #print("FRAME CALLBACK")
                 del gui.frame_callback_list[i]
             i -= 1
 
@@ -20054,24 +20044,19 @@ while pctl.running:
             cursor_blink_timer.set()
             TextBox.cursor ^= True
             gui.update = 1
+
         if k_input:
             cursor_blink_timer.set()
             TextBox.cursor = True
+
         SDL_Delay(3)
         power = 1000
-
 
     if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds: # or mouse_moved:
         power = 1000
 
     if mouse_down:
         power = 1000
-
-
-    # if resize_mode or scroll_hold or album_scroll_hold:
-    #     power += 3
-    # if side_drag:
-    #     power += 2
 
     if gui.level_update and not album_scroll_hold and not scroll_hold:
         power = 500
@@ -20080,7 +20065,6 @@ while pctl.running:
         power = 500
         if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
             gui.spec2_timer.set()
-            #gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
             gui.level_update = True
             vis_update = True
         else:
@@ -20089,15 +20073,12 @@ while pctl.running:
     if not pctl.running:
         break
 
-
     if pctl.playing_state > 0 or pctl.broadcast_active:
         power += 400
     if power < 500:
-        #time.sleep(0.003)
-        #time.sleep(0.003)
+
         SDL_Delay(30)
-        # if gui.lowered:
-        #     time.sleep(0.2)
+
         if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
                 SDL_WaitEventTimeout(None, 1000)
 
@@ -20106,20 +20087,24 @@ while pctl.running:
     else:
         power = 0
 
-    if mouse_down and not k_input: # and gui.update == 0:
-        time.sleep(0.006)
+    if mouse_down and not k_input:
+
+        # Force update (for smooth scrolling) when mouse down (A little hacky)
+
         gui.update = 1
+
+        # We could impose a minimum frame time here...
+        # But waiting any time seems to cause scroll animations to be less smooth.
+        # Most computers now have many cores/threads so perhaps its not so bad to
+        # breiefly run a thread at 100% to ensure a smooth animation.
+
+        # time.sleep(0.002)
+
 
     if gui.pl_update > 2:
         gui.pl_update = 2
 
     new_playlist_cooldown = False
-
-    # if not k_input:
-    #     time.sleep(0.006)
-    # print(k_input)
-
-
 
     if check_file_timer.get() > 1.1:
         check_file_timer.set()
