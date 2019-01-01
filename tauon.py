@@ -144,6 +144,20 @@ music_folder = None
 if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
     music_folder = os.path.expanduser('~').replace("\\", '/') + "/Music"
 
+
+def whicher(target):
+    if flatpak_mode:
+        complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+        r = complete.stdout.decode()
+        return "bin/" + target in r
+    else:
+        return shutil.which(target)
+
+launch_prefix = ""
+if flatpak_mode:
+    launch_prefix = "flatpak-spawn --host "
+
 # -------------------------------
 # Single Instancing
 
@@ -427,8 +441,11 @@ DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
 
 Archive_Formats = {'zip'}
 
-if shutil.which('unrar'):
+if whicher('unrar'):
     Archive_Formats.add("rar")
+
+if whicher('7z'):
+    Archive_Formats.add("7z")
 
 # if system == 'windows':
 #     DA_Formats.add('wma')  # Bass on Linux does not support WMA
@@ -863,6 +880,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.add_music_folder_ready = False
 
         self.playlist_current_visible_tracks = 0
+        self.playlist_current_visible_last_id = 0
 
 gui = GuiVar()
 
@@ -2154,16 +2172,25 @@ class PlayerCtl:
 
                 if not (quiet and self.playing_object().length < 15):
 
+                    vl = gui.playlist_view_length
+                    if pctl.multi_playlist[pctl.active_playlist_viewing][6] == gui.playlist_current_visible_tracks_id:
+                        vl = gui.playlist_current_visible_tracks
+
                     if i == pctl.playlist_view_position - 1 and pctl.playlist_view_position > 1:
                         pctl.playlist_view_position -= 1
 
+                    # Move a bit if its just out of range
                     elif pctl.playlist_view_position + gui.playlist_view_length - 2 == i and i < len(
                             self.multi_playlist[self.active_playlist_viewing][2]) - 5:
                         pctl.playlist_view_position += 3
+
+                    # We know its out of range if above view postion
                     elif i < pctl.playlist_view_position:
                         pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
                             gui.playlist_view_length / 6))
-                    elif abs(pctl.playlist_view_position - i) > gui.playlist_view_length:
+
+                    # If its below we need to test if its in view. If playing track in view, don't jump.
+                    elif abs(pctl.playlist_view_position - i) >= vl:
                         pctl.playlist_view_position = i
                         if i > 6:
                             pctl.playlist_view_position -= 5
@@ -9407,37 +9434,25 @@ def editor(index):
 
     ok = False
 
-    if flatpak_mode:
-        print("Finding app from within Flatpak...")
-        complete = subprocess.run(shlex.split("flatpak-spawn --host which " + prefs.tag_editor_target), stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
 
-        print("Host which is:")
-        r = complete.stdout.decode()
+    prefix = launch_prefix
+    ok = whicher(prefs.tag_editor_target)
 
-
-
-        if "bin/" + prefs.tag_editor_target in r:
-            ok = True
-            prefix = "flatpak-spawn --host "
-            print("Found app on host")
-
-        # elif prefs.tag_editor_target == 'picard':
-        #
-        #     print("App not found on host")
-        #     complete = subprocess.run(shlex.split("flatpak-spawn --host flatpak list"), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #     r = complete.stdout.decode()
-        #     print("Host Flatpak list is:")
-        #     print(r)
-        #
-        #     if "org.musicbrainz.Picard" in r:
-        #         ok = True
-        #         print("Found Picard Flatpak")
-        #         prefix = "flatpak-spawn --host "
-        #         app = "flatpak run org.musicbrainz.Picard"
-
-    elif shutil.which(prefs.tag_editor_target):
-            ok = True
+    # if flatpak_mode:
+    #     print("Finding app from within Flatpak...")
+    #     complete = subprocess.run(shlex.split("flatpak-spawn --host which " + prefs.tag_editor_target), stdout=subprocess.PIPE,
+    #                               stderr=subprocess.PIPE)
+    #
+    #     print("Host which is:")
+    #     r = complete.stdout.decode()
+    #
+    #     if "bin/" + prefs.tag_editor_target in r:
+    #         ok = True
+    #         prefix = "flatpak-spawn --host "
+    #         print("Found app on host")
+    #
+    # elif shutil.which(prefs.tag_editor_target):
+    #         ok = True
 
     if not ok:
         show_message(_("Tag editior app does not appear to be installed."), 'warning')
@@ -12202,23 +12217,7 @@ def worker1():
                                 to_got = "ex"
                                 gui.update += 1
                                 zip_ref = zipfile.ZipFile(path, 'r')
-                                # matches = 0
-                                # count = 0
-                                # for fi in zip_ref.namelist():
-                                #     for ty in DA_Formats:
-                                #         if fi[len(ty) * -1:].lower() == ty:
-                                #             matches += 1
-                                #             break
-                                #     count += 1
-                                # if count == 0:
-                                #     print("Archive has no files")
-                                #     return
-                                # if count > 300:
-                                #     print("Zip archive has many files")
-                                #     return
-                                # if matches == 0:
-                                #     print("Zip archive does not appear to contain audio files")
-                                #     return
+
                                 zip_ref.extractall(target_dir)
                                 zip_ref.close()
                             except RuntimeError as e:
@@ -12235,41 +12234,31 @@ def worker1():
                                 show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
                                 return 1
 
-                        if type == 'rar':
+                        elif type == 'rar':
                             b = to_got
                             try:
-                                # matches = 0
-                                # count = 0
-                                # line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
-                                # result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
-                                # file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
-                                # # print(file_list)
-                                # for fi in file_list:
-                                #     for ty in DA_Formats:
-                                #         if fi[len(ty) * -1:].lower() == ty:
-                                #             matches += 1
-                                #             break
-                                #     count += 1
-                                # if count > 200:
-                                #     print("RAR archive has many files")
-                                #     return
-                                # if matches == 0:
-                                #     print("RAR archive does not appear to contain audio files")
-                                #     return
-                                # if count == 0:
-                                #     print("Archive has no files")
-                                #     return
-                                # #print(matches)
-
-
                                 to_got = "ex"
                                 gui.update += 1
-                                line = "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
+                                line = launch_prefix + "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(target_dir) + os.sep
                                 result = subprocess.run(shlex.split(line))
                                 print(result)
                             except:
                                 to_got = b
                                 show_message("Failed to extract rar archive.", 'warning')
+
+                                return 1
+
+                        elif type == '7z':
+                            b = to_got
+                            try:
+                                to_got = "ex"
+                                gui.update += 1
+                                line = launch_prefix + "7z x -y " + shlex.quote(path) + " -o" + shlex.quote(target_dir) + os.sep
+                                result = subprocess.run(shlex.split(line))
+                                print(result)
+                            except:
+                                to_got = b
+                                show_message("Failed to extract 7z archive.", 'warning')
 
                                 return 1
 
@@ -12291,7 +12280,7 @@ def worker1():
                                 print("Extract error, expected directory not found")
 
                         if True and not error:  # prefs.auto_del_zip
-                            print("Deleting archive file: " + path)
+                            print("Moving archive file to trash: " + path)
                             try:
                                 send2trash(path)
                             except:
@@ -17036,17 +17025,20 @@ class StandardPlaylist:
 
 
             # -----------------------------------------------------------------
-            # if gui.playlist_top + gui.playlist_row_height * w > window_size[0] - gui.panelBY - gui.playlist_row_height:
-            #     pass
-            # else:
-            #     cv += 1
+            # Count the number if visable tracks (used by Show Current function)
+            if gui.playlist_top + gui.playlist_row_height * w > window_size[0] - gui.panelBY - gui.playlist_row_height:
+                pass
+            else:
+                cv += 1
 
             w += 1
             if w > gui.playlist_view_length:
                 break
 
-        #gui.playlist_current_visible_tracks = cv
-        #gui.playlist_current_visible_tracks_id =
+        # This is a bit hacky since its only generated after drawing.
+        # Used to keep track of how many tracks are actually in view.
+        gui.playlist_current_visible_tracks = cv
+        gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
@@ -18705,7 +18697,6 @@ class DLMon:
                 return
 
         self.ticker.set()
-        # print("scan...")
 
         for downloads in download_directories:
 
@@ -18725,7 +18716,7 @@ class DLMon:
                     continue
 
                 min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
-                ext = item[-3:]
+                ext = os.path.splitext(path)[1][1:].lower()
 
                 if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
                     size = os.path.getsize(path)
@@ -18736,9 +18727,12 @@ class DLMon:
                         if size == self.watching[path] and size != 0:
                             #print("scan")
                             del self.watching[path]
-                            if archive_file_scan(path, DA_Formats) > 0.5:
+                            if archive_file_scan(path, DA_Formats, launch_prefix) > 0.5:
                                 self.ready.add(path)
                                 gui.update += 1
+                                print("Archive detected as music")
+                            else:
+                                print("Archive rejected as music")
                             self.done.add(path)
                         else:
                             #print("update.")

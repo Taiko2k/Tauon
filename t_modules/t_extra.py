@@ -203,10 +203,12 @@ def hsl_to_rgb(h, s, l):
     colour = colorsys.hls_to_rgb(h, l, s)
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
+
 def hls_mod_add(source, h=0, l=0, s=0):
     c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
     colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + l, 0), 1))
     return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
+
 
 class ColourGenCache:
 
@@ -243,8 +245,9 @@ def folder_file_scan(path, extensions):
 
     return match / count
 
+
 # Get ratio of given file extensions in archive
-def archive_file_scan(path, extensions):
+def archive_file_scan(path, extensions, launch_prefix=""):
 
     ext = os.path.splitext(path)[1][1:].lower()
     print(path)
@@ -253,7 +256,7 @@ def archive_file_scan(path, extensions):
         if ext == 'rar':
             matches = 0
             count = 0
-            line = "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
+            line = launch_prefix + "unrar lb -p- " + shlex.quote(path) + " " + shlex.quote(os.path.dirname(path)) + os.sep
             result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
             file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
             # print(file_list)
@@ -273,6 +276,39 @@ def archive_file_scan(path, extensions):
                 return 0
             if count == 0:
                 print("Archive has no files")
+                print("   --- " + path)
+                return 0
+
+        elif ext == '7z':
+            matches = 0
+            count = 0
+            line = launch_prefix + "7z l " + shlex.quote(path) # + " " + shlex.quote(os.path.dirname(path)) + os.sep
+            result = subprocess.run(shlex.split(line), stdout=subprocess.PIPE)
+            file_list = result.stdout.decode("utf-8", 'ignore').split("\n")
+            # print(file_list)
+
+            for fi in file_list:
+
+                if '....A' not in fi:
+                    continue
+
+                for ty in extensions:
+                    if fi[len(ty) * -1:].lower() == ty:
+                        matches += 1
+                        break
+
+                count += 1
+
+            if count > 200:
+                print("7z archive has many files")
+                print("   --- " + path)
+                return 0
+            if matches == 0:
+                print("7z archive does not appear to contain audio files")
+                print("   --- " + path)
+                return 0
+            if count == 0:
+                print("7z archive has no files")
                 print("   --- " + path)
                 return 0
 
@@ -315,6 +351,7 @@ def archive_file_scan(path, extensions):
     if count < 5 and matches > 0:
         ratio = 100
     return ratio
+
 
 def get_folder_size(path):
     total_size = 0
