@@ -5082,11 +5082,20 @@ class AlbumArt():
 
         o_size = (0, 0)
         format = "ERROR"
+
         for item in self.image_cache:
             if item.index == index and item.offset == offset:
                 o_size = item.original_size
                 format = item.format
                 break
+
+        else:
+            # Hacky fix
+            # A quirk is the index stays of the cached image.
+            # This workaround can be done since (currently) cache has max size of 1
+            if self.image_cache:
+                o_size = self.image_cache[0].original_size
+                format = self.image_cache[0].format
 
         return [sources[offset][0], len(sources), offset, o_size, format]
 
@@ -12195,10 +12204,9 @@ def worker1():
             return 0
 
         if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
-
             if os.path.splitext(path)[1][1:].lower() in Archive_Formats:
                 if not prefs.auto_extract:
-                    show_message("You attempted to drop an archive.", 'info', 'However the "extract and trash" function is not enabled.')
+                    show_message("You attempted to drop an archive.", 'info', 'However the "extract archive" function is not enabled.')
                 else:
                     type = os.path.splitext(path)[1][1:].lower()
                     split = os.path.splitext(path)
@@ -12222,6 +12230,7 @@ def worker1():
                                 zip_ref.close()
                             except RuntimeError as e:
                                 to_got = b
+                                print("Zip error")
                                 if 'encrypted' in e:
                                     show_message("Failed to extract zip archive.", 'warning',
                                                  "The archive is encrypted. You'll need to extract it manually with the password.")
@@ -12230,6 +12239,7 @@ def worker1():
                                                  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
                                 return 1
                             except:
+                                print("Zip error 2")
                                 to_got = b
                                 show_message("Failed to extract zip archive.", 'warning',  "Maybe archive is corrupted? Does disk have enough space and have write permission?")
                                 return 1
@@ -12279,16 +12289,18 @@ def worker1():
                             if not os.path.isdir(target_dir):
                                 print("Extract error, expected directory not found")
 
-                        if True and not error:  # prefs.auto_del_zip
+                        if True and not error and prefs.auto_del_zip:
                             print("Moving archive file to trash: " + path)
                             try:
                                 send2trash(path)
                             except:
                                 show_message("Could not move archive to trash", 'info', path)
 
+
                         to_got = b
                         gets(target_dir)
                         quick_import_done.append(target_dir)
+                    # gets(target_dir)
 
             return 1
 
@@ -13627,8 +13639,8 @@ def toggle_ex_del(mode=0):
     if mode == 1:
         return prefs.auto_del_zip
     prefs.auto_del_zip ^= True
-    if prefs.auto_del_zip is True:
-        show_message("Caution! This function deletes things!", 'info', "This could result in data loss if the process were to malfunction.")
+    # if prefs.auto_del_zip is True:
+    #     show_message("Caution! This function deletes things!", 'info', "This could result in data loss if the process were to malfunction.")
 
 def toggle_dl_mon(mode=0):
     if mode == 1:
@@ -14015,9 +14027,10 @@ class Over:
         y += 10 * gui.scale
         # self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
         # y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_extract, _("Extract and trash archives on import"))
+        self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
         y += 23 * gui.scale
-        #self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Delete archive after extraction")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Trash archive after extraction")
+        y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
@@ -18727,7 +18740,17 @@ class DLMon:
                         if size == self.watching[path] and size != 0:
                             #print("scan")
                             del self.watching[path]
-                            if archive_file_scan(path, DA_Formats, launch_prefix) > 0.5:
+
+                            # Check if folder to extract to exists
+                            split = os.path.splitext(path)
+                            target_dir = split[0]
+                            if prefs.extract_to_music and music_folder is not None:
+                                target_dir = os.path.join(music_folder, os.path.basename(target_dir))
+
+                            if os.path.exists(target_dir):
+                                print("Target folder for archive already exsists")
+
+                            elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
                                 self.ready.add(path)
                                 gui.update += 1
                                 print("Archive detected as music")
