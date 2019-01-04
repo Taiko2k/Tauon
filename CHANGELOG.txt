@@ -6,6 +6,7 @@ v3.5.2
  - Added setting to switch audio playback backend to GStreamer
  - Added hidden function to find lost playtimes (Hold shift in folder menu)
  - Added 7z support to archive extractor
+ - Added button in settings to cycle to previous theme
  - Tweaked gallery jumping when only one item in view
  - Tweaked mode buttons disappearing in small window
  - Tweaked rename playlist box to open with text highlighted
@@ -20,6 +21,7 @@ v3.5.2
  - Fixed "Fetching image" text rendering.
  - Fixed "Show Current" not jumping when track just out of view
  - Fixed image details showing ERROR with cached files
+ - Fixed tag bar on 1.25x UI scaling
 
 
 v3.5.1
