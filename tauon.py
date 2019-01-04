@@ -746,7 +746,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
         self.panelBY = 51 * self.scale
-        self.panelY = 30 * self.scale
+        self.panelY = round(30 * self.scale)
 
         self.artboxY = self.panelY + (8 * self.scale)
 
@@ -881,6 +881,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.playlist_current_visible_tracks = 0
         self.playlist_current_visible_last_id = 0
+
+        self.theme_name = ""
 
 gui = GuiVar()
 
@@ -1601,7 +1603,7 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 continue
             if p[0] == " " or p[0] == "#":
                 continue
-            if 'log-volume-scale=True' in p:
+            if 'log-volume-scale' in p:
                 prefs.log_vol = True
             if 'tag-editor-path=' in p:
                 result = p.split('=')[1]
@@ -1618,7 +1620,7 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 if result.isdigit() and -1000 < int(result) < 1000:
                     prefs.gallery_scroll_wheel_px = int(result)
 
-            if 'scroll-gallery-row=True' in p:
+            if 'scroll-gallery-row' in p:
                 prefs.gallery_row_scroll = True
 
             if 'pause-fade-time=' in p:
@@ -1645,7 +1647,7 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 prefs.linux_bold_font = result
 
-            if 'vis-scroll=True' in p:
+            if 'vis-scroll' in p:
                 prefs.spec2_scroll = True
             if 'vis-base-colour=' in p:
                 result = p.split('=')[1]
@@ -1660,9 +1662,9 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             # if 'rename-folder-default=' in p:
             #     result = p.split('=')[1]
             #     prefs.rename_folder_template = result
-            if 'linux-mpris-enable=False' in p:
+            if 'disable-linux-mpris' in p:
                 prefs.enable_mpris = False
-            if 'mediakey=False' in p:
+            if 'disable-mediakey' in p:
                 prefs.mkey = False
             if 'add_download_directory=' in p:
                 if len(p) < 1000:
@@ -14272,6 +14274,13 @@ class Over:
                 ddt.draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
 
+    def devance_theme(self):
+        global theme
+        global themeChange
+        theme -= 1
+        themeChange = True
+        if theme < 0:
+            theme = len(os.listdir(install_directory + '/theme'))
 
     def config_b(self):
 
@@ -14325,6 +14334,8 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, scale2, "2x")
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, "Next Theme (F2)", advance_theme)
+        self.button(x + 165 * gui.scale, y + 5 * gui.scale, "Previous Theme", self.devance_theme)
+        ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(100), 13)
 
         y += 28 * gui.scale
         y += 10 * gui.scale
@@ -14342,19 +14353,19 @@ class Over:
 
         # y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        y += 28 * gui.scale
+        y += 26 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
         y += 28 * gui.scale
-        y += 28 * gui.scale
+        #y += 28 * gui.scale
 
         ddt.draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
 
-        y += 28 * gui.scale
+        y += 26 * gui.scale
 
 
         if prefs.backend == 1:
             self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
-            y += 28 * gui.scale
+            y += 26 * gui.scale
 
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
@@ -14362,7 +14373,7 @@ class Over:
         if desktop == 'GNOME' or desktop == 'KDE':
             self.toggle_square(x, y, toggle_notifications, "Show desktop notifications")
 
-        y += 28 * gui.scale
+        y += 26 * gui.scale
 
 
         self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
@@ -14371,6 +14382,9 @@ class Over:
 
         #self.button(x, y, "Reset Layout", standard_size)
         #x += 100
+
+        # x = self.box_x + self.item_x_offset - 10 * gui.scale
+        # y = self.box_y - 5 * gui.scale
 
         #x -= 100
 
@@ -14439,7 +14453,7 @@ class Over:
 
             ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
             y += 20 * gui.scale
-            ddt.draw_text((x, y), "Copyright © 2015-2018 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
+            ddt.draw_text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
             y += 21 * gui.scale
             link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
@@ -15274,8 +15288,8 @@ class TopPanel:
         watching = len(dl_mon.watching)
 
         if (dl > 0 or watching > 0) and core_timer.get() > 8 and prefs.auto_extract and prefs.monitor_downloads:
-            x += 52
-            rect = (x - 5, y - 2, 30, 23)
+            x += 52 * gui.scale
+            rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
             fields.add(rect)
 
             if coll(rect):
@@ -20652,7 +20666,8 @@ while pctl.running:
                         colours.__init__()
                         with open(install_directory + "/theme/" + theme_files[i], encoding="utf_8") as f:
                             content = f.readlines()
-                            print("Applying external theme: " + theme_files[i].split(".")[0])
+                            gui.theme_name = theme_files[i].split(".")[0]
+                            print("Applying external theme: " + gui.theme_name)
                             for p in content:
                                 if "#" in p:
                                     continue
@@ -20776,11 +20791,12 @@ while pctl.running:
                 show_message("Error loading theme file", 'warning')
 
         if theme == 0:
+            gui.theme_name = "Mindaro"
             print("Applying default theme: Mindaro")
             colours.__init__()
             colours.post_config()
 
-        print(theme)
+        # print(theme)
         themeChange = False
         ddt.text_background_colour = colours.playlist_panel_background
 
@@ -21407,15 +21423,22 @@ while pctl.running:
 
 
                     # Draw tags
+
+                    block_h = round(27 * gui.scale)
+                    block_gap = 1 * gui.scale
+                    if gui.scale == 1.25:
+                        block_gap = 1
+
                     if coll(hot_r) or gui.pt > 0:
 
                         for i, item in enumerate(gui.power_bar):
 
-                            if run_y + 27 * gui.scale > top + h:
+                            if run_y + block_h > top + h:
                                 break
 
-                            rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, 27 * gui.scale]
-                            i_rect = [window_size[0] - 21 * gui.scale, run_y, 19 * gui.scale, 27 * gui.scale]
+
+                            rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
+                            i_rect = [window_size[0] - 21 * gui.scale, run_y, 19 * gui.scale, block_h]
                             fields.add(i_rect)
 
                             if coll(i_rect) and item.peak_x == 9 * gui.scale:
@@ -21429,7 +21452,7 @@ while pctl.running:
                                 w = min(maxx, w)
 
 
-                                ddt.rect_r((rect[0] - w - 25 * gui.scale, run_y, w + 25 * gui.scale, 27 * gui.scale), [230, 230, 230, 255], True)
+                                ddt.rect_r((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
                                 ddt.draw_text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
 
                                 if input.mouse_click:
@@ -21437,7 +21460,7 @@ while pctl.running:
 
 
                             ddt.rect_r(rect, item.colour, True)
-                            run_y += 28 * gui.scale
+                            run_y += block_h + block_gap
 
                 # END POWER BAR ------------------------
 
