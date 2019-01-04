@@ -10,6 +10,8 @@ v3.5.2
  - Tweaked mode buttons disappearing in small window
  - Tweaked rename playlist box to open with text highlighted
  - Tweaked archive app detection with Flatpak
+ - Restored option to not delete archives on extraction
+ - Fixed archive monitor activating when target folder already exists
  - Fixed 'open with picard' losing track of playtimes if filename was changed
  - Fixed gstreamer not loading some file paths
  - Fixed last.fm not scrobbling in gstreamer mode
@@ -17,6 +19,7 @@ v3.5.2
  - Fixed time indicator possibly updating irregularly
  - Fixed "Fetching image" text rendering.
  - Fixed "Show Current" not jumping when track just out of view
+ - Fixed image details showing ERROR with cached files
 
 
 v3.5.1

@@ -317,6 +317,7 @@ def archive_file_scan(path, extensions, launch_prefix=""):
             zip_ref = zipfile.ZipFile(path, 'r')
             matches = 0
             count = 0
+            print(zip_ref.namelist())
             for fi in zip_ref.namelist():
                 for ty in extensions:
                     if fi[len(ty) * -1:].lower() == ty:
