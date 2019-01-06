@@ -10734,10 +10734,10 @@ def last_fm_menu_deco():
     #     line = 'Start Last.fm Scrobbling'
     #     bg = colours.menu_background
     if lastfm.hold:
-        line = "Scrobbling is Paused"
+        line = _("Scrobbling is Paused")
         bg = colours.menu_background
     else:
-        line = "Scrobbling is Active"
+        line = _("Scrobbling is Active")
         bg = colours.menu_background
 
     return [colours.menu_text, bg, line]
@@ -14258,9 +14258,11 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
-        self.toggle_square(x, y, switch_mp3, "MP3")
-        if prefs.transcode_codec == 'mp3' and not shutil.which("lame"):
-            ddt.draw_text((x + 90 * gui.scale, y - 3 * gui.scale), "LAME not detected!", [220, 110, 110, 255], 12)
+
+        if not flatpak_mode:
+            self.toggle_square(x, y, switch_mp3, "MP3")
+            if prefs.transcode_codec == 'mp3' and not shutil.which("lame"):
+                ddt.draw_text((x + 90 * gui.scale, y - 3 * gui.scale), "LAME not detected!", [220, 110, 110, 255], 12)
 
         if prefs.transcode_codec != 'flac':
             y += 35 * gui.scale
@@ -17096,13 +17098,13 @@ class ArtBox:
 
         # Draw a background for whole area
         ddt.rect_r((x, y, w ,h), colours.side_panel_background, True)
+        # ddt.rect_r((x, y, w ,h), [255, 0, 0, 200], True)
 
         # We need to find the size of the inner square for the artwork
         #box = min(w, h)
 
         box_x = w
         box_y = h
-
 
         box_x -= 17 * gui.scale  # Inset the square a bit
         box_y -= 17 * gui.scale  # Inset the square a bit
@@ -18994,9 +18996,8 @@ def download_img(link, target_folder):
             show_message("The link does not appear to refer to an image file.", 'warning')
         gui.image_downloading = False
 
-    except:
-
-        show_message("Image download failed.", 'warning')
+    except Exception as e:
+        show_message("Image download failed.", 'warning', str(e))
         gui.image_downloading = False
 
 
@@ -19267,10 +19268,12 @@ def update_layout_do():
 
     box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
 
-    if gui.art_aspect_ratio > 1.2:
+    if gui.art_aspect_ratio > 1.01:
         gui.art_unlock_ratio = True
         if gui.art_aspect_ratio > gui.art_max_ratio_lock:
             gui.art_max_ratio_lock = gui.art_aspect_ratio
+
+
 
     # print("Avaliabe: " + str(box_r))
     elif box_r <= 1:
@@ -20875,10 +20878,18 @@ while pctl.running:
 
                 offset = gui.side_bar_drag_source - mouse_position[0]
 
-                target = gui.side_bar_drag_original + offset #window_size[0] - mouse_position[0]
+                target = gui.side_bar_drag_original + offset
 
-                if not album_mode and offset > 0 and target > (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock:
-                    target = (window_size[1] - gui.panelY - gui.panelBY) * gui.art_max_ratio_lock
+                # Reset max ratio if drag drops below ratio width
+                if target < round((window_size[1] - gui.panelY - gui.panelBY) * gui.art_aspect_ratio):
+                    gui.art_max_ratio_lock = gui.art_aspect_ratio
+
+                max_w = round(((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
+                # 17 here is the art box inset value
+
+                if not album_mode and target > max_w:
+                    target = max_w
+
                     gui.rspw = target
                 else:
                     gui.rspw = target
@@ -22698,7 +22709,7 @@ while pctl.running:
                     if len(search_text.text) == 0:
                         line = "Find in current playlist"
                     ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 84 * gui.scale, 2), line,
-                              colours.grey(110), 12)
+                              colours.grey(110), 312)
 
                     # ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
                     #           colours.grey(90), 214)
