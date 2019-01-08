@@ -1,6 +1,6 @@
 # Tauon Music Box - GStreamer backend Module
 
-# Copyright © 2015-2018, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
@@ -86,12 +86,24 @@ def player3(tauon):  # GStreamer
             if self.pctl.playerCommandReady:
                 if self.pctl.playerCommand == 'open' and self.pctl.target_open != '':
 
+                    # Check if the file exists, mark it as missing if not
+                    if os.path.isfile(self.pctl.target_object.fullpath):
+                        self.pctl.target_object.found = True
+                    else:
+                        self.pctl.target_object.found = False
+                        print("Missing File: " + self.pctl.target_object.fullpath)
+                        self.pctl.playing_state = 0
+                        self.pctl.advance(inplace=True, nolock=True)
+                        GLib.timeout_add(19, self.main_callback)
+                        return
+
+                    # Determine time position of currently playing track
                     current_time = self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                     current_duration = self.pl.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                     print("We are " + str(current_duration - current_time) + " seconds from end.")
 
-                    gapless = False
                     # If we are close to the end of the track, try transition gaplessly
+                    gapless = False
                     if self.play_state == 1 and self.pctl.start_time == 0 and 0.2 < current_duration - current_time < 4.5:
                         print("Use GStreamer Gapless transition")
                         gapless = True
@@ -101,13 +113,9 @@ def player3(tauon):  # GStreamer
                         self.pl.set_state(Gst.State.READY)
 
                     self.play_state = 1
-
                     self.pl.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(self.pctl.target_open)))
-
                     self.pl.set_property('volume', self.pctl.player_volume / 100)
-
                     self.pl.set_state(Gst.State.PLAYING)
-
                     self.pctl.playing_time = 0
 
                     time.sleep(0.1)  # Setting and querying position right away seems to fail, so wait a small moment
