@@ -14,8 +14,6 @@ v3.5.2
  - Restored option to not delete archives on extraction
  - Fixed archive monitor activating when target folder already exists
  - Fixed 'open with picard' losing track of playtimes if filename was changed
- - Fixed gstreamer not loading some file paths
- - Fixed last.fm not scrobbling in gstreamer mode
  - Fixed replay gain indicator not offsetting position on full time indicator
  - Fixed time indicator possibly updating irregularly
  - Fixed "Fetching image" text rendering.
@@ -24,7 +22,9 @@ v3.5.2
  - Fixed tag bar on 1.25x UI scaling
  - Fixed wide art mode not locking ratio to less wide art then previous
  - Fixed wide art mode lock position being slightly incorrect
-
+ - [Gst] Fixed loading file paths with certain characters in name
+ - [Gst] Fixed last.fm not scrobbling in gstreamer mode
+ - [Gst] Fixed tracks not being marked when missing
 
 v3.5.1
 
