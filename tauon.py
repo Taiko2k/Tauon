@@ -22185,7 +22185,7 @@ while pctl.running:
                             input.mouse_click = False
                     else:
                         ddt.draw_text((x1, y1), "Genre", key_colour_off, 212)
-                    ddt.draw_text((x2, y1), line, value_colour,
+                    ddt.draw_text((x2, y1), tc.genre, value_colour,
                               value_font, max_w=290 * gui.scale)
 
                     y1 += int(15 * gui.scale)

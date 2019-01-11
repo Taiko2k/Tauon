@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.5.3
+
+ - Fix track info genre field
+
 v3.5.2
 
  - Added setting to switch audio playback backend to GStreamer
