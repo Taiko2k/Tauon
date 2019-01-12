@@ -13001,6 +13001,10 @@ def reload_albums(quiet=False):
     global album_pos_px
     global old_album_pos
 
+    if cm_clean_db:
+        # Doing reload while things are being removed may cause crash
+        return
+
     if not quiet:
         album_pos_px = old_album_pos
 
