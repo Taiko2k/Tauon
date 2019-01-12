@@ -660,6 +660,9 @@ class Prefs:    # Used to hold any kind of settings
         self.append_total_time = False
         self.backend = 1
 
+        self.album_repeat_mode = False # passed to pctl
+        self.album_shuffle_mode = False # passed to pctl
+
 
 prefs = Prefs()
 
@@ -1403,6 +1406,11 @@ try:
         prefs.append_total_time = save[92]
     if save[93] is not None:
         prefs.backend = save[93]
+    if save[94] is not None:
+        prefs.album_shuffle_mode = save[94]
+    if save[95] is not None:
+        prefs.album_repeat_mode = save[95]
+
 
     state_file.close()
     del save
@@ -1984,8 +1992,8 @@ class PlayerCtl:
         self.jump_time = 0
         self.random_mode = random_mode
         self.repeat_mode = repeat_mode
-        self.album_repeat_mode = False
-        self.album_shuffle_mode = False
+        self.album_repeat_mode = prefs.album_repeat_mode
+        self.album_shuffle_mode = prefs.album_shuffle_mode
         # self.album_shuffle_pool = []
         # self.album_shuffle_id = ""
         self.last_playing_time = 0
@@ -6579,8 +6587,9 @@ gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 def add_album_to_queue(ref):
 
     partway = 0
-    if not pctl.force_queue:
-        if pctl.g(ref).parent_folder_path == pctl.playing_object().parent_folder_path:
+    playing_object = pctl.playing_object()
+    if not pctl.force_queue and playing_object is not None:
+        if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
     pctl.force_queue.append([ref,
@@ -19549,6 +19558,9 @@ def save_state():
             prefs.use_pause_fade, # 91
             prefs.append_total_time, # 92
             prefs.backend,
+            pctl.album_shuffle_mode,
+            pctl.album_repeat_mode, # 95
+            None,
             None,
             None,
             None]
