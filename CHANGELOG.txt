@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v3.5.3
 
- - Fix track info genre field
+ - Fixed track info genre field showing last field
+ - Fixed a possible crash during database clean
 
 v3.5.2
 
