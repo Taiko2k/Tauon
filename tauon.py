@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.5.2"
+t_version = "v3.5.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
