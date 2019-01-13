@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v3.5.4
 
+ - Added option to finish currently playing album when queuing an album
  - Improved playback modes to remember setting after restart
+ - Fixed a crash when double clicking item in queue
  - Fixed a crash if adding item to queue with blank slate
 
 v3.5.3
