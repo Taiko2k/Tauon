@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.5.3"
+t_version = "v3.5.4"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -662,6 +662,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.album_repeat_mode = False # passed to pctl
         self.album_shuffle_mode = False # passed to pctl
+
+        self.finish_current = False  # Finish current album when adding to queue
 
 
 prefs = Prefs()
@@ -1410,7 +1412,8 @@ try:
         prefs.album_shuffle_mode = save[94]
     if save[95] is not None:
         prefs.album_repeat_mode = save[95]
-
+    if save[95] is not None:
+        prefs.finish_queue = save[95]
 
     state_file.close()
     del save
@@ -2719,6 +2722,11 @@ class PlayerCtl:
                     #if ok_continue:
                     # We seem to be still in the album. Step down one and play
                     self.playlist_playing_position += 1
+                    if len(pl) <= self.playlist_playing_position:
+                        print("END OF PLAYLIST!")
+                        del self.force_queue[0]
+                        self.advance(nolock=True)
+                        return
                     self.track_queue.append(pl[self.playlist_playing_position])
                     self.queue_step = len(self.track_queue) - 1
                     self.play_target(jump=not end)
@@ -6493,7 +6501,7 @@ showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(117)
-queue_menu = Menu(130)
+queue_menu = Menu(140)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 
@@ -6584,7 +6592,20 @@ gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 
+def finish_current():
+
+    playing_object = pctl.playing_object()
+    if playing_object is None:
+        show_message("")
+
+    pctl.force_queue.insert(0, [playing_object.index,
+                             pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+
+
 def add_album_to_queue(ref):
+
+    if prefs.finish_current:
+        finish_current()
 
     partway = 0
     playing_object = pctl.playing_object()
@@ -13584,6 +13605,10 @@ def toggle_true_shuffle(mode=0):
         return prefs.true_shuffle
     prefs.true_shuffle ^= True
 
+def toggle_finish_current(mode=0):
+    if mode == 1:
+        return prefs.finish_current
+    prefs.finish_current ^= True
 
 def toggle_enable_web(mode=0):
     if mode == 1:
@@ -13797,6 +13822,8 @@ config_items.append(['Add release year to folder title', toggle_append_date])
 config_items.append(['Add total duration to folder title', toggle_append_total_time])
 
 config_items.append(['Shuffle avoids repeats', toggle_true_shuffle])
+
+config_items.append(['Finish current when queuing album', toggle_finish_current])
 
 # config_items.append(['Playback advances to open playlist', toggle_follow])
 
@@ -17542,7 +17569,17 @@ def queue_pause_deco():
         return [colours.menu_text, colours.menu_background, _('Pause Queue')]
 
 
+def finish_current_deco():
 
+    colour = colours.menu_text
+    line = "Finish Playing Album"
+
+    if pctl.playing_object() is None:
+        colour = colours.menu_text_disabled
+    if pctl.force_queue and pctl.force_queue[0][4] == 1:
+        colour = colours.menu_text_disabled
+
+    return [colour, colours.menu_background, line]
 
 class QueueBox:
 
@@ -17560,8 +17597,10 @@ class QueueBox:
         self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
+
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue)
+        queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
 
 
     def queue_remove_show(self, id):
@@ -17715,7 +17754,8 @@ class QueueBox:
             if i == 0:
                 h_rect = (0, yy - 1000 * gui.scale, w - 28 * gui.scale + 10000, self.tab_h + 3 * gui.scale + 1000 * gui.scale)
 
-            if self.dragging and coll(h_rect) and mouse_up:
+
+            if self.dragging is not None and coll(h_rect) and mouse_up:
 
                 ob = None
                 for u in reversed(range(len(pctl.force_queue))):
@@ -17743,6 +17783,7 @@ class QueueBox:
                         if u != 0:
                             pctl.force_queue[u][4] = 0
 
+                input.mouse_click = False
                 self.draw(x, y, w, h)
                 return
 
@@ -19560,7 +19601,7 @@ def save_state():
             prefs.backend,
             pctl.album_shuffle_mode,
             pctl.album_repeat_mode, # 95
-            None,
+            prefs.finish_queue,
             None,
             None,
             None]
@@ -21142,6 +21183,10 @@ while pctl.running:
 
                                     elif middle_click:
                                         # Middle click to add album to queue
+
+                                        if prefs.finish_current:
+                                            finish_current()
+
                                         partway = 0
                                         if not pctl.force_queue:
                                             if pctl.g(
