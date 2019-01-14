@@ -15329,7 +15329,7 @@ class TopPanel:
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
 
-        if (dl > 0 or watching > 0) and core_timer.get() > 8 and prefs.auto_extract and prefs.monitor_downloads:
+        if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52 * gui.scale
             rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
             fields.add(rect)

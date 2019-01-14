@@ -246,6 +246,37 @@ def folder_file_scan(path, extensions):
     return match / count
 
 
+def is_ignorable_file(string):
+    for s in [
+        "Thumbs.db",
+        ".log",
+        "desktop.ini",
+        "DS_Store",
+        ".nfo",
+        "yric"
+    ]:
+        if s in string:
+            return True
+    return False
+
+
+def is_music_related(string):
+    for s in [
+        "Folder.jpg",
+        "folder.jpg",
+        "Cover.jpg",
+        "cover.jpg",
+        "AlbumArt",
+        ".m3u",
+        ".m3u8",
+        ".cue",
+        ".CUE",
+    ]:
+        if s in string:
+            return True
+    return False
+
+
 # Get ratio of given file extensions in archive
 def archive_file_scan(path, extensions, launch_prefix=""):
 
@@ -265,6 +296,11 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                     if fi[len(ty) * -1:].lower() == ty:
                         matches += 1
                         break
+                    elif is_ignorable_file(fi):
+                        count -= 1
+                        break
+                    elif is_music_related(fi):
+                        matches += 5
                 count += 1
             if count > 200:
                 print("RAR archive has many files")
@@ -291,12 +327,15 @@ def archive_file_scan(path, extensions, launch_prefix=""):
 
                 if '....A' not in fi:
                     continue
-
                 for ty in extensions:
                     if fi[len(ty) * -1:].lower() == ty:
                         matches += 1
                         break
-
+                    elif is_ignorable_file(fi):
+                        count -= 1
+                        break
+                    elif is_music_related(fi):
+                        matches += 5
                 count += 1
 
             if count > 200:
@@ -323,7 +362,11 @@ def archive_file_scan(path, extensions, launch_prefix=""):
                     if fi[len(ty) * -1:].lower() == ty:
                         matches += 1
                         break
-
+                    elif is_ignorable_file(fi):
+                        count -= 1
+                        break
+                    elif is_music_related(fi):
+                        matches += 5
                 count += 1
             if count == 0:
                 print("Archive has no files")
