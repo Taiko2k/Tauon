@@ -1413,7 +1413,7 @@ try:
     if save[95] is not None:
         prefs.album_repeat_mode = save[95]
     if save[95] is not None:
-        prefs.finish_queue = save[95]
+        prefs.finish_current = save[95]
 
     state_file.close()
     del save
@@ -19601,7 +19601,7 @@ def save_state():
             prefs.backend,
             pctl.album_shuffle_mode,
             pctl.album_repeat_mode, # 95
-            prefs.finish_queue,
+            prefs.finish_current,
             None,
             None,
             None]
