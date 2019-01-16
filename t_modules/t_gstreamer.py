@@ -1,6 +1,6 @@
 # Tauon Music Box - GStreamer backend Module
 
-# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2018-2019, Taiko2k captain(dot)gxj(at)gmail.com
 
 #     This file is part of Tauon Music Box.
 #
