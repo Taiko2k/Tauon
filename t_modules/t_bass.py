@@ -295,6 +295,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b + b'/lib/libbass_tta.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
         BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
+        BASS_PluginLoad(b + b'/lib/libbasshls.so', 0)
+
 
     bass_ready = False
 
@@ -824,6 +826,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(BASS_ChannelGetTags(handle1,4 ))
 
                 meta = BASS_ChannelGetTags(bass_player.channel, 5)
+                # print(meta)
                 if meta is not None:
                     meta = meta.decode('utf-8')
                 else:
@@ -986,25 +989,31 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # fileline = str(datetime.datetime.now()) + ".ogg"
                 # print(BASS_ErrorGetCode())
                 # print(pctl.url)
-                bass_error = BASS_ErrorGetCode()
+
+                BASS_ErrorGetCode()  # Flush old errors
                 bass_player.channel = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
+                bass_player.decode_channel = bass_player.channel
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
-                    gui.show_message("Stream error.", "warning", "Connection timeout")
+                    gui.show_message("Stream error", "warning", "Connection timeout")
                 elif bass_error == 32:
-                    gui.show_message("Stream error.", "warning", "No internet connection")
+                    gui.show_message("Stream error", "warning", "No internet connection")
                 elif bass_error == 20:
-                    gui.show_message("Stream error.", "warning", "Bad URL")
+                    gui.show_message("Stream error", "warning", "Bad URL")
                 elif bass_error == 2:
-                    gui.show_message("Stream error.", "warning", "Could not open stream")
+                    gui.show_message("Stream error", "warning", "Could not open stream")
                 elif bass_error == 41:
-                    gui.show_message("Stream error.", "warning", "Unknown file format")
+                    gui.show_message("Stream error", "warning", "Unknown file format")
                 elif bass_error == 44:
-                    gui.show_message("Stream error.", "warning", "Unknown/unsupported codec")
+                    gui.show_message("Stream error", "warning", "Unknown/unsupported codec")
+                elif bass_error == 10:
+                    gui.show_message("Stream error", "warning", "SSL/HTTPS support not available")
                 elif bass_error == -1:
-                    gui.show_message("Stream error.", "warning", "Its a mystery!!")
+                    gui.show_message("Stream error", "warning", "Its a mystery!!")
                 elif bass_error != 0:
-                    gui.show_message("Stream error.", "warning", "Something went wrong... somewhere")
+                    gui.show_message("Stream error", "warning", "Something went wrong... somewhere")
+                    print("BASS error: ", end="")
+                    print(bass_error)
                 if bass_error == 0:
                     BASS_ChannelSetAttribute(bass_player.channel, 2, pctl.player_volume / 100)
                     BASS_ChannelPlay(bass_player.channel, True)

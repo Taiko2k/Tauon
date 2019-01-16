@@ -9,6 +9,7 @@ v3.5.4
  - Fixed a crash when double clicking item in queue
  - Fixed a crash if adding item to queue with blank slate
  - Fixed download monitor indicator being delayed on startup
+ - Fixed crash on starting inbound stream
 
 v3.5.3
 
