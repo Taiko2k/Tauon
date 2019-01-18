@@ -665,6 +665,9 @@ class Prefs:    # Used to hold any kind of settings
 
         self.finish_current = False  # Finish current album when adding to queue
 
+        self.reload_play_state = False # Resume playback on app restart
+        self.reload_state = None
+
 
 prefs = Prefs()
 
@@ -1226,6 +1229,8 @@ url_saves = []
 rename_files_previous = ""
 rename_folder_previous = ""
 p_force_queue = []
+
+reload_state = None
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
@@ -1412,8 +1417,13 @@ try:
         prefs.album_shuffle_mode = save[94]
     if save[95] is not None:
         prefs.album_repeat_mode = save[95]
-    if save[95] is not None:
-        prefs.finish_current = save[95]
+    if save[96] is not None:
+        prefs.finish_current = save[96]
+    if save[97] is not None:
+        reload_state = save[97]
+    if save[98] is not None:
+        prefs.reload_play_state = save[98]
+
 
     state_file.close()
     del save
@@ -2643,6 +2653,7 @@ class PlayerCtl:
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
 
+
         # Trim the history if it gets too long
         while len(self.track_queue) > 250:
             self.queue_step -= 1
@@ -2769,6 +2780,7 @@ class PlayerCtl:
             return 0
 
         # If random, jump to random track
+
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
             #self.queue_step += 1
             new_step = self.queue_step + 1
@@ -3642,7 +3654,7 @@ class LastScrob:
 
         artist_name = pctl.master_library[self.a_index].artist
         if pctl.master_library[self.a_index].album_artist:
-            if "feat." in artist_name.lower() or ", " in artist_name or "; " in artist_name:
+            if "feat." in artist_name.lower() or ", " in artist_name or "; " in artist_name or not artist_name:
                 if pctl.master_library[self.a_index].album_artist.lower() != "va" and \
                             pctl.master_library[self.a_index].album_artist.lower() != "various artists":
                     artist_name = pctl.master_library[self.a_index].album_artist
@@ -3708,6 +3720,7 @@ class Tauon:
         self.pctl = pctl
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
+        self.gui = gui
 
 tauon = Tauon()
 
@@ -13675,6 +13688,12 @@ def toggle_lb(mode=0):
     else:
         lb.hold = True
 
+
+def toggle_resume_state(mode=0):
+    if mode == 1:
+        return prefs.reload_play_state
+    prefs.reload_play_state ^= True
+
 def toggle_ex_del(mode=0):
     if mode == 1:
         return prefs.auto_del_zip
@@ -14067,7 +14086,8 @@ class Over:
         y = y1
 
         y += 10 * gui.scale
-        # self.toggle_square(x, y, toggle_cache, "Cache gallery to disk")
+        #self.toggle_square(x, y - 25 * gui.scale, toggle_cache, "Cache gallery to disk")
+        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, "Resume playback on app restart")
         # y += 25 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
         y += 23 * gui.scale
@@ -19602,8 +19622,8 @@ def save_state():
             pctl.album_shuffle_mode,
             pctl.album_repeat_mode, # 95
             prefs.finish_current,
-            None,
-            None,
+            prefs.reload_state,  # 97
+            prefs.reload_play_state,
             None]
 
     #print(prefs.last_device + "-----")
@@ -19637,6 +19657,14 @@ if gui.remember_library_mode:
     toggle_library_mode()
 
 quick_import_done = []
+
+if reload_state:
+    if reload_state[0] == 1:
+        pctl.jump_time = reload_state[1]
+        pctl.play()
+
+    # if reload_state[0] == 2:
+    #     pctl.playing_state = 2
 
 print("Setup done. Entering main loop")
 
@@ -23492,12 +23520,17 @@ if lfm_scrobbler.queue and not lfm_scrobbler.running:
 
 SDL_DestroyWindow(t_window)
 
+if prefs.reload_play_state and pctl.playing_state in (1, 2):
+    print("Saving play state...")
+    prefs.reload_state = (pctl.playing_state, pctl.playing_time)
+
 pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
+
 
 save_state()
 

@@ -37,6 +37,7 @@ def player3(tauon):  # GStreamer
             self.pctl = tauon.pctl
             self.lfm_scrobbler = tauon.lfm_scrobbler
             self.star_store = tauon.star_store
+            self.gui = tauon.gui
 
             # This is used to keep track of time between callbacks to progress the seek bar etc
             self.player_timer = Timer()
@@ -93,6 +94,7 @@ def player3(tauon):  # GStreamer
                         self.pctl.target_object.found = False
                         print("Missing File: " + self.pctl.target_object.fullpath)
                         self.pctl.playing_state = 0
+                        self.pctl.jump_time = 0
                         self.pctl.advance(inplace=True, nolock=True)
                         GLib.timeout_add(19, self.main_callback)
                         return
@@ -104,7 +106,8 @@ def player3(tauon):  # GStreamer
 
                     # If we are close to the end of the track, try transition gaplessly
                     gapless = False
-                    if self.play_state == 1 and self.pctl.start_time == 0 and 0.2 < current_duration - current_time < 4.5:
+                    if self.play_state == 1 and self.pctl.start_time == 0 and self.pctl.jump_time == 0 and \
+                            0.2 < current_duration - current_time < 4.5:
                         print("Use GStreamer Gapless transition")
                         gapless = True
 
@@ -116,14 +119,18 @@ def player3(tauon):  # GStreamer
                     self.pl.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(self.pctl.target_open)))
                     self.pl.set_property('volume', self.pctl.player_volume / 100)
                     self.pl.set_state(Gst.State.PLAYING)
-                    self.pctl.playing_time = 0
+                    if self.pctl.jump_time == 0:
+                        self.pctl.playing_time = 0
 
                     time.sleep(0.1)  # Setting and querying position right away seems to fail, so wait a small moment
 
                     # Due to CUE sheets, the position to start is not always the beginning of the file
-                    if self.pctl.start_time > 0:
+                    if self.pctl.start_time > 0 or self.pctl.jump_time > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                            self.pctl.start_time * Gst.SECOND)
+                                            (self.pctl.start_time + self.pctl.jump_time) * Gst.SECOND)
+                        self.pctl.playing_time = self.pctl.jump_time
+                        self.gui.update = 1
+
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
@@ -134,6 +141,7 @@ def player3(tauon):  # GStreamer
                                 print("Gonna stop waiting...")  # Cant wait forever
                                 break
 
+                    self.pctl.jump_time = 0
                     time.sleep(0.15)
                     self.check_duration()
 

@@ -473,6 +473,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 gui.pl_update = 1
                 print("Missing File: " + pctl.target_object.fullpath)
                 pctl.playing_state = 0
+                pctl.jump_time = 0
                 pctl.advance(inplace=True, nolock=True)
                 return
 
@@ -608,6 +609,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     if pctl.start_time > 0 or pctl.jump_time > 0:
                         bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
                         BASS_ChannelSetPosition(new_handle, bytes_position, 0)
+                        pctl.playing_time = pctl.jump_time
+                        gui.update = 1
+                        pctl.jump_time = 0
 
                     if instant:
                         print("Do transition QUICK")
@@ -645,7 +649,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             bytes_position = BASS_ChannelSeconds2Bytes(user, pctl.start_time + pctl.jump_time)
             BASS_ChannelSetPosition(user, bytes_position, 0)
 
-        pctl.playing_time = 0
+        pctl.playing_time = pctl.jump_time
+        pctl.jump_time = 0
         BASS_ChannelSetPosition(channel, 0, 0)
         # print("Set position")
         # print(BASS_ErrorGetCode())
