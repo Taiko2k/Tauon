@@ -3,8 +3,9 @@ Changelog-------------------------------------
 
 v3.5.4
 
- - Added option to resume playback on app restart
- - Added option to finish currently playing album when queuing an album
+ - Added settings option to resume playback on app restart
+ - Added settings option to finish currently playing album when queuing an album
+ - Added config option to force mono audio (bass only)
  - Improved playback modes to remember setting after restart
  - Improved download monitor archive contents detection
  - Fixed a crash when double clicking item in queue

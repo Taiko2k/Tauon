@@ -668,6 +668,8 @@ class Prefs:    # Used to hold any kind of settings
         self.reload_play_state = False # Resume playback on app restart
         self.reload_state = None
 
+        self.mono = False
+
 
 prefs = Prefs()
 
@@ -1695,6 +1697,8 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                         print("Additional directory: " + path)
                     else:
                         print("Directory was not found: " + path)
+            if 'force-mono' in p:
+                prefs.mono = True
 
 else:
     print("Warning: Missing config file")

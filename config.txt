@@ -5,6 +5,8 @@
 #pause-fade-time=400
 #cross-fade-time=700
 
+#force-mono (libbass only)
+
 ### Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
 
 #log-volume-scale
