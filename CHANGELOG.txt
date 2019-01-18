@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.5.4
 
+ - Added option to resume playback on app restart
  - Added option to finish currently playing album when queuing an album
  - Improved playback modes to remember setting after restart
  - Improved download monitor archive contents detection
@@ -10,6 +11,9 @@ v3.5.4
  - Fixed a crash if adding item to queue with blank slate
  - Fixed download monitor indicator being delayed on startup
  - Fixed crash on starting inbound stream
+ - Fixed radio random and revert causing seek bar to visually momentarily jump to zero
+ - Fixed case where using revert function to missing file could cause next track to not start at beginning
+ - [GStreamer] Fixed radio random and revert not setting start time
 
 v3.5.3
 
