@@ -245,6 +245,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_MIXER_PAUSE = 0x20000
 
     BASS_DEVICE_DMIX = 0x2000
+    BASS_DEVICE_MONO = 2
 
     BASS_CONFIG_ASYNCFILE_BUFFER = 45
 
@@ -258,6 +259,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     # open_flag |= BASS_STREAM_DECODE
     open_flag |= BASS_SAMPLE_FLOAT
     open_flag |= BASS_STREAM_AUTOFREE
+
+    init_flag = BASS_DEVICE_DMIX
+    if prefs.mono:
+        init_flag |= BASS_DEVICE_MONO
 
     # gap1
     class BassGapless:
@@ -317,7 +322,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         current = BASS_DEVICE_INIT & flags
 
         if name != "" and name == prefs.last_device:
-            BassInitSuccess = BASS_Init(a, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
+            BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
             pctl.set_device = a
             print("Set output device as: " + name)
             bass_ready = True
@@ -331,7 +336,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     bass_init_success = False
     if not bass_ready:
-        bass_init_success = BASS_Init(-1, 48000, BASS_DEVICE_DMIX, gui.window_id, 0)
+        bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
         print("Using default sound device")
     if bass_init_success == True:
         print("Bass library initialised")
@@ -977,7 +982,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 pctl.playing_state = 0
                 pctl.playing_time = 0
                 print("Changing output device")
-                print(BASS_Init(pctl.set_device, 48000, BASS_DEVICE_DMIX, gui.window_id, 0))
+                print(BASS_Init(pctl.set_device, 48000, init_flag, gui.window_id, 0))
                 result = BASS_SetDevice(pctl.set_device)
                 print(result)
                 if result is False:

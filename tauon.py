@@ -69,7 +69,9 @@ flatpak_mode = False
 if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/":
     install_mode = True
     if install_directory[:5] == "/app/":
-        t_id = "com.github.taiko2k.tauonmb"  # Flatpak mode
+        # Flatpak mode
+
+        t_id = "com.github.taiko2k.tauonmb"
         print("Running as Flatpak")
 
         # Clear shader cache as workaround for segfault on runtime update
@@ -139,12 +141,12 @@ transfer_target = user_directory + "/transfer.p"
 print('Install directory: ' + install_directory)
 b_active_directory = install_directory.encode('utf-8')
 
-
+# Find home music folder
 music_folder = None
 if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
     music_folder = os.path.expanduser('~').replace("\\", '/') + "/Music"
 
-
+# Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
     if flatpak_mode:
         complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
@@ -3608,7 +3610,7 @@ class LastScrob:
 
     def process_queue(self):
 
-        time.sleep(1)
+        time.sleep(0.5)
 
         while self.queue:
             try:
@@ -3629,7 +3631,7 @@ class LastScrob:
                     print("Re-queue scrobble")
                     self.queue.append(tr)
 
-                time.sleep(0.5)
+                time.sleep(0.2)
 
             except:
                 print("SCROBBLE QUEUE ERROR")
@@ -13663,7 +13665,7 @@ def toggle_expose_web(mode=0):
     if not gui.web_running:
         return
     else:
-        show_message("Web server needs restart for this change to take effect.")
+        show_message(_("Web server needs restart for this change to take effect."))
 
 def toggle_scrobble_mark(mode=0):
     if mode == 1:
@@ -13835,18 +13837,18 @@ def toggle_transition_gapless(mode=0):
 
 # config_items.append(['Turn off playlist title breaks', toggle_break])
 
-config_items.append(['Use double digit track indices', toggle_dd])
+config_items.append([_('Use double digit track indices'), toggle_dd])
 
 # config_items.append(['Use custom line format [broken]', toggle_custom_line])
 
 # config_items.append(['Always use folder name as title', toggle_use_title])
 
-config_items.append(['Add release year to folder title', toggle_append_date])
-config_items.append(['Add total duration to folder title', toggle_append_total_time])
+config_items.append([_('Add release year to folder title'), toggle_append_date])
+config_items.append([_('Add total duration to folder title'), toggle_append_total_time])
 
-config_items.append(['Shuffle avoids repeats', toggle_true_shuffle])
+config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
-config_items.append(['Finish current when queuing album', toggle_finish_current])
+config_items.append([_('Finish current when queuing album'), toggle_finish_current])
 
 # config_items.append(['Playback advances to open playlist', toggle_follow])
 
@@ -13962,16 +13964,16 @@ class Over:
             y = self.box_y + 87 * gui.scale
             x = self.box_x + 130 * gui.scale
 
-            ddt.draw_text((x, y - 22 * gui.scale), "ReplayGain", colours.grey_blend_bg(100), 12)
+            ddt.draw_text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(100), 12)
 
             y += 6 * gui.scale
             x += 10 * gui.scale
 
             # self.toggle_square(x, y, switch_rg_off, "Off")
             # y += 23 * gui.scale
-            self.toggle_square(x, y, switch_rg_track, "Track Gain")
+            self.toggle_square(x, y, switch_rg_track, _("Track Gain"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, switch_rg_album, "Album Gain")
+            self.toggle_square(x, y, switch_rg_album, _("Album Gain"))
 
 
             x -= 10 * gui.scale
@@ -13992,7 +13994,7 @@ class Over:
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
 
-            ddt.draw_text((x, y - 22 * gui.scale), "Set audio output device", [185, 185, 185, 255], 212)
+            ddt.draw_text((x, y - 22 * gui.scale), _("Set audio output device"), [185, 185, 185, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             for item in pctl.bass_devices:
@@ -14020,7 +14022,7 @@ class Over:
                 y += 14 * gui.scale
 
             y = self.box_y + 225 * gui.scale
-            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), "Settings apply on track change", colours.grey(100), 11)
+            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply on track change"), colours.grey(100), 11)
 
 
     def funcs(self):
@@ -14059,9 +14061,9 @@ class Over:
 
 
         y += 35 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, "Allow external connections")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, "Allow remote control")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
         y += 23 * gui.scale
 
         y -= (23 + 23 + 25) * gui.scale
@@ -14091,11 +14093,11 @@ class Over:
 
         y += 10 * gui.scale
         #self.toggle_square(x, y - 25 * gui.scale, toggle_cache, "Cache gallery to disk")
-        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, "Resume playback on app restart")
+        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, _("Resume playback on app restart"))
         # y += 25 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
         y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, "Trash archive after extraction")
+        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
         y += 23 * gui.scale
@@ -14359,7 +14361,7 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        ddt.draw_text((x, y), "Gallery art size", colours.grey(210), 11)
+        ddt.draw_text((x, y), _("Gallery art size"), colours.grey(210), 11)
 
         x += 95 * gui.scale
 
@@ -14381,15 +14383,15 @@ class Over:
         y1 = y
 
 
-        ddt.draw_text((x, y), "Window", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
         y += 25 * gui.scale
 
-        self.toggle_square(x, y, toggle_borderless, "Draw own window decorations")
+        self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
 
         y += 28 * gui.scale
         if not draw_border:
-            self.toggle_square(x, y, toggle_titlebar_line, "Show playing in titlebar")
+            self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
         y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
@@ -14399,8 +14401,8 @@ class Over:
 
         y += 25 * gui.scale
         self.toggle_square(x, y, scale2, "2x")
-        self.button(x + 268 * gui.scale, y + 5 * gui.scale, "Next Theme (F2)", advance_theme)
-        self.button(x + 165 * gui.scale, y + 5 * gui.scale, "Previous Theme", self.devance_theme)
+        self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
+        self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
         ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(100), 13)
 
         y += 28 * gui.scale
@@ -14415,34 +14417,34 @@ class Over:
         y += 28 * gui.scale
 
 
-        ddt.draw_text((x, y), "Gallery", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
         # y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 26 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, "Show titles in gallery")
+        self.toggle_square(x, y, toggle_galler_text, _("Show titles in gallery"))
         y += 28 * gui.scale
         #y += 28 * gui.scale
 
-        ddt.draw_text((x, y), "Misc", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
 
         y += 26 * gui.scale
 
 
         if prefs.backend == 1:
-            self.toggle_square(x, y, toggle_level_meter, "Show visualisation")
+            self.toggle_square(x, y, toggle_level_meter, _("Show visualisation"))
             y += 26 * gui.scale
 
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
         if desktop == 'GNOME' or desktop == 'KDE':
-            self.toggle_square(x, y, toggle_notifications, "Show desktop notifications")
+            self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 26 * gui.scale
 
 
-        self.toggle_square(x, y, toggle_auto_theme, "Auto theme from album art")
+        self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
 
         y += 28 * gui.scale
 
@@ -14549,7 +14551,7 @@ class Over:
         x = self.box_x + self.w - 100 * gui.scale
         y = self.box_y + self.h - 35 * gui.scale
 
-        self.button(x, y, "Show License", open_license)
+        self.button(x, y, _("Show License"), open_license)
 
     def stats(self):
 
@@ -14575,13 +14577,13 @@ class Over:
 
         line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
 
-        ddt.draw_text((x1, y1), "Tracks in playlist", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Tracks in playlist"), colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), "Albums in playlist", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Albums in playlist"), colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), "Playlist duration", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Playlist duration"), colours.grey_blend_bg(100), 12)
 
 
 
@@ -14598,14 +14600,14 @@ class Over:
 
 
         y1 += 40 * gui.scale
-        ddt.draw_text((x1, y1), "Tracks in database", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Tracks in database"), colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), "Total albums", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Total albums"), colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(220), 12)
 
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), "Total playtime", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Total playtime"), colours.grey_blend_bg(100), 12)
         ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(220), 15)
 
@@ -17406,9 +17408,14 @@ class PlaylistBox:
         tab_title_colour = [230, 230, 230, 255]
 
         light_mode = False
+        print(test_lumi(colours.side_panel_background))
         if test_lumi(colours.side_panel_background) < 0.55:
             light_mode = True
             tab_title_colour = [20, 20, 20, 255]
+
+        dark_mode = False
+        if test_lumi(colours.side_panel_background) > 0.8:
+            dark_mode = True
 
         show_scroll = False
         tab_start = x + 10 * gui.scale
@@ -17500,11 +17507,15 @@ class PlaylistBox:
             if semi_light:
                 bg = [45, 45, 45, 255]
 
+
             # Additional highlight reasons
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
-                bg = [255, 255, 255, 14]
+                bg = [255, 255, 255, 25]
+
+                if dark_mode:
+                    bg = [255, 255, 255, 15]
                 if light_mode:
-                    bg = [0, 0, 0, 15]
+                    bg = [0, 0, 0, 25]
                 if semi_light:
                     bg = [55, 55, 55, 255]
 
@@ -17522,8 +17533,13 @@ class PlaylistBox:
 
 
             indicator_colour = [100, 200, 90, 255]
+            # if light_mode:
+            #     indicator_colour = [0, 210, 0, 255]
             if hidden:
                 indicator_colour = [60, 60, 60, 255]
+                if not dark_mode:
+                    indicator_colour = [120, 120, 120, 180]
+
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
 
@@ -23560,7 +23576,7 @@ print("SDL unloaded")
 exit_timer = Timer()
 exit_timer.set()
 while pctl.playerCommand != 'done' or lfm_scrobbler.running:
-    time.sleep(0.2)
+    time.sleep(0.1)
     if exit_timer.get() > 3:
         print("Unload timeout")
         break
