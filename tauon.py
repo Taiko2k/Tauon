@@ -12579,16 +12579,26 @@ def worker1():
 
                 folder_items = transcode_list[0]
 
-                folder_name = encode_folder_name(pctl.master_library[folder_items[0]])
+                ref_track_object = pctl.master_library[folder_items[0]]
+                ref_album = ref_track_object.album
 
+                # Generate a folder name based on artist and album of first track in batch
+                folder_name = encode_folder_name(ref_track_object)
+
+                # If folder contains tracks from multiple albums, use original folder name instead
+                for item in folder_items:
+                    test_object = pctl.master_library[item]
+                    if test_object.album != ref_album:
+                        folder_name = ref_track_object.parent_folder_name
+                        break
 
                 print("Transcoding folder: " + folder_name)
 
+                # Remove any existing matching folder
                 if os.path.isdir(prefs.encoder_output + folder_name):
                     shutil.rmtree(prefs.encoder_output + folder_name)
-                    # del transcode_list[0]
-                    # continue
 
+                # Create new empty folder to output tracks to
                 os.makedirs(prefs.encoder_output + folder_name)
 
                 working_folder = prefs.encoder_output + folder_name
@@ -12602,8 +12612,6 @@ def worker1():
                     os.remove(full_wav_out_p)
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
-
-                # if prefs.transcode_mode == 'single':  #  Previously there was a CUE option
 
                 if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
                     global core_use
@@ -12669,18 +12677,11 @@ def worker1():
                             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                         subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
                                         startupinfo=startupinfo)
-                        # out = subprocess.popen.communicate(shlex.split(command), stdout=subprocess.PIPE, shell=False,
-                        #                 startupinfo=startupinfo)
-                        # print(out)
-
-                        # print('Done transcoding track via ffmpeg')
 
                         transcode_state = "(Encoding)"
                         gui.update += 1
 
                         if prefs.transcode_codec == 'mp3':
-
-                            #print("hit")
 
                             command = user_directory + '/encoder/lame --silent --abr ' + str(
                                 prefs.transcode_bitrate) + ' '
@@ -12692,7 +12693,6 @@ def worker1():
                                 command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
 
                                                                                                                "") + '" '
-
                             if len(str(pctl.master_library[item].track_number)) < 4 and str(
                                     pctl.master_library[item].track_number).isdigit():
                                 command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
@@ -12708,7 +12708,6 @@ def worker1():
                             if pctl.master_library[item].album != "":
                                 command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
                                                                                                                "") + '" '
-
                             command += full_wav_out + ' ' + full_target_out
 
                             print(shlex.split(command))
@@ -12726,10 +12725,8 @@ def worker1():
                             print(output_dir)
                             shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
 
-                            #print(command)
 
                 output_dir = prefs.encoder_output + folder_name + "/"
-                #album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + folder_name)
                 album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
 
                 del transcode_list[0]
@@ -12738,9 +12735,10 @@ def worker1():
 
             except:
                 transcode_state = "Transcode Error"
-                show_message("Encode failed.", 'error', "An unknown error was encountered.")
-                gui.update += 1
                 time.sleep(0.2)
+                show_message("Transcode failed.", 'error', "An error was encountered.")
+                gui.update += 1
+                time.sleep(0.1)
                 del transcode_list[0]
 
             if len(transcode_list) == 0:
@@ -12788,7 +12786,6 @@ def worker1():
 
 
                     loaderCommand = LC_Done
-                    # print('ADDED: ' + str(added))
                     order.tracks = added
 
                     # Double check for cue dupes
@@ -17408,7 +17405,7 @@ class PlaylistBox:
         tab_title_colour = [230, 230, 230, 255]
 
         light_mode = False
-        print(test_lumi(colours.side_panel_background))
+        # print(test_lumi(colours.side_panel_background))
         if test_lumi(colours.side_panel_background) < 0.55:
             light_mode = True
             tab_title_colour = [20, 20, 20, 255]
@@ -18988,8 +18985,8 @@ class GalleryJumper:
                 #print(self.tags[-1:][0][1])
                 self.tags.append((album, os.path.basename(counts[0][0])))
 
-        print(self.tags)
-        print(len(self.tags))
+        # print(self.tags)
+        # print(len(self.tags))
 
 
 gallery_jumper = GalleryJumper()
@@ -21608,7 +21605,7 @@ while pctl.running:
 
                         # print(order.tracks)
                         if order.playlist_position is not None:
-                            print(order.playlist_position)
+                            # print(order.playlist_position)
                             pctl.multi_playlist[target_pl][2][order.playlist_position:order.playlist_position] = order.tracks
                         else:
 
