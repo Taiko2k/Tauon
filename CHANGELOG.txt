@@ -1,9 +1,11 @@
 
 Changelog-------------------------------------
 
-v3.5.5
+v3.6.0
 
+ - Changed last.fm login to use web authorisation method
  - Tweaked transcoder to use original folder name when tracks from multiple albums are detected
+ - Fixed a bug where "disk total" field would not show for some formats
 
 v3.5.4
 

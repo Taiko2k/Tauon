@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.5.4"
+t_version = "v3.6.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -220,10 +220,10 @@ import base64
 import re
 import zipfile
 import warnings
-import struct
+# import struct
 import colorsys
 import html
-import csv
+# import csv
 import stat
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -309,7 +309,6 @@ if discord_allow:
 message_box_min_timer = Timer()
 cursor_blink_timer = Timer()
 animate_monitor_timer = Timer()
-spec_decay_timer = Timer()
 min_render_timer = Timer()
 check_file_timer = Timer()
 vis_rate_timer = Timer()
@@ -321,7 +320,6 @@ core_timer = Timer()
 gallery_select_animate_timer = Timer()
 gallery_select_animate_timer.force_set(10)
 search_clear_timer = Timer()
-test_timer = Timer()
 lfm_dl_timer = Timer()
 lfm_dl_timer.force_set(60)
 gall_pl_switch_timer = Timer()
@@ -358,7 +356,6 @@ last_row = 0
 album_v_gap = 66
 album_h_gap = 30
 album_mode_art_size = 200
-albums_to_render = 0
 
 album_pos_px = 1
 time_last_save = 0
@@ -460,7 +457,7 @@ cargo = []
 # pl_follow = False
 
 # List of encodings to check for with the fix mojibake function
-encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']  # These are the most common for Japanese
+encodings = ['cp932', 'utf-8', 'big5hkscs', 'gbk']  # These seem to be the most common for Japanese
 
 track_box = False
 
@@ -523,9 +520,7 @@ rename_index = 0
 quick_search_mode = False
 search_index = 0
 
-lfm_password = ""
-lfm_username = ""
-lfm_hash = ""
+
 # ----------------------------------------
 # Playlist right click menu
 
@@ -589,7 +584,7 @@ class Prefs:    # Used to hold any kind of settings
         self.transcode_mode = 'single'
         self.transcode_bitrate = 64
 
-        self.line_style = 1
+        # self.line_style = 1
         self.device = 1
         self.device_name = ""
 
@@ -671,6 +666,9 @@ class Prefs:    # Used to hold any kind of settings
         self.reload_state = None
 
         self.mono = False
+
+        self.last_fm_token = None
+        self.last_fm_username = ""
 
 
 prefs = Prefs()
@@ -760,8 +758,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.panelBY = 51 * self.scale
         self.panelY = round(30 * self.scale)
 
-        self.artboxY = self.panelY + (8 * self.scale)
-
         self.playlist_top = self.panelY + (8 * self.scale)
         self.playlist_top_bk = self.playlist_top
         self.offset_extra = 0
@@ -773,10 +769,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.compact_bar = False
         self.abc = None
         self.ttext = None
-        #self.side_panel_size = 80 + int(window_size[0] * 0.18)
-        #self.playlist_width = int(window_size[0] * 0.65) + 25
-
-        self.set_load_old = False
 
         self.trunk_end = "..." # "…"
         self.temp_themes = {}
@@ -1235,6 +1227,16 @@ rename_folder_previous = ""
 p_force_queue = []
 
 reload_state = None
+
+
+def show_message(text, message_mode='info', subtext=""):
+    gui.message_box = True
+    gui.message_text = text
+    gui.message_mode = message_mode
+    gui.message_subtext = subtext
+    message_box_min_timer.set()
+    gui.update = 1
+
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
@@ -1270,8 +1272,10 @@ try:
     radio_field_text = save[12]
     theme = save[13]
     folder_image_offsets = save[14]
-    lfm_username = save[15]
-    lfm_hash = save[16]
+    #lfm_username = save[15]
+    #lfm_hash = save[16]
+    if save[16] is not None and save[16]:  # it should be None from now on
+        show_message("Upgrade note: Last.fm loggout.", 'info', "This new version changes how last.fm login works. You will need to log back in.")
     db_version = save[17]
     view_prefs = save[18]
     window_size = save[19]
@@ -1307,8 +1311,8 @@ try:
         prefs.transcode_codec = save[36]
     if save[37] is not None:
         prefs.transcode_bitrate = save[37]
-    if save[38] is not None:
-        prefs.line_style = save[38]
+    # if save[38] is not None:
+    #     prefs.line_style = save[38]
     # if save[39] is not None:
     #     prefs.cache_gallery = save[39]
     if save[40] is not None:
@@ -1317,7 +1321,6 @@ try:
         prefs.use_title = save[41]
     if save[42] is not None:
         gui.pl_st = save[42]
-        gui.set_load_old = True
     # if save[43] is not None:
     #     gui.set_mode = save[43]
     #     gui.set_bar = gui.set_mode
@@ -1427,7 +1430,10 @@ try:
         reload_state = save[97]
     if save[98] is not None:
         prefs.reload_play_state = save[98]
-
+    if save[99] is not None:
+        prefs.last_fm_token = save[99]
+    if save[100] is not None:
+        prefs.last_fm_username = save[100]
 
     state_file.close()
     del save
@@ -1456,15 +1462,6 @@ if prefs.backend == 2:
 if window_size is None:
     window_size = window_default_size
     gui.rspw = 200
-
-
-def show_message(text, message_mode='info', subtext=""):
-    gui.message_box = True
-    gui.message_text = text
-    gui.message_mode = message_mode
-    gui.message_subtext = subtext
-    message_box_min_timer.set()
-    gui.update = 1
 
 def track_number_process(line):
     line = str(line).split("/", 1)[0].lstrip("0")
@@ -1605,11 +1602,6 @@ if db_version > 0:
            theme += 1
 
 # Loading Config -----------------
-
-# main_font = 'Koruri-Regular.ttf'  # these fonts are no longer used
-# alt_font = 'DroidSansFallback.ttf'
-# gui_font = 'Koruri-Semibold.ttf'
-#light_font = 'Koruri-Light.ttf'
 
 download_directories = []
 
@@ -1774,7 +1766,7 @@ def tag_scan(nt):
             nt.lyrics = audio.lyrics
             nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
-            nt.disk_total = audio.disc_total
+            nt.disc_total = audio.disc_total
             nt.comment = audio.comment
             nt.track_gain = audio.track_gain
             nt.album_gain = audio.album_gain
@@ -1815,7 +1807,7 @@ def tag_scan(nt):
             nt.lyrics = audio.lyrics
             nt.disc_number = audio.disc_number
             nt.track_total = audio.track_total
-            nt.disk_total = audio.disc_total
+            nt.disc_total = audio.disc_total
             nt.comment = audio.comment
             nt.track_gain = audio.track_gain
             nt.album_gain = audio.album_gain
@@ -1848,7 +1840,7 @@ def tag_scan(nt):
             if nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             nt.track_total = audio.track_total
-            nt.disk_total = audio.disc_total
+            nt.disc_total = audio.disc_total
             nt.comment = audio.comment
 
             if audio.found_tag is False:
@@ -1890,12 +1882,11 @@ def tag_scan(nt):
             nt.lyrics = audio.lyrics
             nt.bitrate = audio.bit_rate
             #nt.track_total = audio.track_total
-            #nt.disk_total = audio.disc_total
+            #nt.disc_total = audio.disc_total
             nt.comment = audio.comment
             #nt.track_gain = audio.track_gain
             #nt.album_gain = audio.album_gain
             #nt.cue_sheet = audio.cue_sheet
-
 
             return nt
 
@@ -2110,12 +2101,8 @@ class PlayerCtl:
         return self.master_library[index]
 
     def playing_object(self):
+
         if len(self.track_queue) > 0:
-
-            # if self.queue_step > len(self.track_queue) - 1:
-            #     self.queue_step = len(self.track_queue) - 1
-            #     print("The queue position was out of range!")
-
             return self.master_library[self.track_queue[self.queue_step]]
         else:
             return None
@@ -2476,7 +2463,6 @@ class PlayerCtl:
         else:
             self.play()
 
-
     def seek_decimal(self, decimal):
 
         if self.playing_state == 1 or self.playing_state == 2:
@@ -2659,7 +2645,6 @@ class PlayerCtl:
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
 
-
         # Trim the history if it gets too long
         while len(self.track_queue) > 250:
             self.queue_step -= 1
@@ -2758,8 +2743,6 @@ class PlayerCtl:
 
                         #self.advance()
                         #return
-
-
 
             else:
                 # This is track type
@@ -3037,7 +3020,6 @@ class PlayerCtl:
         # if album_mode:
         #     goto_album(self.playlist_playing)
 
-
         self.render_playlist()
 
         self.notify_update()
@@ -3100,10 +3082,11 @@ def notify_song(notify_of_end=False):
 
 # Last.FM -----------------------------------------------------------------
 class LastFMapi:
-    API_SECRET = "18c471e5475e7e877b126843d447e855"
+
+    API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
     connected = False
     hold = False
-    API_KEY = "0eea8ea966ab2ca395731e2c3c22e81e"
+    API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
     scanning_username = ""
 
     network = None
@@ -3111,11 +3094,57 @@ class LastFMapi:
 
     scanning_friends = False
 
-    def connect(self, m_notify=True):
+    def __init__(self):
 
-        global lfm_password
-        global lfm_username
-        global lfm_hash
+        self.sg = None
+        self.url = None
+
+    def auth1(self):
+
+        # This is step one where the user clicks "login"
+
+        if self.network is None:
+            self.no_user_connect()
+
+        self.sg = pylast.SessionKeyGenerator(self.network)
+        self.url = self.sg.get_web_auth_url()
+        show_message("Web auth paged opened", 'arrow', "Once authorised click the 'done' button.")
+        webbrowser.open(self.url, new=2, autoraise=True)
+
+    def auth2(self):
+
+        # This is step 2 where the user clicks "Done"
+
+        if self.sg is None:
+            show_message("You need to login first")
+            return
+
+        try:
+            # session_key = self.sg.get_web_auth_session_key(self.url)
+            session_key, username = self.sg.get_web_auth_session_key_username(self.url)
+            prefs.last_fm_token = session_key
+            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
+                self.API_SECRET, session_key=prefs.last_fm_token)
+            # user = self.network.get_authenticated_user()
+            # username = user.get_name()
+            prefs.last_fm_username = username
+
+        except Exception as e:
+            if 'Unauthorized Token' in str(e):
+                show_message("Error - Not authorized", 'error')
+            else:
+                show_message("Error", 'error', 'Unknown error.')
+
+    def auth3(self):
+
+        # This is used for "logout"
+
+        prefs.last_fm_token = None
+        prefs.last_fm_username = ""
+        show_message("Logout will complete on app restart.")
+
+
+    def connect(self, m_notify=True):
 
         if not last_fm_enable:
             return False
@@ -3125,26 +3154,16 @@ class LastFMapi:
                 show_message("Already connected to Last.fm")
             return True
 
-        if lfm_username == "":
-            show_message("No Last.fm account information.", "warning", "See Last.fm tab in settings.")
-            return False
-
-        if lfm_hash == "":
-            if lfm_password == "":
-                show_message("Missing Password.", 'warning', "See Last.fm tab in settings.")
-                return False
-            else:
-                lfm_hash = pylast.md5(lfm_password)
+        if prefs.last_fm_token is None:
+            show_message("No Last.Fm account registered", 'info', "Authorise an account in settings")
+            return
 
         print('Attempting to connect to Last.fm network')
 
         try:
-            # print(lfm_username)
-            # print(lfm_hash)
-            # print(lfm_password)
 
             self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
-            self.API_SECRET, username=lfm_username, password_hash=lfm_hash)
+                self.API_SECRET, session_key=prefs.last_fm_token) #, username=lfm_username, password_hash=lfm_hash)
 
             self.connected = True
             if m_notify:
@@ -3165,7 +3184,8 @@ class LastFMapi:
         #    self.connect()
 
     def details_ready(self):
-        if len(lfm_username) > 1 and len(lfm_username) > 1 and prefs.auto_lfm:
+        if prefs.last_fm_token:
+        #if len(lfm_username) > 1 and len(lfm_username) > 1 and prefs.auto_lfm:
             return True
         else:
             return False
@@ -3173,11 +3193,10 @@ class LastFMapi:
     def no_user_connect(self):
 
         try:
-            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=
-            self.API_SECRET)
-
+            self.network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
             print('Connection appears successful')
             return True
+
         except Exception as e:
             show_message("Error communicating with Last.fm network", "warning", str(e))
             print(e)
@@ -3230,7 +3249,7 @@ class LastFMapi:
 
             if 'retry' in str(e):
                 print("Retrying...")
-                time.sleep(12)
+                time.sleep(7)
 
                 try:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
@@ -3290,10 +3309,9 @@ class LastFMapi:
         self.scanning_friends = True
 
         try:
-            global lfm_username
-            username = lfm_username
+            username = prefs.last_fm_username
 
-            if username == "":
+            if not username:
                 return
 
             if self.network is None:
@@ -3333,13 +3351,10 @@ class LastFMapi:
 
     def dl_love(self):
 
-        global lfm_username
-        username = lfm_username
 
-        if last_fm_user_field.text != "":
-            username = last_fm_user_field.text
+        username = prefs.last_fm_username
 
-        if username == "":
+        if not username:
             show_message("No username found", 'error')
             return
 
@@ -3351,7 +3366,6 @@ class LastFMapi:
         lfm_dl_timer.set()
 
         try:
-
             if self.network is None:
                 self.no_user_connect()
 
@@ -3405,6 +3419,8 @@ class LastFMapi:
         if prefs.auto_lfm:
             if self.connect(False) is False:
                 prefs.auto_lfm = False
+        else:
+            return 0
 
         # print('Updating Now Playing')
         try:
@@ -5509,9 +5525,6 @@ class AlbumArt():
                         if abs(colour[0] - cc[0]) < min_colour_varience and abs(
                                         colour[1] - cc[1]) < min_colour_varience and abs(
                                         colour[2] - cc[2]) < min_colour_varience:
-                            # if abs(colour[0] - cc[0]) + abs(
-                            #                 colour[1] - cc[1]) + abs(
-                            #                 colour[2] - cc[2]) < min_colour_varience:
                             break
                     else:
                         x_colours.append(colour)
@@ -5532,25 +5545,25 @@ class AlbumArt():
                 ar = 0
                 ti = 0
 
-                print("")
+                # print("")
 
                 if colour_value(colours.playlist_panel_background) < 120:
-                    print("Backgroud is dark")
+                    # print("Backgroud is dark")
                     bg = 1
                 if colour_value(colours.playlist_panel_background) > 300:
-                    print("Backgroud is Light")
+                    # print("Backgroud is Light")
                     bg = 2
                 if colour_value(colours.title_text) < 190:
-                    print("Title is dark")
+                    # print("Title is dark")
                     ti = 1
                 if colour_value(colours.title_text) > 300:
-                    print("Title is Light")
+                    # print("Title is Light")
                     ti = 2
                 if colour_value(colours.artist_text) < 190:
-                    print("Artist is dark")
+                    # print("Artist is dark")
                     ar = 1
                 if colour_value(colours.artist_text) > 400:
-                    print("Artist is Light")
+                    # print("Artist is Light")
                     ar = 2
 
                 if bg == 2 and ti == 2:
@@ -5584,21 +5597,21 @@ class AlbumArt():
                 colours.album_playing = colours.title_playing
 
                 gui.pl_update = 1
-                print("Bgr1: ", end="")
-                print(colours.playlist_panel_background)
-                print("Bgr2: ", end="")
-                print(colours.side_panel_background)
-                print("Txt1: ", end="")
-                print(colours.artist_text)
-                print("Txt2: ", end="")
-                print(colours.title_text)
-
-                print("Colours found: ", end="")
-                print(len(x_colours))
-                print("Background perceived lightness: ", end="")
+                # print("Bgr1: ", end="")
+                # print(colours.playlist_panel_background)
+                # print("Bgr2: ", end="")
+                # print(colours.side_panel_background)
+                # print("Txt1: ", end="")
+                # print(colours.artist_text)
+                # print("Txt2: ", end="")
+                # print(colours.title_text)
+                #
+                # print("Colours found: ", end="")
+                # print(len(x_colours))
+                # print("Background perceived lightness: ", end="")
                 prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
-                print(prcl, end="")
-                print("%")
+                # print(prcl, end="")
+                # print("%")
 
                 if prcl > 45:
                     ce = alpha_blend([0, 0, 0, 180], colours.playlist_panel_background) #[40, 40, 40, 255]
@@ -10816,7 +10829,7 @@ lastfm_icon.colour_callback = lastfm_colour
 
 def lastfm_menu_test(a):
 
-    if prefs.auto_lfm and lfm_username != "":
+    if prefs.last_fm_token is not None:
         return True
     return False
 
@@ -12984,63 +12997,6 @@ def gen_power2():
     return h
 
 
-# def gen_power(threshold_variable):
-#
-#     run = 0
-#     prev = None
-#     h = []
-#     l = ["a", 'b'] * 7
-#
-#     s = {}
-#     done = []
-#
-#     cc = random.random()
-#
-#     for position in album_dex:
-#
-#         index = default_playlist[position]
-#         tr = pctl.g(index)
-#
-#         li = tr.parent_folder_path.split("/")
-#
-#         for i, b in enumerate(li):
-#
-#             if i > 0 and ((tr.artist in b and tr.artist) or (tr.album in b and tr.album)):
-#                 a = li[i - 1]
-#
-#                 l.append(a)
-#                 del l[0]
-#
-#                 if not a in s:
-#                     s[a] = position
-#
-#                 o = None
-#                 if h:
-#                     o = h[-1].name
-#                 if checkEqual(l) and a != o:
-#                     if a not in done:
-#                         t = PowerTag()
-#                         t.name = a.upper()
-#                         t.position = s[a]
-#                         #t.colour = power_tag_colours.get(a)
-#                         h.append(t)
-#                         done.append(a)
-#
-#                 break
-#
-#     cj = 0.03
-#     if len(h) < 5:
-#         cj = 0.11
-#
-#     cj = 0.5 / max(len(h), 2)
-#
-#     for item in h:
-#         item.colour = hsl_to_rgb(cc, 0.8, 0.7)
-#         cc += cj
-#
-#     return h
-
-
 def reload_albums(quiet=False):
     global album_dex
     global update_layout
@@ -13075,8 +13031,6 @@ def reload_albums(quiet=False):
 
 
     # Generate POWER BAR
-
-
     gui.power_bar = gen_power2()
     gui.pt = 0
 
@@ -14146,58 +14100,29 @@ class Over:
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
         ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 170 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
-        if lfm_username != "":
-            line = "User: " + lfm_username
-            ddt.draw_text((x + 375 * gui.scale, y - 3 * gui.scale, 2), line, colours.grey_blend_bg(160), 213)
+        self.toggle_square(x + 148 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
 
-        rect = [x + 20 * gui.scale, y + 30 * gui.scale, 210 * gui.scale, 16 * gui.scale]
-        rect2 = [x + 20 * gui.scale, y + 60 * gui.scale, 210 * gui.scale, 16 * gui.scale]
-        if self.click:
-            if coll(rect):
-                self.lastfm_input_box = 0
+        ddt.draw_text((x + 295 * gui.scale, y - 3 * gui.scale, 2), "Username: ", colours.grey_blend_bg(60), 212)
+        ddt.draw_text((x + 360 * gui.scale, y - 3 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
-            elif coll(rect2):
-                self.lastfm_input_box = 1
+        y += 30 * gui.scale
 
-        if key_tab:
-            if self.lastfm_input_box == 0:
-                self.lastfm_input_box = 1
-            elif self.lastfm_input_box == 1:
-                self.lastfm_input_box = 0
-            else:
-                self.lastfm_input_box = 0
+        if prefs.last_fm_token is None:
+            self.button(x + 20 * gui.scale, y, "Login", lastfm.auth1, 65 * gui.scale)
+            self.button(x + 100 * gui.scale, y, "Done", lastfm.auth2, 65 * gui.scale)
 
-
-
-        bg = alpha_blend(colours.alpha_grey(10), colours.sys_background)
-
-
-        ddt.rect_r(rect, colours.alpha_grey(10), True)
-        ddt.rect_r(rect2, colours.alpha_grey(10), True)
-        if last_fm_user_field.text == "":
-            ddt.draw_text((rect[0] + 9 * gui.scale, rect[1]), "Username", colours.grey_blend_bg(60), 11, bg=bg)
-        if last_fm_pass_field.text == "":
-            ddt.draw_text((rect2[0] + 9 * gui.scale, rect2[1]), "Password", colours.grey_blend_bg(60), 11, bg=bg)
-
-        if self.lastfm_input_box == 0:
-            last_fm_user_field.draw(x + 25 * gui.scale, y + 30 * gui.scale, colours.grey_blend_bg(180), active=True, font=13, width=210, click=self.click, selection_height=16)
+            y += 30 * gui.scale
+            ddt.draw_text((x + 20 * gui.scale, y), "Click login to open the last.fm ",
+                          colours.grey_blend_bg(90), 11)
+            y += 14 * gui.scale
+            ddt.draw_text((x + 20 * gui.scale, y), "web authorisation page.",
+                          colours.grey_blend_bg(90), 11)
+            y += 14 * gui.scale
+            ddt.draw_text((x + 20 * gui.scale, y), 'Then return here and click "Done".',
+                          colours.grey_blend_bg(90), 11)
         else:
-            last_fm_user_field.draw(x + 25 * gui.scale, y + 30 * gui.scale, colours.grey_blend_bg(180), False, font=13)
+            self.button(x + 20 * gui.scale, y, "Forget account", lastfm.auth3)
 
-        if self.lastfm_input_box == 1:
-            last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), active=True, secret=True)
-        else:
-            last_fm_pass_field.draw(rect2[0] + 5 * gui.scale, rect2[1] - 1 * gui.scale, colours.grey_blend_bg(180), False, True)
-
-        if input.key_return_press:
-            self.update_lfm()
-
-
-        y += 95 * gui.scale
-
-        self.button(x + 50 * gui.scale, y, "Update", self.update_lfm, 65 * gui.scale)
-        self.button(x + 130 * gui.scale, y, "Clear", self.clear_lfm, 65 * gui.scale)
 
         # if not prefs.auto_lfm:
         #     x = self.box_x + 50 * gui.scale + int(self.w / 2)
@@ -14233,16 +14158,16 @@ class Over:
         x = self.box_x + self.item_x_offset + 310 * gui.scale
         self.toggle_square(x, y, toggle_scrobble_mark, "Show threshold marker")
 
-        x = self.box_x + 40 * gui.scale + self.item_x_offset
+        x = self.box_x + 20 * gui.scale + self.item_x_offset
         y = self.box_y + 170 * gui.scale
-        ddt.draw_text((x - 20 * gui.scale, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
+        ddt.draw_text((x, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
+        self.toggle_square(x + 110 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
         y += 30 * gui.scale
         self.button(x, y, "Paste Token", lb.paste_key)
         self.button(x + 85 * gui.scale, y, "Clear", lb.clear_key)
         if lb.key != None:
             line = lb.key
-            ddt.draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(160), 212)
+            ddt.draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(180), 212)
 
         y += 20 * gui.scale
         link_pa2 = draw_linked_text((x + 235 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
@@ -14276,30 +14201,6 @@ class Over:
         else:
             show_message("This process is already running. Wait for it to finish.")
 
-    def clear_lfm(self):
-        global lfm_hash
-        global lfm_password
-        global lfm_username
-        lfm_hash = ""
-        lfm_password = ""
-        lfm_username = ""
-        last_fm_user_field.text = ""
-        last_fm_pass_field.text = ""
-        self.lastfm_input_box = 0
-
-    def update_lfm(self):
-
-        global lfm_password
-        global lfm_username
-        global lfm_hash
-        lfm_password = last_fm_pass_field.text
-        lfm_username = last_fm_user_field.text
-        lfm_hash = ""
-        last_fm_pass_field.text = ""
-        self.lastfm_input_box = 3
-
-        if lastfm.connected:
-            show_message("You will need to restart app for new account to take effect.")
 
     def codec_config(self):
 
@@ -14816,11 +14717,10 @@ class Over:
 
         return value
 
-
-    def style_up(self):
-        prefs.line_style += 1
-        if prefs.line_style > 5:
-            prefs.line_style = 1
+    # def style_up(self):
+    #     prefs.line_style += 1
+    #     if prefs.line_style > 5:
+    #         prefs.line_style = 1
 
     def inside(self):
 
@@ -16919,7 +16819,7 @@ class StandardPlaylist:
             if not gui.set_mode:
 
                 line_render(n_track, p_track, gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w,
-                            this_line_playing, album_fade, left + inset_left, inset_width, prefs.line_style, gui.playlist_top + gui.playlist_row_height * w)
+                            this_line_playing, album_fade, left + inset_left, inset_width, 1, gui.playlist_top + gui.playlist_row_height * w)
             else:
                 # NEE ---------------------------------------------------------
 
@@ -18918,78 +18818,14 @@ class DLMon:
 
 dl_mon = DLMon()
 
+
 def dismiss_dl():
+
     dl_mon.ready.clear()
     dl_mon.done.update(dl_mon.watching)
     dl_mon.watching.clear()
 
-
 dl_menu.add("Dismiss", dismiss_dl)
-
-class GalleryJumper:
-
-    def __init__(self):
-        self.tags = []
-        self.threshold = 8
-
-
-    def calculate(self):
-
-        #print(album_dex)
-
-        self.tags = []
-        def key(item):
-            return len(item[0])
-
-        for a, album in enumerate(album_dex):
-
-
-            a1 = a - 25
-            a2 = a + 25
-            if a1 < 0:
-                a1 = 1
-            if a2 > len(album_dex) - 1:
-                a2 = len(album_dex) - 1
-
-            source = pctl.master_library[default_playlist[album]].parent_folder_path.replace("\\", "/")
-
-            samples = album_dex[a1:a2]
-
-            commons = []
-            for q in samples:
-                target = pctl.master_library[default_playlist[q]].parent_folder_path.replace("\\", "/")
-                common_path = os.path.commonpath([source, target])
-                #if pctl.master_library[default_playlist[q]].artist.lower() not in os.path.basename(target).lower():
-                commons.append(common_path)
-
-
-            counts = {i: commons.count(i) for i in commons}
-            counts = list(counts.items())
-            counts = sorted(counts, key=key)
-            counts = list(reversed(counts))
-            for i in reversed(range(len(counts))):
-                if counts[i][1] < self.threshold:
-                    del counts[i]
-
-            #print(counts)
-
-            if len(counts) == 0:
-                continue
-
-            #print("---")
-            #print(self.tags[-1:][0][1])
-            #print(counts[0][0])
-
-            if len(self.tags) == 0 or self.tags[-1:][0][1] != os.path.basename(counts[0][0]):
-
-                #print(self.tags[-1:][0][1])
-                self.tags.append((album, os.path.basename(counts[0][0])))
-
-        # print(self.tags)
-        # print(len(self.tags))
-
-
-gallery_jumper = GalleryJumper()
 
 
 class Fader:
@@ -19208,12 +19044,6 @@ if prefs.backend == 2:
 elif prefs.backend == 0:
     show_message("ERROR: No backend found", 'error')
 
-# total = 0
-# if gui.set_load_old is False:
-#     for i in range(len(gui.pl_st) - 1):
-#         total += gui.pl_st[i][1]
-#
-#     gui.pl_st[len(gui.pl_st) - 1][1] = gui.plw - 16 - total
 
 class Undo():
 
@@ -19557,8 +19387,8 @@ def save_state():
             radio_field.text,
             theme,
             folder_image_offsets,
-            lfm_username,
-            lfm_hash,
+            None, # lfm_username,
+            None, # lfm_hash,
             2.5,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
@@ -19571,7 +19401,7 @@ def save_state():
             prefs.enable_web,
             prefs.allow_remote,
             prefs.expose_web,
-            True,  #prefs.enable_transcode
+            True,  # prefs.enable_transcode
             prefs.show_rym,
             None,  # was combo mode art size
             gui.maximized,
@@ -19580,12 +19410,12 @@ def save_state():
             prefs.transcode_mode,
             prefs.transcode_codec,
             prefs.transcode_bitrate,
-            prefs.line_style,
+            1, # prefs.line_style,
             prefs.cache_gallery,
             prefs.playlist_font_size,
             prefs.use_title,
             gui.pl_st,
-            None, #gui.set_mode,
+            None, # gui.set_mode,
             None,
             prefs.playlist_row_height,
             prefs.show_wiki,
@@ -19641,7 +19471,8 @@ def save_state():
             prefs.finish_current,
             prefs.reload_state,  # 97
             prefs.reload_play_state,
-            None]
+            prefs.last_fm_token,
+            prefs.last_fm_username]
 
     #print(prefs.last_device + "-----")
 
@@ -23161,7 +22992,6 @@ while pctl.running:
 
             if len(gui.spec2_buffers) > 0 and vis_update:
                 vis_update = False
-                #print(test_timer.hit())
 
                 SDL_SetRenderTarget(renderer, gui.spec2_tex)
                 for i, value in enumerate(gui.spec2_buffers[0]):
