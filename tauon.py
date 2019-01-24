@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v3.6.0"
+t_version = "v 3.6.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -575,7 +575,7 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_transcode = True
         self.show_rym = False
         self.show_wiki = True
-        self.show_transfer = False
+        self.show_transfer = True
         self.show_queue = True
         self.prefer_bottom_title = True
         self.append_date = True
@@ -4247,7 +4247,7 @@ display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
 SDL_GetDisplayBounds(display_index, display_bounds)
 
-icon = IMG_Load(b_active_directory + b"/gui/icon.png")
+icon = IMG_Load(b_active_directory + b"/gui/icon-64.png")
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
@@ -9092,7 +9092,7 @@ def rename_tracks(index):
     input_text = ""
 
 
-rename_tracks_icon.colour = [245, 170, 0, 255]
+rename_tracks_icon.colour = [244, 241, 66, 255]
 rename_tracks_icon.xoff = 1
 track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
@@ -9610,11 +9610,17 @@ track_menu.add_to_sub(_("Reload Metadata"), 0, reload_metadata, pass_ref=True)
 if gui.scale == 2:
     mbp_icon = MenuIcon(LoadImageAsset('/gui/2x/mbp-g.png'))
     mbp_icon.base_asset = LoadImageAsset('/gui/2x/mbp-gs.png')
+elif gui.scale == 1.25:
+    mbp_icon = MenuIcon(LoadImageAsset('/gui/1.25x/mbp-g.png'))
+    mbp_icon.base_asset = LoadImageAsset('/gui/1.25x/mbp-gs.png')
 else:
     mbp_icon = MenuIcon(LoadImageAsset('/gui/mbp-g.png'))
     mbp_icon.base_asset = LoadImageAsset('/gui/mbp-gs.png')
 mbp_icon.xoff = 2
 mbp_icon.yoff = -1
+
+if gui.scale == 1.25:
+    mbp_icon.yoff = 0
 
 edit_icon = None
 if prefs.tag_editor_name == "Picard":
@@ -9905,6 +9911,9 @@ track_menu.add(_('Search Track on Genius'), ser_gen, pass_ref=True, show_test=to
 if gui.scale == 2:
     son_icon = MenuIcon(LoadImageAsset('/gui/2x/sonemic-g.png'))
     son_icon.base_asset = LoadImageAsset('/gui/2x/sonemic-gs.png')
+elif gui.scale == 1.25:
+    son_icon = MenuIcon(LoadImageAsset('/gui/1.25x/sonemic-g.png'))
+    son_icon.base_asset = LoadImageAsset('/gui/1.25x/sonemic-gs.png')
 else:
     son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
     son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
@@ -13268,7 +13277,8 @@ def webserv():
 
     @app.route('/favicon.ico')
     def favicon():
-        return send_file(install_directory + "/gui/v2.ico", mimetype='image/vnd.microsoft.icon')
+        return send_file(install_directory + "/gui/favicon.ico", mimetype='image/x-icon')
+
 
     @app.route('/remote/toggle-broadcast')
     def remote_toggle_broadcast():
@@ -13832,23 +13842,26 @@ class Over:
 
         self.init2done = False
         if gui.scale == 2:
-            self.about_image = LoadImageAsset('/gui/2x/v3-a.png')
-            self.about_image2 = LoadImageAsset('/gui/2x/v3-b.png')
-            self.about_image3 = LoadImageAsset('/gui/2x/v3-c.png')
+            self.about_image = LoadImageAsset('/gui/2x/v4-a.png')
+            self.about_image2 = LoadImageAsset('/gui/2x/v4-b.png')
+            self.about_image3 = LoadImageAsset('/gui/2x/v4-c.png')
+            self.about_image4 = LoadImageAsset('/gui/2x/v4-d.png')
         elif gui.scale == 1.25:
-            self.about_image = LoadImageAsset('/gui/1.25x/v3-a.png')
-            self.about_image2 = LoadImageAsset('/gui/1.25x/v3-b.png')
-            self.about_image3 = LoadImageAsset('/gui/1.25x/v3-c.png')
+            self.about_image = LoadImageAsset('/gui/1.25x/v4-a.png')
+            self.about_image2 = LoadImageAsset('/gui/1.25x/v4-b.png')
+            self.about_image3 = LoadImageAsset('/gui/1.25x/v4-c.png')
+            self.about_image4 = LoadImageAsset('/gui/1.25x/v4-d.png')
         else:
-            self.about_image = LoadImageAsset('/gui/v3-a.png')
-            self.about_image2 = LoadImageAsset('/gui/v3-b.png')
-            self.about_image3 = LoadImageAsset('/gui/v3-c.png')
+            self.about_image = LoadImageAsset('/gui/v4-a.png')
+            self.about_image2 = LoadImageAsset('/gui/v4-b.png')
+            self.about_image3 = LoadImageAsset('/gui/v4-c.png')
+            self.about_image4 = LoadImageAsset('/gui/v4-d.png')
 
-        self.w = 650 * gui.scale
+        self.w = 660 * gui.scale
         self.h = 250 * gui.scale
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
-        self.item_x_offset = 130 * gui.scale
+        self.item_x_offset = 140 * gui.scale
 
         self.current_path = os.path.expanduser('~')
         self.ext_colours = {}
@@ -13915,26 +13928,30 @@ class Over:
             y = self.box_y + 87 * gui.scale
             x = self.box_x + 130 * gui.scale
 
-            ddt.draw_text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(100), 12)
+            x += 8 * gui.scale
+            ddt.draw_text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(90), 12)
 
-            y += 6 * gui.scale
-            x += 10 * gui.scale
+            y += 4 * gui.scale
 
             # self.toggle_square(x, y, switch_rg_off, "Off")
             # y += 23 * gui.scale
-            self.toggle_square(x, y, switch_rg_track, _("Track Gain"))
+
+            self.toggle_square(x, y, switch_rg_album, _("Album gain"))
+            x += 105 * gui.scale
+            self.toggle_square(x, y, switch_rg_track, _("Track gain"))
+            x -= 105 * gui.scale
+
+            y += 46 * gui.scale
+
+            ddt.draw_text((x, y - 22 * gui.scale), _("Transitions"), colours.grey_blend_bg(90), 12)
+
+            y += 5 * gui.scale
+
+            self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade"))
+
             y += 23 * gui.scale
-            self.toggle_square(x, y, switch_rg_album, _("Album Gain"))
 
-
-            x -= 10 * gui.scale
-            y += 29 * gui.scale
-
-            self.toggle_square(x, y, toggle_transition_crossfade, _("Use crossfade at end of tracks"))
-
-            y += 23 * gui.scale
-
-            self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless transitions"))
+            self.toggle_square(x, y, toggle_transition_gapless, _("Use gapless playback"))
 
             y += 29 * gui.scale
 
@@ -13973,7 +13990,7 @@ class Over:
                 y += 14 * gui.scale
 
             y = self.box_y + 225 * gui.scale
-            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply on track change"), colours.grey(100), 11)
+            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
 
 
     def funcs(self):
@@ -14037,14 +14054,14 @@ class Over:
         # y += 23 * gui.scale
         # self.toggle_square(x, y, toggle_queue, _("Add to queue"))
         y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
+        #self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
 
         x = x1
         y = y1
 
         y += 10 * gui.scale
         #self.toggle_square(x, y - 25 * gui.scale, toggle_cache, "Cache gallery to disk")
-        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, _("Resume playback on app restart"))
+        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, _("Resume playback on launch"))
         # y += 25 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
         y += 23 * gui.scale
@@ -14099,8 +14116,8 @@ class Over:
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
-        ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 148 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
+        ddt.draw_text((x, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
+        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
 
         ddt.draw_text((x + 295 * gui.scale, y - 3 * gui.scale, 2), "Username: ", colours.grey_blend_bg(60), 212)
         ddt.draw_text((x + 360 * gui.scale, y - 3 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
@@ -14108,8 +14125,8 @@ class Over:
         y += 30 * gui.scale
 
         if prefs.last_fm_token is None:
-            self.button(x + 20 * gui.scale, y, "Login", lastfm.auth1, 65 * gui.scale)
-            self.button(x + 100 * gui.scale, y, "Done", lastfm.auth2, 65 * gui.scale)
+            self.button(x, y, "Login", lastfm.auth1, 65 * gui.scale)
+            self.button(x + 80 * gui.scale, y, "Done", lastfm.auth2, 65 * gui.scale)
 
             y += 30 * gui.scale
             ddt.draw_text((x + 20 * gui.scale, y), "Click login to open the last.fm ",
@@ -14121,7 +14138,7 @@ class Over:
             ddt.draw_text((x + 20 * gui.scale, y), 'Then return here and click "Done".',
                           colours.grey_blend_bg(90), 11)
         else:
-            self.button(x + 20 * gui.scale, y, "Forget account", lastfm.auth3)
+            self.button(x, y, "Forget account", lastfm.auth3)
 
 
         # if not prefs.auto_lfm:
@@ -14129,7 +14146,7 @@ class Over:
         #     y += 85 * gui.scale
         #     ddt.draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
-        x = self.box_x + self.item_x_offset + 260 * gui.scale
+        x = self.box_x + self.item_x_offset + 250 * gui.scale
         y = self.box_y + 45 * gui.scale
 
 
@@ -14158,19 +14175,22 @@ class Over:
         x = self.box_x + self.item_x_offset + 310 * gui.scale
         self.toggle_square(x, y, toggle_scrobble_mark, "Show threshold marker")
 
-        x = self.box_x + 20 * gui.scale + self.item_x_offset
+        x = self.box_x + self.item_x_offset
         y = self.box_y + 170 * gui.scale
         ddt.draw_text((x, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 110 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
+        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
         y += 30 * gui.scale
         self.button(x, y, "Paste Token", lb.paste_key)
         self.button(x + 85 * gui.scale, y, "Clear", lb.clear_key)
+
+        y -= 10 * gui.scale
+
         if lb.key != None:
             line = lb.key
-            ddt.draw_text((x + 320 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(180), 212)
+            ddt.draw_text((x + 370 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(180), 212)
 
         y += 20 * gui.scale
-        link_pa2 = draw_linked_text((x + 235 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
+        link_pa2 = draw_linked_text((x + 285 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
         link_rect2 = [x + 235 * gui.scale, y, link_pa2[1], 20 * gui.scale]
         fields.add(link_rect2)
 
@@ -14259,7 +14279,7 @@ class Over:
         x += 10 * gui.scale
         y += 25 * gui.scale
 
-        ddt.draw_text((x, y), _("Gallery art size"), colours.grey(210), 11)
+        ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
         x += 95 * gui.scale
 
@@ -14301,7 +14321,7 @@ class Over:
         self.toggle_square(x, y, scale2, "2x")
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(100), 13)
+        ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
 
         y += 28 * gui.scale
         y += 10 * gui.scale
@@ -14366,18 +14386,28 @@ class Over:
 
         icon_rect = (x - 100 * gui.scale, y - 10 * gui.scale, self.about_image.w, self.about_image.h)
 
-        if pctl.playing_object() is not None and 'rock' in pctl.playing_object().genre.lower():
-            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
-        elif pctl.playing_object() is not None and 'metal' in pctl.playing_object().genre.lower():
-            self.about_image.render(x - 100 * gui.scale, y - 10 * gui.scale)
-        elif pctl.playing_object() is not None and 'ambient' in pctl.playing_object().genre.lower():
-            self.about_image3.render(x - 100 * gui.scale, y - 10 * gui.scale)
-        else:
-            self.about_image2.render(x - 100 * gui.scale, y - 10 * gui.scale)
+        genre = ""
+        if pctl.playing_object() is not None:
+            genre = pctl.playing_object().genre.lower()
+
+            if any(s in genre for s in ['ock', 'lt']):
+                self.about_image2.render(x - 110 * gui.scale, y - 15 * gui.scale)
+                genre = ""
+            elif any(s in genre for s in ['syn', 'pop']):
+                self.about_image4.render(x - 110 * gui.scale, y - 15 * gui.scale)
+                genre = ""
+            elif any(s in genre for s in ['tro', 'cid']):
+                self.about_image4.render(x - 110 * gui.scale, y - 15 * gui.scale)
+                genre = ""
+
+        if not genre:
+            self.about_image.render(x - 110 * gui.scale, y - 15 * gui.scale)
+
+
         x += 20 * gui.scale
         y -= 10 * gui.scale
 
-        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(222), 216)
+        ddt.draw_text((x, y + 4 * gui.scale), t_title, colours.grey(233), 216)
 
 
         if self.click and coll(icon_rect) and self.ani_cred == 0:
@@ -14412,12 +14442,12 @@ class Over:
 
         y += 32 * gui.scale
 
-        block_y = y
+        block_y = y - 10 * gui.scale
 
 
         if self.cred_page == 0:
 
-            ddt.draw_text((x, y + 1 * gui.scale), t_version, colours.grey(195), 13)
+            ddt.draw_text((x, y - 6 * gui.scale), t_version, colours.grey(90), 313)
             y += 20 * gui.scale
             ddt.draw_text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
             y += 21 * gui.scale
@@ -14456,8 +14486,11 @@ class Over:
         x = self.box_x + self.item_x_offset - 10 * gui.scale
         y = self.box_y - 10 * gui.scale
 
+        lt_font = 312
+        lt_colour = colours.grey_blend_bg(85)
+
         x1 = x + (8 + 10 + 10) * gui.scale
-        x2 = x1 + 120 * gui.scale
+        x2 = x1 + 125 * gui.scale
         y1 = y + 40 * gui.scale
 
         if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing][6] or self.stats_pl_timer.get() > 5:
@@ -14475,13 +14508,13 @@ class Over:
 
         line = str(datetime.timedelta(seconds=int(self.stats_pl_length)))
 
-        ddt.draw_text((x1, y1), _("Tracks in playlist"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Tracks in playlist"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), '{:,}'.format(len(default_playlist)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), _("Albums in playlist"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Albums in playlist"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), str(self.stats_pl_albums), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), _("Playlist duration"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Playlist duration"), lt_colour, lt_font)
 
 
 
@@ -14498,24 +14531,24 @@ class Over:
 
 
         y1 += 40 * gui.scale
-        ddt.draw_text((x1, y1), _("Tracks in database"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Tracks in database"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), _("Total albums"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Total albums"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(220), 12)
 
         y1 += 20 * gui.scale
-        ddt.draw_text((x1, y1), _("Total playtime"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x1, y1), _("Total playtime"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(220), 15)
 
 
         # Ratio bar
-        if len(pctl.master_library) > 110 * gui.scale:
-            x = self.box_x + 110 * gui.scale
+        if len(pctl.master_library) > 115 * gui.scale:
+            x = self.box_x + 115 * gui.scale
             y = self.box_y + self.h - 7 * gui.scale
 
-            full_rect = [x, y, self.w - 110 * gui.scale + 0, 7 * gui.scale]
+            full_rect = [x, y, self.w - 115 * gui.scale + 0, 7 * gui.scale]
             d = 0
 
             # Stats
@@ -14578,7 +14611,7 @@ class Over:
 
         for k in config_items:
             if k is None:
-                y += 25 * gui.scale
+                y += 15 * gui.scale
                 continue
             ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(200), 12)
             ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
@@ -14610,10 +14643,10 @@ class Over:
         # x += 90
         # self.button(x, y, "Large Preset", self.large_preset, 80)
 
-        y += 50 * gui.scale
+        y += 40 * gui.scale
         x -= 90 * gui.scale
 
-        ddt.draw_text((x, y), "End of playlist action", colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y), "End of playlist action", colours.grey_blend_bg(90), 12)
 
         y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_stop, "Stop playback")
@@ -14666,7 +14699,7 @@ class Over:
     def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
 
         if label is not None:
-            ddt.draw_text((x, y), label, colours.grey_blend_bg(170), 12)
+            ddt.draw_text((x, y), label, colours.grey_blend_bg(220), 11)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
@@ -14692,7 +14725,7 @@ class Over:
         x += 33 * gui.scale
 
         ddt.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
-        ddt.draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(200), 11)
+        ddt.draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(220), 11)
 
         x += 58 * gui.scale
 
@@ -14741,12 +14774,14 @@ class Over:
             self.enabled = False
             fader.fall()
 
+        tab_width = 115 * gui.scale
+
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
 
         ddt.rect_a((self.box_x - 5 * gui.scale, self.box_y - 5 * gui.scale), (self.w + 10 * gui.scale, self.h + 10 * gui.scale), colours.grey(50), True)
         ddt.rect_a((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
-        ddt.rect_a((self.box_x, self.box_y), (110 * gui.scale, self.h), colours.sys_background_2, True)
+        ddt.rect_a((self.box_x, self.box_y), (tab_width, self.h), colours.sys_background_2, True)
 
         # ddt.rect_a((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
 
@@ -14761,8 +14796,8 @@ class Over:
             if self.click and gui.message_box:
                 gui.message_box = False
 
-            box = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 30 * gui.scale]
-            box2 = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), 110 * gui.scale, 29 * gui.scale]
+            box = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), tab_width, 30 * gui.scale]
+            box2 = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), tab_width, 29 * gui.scale]
             fields.add(box2)
             # ddt.rect_r(box, colours.tab_background, True)
 
@@ -14783,9 +14818,9 @@ class Over:
 
             # ddt.draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
             if current_tab == self.tab_active:
-                ddt.draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
+                ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
             else:
-                ddt.draw_text((box[0] + 55 * gui.scale, box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
+                ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
 
             current_tab += 1
 
@@ -17576,7 +17611,7 @@ class QueueBox:
             ddt.rect_r(rect, self.card_bg, True)
             bg = self.card_bg
 
-        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), 26)
+        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(26 * gui.scale))
 
         ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6], True)
 

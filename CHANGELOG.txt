@@ -3,9 +3,14 @@ Changelog-------------------------------------
 
 v3.6.0
 
+ - Redesigned app icon
  - Changed last.fm login to use web authorisation method
  - Tweaked transcoder to use original folder name when tracks from multiple albums are detected
+ - Tweaked positioning of various elements in settings box
  - Fixed a bug where "disk total" field would not show for some formats
+ - Fixed missing HiDPI icons for Sonemic and Picard
+ - Fixed queue thumbnails not respecting UI scale
+ - Removed folder transfer show option (reverted to always on)
 
 v3.5.4
 
