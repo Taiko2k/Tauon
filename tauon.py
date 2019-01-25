@@ -569,8 +569,8 @@ class Prefs:    # Used to hold any kind of settings
         self.rename_tracks_template = "<tn>. <album> - <title>.<ext>"
 
         self.enable_web = False
-        self.allow_remote = True
-        self.expose_web = False
+        self.allow_remote = False
+        self.expose_web = True
 
         self.enable_transcode = True
         self.show_rym = False
@@ -8737,8 +8737,11 @@ def lightning_paste():
 
             print("found target artist level")
             print(t_artist)
-
             print("Upper folder is: " + upper)
+
+            if len(move_path) < 4:
+                show_message("Safety interupt! The source path seems oddly short.", 'error', move_path)
+                return
 
             if not os.path.isdir(upper):
                 show_message("The target directory is missing!", 'warning', upper)
@@ -8748,15 +8751,19 @@ def lightning_paste():
                 show_message("The source directory is missing!", 'warning', move_path)
                 return
 
-            if directory_size(move_path) > 1500000000:
-                show_message("Folder size safety limit reached! (1.5GB)", 'warning', move_path)
-                return
-
             protect = ("", "Documents", "Music", "Desktop", "Downloads")
             for fo in protect:
                 if move_path.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
                     show_message("Better not do anything to that folder!", 'warning', os.path.join(os.path.expanduser('~'), fo))
                     return
+
+            if directory_size(move_path) > 1500000000:
+                show_message("Folder size safety limit reached! (1.5GB)", 'warning', move_path)
+                return
+
+            if len(os.walk(move_path)) > min(20, len(cargo) * 2):
+                show_message("Safety interupt! The source folder seems to have many files.", 'warning', move_path)
+                return
 
             artist = move_track.artist
             if move_track.album_artist != "":
@@ -13043,341 +13050,15 @@ def reload_albums(quiet=False):
     gui.power_bar = gen_power2()
     gui.pt = 0
 
-
 # ------------------------------------------------------------------------------------
 # WEBSERVER
 
-def webserv():
-    if prefs.enable_web is False:
-
-        return 0
-
-    try:
-        from flask import Flask, redirect, send_file, abort, request, jsonify, render_template
-
-    except:
-        print("Failed to load Flask")
-        show_message("Web server failed to start.", 'warning', "Required dependency 'flask' was not found.")
-        return 0
-
-    gui.web_running = True
-
-    app = Flask(__name__)
-
-    def shutdown_server():
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        func()
-
-    @app.route('/shutdown', methods=['POST'])
-    def shutdown():
-        shutdown_server()
-        gui.web_running = False
-        show_message("Web server stopped.")
-        return 'Server shutting down...'
-
-    @app.route('/radio/')
-    def radio():
-        print("Radio Accessed")
-        return send_file(install_directory + "/templates/radio.html" )
-
-    @app.route('/radio/radio.js')
-    def radiojs():
-        return send_file(install_directory + "/templates/radio.js")
-
-    @app.route('/radio/jquery.js')
-    def radiojq():
-        return send_file(install_directory + "/templates/jquery.js")
-
-    @app.route('/radio/theme.css')
-    def radiocss():
-        return send_file(install_directory + "/templates/theme.css")
-
-
-    @app.route('/remote/')
-    def remote2():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        print("Remote Accessed")
-        return send_file(install_directory + "/templates/remote.html")
-
-    @app.route('/remote/theme.css')
-    def remotecss():
-        return send_file(install_directory + "/templates/theme.css")
-
-    @app.route('/remote/jquery.js')
-    def remotejq():
-        return send_file(install_directory + "/templates/jquery.js")
-
-    @app.route('/remote/code.js')
-    def remotejs():
-        return send_file(install_directory + "/templates/code.js")
-
-    @app.route('/remote/update', methods=['GET'])
-    def update():
-        track = pctl.playing_object()
-        if track is not None:
-            title = track.title
-            artist = track.artist
-            if pctl.playing_length > 2:
-                position = pctl.playing_time / pctl.playing_length
-            else:
-                position = 0
-
-        return jsonify(title=title, artist=artist, position=position, index=track.index, shuffle=pctl.random_mode,
-                       repeat=pctl.repeat_mode)
-
-    def get_folder_tracks_index(index):
-        selection = []
-        parent = os.path.normpath(pctl.master_library[index].parent_folder_path)
-        for item in default_playlist:
-            if parent == os.path.normpath(pctl.master_library[item].parent_folder_path):
-                selection.append(item)
-        return selection
-
-    def get_album_tracks():
-        selection = []
-        current_folder = ""
-        playing = False
-
-        for i in reversed(range(len(default_playlist))):
-            track = pctl.master_library[default_playlist[i]]
-            if i == pctl.playlist_playing_position:
-                playing = True
-            if i == len(default_playlist) or track.parent_folder_name != current_folder:
-                selection.append((track.index, track.artist, track.album, playing))
-                current_folder = track.parent_folder_name
-                playing = False
-
-        return list(reversed(selection))
-
-    @app.route('/remote/al', methods=['GET'])
-    def albumlist():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        return jsonify(tracks=get_album_tracks())
-
-    @app.route('/remote/tl', methods=['GET'])
-    def tracklist():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        playing = pctl.playing_object()
-        tracks = []
-        if playing is not None:
-            for item in get_folder_tracks_index(playing.index):
-                track = pctl.master_library[item]
-                tracks.append((track.index, track.artist, track.title, track.track_number))
-
-        return jsonify(tracks=tracks)
-
-
-    @app.route('/remote/getpic', methods=['GET'])
-    def get64Pic():
-        track = pctl.playing_object()
-
-        if track is not None:
-            try:
-                index = track.index
-                base64 = album_art_gen.get_base64(index, (300, 300)).decode()
-
-                return jsonify(index=index, image=base64, title=track.title, artist=track.artist)
-            except:
-                return jsonify(index=index, image="None", title=track.title, artist=track.artist)
-        else:
-            return None
-
-    @app.route('/radio/update_radio', methods=['GET'])
-    def update_radio():
-
-        if pctl.broadcast_active:
-            track = pctl.master_library[pctl.broadcast_index]
-            if track.length > 2:
-                position = pctl.broadcast_time / track.length
-            else:
-                position = 0
-            return jsonify(position=position, index=track.index)
-        else:
-            return jsonify(position=0, index=0)
-
-
-    @app.route('/radio/getpic', methods=['GET'])
-    def get64Pic_radio():
-
-        if pctl.broadcast_active:
-            index = pctl.broadcast_index
-            track = pctl.master_library[index]
-
-
-            # Lyrics ---
-            lyrics = ""
-            if prefs.radio_page_lyrics and track.lyrics != "":
-                lyrics = html.escape(track.lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
-
-            try:
-                index = track.index
-                base64 = album_art_gen.get_base64(index, (300, 300)).decode()
-
-                return jsonify(index=index, image=base64, title=track.title, artist=track.artist, lyrics=lyrics)
-            except:
-                return jsonify(index=index, image="None", title=track.title, artist=track.artist, lyrics=lyrics)
-        else:
-            return jsonify(index=-1, image="None", title="", artist="- - Broadcast Offline -", lyrics="")
-
-    @app.route('/remote/command', methods=['POST'])
-    def get_post_javascript_data():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        command = request.form['cmd']
-        print(command)
-        if command == "Play/Pause":
-            if pctl.playing_state == 0 or pctl.playing_state == 2:
-                pctl.play()
-            else:
-                pctl.pause()
-        elif command == "Stop":
-            pctl.stop()
-        elif command == "Next":
-            pctl.advance()
-        elif command == "Back":
-            pctl.back()
-        elif command == "Shuffle":
-            pctl.random_mode ^= True
-        elif command == "Repeat":
-            pctl.repeat_mode ^= True
-        elif command[:5] == "Seek ":
-            value = command[5:]
-            try:
-                value = float(value)
-                if value < 0:
-                    value = 0
-                if value > 100:
-                    value = 100
-                pctl.new_time = pctl.playing_length / 100 * value
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
-                pctl.playing_time = pctl.new_time
-            except Exception as e:
-                print(e)
-
-        return command
-
-    @app.route('/remote/jump<int:indexno>', methods=['GET'])
-    def jump(indexno):
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        pctl.jump(indexno)
-        return "OK"
-
-
-    @app.route('/favicon.ico')
-    def favicon():
-        return send_file(install_directory + "/gui/favicon.ico", mimetype='image/x-icon')
-
-
-    @app.route('/remote/toggle-broadcast')
-    def remote_toggle_broadcast():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        toggle_broadcast()
-        # pctl.join_broadcast = False
-        return "Done"
-
-    # @app.route('/remote/sync-broadcast')
-    # def remote_toggle_sync():
-    #     if not prefs.allow_remote:
-    #         abort(403)
-    #         return 0
-    #     pctl.join_broadcast = True
-    #     return "Done"
-
-    @app.route('/remote/pl-up')
-    def pl_up():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        
-        global default_playlist
-        pctl.playlist_view_position -= 24
-        if pctl.playlist_view_position < 0:
-            pctl.playlist_view_position = 0
-        return redirect(request.referrer)
-
-    @app.route('/remote/pl-down')
-    def pl_down():
-        if not prefs.allow_remote:
-            abort(403)
-            return 0
-        
-        global default_playlist
-        pctl.playlist_view_position += 24
-        if pctl.playlist_view_position > len(default_playlist) - 26:
-            pctl.playlist_view_position = len(default_playlist) - 25
-        return redirect(request.referrer)
-
-
-    @app.route('/remote/upplaylist')
-    def next_playlist():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        switch_playlist(1, True)
-        return redirect(request.referrer)
-
-    @app.route('/remote/downplaylist')
-    def back_playlist():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        switch_playlist(-1, True)
-        return redirect(request.referrer)
-
-    @app.route('/remote/vdown')
-    def vdown():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-
-        global pctl
-        if pctl.player_volume > 20:
-            pctl.player_volume -= 20
-        else:
-            pctl.player_volume = 0
-        pctl.set_volume()
-
-        return redirect(request.referrer)
-
-    @app.route('/remote/vup')
-    def vup():
-        if not prefs.allow_remote:
-            abort(403)
-            return (0)
-        global pctl
-        pctl.player_volume += 20
-        if pctl.player_volume > 100:
-            pctl.player_volume = 100
-        pctl.set_volume()
-
-        return redirect(request.referrer)
-
-
-    if prefs.expose_web is True:
-        app.run(host='0.0.0.0 ', port=prefs.server_port)
-    else:
-        app.run(port=prefs.server_port)
-
+from t_modules.t_webserve import webserve
 
 if prefs.enable_web is True:
-    webThread = threading.Thread(target=webserv)
+    webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
     webThread.daemon = True
     webThread.start()
-
 
 # --------------------------------------------------------------
 
@@ -13597,10 +13278,10 @@ def toggle_enable_web(mode=0):
     prefs.enable_web ^= True
 
     if prefs.enable_web and not gui.web_running:
-        webThread = threading.Thread(target=webserv)
+        webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
         webThread.daemon = True
         webThread.start()
-        show_message("Web server starting", 'done')
+        show_message("Web server starting", 'done', "External connections will be accepted.")
 
     elif prefs.enable_web is False:
         requests.post("http://localhost:7590/shutdown")
@@ -14000,47 +13681,63 @@ class Over:
 
         y += 35 * gui.scale
         self.toggle_square(x, y, toggle_enable_web,
-                           "Web interface")
+                           _("Serve webpage for broadcast metadata"))
 
-        y -= 10 * gui.scale
+
+
+
+        y += 30 * gui.scale
+        # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
+        # y += 23 * gui.scale
+        # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
+        # y += 23 * gui.scale
+
+
+        self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
+
+        y += 30 * gui.scale
+        self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
+
+        x = self.box_x + self.item_x_offset
+        y = self.box_y - 10 * gui.scale
+
+        y += 30 * gui.scale
+
         if toggle_enable_web(1):
 
-            link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
-            link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
-            fields.add(link_rect)
+            # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
+            # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
+            # fields.add(link_rect)
 
-            link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 21 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
-            link_rect2 = [x + 280 * gui.scale, y + 21 * gui.scale, link_pa2[1], 20 * gui.scale]
+            link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
+            link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
 
-            if coll(link_rect):
-                if not self.click:
-                    gui.cursor_want = 3
+            # if coll(link_rect):
+            #     if not self.click:
+            #         gui.cursor_want = 3
+            #
+            #     if self.click:
+            #         webbrowser.open(link_pa[2], new=2, autoraise=True)
 
-                if self.click:
-                    webbrowser.open(link_pa[2], new=2, autoraise=True)
-
-            elif coll(link_rect2):
+            if coll(link_rect2):
                 if not self.click:
                     gui.cursor_want = 3
 
                 if self.click:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
+        y += 30 * gui.scale
 
-        y += 35 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
-        y += 23 * gui.scale
-
-        y -= (23 + 23 + 25) * gui.scale
-        x1 = x
-        y1 = y + 100 * gui.scale
         x += 280 * gui.scale
-
-        if toggle_enable_web(1):
-            y += 40 * gui.scale
+        # if toggle_enable_web(1):
+        #     y += 40 * gui.scale
         ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
         y += 23 * gui.scale
 
@@ -14056,25 +13753,11 @@ class Over:
         y += 23 * gui.scale
         #self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
 
-        x = x1
-        y = y1
-
-        y += 10 * gui.scale
-        #self.toggle_square(x, y - 25 * gui.scale, toggle_cache, "Cache gallery to disk")
-        self.toggle_square(x, y - 30 * gui.scale, toggle_resume_state, _("Resume playback on launch"))
-        # y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
 
         y = self.box_y + 190 * gui.scale
-        self.button(x + 410 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
+        self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
         y += 26 * gui.scale
-        self.button(x + 410 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
+        self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
 
     def button(self, x, y, text, plug, width=0):
@@ -14384,24 +14067,23 @@ class Over:
 
         ddt.text_background_colour = colours.sys_background
 
-        icon_rect = (x - 100 * gui.scale, y - 10 * gui.scale, self.about_image.w, self.about_image.h)
+        icon_rect = (x - 110 * gui.scale, y - 15 * gui.scale, self.about_image.w, self.about_image.h)
 
         genre = ""
         if pctl.playing_object() is not None:
             genre = pctl.playing_object().genre.lower()
 
             if any(s in genre for s in ['ock', 'lt']):
-                self.about_image2.render(x - 110 * gui.scale, y - 15 * gui.scale)
-                genre = ""
+                self.about_image2.render(icon_rect[0], icon_rect[1])
             elif any(s in genre for s in ['syn', 'pop']):
-                self.about_image4.render(x - 110 * gui.scale, y - 15 * gui.scale)
-                genre = ""
+                self.about_image4.render(icon_rect[0], icon_rect[1])
             elif any(s in genre for s in ['tro', 'cid']):
-                self.about_image4.render(x - 110 * gui.scale, y - 15 * gui.scale)
+                self.about_image4.render(icon_rect[0], icon_rect[1])
+            else:
                 genre = ""
 
         if not genre:
-            self.about_image.render(x - 110 * gui.scale, y - 15 * gui.scale)
+            self.about_image.render(icon_rect[0], icon_rect[1])
 
 
         x += 20 * gui.scale
@@ -14451,7 +14133,7 @@ class Over:
             y += 20 * gui.scale
             ddt.draw_text((x, y), "Copyright © 2015-2019 Taiko2k captain.gxj@gmail.com", colours.grey(195), 13)
             y += 21 * gui.scale
-            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmb", colours.grey_blend_bg3(190), 12)
+            link_pa = draw_linked_text((x, y), "https://github.com/Taiko2k/tauonmusicbox", colours.grey_blend_bg3(190), 12)
             link_rect = [x, y, link_pa[1], 18 * gui.scale]
             if coll(link_rect):
                 if not self.click:
