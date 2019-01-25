@@ -12,9 +12,9 @@ Designed to be simple and streamlined while putting the user in control of their
 
 ## Features :sparkles:
 
-  - Import tracks and create playlist's by simple **drag and drop**. Ready to go out the box.
-  - Support for **gapless playback** and **ReplayGain**.
-  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) to an output folder for easy and compact copying to a portable device.
+  - Import tracks and create playlists by simple **drag and drop**.
+  - Support for **gapless playback**.
+  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP.
   - Last.fm **scrobbling** with track love support.
   - **Lyrics** display with support for fetching lyrics from LyricWiki.
   - Edit tags with MusicBrainz **Picard** (when also installed).
