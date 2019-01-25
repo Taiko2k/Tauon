@@ -21,10 +21,10 @@ Designed to be simple and streamlined while putting the user in control of their
   - Keep track of play counts.
     - Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
-  - Extract and import your music downloads in one click! :zap:
+  - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
-## File type compatibility :milky_way:
+### File type compatibility :milky_way:
 
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
 - [x] XSPF, CUE (automatic detection)
