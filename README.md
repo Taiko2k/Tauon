@@ -27,15 +27,8 @@ Designed to be simple and streamlined while putting the user in control of their
 
 #### Audio
 
-- [x] FLAC 
-- [x] APE, TTA, WV
-- [x] MP3, M4A(aac, alac)
-- [x] OGG, OPUS
-
-#### Other
-
-- [x] XSPF
-- [x] CUE (automatic detection)
+- [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
+- [x] XSPF, CUE (automatic detection)
 
 #### Not supported
 
