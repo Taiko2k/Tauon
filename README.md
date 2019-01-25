@@ -18,8 +18,7 @@ Designed to be simple and streamlined while putting the user in control of their
     - See which of your tracks your friends loved too! :purple_heart:
   - **Lyrics** display with support for fetching lyrics from LyricWiki.
   - Edit tags with MusicBrainz **Picard** (when also installed).
-  - Keep track of play counts.
-    - Visualise these so you always know which tracks were your favorite.
+  - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
