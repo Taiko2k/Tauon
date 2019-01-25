@@ -1,29 +1,28 @@
-# Tauon Music Box
 
-<img src="https://user-images.githubusercontent.com/17271572/41101848-6ccf4ed0-6ab9-11e8-8ce8-7f62060b39c9.png" align="left" height="50px" hspace="0px" vspace="20px">
+<img src="https://user-images.githubusercontent.com/17271572/51741171-038d9000-20fb-11e9-8d49-bda8d3e67194.png" align="left" height="160px" hspace="0px" vspace="20px">
+
+## Tauon Music Box
 
 A desktop music player for playback of local audio files.
 Designed to be simple and streamlined while putting the user in control of their music collection. Uses BASS audio library for playback (proprietary).
 
-### Screenshot
-
-<img src="https://user-images.githubusercontent.com/17271572/48976940-492ade00-f0f5-11e8-9e93-b8dcb9cdbd8c.jpg" hspace="0px" vspace="60px">
+<img src="https://user-images.githubusercontent.com/17271572/51741796-c6c29880-20fc-11e9-9507-c1681c0f03b1.jpg" hspace="0px" vspace="160px">
 
 ## Features :sparkles:
 
   - Import tracks and create playlists by simple **drag and drop**.
   - Support for **gapless playback**.
-  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP. 
-  - Last.fm **scrobbling** with track love support. :heart:
-    - See which of your tracks your friends loved too! :purple_heart:
+  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP.
+  - Last.fm **scrobbling** with track love support :heart:. See which of your tracks your friends loved too! :purple_heart:
   - **Lyrics** display with support for fetching lyrics from LyricWiki.
   - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
+  - Desktop integration with MPRIS2
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
-### File type compatibility :milky_way:
+#### File type compatibility :milky_way:
 
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
 - [x] XSPF, CUE (automatic detection)
@@ -37,22 +36,21 @@ Designed to be simple and streamlined while putting the user in control of their
 For __Arch Linux__ based distros, install is avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
 
 For __Other Linux distributions__, a standalone **Flatpak** package is available.
- 
+
  - After downloading *tauon.flatpak* from lastest [release](https://github.com/Taiko2k/tauonmb/releases):    
-     
+
      - Install using: `sudo flatpak install tauon.flatpak`
-         
+
      - To uninstall run: `sudo flatpak uninstall com.github.taiko2k.tauonmb`
- 
+
      >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
-     
+
      >**Troubleshooting:** If you're having issues installing, try make sure you have installed and configured Flatpak for your distro as described on https://flatpak.org/setup/. Make sure you have the flathub repo added using `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo` as this is needed to download the runtimes.
 
-> **Note:** These packages are for x86_64 only
 ___
 
 For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?style=flat-square)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=flat-square&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases)
+[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![test](https://img.shields.io/badge/platform-linux--64-lightgrey.svg?style=for-the-badge)
