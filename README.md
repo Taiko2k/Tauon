@@ -3,39 +3,30 @@
 <img src="https://user-images.githubusercontent.com/17271572/41101848-6ccf4ed0-6ab9-11e8-8ce8-7f62060b39c9.png" align="left" height="50px" hspace="0px" vspace="20px">
 
 A desktop music player for playback of local audio files.
-Designed to be simple and streamlined while putting the user in control of their music collection. Uses the proprietary BASS audio library for playback.
+Designed to be simple and streamlined while putting the user in control of their music collection. Uses BASS audio library for playback (proprietary).
 
 ### Screenshot
 
 <img src="https://user-images.githubusercontent.com/17271572/48976940-492ade00-f0f5-11e8-9e93-b8dcb9cdbd8c.jpg" hspace="0px" vspace="60px">
 
-
 ## Features :sparkles:
 
   - Import tracks and create playlists by simple **drag and drop**.
   - Support for **gapless playback**.
-  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP.
-  - Last.fm **scrobbling** with track love support.
+  - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP. 
+  - Last.fm **scrobbling** with track love support. :heart:
+    - See which of your tracks your friends loved too! :purple_heart:
   - **Lyrics** display with support for fetching lyrics from LyricWiki.
   - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
-  - Auto extract archives on import.
- 
+  - **Extract archives** and import your music downloads in **one click**! :zap:
+
 
 ### File type compatibility :milky_way:
 
-#### Audio
-
-- [x] FLAC 
-- [x] APE, TTA, WV
-- [x] MP3, M4A(aac, alac)
-- [x] OGG, OPUS
-
-#### Other
-
-- [x] XSPF
-- [x] CUE (automatic detection)
+- [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
+- [x] XSPF, CUE (automatic detection)
 
 #### Not supported
 
