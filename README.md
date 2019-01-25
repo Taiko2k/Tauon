@@ -25,8 +25,6 @@ Designed to be simple and streamlined while putting the user in control of their
 
 ### File type compatibility :milky_way:
 
-#### Audio
-
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
 - [x] XSPF, CUE (automatic detection)
 
