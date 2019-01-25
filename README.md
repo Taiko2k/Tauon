@@ -1,5 +1,5 @@
 
-<img src="https://user-images.githubusercontent.com/17271572/51741171-038d9000-20fb-11e9-8d49-bda8d3e67194.png" align="left" height="160px" hspace="0px" vspace="20px">
+<img src="https://user-images.githubusercontent.com/17271572/51743494-a2b58600-2101-11e9-9e90-9c7c6c3394eb.png" align="left" height="157px" hspace="0px" vspace="20px">
 
 ## Tauon Music Box
 
