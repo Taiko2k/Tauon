@@ -5,15 +5,8 @@ v3.6.0
 
  - Added new theme "Lavender Light"
       todo:
-      - fix lyric buttons colour
-      - fix starline colour?
-      - fix queue box border
-      - fix clock time modes
       - tweak gallery highlight box
-      - move time cursor to front of frame
-      - set settings checkbox colour
       - check UI scaling (gallery and frame)
-      - move new theme to theme file
 
  - todo - Added setting to change gallery tile to card style (Light mode only)
  - Redesigned app icon
@@ -25,6 +18,7 @@ v3.6.0
  - Tweaked positioning of various elements in settings box
  - Tweaked folder transfer safety check
  - Tweaked playlist side bar tab
+ - Fixed quick find box font positioning
  - Fixed a bug where "disk total" field would not show for some formats
  - Fixed missing HiDPI icons for Sonemic and Picard
  - Fixed queue thumbnails not respecting UI scale
