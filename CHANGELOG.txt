@@ -4,11 +4,7 @@ Changelog-------------------------------------
 v3.6.0
 
  - Added new theme "Lavender Light"
-      todo:
-      - tweak gallery highlight box
-      - check UI scaling (gallery and frame)
-
- - todo - Added setting to change gallery tile to card style (Light mode only)
+ - Added setting to change gallery tile to card style (Light mode only)
  - Redesigned app icon
  - Redesigned rename playlist box
  - Improved last.fm login to use web authorisation method
@@ -18,6 +14,7 @@ v3.6.0
  - Tweaked positioning of various elements in settings box
  - Tweaked folder transfer safety check
  - Tweaked playlist side bar tab
+ - Tweaked playlist text positioning in 1.25x mode
  - Fixed quick find box font positioning
  - Fixed a bug where "disk total" field would not show for some formats
  - Fixed missing HiDPI icons for Sonemic and Picard
