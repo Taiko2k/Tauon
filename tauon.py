@@ -276,7 +276,7 @@ else:
 import gi
 from sdl2 import *
 from sdl2.sdlimage import *
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
@@ -514,12 +514,11 @@ multi_playlist = [pl_gen()] # Create default playlist
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
 
-rename_playlist_box = False
-rename_index = 0
 
 quick_search_mode = False
 search_index = 0
 
+rename_index = 0
 
 # ----------------------------------------
 # Playlist right click menu
@@ -887,6 +886,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.playlist_current_visible_last_id = 0
 
         self.theme_name = ""
+        self.rename_playlist_box = False
 
 gui = GuiVar()
 
@@ -1173,7 +1173,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_background_2 = self.grey(25)
         self.sys_tab_bg = self.grey(25)
         self.sys_tab_hl = self.grey(45)
-        self.sys_background_3 = self.grey(20)
+        self.sys_background_3 = self.grey(35)
         self.sys_background_4 = self.grey(19)
         self.toggle_box_on = self.tab_background_active
         self.time_sub = [0, 0, 0, 200]
@@ -4453,6 +4453,66 @@ ddt.prime_font(standard_font, 25, 228)
 
 
 
+class DropShadow:
+
+    def __init__(self):
+
+        self.readys = {}
+        self.underscan = int(15 * gui.scale)
+        self.radius = 4
+        self.grow = 2 * gui.scale
+        self.opacity = 90
+
+    def prepare(self, w, h):
+
+        fh = h + self.underscan
+        fw = w + self.underscan
+
+        im = Image.new("RGBA", (fw, fh), 0x00000000)
+        draw = ImageDraw.Draw(im)
+        draw.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
+
+        im = im.filter(ImageFilter.GaussianBlur(self.radius))
+
+        g = io.BytesIO()
+        g.seek(0)
+        im.save(g, 'PNG')
+        g.seek(0)
+
+        wop = rw_from_object(g)
+        s_image = IMG_Load_RW(wop, 0)
+        c = SDL_CreateTextureFromSurface(renderer, s_image)
+        SDL_SetTextureAlphaMod(c, self.opacity)
+
+        tex_w = pointer(c_int(0))
+        tex_h = pointer(c_int(0))
+        SDL_QueryTexture(c, None, None, tex_w, tex_h)
+
+        dst = SDL_Rect(0, 0)
+        dst.w = int(tex_w.contents.value)
+        dst.h = int(tex_h.contents.value)
+
+        SDL_FreeSurface(s_image)
+        g.close()
+        im.close()
+
+        unit = (dst, c)
+        self.readys[(w, h)] = unit
+
+    def render(self, x, y, w, h):
+
+        if (w, h) not in self.readys:
+            self.prepare(w, h)
+
+        unit = self.readys[(w, h)]
+        unit[0].x = x - self.underscan
+        unit[0].y = y - self.underscan
+        SDL_RenderCopy(renderer, unit[1], None, unit[0])
+
+
+drop_shadow = DropShadow()
+
+
 class LyricsRenMini:
 
     def __init__(self):
@@ -7256,11 +7316,15 @@ tab_menu = Menu(160, show_icons=True)
 
 
 def rename_playlist(index):
-    global rename_playlist_box
-    global rename_index
 
-    rename_playlist_box = True
-    rename_index = index
+    gui.rename_playlist_box = True
+    rename_box.playlist_index = index
+    rename_box.x = mouse_position[0]
+    rename_box.y = mouse_position[1]
+
+    if rename_box.y < gui.panelY:
+        rename_box.y = gui.panelY + 10 * gui.scale
+
     rename_text_area.set_text(pctl.multi_playlist[index][0])
     rename_text_area.highlight_all()
 
@@ -7425,7 +7489,7 @@ def delete_playlist(index):
     global default_playlist
     
 
-    if rename_playlist_box:
+    if gui.rename_playlist_box:
         return
 
     # Set screen to be redwarn
@@ -11517,7 +11581,7 @@ class SearchOverlay:
 
             if input_text != "" and \
                     not key_ctrl_down and not radiobox and not renamebox and \
-                    not quick_search_mode and not pref_box.enabled and not rename_playlist_box \
+                    not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
                 self.active = True
@@ -16206,6 +16270,7 @@ class StandardPlaylist:
                         date = ""
 
                     qq = 0
+
                     if prefs.append_total_time:
                         q = p_track
 
@@ -16225,6 +16290,11 @@ class StandardPlaylist:
 
 
                     ex = left + highlight_left + highlight_width - 7 * gui.scale
+
+                    light_offset = 0
+                    if colours.lm:
+                        light_offset = 3 * gui.scale
+                    ex -= light_offset
 
                     if qq > 1:
                         ex += 1 * gui.scale
@@ -16249,7 +16319,7 @@ class StandardPlaylist:
                             date_w -= 1 * gui.scale
 
                     ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
-                    if ft_width > highlight_width - date_w - 13 * gui.scale:
+                    if ft_width > highlight_width - date_w - 13 * gui.scale - light_offset:
                         date_w += 19 * gui.scale
                         ddt.draw_text((left + highlight_left + 8 * gui.scale, height), line,
                                    alpha_mod(colours.folder_title, album_fade),
@@ -16885,7 +16955,7 @@ class ArtBox:
                 and renamebox is False \
                 and radiobox is False \
                 and pref_box.enabled is False \
-                and rename_playlist_box is False \
+                and gui.rename_playlist_box is False \
                 and gui.message_box is False \
                 and track_box is False:
 
@@ -16962,14 +17032,25 @@ class ScrollBox():
         self.source_click_y = 0
         self.source_bar_y = 0
 
-    def draw(self, x, y, w, h, value, max_value):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False):
 
         if max_value < 2:
             return 0
 
         bar_height = 90
 
-        ddt.rect_r((x, y, w, h), [255, 255, 255, 7], True)
+        bg = [255, 255, 255, 7]
+        fg = [255, 255, 255, 30]
+        fg_h = [255, 255, 255, 40]
+        fg_off = [255, 255, 255, 15]
+
+        if colours.lm and not force_dark_theme:
+            bg = [0, 0, 0, 15]
+            fg_off = [0, 0, 0, 30]
+            fg = [0, 0, 0, 60]
+            fg_h = [0, 0, 0, 70]
+
+        ddt.rect_r((x, y, w, h), bg, True)
 
         half = bar_height // 2
 
@@ -17031,13 +17112,13 @@ class ScrollBox():
             ratio = position / distance
             value = int(round(max_value * ratio))
 
-        colour = [255, 255, 255, 15]
+        colour = fg_off
         rect = (x, mi + position - half, w, bar_height)
         fields.add(rect)
         if coll(rect):
-            colour = [255, 255, 255, 30]
+            colour = fg
         if self.held:
-            colour = [255, 255, 255, 40]
+            colour = fg_h
 
         ddt.rect_r(rect, colour, True)
 
@@ -17047,6 +17128,48 @@ mini_lyrics_scroll = ScrollBox()
 playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
 
+
+class RenameBox:
+
+    def __init__(self):
+
+        self.x = 300
+        self.y = 300
+        self.playlist_index = 0
+
+    def render(self):
+
+        if gui.level_2_click:
+            input.mouse_click = True
+        gui.level_2_click = False
+
+        min_w = max(250 * gui.scale, ddt.get_text_w(rename_text_area.text, 315) + 50 * gui.scale)
+
+        rect = [self.x, self.y, min_w, 41 * gui.scale]
+        bg = [185, 106, 202, 255]
+        ddt.text_background_colour = bg
+
+        # Draw background
+        ddt.rect_r(rect, bg, True)
+
+        # Draw text entry
+        rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, colours.alpha_grey(250),
+                              width=350 * gui.scale, font=315)
+
+        # Draw accent
+        rect2 = [self.x, self.y + 35 * gui.scale, min_w, 6 * gui.scale]
+        ddt.rect_r(rect2, [255, 255, 255, 40], True)
+
+        # If enter or click outside of box: save and close
+        if input.key_return_press or (key_esc_press and len(editline) == 0) \
+                or ((input.mouse_click or level_2_right_click) and not coll(rect)):
+            gui.rename_playlist_box = False
+            if len(rename_text_area.text) > 0:
+                pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
+            input.key_return_press = False
+
+
+rename_box = RenameBox()
 
 class PlaylistBox:
 
@@ -17647,9 +17770,11 @@ class MetaBox:
 
             lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, 15 * gui.scale, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
 
+            margin = 10 * gui.scale
+            if colours.lm:
+                margin += 1 * gui.scale
 
-
-            lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + 8 * gui.scale,
+            lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + margin,
                                    y + lyrics_ren_mini.lyrics_position + 11,
                                    w - 30 * gui.scale,
                                    None, 0)
@@ -17657,7 +17782,7 @@ class MetaBox:
             ddt.rect_r((x, y + h - 1, w,
                          1), colours.side_panel_background, True)
 
-            lyric_side_top_pulse.render(x, y, w - 17 * gui.scale, 2 * gui.scale)
+            lyric_side_top_pulse.render(x, y, (w - 9 - margin) * gui.scale, 2 * gui.scale)
             lyric_side_bottom_pulse.render(x, y + h - 2 * gui.scale, w - 17 * gui.scale, 2 * gui.scale)
 
 
@@ -17681,6 +17806,9 @@ class MetaBox:
             genre = ""
 
             margin = x + 10 * gui.scale
+            if colours.lm:
+                margin += 2 * gui.scale
+
             text_width = w - 25 * gui.scale
 
             if pctl.playing_state < 3:
@@ -17921,7 +18049,7 @@ class ArtistInfoBox:
             text_max_w = w - 250 * gui.scale
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
-                                                        self.scroll_y, scroll_max)
+                                                        self.scroll_y, scroll_max, True)
                 right -= 15
                 text_max_w -= 15
 
@@ -17946,7 +18074,7 @@ class ArtistInfoBox:
                     ddt.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255], True)
                     ddt.rect_r((xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [50, 50, 50, 255])
 
-                    ddt.draw_text((xx, yy), item[0], [250, 250, 250, 255], 13)
+                    ddt.draw_text((xx, yy), item[0], [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
                     self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
                 # ddt.rect_r(rect, [210, 80, 80, 255], True)
 
@@ -18140,24 +18268,24 @@ class Showcase:
 showcase = Showcase()
 
 
-class ColourPulse:
+# Animates colour between two colours
+class ColourPulse2:
 
-    def __init__(self, hue):
+    def __init__(self):
+
         self.timer = Timer()
         self.in_timer = Timer()
         self.out_timer = Timer()
         self.out_timer.start = 0
         self.active = False
 
-        self.hue = hue
-
-        self.max_sat = 0.75
-        self.max_lumi = 0.45
-
-    def get(self, hit, on):
+    def get(self, hit, on, off, low_hls, high_hls):
 
         if on:
-            rgb = colorsys.hls_to_rgb(self.hue, 0.15 + 0.4, 0.7)
+            rgb = colorsys.hls_to_rgb(high_hls[0], high_hls[1], high_hls[2])
+            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+        if off:
+            rgb = colorsys.hls_to_rgb(low_hls[0], low_hls[1], low_hls[2])
             return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
 
         ani_time = 0.15
@@ -18170,7 +18298,6 @@ class ColourPulse:
             if out_time < ani_time:
                 self.in_timer.force_set(ani_time - out_time)
 
-
         elif hit is False and self.active is True:
             self.active = False
             self.out_timer.set()
@@ -18179,41 +18306,37 @@ class ColourPulse:
             if in_time < ani_time:
                 self.out_timer.force_set(ani_time - in_time)
 
-        lumi = 0
-        sat = 0
 
-        in_time = self.in_timer.get()
-        out_time = self.out_timer.get()
-
+        pro = 0.5
         if self.active:
-            if in_time < ani_time:
+            time = self.in_timer.get()
+            if time <= 0:
+                pro = 0
+            elif time >= ani_time:
+                pro = 1
+            else:
+                pro = time / ani_time
                 gui.update = 2
-                lumi = (in_time / ani_time) * self.max_lumi
-            else:
-                lumi = self.max_lumi
-
-            if in_time < ani_time:
-                sat = (in_time / ani_time) * self.max_sat
-            else:
-                sat = self.max_sat
-
         else:
-            if out_time < ani_time:
+            time = self.out_timer.get()
+            if time <= 0:
+                pro = 1
+            elif time >= ani_time:
+                pro = 0
+            else:
+                pro = 1 - (time / ani_time)
                 gui.update = 2
-                lumi = self.max_lumi - ((out_time / ani_time) * self.max_lumi)
-            else:
-                lumi = 0
-
-            if out_time < ani_time:
-                sat = self.max_sat - ((out_time / ani_time) * self.max_sat)
-            else:
-                sat = 0
-
-        lumi += 0.15
 
 
-        rgb = colorsys.hls_to_rgb(self.hue, lumi, sat)
+        lumi = low_hls[1] + ((high_hls[1] - low_hls[1]) * pro)
+        sat = low_hls[2] + ((high_hls[2] - low_hls[2]) * pro)
+        hue = high_hls[0]
+
+        rgb = colorsys.hls_to_rgb(hue, lumi, sat)
         return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+
+cctest = ColourPulse2()
+
 
 class ViewBox:
 
@@ -18254,14 +18377,15 @@ class ViewBox:
             self.col_img = WhiteModImageAsset("/gui/2x/col.png")
             self.artist_img = WhiteModImageAsset("/gui/2x/artist.png")
 
-        self.tracks_colour = ColourPulse(0.5)
-        self.side_colour = ColourPulse(0.55)
-        self.gallery1_colour = ColourPulse(0.6)
-        self.combo_colour = ColourPulse(0.75)
-        self.lyrics_colour = ColourPulse(0.7)
-        self.gallery2_colour = ColourPulse(0.65)
-        self.col_colour = ColourPulse(0.14)
-        self.artist_colour = ColourPulse(0.2)
+        # _ .15 0
+        self.tracks_colour = ColourPulse2() #(0.5) # .5 .6 .75
+        self.side_colour = ColourPulse2() #(0.55) # .55 .6 .75
+        self.gallery1_colour = ColourPulse2() #(0.6) # .6 .6 .75
+        #self.combo_colour = ColourPulse(0.75)
+        self.lyrics_colour = ColourPulse2() #(0.7)
+        #self.gallery2_colour = ColourPulse(0.65)
+        self.col_colour = ColourPulse2() #(0.14)
+        self.artist_colour = ColourPulse2() #(0.2)
 
         self.on_colour = [255, 190, 50, 255]
         self.over_colour = [255, 190, 50, 255]
@@ -18276,18 +18400,18 @@ class ViewBox:
         self.tracks_colour.out_timer.force_set(10)
         self.side_colour.out_timer.force_set(10)
         self.gallery1_colour.out_timer.force_set(10)
-        self.combo_colour.out_timer.force_set(10)
+        #self.combo_colour.out_timer.force_set(10)
         self.lyrics_colour.out_timer.force_set(10)
-        self.gallery2_colour.out_timer.force_set(10)
+        #self.gallery2_colour.out_timer.force_set(10)
         self.col_colour.out_timer.force_set(10)
         self.artist_colour.out_timer.force_set(10)
 
         self.tracks_colour.active = False
         self.side_colour.active = False
         self.gallery1_colour.active = False
-        self.combo_colour.active = False
+        #self.combo_colour.active = False
         self.lyrics_colour.active = False
-        self.gallery2_colour.active = False
+        #self.gallery2_colour.active = False
         self.col_colour.active = False
         self.artist_colour.active = False
 
@@ -18296,7 +18420,7 @@ class ViewBox:
         #gui.level_2_click = False
         gui.update = 2
 
-    def button(self, x, y, asset, test, colour_get=None, name="Unknown", animate=True):
+    def button(self, x, y, asset, test, colour_get=None, name="Unknown", animate=True, low=0, high=0):
 
         on = test()
         rect = [x - 8 * gui.scale,
@@ -18324,15 +18448,18 @@ class ViewBox:
             if colour_get is None:
                 colour = self.over_colour
 
-        if colour_get is not None:
-            colour = colour_get.get(col, on)
+        colour = colour_get.get(col, on, not on and not animate, low, high)
+            # if "+" in name:
+            #
+            #     colour = cctest.get(col, on, [0, 0.2, 0.0], [0, 0.8, 0.8])
 
-        if not on and not animate:
-            colour = self.off_colour
+        # if not on and not animate:
+        #     colour = self.off_colour
 
         asset.render(x, y, colour)
 
         return fun
+
 
     def tracks(self, hit=False):
 
@@ -18431,42 +18558,81 @@ class ViewBox:
 
         func = None
 
+        low = (0, .15, 0)
 
-        test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art")
+        if colours.lm:
+            low = (0, .8, 0)
+
+        # ----
+
+        high = (.55, .6, .75)
+        if colours.lm:
+            high = (.55, .55, .75)
+
+        test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art", low=low, high=high)
         if test is not None:
             func = test
+
+        # ----
 
         y += 40 * gui.scale
 
-        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery")
+        high = (.6, .6, .75)
+        if colours.lm:
+            high = (.6, .55, .75)
+
+        test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
         if test is not None:
             func = test
+
+        # ---
 
         y += 40 * gui.scale
 
-        test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only")
+        high = (.5, .6, .75)
+        if colours.lm:
+            high = (.5, .55, .75)
+
+        test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only", low=low, high=high)
         if test is not None:
             func = test
+
+        # ---
 
         y += 50 * gui.scale
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics View", False)
+
+        high = (.7, .6, .75)
+        if colours.lm:
+            high = (.7, .55, .75)
+
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics View", False, low=low, high=high)
         if test is not None:
             func = test
 
+        # --
 
         y += 40 * gui.scale
 
-        test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False)
+        high = (.14, .6, .75)
+        if colours.lm:
+            high = (.14, .55, .75)
+
+        test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
         if test is not None:
             func = test
 
+        # --
 
         y += 41 * gui.scale
+
+        high = (.2, .6, .75)
+        if colours.lm:
+            high = (.2, .55, .75)
 
         if gui.scale == 1.25:
             x-= 1
 
-        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False)
+        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
         if test is not None:
             func = test
 
@@ -19943,7 +20109,7 @@ while pctl.running:
             show_message("This doesn't do anything")
 
         # Disable keys for text cursor control
-        if not gui.rename_folder_box and not renamebox and not rename_playlist_box and not radiobox and not pref_box.enabled:
+        if not gui.rename_folder_box and not renamebox and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
 
             if key_tab and not (key_ralt or key_lalt):
                 gui.album_tab_mode ^= True
@@ -20041,7 +20207,7 @@ while pctl.running:
 
         if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
                 and not gui.rename_folder_box \
-                and not rename_playlist_box and not search_over.active:
+                and not gui.rename_playlist_box and not search_over.active:
 
             if key_c_press and key_ctrl_down:
                 gui.pl_update = 1
@@ -20119,8 +20285,6 @@ while pctl.running:
             show_message("Test error message 123", 'error', "hello text")
 
             accent = [180, 140, 255, 255]
-            #accent = [181, 126, 220, 255]
-            #accent = [200, 180, 255, 255]
 
             colours.playlist_panel_background = colours.grey(245)
             colours.side_panel_background = colours.grey(239)
@@ -20129,7 +20293,7 @@ while pctl.running:
             colours.light_mode()
             gui.pl_update = 1
 
-            colours.title_text = colours.grey(40)
+            colours.title_text = colours.grey(80)
             colours.index_text = colours.grey(40)
 
             colours.artist_text = colours.grey(40)
@@ -20199,6 +20363,7 @@ while pctl.running:
 
             colours.tb_line = colours.grey(140)
             colours.art_box = [0,0,0,0]
+            # colours.scroll_colour = [200, 200, 200, 100]
 
 
             key_F7 = False
@@ -20242,7 +20407,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
+        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -20282,7 +20447,7 @@ while pctl.running:
         if right_click:
             level_2_right_click = True
 
-        if right_click and (radiobox or renamebox or rename_playlist_box or gui.rename_folder_box or search_over.active):
+        if right_click and (radiobox or renamebox or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
 
         if mouse_wheel != 0:
@@ -20311,7 +20476,7 @@ while pctl.running:
                 d_mouse_click = True
             click_time = n_click_time
 
-        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and rename_playlist_box is False and not pref_box.enabled:
+        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled:
 
             if (key_shiftr_down or key_shift_down) and key_right_press:
                 key_right_press = False
@@ -20636,7 +20801,7 @@ while pctl.running:
             if (coll(rect) or side_drag is True) \
                     and renamebox is False \
                     and radiobox is False \
-                    and rename_playlist_box is False \
+                    and gui.rename_playlist_box is False \
                     and gui.message_box is False \
                     and pref_box.enabled is False \
                     and track_box is False \
@@ -21016,6 +21181,24 @@ while pctl.running:
                             #artisttitle = colours.side_bar_line2
                             #albumtitle = colours.side_bar_line1  # grey(220)
 
+
+                            card_mode = False
+                            if colours.lm:
+                                card_mode = True
+                            #card_mode = False
+
+                            if card_mode:
+                                drop_shadow.render(x + 3 * gui.scale, y + 3 * gui.scale, album_mode_art_size + 11 * gui.scale, album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
+                                ddt.rect_r((x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250), True)
+
+
+                            # White background needs extra border
+                            if colours.lm and not card_mode:
+                                ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4),
+                                          colours.grey(200), True)
+
+
+
                             if a == row_len - 1:
 
                                 gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
@@ -21139,29 +21322,55 @@ while pctl.running:
                                 line = album_artist_dict[c_index]
                                 line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
-                                if line2 == "":
 
-                                    ddt.draw_text((x, y + album_mode_art_size + 9 * gui.scale),
-                                               line,
-                                               line1_colour,
-                                               311,
-                                               album_mode_art_size - 5 * gui.scale,
-                                               )
+                                if card_mode:
+                                    if line2 == "":
+
+                                        ddt.draw_text((x + 6 * gui.scale, y + album_mode_art_size + 8 * gui.scale),
+                                                      line,
+                                                      line1_colour,
+                                                      310,
+                                                      album_mode_art_size - 5 * gui.scale,
+                                                      )
+                                    else:
+
+                                        ddt.draw_text((x + 6 * gui.scale, y + album_mode_art_size + 7 * gui.scale),
+                                                      line2,
+                                                      line2_colour,
+                                                      311,
+                                                      album_mode_art_size,
+                                                      )
+
+                                        ddt.draw_text((x + 6 * gui.scale, y + album_mode_art_size + (10 + 14) * gui.scale),
+                                                      line,
+                                                      line1_colour,
+                                                      310,
+                                                      album_mode_art_size - 5 * gui.scale,
+                                                      )
                                 else:
+                                    if line2 == "":
 
-                                    ddt.draw_text((x, y + album_mode_art_size + 8 * gui.scale),
-                                               line2,
-                                               line2_colour,
-                                               212,
-                                               album_mode_art_size,
-                                               )
+                                        ddt.draw_text((x, y + album_mode_art_size + 9 * gui.scale),
+                                                   line,
+                                                   line1_colour,
+                                                   311,
+                                                   album_mode_art_size - 5 * gui.scale,
+                                                   )
+                                    else:
 
-                                    ddt.draw_text((x, y + album_mode_art_size + (10 + 14)  * gui.scale),
-                                               line,
-                                               line1_colour,
-                                               311,
-                                               album_mode_art_size - 5 * gui.scale,
-                                               )
+                                        ddt.draw_text((x, y + album_mode_art_size + 8 * gui.scale),
+                                                   line2,
+                                                   line2_colour,
+                                                   212,
+                                                   album_mode_art_size,
+                                                   )
+
+                                        ddt.draw_text((x, y + album_mode_art_size + (10 + 14)  * gui.scale),
+                                                   line,
+                                                   line1_colour,
+                                                   311,
+                                                   album_mode_art_size - 5 * gui.scale,
+                                                   )
 
                             album_on += 1
 
@@ -21598,15 +21807,23 @@ while pctl.running:
                 top += 200
 
             x = 0
-            if gui.lsp:
+            if gui.lsp:  # Move left so it sits over panel divide
                 x = gui.lspw - 7 * gui.scale
+                if colours.lm:  # Alligns with frame
+                    x = gui.lspw - 1 * gui.scale
 
             gui.scroll_hide_box = (
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
 
             fields.add(gui.scroll_hide_box)
             if (coll(
-                    gui.scroll_hide_box) or scroll_hold or quick_search_mode) and not x_menu.active and not tab_menu.active and not pref_box.enabled and not extra_tab_menu.active:  # or scroll_opacity > 0:
+                    gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
+                    not x_menu.active and \
+                    not tab_menu.active and \
+                    not pref_box.enabled and \
+                    not extra_tab_menu.active and \
+                    not gui.rename_playlist_box:
+
                 scroll_opacity = 255
 
                 if not gui.combo_mode:
@@ -21698,10 +21915,17 @@ while pctl.running:
                             sbp = int((ey - top - sbl) * per) + top + 1
 
 
-                    ddt.rect_a((x, top), (17 * gui.scale, window_size[1] - top - gui.panelBY), colours.grey(24),
+                    bg = colours.grey(24)
+                    fg = colours.scroll_colour
+
+                    if colours.lm:
+                        bg = [200, 200, 200, 100]
+                        fg = [100, 100, 100, 200]
+
+                    ddt.rect_a((x, top), (17 * gui.scale, window_size[1] - top - gui.panelBY), bg,
                                True)
                     ddt.rect_a((x + 1, sbp), (16 * gui.scale, sbl),
-                               alpha_mod(colours.scroll_colour, scroll_opacity), True)
+                               alpha_mod(fg, scroll_opacity), True)
 
                     if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
                         0] != 0) or scroll_hold:
@@ -21732,34 +21956,8 @@ while pctl.running:
 
             # Overlay GUI ----------------------
 
-            if rename_playlist_box:
-
-                if gui.level_2_click:
-                    input.mouse_click = True
-                gui.level_2_click = False
-
-                rect = [0, 0, 350 * gui.scale, 60 * gui.scale]
-                rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
-                rect[1] = int(window_size[1] / 2) - rect[3]
-
-                ddt.rect_a((rect[0] - 2 * gui.scale, rect[1] - 2 * gui.scale), (rect[2] + 4 * gui.scale, rect[3] + 4 * gui.scale), colours.grey(60), True)
-                ddt.rect_r(rect, colours.sys_background_3, True)
-                ddt.rect_a((rect[0] + 15 * gui.scale, rect[1] + 30 * gui.scale), (320 * gui.scale, 19 * gui.scale), colours.alpha_grey(10), True)
-                ddt.text_background_colour = colours.sys_background_3
-
-                rename_text_area.draw(rect[0] + 20 * gui.scale, rect[1] + 31 * gui.scale, colours.alpha_grey(200), width=350 * gui.scale)
-
-                ddt.draw_text((rect[0] + 17 * gui.scale, rect[1] + 5 * gui.scale), "Rename Playlist", colours.grey(320), 212)
-
-                if (key_esc_press and len(editline) == 0) or ((input.mouse_click or right_click) and not coll(rect)):
-                    rename_playlist_box = False
-                    if len(rename_text_area.text) > 0:
-                        pctl.multi_playlist[rename_index][0] = rename_text_area.text
-                elif input.key_return_press:
-                    rename_playlist_box = False
-                    input.key_return_press = False
-                    if len(rename_text_area.text) > 0:
-                        pctl.multi_playlist[rename_index][0] = rename_text_area.text
+            if gui.rename_playlist_box:
+                rename_box.render()
 
             if track_box:
                 if input.key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
@@ -22123,12 +22321,86 @@ while pctl.running:
                     input.mouse_click = True
                 gui.level_2_click = False
 
+                # w = 500 * gui.scale
+                # h = 127 * gui.scale
+                # x = int(window_size[0] / 2) - int(w / 2)
+                # y = int(window_size[1] / 2) - int(h / 2)
+                #
+                # bg = [231, 76, 60, 255]
+                #
+                # #ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                # ddt.rect_a((x, y), (w, h), bg, True)
+                #
+                # ddt.text_background_colour = bg
+                #
+                # if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
+                #     gui.rename_folder_box = False
+                #
+                # p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(250), 213)
+                #
+                # if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
+                #                70 * gui.scale):
+                #     rename_folder.text = prefs.rename_folder_template
+                #
+                #
+                # rename_folder.draw(x + 14 * gui.scale, y + 38 * gui.scale, colours.alpha_grey(230), width=300, font=313)
+                #
+                # #ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                #
+                # bbg = alpha_blend([0, 0, 0, 50] ,bg)
+                # bfg = alpha_blend([255, 255, 255, 50] ,bg)
+                #
+                # if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, fg=bfg, bg=bbg, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
+                #     rename_parent(rename_index, rename_folder.text)
+                #     gui.rename_folder_box = False
+                #     input.mouse_click = False
+                #
+                # text = "Trash"
+                # tt = "Moves folder to system trash"
+                # if key_shift_down:
+                #     text = "Delete"
+                #     tt = "Physically deletes folder from disk"
+                # if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
+                #     if key_shift_down:
+                #         delete_folder(rename_index, True)
+                #     else:
+                #         delete_folder(rename_index)
+                #     gui.rename_folder_box = False
+                #     input.mouse_click = False
+                #
+                # if move_folder_up(rename_index):
+                #     if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
+                #         move_folder_up(rename_index, True)
+                #         input.mouse_click = False
+                #
+                # to_clean = clean_folder(rename_index)
+                # if to_clean > 0:
+                #     if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
+                #         clean_folder(rename_index, True)
+                #         input.mouse_click = False
+                #
+                # ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.alpha_grey(190), 212)
+                # line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
+                # line = right_trunc(line, 12, 420 * gui.scale)
+                # ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(245), 211)
+                #
+                # ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.alpha_grey(190), 212)
+                # line = pctl.master_library[rename_index].parent_folder_name
+                # ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(245), 211, max_w=420 * gui.scale)
+                #
+                # ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.alpha_grey(190), 212)
+                # line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
+                # ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(245), 211, max_w=420 * gui.scale)
+
+
+
+
                 w = 500 * gui.scale
                 h = 127 * gui.scale
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                #ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 ddt.text_background_colour = colours.sys_background_3
@@ -22742,9 +23014,10 @@ while pctl.running:
                     if playlist_selected > len(default_playlist) - 1:
                         playlist_selected = 0
                         shift_selection = []
-                    pctl.jump(default_playlist[playlist_selected], playlist_selected)
-                    if album_mode:
-                        goto_album(pctl.playlist_playing_position)
+                    if default_playlist:
+                        pctl.jump(default_playlist[playlist_selected], playlist_selected)
+                        if album_mode:
+                            goto_album(pctl.playlist_playing_position)
 
         elif GUI_Mode == 3:
 
