@@ -5,18 +5,20 @@ v3.6.0
 
  - Added new theme "Lavender Light"
       todo:
-      - fix view box button colours
-      - fix folder title offset
-      - fix scroll bar layering
-      - fix scroll bar colours
       - fix lyric buttons colour
-      - fix playlist tab hit box
+      - fix starline colour?
       - fix queue box border
-      - retheme gallery?
+      - fix clock time modes
+      - tweak gallery highlight box
+      - move time cursor to front of frame
+      - set settings checkbox colour
+      - check UI scaling (gallery and frame)
       - move new theme to theme file
 
+ - todo - Added setting to change gallery tile to card style (Light mode only)
  - Redesigned app icon
- - Changed last.fm login to use web authorisation method
+ - Redesigned rename playlist box
+ - Improved last.fm login to use web authorisation method
  - Improved gallery text colour for light backgrounds
  - Restored "Large row preset" button
  - Tweaked transcoder to use original folder name when tracks from multiple albums are detected
@@ -26,6 +28,7 @@ v3.6.0
  - Fixed a bug where "disk total" field would not show for some formats
  - Fixed missing HiDPI icons for Sonemic and Picard
  - Fixed queue thumbnails not respecting UI scale
+ - Fixed crash if enter pressed with empty playlist
  - Removed folder transfer show option (reverted to always on)
  - Removed web remote interface
 
