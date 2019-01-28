@@ -669,6 +669,8 @@ class Prefs:    # Used to hold any kind of settings
         self.last_fm_token = None
         self.last_fm_username = ""
 
+        self.use_card_style = True
+
 
 prefs = Prefs()
 
@@ -1485,6 +1487,9 @@ try:
         prefs.last_fm_token = save[99]
     if save[100] is not None:
         prefs.last_fm_username = save[100]
+    if save[101] is not None:
+        prefs.use_card_style = save[101]
+
 
     state_file.close()
     del save
@@ -4485,7 +4490,7 @@ class DropShadow:
         fh = h + self.underscan
         fw = w + self.underscan
 
-        im = Image.new("RGBA", (fw, fh), 0x00000000)
+        im = Image.new("RGBA", (round(fw), round(fh)), 0x00000000)
         draw = ImageDraw.Draw(im)
         draw.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
 
@@ -4522,8 +4527,8 @@ class DropShadow:
             self.prepare(w, h)
 
         unit = self.readys[(w, h)]
-        unit[0].x = x - self.underscan
-        unit[0].y = y - self.underscan
+        unit[0].x = round(x) - round(self.underscan)
+        unit[0].y = round(y) - round(self.underscan)
         SDL_RenderCopy(renderer, unit[1], None, unit[0])
 
 
@@ -10371,7 +10376,12 @@ def toggle_galler_text(mode=0):
         if gui.first_in_grid < len(default_playlist):
             goto_album(gui.first_in_grid, force=True)
 
+def toggle_card_style(mode=0):
+    if mode == 1:
+        return prefs.use_card_style
 
+    prefs.use_card_style ^= True
+    gui.update += 1
 
 
 def toggle_side_panel(mode=0):
@@ -10593,6 +10603,7 @@ x_menu.br()
 settings_icon.xoff = 0
 settings_icon.yoff = 2
 settings_icon.colour = [232, 200, 96, 255]#[230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
+#settings_icon.colour = [180, 140, 255, 255]
 x_menu.add(_("Settings"), activate_info_box, icon=settings_icon)
 x_menu.add_sub(_("Database…"), 190)
 x_menu.br()
@@ -14148,6 +14159,9 @@ class Over:
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         y += 26 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, _("Show titles in gallery"))
+        y += 26 * gui.scale
+
+        self.toggle_square(x + 10 * gui.scale, y, toggle_card_style, _("Use card style (Light theme only)"))
         y += 28 * gui.scale
         #y += 28 * gui.scale
 
@@ -17547,10 +17561,9 @@ class QueueBox:
         else:
             gui.queue_frame_draw = y
 
-
         yy += 3 * gui.scale
 
-        box_rect = (x, yy, w, h)
+        box_rect = (x, yy - 3 * gui.scale, w, h)
 
         qb_right_click = 0
 
@@ -18603,13 +18616,13 @@ class ViewBox:
         low = (0, .15, 0)
 
         if colours.lm:
-            low = (0, .8, 0)
+            low = (0, .85, 0)
 
         # ----
 
         high = (.55, .6, .75)
         if colours.lm:
-            high = (.55, .55, .75)
+            high = (.55, .75, .75)
 
         test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art", low=low, high=high)
         if test is not None:
@@ -18621,7 +18634,7 @@ class ViewBox:
 
         high = (.6, .6, .75)
         if colours.lm:
-            high = (.6, .55, .75)
+            high = (.6, .80, .85)
 
         test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
         if test is not None:
@@ -18633,7 +18646,7 @@ class ViewBox:
 
         high = (.5, .6, .75)
         if colours.lm:
-            high = (.5, .55, .75)
+            high = (.5, .7, .65)
 
         test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only", low=low, high=high)
         if test is not None:
@@ -18657,7 +18670,7 @@ class ViewBox:
 
         high = (.14, .6, .75)
         if colours.lm:
-            high = (.14, .70, .70)
+            high = (.10, .8, .7)
 
         test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
         if test is not None:
@@ -18669,7 +18682,7 @@ class ViewBox:
 
         high = (.2, .6, .75)
         if colours.lm:
-            high = (.2, .55, .75)
+            high = (.2, .6, .75)
 
         if gui.scale == 1.25:
             x-= 1
@@ -19167,7 +19180,7 @@ def update_layout_do():
     if gui.scale == 2:
         gui.playlist_text_offset += 3
     if gui.scale == 1.25:
-        gui.playlist_text_offset += 3
+        gui.playlist_text_offset += 1
 
     gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
@@ -19465,7 +19478,8 @@ def save_state():
             prefs.reload_state,  # 97
             prefs.reload_play_state,
             prefs.last_fm_token,
-            prefs.last_fm_username]
+            prefs.last_fm_username,
+            prefs.use_card_style]
 
     #print(prefs.last_device + "-----")
 
@@ -20998,7 +21012,7 @@ while pctl.running:
                     #line1_colour = [200, 200, 200, 255]
 
                 if test_lumi(colours.gallery_background) < 0.5:
-                    line1_colour = colours.grey(60)
+                    line1_colour = colours.grey(80)
                     line2_colour = colours.grey(40)
 
                 if row_len == 0:
@@ -21125,8 +21139,8 @@ while pctl.running:
                                     break
 
                                 extend = 0
-                                # if gui.gallery_show_text:
-                                #     extend = 40
+                                if card_mode: #gui.gallery_show_text:
+                                    extend = 40 * gui.scale
 
                                 if coll((
                                         x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)) and gui.panelY < mouse_position[
@@ -21234,9 +21248,10 @@ while pctl.running:
 
 
                             card_mode = False
-                            if colours.lm:
+                            if prefs.use_card_style and colours.lm and gui.gallery_show_text:
+
                                 card_mode = True
-                            #card_mode = False
+
 
                             if card_mode:
                                 drop_shadow.render(x + 3 * gui.scale, y + 3 * gui.scale, album_mode_art_size + 11 * gui.scale, album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
@@ -21395,7 +21410,7 @@ while pctl.running:
                                         ddt.draw_text((x + 6 * gui.scale, y + album_mode_art_size + (10 + 14) * gui.scale),
                                                       line,
                                                       line1_colour,
-                                                      310,
+                                                      10,
                                                       album_mode_art_size - 18 * gui.scale,
                                                       )
                                 else:

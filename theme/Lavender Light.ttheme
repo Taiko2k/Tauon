@@ -18,8 +18,8 @@ light-mode
 #-Playlist-------
 
 80,80,80		track line
-40,40,40		track time
-40,40,40		track index
+80,80,80		track time
+80,80,80		track index
 40,40,40		track artist
 40,40,40		album line
 
