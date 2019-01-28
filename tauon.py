@@ -6385,6 +6385,10 @@ class Menu:
 
     def render_icon(self, x, y, icon, selected):
 
+        if colours.lm:
+            selected = True
+
+
         if icon is not None:
 
             x += icon.xoff * gui.scale
@@ -9140,6 +9144,8 @@ def heart_xmenu_colour():
     if love(False, r_menu_index):
         return [245, 60, 60, 255]
     else:
+        if colours.lm:
+            return [255, 200, 200, 255]
         return None
 
 
@@ -9228,6 +9234,7 @@ def rename_tracks(index):
 
 
 rename_tracks_icon.colour = [244, 241, 66, 255]
+rename_tracks_icon.colour = [204, 255, 66, 255]
 rename_tracks_icon.xoff = 1
 track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
@@ -10820,10 +10827,14 @@ extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
 
 def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
+        if colours.lm:
+            return [255, 200, 200, 255]
         return [50, 50, 50, 255]
     if love(False):
         return [245, 60, 60, 255]
     else:
+        if colours.lm:
+            return [255, 200, 200, 255]
         return None
 
 if gui.scale == 2:
