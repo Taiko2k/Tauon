@@ -1123,6 +1123,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_title_strong = self.grey(230)
         self.lm = False
 
+        self.plus_colour = [244, 212, 66, 255]
+
         #self.post_config()
 
     def post_config(self):
@@ -1201,6 +1203,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.message_box_text = self.grey(20)
         self.gallery_background = self.grey(230)
         self.gallery_artist_line = self.grey(40)
+        self.plus_colour = [212, 66, 244, 255]
 
         #view_box.off_colour = self.grey(200)
 
@@ -9233,8 +9236,9 @@ def rename_tracks(index):
     input_text = ""
 
 
-rename_tracks_icon.colour = [244, 241, 66, 255]
-rename_tracks_icon.colour = [204, 255, 66, 255]
+# rename_tracks_icon.colour = [244, 241, 66, 255]
+# rename_tracks_icon.colour = [204, 255, 66, 255]
+rename_tracks_icon.colour = [204, 100, 205, 255]
 rename_tracks_icon.xoff = 1
 track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
@@ -15029,7 +15033,7 @@ class TopPanel:
                             ay = y + 4
                             ay -= 6 * self.adds[k][2].get() / 0.3
 
-                            ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.plus_colour, 212, bg=bg)
                             gui.update += 1
 
 
@@ -15129,6 +15133,8 @@ class TopPanel:
 
             if coll(rect):
                 colour = [230, 230, 230, 255]
+                if colours.lm:
+                    colour = [40, 40, 40, 255]
                 if dl > 0 or watching > 0:
                     if right_click:
                         dl_menu.activate(position=(mouse_position[0], gui.panelY))
@@ -15155,6 +15161,8 @@ class TopPanel:
                             gui.update += 1
                 else:
                     colour = [60, 60, 60, 255]
+                    if colours.lm:
+                        colour = [180, 180, 180, 255]
                     if input.mouse_click:
                         input.mouse_click = False
                         show_message("It looks like something is being downloaded...", 'info', "Let's check back later...")
@@ -15162,10 +15170,14 @@ class TopPanel:
 
             else:
                 colour = [60, 60, 60, 255]
+                if colours.lm:
+                    colour = [180, 180, 180, 255]
+                    if dl_mon.ready:
+                        colour = [60, 60, 60, 255]
 
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if dl > 0:
-                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), [244, 223, 66, 255] , 209)
+                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.plus_colour, 209) #[244, 223, 66, 255]
                 # [166, 244, 179, 255]
 
 
@@ -17332,6 +17344,7 @@ class PlaylistBox:
                         delete_playlist(self.drag_on)
                     else:
                         move_playlist(self.drag_on, i)
+                    gui.update += 1
 
                 # Process input of dragging tracks onto tab
                 elif quick_drag is True:
@@ -17423,7 +17436,7 @@ class PlaylistBox:
                             ay = yy + 4 * gui.scale
                             ay -= 6 * gui.scale * self.adds[k][2].get() / 0.3
 
-                            ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), [244, 212, 66, 255], 212)
+                            ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.plus_colour, 212, bg=real_bg)
                             gui.update += 1
 
                             ddt.rect_r((tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
@@ -18681,7 +18694,7 @@ class ViewBox:
 
         high = (.14, .6, .75)
         if colours.lm:
-            high = (.10, .8, .7)
+            high = (.9, .75, .65)
 
         test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
         if test is not None:
@@ -18893,6 +18906,9 @@ class EdgePulse:
         self.ani_duration = 0.5
 
     def render(self, x, y, w, h, r=200, g=120, b=0):
+        r = colours.plus_colour[0]
+        g = colours.plus_colour[1]
+        b = colours.plus_colour[2]
         time = self.timer.get()
         if time < self.ani_duration:
             alpha = 255 - int(255 * (time / self.ani_duration))
@@ -22482,7 +22498,7 @@ while pctl.running:
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
-                #ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
 
                 ddt.text_background_colour = colours.sys_background_3
@@ -22589,9 +22605,6 @@ while pctl.running:
                 # c_blink = 200
 
                 ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
-
-
-
 
                 afterline = ""
                 warn = False
