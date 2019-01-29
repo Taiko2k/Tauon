@@ -20,6 +20,7 @@ v3.6.0
  - Fixed missing HiDPI icons for Sonemic and Picard
  - Fixed queue thumbnails not respecting UI scale
  - Fixed crash if enter pressed with empty playlist
+ - Fixed playlist side bar titles not updating immediately after drag
  - Removed folder transfer show option (reverted to always on)
  - Removed web remote interface
 
