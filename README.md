@@ -6,7 +6,9 @@
 A desktop music player for playback of local audio files.
 Designed to be simple and streamlined while putting the user in control of their music collection. Uses BASS audio library for playback (proprietary).
 
-<img src="https://user-images.githubusercontent.com/17271572/51741796-c6c29880-20fc-11e9-9507-c1681c0f03b1.jpg" hspace="0px" vspace="160px">
+<img src="https://user-images.githubusercontent.com/17271572/51880647-f1eb0780-23dc-11e9-8bb0-c3e888f8e52b.jpg" hspace="0px" vspace="160px">
+
+  > **Note**: This screenshot is from v3.6.0 (unreleased)
 
 ## Features :sparkles:
 
@@ -27,9 +29,11 @@ Designed to be simple and streamlined while putting the user in control of their
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
 - [x] XSPF, CUE (automatic detection)
 
-#### Not supported
 
-- [ ] M3U, PLS, WMA, CD, MOD, AIFF
+### Dark theme:
+
+![turbo1](https://user-images.githubusercontent.com/17271572/48976940-492ade00-f0f5-11e8-9e93-b8dcb9cdbd8c.jpg)
+
 
 ## Download and Install :dizzy:
 
