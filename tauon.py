@@ -384,7 +384,7 @@ renamebox = False
 pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
-theme = 6
+theme = 7
 themeChange = True
 
 scroll_enable = True
@@ -3193,6 +3193,9 @@ class LastFMapi:
                 show_message("Error - Not authorized", 'error')
             else:
                 show_message("Error", 'error', 'Unknown error.')
+
+        if not toggle_lfm_auto(mode=1):
+            toggle_lfm_auto()
 
     def auth3(self):
 
@@ -17211,20 +17214,20 @@ class RenameBox:
 
         min_w = max(250 * gui.scale, ddt.get_text_w(rename_text_area.text, 315) + 50 * gui.scale)
 
-        rect = [self.x, self.y, min_w, 41 * gui.scale]
-        bg = [185, 106, 202, 255]
+        rect = [self.x, self.y, min_w, 37 * gui.scale]
+        bg = [40, 40, 40, 255]
         ddt.text_background_colour = bg
 
         # Draw background
         ddt.rect_r(rect, bg, True)
 
         # Draw text entry
-        rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, colours.alpha_grey(250),
+        rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 8 * gui.scale, colours.alpha_grey(250),
                               width=350 * gui.scale, font=315)
 
         # Draw accent
-        rect2 = [self.x, self.y + 35 * gui.scale, min_w, 6 * gui.scale]
-        ddt.rect_r(rect2, [255, 255, 255, 40], True)
+        rect2 = [self.x, self.y + rect[3] - 4 * gui.scale, min_w, 4 * gui.scale]
+        ddt.rect_r(rect2, [255, 255, 255, 60], True)
 
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
@@ -20367,90 +20370,6 @@ while pctl.running:
 
             show_message("Test error message 123", 'error', "hello text")
 
-            # accent = [180, 140, 255, 255]
-            # print(colours.menu_highlight_background)
-
-            # colours.playlist_panel_background = colours.grey(245)
-            # colours.side_panel_background = colours.grey(239)
-            # colours.top_panel_background = colours.grey(245)
-            # colours.bottom_panel_colour = colours.grey(35)
-            # colours.light_mode()
-            # gui.pl_update = 1
-            #
-            # colours.title_text = colours.grey(80)
-            # colours.index_text = colours.grey(40)
-            #
-            # colours.artist_text = colours.grey(40)
-            # colours.album_text = colours.grey(40)
-            # colours.bar_time = colours.grey(40)
-            #
-            # colours.index_playing = colours.grey(245)
-            # colours.artist_playing = colours.grey(250)
-            # colours.album_playing = colours.grey(250)
-            # colours.title_playing = colours.grey(250)
-            # colours.row_playing_highlight = accent
-            # colours.row_select_highlight = [0, 0, 0, 14]
-            # colours.time_playing = [250, 210, 100, 255]
-            # colours.time_text = colours.grey(245)
-            #
-            # # print(pctl.playing_object().lyrics)
-            # colours.folder_title = [80, 80, 80, 255]
-            # colours.folder_line = [200, 200, 200, 255]
-            #
-            # colours.tab_text_active = colours.grey(240)
-            # colours.tab_text = colours.grey(30)
-            # colours.tab_background = colours.grey(240)
-            # colours.tab_highlight = colours.grey(230)
-            # colours.tab_background_active = accent
-            #
-            # colours.side_bar_line1 = colours.grey(25)
-            # colours.side_bar_line2 = colours.grey(35)
-            #
-            # colours.vis_colour = accent
-            # colours.vis_bg = [235, 235, 235, 255]
-            #
-            # colours.seek_bar_fill = accent
-            # colours.seek_bar_background = colours.grey(30)
-            #
-            # colours.volume_bar_fill = colours.grey(160)
-            #
-            # colours.bar_title_text = colours.grey(255)
-
-            # colours.menu_background = [240, 240, 240, 245]
-            # colours.menu_text = colours.grey(40)
-            # colours.menu_text_disabled = colours.grey(180)
-            # colours.menu_highlight_background = [200, 200, 200, 245]
-            #
-            # colours.mode_button_off = colours.grey(70)
-            # colours.mode_button_over = colours.grey(250)
-            # colours.mode_button_active = colours.grey(230)
-            #
-            # colours.media_buttons_over = colours.grey(255)
-            # colours.media_buttons_active = colours.grey(250)
-            # colours.media_buttons_off = colours.grey(70)
-            #
-            # colours.corner_button = colours.grey(50)
-            # colours.corner_button_active = colours.grey(50)
-            #
-            # colours.window_buttons_bg = [0, 0, 0, 5]
-            #
-            # # colours.sys_background_3 = [245, 245, 245, 255]
-            # # colours.sys_title = colours.grey(30)
-            # # colours.sys_title_strong = colours.grey(20)
-            # colours.message_box_bg = [245, 245, 245, 255]
-            # colours.message_box_text = colours.grey(20)
-            #
-            #
-            # colours.gallery_background = colours.grey(230)
-            # colours.gallery_artist_line = colours.grey(40)
-            #
-            # colours.gallery_highlight = accent
-            #
-            # colours.tb_line = colours.grey(140)
-            # colours.art_box = [0,0,0,0]
-            # # colours.scroll_colour = [200, 200, 200, 100]
-
-
             key_F7 = False
 
 
@@ -20849,7 +20768,7 @@ while pctl.running:
             colours.__init__()
             colours.post_config()
 
-        # print(theme)
+        print("Theme number: " + str(theme))
         themeChange = False
         ddt.text_background_colour = colours.playlist_panel_background
 
@@ -21318,6 +21237,8 @@ while pctl.running:
                                             break
                                 if tr:
                                     c = [244, 212, 66, 255]
+                                    if colours.lm:
+                                        c = [244, 64, 244, 255]
                                     ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                               c, True)
                                     ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
