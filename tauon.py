@@ -431,7 +431,8 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "TTA": [94, 78, 244, 255],
     "OPUS": [247, 79, 146, 255],
     "AAC": [79, 247, 168, 255],
-    "WV": [229, 23, 18, 255]
+    "WV": [229, 23, 18, 255],
+    "PLEX": [229, 160, 13, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -636,7 +637,6 @@ class Prefs:    # Used to hold any kind of settings
 
         self.transcode_opus_as = False
 
-
         self.discord_active = False
         self.discord_ready = False
 
@@ -670,6 +670,10 @@ class Prefs:    # Used to hold any kind of settings
         self.last_fm_username = ""
 
         self.use_card_style = True
+
+        self.plex_username = ""
+        self.plex_password = ""
+        self.plex_servername = ""
 
 
 prefs = Prefs()
@@ -1155,22 +1159,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
 
-            #self.menu_highlight_background = alpha_blend((self.artist_text[0], self.artist_text[1], self.artist_text[2], 100), self.menu_background)
-
-        # if gui.light_mode:  # Light mode was removed
-        #     self.sys_background = self.grey(20)
-        #     self.sys_background_2 = self.grey(25)
-        #     self.sys_tab_bg = self.grey(25)
-        #     self.sys_tab_hl = self.grey(45)
-        #     self.sys_background_3 = self.grey(20)
-        #     self.sys_background_4 = self.grey(19)
-        #     self.toggle_box_on = self.tab_background_active
-        #     self.time_sub = [0, 0, 0, 200]
-        #     self.gallery_artist_line = self.grey(40)
-        #     self.bar_title_text = self.grey(30)
-        #     self.status_text_normal = self.grey(70)
-        #     self.status_text_over = self.grey(40)
-        #     self.status_info_text = [40, 40, 40, 255]
 
     def light_mode(self):
 
@@ -1208,7 +1196,6 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         #view_box.off_colour = self.grey(200)
 
 
-
 colours = ColoursClass()
 colours.post_config()
 
@@ -1237,6 +1224,11 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.file_ext = ""
         self.size = 0
         self.modified_time = 0
+
+        self.is_network = False
+        #self.url = ""
+        self.url_key = ""
+        self.art_url_key = ""
 
         self.artist = ""
         self.album_artist = ""
@@ -1660,6 +1652,11 @@ if db_version > 0:
         if theme > 0:
            theme += 1
 
+    if db_version <= 2.5:
+        print("Updating database to version 2.6")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'is_network', False)
+
 # Loading Config -----------------
 
 download_directories = []
@@ -1752,6 +1749,16 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                         print("Directory was not found: " + path)
             if 'force-mono' in p:
                 prefs.mono = True
+
+            if 'plex-username=' in p:
+                result = p.split('=')[1]
+                prefs.plex_username = result
+            if 'plex-password=' in p:
+                result = p.split('=')[1]
+                prefs.plex_password = result
+            if 'plex-servname=' in p:
+                result = p.split('=')[1]
+                prefs.plex_servername = result
 
 else:
     print("Warning: Missing config file")
@@ -2112,6 +2119,10 @@ class PlayerCtl:
         if self.mpris is not None:
             self.mpris.update()
 
+    def get_url(self, track_object):
+        if track_object.file_ext == "PLEX":
+            return plex.resolve_stream(track_object.url_key)
+        return None
 
     def playing_playlist(self):
         return self.multi_playlist[self.active_playlist_playing][2]
@@ -2169,7 +2180,7 @@ class PlayerCtl:
     def title_text(self):
 
         line = ""
-        if self.playing_state < 3:
+        if self.playing_state < 3 and pctl.playing_ready():
             title = self.master_library[self.track_queue[self.queue_step]].title
             artist = self.master_library[self.track_queue[self.queue_step]].artist
 
@@ -2192,8 +2203,6 @@ class PlayerCtl:
 
         if not self.track_queue:
             return 0
-
-
 
 
     def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None):
@@ -3796,7 +3805,6 @@ class LastScrob:
 
 lfm_scrobbler = LastScrob()
 
-
 class Tauon:
 
     def __init__(self):
@@ -3818,6 +3826,116 @@ if prefs.backend == 2:
 
 if prefs.backend == 1:
     from t_modules.t_bass import player
+
+
+
+class PlexService:
+
+    def __init__(self):
+        self.connected = False
+        self.resource = None
+
+    def connect(self):
+
+        if not prefs.plex_username:
+            show_message("No username in config", 'warning', 'Enter details in config file then restart app to apply.')
+            return
+        if not prefs.plex_password:
+            show_message("No password in config", 'warning', 'Enter details in config file then restart app to apply.')
+            return
+        if not prefs.plex_servername:
+            show_message("No name of plex server in config", 'warning', 'Enter details in config file then restart app to apply.')
+            return
+
+        from plexapi.myplex import MyPlexAccount
+        account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
+        self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
+
+        # from plexapi.server import PlexServer
+        # baseurl = 'http://localhost:32400'
+        # token = ''
+
+        self.resource = PlexServer(baseurl, token)
+
+        self.connected = True
+
+    def resolve_stream(self, location):
+
+        if not self.connected:
+            self.connect()
+
+        #return self.resource.url(location, True)
+        return self.resource.library.fetchItem(location).getStreamURL()
+
+    def resolve_thumbnail(self, location):
+
+        if not self.connected:
+            self.connect()
+        return self.resource.url(location, True)
+
+    def get_albums(self):
+
+        if not self.connected:
+            self.connect()
+
+        if not self.connected:
+            return
+
+        global master_count
+
+        albums = self.resource.library.section('Music').albums()
+        for album in albums:
+            year = album.year
+            album_artist = album.parentTitle
+            album_title = album.title
+
+            parent = (album_artist + " - " + album_title).strip("- ")
+
+            for track in album.tracks():
+                title = track.title
+                track_artist = track.grandparentTitle
+                duration = track.duration / 1000
+
+                tn = track.index
+
+                nt = TrackClass()
+                nt.index = master_count
+                nt.file_ext = "PLEX"
+                nt.parent_folder_path = parent
+                nt.parent_folder_name = parent
+                nt.album_artist = album_artist
+                nt.artist = track_artist
+                nt.title = title
+                nt.album = album_title
+                nt.length = duration
+
+                nt.is_network = True
+
+                if track.thumb:
+                    nt.art_url_key = track.thumb
+
+                #nt.url = track.getStreamURL()
+                print(track.getStreamURL())
+                #print(track.url())
+                nt.url_key = track.key
+
+
+                nt.date = str(year)
+
+                pctl.master_library[master_count] = nt
+                master_count += 1
+
+                default_playlist.append(nt.index)
+
+
+plex = PlexService()
+
+
+def get_network_thumbnail_url(track_object):
+
+    if track_object.file_ext == "PLEX":
+        return plex.resolve_thumbnail(track_object.art_url_key)
+    return None
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -5005,10 +5123,16 @@ class GallClass:
                     source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
                     # print('load from cache')
 
-                elif source[0] is True:
+                elif source[0] == 1:
                     # print('tag')
                     source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
 
+                elif source[0] == 2:
+                    try:
+                        response = urllib.request.urlopen(get_network_thumbnail_url(pctl.g(key[0])))
+                        source_image = response
+                    except:
+                        print("IMAGE NETWORK LOAD ERROR")
                 else:
                     source_image = open(source[1], 'rb')
 
@@ -5044,6 +5168,7 @@ class GallClass:
                     gui.pl_update = 1
 
             except:
+                raise
                 print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
@@ -5284,8 +5409,9 @@ class AlbumArt():
 
     def get_sources(self, index):
 
-        filepath = pctl.master_library[index].fullpath
-        ext = pctl.master_library[index].file_ext
+        tr = pctl.master_library[index]
+        filepath = tr.fullpath
+        ext = tr.file_ext
 
         # Check if source list already exists, if not, make it
         if index in self.source_cache:
@@ -5295,13 +5421,25 @@ class AlbumArt():
 
         source_list = []  # istag,
 
-        try:
-            direc = os.path.dirname(filepath)
-            items_in_dir = os.listdir(direc)
-        except:
-            print("Error loading directroy")
-            return []
+        # Source type the is first element in list
+        # 0 = File
+        # 1 = Embedded in tag
+        # 2 = Network location
 
+        if tr.is_network:
+            # Add url if network target
+            if tr.art_url_key:
+                source_list.append([2, tr.art_url_key])
+        else:
+            # Check for local image files
+            try:
+                direc = os.path.dirname(filepath)
+                items_in_dir = os.listdir(direc)
+            except:
+                print("Error loading directroy")
+                return []
+
+        # Check for embedded image
         try:
             if ext == 'MP3':
                 tag = stagger.read_tag(filepath)
@@ -5312,14 +5450,14 @@ class AlbumArt():
                     tt = tag[PIC][0]
 
                 if len(tt.data) > 30:
-                    source_list.append([True, filepath])
+                    source_list.append([1, filepath])
 
             elif ext == 'OGG' or ext == 'OPUS':
 
                 tt = Opus(filepath)
                 tt.read()
                 if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([True, filepath])
+                    source_list.append([1, filepath])
 
 
             elif ext == 'FLAC':
@@ -5327,21 +5465,21 @@ class AlbumArt():
                 tt = Flac(filepath)
                 tt.read(True)
                 if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([True, filepath])
+                    source_list.append([1, filepath])
 
             elif ext == 'APE':
 
                 tt = Ape(filepath)
                 tt.read()
                 if tt.has_picture is True and len(tt.picture) > 30:
-                    source_list.append([True, filepath])
+                    source_list.append([1, filepath])
 
             elif ext == 'M4A':
 
                 tt = M4a(filepath)
                 tt.read()
                 if tt.has_picture:
-                    source_list.append([True, filepath])
+                    source_list.append([1, filepath])
 
                     # elif '.opus' in filepath or '.OPUS' in filepath or ".ogg" in filepath or ".OGG" in filepath:
                     #
@@ -5355,24 +5493,27 @@ class AlbumArt():
             # raise
             pass
 
-        for i in range(len(items_in_dir)):
+        if not tr.is_network:
+            for i in range(len(items_in_dir)):
 
-            if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
-                dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
-                source_list.append([False, dir_path])
+                if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
+                    dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
+                    source_list.append([0, dir_path])
 
-            elif os.path.isdir(os.path.join(direc, items_in_dir[i])) and \
-                            items_in_dir[i].lower() in self.art_folder_names:
+                elif os.path.isdir(os.path.join(direc, items_in_dir[i])) and \
+                                items_in_dir[i].lower() in self.art_folder_names:
 
-                subdirec = os.path.join(direc, items_in_dir[i])
-                items_in_dir2 = os.listdir(subdirec)
+                    subdirec = os.path.join(direc, items_in_dir[i])
+                    items_in_dir2 = os.listdir(subdirec)
 
-                for y in range(len(items_in_dir2)):
-                    if os.path.splitext(items_in_dir2[y])[1][1:] in self.image_types:
-                        dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
-                        source_list.append([False, dir_path])
+                    for y in range(len(items_in_dir2)):
+                        if os.path.splitext(items_in_dir2[y])[1][1:] in self.image_types:
+                            dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
+                            source_list.append([0, dir_path])
 
         self.source_cache[index] = source_list
+
+        print(source_list)
 
         return source_list
 
@@ -5402,14 +5543,6 @@ class AlbumArt():
 
         bh = round(box[1])
         bw = round(box[0])
-
-        # # correct aspect ratio if needed
-        # if unit.original_size[0] > unit.original_size[1]:
-        #     temp_dest.w = box[0]
-        #     temp_dest.h = int(temp_dest.h * (unit.original_size[1] / unit.original_size[0]))
-        # elif unit.original_size[0] < unit.original_size[1]:
-        #     temp_dest.h = box[1]
-        #     temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
         # Constrain image to given box
         if temp_dest.w > bw:
@@ -5576,12 +5709,13 @@ class AlbumArt():
 
     def display(self, index, location, box, fast=False):
 
-        filepath = pctl.master_library[index].fullpath
+        tr = pctl.master_library[index]
+        filepath = tr.fullpath
 
         if prefs.colour_from_image and index != gui.theme_temp_current and box[0] != 115: #mark2233
-            if pctl.master_library[index].album in gui.temp_themes:
+            if tr.album in gui.temp_themes:
                 global colours
-                colours = gui.temp_themes[pctl.master_library[index].album]
+                colours = gui.temp_themes[tr.album]
 
                 gui.theme_temp_current = index
 
@@ -5610,9 +5744,16 @@ class AlbumArt():
         try:
 
             # Get source IO
-            if source[offset][0] is True:
+            if source[offset][0] == 1:
                 # Target is a embedded image
                 source_image = io.BytesIO(self.get_embed(index))
+            elif source[offset][0] == 2:
+                try:
+                    response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                    source_image = response
+                except:
+                    print("IMAGE NETWORK LOAD ERROR")
+
             else:
                 source_image = open(source[offset][1], 'rb')
 
@@ -5638,7 +5779,7 @@ class AlbumArt():
             g.seek(0)
 
             if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
-                colours.last_album = pctl.master_library[index].parent_folder_path
+                colours.last_album = tr.parent_folder_path
 
                 im.thumbnail((50, 50), Image.ANTIALIAS)
                 pixels = im.getcolors(maxcolors=2500)
@@ -5826,9 +5967,9 @@ class AlbumArt():
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
-        except:
+        except Exception as error:
 
-            print("Image processing error")
+            print("Image processing error" + str(error))
             self.current_wu = None
             del self.source_cache[index][offset]
             return 1
@@ -6351,6 +6492,7 @@ class Menu:
 
         self.sub_number = 0
         self.sub_active = -1
+        self.sub_y_postion = 0
         Menu.instances.append(self)
 
     @staticmethod
@@ -6496,6 +6638,7 @@ class Menu:
                         else:
                             self.clicked = False
                             self.sub_active = self.items[i][2]
+                            self.sub_y_postion = y_run
 
                 # Draw tab
                 ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.h),
@@ -6530,11 +6673,12 @@ class Menu:
                               colo, self.font, bg=bg)
 
                 y_run += self.h
+
                 # Render sub menu if active
                 if self.sub_active > -1 and self.items[i][1] and self.sub_active == self.items[i][2]:
 
                     # sub_pos = [self.pos[0] + self.w, self.pos[1] + i * self.h]
-                    sub_pos = [self.pos[0] + self.w, self.pos[1]]
+                    sub_pos = [self.pos[0] + self.w, self.sub_y_postion]
                     sub_w = self.items[i][4]
                     fx = self.deco()
 
@@ -8579,6 +8723,13 @@ def open_license():
         print(target)
 
 
+def reset_config_file():
+    if install_mode:
+        shutil.copy(install_directory + "/config.txt", config_directory)
+        show_message("Config reset", 'done')
+    else:
+        show_message("Running in portable mode", 'warning', 'Already using original config')
+
 def open_config_file():
     target = os.path.join(config_directory, "config.txt")
     if system == "windows":
@@ -8651,10 +8802,16 @@ def convert_folder(index):
     r_folder = pctl.master_library[index].parent_folder_path
     for item in default_playlist:
         if r_folder == pctl.master_library[item].parent_folder_path:
+
+            track_object = pctl.g(item)
+            if track_object.is_network:
+                show_message("Transcoding tracks from a network locations is not currenty supported")
+                return
+
             folder.append(item)
             print(prefs.transcode_codec)
-            print(pctl.master_library[item].file_ext)
-            if prefs.transcode_codec == 'flac' and pctl.master_library[item].file_ext.lower() in ('mp3', 'opus',
+            print(track_object.file_ext)
+            if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
                                                                                                   'mp4', 'ogg',
                                                                                                   'aac'):
                 show_message("NO! Bad user!",
@@ -9250,6 +9407,10 @@ def delete_folder(index, force=False):
 
     track = pctl.master_library[index]
 
+    if track.is_network:
+        show_message("Cannot physically delete", 'info', "One or more tracks is from a network location!")
+        return
+
     old = track.parent_folder_path
 
 
@@ -9311,6 +9472,10 @@ def rename_parent(index, template):
     #template = prefs.rename_folder_template
     template = template.strip("/\\")
     track = pctl.master_library[index]
+
+    if track.is_network:
+        show_message("Cannot rename", 'info', "One or more tracks is from a network location!")
+        return
 
     old = track.parent_folder_path
     #print(old)
@@ -9419,6 +9584,10 @@ def move_folder_up(index, do=False):
 
     track = pctl.master_library[index]
 
+    if track.is_network:
+        show_message("Cannot move", 'info', "One or more tracks is from a network location!")
+        return
+
     parent_folder = os.path.dirname(track.parent_folder_path)
     folder_name = track.parent_folder_name
     move_target = track.parent_folder_path
@@ -9477,6 +9646,11 @@ def move_folder_up(index, do=False):
 def clean_folder(index, do=False):
 
     track = pctl.master_library[index]
+
+    if track.is_network:
+        show_message("Cannot clean", 'info', "One or more tracks is from a network location!")
+        return
+
     folder = track.parent_folder_path
     found = 0
     to_purge = []
@@ -10948,13 +11122,27 @@ def level_meter_special_2():
     gui.level_meter_colour_mode = 2
 
 
-
+theme_files = os.listdir(install_directory + '/theme')
+theme_files.sort()
 
 def advance_theme():
     global theme
     global themeChange
     theme += 1
     themeChange = True
+
+
+def set_theme_vape():
+    global theme
+    global themeChange
+    for i, theme in enumerate(theme_files):
+        if 'vape.ttheme' == theme:
+            theme = i + 1
+            themeChange = True
+            break
+
+
+
 
 def last_fm_menu_deco():
     # if lastfm.connected:
@@ -13908,10 +14096,16 @@ class Over:
 
 
         y = self.box_y + 190 * gui.scale
-        self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
+        if key_shift_down:
+            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
+                        100 * gui.scale)
+        else:
+            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
         y += 26 * gui.scale
         self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
+        # x = self.box_x + self.item_x_offset
+        # self.button(x, y - 4 * gui.scale, _("Import PLEX music"), plex.get_albums)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -17031,8 +17225,10 @@ class ArtBox:
             if not key_shift_down:
 
                 line = ""
-                if showc[0] is True:
+                if showc[0] == 1:
                     line += 'E '
+                elif showc[0] == 2:
+                    line += 'N '
                 else:
                     line += 'F '
 
@@ -17050,8 +17246,10 @@ class ArtBox:
             else:   # Extended metadata
 
                 line = ""
-                if showc[0] is True:
+                if showc[0] == 1:
                     line += 'Embedded'
+                elif showc[0] == 2:
+                    line += 'Network'
                 else:
                     line += 'File'
 
@@ -19425,7 +19623,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            2.5,  # Version, used for upgrading
+            2.6,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -19631,6 +19829,8 @@ while pctl.running:
     mouse_moved = False
     gui.level_2_click = False
 
+    # gui.update = 2
+
     while SDL_PollEvent(ctypes.byref(event)) != 0:
 
         # print(event.type)
@@ -19641,7 +19841,7 @@ while pctl.running:
         if event.type == SDL_DROPTEXT:
 
             link = event.drop.file.decode()
-            if pctl.playing_ready and 'http' in link:
+            if pctl.playing_ready() and 'http' in link:
                 if system != 'windows' and sdl_version >= 204:
                     gmp = get_global_mouse()
                     gwp = get_window_position()
@@ -20367,6 +20567,8 @@ while pctl.running:
             update_layout_do()
 
         if key_F7: #  F7 test
+
+            plex.get_albums()
 
             show_message("Test error message 123", 'error', "hello text")
 
@@ -22035,6 +22237,7 @@ while pctl.running:
                 else:
                     art_size = int(115 * gui.scale)
 
+                    # if not tc.is_network: # Don't draw album art if from network location for better performance
                     if comment_mode == 1:
                         album_art_gen.display(r_menu_index, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size)) # Mirror this size in auto theme #mark2233
                     else:
@@ -22340,80 +22543,6 @@ while pctl.running:
                     input.mouse_click = True
                 gui.level_2_click = False
 
-                # w = 500 * gui.scale
-                # h = 127 * gui.scale
-                # x = int(window_size[0] / 2) - int(w / 2)
-                # y = int(window_size[1] / 2) - int(h / 2)
-                #
-                # bg = [231, 76, 60, 255]
-                #
-                # #ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
-                # ddt.rect_a((x, y), (w, h), bg, True)
-                #
-                # ddt.text_background_colour = bg
-                #
-                # if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
-                #     gui.rename_folder_box = False
-                #
-                # p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(250), 213)
-                #
-                # if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
-                #                70 * gui.scale):
-                #     rename_folder.text = prefs.rename_folder_template
-                #
-                #
-                # rename_folder.draw(x + 14 * gui.scale, y + 38 * gui.scale, colours.alpha_grey(230), width=300, font=313)
-                #
-                # #ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
-                #
-                # bbg = alpha_blend([0, 0, 0, 50] ,bg)
-                # bfg = alpha_blend([255, 255, 255, 50] ,bg)
-                #
-                # if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, fg=bfg, bg=bbg, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
-                #     rename_parent(rename_index, rename_folder.text)
-                #     gui.rename_folder_box = False
-                #     input.mouse_click = False
-                #
-                # text = "Trash"
-                # tt = "Moves folder to system trash"
-                # if key_shift_down:
-                #     text = "Delete"
-                #     tt = "Physically deletes folder from disk"
-                # if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
-                #     if key_shift_down:
-                #         delete_folder(rename_index, True)
-                #     else:
-                #         delete_folder(rename_index)
-                #     gui.rename_folder_box = False
-                #     input.mouse_click = False
-                #
-                # if move_folder_up(rename_index):
-                #     if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
-                #         move_folder_up(rename_index, True)
-                #         input.mouse_click = False
-                #
-                # to_clean = clean_folder(rename_index)
-                # if to_clean > 0:
-                #     if draw.button("Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale, 80 * gui.scale, tooltip="Deletes some unnecessary files from folder"):
-                #         clean_folder(rename_index, True)
-                #         input.mouse_click = False
-                #
-                # ddt.draw_text((x + 10 * gui.scale, y + 65 * gui.scale,), "PATH", colours.alpha_grey(190), 212)
-                # line = os.path.dirname(pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\", "/") + "/"
-                # line = right_trunc(line, 12, 420 * gui.scale)
-                # ddt.draw_text((x + 60 * gui.scale, y + 65 * gui.scale,), line, colours.grey(245), 211)
-                #
-                # ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "OLD", colours.alpha_grey(190), 212)
-                # line = pctl.master_library[rename_index].parent_folder_name
-                # ddt.draw_text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(245), 211, max_w=420 * gui.scale)
-                #
-                # ddt.draw_text((x + 10 * gui.scale, y + 101 * gui.scale), "NEW", colours.alpha_grey(190), 212)
-                # line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
-                # ddt.draw_text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(245), 211, max_w=420 * gui.scale)
-
-
-
-
                 w = 500 * gui.scale
                 h = 127 * gui.scale
                 x = int(window_size[0] / 2) - int(w / 2)
@@ -22506,7 +22635,10 @@ while pctl.running:
                     if pctl.master_library[item].parent_folder_path == pctl.master_library[
                                 rename_index].parent_folder_path:
 
-                        # Close and display error if any tracks are based on a CUE sheet
+                        # Close and display error if any tracks are not single local files
+                        if pctl.master_library[item].is_network is True:
+                            renamebox = False
+                            show_message("Cannot rename", 'info', "One or more tracks is from a network location!")
                         if pctl.master_library[item].is_cue is True:
                             renamebox = False
                             show_message("This function does not support renaming CUE Sheet tracks.")

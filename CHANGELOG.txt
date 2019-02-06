@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.6.1
+
+ - Improved menu sub position to start at parent location
+
 v3.6.0
 
  - Added new theme "Lavender Light"

@@ -21,6 +21,7 @@
 
 from t_modules.t_extra import Timer
 import ctypes
+from ctypes.util import find_library
 import time
 import math
 import datetime
@@ -63,6 +64,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
                               ctypes.c_void_p)(('BASS_Init', bass_module))
 
+    BASS_GetVersion = function_type(ctypes.c_ulong)(("BASS_GetVersion", bass_module))
+
     BASS_FX_GetVersion = function_type(ctypes.c_ulong)(("BASS_FX_GetVersion", fx_module))
 
     BASS_StreamCreateFile = function_type(ctypes.c_ulong, ctypes.c_bool, ctypes.c_void_p, ctypes.c_int64,
@@ -77,6 +80,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         ('BASS_ChannelPlay', bass_module))
     BASS_ErrorGetCode = function_type(ctypes.c_int)(('BASS_ErrorGetCode', bass_module))
     BASS_SetConfig = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong)(('BASS_SetConfig', bass_module))
+    BASS_SetConfigPtr = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_void_p)(('BASS_SetConfigPtr', bass_module))
     BASS_GetConfig = function_type(ctypes.c_ulong, ctypes.c_ulong)(('BASS_GetConfig', bass_module))
     BASS_ChannelSlideAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float,
                                                ctypes.c_ulong)(('BASS_ChannelSlideAttribute', bass_module))
@@ -248,9 +252,19 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_DEVICE_MONO = 2
 
     BASS_CONFIG_ASYNCFILE_BUFFER = 45
+    BASS_CONFIG_LIBSSL = 64
+
+    print(BASS_ErrorGetCode())
+
+    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so"))
+    print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0"))
+    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.1"))
+    #
+    print(BASS_ErrorGetCode())
 
     #if system != 'windows':
     open_flag = 0
+
     #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 128000)
     #else:
     #    open_flag = BASS_UNICODE
@@ -346,6 +360,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     x = (ctypes.c_float * 512)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
+
+    print(BASS_GetVersion())
+    print(hex(BASS_GetVersion()))
+    print(bin(BASS_GetVersion()))
 
     def broadcast_connect(handle, connect, client, headers, user):
 
@@ -467,38 +485,51 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             print("Open file...")
 
-            # Get the target filepath and convert to bytes
-            target = pctl.target_open.encode('utf-8')
+            target_object = pctl.target_object
 
-            # Check if the file exists, mark it as missing if not
-            if os.path.isfile(pctl.target_object.fullpath):
-                pctl.target_object.found = True
+            if target_object.is_network:
+
+                # This currently fails with PLEX URL's
+
+                print(BASS_ErrorGetCode())
+                print("START")
+                url = pctl.get_url(target_object).encode()
+                print(url)
+                new_handle = BASS_StreamCreateURL(url, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT, down_func, 0)
+                print(BASS_ErrorGetCode())
             else:
-                pctl.target_object.found = False
-                gui.pl_update = 1
-                print("Missing File: " + pctl.target_object.fullpath)
-                pctl.playing_state = 0
-                pctl.jump_time = 0
-                pctl.advance(inplace=True, nolock=True)
-                return
 
-            # print(BASS_ErrorGetCode())
-            # Load new stream
-            new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE|BASS_SAMPLE_FLOAT)
+                # Get the target filepath and convert to bytes
+                target = pctl.target_open.encode('utf-8')
 
-            # print("Creade decode chanel")
-            # print(BASS_ErrorGetCode())
+                # Check if the file exists, mark it as missing if not
+                if os.path.isfile(pctl.target_object.fullpath):
+                    pctl.target_object.found = True
+                else:
+                    pctl.target_object.found = False
+                    gui.pl_update = 1
+                    print("Missing File: " + pctl.target_object.fullpath)
+                    pctl.playing_state = 0
+                    pctl.jump_time = 0
+                    pctl.advance(inplace=True, nolock=True)
+                    return
 
-            # Verify length if very short
-            if pctl.target_object.length < 1:
-                blen = BASS_ChannelGetLength(new_handle, 0)
-                tlen = BASS_ChannelBytes2Seconds(new_handle, blen)
-                pctl.target_object.length = tlen
-                pctl.playing_length = tlen
+                # print(BASS_ErrorGetCode())
+                # Load new stream
+                new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE|BASS_SAMPLE_FLOAT)
+
+                # print("Creade decode chanel")
+                # print(BASS_ErrorGetCode())
+
+                # Verify length if very short
+                if pctl.target_object.length < 1:
+                    blen = BASS_ChannelGetLength(new_handle, 0)
+                    tlen = BASS_ChannelBytes2Seconds(new_handle, blen)
+                    pctl.target_object.length = tlen
+                    pctl.playing_length = tlen
 
             # Set the volume to 0 and set replay gain
             # BASS_ChannelSetAttribute(new_handle, 2, 0)
-            # replay_gain(new_handle)
 
             if self.state == 'paused':
                 BASS_ChannelStop(self.channel)
@@ -918,6 +949,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             elif status == 2:
                 print("Channel has stalled")
+
                 pctl.playing_time += add_time
 
                 if pctl.playing_time > 10 and pctl.playing_state != 3:
@@ -1219,7 +1251,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             # OPEN COMMAND
 
-            if command == 'open' and pctl.target_open != '':
+            if command == 'open':# and pctl.target_open != '':
 
                 bass_player.start(transition_instant)
 
