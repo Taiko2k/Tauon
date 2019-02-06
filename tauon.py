@@ -326,6 +326,7 @@ gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
 d_click_timer.force_set(10)
+lyrics_check_timer = Timer()
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -674,6 +675,9 @@ class Prefs:    # Used to hold any kind of settings
         self.plex_username = ""
         self.plex_password = ""
         self.plex_servername = ""
+
+        self.auto_lyrics = False
+        self.auto_lyrics_checked = []
 
 
 prefs = Prefs()
@@ -1484,7 +1488,10 @@ try:
         prefs.last_fm_username = save[100]
     if save[101] is not None:
         prefs.use_card_style = save[101]
-
+    if save[102] is not None:
+        prefs.auto_lyrics = save[102]
+    if save[103] is not None:
+        prefs.auto_lyrics_checked = save[103]
 
     state_file.close()
     del save
@@ -3547,6 +3554,9 @@ class ListenBrainz:
 
         data = {"listen_type": "single", "payload": []}
         metadata = {"track_name": title, "artist_name": artist}
+
+        additional = {"release_mbid": _, "artist_mbids": [], "recording_mbid": _}
+
         data["payload"].append({"track_metadata": metadata})
         data["payload"][0]["listened_at"] = time
 
@@ -3571,7 +3581,6 @@ class ListenBrainz:
         data["payload"].append({"track_metadata": metadata})
         #data["payload"][0]["listened_at"] = int(time.time())
 
-        print(self.key)
         r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
@@ -3855,7 +3864,7 @@ class PlexService:
         # baseurl = 'http://localhost:32400'
         # token = ''
 
-        self.resource = PlexServer(baseurl, token)
+        # self.resource = PlexServer(baseurl, token)
 
         self.connected = True
 
@@ -4043,7 +4052,7 @@ if True:
                                 if i_path is not None:
                                     d['mpris:artUrl'] = 'file://' + i_path
                             except:
-
+                                # raise
                                 print("Thumbnail error")
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
@@ -5168,7 +5177,7 @@ class GallClass:
                     gui.pl_update = 1
 
             except:
-                raise
+                # raise
                 print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
@@ -5299,10 +5308,16 @@ class ThumbTracks:
 
         #print(source[0])
 
-        if source[0] is True:
+        if source[0] == 1:
         # print('tag')
             source_image = io.BytesIO(album_art_gen.get_embed(track.index))
 
+        elif source[0] == 2:
+            try:
+                response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                source_image = response
+            except:
+                print("IMAGE NETWORK LOAD ERROR")
         else:
             source_image = open(source[1], 'rb')
 
@@ -5315,7 +5330,7 @@ class ThumbTracks:
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail((250, 250), Image.ANTIALIAS)
+        im.thumbnail((750, 750), Image.ANTIALIAS)
 
         im.save(t_path, 'JPEG')
         source_image.close()
@@ -5513,7 +5528,7 @@ class AlbumArt():
 
         self.source_cache[index] = source_list
 
-        print(source_list)
+        # print(source_list)
 
         return source_list
 
@@ -5614,7 +5629,7 @@ class AlbumArt():
 
         if parent_folder in folder_image_offsets:
 
-            # Reset the offset if greater then number of images available
+            # Reset the offset if greater than number of images available
             if folder_image_offsets[parent_folder] > len(source) - 1:
                 folder_image_offsets[parent_folder] = 0
         else:
@@ -6968,10 +6983,11 @@ def toggle_lyrics(track_object):
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
 
 
-def get_lyric_fire(track_object):
+def get_lyric_fire(track_object, silent=False):
 
     print("Query Lyric Wiki...")
-    show_message(_("Searching..."))
+    if not silent:
+        show_message(_("Searching..."))
     try:
         track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
         gui.message_box = False
@@ -6979,7 +6995,8 @@ def get_lyric_fire(track_object):
             prefs.show_lyrics_side = True
         lyrics_ren.lyrics_position = 0
     except:
-        show_message("LyricWiki does not appear to have lyrics for this song")
+        if not silent:
+            show_message("LyricWiki does not appear to have lyrics for this song")
 
 def get_lyric_wiki(track_object):
 
@@ -6992,6 +7009,27 @@ def get_lyric_wiki(track_object):
     shoot_dl.start()
 
     print("..Done")
+
+def get_lyric_wiki_silent(track_object):
+
+    print("Searching LyricWiki...")
+
+    if track_object.artist == "" or track_object.title == "":
+        return
+
+    shoot_dl = threading.Thread(target=get_lyric_fire, args=([track_object, True]))
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+    print("..Done")
+
+def test_auto_lyrics(track_object):
+
+    if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
+        if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
+            get_lyric_wiki_silent(track_object)
+            lyrics_check_timer.set()
+            prefs.auto_lyrics_checked.append(track_object.index)
 
 
 def get_bio(track_object):
@@ -12602,7 +12640,7 @@ def worker1():
 
         except:
             print("Error in processing CUE file")
-            raise
+            # raise
 
     def add_file(path):
         # bm.get("add file start")
@@ -13711,6 +13749,12 @@ def toggle_extract(mode=0):
         prefs.auto_del_zip = False
 
 
+def toggle_auto_lyrics(mode=0):
+    if mode == 1:
+        return prefs.auto_lyrics
+    prefs.auto_lyrics ^= True
+
+
 def switch_single(mode=0):
     if mode == 1:
         if prefs.transcode_mode == 'single':
@@ -14037,6 +14081,10 @@ class Over:
         self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
 
         y += 30 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto seacrch lyrics"))
+
+        y += 30 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
@@ -14044,6 +14092,7 @@ class Over:
         self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
+
 
         x = self.box_x + self.item_x_offset
         y = self.box_y - 10 * gui.scale
@@ -17996,6 +18045,10 @@ class MetaBox:
 
     def draw(self, x, y, w ,h):
 
+        if not pctl.playing_ready():
+            return
+        track = pctl.playing_object()
+
         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
         if pctl.playing_state == 0:
@@ -18008,11 +18061,15 @@ class MetaBox:
         if coll((x + 10, y, w - 10, h)):
             if right_click and 3 > pctl.playing_state > 0:
                 gui.force_showcase_index = -1
-                showcase_menu.activate(pctl.master_library[pctl.track_queue[pctl.queue_step]])
+                showcase_menu.activate(track)
+
+
+        # Check for lyrics if auto setting
+        test_auto_lyrics(track)
 
         # Draw lyrics if avaliable
         if prefs.show_lyrics_side and pctl.track_queue \
-                    and pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
+                    and track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
 
             # Test for scroll wheel input
             if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
@@ -18497,6 +18554,9 @@ class Showcase:
             album_art_gen.display(index, (x, y), (box, box))
             if coll((x, y, box, box)) and input.mouse_click is True:
                 album_art_gen.cycle_offset(index)
+
+            # Check for lyrics if auto setting
+            test_auto_lyrics(track)
 
             if track.lyrics == "":
 
@@ -19707,7 +19767,9 @@ def save_state():
             prefs.reload_play_state,
             prefs.last_fm_token,
             prefs.last_fm_username,
-            prefs.use_card_style]
+            prefs.use_card_style,
+            prefs.auto_lyrics,
+            prefs.auto_lyrics_checked]
 
     #print(prefs.last_device + "-----")
 
