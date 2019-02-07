@@ -29,6 +29,31 @@ import struct
 import wave
 import io
 
+
+def parse_mbids_from_vorbis(object, key, value):
+
+    if key == "musicbrainz_artistid":
+        if "'musicbrainz_artistids'" not in object.misc:
+            object.misc['musicbrainz_artistids'] = []
+        object.misc['musicbrainz_artistids'].append(value)
+        return True
+
+    if key == "musicbrainz_trackid":
+        object.misc['musicbrainz_recordingid'] = value
+        print(object.filepath)
+        return True
+
+    if key == "musicbrainz_releasetrackid":
+        object.misc['musicbrainz_trackid'] = value
+        return True
+
+    if key == "musicbrainz_albumid":
+        object.misc['musicbrainz_albumid'] = value
+        return True
+
+    return False
+
+
 def parse_picture_block(f):
     a = f.read(4)
     a = int.from_bytes(a, byteorder='big')
@@ -94,6 +119,7 @@ class Flac:
         self.disc_total = ""
         self.lyrics = ""
         self.cue_sheet = ""
+        self.misc = {}
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -142,7 +168,11 @@ class Flac:
                     # print(a)
                     # print(b)
 
-                    if a == "genre":
+                    if parse_mbids_from_vorbis(self, a, b.decode()):
+                        print("Found MBID data:")
+                        print(a)
+                        print(b)
+                    elif a == "genre":
                         self.genre = b.decode("utf-8")
                     elif a == 'cuesheet':
                         self.cue_sheet = b.decode()
@@ -294,6 +324,7 @@ class Opus:
         self.lyrics = ""
         self.track_gain = None
         self.album_gain = None
+        self.misc = {}
 
         self.sample_rate = 48000  # OPUS files are always 48000
         self.bit_rate = 0
@@ -397,7 +428,12 @@ class Opus:
                     # print(a)  # Key
                     # print(b)  # Value
 
-                    if a == "genre":
+                    if parse_mbids_from_vorbis(self, a, b.decode()):
+                        print("Found MBID data:")
+                        print(a)
+                        print(b)
+
+                    elif a == "genre":
                         self.genre = b.decode("utf-8")
                     elif a == "date":
                         self.date = b.decode("utf-8")
@@ -496,6 +532,7 @@ class Ape:
         self.label = ""
         self.track_gain = None
         self.album_gain = None
+        self.misc = {}
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -620,10 +657,12 @@ class Ape:
                     self.label = value
                 elif key.lower() == "lyrics":
                     self.lyrics = value
+                elif parse_mbids_from_vorbis(self, key.lower(), value):
+                    pass
                 elif 'replaygain_track_gain' == key.lower():
-                    self.track_gain = float(value.decode("utf-8").strip(" dB"))
+                    self.track_gain = float(value.strip(" dB"))
                 elif 'replaygain_album_gain' == key.lower():
-                    self.album_gain = float(value.decode("utf-8").strip(" dB"))
+                    self.album_gain = float(value.strip(" dB"))
                 elif key.lower() == "cover art (front)":
 
                     # Data appears to have a filename at the start of it, we need to remove to recover a valid picture
@@ -905,6 +944,7 @@ class M4a:
         self.lyrics = ""
         self.track_gain = None
         self.album_gain = None
+        self.misc = {}
 
         self.sample_rate = 0
         self.bit_rate = 0
