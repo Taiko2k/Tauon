@@ -1849,6 +1849,7 @@ def tag_scan(nt):
             nt.track_gain = audio.track_gain
             nt.album_gain = audio.album_gain
             nt.cue_sheet = audio.cue_sheet
+            nt.misc = audio.misc
 
 
             return nt
@@ -1889,6 +1890,7 @@ def tag_scan(nt):
             nt.comment = audio.comment
             nt.track_gain = audio.track_gain
             nt.album_gain = audio.album_gain
+            nt.misc = audio.misc
             if nt.bitrate == 0 and nt.length > 0:
                 nt.bitrate = int(nt.size / nt.length * 8 / 1024)
             return nt
@@ -1920,6 +1922,7 @@ def tag_scan(nt):
             nt.track_total = audio.track_total
             nt.disc_total = audio.disc_total
             nt.comment = audio.comment
+            nt.misc = audio.misc
 
             if audio.found_tag is False:
                 try:
@@ -1965,6 +1968,7 @@ def tag_scan(nt):
             #nt.track_gain = audio.track_gain
             #nt.album_gain = audio.album_gain
             #nt.cue_sheet = audio.cue_sheet
+            nt.misc = audio.misc
 
             return nt
 
@@ -2020,7 +2024,11 @@ def tag_scan(nt):
                             if item.description == "MusicBrainz Album Id":
                                 nt.misc['musicbrainz_albumid'] = item.value
                             if item.description == "MusicBrainz Artist Id":
-                                nt.misc['musicbrainz_artistid'] = item.value
+
+                                if "'musicbrainz_artistids'" not in nt.misc:
+                                    nt.misc['musicbrainz_artistids'] = []
+
+                                nt.misc['musicbrainz_artistids'].append(item.value)
 
                 if USLT in tag:
                     lyrics = tag[USLT][0].text
@@ -3318,7 +3326,7 @@ class LastFMapi:
         return False, "", ""
 
 
-    def scrobble(self, title, artist, album, timestamp=None):
+    def scrobble(self, track_object, timestamp=None):
         if self.hold:
             return
         if prefs.auto_lfm:
@@ -3328,6 +3336,10 @@ class LastFMapi:
             timestamp = int(time.time())
 
         # lastfm_user = self.network.get_user(self.username)
+
+        title = track_object.title
+        album = track_object.album
+        artist = get_artist_strip_feat(track_object)
 
         # Act
         try:
@@ -3508,7 +3520,7 @@ class LastFMapi:
             show_message("This doesn't seem to be working :(", 'error')
 
 
-    def update(self, title, artist, album):
+    def update(self, track_object):
         if self.hold:
             return 0
         if prefs.auto_lfm:
@@ -3518,6 +3530,11 @@ class LastFMapi:
             return 0
 
         # print('Updating Now Playing')
+
+        title = track_object.title
+        album = track_object.album
+        artist = get_artist_strip_feat(track_object)
+
         try:
             if title != "" and artist != "":
                 self.network.update_now_playing(
@@ -3558,7 +3575,7 @@ class ListenBrainz:
         self.hold = False
         self.url = "https://api.listenbrainz.org/1/submit-listens"
 
-    def listen_full(self, title, artist, album, time):
+    def listen_full(self, track_object, time):
 
         if self.enable is False:
             return
@@ -3566,13 +3583,37 @@ class ListenBrainz:
             return
         if self.key is None:
             show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
+
+        title = track_object.title
+        album = track_object.album
+        artist = get_artist_strip_feat(track_object)
+
         if title == "" or artist == "":
             return
 
         data = {"listen_type": "single", "payload": []}
         metadata = {"track_name": title, "artist_name": artist}
 
-        additional = {"release_mbid": _, "artist_mbids": [], "recording_mbid": _}
+        additional = {}
+
+        # MusicBrainz Artist IDs
+        if 'musicbrainz_artistids' in track_object.misc:
+            additional['artist_mbids'] = track_object.misc['musicbrainz_artistids']
+
+        # MusicBrainz Release ID
+        if 'musicbrainz_albumid' in track_object.misc:
+            additional['release_mbid'] = track_object.misc['musicbrainz_albumid']
+
+        # MusicBrainz Recording ID
+        if 'musicbrainz_recordingid' in track_object.misc:
+            additional['recording_mbid'] = track_object.misc['musicbrainz_recordingid']
+
+        # MusicBrainz Track ID
+        if 'musicbrainz_trackid' in track_object.misc:
+            additional['track_mbid'] = track_object.misc['musicbrainz_trackid']
+
+        if additional:
+            metadata['additional_info'] = additional
 
         data["payload"].append({"track_metadata": metadata})
         data["payload"][0]["listened_at"] = time
@@ -3583,18 +3624,46 @@ class ListenBrainz:
             show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
             return False
 
-    def listen_playing(self, title, artist, album):
+    def listen_playing(self, track_object):
+
         if self.enable is False:
             return
         if self.hold is True:
             return
         if self.key is None:
             show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
+
+        title = track_object.title
+        album = track_object.album
+        artist = get_artist_strip_feat(track_object)
+
         if title == "" or artist == "":
             return
 
         data = {"listen_type": "playing_now", "payload": []}
         metadata = {"track_name": title, "artist_name": artist}
+
+        additional = {}
+
+        # MusicBrainz Artist IDs
+        if 'musicbrainz_artistids' in track_object.misc:
+            additional['artist_mbids'] = track_object.misc['musicbrainz_artistids']
+
+        # MusicBrainz Release ID
+        if 'musicbrainz_albumid' in track_object.misc:
+            additional['release_mbid'] = track_object.misc['musicbrainz_albumid']
+
+        # MusicBrainz Recording ID
+        if 'musicbrainz_recordingid' in track_object.misc:
+            additional['recording_mbid'] = track_object.misc['musicbrainz_recordingid']
+
+        # MusicBrainz Track ID
+        if 'musicbrainz_trackid' in track_object.misc:
+            additional['track_mbid'] = track_object.misc['musicbrainz_trackid']
+
+        if additional:
+            metadata['additional_info'] = additional
+
         data["payload"].append({"track_metadata": metadata})
         #data["payload"][0]["listened_at"] = int(time.time())
 
@@ -3704,6 +3773,8 @@ def love(set=True, index=None):
     gui.pl_update = 2
 
 
+
+
 class LastScrob:
 
     def __init__(self):
@@ -3730,15 +3801,15 @@ class LastScrob:
                 tr = self.queue.pop()
 
                 gui.pl_update = 1
-                print("Submit Scrobble " + tr[0] + " - " + tr[1])
+                print("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
 
                 an = True
 
                 if lastfm.connected or lastfm.details_ready():
-                    an = lastfm.scrobble(tr[0], tr[1], tr[2], int(time.time()))
+                    an = lastfm.scrobble(tr[0], int(time.time()))
 
                 if lb.enable:
-                    an = lb.listen_full(tr[0], tr[1], tr[2], int(time.time()))
+                    an = lb.listen_full(tr[0], int(time.time()))
 
                 if an is False:
                     print("Re-queue scrobble")
@@ -3748,6 +3819,7 @@ class LastScrob:
 
             except:
                 print("SCROBBLE QUEUE ERROR")
+                # raise
 
         self.running = False
 
@@ -3771,27 +3843,18 @@ class LastScrob:
             self.a_pt = False
             self.a_sc = False
 
-        artist_name = pctl.master_library[self.a_index].artist
-        if pctl.master_library[self.a_index].album_artist:
-            if "feat." in artist_name.lower() or ", " in artist_name or "; " in artist_name or not artist_name:
-                if pctl.master_library[self.a_index].album_artist.lower() != "va" and \
-                            pctl.master_library[self.a_index].album_artist.lower() != "various artists":
-                    artist_name = pctl.master_library[self.a_index].album_artist
+
 
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
 
             if lastfm.connected or lastfm.details_ready():
-                mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
-                                                                      artist_name,
-                                                                      pctl.master_library[self.a_index].album))
+                mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
 
             if lb.enable:
-                mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
-                                                                          artist_name,
-                                                                      pctl.master_library[self.a_index].album))
+                mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
 
@@ -3800,16 +3863,12 @@ class LastScrob:
             if pctl.b_time > 20:
                 pctl.b_time = 0
                 if lastfm.connected or lastfm.details_ready():
-                    mini_t = threading.Thread(target=lastfm.update, args=(pctl.master_library[self.a_index].title,
-                                                                          artist_name,
-                                                                          pctl.master_library[self.a_index].album))
+                    mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                     mini_t.daemon = True
                     mini_t.start()
 
                 if lb.enable:
-                    mini_t = threading.Thread(target=lb.listen_playing, args=(pctl.master_library[self.a_index].title,
-                                                                              artist_name,
-                                                                          pctl.master_library[self.a_index].album))
+                    mini_t = threading.Thread(target=lb.listen_playing, args=([pctl.master_library[self.a_index]]))
                     mini_t.daemon = True
                     mini_t.start()
 
@@ -3818,15 +3877,14 @@ class LastScrob:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index].title, artist_name, pctl.master_library[self.a_index].album))
+                self.queue.append([pctl.master_library[self.a_index]])
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index].title, artist_name,
-                             pctl.master_library[self.a_index].album))
+                self.queue.append([pctl.master_library[self.a_index]])
 
 
 lfm_scrobbler = LastScrob()
