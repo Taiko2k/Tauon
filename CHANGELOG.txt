@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v3.6.1
 
  - Added setting to automatically search LyricWiki
+ - Added setting to hide album art box
  - Improved menu sub position to start at parent location
  - Fixed a crash when resizing window small before playing
 
