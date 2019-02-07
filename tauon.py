@@ -679,6 +679,8 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_lyrics = False
         self.auto_lyrics_checked = []
 
+        self.show_side_art = False
+
 
 prefs = Prefs()
 
@@ -1260,6 +1262,7 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.track_gain = None
 
         self.lfm_friend_likes = set()
+        self.misc = {}
 
 
 class LoadClass:    # Object for import track jobs (passed to worker thread)
@@ -1492,6 +1495,8 @@ try:
         prefs.auto_lyrics = save[102]
     if save[103] is not None:
         prefs.auto_lyrics_checked = save[103]
+    if save[104] is not None:
+        prefs.show_side_art = save[104]
 
     state_file.close()
     del save
@@ -1997,6 +2002,12 @@ def tag_scan(nt):
                 # if TXXX in tag:
                 #     print(tag[TXXX])
                 #     print(nt.fullpath)
+                if UFID in tag:
+                    for item in tag[UFID]:
+                        if hasattr(item, 'description'):
+                            if item.description == "//musicbrainz.org":
+                                nt.misc['musicbrainz_recordingid'] = item.value
+
                 if TXXX in tag:
                     for item in tag[TXXX]:
                         if hasattr(item, 'description'):
@@ -2004,6 +2015,12 @@ def tag_scan(nt):
                                 nt.album_gain = float(item.value.strip(" dB"))
                             if item.description == "replaygain_track_gain":
                                 nt.track_gain = float(item.value.strip(" dB"))
+                            if item.description == "MusicBrainz Release Track Id":
+                                nt.misc['musicbrainz_trackid'] = item.value
+                            if item.description == "MusicBrainz Album Id":
+                                nt.misc['musicbrainz_albumid'] = item.value
+                            if item.description == "MusicBrainz Artist Id":
+                                nt.misc['musicbrainz_artistid'] = item.value
 
                 if USLT in tag:
                     lyrics = tag[USLT][0].text
@@ -6960,6 +6977,27 @@ def toggle_lyrics_show(a):
     return not gui.combo_mode
 
 
+def toggle_side_art_deco():
+    colour = colours.menu_text
+    if prefs.show_side_art:
+        line = "Hide Art box"
+    else:
+        line = "Show Art Box"
+    # if pctl.playing_object().lyrics == "":
+    #     colour = colours.menu_text_disabled
+
+    return [colour, colours.menu_background, line]
+
+
+def toggle_side_art(track_object):
+    prefs.show_side_art ^= True
+
+
+showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco, pass_ref=True,
+                  show_test=toggle_lyrics_show)
+
+
+
 
 def toggle_lyrics_deco():
 
@@ -6981,6 +7019,10 @@ def toggle_lyrics(track_object):
         show_message("No lyrics for this track")
 
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
+
+
+
+
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -17392,9 +17434,9 @@ class ScrollBox():
             elif mouse_down:
 
                     if mouse_position[1] < mi + position:
-                        position -= 1
+                        position -= 1 if h < 400 else 2
                     else:
-                        position += 1
+                        position += 1 if h < 400 else 2
 
                     if position < 0:
                         position = 0
@@ -18051,17 +18093,19 @@ class MetaBox:
 
         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
+        # Test for show lyric menu on right ckick
+        if coll((x + 10, y, w - 10, h)):
+            if right_click: # and 3 > pctl.playing_state > 0:
+                gui.force_showcase_index = -1
+                showcase_menu.activate(track)
+
+
         if pctl.playing_state == 0:
             return
 
         if h < 15:
             return
 
-        # Test for show lyric menu on right ckick
-        if coll((x + 10, y, w - 10, h)):
-            if right_click and 3 > pctl.playing_state > 0:
-                gui.force_showcase_index = -1
-                showcase_menu.activate(track)
 
 
         # Check for lyrics if auto setting
@@ -19769,7 +19813,8 @@ def save_state():
             prefs.last_fm_username,
             prefs.use_card_style,
             prefs.auto_lyrics,
-            prefs.auto_lyrics_checked]
+            prefs.auto_lyrics_checked,
+            prefs.show_side_art]
 
     #print(prefs.last_device + "-----")
 
@@ -22005,12 +22050,18 @@ while pctl.running:
                         boxw = gui.rspw
                         boxh = gui.rspw
 
-                        meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
-                                      window_size[1] - gui.panelY - gui.panelBY - boxh)
+                        if prefs.show_side_art:
 
-                        boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
+                            meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
+                                          window_size[1] - gui.panelY - gui.panelBY - boxh)
 
-                        art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh)
+                            boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
+
+                            art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh)
+
+                        else:
+                            meta_box.draw(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
+                                          window_size[1] - gui.panelY - gui.panelBY)
 
 
 
