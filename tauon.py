@@ -490,11 +490,12 @@ repeat_mode = False
 # 1 Playing (int)
 # 2 list  (list of int)
 # 3 View Position (int)
-# 4 hide tittle (bool)
+# 4 hide playlist folder titles (bool)
 # 5 selected (int)
 # 6 Unique id (int)
-# 7 last folder import (string)
+# 7 last folder import path (string)
 # 8 hidden (bool)
+
 
 def pl_uid_gen():
     return random.randrange(100, 10000000)
@@ -504,7 +505,7 @@ def pl_gen(title='Default',
            playlist=None,
            position=0,
            hide_title=0,
-           selected=0):
+           selected=0,):
 
     if playlist == None:
         playlist = []
@@ -1664,10 +1665,13 @@ if db_version > 0:
         if theme > 0:
            theme += 1
 
-    if db_version <= 2.5:
+    if db_version <= 2.6:
         print("Updating database to version 2.6")
         for key, value in master_library.items():
             setattr(master_library[key], 'is_network', False)
+        # for i in range(len(multi_playlist)):
+        #     if len(multi_playlist[i]) < 10:
+        #         multi_playlist[i].append(False)
 
 # Loading Config -----------------
 
@@ -3128,6 +3132,47 @@ class PlayerCtl:
 
 
 pctl = PlayerCtl()
+
+
+def auto_name_pl(target_pl):
+
+    if not pctl.multi_playlist[target_pl][2]:
+        return
+
+    albums = []
+    artists = []
+    parents = []
+
+    track = None
+
+    for index in pctl.multi_playlist[target_pl][2]:
+        track = pctl.g(index)
+        albums.append(track.album)
+        if track.album_artist:
+            artists.append(track.album_artist)
+        else:
+            artists.append(track.artist)
+        parents.append(track.parent_folder_path)
+
+    nt = ""
+    artist = ""
+
+    if track:
+        artist = track.artist
+        if track.album_artist:
+            artist = track.album_artist
+
+    if track and albums and albums[0] and albums.count(albums[0]) == len(albums):
+        nt = artist + " - " + track.album
+
+    elif track and artists and artists[0] and artists.count(artists[0]) == len(artists):
+        nt = "Artist: " + artists[0]
+
+    else:
+        nt = os.path.basename(commonprefix(parents))
+
+    pctl.multi_playlist[target_pl][0] = nt
+
 
 
 def get_object(index):
@@ -14399,7 +14444,7 @@ class Over:
 
         y += 20 * gui.scale
         link_pa2 = draw_linked_text((x + 285 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
-        link_rect2 = [x + 235 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+        link_rect2 = [x + 285 * gui.scale, y, link_pa2[1], 20 * gui.scale]
         fields.add(link_rect2)
 
         if coll(link_rect2):
@@ -17787,15 +17832,15 @@ class PlaylistBox:
             bg = [0,0,0,0]
 
             # Additional highlight reasons
-            if i == pctl.active_playlist_playing and 3 > pctl.playing_state > 0:
-                bg = [255, 255, 255, 10]
-
-                if dark_mode:
-                    bg = [255, 255, 255, 8]
-                if light_mode:
-                    bg = [0, 0, 0, 13]
-                if semi_light:
-                    bg = [55, 55, 55, 255]
+            # if i == pctl.active_playlist_playing and 3 > pctl.playing_state > 0:
+            #     bg = [255, 255, 255, 10]
+            #
+            #     if dark_mode:
+            #         bg = [255, 255, 255, 8]
+            #     if light_mode:
+            #         bg = [0, 0, 0, 13]
+            #     if semi_light:
+            #         bg = [55, 55, 55, 255]
 
 
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
@@ -17829,7 +17874,40 @@ class PlaylistBox:
                 if not dark_mode:
                     indicator_colour = [180, 180, 180, 180]
 
+            if i == pctl.active_playlist_playing and not hidden:
+                indicator_colour = [200, 230, 20, 255]
+                if light_mode:
+                    indicator_colour = colours.tab_background_active
+
+            # indicator_colour = [220, 170, 20, 255]
+            # # if light_mode:
+            # #     indicator_colour = [0, 210, 0, 255]
+            # if hidden:
+            #     indicator_colour = [60, 60, 60, 255]
+            #     if not dark_mode:
+            #         indicator_colour = [180, 180, 180, 180]
+            #
+            # if i == pctl.active_playlist_playing and not hidden:
+            #     indicator_colour = [100, 200, 90, 255]
+
+            # indicator_colour = colours.tab_background_active
+            # # if light_mode:
+            # #     indicator_colour = [0, 210, 0, 255]
+            # if hidden:
+            #     indicator_colour = [60, 60, 60, 255]
+            #     if not dark_mode:
+            #         indicator_colour = [180, 180, 180, 180]
+            #
+            # if i == pctl.active_playlist_playing and not hidden:
+            #     indicator_colour = [200, 230, 20, 255]
+            #     if light_mode:
+            #         indicator_colour = [100, 200, 90, 255]
+
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
+            #
+            # if i == pctl.active_playlist_playing:
+            #     ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale),
+            #                [220, 170, 20, 255], True)
 
 
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))):
@@ -21991,7 +22069,6 @@ while pctl.running:
                         else:
 
                             if order.replace_stem:
-
                                 for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
                                     if pctl.g(id).parent_folder_path.startswith(order.target):
                                         del pctl.multi_playlist[target_pl][2][ii]
@@ -21999,12 +22076,23 @@ while pctl.running:
 
                             pctl.multi_playlist[target_pl][2] += order.tracks
 
+
                         gui.update += 2
                         gui.pl_update += 2
                         if order.notify and gui.message_box:
                             show_message("Rescan folder complete.", 'done', order.target)
                         reload()
                         del load_orders[i]
+
+                        # Are there more orders for this playlist?
+                        # If not, decide on a name for the playlist
+                        for item in load_orders:
+                            if item.playlist == order.playlist:
+                                break
+                        else:
+                            if "New Playlist" in pctl.multi_playlist[target_pl][0]:
+                                auto_name_pl(target_pl)
+
                         if not load_orders:
                             loading_in_progress = False
                         break
