@@ -2465,7 +2465,7 @@ class PlayerCtl:
 
         gui.update_spec = 0
         # Move up
-        if self.random_mode is False and self.playlist_playing_position > 0:
+        if self.random_mode is False and len(self.playing_playlist()) > self.playlist_playing_position > 0:
 
             if len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != self.track_queue[
                 self.queue_step]:
@@ -4528,6 +4528,9 @@ if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
 print("Create base textures...")
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+
+# gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
+
 SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
@@ -6400,12 +6403,21 @@ b_panel_size = 300
 b_info_bar = False
 
 class LoadImageAsset:
-    def __init__(self, local_path):
-        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+    def __init__(self, local_path, is_full_path=False):
+        if is_full_path:
+            raw_image = IMG_Load(local_path.encode('utf-8'))
+        else:
+            raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+
         p_w = pointer(c_int(0))
         p_h = pointer(c_int(0))
         SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+
+        if is_full_path:
+            SDL_SetTextureAlphaMod(self.sdl_texture, 40)
+
         self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
         self.w = p_w.contents.value
         self.h = p_h.contents.value
@@ -6994,12 +7006,16 @@ gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 def finish_current():
 
+
     playing_object = pctl.playing_object()
     if playing_object is None:
         show_message("")
 
-    pctl.force_queue.insert(0, [playing_object.index,
-                             pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+    if not pctl.force_queue:
+
+        pctl.force_queue.insert(0, [playing_object.index,
+                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+
 
 
 def add_album_to_queue(ref):
@@ -13984,6 +14000,9 @@ c_time = 0
 c_blink = 0
 key_shiftr_down = False
 key_ctrl_down = False
+key_meta = False
+key_ralt = False
+key_lalt = False
 
 
 def set_player_bass(mode=0):
@@ -14074,6 +14093,8 @@ class Over:
         self.ani_fade_on_timer = Timer(force=10)
         self.ani_fade_off_timer = Timer(force=10)
 
+        self.device_scroll_bar_position = 0
+
     def audio(self):
 
         y = self.box_y + 40 * gui.scale
@@ -14131,7 +14152,16 @@ class Over:
             ddt.draw_text((x, y - 22 * gui.scale), _("Set audio output device"), [185, 185, 185, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
-            for item in pctl.bass_devices:
+            if len(pctl.bass_devices) > 13:
+                self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.bass_devices) - 11, click=self.click)
+
+            for i, item in enumerate(pctl.bass_devices):
+
+                if i < self.device_scroll_bar_position:
+                    continue
+                if y > self.box_y + self.h - 40 * gui.scale:
+                    break
+
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
                 #ddt.rect_r(rect, [0, 255, 0, 50])
 
@@ -14177,12 +14207,11 @@ class Over:
         # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
         # y += 23 * gui.scale
 
-
         self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
 
         y += 30 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto seacrch lyrics"))
+        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
 
         y += 30 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
@@ -16506,6 +16535,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                   alpha_mod(timec, album_fade), gui.row_font_size)
 
 
+pl_bg = None
+if os.path.exists(user_directory + "/bg.png"):
+    pl_bg = LoadImageAsset(user_directory + "/bg.png", True)
+
 class StandardPlaylist:
     def __init__(self):
         pass
@@ -16568,6 +16601,12 @@ class StandardPlaylist:
         rect = (left, gui.panelY, width, window_size[1])
         ddt.rect_r(rect, colours.playlist_panel_background, True)
 
+        # This draws an optional background image
+        if pl_bg:
+            pl_bg.render(left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h)
+            ddt.pretty_rect = (left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+
+        # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
             1] > gui.panelY - 2 \
                 and not (coll(pl_rect)) and not search_over.active:
@@ -16766,6 +16805,10 @@ class StandardPlaylist:
 
                         # Add folder to queue if middle click
                         if middle_click:
+
+                            if prefs.finish_current:
+                                finish_current()
+
                             pctl.force_queue.append([default_playlist[p_track],
                                                      p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
 
@@ -16918,6 +16961,7 @@ class StandardPlaylist:
 
             # Add to queue on middle click
             if middle_click and line_hit:
+
                 pctl.force_queue.append([default_playlist[p_track],
                                          p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
 
@@ -17301,6 +17345,8 @@ class StandardPlaylist:
         if mouse_down is False:
             playlist_hold = False
 
+        ddt.pretty_rect = None
+
     def cache_render(self):
 
         SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
@@ -17448,10 +17494,14 @@ class ScrollBox():
         self.source_click_y = 0
         self.source_bar_y = 0
 
-    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None):
 
         if max_value < 2:
             return 0
+
+        if click is None:
+            click = input.mouse_click
+
 
         bar_height = 90
 
@@ -17481,7 +17531,7 @@ class ScrollBox():
         if coll((x, y, w, h)):
 
             if coll((x, mi + position - half, w, bar_height)):
-                if input.mouse_click:
+                if click:
                     self.held = True
 
                     p_y = pointer(c_int(0))
@@ -17489,20 +17539,31 @@ class ScrollBox():
                     self.source_click_y = p_y.contents.value
                     self.source_bar_y = position
 
-            elif mouse_down:
+            elif mouse_down and not self.held:
 
+                    direction = 0
                     if mouse_position[1] < mi + position:
                         position -= 1 if h < 400 else 2
                     else:
                         position += 1 if h < 400 else 2
+                        direction = 1
 
                     if position < 0:
                         position = 0
                     if position > distance:
                         position = distance
 
+                    old_value = value
+
                     ratio = position / distance
                     value = int(round(max_value * ratio))
+
+                    # This forced the scroll bar to move in a direction so
+                    # we dont get stuck due to rounding to same value
+                    if direction == 1 and old_value >= value:
+                        value += 1
+                    if direction == 0 and old_value <= value:
+                        value -= 1
 
         if self.held and mouse_up or not mouse_down:
             self.held = False
@@ -17543,7 +17604,7 @@ class ScrollBox():
 mini_lyrics_scroll = ScrollBox()
 playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
-
+device_scroll = ScrollBox()
 
 class RenameBox:
 
@@ -17726,6 +17787,17 @@ class PlaylistBox:
             bg = [0,0,0,0]
 
             # Additional highlight reasons
+            if i == pctl.active_playlist_playing and 3 > pctl.playing_state > 0:
+                bg = [255, 255, 255, 10]
+
+                if dark_mode:
+                    bg = [255, 255, 255, 8]
+                if light_mode:
+                    bg = [0, 0, 0, 13]
+                if semi_light:
+                    bg = [55, 55, 55, 255]
+
+
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 25]
 
@@ -19929,8 +20001,6 @@ while pctl.running:
         middle_click = False
         mouse_up = False
         input.key_return_press = False
-        key_ralt = False
-        key_lalt = False
         key_space_press = False
         key_down_press = False
         key_up_press = False
@@ -20283,6 +20353,9 @@ while pctl.running:
                 key_home_press = True
             elif event.key.keysym.sym == SDLK_END:
                 key_end_press = True
+            elif event.key.keysym.sym == SDLK_LGUI:
+                key_meta = True
+
 
         elif event.type == SDL_KEYUP:
             k_input = True
@@ -20296,8 +20369,12 @@ while pctl.running:
                 key_shiftr_down = False
             elif event.key.keysym.sym == SDLK_RALT:
                 gui.album_tab_mode = False
+                key_ralt = False
             elif event.key.keysym.sym == SDLK_LALT:
                 gui.album_tab_mode = False
+                key_lalt = False
+            elif event.key.keysym.sym == SDLK_LGUI:
+                key_meta = False
 
         elif event.type == SDL_TEXTINPUT:
             k_input = True
@@ -20571,7 +20648,10 @@ while pctl.running:
                     toggle_album_mode()
 
             if not quick_search_mode and not search_over.active:
-                if album_mode and gui.album_tab_mode:
+                if album_mode and gui.album_tab_mode \
+                        and not key_ctrl_down \
+                        and not key_meta \
+                        and not key_lalt:
                     if key_left_press:
                         gal_left = True
                         key_left_press = False
@@ -20593,7 +20673,14 @@ while pctl.running:
 
 
             # Arrow keys to change playlist
-            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 and not key_shiftr_down and not key_shift_down and not search_over.active:
+            if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 \
+                    and not key_shiftr_down\
+                    and not key_shift_down\
+                    and not search_over.active\
+                    and not key_ctrl_down\
+                    and not key_meta\
+                    and not key_lalt:
+
                 gui.pl_update = 1
                 gui.update += 1
                 if gui.lsp:
