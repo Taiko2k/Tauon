@@ -415,3 +415,18 @@ def get_artist_strip_feat(track_object):
                 artist_name = track_object.album_artist
     return artist_name
 
+
+def coll_rect(rect1, rect2):
+
+    # x 0
+    # y 1
+    # w 2
+    # h 3
+
+    if rect1[0] + rect1[2] < rect2[0] or \
+            rect1[1] + rect1[3] < rect2[1] or \
+            rect1[0] > rect2[0] + rect2[2] or \
+            rect1[1] > rect2[1] + rect2[3]:
+        return False
+    return True
+

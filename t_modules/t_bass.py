@@ -361,9 +361,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     x = (ctypes.c_float * 512)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
 
-    print(BASS_GetVersion())
-    print(hex(BASS_GetVersion()))
-    print(bin(BASS_GetVersion()))
+    # print(BASS_GetVersion())
+    # print(hex(BASS_GetVersion()))
+    # print(bin(BASS_GetVersion()))
 
     def broadcast_connect(handle, connect, client, headers, user):
 

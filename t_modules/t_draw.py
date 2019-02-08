@@ -20,6 +20,7 @@
 
 
 from sdl2 import *
+from t_modules.t_extra import *
 import ctypes
 import cairo
 import gi
@@ -36,6 +37,8 @@ def alpha_blend(colour, base):
             int(alpha * colour[1] + (1 - alpha) * base[1]),
             int(alpha * colour[2] + (1 - alpha) * base[2]), 255]
 
+
+perf = Timer()
 
 class TDraw:
 
@@ -60,6 +63,8 @@ class TDraw:
         # PangoCairo.context_set_font_options(self.layout_context, fo)
 
         self.text_background_colour = [0, 0, 0, 255]
+        #self.pretty_rect = [0, 0, 0, 0]
+        self.pretty_rect = None
         self.f_dict = {}
         self.ttc = {}
         self.ttl = []
@@ -131,6 +136,25 @@ class TDraw:
 
         return self.layout.get_pixel_size()
 
+    def get_y_offset(self, text, font, max_x, wrap=False):  # HACKY
+
+        self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+        self.layout.set_ellipsize(Pango.EllipsizeMode.END)
+        self.layout.set_width(max_x * 1000)
+        if wrap:
+            self.layout.set_height(20000 * 1000)
+        else:
+            self.layout.set_height(0)
+        self.layout.set_text(text, -1)
+
+
+        y_off = self.layout.get_baseline() / 1000
+        y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
+        if self.scale == 2:
+            y_off -= 2
+
+        return y_off
+
     def __render_text(self, key, x, y, range_top, range_height, align):
 
         sd = key
@@ -164,8 +188,33 @@ class TDraw:
 
     def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
+        # perf.set()
+        # print("START")
+
         max_x += 12  # Hack
         max_x = round(max_x)
+
+        real_bg = False
+
+        x = round(location[0])
+        y = round(location[1])
+
+        if self.pretty_rect:
+            w, h = self.get_text_wh(text, font, max_x, wrap)
+
+            quick_box = [x, y, w, h]
+
+            if align == 1:
+                quick_box[0] = x - quick_box[2]
+
+            elif align == 2:
+                quick_box[0] = quick_box[0] - int(quick_box[2] / 2)
+
+            if coll_rect(self.pretty_rect, quick_box):
+                # self.rect_r(quick_box, [0, 0, 0, 100], True)
+                # print("PT")
+                # print(text)
+                real_bg = True
 
         if max_y is not None:
             max_y = round(max_y)
@@ -173,23 +222,26 @@ class TDraw:
         if len(text) == 0:
             return 0
 
+
         key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
-        x = round(location[0])
-        y = round(location[1])
+        if not real_bg:
+            if key in self.ttc:
+                sd = self.ttc[key]
+                sd[0].x = x
+                sd[0].y = y - sd[2]
+                self.__render_text(sd, x, y, range_top, range_height, align)
 
-        if key in self.ttc:
+                # print("CAHE")
+                # print(perf.hit())
 
-            sd = self.ttc[key]
-            sd[0].x = x
-            sd[0].y = y - sd[2]
-            self.__render_text(sd, x, y, range_top, range_height, align)
+                if wrap:
+                    return sd[0].h
+                return sd[0].w
 
-            if wrap:
-                return sd[0].h
-            return sd[0].w
+        if not self.pretty_rect:  # Would have already done this if True
+            w, h = self.get_text_wh(text, font, max_x, wrap)
 
-        w, h = self.get_text_wh(text, font, max_x, wrap)
         if w < 1:
             return 0
 
@@ -198,15 +250,25 @@ class TDraw:
         if wrap:
             w = max_x + 1
 
-        data = ctypes.c_buffer(b" " * (h * (w * 4)))
+        data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
+
+        if real_bg:
+            box = SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
+
+            if align == 1:
+                box.x = x - box.w
+
+            elif align == 2:
+                box.x = box.x - int(box.w / 2)
+
+            SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
+
+            # print("READ")
+            # print(perf.hit())
+
         surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
         context = cairo.Context(surf)
-
-        # options = context.get_font_options()
-        # options.set_antialias(cairo.ANTIALIAS_GRAY)
-        # context.set_font_options(options)
-
         layout = PangoCairo.create_layout(context)
 
         if max_y is not None:
@@ -224,14 +286,16 @@ class TDraw:
             layout.set_height(h * 1000 + extra)
 
         # Attributes don't seem to be implemented in gi?
-
         # attrs = Pango.AttrList()
         # attrs.insert(Pango.Attribute(Pango.Underline.SINGLE))
         # layout.set_attributes(attrs)
 
         context.rectangle(0, 0, w, h)
-        context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
-        context.fill()
+
+        if not real_bg:
+            context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
+            #context.set_source_rgba(0, 0, 0, 0)
+            context.fill()
         context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
 
         if font not in self.f_dict:
@@ -239,21 +303,36 @@ class TDraw:
             return 10
 
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+
+        # This seems broken, it always uses the system fonconfig and override here does not work?
+        # options = context.get_font_options()
+        # options.set_antialias(cairo.ANTIALIAS_GRAY)
+        # context.set_font_options(options)
+
+        # options = context.get_font_options()
+        # print(options.get_antialias())
+
         layout.set_text(text, -1)
 
         y_off = layout.get_baseline() / 1000
-
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
-
         if self.scale == 2:
             y_off -= 2
 
         PangoCairo.show_layout(context, layout)
+
+        # print("TEXT")
+        # print(perf.hit())
+
         sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
+        #sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_ARGB8888)
 
         # Here the background colour is keyed out allowing lines to overlap slightly
-        ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
-        SDL_SetColorKey(sdl_surface, True, ke)
+        if not real_bg:
+            ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
+            SDL_SetColorKey(sdl_surface, True, ke)
+
+
 
         c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
         SDL_FreeSurface(sdl_surface)
@@ -263,15 +342,26 @@ class TDraw:
         dst.h = h
         dst.y = y - y_off
 
-        self.ttc[key] = [dst, c, y_off]
-        self.__render_text(self.ttc[key], x, y, range_top, range_height, align)
-        self.ttl.append(key)
-        if len(self.ttl) > 350:
-            key = self.ttl[0]
-            so = self.ttc[key]
-            SDL_DestroyTexture(so[1])
-            del self.ttc[key]
-            del self.ttl[0]
+        pack = [dst, c, y_off]
+
+        # print("RENDER")
+        # print(perf.hit())
+
+        self.__render_text(pack, x, y, range_top, range_height, align)
+
+        # print("DONE")
+        # print(perf.hit())
+
+        # Don't cache if using real background data
+        if not real_bg:
+            self.ttc[key] = pack
+            self.ttl.append(key)
+            if len(self.ttl) > 350:
+                key = self.ttl[0]
+                so = self.ttc[key]
+                SDL_DestroyTexture(so[1])
+                del self.ttc[key]
+                del self.ttl[0]
         if wrap:
             return dst.h
         return dst.w
