@@ -430,3 +430,21 @@ def coll_rect(rect1, rect2):
         return False
     return True
 
+
+def commonprefix(l):
+    print(l)
+    cp = []
+    ls = [p.split('/') for p in l]
+    ml = min(len(p) for p in ls)
+
+    for i in range(ml):
+
+        s = set(p[i] for p in ls)
+        if len(s) != 1:
+            break
+
+        cp.append(s.pop())
+
+    return '/'.join(cp)
+
+
