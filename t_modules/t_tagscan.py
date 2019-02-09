@@ -1014,7 +1014,11 @@ class M4a:
                 self.lyrics = meta_get(f, size).decode()
 
             if name == b'\xa9day':
-                self.date = meta_get(f, size).decode()
+                day = meta_get(f, size).decode()
+                print(day[10])
+                if len(day) > 10 and day[10] == "T":
+                    day = day[:10]
+                self.date = day
 
             if name == b'gnre':
                 index = int.from_bytes(meta_get(f, size), 'big')
@@ -1054,6 +1058,9 @@ class M4a:
             #         print(data)
 
             if name in k:
+
+                if name == b'----':
+                    f.seek(30, 1)
 
                 if name == b'stsd':
                     f.seek(44, 1)
