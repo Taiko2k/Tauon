@@ -6,8 +6,6 @@ v3.6.1
  - todo
   - fix plex crash when connection fails
   - add docs for pl bg image
-  - fix notification with no album field
-  - fix lyrics auto colours
   - fix side playlist panel semilight auto colours
 
  - Added setting to automatically search LyricWiki
@@ -15,12 +13,16 @@ v3.6.1
  - Improved importing to always auto-name new playlists
  - Improved listenbrainz to submit track ID data
  - Improved menu sub position to start at parent location
+ - Improved transcode finish notification to provide button to open folder
  - Fixed a crash when resizing window small before playing
  - Fixed a crash when pressing back on an empty playlist
  - Fixed a bug where "finish current" queue setting would not function
  - Fixed audio device list not being contained to box / not being scrollable
  - Fixed direction keys changing playlist when a modifier key was held
  - Fixed listenbrainz profile url link cursor hit box
+ - Fixed side panel lyrics being wrong colour on auto theme
+ - Fixed notification not showing correctly when no album field
+ - Fixed tag scanner including date format data in date field for M4A
 
 v3.6.0
 

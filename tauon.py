@@ -267,10 +267,6 @@ else:
     gi.require_version('Notify', '0.7')  # Doesn't really matter, just stops it from complaining
     from gi.repository import Notify
 
-    if de_nofity_support:
-        Notify.init("Tauon Music Box Transcode Notification")
-        g_tc_notify = Notify.Notification.new("Tauon Music Box",
-                                        "Transcoding has finished.")
 
 # Other imports
 import gi
@@ -1665,7 +1661,7 @@ if db_version > 0:
         if theme > 0:
            theme += 1
 
-    if db_version <= 2.6:
+    if db_version <= 2.5:
         print("Updating database to version 2.6")
         for key, value in master_library.items():
             setattr(master_library[key], 'is_network', False)
@@ -2007,14 +2003,12 @@ def tag_scan(nt):
                 nt.track_total = str(tag.track_total)
                 nt.genre = tag.genre
                 nt.date = tag.date
-                # if TXXX in tag:
-                #     print(tag[TXXX])
-                #     print(nt.fullpath)
+
                 if UFID in tag:
                     for item in tag[UFID]:
-                        if hasattr(item, 'description'):
-                            if item.description == "//musicbrainz.org":
-                                nt.misc['musicbrainz_recordingid'] = item.value
+                        if hasattr(item, 'owner'):
+                            if "musicbrainz.org" in item.owner:
+                                nt.misc['musicbrainz_recordingid'] = item.data.decode()
 
                 if TXXX in tag:
                     for item in tag[TXXX]:
@@ -2028,10 +2022,8 @@ def tag_scan(nt):
                             if item.description == "MusicBrainz Album Id":
                                 nt.misc['musicbrainz_albumid'] = item.value
                             if item.description == "MusicBrainz Artist Id":
-
                                 if "'musicbrainz_artistids'" not in nt.misc:
                                     nt.misc['musicbrainz_artistids'] = []
-
                                 nt.misc['musicbrainz_artistids'].append(item.value)
 
                 if USLT in tag:
@@ -3221,7 +3213,13 @@ def notify_song(notify_of_end=False):
             bottom_line = "Tauon Music Box"
             top_line = "End of playlist"
 
-        song_notification.update(top_line, bottom_line, i_path)
+            song_notification.update(top_line, bottom_line, i_path)
+
+        elif track.album:
+            song_notification.update(top_line, bottom_line, i_path)
+
+        else:
+            song_notification.update(bottom_line, "", i_path)
 
         song_notification.show()
 
@@ -4812,9 +4810,8 @@ class LyricsRenMini:
             self.index = index
             self.generate(index, w)
 
-        colour = colours.lyrics
-        if test_lumi(colours.gallery_background) < 0.5:
-            colour = colours.grey(40)
+        colour = colours.side_bar_line1
+
 
         ddt.draw_text((x, y, 4, w), self.text, colour, 15, w, colours.side_panel_background)
 
@@ -5453,7 +5450,7 @@ class ThumbTracks:
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail((750, 750), Image.ANTIALIAS)
+        im.thumbnail((1000, 1000), Image.ANTIALIAS)
 
         im.save(t_path, 'JPEG')
         source_image.close()
@@ -5628,7 +5625,7 @@ class AlbumArt():
                     #         source_list.append([True, filepath])
 
         except:
-            # raise
+
             pass
 
         if not tr.is_network:
@@ -8959,6 +8956,8 @@ def open_encode_out():
         else:
             subprocess.Popen(['xdg-open', line])
 
+def g_open_encode_out(a, b, c):
+    open_encode_out()
 
 
 def remove_folder(index):
@@ -16649,7 +16648,8 @@ class StandardPlaylist:
         # This draws an optional background image
         if pl_bg:
             pl_bg.render(left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h)
-            ddt.pretty_rect = (left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+            if not gui.set_mode:
+                ddt.pretty_rect = (left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
 
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
@@ -19556,6 +19556,20 @@ SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 # MAIN LOOP---------------------------------------------------------------------------
 
+if system == 'linux':
+    if de_nofity_support:
+        Notify.init("Tauon Music Box Transcode Notification")
+        g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                              "Transcoding has finished.")
+
+        g_tc_notify.add_action(
+            "action_click",
+            "Open Output Folder",
+            g_open_encode_out,
+            None
+        )
+
+
 print("Almost done...")
 
 gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
@@ -20898,7 +20912,8 @@ while pctl.running:
 
         if key_F7: #  F7 test
 
-            plex.get_albums()
+            #plex.get_albums()
+            print(pctl.playing_object().misc)
 
             show_message("Test error message 123", 'error', "hello text")
 
