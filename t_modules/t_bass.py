@@ -162,10 +162,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     DownloadProc = function_type(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
 
-    # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong,
-    #        ctypes.c_ulong, DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+    # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
+    #                                      DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
     BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
-                                         DownloadProc, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
+                                         ctypes.c_void_p, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
     BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_ChannelGetTags', bass_module))
 
@@ -257,7 +257,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     print(BASS_ErrorGetCode())
 
     #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so"))
-    print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0"))
+    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0"))
     #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.1"))
     #
     print(BASS_ErrorGetCode())
@@ -420,10 +420,32 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         def seek(self):
 
             if self.state is not 'stopped':
+                # #print(BASS_ErrorGetCode())
+                # #print(BASS_ErrorGetCode())
+                # BASS_ChannelStop(self.channel)
+                # pos = BASS_ChannelSeconds2Bytes(self.decode_channel, pctl.new_time + pctl.start_time)
+                # #print(pos)
+                # #print(BASS_ErrorGetCode())
+                # #BASS_ChannelSetPosition(self.decode_channel, 0, 0)
+                # BASS_ChannelSetPosition(self.channel, pos, 0)
+                #
+                #
+                #
+                # #print(BASS_ErrorGetCode())
+                #
+                # #BASS_Mixer_ChannelSetPosition(self.decode_channel, pos, 0)
+                #
+                # #print(BASS_ErrorGetCode())
+                #
+                # BASS_ChannelPlay(self.channel, True)
+
                 BASS_ChannelStop(self.channel)
                 pos = BASS_ChannelSeconds2Bytes(self.decode_channel, pctl.new_time + pctl.start_time)
                 BASS_Mixer_ChannelSetPosition(self.decode_channel, pos, 0)
                 BASS_ChannelPlay(self.channel, True)
+
+
+
 
         def update_time(self):
 
@@ -490,13 +512,31 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if target_object.is_network:
 
                 # This currently fails with PLEX URL's
+                print("START STEAM")
 
-                print(BASS_ErrorGetCode())
-                print("START")
-                url = pctl.get_url(target_object).encode()
+                url = None
+
+                try:
+                    url = pctl.get_url(target_object).encode()
+                except:
+                    gui.show_message("Failed to query url", 'info', "Bad login? Server offline?")
+
                 print(url)
-                new_handle = BASS_StreamCreateURL(url, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT, down_func, 0)
-                print(BASS_ErrorGetCode())
+                #url = b"http://0.0.0.0:8000"
+
+                if url is None:
+                    self.stop()
+                    return
+
+                new_handle = BASS_StreamCreateURL(url, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT, None, 0)
+                # new_handle = BASS_StreamCreateURL(url, 0, BASS_SAMPLE_FLOAT, None, 0)
+                #
+                # BASS_ChannelPlay(new_handle, False)
+                # self.decode_channel = new_handle
+                # self.channel = new_handle
+                # self.state = 'playing'
+                # return
+
             else:
 
                 # Get the target filepath and convert to bytes
@@ -1033,7 +1073,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(pctl.url)
 
                 BASS_ErrorGetCode()  # Flush old errors
-                bass_player.channel = BASS_StreamCreateURL(pctl.url, 0, 0, down_func, 0)
+                bass_player.channel = BASS_StreamCreateURL(pctl.url, 0, 0, None, 0)
                 bass_player.decode_channel = bass_player.channel
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
