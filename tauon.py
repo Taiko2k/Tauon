@@ -493,6 +493,7 @@ repeat_mode = False
 # 8 hidden (bool)
 
 
+
 def pl_uid_gen():
     return random.randrange(100, 10000000)
 
@@ -501,14 +502,18 @@ def pl_gen(title='Default',
            playlist=None,
            position=0,
            hide_title=0,
-           selected=0,):
+           selected=0,
+           hidden=None):
+
+    if hidden is None:
+        hidden = prefs.always_pin_playlists
 
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", False])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", hidden])
 
-multi_playlist = [pl_gen()] # Create default playlist
+multi_playlist = [pl_gen(hidden=False)] # Create default playlist
 
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
@@ -10302,7 +10307,10 @@ folder_menu = Menu(190, show_icons=True)
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
+# folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
+folder_menu.add(_("↳ After Current Album"), add_album_to_queue, pass_ref=True)
+
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
@@ -14035,7 +14043,7 @@ config_items.append([_('Add total duration to folder title'), toggle_append_tota
 
 config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
-config_items.append([_('Finish current when queuing album'), toggle_finish_current])
+# config_items.append([_('Show finish current when queuing album option'), toggle_finish_current])
 
 # config_items.append(['Playback advances to open playlist', toggle_follow])
 
@@ -16851,8 +16859,8 @@ class StandardPlaylist:
                         # Add folder to queue if middle click
                         if middle_click:
 
-                            if prefs.finish_current:
-                                finish_current()
+                            # if prefs.finish_current:
+                            #     finish_current()
 
                             pctl.force_queue.append([default_playlist[p_track],
                                                      p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
@@ -17865,46 +17873,25 @@ class PlaylistBox:
             ddt.rect_r((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
             ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - 55 * gui.scale, bg=real_bg)
 
+            # print(light_mode)
+            # print(dark_mode)
 
             indicator_colour = [100, 200, 90, 255]
-            # if light_mode:
-            #     indicator_colour = [0, 210, 0, 255]
+            if light_mode:
+                indicator_colour = [40, 40, 40, 210]
             if hidden:
-                indicator_colour = [60, 60, 60, 255]
+                indicator_colour = [60, 60, 60, 245]
                 if not dark_mode:
-                    indicator_colour = [180, 180, 180, 180]
+                    indicator_colour = [80, 80, 80, 120]
 
-            if i == pctl.active_playlist_playing and not hidden:
-                indicator_colour = [200, 230, 20, 255]
-                if light_mode:
-                    indicator_colour = colours.tab_background_active
-
-            # indicator_colour = [220, 170, 20, 255]
-            # # if light_mode:
-            # #     indicator_colour = [0, 210, 0, 255]
-            # if hidden:
-            #     indicator_colour = [60, 60, 60, 255]
-            #     if not dark_mode:
-            #         indicator_colour = [180, 180, 180, 180]
-            #
-            # if i == pctl.active_playlist_playing and not hidden:
-            #     indicator_colour = [100, 200, 90, 255]
-
-            # indicator_colour = colours.tab_background_active
-            # # if light_mode:
-            # #     indicator_colour = [0, 210, 0, 255]
-            # if hidden:
-            #     indicator_colour = [60, 60, 60, 255]
-            #     if not dark_mode:
-            #         indicator_colour = [180, 180, 180, 180]
-            #
-            # if i == pctl.active_playlist_playing and not hidden:
+            # if i == pctl.active_playlist_playing:
             #     indicator_colour = [200, 230, 20, 255]
             #     if light_mode:
-            #         indicator_colour = [100, 200, 90, 255]
+            #         indicator_colour = [100, 60, 180, 255]
+
 
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
-            #
+
             # if i == pctl.active_playlist_playing:
             #     ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale),
             #                [220, 170, 20, 255], True)
@@ -19375,19 +19362,22 @@ class Fader:
 
     def __init__(self):
 
+        self.total_timer = Timer()
         self.timer = Timer()
         self.timer.force_set(10)
         self.ani_duration = 0.3
-        self.state = 0
-        self.a = 0
+        self.state = 0  # 0 = Want off, 1 = Want fade on
+        self.a = 0  # The fade progress (0-1)
 
     def render(self):
 
-        if self.state == 0:
+        if self.total_timer.get() > self.ani_duration:
+            self.a = self.state
+        elif self.state == 0:
             t = self.timer.hit()
             self.a -= t / self.ani_duration
             self.a = max(0, self.a)
-        if self.state == 1:
+        elif self.state == 1:
             t = self.timer.hit()
             self.a += t / self.ani_duration
             self.a = min(1, self.a)
@@ -19402,11 +19392,13 @@ class Fader:
 
         self.state = 1
         self.timer.hit()
+        self.total_timer.set()
 
     def fall(self):
 
         self.state = 0
         self.timer.hit()
+        self.total_timer.set()
 
 fader = Fader()
 
@@ -20912,8 +20904,8 @@ while pctl.running:
 
         if key_F7: #  F7 test
 
-            #plex.get_albums()
-            print(pctl.playing_object().misc)
+            plex.get_albums()
+            #print(pctl.playing_object().misc)
 
             show_message("Test error message 123", 'error', "hello text")
 
@@ -21656,8 +21648,8 @@ while pctl.running:
                                     elif middle_click:
                                         # Middle click to add album to queue
 
-                                        if prefs.finish_current:
-                                            finish_current()
+                                        # if prefs.finish_current:
+                                        #     finish_current()
 
                                         partway = 0
                                         if not pctl.force_queue:
