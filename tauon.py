@@ -506,7 +506,7 @@ def pl_gen(title='Default',
            hidden=None):
 
     if hidden is None:
-        hidden = prefs.always_pin_playlists
+        hidden = prefs.always_pin_playlists ^ True
 
     if playlist == None:
         playlist = []
@@ -682,6 +682,7 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_lyrics_checked = []
 
         self.show_side_art = False
+        self.always_pin_playlists = True
 
 
 prefs = Prefs()
