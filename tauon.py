@@ -35,7 +35,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.6.0"
+t_version = "v 3.7.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -502,18 +502,14 @@ def pl_gen(title='Default',
            playlist=None,
            position=0,
            hide_title=0,
-           selected=0,
-           hidden=None):
-
-    if hidden is None:
-        hidden = prefs.always_pin_playlists ^ True
+           selected=0,):
 
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", hidden])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", False])
 
-multi_playlist = [pl_gen(hidden=False)] # Create default playlist
+multi_playlist = [pl_gen()] # Create default playlist
 
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
@@ -683,6 +679,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.show_side_art = False
         self.always_pin_playlists = True
+
+        self.user_directory = user_directory
 
 
 prefs = Prefs()
@@ -1482,8 +1480,8 @@ try:
         prefs.album_shuffle_mode = save[94]
     if save[95] is not None:
         prefs.album_repeat_mode = save[95]
-    if save[96] is not None:
-        prefs.finish_current = save[96]
+    # if save[96] is not None:
+    #     prefs.finish_current = save[96]
     if save[97] is not None:
         reload_state = save[97]
     if save[98] is not None:
@@ -3164,7 +3162,7 @@ def auto_name_pl(target_pl):
         nt = artist + " - " + track.album
 
     elif track and artists and artists[0] and artists.count(artists[0]) == len(artists):
-        nt = "Artist: " + artists[0]
+        nt = artists[0]
 
     else:
         nt = os.path.basename(commonprefix(parents))
@@ -3967,6 +3965,7 @@ class PlexService:
     def __init__(self):
         self.connected = False
         self.resource = None
+        self.scanning = False
 
     def connect(self):
 
@@ -3980,9 +3979,18 @@ class PlexService:
             show_message("No name of plex server in config", 'warning', 'Enter details in config file then restart app to apply.')
             return
 
-        from plexapi.myplex import MyPlexAccount
-        account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
-        self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
+        try:
+            from plexapi.myplex import MyPlexAccount
+        except:
+            show_message("Error importing python-plexapi", 'error')
+            return
+
+        try:
+            account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
+            self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
+        except:
+            show_message("Error connecting to PLEX server", "error", "Try check login credentials and that server is accessible.")
+            return
 
         # from plexapi.server import PlexServer
         # baseurl = 'http://localhost:32400'
@@ -4015,6 +4023,8 @@ class PlexService:
             return
 
         global master_count
+
+        playlist = []
 
         albums = self.resource.library.section('Music').albums()
         for album in albums:
@@ -4058,7 +4068,11 @@ class PlexService:
                 pctl.master_library[master_count] = nt
                 master_count += 1
 
-                default_playlist.append(nt.index)
+                playlist.append(nt.index)
+
+        self.scanning = False
+
+        pctl.multi_playlist.append(pl_gen(title="PLEX Collection", playlist=playlist))
 
 
 plex = PlexService()
@@ -4069,6 +4083,19 @@ def get_network_thumbnail_url(track_object):
     if track_object.file_ext == "PLEX":
         return plex.resolve_thumbnail(track_object.art_url_key)
     return None
+
+
+def plex_get_album_thread():
+
+    if plex.scanning:
+        show_message("Already scanning!")
+        return
+
+
+    shoot_dl = threading.Thread(target=plex.get_albums)
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -4819,7 +4846,7 @@ class LyricsRenMini:
         colour = colours.side_bar_line1
 
 
-        ddt.draw_text((x, y, 4, w), self.text, colour, 15, w, colours.side_panel_background)
+        ddt.draw_text((x, y, 4, w), self.text, colour, 15, w - (w % 2), colours.side_panel_background)
 
 
 lyrics_ren_mini = LyricsRenMini()
@@ -4854,6 +4881,36 @@ class LyricsRen:
 lyrics_ren = LyricsRen()
 
 
+def draw_internel_link(x, y, text, colour, font):
+
+    tweak = font
+    while tweak > 100:
+        tweak -= 100
+
+    if gui.scale == 2:
+        tweak *= 2
+        tweak += 4
+    if gui.scale == 1.25:
+        tweak = round(tweak * 1.25)
+        tweak += 1
+
+    sp = ddt.draw_text((x, y), text, colour, font)
+
+    rect = [x - 5 * gui.scale, y - 2 * gui.scale, sp + 11 * gui.scale, 23 * gui.scale]
+    fields.add(rect)
+
+    if coll(rect):
+        if not input.mouse_click:
+            gui.cursor_want = 3
+        ddt.line(x, y + tweak + 2, x + sp, y + tweak + 2, alpha_mod(colour, 180))
+        if input.mouse_click:
+            return True
+    return False
+
+
+
+
+# No hit detect
 def draw_linked_text(location, text, colour, font):
     base = ""
     link_text = ""
@@ -7052,8 +7109,9 @@ gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 
-def finish_current():
 
+
+def finish_current():
 
     playing_object = pctl.playing_object()
     if playing_object is None:
@@ -7065,11 +7123,12 @@ def finish_current():
                                  pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
 
 
+def add_album_to_queue(ref, position=None):
 
-def add_album_to_queue(ref):
-
-    if prefs.finish_current:
-        finish_current()
+    # if prefs.finish_current:
+    #     finish_current()
+    if position is None:
+        position = r_menu_position
 
     partway = 0
     playing_object = pctl.playing_object()
@@ -7078,9 +7137,30 @@ def add_album_to_queue(ref):
             partway = 1
 
     pctl.force_queue.append([ref,
-                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
+                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
+
+
+def add_album_to_queue_fc(ref):
+
+    playing_object = pctl.playing_object()
+    if playing_object is None:
+        show_message("")
+
+    if not pctl.force_queue:
+        pctl.force_queue.insert(0, [playing_object.index,
+                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+        add_album_to_queue(ref)
+        return
+
+    if pctl.force_queue[0][4] == 1:
+        pctl.force_queue.insert(1, [ref,
+                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, pl_uid_gen()])
+    else:
+        pctl.force_queue.insert(0, [ref,
+                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, pl_uid_gen()])
+
 
 def cancel_import():
 
@@ -10310,7 +10390,7 @@ folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 # folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
-folder_menu.add(_("↳ After Current Album"), add_album_to_queue, pass_ref=True)
+folder_menu.add(_("↳ After Current Album"), add_album_to_queue_fc, pass_ref=True)
 
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
@@ -10480,6 +10560,11 @@ def drop_tracks_to_new_playlist(track_list):
             if track.album_artist != "":
                 artist = track.album_artist
             pctl.multi_playlist[pl][0] = artist + " - " + albums[0][:50]
+
+    elif len(track_list) == 1 and artists:
+        pctl.multi_playlist[pl][0] = artists[0]
+
+
 
 def queue_deco():
     if len(pctl.force_queue) > 0:
@@ -14335,8 +14420,8 @@ class Over:
         y += 26 * gui.scale
         self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
-        # x = self.box_x + self.item_x_offset
-        # self.button(x, y - 4 * gui.scale, _("Import PLEX music"), plex.get_albums)
+        #x = self.box_x + self.item_x_offset
+        self.button(x + 0 * gui.scale , y - 4 * gui.scale, _("Import PLEX music"), plex_get_album_thread)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -16862,9 +16947,10 @@ class StandardPlaylist:
 
                             # if prefs.finish_current:
                             #     finish_current()
+                            add_album_to_queue(default_playlist[p_track], p_track)
 
-                            pctl.force_queue.append([default_playlist[p_track],
-                                                     p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
+                            # pctl.force_queue.append([default_playlist[p_track],
+                            #                          p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
 
                         # Play if double click:
                         if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
@@ -17660,6 +17746,7 @@ playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
 device_scroll = ScrollBox()
 
+
 class RenameBox:
 
     def __init__(self):
@@ -17701,6 +17788,7 @@ class RenameBox:
 
 
 rename_box = RenameBox()
+
 
 class PlaylistBox:
 
@@ -17774,6 +17862,7 @@ class PlaylistBox:
 
         if show_scroll:
             self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
+
 
 
         # Drawing
@@ -17894,9 +17983,8 @@ class PlaylistBox:
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
             # if i == pctl.active_playlist_playing:
-            #     ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale),
-            #                [220, 170, 20, 255], True)
-
+            #     ddt.rect_r((tab_start + tab_width - 2 * gui.scale, yy, 13, self.tab_h - self.indicate_w),
+            #                colours.playlist_panel_background, True)
 
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))):
                 if quick_drag:
@@ -17964,17 +18052,17 @@ def queue_pause_deco():
         return [colours.menu_text, colours.menu_background, _('Pause Queue')]
 
 
-def finish_current_deco():
-
-    colour = colours.menu_text
-    line = "Finish Playing Album"
-
-    if pctl.playing_object() is None:
-        colour = colours.menu_text_disabled
-    if pctl.force_queue and pctl.force_queue[0][4] == 1:
-        colour = colours.menu_text_disabled
-
-    return [colour, colours.menu_background, line]
+# def finish_current_deco():
+#
+#     colour = colours.menu_text
+#     line = "Finish Playing Album"
+#
+#     if pctl.playing_object() is None:
+#         colour = colours.menu_text_disabled
+#     if pctl.force_queue and pctl.force_queue[0][4] == 1:
+#         colour = colours.menu_text_disabled
+#
+#     return [colour, colours.menu_background, line]
 
 class QueueBox:
 
@@ -17995,7 +18083,7 @@ class QueueBox:
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue)
-        queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+        # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
 
 
     def queue_remove_show(self, id):
@@ -18376,14 +18464,18 @@ class MetaBox:
                 margin += 2 * gui.scale
 
             text_width = w - 25 * gui.scale
+            tr = None
 
             if pctl.playing_state < 3:
-                title = pctl.master_library[pctl.track_queue[pctl.queue_step]].title
-                album = pctl.master_library[pctl.track_queue[pctl.queue_step]].album
-                artist = pctl.master_library[pctl.track_queue[pctl.queue_step]].artist
-                ext = pctl.master_library[pctl.track_queue[pctl.queue_step]].file_ext
-                date = pctl.master_library[pctl.track_queue[pctl.queue_step]].date
-                genre = pctl.master_library[pctl.track_queue[pctl.queue_step]].genre
+                tr = pctl.playing_object()
+                title = tr.title
+                album = tr.album
+                artist = tr.artist
+                ext = tr.file_ext
+                if tr.lyrics:
+                    ext += ","
+                date = tr.date
+                genre = tr.genre
             else:
                 title = pctl.tag_meta
 
@@ -18415,8 +18507,16 @@ class MetaBox:
                                   fonts.side_panel_line2, max_w=text_width)
 
                     if ext != "":
-                        ddt.draw_text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
+
+                        sp = ddt.draw_text((margin, block_y + 40 * gui.scale), ext, colours.side_bar_line2,
                                   fonts.side_panel_line2, max_w=text_width)
+
+                        if tr and tr.lyrics:
+                            if draw_internel_link(margin + sp + 6 * gui.scale, block_y + 40 * gui.scale, "Lyrics", colours.side_bar_line2, fonts.side_panel_line2):
+                                switch_showcase(tr.index)
+
+
+
 
 
 
@@ -18527,7 +18627,7 @@ class ArtistInfoBox:
             if artist == "":
                 return
 
-            if self.min_rq_timer.get() < 5:  # Limit rate
+            if self.min_rq_timer.get() < 2:  # Limit rate
                 if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
                     pass
                 else:
@@ -18535,12 +18635,12 @@ class ArtistInfoBox:
                     wait = True
 
 
-            if pctl.playing_time < 1.5:
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
-                    pass
-                else:
-                    self.status = "..."
-                    wait = True
+            # if pctl.playing_time < 0.1:
+            #     if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+            #         pass
+            #     else:
+            #         self.status = "..."
+            #         wait = True
 
 
             if not wait:
@@ -18620,7 +18720,7 @@ class ArtistInfoBox:
                 text_max_w -= 15
 
             artist_picture_render.draw(x + 20, y + 10)
-            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w, 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w - (text_max_w % 20), 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -18647,7 +18747,7 @@ class ArtistInfoBox:
                 yy += 19
 
         else:
-            ddt.draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 13, bg=backgound)
+            ddt.draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
 
 
     def get_data(self, artist):
@@ -20021,7 +20121,7 @@ def save_state():
             prefs.backend,
             pctl.album_shuffle_mode,
             pctl.album_repeat_mode, # 95
-            prefs.finish_current,
+            prefs.finish_current,  # Not used
             prefs.reload_state,  # 97
             prefs.reload_play_state,
             prefs.last_fm_token,
@@ -20122,6 +20222,8 @@ while pctl.running:
         key_z_press = False
         key_x_press = False
         key_r_press = False
+        key_i_press = False
+        key_p_press = False
         key_dash_press = False
         key_eq_press = False
         key_slash_press = False
@@ -20390,6 +20492,10 @@ while pctl.running:
                 key_x_press = True
             elif event.key.keysym.sym == SDLK_r:
                 key_r_press = True
+            elif event.key.keysym.sym == SDLK_i:
+                key_i_press = True
+            elif event.key.keysym.sym == SDLK_p:
+                key_p_press = True
             elif event.key.keysym.sym == SDLK_BACKSLASH:
                 key_backslash_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
@@ -20942,6 +21048,8 @@ while pctl.running:
 
         if key_r_press and key_ctrl_down:
             rename_playlist(pctl.active_playlist_viewing)
+            rename_box.x = 60 * gui.scale
+            rename_box.y = 60 * gui.scale
 
         # Transfer click register to menus
         if input.mouse_click:
@@ -21021,6 +21129,17 @@ while pctl.running:
             click_time = n_click_time
 
         if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled:
+
+            if key_ctrl_down:
+                if key_i_press:
+                    if playlist_selected < len(default_playlist):
+                        r_menu_index = pctl.g(default_playlist[playlist_selected]).index
+                        track_box = True
+
+                if key_p_press:
+                    if pctl.playing_ready():
+                        r_menu_index = pctl.playing_object().index
+                        track_box = True
 
             if (key_shiftr_down or key_shift_down) and key_right_press:
                 key_right_press = False
