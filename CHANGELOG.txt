@@ -1,28 +1,32 @@
 
 Changelog-------------------------------------
 
-v3.6.1
+v3.7.0
 
- - todo
-  - fix plex crash when connection fails
-  - add docs for pl bg image
-  - fix side playlist panel semilight auto colours
-
+ - Added integrated PLEX streaming support
  - Added setting to automatically search LyricWiki
  - Added setting to hide album art box
+ - Added link to lyrics view in metadata box
+ - Added keyboard shortcuts to show track info box
+ - Added playlist background mascot feature
  - Improved importing to always auto-name new playlists
  - Improved listenbrainz to submit track ID data
  - Improved menu sub position to start at parent location
  - Improved transcode finish notification to provide button to open folder
+ - Improved artist bio panel resize performance
+ - Tweaked artist bio status font
+ - Tweaked artist bio rate limiting (reduced)
  - Fixed a crash when resizing window small before playing
  - Fixed a crash when pressing back on an empty playlist
- - Fixed a bug where "finish current" queue setting would not function
  - Fixed audio device list not being contained to box / not being scrollable
  - Fixed direction keys changing playlist when a modifier key was held
  - Fixed listenbrainz profile url link cursor hit box
  - Fixed side panel lyrics being wrong colour on auto theme
  - Fixed notification not showing correctly when no album field
  - Fixed tag scanner including date format data in date field for M4A
+ - Fixed issue with malfunctioning fader animation causing flickering
+ - Fixed inconsistent / wrong behavior when adding album to queue
+ - Removed "Finish current" and "Automatically finish current album" options
 
 v3.6.0
 
