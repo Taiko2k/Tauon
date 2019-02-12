@@ -2499,6 +2499,7 @@ class PlayerCtl:
         self.notify_update()
         notify_song()
         lfm_scrobbler.start_queue()
+        gui.pl_update += 1
 
 
     def stop(self, block=False, run=False):
@@ -4016,6 +4017,8 @@ class PlexService:
 
     def get_albums(self):
 
+        gui.update += 1
+
         if not self.connected:
             self.connect()
 
@@ -4057,12 +4060,7 @@ class PlexService:
                 if track.thumb:
                     nt.art_url_key = track.thumb
 
-                #nt.url = track.getStreamURL()
-                print(track.getStreamURL())
-                #print(track.url())
                 nt.url_key = track.key
-
-
                 nt.date = str(year)
 
                 pctl.master_library[master_count] = nt
@@ -4073,6 +4071,7 @@ class PlexService:
         self.scanning = False
 
         pctl.multi_playlist.append(pl_gen(title="PLEX Collection", playlist=playlist))
+        switch_playlist(len(pctl.multi_playlist) - 1)
 
 
 plex = PlexService()
@@ -4087,9 +4086,14 @@ def get_network_thumbnail_url(track_object):
 
 def plex_get_album_thread():
 
+
+    pref_box.enabled = False
+    fader.fall()
     if plex.scanning:
+        input.mouse_click = False
         show_message("Already scanning!")
         return
+    plex.scanning = True
 
 
     shoot_dl = threading.Thread(target=plex.get_albums)
@@ -7233,14 +7237,23 @@ def get_lyric_fire(track_object, silent=False):
     if not silent:
         show_message(_("Searching..."))
     try:
-        track_object.lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+
+        lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+
+        if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
+            lyrics = "[Instrumental]"
+
+        track_object.lyrics = lyrics
+
         gui.message_box = False
         if not gui.showcase_mode:
             prefs.show_lyrics_side = True
         lyrics_ren.lyrics_position = 0
     except:
+        raise
         if not silent:
             show_message("LyricWiki does not appear to have lyrics for this song")
+
 
 def get_lyric_wiki(track_object):
 
@@ -9089,7 +9102,7 @@ def convert_folder(index):
 
             track_object = pctl.g(item)
             if track_object.is_network:
-                show_message("Transcoding tracks from a network locations is not currenty supported")
+                show_message("Transcoding tracks from network locations is not currenty supported")
                 return
 
             folder.append(item)
@@ -15725,6 +15738,9 @@ class TopPanel:
         elif to_scan:
             text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
             bg = [100, 200, 100, 255]
+        elif plex.scanning:
+            text = "Accessing PLEX library..."
+            bg = [229, 160, 13, 255]
         elif transcode_list:
             # if key_ctrl_down and key_c_press:
             #     del transcode_list[1:]
@@ -17790,6 +17806,9 @@ class RenameBox:
 rename_box = RenameBox()
 
 
+# dia_icon = WhiteModImageAsset("/gui/dia.png")
+
+
 class PlaylistBox:
 
     def __init__(self):
@@ -17979,7 +17998,10 @@ class PlaylistBox:
             #     if light_mode:
             #         indicator_colour = [100, 60, 180, 255]
 
+            # if i == pctl.active_playlist_playing:
+            #     dia_icon.render(tab_start + 9 * gui.scale, yy + 7 * gui.scale, indicator_colour)
 
+            #else:
             ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
             # if i == pctl.active_playlist_playing:

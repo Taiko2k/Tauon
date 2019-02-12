@@ -128,6 +128,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     # ]
 
 
+
     #BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_BFX_VOLUME))(
     BASS_FXSetParameters = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_void_p)(
         ('BASS_FXSetParameters', bass_module))
@@ -420,6 +421,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             self.dl_ready = False
             self.save_temp = ""
+            self.alt = "a"
             self.url = ""
 
         def seek(self):
@@ -518,6 +520,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             print("Open file...")
 
+            self.dl_ready = False
+
             target_object = pctl.target_object
 
             if target_object.is_network:
@@ -534,10 +538,15 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 print(url)
 
-                self.save_temp = prefs.user_directory + "/temp.mp3"
+                self.save_temp = prefs.user_directory + "/" + self.alt + "-temp.mp3"
+
+                if self.alt == 'a':
+                    self.alt = 'b'
+                else:
+                    self.alt = 'a'
+
                 self.url = url.decode()
 
-                self.dl_ready = False
                 shoot_dl = threading.Thread(target=self.download_part, args=([url.decode(), self.save_temp]))
                 shoot_dl.daemon = True
                 shoot_dl.start()
