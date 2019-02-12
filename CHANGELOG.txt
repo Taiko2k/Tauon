@@ -26,6 +26,7 @@ v3.7.0
  - Fixed tag scanner including date format data in date field for M4A
  - Fixed issue with malfunctioning fader animation causing flickering
  - Fixed inconsistent / wrong behavior when adding album to queue
+ - Fixed / workaround for lyricwiki instrumental pages
  - Removed "Finish current" and "Automatically finish current album" options
 
 v3.6.0
