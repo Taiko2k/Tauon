@@ -256,6 +256,7 @@ else:
     def _(message):
         return message
 
+
 # ------------------------------------------------
 
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
@@ -681,6 +682,8 @@ class Prefs:    # Used to hold any kind of settings
         self.always_pin_playlists = True
 
         self.user_directory = user_directory
+
+        self.window_opacity = 1
 
 
 prefs = Prefs()
@@ -1498,6 +1501,8 @@ try:
         prefs.auto_lyrics_checked = save[103]
     if save[104] is not None:
         prefs.show_side_art = save[104]
+    if save[105] is not None:
+        prefs.window_opacity = save[105]
 
     state_file.close()
     del save
@@ -3125,7 +3130,7 @@ class PlayerCtl:
 
         self.notify_update()
         lfm_scrobbler.start_queue()
-        notify_song(end_of_playlist)
+        notify_song(end_of_playlist, delay=1.2)
 
 
 pctl = PlayerCtl()
@@ -3192,7 +3197,14 @@ def update_title_do():
 if de_nofity_support:
     song_notification = Notify.Notification.new("Next track notification")
 
-def notify_song(notify_of_end=False):
+
+def notify_song_fire(notification, delay):
+
+    time.sleep(delay)
+    notification.show()
+
+
+def notify_song(notify_of_end=False, delay=0):
 
     if not de_nofity_support:
         return
@@ -3226,7 +3238,12 @@ def notify_song(notify_of_end=False):
         else:
             song_notification.update(bottom_line, "", i_path)
 
-        song_notification.show()
+        if not delay:
+            song_notification.show()
+        else:
+            shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay]))
+            shoot_dl.daemon = True
+            shoot_dl.start()
 
 # Last.FM -----------------------------------------------------------------
 class LastFMapi:
@@ -4207,7 +4224,6 @@ if True:
                                 if i_path is not None:
                                     d['mpris:artUrl'] = 'file://' + i_path
                             except:
-                                # raise
                                 print("Thumbnail error")
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
@@ -4629,6 +4645,7 @@ SDL_RenderClear(renderer)
 gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 gui.pl_update = 2
 
+SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
 def bass_player_thread():
 
@@ -5511,9 +5528,11 @@ class ThumbTracks:
         if not os.path.isdir(cache_directory):
             os.makedirs(cache_directory)
 
-        g = io.BytesIO()
-        g.seek(0)
-        # print('pro stage 1')
+
+        # with open("test", 'wb') as w:
+        #     w.write(source_image.read())
+
+
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
@@ -5644,6 +5663,7 @@ class AlbumArt():
         # Check for embedded image
         try:
             if ext == 'MP3':
+
                 tag = stagger.read_tag(filepath)
 
                 try:
@@ -5653,6 +5673,7 @@ class AlbumArt():
 
                 if len(tt.data) > 30:
                     source_list.append([1, filepath])
+
 
             elif ext == 'OGG' or ext == 'OPUS':
 
@@ -5835,6 +5856,7 @@ class AlbumArt():
                 return tag[APIC][0].data
             except:
                 return tag[PIC][0].data
+
 
 
         elif pctl.master_library[index].file_ext == 'FLAC':
@@ -14674,7 +14696,7 @@ class Over:
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
         self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale125, "1.25x")
+        self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
 
         y += 25 * gui.scale
         self.toggle_square(x, y, scale2, "2x")
@@ -14893,7 +14915,7 @@ class Over:
 
         y1 += 40 * gui.scale
         ddt.draw_text((x1, y1), _("Tracks in database"), lt_colour, lt_font)
-        ddt.draw_text((x2, y1), '{:,}'.format(len(pctl.master_library)), colours.grey_blend_bg(220), 12)
+        ddt.draw_text((x2, y1), locale.format_string('%d', len(pctl.master_library), True), colours.grey_blend_bg(220), 12)
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), _("Total albums"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), str(self.total_albums), colours.grey_blend_bg(220), 12)
@@ -18413,7 +18435,6 @@ class MetaBox:
             return
 
 
-
         # Check for lyrics if auto setting
         test_auto_lyrics(track)
 
@@ -18443,8 +18464,11 @@ class MetaBox:
                 if oth > h:
                     lyric_side_bottom_pulse.pulse()
 
+            scroll_w = 15 * gui.scale
+            if gui.maximized:
+                scroll_w = 17 * gui.scale
 
-            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, 15 * gui.scale, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
+            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
 
             margin = 10 * gui.scale
             if colours.lm:
@@ -19633,33 +19657,37 @@ def display_friend_heart(x, yy, name):
 
 def hit_callback(win, point, data):
 
-    if point.contents.y < 0 and point.contents.x > window_size[0]:
-        return SDL_HITTEST_RESIZE_TOPRIGHT
+    if not gui.maximized:
+        if point.contents.y < 0 and point.contents.x > window_size[0]:
+            return SDL_HITTEST_RESIZE_TOPRIGHT
 
-    elif point.contents.y < 0 and point.contents.x < 1:
-        return SDL_HITTEST_RESIZE_TOPLEFT
+        if point.contents.y < 0 and point.contents.x < 1:
+            return SDL_HITTEST_RESIZE_TOPLEFT
 
-    elif draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
-        return SDL_HITTEST_RESIZE_TOP
+        if draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
+            return SDL_HITTEST_RESIZE_TOP
 
-    elif point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+    if point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
 
         if tab_menu.active: # or pctl.broadcast_active:
             return SDL_HITTEST_NORMAL
 
         return SDL_HITTEST_DRAGGABLE
-    elif point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
-        return SDL_HITTEST_RESIZE_BOTTOMRIGHT
-    elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
-        return SDL_HITTEST_RESIZE_BOTTOMLEFT
-    elif point.contents.y > window_size[1] - 7:
-        return SDL_HITTEST_RESIZE_BOTTOM
 
-    elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
-        return SDL_HITTEST_RESIZE_RIGHT
-    elif point.contents.x < 5:
-        return SDL_HITTEST_RESIZE_LEFT
+    if not gui.maximized:
+        if point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
+            return SDL_HITTEST_RESIZE_BOTTOMRIGHT
+        elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
+            return SDL_HITTEST_RESIZE_BOTTOMLEFT
+        elif point.contents.y > window_size[1] - 7:
+            return SDL_HITTEST_RESIZE_BOTTOM
 
+        elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
+            return SDL_HITTEST_RESIZE_RIGHT
+        elif point.contents.x < 5:
+            return SDL_HITTEST_RESIZE_LEFT
+        else:
+            return SDL_HITTEST_NORMAL
     else:
         return SDL_HITTEST_NORMAL
 
@@ -20151,7 +20179,8 @@ def save_state():
             prefs.use_card_style,
             prefs.auto_lyrics,
             prefs.auto_lyrics_checked,
-            prefs.show_side_art]
+            prefs.show_side_art,
+            prefs.window_opacity]
 
     #print(prefs.last_device + "-----")
 
@@ -21205,20 +21234,34 @@ while pctl.running:
                 if key_col_hit:
                     random_track()
 
-            if key_dash_press:
-                pctl.new_time = pctl.playing_time - 15
-                pctl.playing_time -= 15
-                if pctl.new_time < 0:
-                    pctl.new_time = 0
-                    pctl.playing_time = 0
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
+            if not key_ctrl_down:
+                if key_dash_press:
+                    pctl.new_time = pctl.playing_time - 15
+                    pctl.playing_time -= 15
+                    if pctl.new_time < 0:
+                        pctl.new_time = 0
+                        pctl.playing_time = 0
+                    pctl.playerCommand = 'seek'
+                    pctl.playerCommandReady = True
 
-            if key_eq_press:
-                pctl.new_time = pctl.playing_time + 15
-                pctl.playing_time += 15
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
+                if key_eq_press:
+                    pctl.new_time = pctl.playing_time + 15
+                    pctl.playing_time += 15
+                    pctl.playerCommand = 'seek'
+                    pctl.playerCommandReady = True
+            else:
+                if key_dash_press:
+                    prefs.window_opacity -= .05
+                    if prefs.window_opacity < .30:
+                        prefs.window_opacity = .30
+                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+                if key_eq_press:
+                    prefs.window_opacity += .05
+                    if prefs.window_opacity > 1:
+                        prefs.window_opacity = 1
+                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
 
     # if mouse_position[1] < 1:
     #     mouse_down = False
