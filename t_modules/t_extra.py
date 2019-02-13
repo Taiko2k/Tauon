@@ -27,7 +27,7 @@ import os
 import shlex
 import zipfile
 import glob
-
+import locale
 
 # A seconds based timer
 class Timer:
@@ -97,13 +97,13 @@ def get_display_time(seconds):
 # Creates a string from number of bytes to X MB/kB etc
 def get_filesize_string(file_bytes):
     if file_bytes < 1000:
-        line = str(file_bytes) + " Bytes"
+        line = locale.str(file_bytes) + " Bytes"
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, 2)
-        line = str(file_kb).rstrip('0').rstrip('.') + " KB"
+        line = locale.str(file_kb) + " KB"
     else:
         file_mb = round(file_bytes / 1000000, 2)
-        line = str(file_mb).rstrip('0').rstrip('.') + " MB"
+        line = locale.str(file_mb) + " MB"
     return line
 
 

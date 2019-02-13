@@ -9,13 +9,16 @@ v3.7.0
  - Added link to lyrics view in metadata box
  - Added keyboard shortcuts to show track info box
  - Added playlist background mascot feature
+ - Added key to change window opacity
  - Improved importing to always auto-name new playlists
  - Improved listenbrainz to submit track ID data
  - Improved menu sub position to start at parent location
  - Improved transcode finish notification to provide button to open folder
  - Improved artist bio panel resize performance
+ - Improved internationalisation for various number displays
  - Tweaked artist bio status font
  - Tweaked artist bio rate limiting (reduced)
+ - Tweaked notification timing at end of track
  - Fixed a crash when resizing window small before playing
  - Fixed a crash when pressing back on an empty playlist
  - Fixed audio device list not being contained to box / not being scrollable
@@ -27,6 +30,7 @@ v3.7.0
  - Fixed issue with malfunctioning fader animation causing flickering
  - Fixed inconsistent / wrong behavior when adding album to queue
  - Fixed / workaround for lyricwiki instrumental pages
+ - Fixed window drag border being active when maximized
  - Removed "Finish current" and "Automatically finish current album" options
 
 v3.6.0
