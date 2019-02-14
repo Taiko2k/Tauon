@@ -1015,7 +1015,6 @@ class M4a:
 
             if name == b'\xa9day':
                 day = meta_get(f, size).decode()
-                print(day[10])
                 if len(day) > 10 and day[10] == "T":
                     day = day[:10]
                 self.date = day
