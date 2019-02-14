@@ -685,6 +685,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.window_opacity = 1
 
+        self.gallery_single_click = False
+
 
 prefs = Prefs()
 
@@ -1503,6 +1505,8 @@ try:
         prefs.show_side_art = save[104]
     if save[105] is not None:
         prefs.window_opacity = save[105]
+    if save[106] is not None:
+        prefs.gallery_single_click = save[106]
 
     state_file.close()
     del save
@@ -1615,9 +1619,6 @@ if db_version > 0:
                     star_store.db[n_key] = n_value
 
             print("New total: ", end='')
-            #perf_timer.set()
-            print(star_store.get_total())
-            #print(perf_timer.get())
             diff = old_total - star_store.get_total()
             print(int(diff), end='')
             print(" Secconds could not be matched to tracks. Total playtime won't be affected")
@@ -3342,7 +3343,7 @@ class LastFMapi:
 
         except Exception as e:
             show_message("Error connecting to Last.fm network", "warning", str(e))
-            print(e)
+            # print(e)
             return False
 
     def toggle(self):
@@ -3441,11 +3442,11 @@ class LastFMapi:
 
         artist_object = pylast.Artist(artist, self.network)
         bio = artist_object.get_bio_summary(language="en")
-        print(artist_object.get_cover_image())
-        print("\n\n")
-        print(bio)
-        print("\n\n")
-        print(artist_object.get_bio_content())
+        # print(artist_object.get_cover_image())
+        # print("\n\n")
+        # print(bio)
+        # print("\n\n")
+        # print(artist_object.get_bio_content())
         return bio
         #else:
         #    return ""
@@ -3988,13 +3989,13 @@ class PlexService:
     def connect(self):
 
         if not prefs.plex_username:
-            show_message("No username in config", 'warning', 'Enter details in config file then restart app to apply.')
+            show_message("PLEX Account - No username in config", 'warning', 'Enter details in config file then restart app to apply.')
             return
         if not prefs.plex_password:
-            show_message("No password in config", 'warning', 'Enter details in config file then restart app to apply.')
+            show_message("PLEX Account - No password in config", 'warning', 'Enter details in config file then restart app to apply.')
             return
         if not prefs.plex_servername:
-            show_message("No name of plex server in config", 'warning', 'Enter details in config file then restart app to apply.')
+            show_message("PLEX - No name of plex server in config", 'warning', 'Enter details in config file then restart app to apply.')
             return
 
         try:
@@ -9601,10 +9602,11 @@ def del_selected():
 def test_show(dummy):
     return album_mode
 
-def show_in_gal(track):
+def show_in_gal(track, silent=False):
     # goto_album(playlist_selected)
     gui.gallery_animate_highlight_on = goto_album(playlist_selected)
-    gallery_select_animate_timer.set()
+    if not silent:
+        gallery_select_animate_timer.set()
 
 
 
@@ -10877,6 +10879,14 @@ def toggle_dim_albums(mode=0):
     gui.pl_update = 1
     gui.update += 1
 
+
+def toggle_gallery_click(mode=0):
+    if mode == 1:
+        return prefs.gallery_single_click
+
+    prefs.gallery_single_click ^= True
+
+
 def toggle_galler_text(mode=0):
     if mode == 1:
         return gui.gallery_show_text
@@ -11054,6 +11064,7 @@ def toggle_album_mode(force_on=False):
         gui.rspw = gui.pref_rspw
         gui.rsp = prefs.prefer_side
         #gui.rspw = old_side_pos
+        gui.album_tab_mode = False
     else:
         if gui.combo_mode:
             toggle_combo_view(off=True)
@@ -11062,6 +11073,7 @@ def toggle_album_mode(force_on=False):
 
         #old_side_pos = gui.rspw
         gui.rspw = gui.pref_gallery_w
+
 
     if album_mode and gui.set_mode and len(gui.pl_st) > 7:
         gui.set_mode = False
@@ -13559,18 +13571,37 @@ def gal_jump_select(up=False, num=1):
     old_selected = playlist_selected
     old_num = num
 
+    if not default_playlist:
+        return
+
     if up is False:
         on = playlist_selected
 
         while num > 0:
-            while on < len(default_playlist) - 1 and pctl.master_library[
+            while pctl.master_library[
                 default_playlist[on]].parent_folder_name == pctl.master_library[
                     default_playlist[playlist_selected]].parent_folder_name:
                 on += 1
+
+                if on > len(default_playlist) - 1:
+                    playlist_selected = old_selected
+                    return
+
             playlist_selected = on
             num -= 1
     else:
         on = playlist_selected
+
+        if num > 1:
+
+            if playlist_selected < len(default_playlist):
+                playlist_selected = old_selected
+                return
+
+            alb = get_album_info(playlist_selected)
+            if alb[1][0] in album_dex[:num]:
+                playlist_selected = old_selected
+                return
 
         while num > 0:
 
@@ -13585,8 +13616,6 @@ def gal_jump_select(up=False, num=1):
             playlist_selected = max(get_album_info(on)[1][0], 0)
             num -= 1
 
-    if old_num > 1 and (playlist_selected >= len(default_playlist) - 1 or playlist_selected == 0):
-        playlist_selected = old_selected
 
 
 power_tag_colours = ColourGenCache(0.5, 0.8)
@@ -14713,29 +14742,30 @@ class Over:
         y = self.box_y - 5 * gui.scale
         x += 270 * gui.scale
 
-        y += 28 * gui.scale
+        y += 18 * gui.scale
 
 
         ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
-        # y += 28 * gui.scale
+        y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        y += 26 * gui.scale
+        self.toggle_square(x, y, toggle_gallery_click, "Single click to play")
+        y += 25 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, _("Show titles in gallery"))
-        y += 26 * gui.scale
+        y += 25 * gui.scale
 
         self.toggle_square(x + 10 * gui.scale, y, toggle_card_style, _("Use card style (Light theme only)"))
-        y += 28 * gui.scale
+        y += 24 * gui.scale
         #y += 28 * gui.scale
 
         ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
 
-        y += 26 * gui.scale
+        y += 25 * gui.scale
 
 
         if prefs.backend == 1:
             self.toggle_square(x, y, toggle_level_meter, _("Show visualisation"))
-            y += 26 * gui.scale
+            y += 25 * gui.scale
 
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
@@ -14743,12 +14773,12 @@ class Over:
         if desktop == 'GNOME' or desktop == 'KDE':
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
-        y += 26 * gui.scale
+        y += 25 * gui.scale
 
 
         self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
 
-        y += 28 * gui.scale
+        y += 26 * gui.scale
 
         #self.button(x, y, "Reset Layout", standard_size)
         #x += 100
@@ -20180,7 +20210,8 @@ def save_state():
             prefs.auto_lyrics,
             prefs.auto_lyrics_checked,
             prefs.show_side_art,
-            prefs.window_opacity]
+            prefs.window_opacity,
+            prefs.gallery_single_click]
 
     #print(prefs.last_device + "-----")
 
@@ -20270,6 +20301,7 @@ while pctl.running:
         key_f_press = False
         key_a_press = False
         key_w_press = False
+        key_t_press = False
         key_z_press = False
         key_x_press = False
         key_r_press = False
@@ -20537,6 +20569,8 @@ while pctl.running:
                 key_c_press = True
             elif event.key.keysym.sym == SDLK_w:
                 key_w_press = True
+            elif event.key.keysym.sym == SDLK_t:
+                key_t_press = True
             elif event.key.keysym.sym == SDLK_z:
                 key_z_press = True
             elif event.key.keysym.sym == SDLK_x:
@@ -20882,12 +20916,20 @@ while pctl.running:
         if not gui.rename_folder_box and not renamebox and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
 
             if key_tab and not (key_ralt or key_lalt):
-                gui.album_tab_mode ^= True
+                #gui.album_tab_mode ^= True
                 if not album_mode:
                     toggle_album_mode()
                     gui.gall_tab_enter = True
+                    gui.album_tab_mode = True
+                    show_in_gal(playlist_selected, silent=True)
                 elif gui.gall_tab_enter:
+                    # Exit gallery and tab mode
                     toggle_album_mode()
+                else:
+                    gui.album_tab_mode ^= True
+                    if gui.album_tab_mode:
+                        show_in_gal(playlist_selected, silent=True)
+
 
             if not quick_search_mode and not search_over.active:
                 if album_mode and gui.album_tab_mode \
@@ -21093,6 +21135,9 @@ while pctl.running:
             gui.pl_update = 1
             shift_selection = range(len(default_playlist))
 
+
+        if key_t_press and key_ctrl_down:
+            new_playlist()
 
         if key_w_press and key_ctrl_down:
             delete_playlist(pctl.active_playlist_viewing)
@@ -21820,15 +21865,40 @@ while pctl.running:
 
                                     if input.mouse_click:
 
-                                        if info[0] == 1 and pctl.playing_state == 2:
-                                            pctl.play()
-                                        elif info[0] == 1 and pctl.playing_state > 0:
-                                            pctl.playlist_view_position = album_dex[album_on]
-                                        else:
-                                            pctl.playlist_view_position = album_dex[album_on]
-                                            pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+                                        if prefs.gallery_single_click:
 
-                                        pctl.show_current()
+                                            if info[0] == 1 and pctl.playing_state == 2:
+                                                pctl.play()
+                                            elif info[0] == 1 and pctl.playing_state > 0:
+                                                pctl.playlist_view_position = album_dex[album_on]
+                                            else:
+                                                pctl.playlist_view_position = album_dex[album_on]
+                                                pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                            pctl.show_current()
+
+                                        else:
+
+                                            if d_click_timer.get() < 1 and gui.d_click_ref == album_dex[album_on]:
+
+                                                if info[0] == 1 and pctl.playing_state == 2:
+                                                    pctl.play()
+                                                elif info[0] == 1 and pctl.playing_state > 0:
+                                                    pctl.playlist_view_position = album_dex[album_on]
+                                                else:
+                                                    pctl.playlist_view_position = album_dex[album_on]
+                                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                            else:
+                                                gui.d_click_ref = album_dex[album_on]
+                                                d_click_timer.set()
+
+
+                                            pctl.playlist_view_position = album_dex[album_on]
+                                            playlist_selected = album_dex[album_on]
+                                            gui.pl_update += 1
+
+
 
                                     elif middle_click:
                                         # Middle click to add album to queue

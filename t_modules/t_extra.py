@@ -418,11 +418,6 @@ def get_artist_strip_feat(track_object):
 
 def coll_rect(rect1, rect2):
 
-    # x 0
-    # y 1
-    # w 2
-    # h 3
-
     if rect1[0] + rect1[2] < rect2[0] or \
             rect1[1] + rect1[3] < rect2[1] or \
             rect1[0] > rect2[0] + rect2[2] or \
@@ -432,7 +427,7 @@ def coll_rect(rect1, rect2):
 
 
 def commonprefix(l):
-    print(l)
+
     cp = []
     ls = [p.split('/') for p in l]
     ml = min(len(p) for p in ls)

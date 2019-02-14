@@ -10,6 +10,7 @@ v3.7.0
  - Added keyboard shortcuts to show track info box
  - Added playlist background mascot feature
  - Added key to change window opacity
+ - Added option to toggle gallery single/double click to play
  - Improved importing to always auto-name new playlists
  - Improved listenbrainz to submit track ID data
  - Improved menu sub position to start at parent location
