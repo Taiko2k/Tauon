@@ -1017,7 +1017,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 pctl.playing_time += add_time
 
-                if pctl.playing_time > 10 and pctl.playing_state != 3:
+                if pctl.playing_time > 20 and pctl.playing_state != 3:
                     pctl.playing_time = 0
                     print("Advancing")
                     bass_player.stop(now=True)
