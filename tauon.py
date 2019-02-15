@@ -5454,7 +5454,8 @@ class GallClass:
                 order[3].y = int((size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
 
-                self.key_list.remove((index, size, offset))
+                if (index, size, offset) in self.key_list:
+                    self.key_list.remove((index, size, offset))
                 self.key_list.append((index, size, offset))
 
                 return True
@@ -13522,11 +13523,11 @@ worker2Thread.start()
 def get_album_info(position):
 
     if position > len(default_playlist) - 1:
-        position -= 1
+        position = len(default_playlist) - 1
     current = position
 
+    while position > 0 and current > 0:
 
-    while position > 0:
         if pctl.master_library[default_playlist[position]].parent_folder_name == pctl.master_library[
                 default_playlist[current - 1]].parent_folder_name:
             current -= 1
@@ -13592,9 +13593,10 @@ def gal_jump_select(up=False, num=1):
     else:
         on = playlist_selected
 
+
         if num > 1:
 
-            if playlist_selected < len(default_playlist):
+            if playlist_selected > len(default_playlist) - 1    :
                 playlist_selected = old_selected
                 return
 
@@ -14202,6 +14204,7 @@ c_time = 0
 c_blink = 0
 key_shiftr_down = False
 key_ctrl_down = False
+key_rctrl_down = False
 key_meta = False
 key_ralt = False
 key_lalt = False
@@ -20623,6 +20626,8 @@ while pctl.running:
                 key_tab = True
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
+            elif event.key.keysym.sym == SDLK_RCTRL:
+                key_rctrl_down = True
             elif event.key.keysym.sym == SDLK_BACKQUOTE:
                 key_tilde = True
             elif event.key.keysym.sym == SDLK_HOME:
@@ -20641,6 +20646,8 @@ while pctl.running:
                 key_shift_down = False
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = False
+            elif event.key.keysym.sym == SDLK_RCTRL:
+                key_rctrl_down = False
             elif event.key.keysym.sym == SDLK_RSHIFT:
                 key_shiftr_down = False
             elif event.key.keysym.sym == SDLK_RALT:
@@ -20962,8 +20969,10 @@ while pctl.running:
                     and not key_shift_down\
                     and not search_over.active\
                     and not key_ctrl_down\
+                    and not key_rctrl_down\
                     and not key_meta\
-                    and not key_lalt:
+                    and not key_lalt\
+                    and not key_ralt:
 
                 gui.pl_update = 1
                 gui.update += 1
@@ -23890,6 +23899,7 @@ while pctl.running:
 
         if gui.turbo:
             gui.level_update = True
+
 
     if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
 

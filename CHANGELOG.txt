@@ -28,10 +28,11 @@ v3.7.0
  - Fixed side panel lyrics being wrong colour on auto theme
  - Fixed notification not showing correctly when no album field
  - Fixed tag scanner including date format data in date field for M4A
- - Fixed issue with malfunctioning fader animation causing flickering
  - Fixed inconsistent / wrong behavior when adding album to queue
  - Fixed / workaround for lyricwiki instrumental pages
  - Fixed window drag border being active when maximized
+ - Fixed a crash when navigating through gallery very fast
+ - Fixed pressing up to first gallery album not working
  - Removed "Finish current" and "Automatically finish current album" options
 
 v3.6.0
