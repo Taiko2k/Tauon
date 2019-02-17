@@ -1,5 +1,12 @@
 ﻿#### Tauon Music Box config file
 
+
+### --- PLEX Account ------------------------------------------------------------------------------------
+
+plex-username=
+plex-password=
+plex-servname=
+
 ### --- Playback / Audio  (min 50ms, max 3000ms) --------------------------------------------------------
 
 #pause-fade-time=400
