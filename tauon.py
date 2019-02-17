@@ -7264,10 +7264,6 @@ def toggle_lyrics(track_object):
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
 
 
-
-
-
-
 def get_lyric_fire(track_object, silent=False):
 
     print("Query Lyric Wiki...")
@@ -7287,7 +7283,6 @@ def get_lyric_fire(track_object, silent=False):
             prefs.show_lyrics_side = True
         lyrics_ren.lyrics_position = 0
     except:
-        raise
         if not silent:
             show_message("LyricWiki does not appear to have lyrics for this song")
 
@@ -18577,7 +18572,6 @@ class MetaBox:
 
                 if not prefs.show_side_art:
                     block_y += 3 * gui.scale
-
 
                 if title != "":
                     ddt.draw_text((margin, block_y + 2 * gui.scale), title, colours.side_bar_line1, fonts.side_panel_line1, max_w=text_width)
