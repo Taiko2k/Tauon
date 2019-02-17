@@ -4870,6 +4870,10 @@ class LyricsRenMini:
 
     def render(self, index, x, y, w, h, p):
 
+
+        if not prefs.show_side_art:  # Hacky tweak
+            y += 5 * gui.scale
+
         if index != self.index or self.text != pctl.master_library[index].lyrics:
             self.index = index
             self.generate(index, w)
@@ -17723,7 +17727,6 @@ class ScrollBox():
         if click is None:
             click = input.mouse_click
 
-
         bar_height = 90
 
         bg = [255, 255, 255, 7]
@@ -18571,6 +18574,9 @@ class MetaBox:
             if h > 58 * gui.scale:
 
                 block_y = y + 7 * gui.scale
+
+                if not prefs.show_side_art:
+                    block_y += 3 * gui.scale
 
 
                 if title != "":
