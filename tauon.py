@@ -678,7 +678,7 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_lyrics = False
         self.auto_lyrics_checked = []
 
-        self.show_side_art = False
+        self.show_side_art = True
         self.always_pin_playlists = True
 
         self.user_directory = user_directory
