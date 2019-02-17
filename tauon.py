@@ -687,6 +687,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.gallery_single_click = False
 
+        self.custom_bg_opacity = 40
+
 
 prefs = Prefs()
 
@@ -1781,6 +1783,14 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'plex-servname=' in p:
                 result = p.split('=')[1]
                 prefs.plex_servername = result
+
+            if 'bg-opacity' in p:
+                result = p.split('=')[1]
+                try:
+                    if 0 < int(result) < 101:
+                        prefs.custom_bg_opacity = int(result)
+                except:
+                    print("BG opacity setting error")
 
 else:
     print("Warning: Missing config file")
@@ -4060,10 +4070,9 @@ class PlexService:
                 track_artist = track.grandparentTitle
                 duration = track.duration / 1000
 
-                tn = track.index
-
                 nt = TrackClass()
                 nt.index = master_count
+                nt.track_number = track.index
                 nt.file_ext = "PLEX"
                 nt.parent_folder_path = parent
                 nt.parent_folder_name = parent
@@ -6549,7 +6558,7 @@ class LoadImageAsset:
         SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
 
         if is_full_path:
-            SDL_SetTextureAlphaMod(self.sdl_texture, 40)
+            SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
 
         self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
         self.w = p_w.contents.value
@@ -14886,8 +14895,9 @@ class Over:
 
             y += 22 * gui.scale
 
-            ddt.draw_text((x, y + 1 * gui.scale), "Aditional testing", colours.grey(90), 13)
+            ddt.draw_text((x, y + 1 * gui.scale), "Additional testing", colours.grey(90), 13)
             ddt.draw_text((x +  120 * gui.scale, y + 1 * gui.scale), "Tyzmodo", colours.grey(220), 13)
+            ddt.draw_text((x +  120 * gui.scale, y + 21 * gui.scale), "Solarunit", colours.grey(220), 13)
 
         ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 

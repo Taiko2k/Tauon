@@ -535,6 +535,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     url = pctl.get_url(target_object).encode()
                 except:
                     gui.show_message("Failed to query url", 'info', "Bad login? Server offline?")
+                    pctl.stop()
+                    return
+
+                if url is None:
+                    print(gui.show_message("Failed to query url", 'info', "Bad login? Server offline?"))
+                    pctl.stop()
+                    return
 
                 print(url)
 
