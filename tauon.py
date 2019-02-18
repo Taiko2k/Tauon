@@ -2178,6 +2178,9 @@ class PlayerCtl:
     def playing_ready(self):
         return len(self.track_queue) > 0
 
+    def selected_ready(self):
+        return default_playlist and playlist_selected < len(default_playlist)
+
     def render_playlist(self):
 
         # if taskbar_progress and system == 'windows':
@@ -4193,7 +4196,7 @@ if True:
 
                 class MPRIS(dbus.service.Object):
 
-                    def update(self):
+                    def update(self, force=False):
 
                         changed = {}
 
@@ -4214,7 +4217,7 @@ if True:
                             self.player_properties['Volume'] = pctl.player_volume / 100
                             changed['Volume'] = self.player_properties['Volume']
 
-                        if pctl.playing_object() is not None and pctl.playing_object().index != self.playing_index:
+                        if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
                             track = pctl.playing_object()
                             self.playing_index = track.index
 
@@ -4225,8 +4228,6 @@ if True:
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
-
-
                             }
 
                             try:
@@ -13558,7 +13559,8 @@ def get_album_info(position):
         else:
             current += 1
     if not album:
-        album = [default_playlist[len(default_playlist) - 1]]
+        #album = [default_playlist[len(default_playlist) - 1]]
+        album = [len(default_playlist) - 1]
 
     return playing, album, select
 
@@ -17624,6 +17626,10 @@ class ArtBox:
             if coll(gui.main_art_box) and input.mouse_click is True:
                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
+                if pctl.mpris:
+                    pctl.mpris.update(force=True)
+
+
         # Activate picture context menu on right click
         if right_click and coll(rect):
             picture_menu.activate(in_reference=pctl.playing_object().index)
@@ -20320,6 +20326,7 @@ while pctl.running:
         key_r_press = False
         key_i_press = False
         key_p_press = False
+        key_q_press = False
         key_dash_press = False
         key_eq_press = False
         key_slash_press = False
@@ -20582,6 +20589,8 @@ while pctl.running:
                 key_c_press = True
             elif event.key.keysym.sym == SDLK_w:
                 key_w_press = True
+            elif event.key.keysym.sym == SDLK_q:
+                key_q_press = True
             elif event.key.keysym.sym == SDLK_t:
                 key_t_press = True
             elif event.key.keysym.sym == SDLK_z:
@@ -21067,6 +21076,15 @@ while pctl.running:
                     pctl.play()
                 else:
                     pctl.pause()
+
+            if key_q_press and key_ctrl_down and pctl.selected_ready():
+                if gui.album_tab_mode:
+                    add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
+
+                else:
+                    pctl.force_queue.append([default_playlist[playlist_selected],
+                                             playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
+                                             pl_uid_gen()])
 
 
         if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
