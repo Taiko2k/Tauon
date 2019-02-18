@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v3.7.1
+
+ - Add keyboard shortcut for adding to queue (ctrl + q)
+
 v3.7.0
 
  - Added integrated PLEX streaming support
