@@ -7473,7 +7473,7 @@ def open_image_deco():
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] is False:
+    if pctl.playing_state > 0 and info[0] == 0:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled

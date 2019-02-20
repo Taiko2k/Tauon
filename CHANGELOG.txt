@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v3.7.1
 
- - Add keyboard shortcut for adding to queue (ctrl + q)
+ - Added keyboard shortcut for adding to queue (ctrl + q)
+ - Fixed "Open Image" always showing as greyed
 
 v3.7.0
 
