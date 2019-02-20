@@ -495,7 +495,7 @@ repeat_mode = False
 
 
 
-def pl_uid_gen():
+def uid_gen():
     return random.randrange(100, 10000000)
 
 def pl_gen(title='Default',
@@ -508,7 +508,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, pl_uid_gen(), "", False])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -1580,7 +1580,7 @@ if db_version > 0:
     if db_version <= 1.4:
         print("Updating database to version 1.5")
         for playlist in multi_playlist:
-            playlist.append(pl_uid_gen())
+            playlist.append(uid_gen())
 
     if db_version <= 1.5:
         print("Updating database to version 1.6")
@@ -7162,7 +7162,7 @@ def finish_current():
     if not pctl.force_queue:
 
         pctl.force_queue.insert(0, [playing_object.index,
-                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, uid_gen()])
 
 
 def add_album_to_queue(ref, position=None):
@@ -7179,7 +7179,7 @@ def add_album_to_queue(ref, position=None):
             partway = 1
 
     pctl.force_queue.append([ref,
-                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway, pl_uid_gen()])
+                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway, uid_gen()])
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 
@@ -7192,16 +7192,16 @@ def add_album_to_queue_fc(ref):
 
     if not pctl.force_queue:
         pctl.force_queue.insert(0, [playing_object.index,
-                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, pl_uid_gen()])
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, uid_gen()])
         add_album_to_queue(ref)
         return
 
     if pctl.force_queue[0][4] == 1:
         pctl.force_queue.insert(1, [ref,
-                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, pl_uid_gen()])
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, uid_gen()])
     else:
         pctl.force_queue.insert(0, [ref,
-                                 pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, pl_uid_gen()])
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, uid_gen()])
 
 
 def cancel_import():
@@ -9686,7 +9686,7 @@ def add_to_queue(ref):
     # ref, postion-in-playlist, source-playlist-id, type(0 is track, 1 is album), album-stage, UID
 
     pctl.force_queue.append([ref,
-                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
+                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
 
 
 
@@ -17185,7 +17185,7 @@ class StandardPlaylist:
             if middle_click and line_hit:
 
                 pctl.force_queue.append([default_playlist[p_track],
-                                         p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
+                                         p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -18444,9 +18444,9 @@ class QueueBox:
             ti = default_playlist[pp]
 
             if len(shift_selection) == 1:
-                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, pl_uid_gen()])
+                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
             else:
-                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
+                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, uid_gen()])
 
         # Right click context menu in blank space
         if qb_right_click:
@@ -21078,13 +21078,16 @@ while pctl.running:
                     pctl.pause()
 
             if key_q_press and key_ctrl_down and pctl.selected_ready():
+
+                gui.pl_update += 1
+
                 if gui.album_tab_mode:
                     add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
 
                 else:
                     pctl.force_queue.append([default_playlist[playlist_selected],
                                              playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
-                                             pl_uid_gen()])
+                                             uid_gen()])
 
 
         if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
@@ -21952,7 +21955,7 @@ while pctl.running:
                                         pctl.force_queue.append([default_playlist[album_dex[album_on]],
                                                                  album_dex[album_on],
                                                                  pl_to_id(pctl.active_playlist_viewing), 1, partway,
-                                                                 pl_uid_gen()])
+                                                                 uid_gen()])
 
 
                                     else:
