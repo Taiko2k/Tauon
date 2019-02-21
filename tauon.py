@@ -148,13 +148,16 @@ if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
-    if flatpak_mode:
-        complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-        r = complete.stdout.decode()
-        return "bin/" + target in r
-    else:
-        return shutil.which(target)
+    try:
+        if flatpak_mode:
+            complete = subprocess.run(shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+            r = complete.stdout.decode()
+            return "bin/" + target in r
+        else:
+            return shutil.which(target)
+    except:
+        return False
 
 launch_prefix = ""
 if flatpak_mode:
@@ -5006,6 +5009,18 @@ def draw_linked_text(location, text, colour, font):
 
     return left, right - left, link_text
 
+
+def link_activate(x, y, link_pa):
+
+    link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
+
+    fields.add(link_rect)
+    if coll(link_rect):
+        if not input.mouse_click:
+            gui.cursor_want = 3
+        if input.mouse_click:
+            webbrowser.open(link_pa[2], new=2, autoraise=True)
+            track_box = True
 
 
 class TextBox:
@@ -10200,6 +10215,10 @@ def editor(index):
 
     if not ok:
         show_message(_("Tag editior app does not appear to be installed."), 'warning')
+
+        if flatpak_mode:
+            show_message(_("App not found on host OR insufficient Flatpak permissions."), 'bubble', 'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak_Permissions for details.')
+
         return
 
     if prefs.tag_editor_target == 'picard':
@@ -20475,8 +20494,14 @@ while pctl.running:
 
 
             dropped_file_sdl = event.drop.file
+            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
+
+            if not os.path.exists(target) and flatpak_mode:
+                show_message(_("Could not find access! Possible insufficient Flatpak permissions."), 'bubble',
+                             " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak_Permissions for details.")
+
             load_order = LoadClass()
-            load_order.target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
+            load_order.target = target
 
 
             if os.path.isdir(load_order.target):
@@ -21161,10 +21186,11 @@ while pctl.running:
 
         if key_F7: #  F7 test
 
-            plex.get_albums()
+            #plex.get_albums()
             #print(pctl.playing_object().misc)
 
-            show_message("Test error message 123", 'error', "hello text")
+            #show_message("Test error message 123", 'error', "hello text")
+
 
             key_F7 = False
 
@@ -23579,10 +23605,17 @@ while pctl.running:
                     message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
                 elif gui.message_mode == 'error':
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
+                elif gui.message_mode == 'bubble':
+                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+
 
                 if len(gui.message_subtext) > 0:
                     ddt.draw_text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
-                    ddt.draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
+                    if gui.message_mode == "bubble":
+                        link_pa = draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
+                        link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
+                    else:
+                        ddt.draw_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
                 else:
                     ddt.draw_text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.message_box_text, 15)
 
