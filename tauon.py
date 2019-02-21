@@ -1214,6 +1214,23 @@ colours = ColoursClass()
 colours.post_config()
 
 
+def get_themes():
+
+    themes = []  # full, name
+    direcs = [install_directory + '/theme']
+    if user_directory != install_directory:
+        direcs.append(user_directory + '/theme')
+
+    for direc in direcs:
+        if os.path.exists(direc):
+            for path in [os.path.join(direc, f) for f in os.listdir(direc)]:
+                if path[-6:] == 'ttheme':
+                    themes.append((path, os.path.basename(path).split(".")[0]))
+
+    themes.sort()
+    return themes
+
+
 # This is legacy. New settings are added straight to the save list (need to overhaul)
 view_prefs = {
 
@@ -5813,7 +5830,7 @@ class AlbumArt():
 
         offset = self.get_offset(pctl.master_library[index].fullpath, source)
 
-        if source[offset][0] is True:
+        if source[offset][0] > 0:
             return 0
 
         if system == "windows":
@@ -7492,7 +7509,7 @@ def extract_image_deco():
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] is True:
+    if pctl.playing_state > 0 and info[0] == 1:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -7536,7 +7553,7 @@ def remove_embed_deco():
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] is True and (pctl.playing_object().file_ext == "MP3" or pctl.playing_object().file_ext == "FLAC"):
+    if pctl.playing_state > 0 and info[0] == 1 and (pctl.playing_object().file_ext == "MP3" or pctl.playing_object().file_ext == "FLAC"):
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -14689,7 +14706,7 @@ class Over:
         theme -= 1
         themeChange = True
         if theme < 0:
-            theme = len(os.listdir(install_directory + '/theme'))
+            theme = len(get_themes())
 
     def config_b(self):
 
@@ -21430,18 +21447,17 @@ while pctl.running:
             theme_number = theme - 1
             try:
 
-                theme_files = os.listdir(install_directory + '/theme')
-                theme_files.sort()
+                theme_files = get_themes()
                 #print(theme_files)
 
-                for i in range(len(theme_files)):
+                for i, item in enumerate(theme_files):
                     # print(theme_files[i])
-                    if i == theme_number and 'ttheme' in theme_files[i]:
+                    if i == theme_number:
                         colours.lm = False
                         colours.__init__()
-                        with open(install_directory + "/theme/" + theme_files[i], encoding="utf_8") as f:
+                        with open(item[0], encoding="utf_8") as f:
                             content = f.readlines()
-                            gui.theme_name = theme_files[i].split(".")[0]
+                            gui.theme_name = item[1]
                             print("Applying external theme: " + gui.theme_name)
                             for p in content:
                                 if "#" in p:
