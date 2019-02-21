@@ -4,7 +4,8 @@ Changelog-------------------------------------
 v3.7.1
 
  - Added keyboard shortcut for adding to queue (ctrl + q)
- - Fixed "Open Image" always showing as greyed
+ - Added support for user folder themes
+ - Fixed image menu incorrectly showing items as greyed
 
 v3.7.0
 
