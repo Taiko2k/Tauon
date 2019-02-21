@@ -6634,18 +6634,21 @@ if gui.scale == 2:
     message_tick_icon = LoadImageAsset("/gui/2x/done.png")
     message_arrow_icon = LoadImageAsset("/gui/2x/ext.png")
     message_error_icon = LoadImageAsset("/gui/2x/error.png")
+    message_bubble_icon = LoadImageAsset("/gui/2x/bubble.png")
 elif gui.scale == 1.25:
     message_info_icon = LoadImageAsset("/gui/1.25x/notice.png")
     message_warning_icon = LoadImageAsset("/gui/1.25x/warning.png")
     message_tick_icon = LoadImageAsset("/gui/1.25x/done.png")
     message_arrow_icon = LoadImageAsset("/gui/1.25x/ext.png")
     message_error_icon = LoadImageAsset("/gui/1.25x/error.png")
+    message_bubble_icon = LoadImageAsset("/gui/1.25x/bubble.png")
 else:
     message_info_icon = LoadImageAsset("/gui/notice.png")
     message_warning_icon = LoadImageAsset("/gui/warning.png")
     message_tick_icon = LoadImageAsset("/gui/done.png")
     message_arrow_icon = LoadImageAsset("/gui/ext.png")
     message_error_icon = LoadImageAsset("/gui/error.png")
+    message_bubble_icon = LoadImageAsset("/gui/bubble.png")
 
 
 class ToolTip:
@@ -10217,7 +10220,7 @@ def editor(index):
         show_message(_("Tag editior app does not appear to be installed."), 'warning')
 
         if flatpak_mode:
-            show_message(_("App not found on host OR insufficient Flatpak permissions."), 'bubble', 'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak_Permissions for details.')
+            show_message(_("App not found on host OR insufficient Flatpak permissions."), 'bubble', 'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.')
 
         return
 
@@ -20497,8 +20500,8 @@ while pctl.running:
             target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
 
             if not os.path.exists(target) and flatpak_mode:
-                show_message(_("Could not find access! Possible insufficient Flatpak permissions."), 'bubble',
-                             " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak_Permissions for details.")
+                show_message(_("Could not access! Possible insufficient Flatpak permissions."), 'bubble',
+                             " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.")
 
             load_order = LoadClass()
             load_order.target = target
@@ -23606,7 +23609,7 @@ while pctl.running:
                 elif gui.message_mode == 'error':
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
                 elif gui.message_mode == 'bubble':
-                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+                    message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
 
 
                 if len(gui.message_subtext) > 0:
