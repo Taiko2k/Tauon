@@ -4,7 +4,7 @@
   <id type="desktop">com.github.taiko2k.tauonmb.desktop</id>
   <name>Tauon Music Box</name>
   <developer_name>Taiko2k</developer_name>
-  <summary>Play and manage your music collection</summary>
+  <summary>Play your music collection</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LicenseRef-proprietary</project_license>
@@ -13,7 +13,7 @@
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/52980219-fa63ba80-343d-11e9-853b-06de62ba03c7.png</icon>
 
   <description>
-    <p>Tauon Music Box is a music player for playback of local audio files. Import music and create playlists by simple drag and drop. Navigate albums quickly by using the built in searching and sorting functions. Designed to be streamlined but powerful, putting the user in control of their music collection.</p>
+    <p>Tauon Music Box is a music player for playback of audio files. Designed to be streamlined but powerful while putting the user in control of their music collection.</p>
     <p>Features:</p>
     <ul>
       <li>Simple drag and drop file importing</li>
@@ -22,7 +22,7 @@
       <li>Easily create and manage playlists</li>
       <li>Quick and powerful searching</li>
       <li>Scrobble and love tracks to last.fm</li>
-      <li>Large album art and gallery views avaliable</li>
+      <li>Large album art and gallery layouts avaliable</li>
     </ul>
   </description>
 
