@@ -687,10 +687,10 @@ class Prefs:    # Used to hold any kind of settings
         self.user_directory = user_directory
 
         self.window_opacity = 1
-
         self.gallery_single_click = False
-
         self.custom_bg_opacity = 40
+
+        self.tabs_on_top = True
 
 
 prefs = Prefs()
@@ -1529,6 +1529,8 @@ try:
         prefs.window_opacity = save[105]
     if save[106] is not None:
         prefs.gallery_single_click = save[106]
+    if save[107] is not None:
+        prefs.tabs_on_top = save[107]
 
     state_file.close()
     del save
@@ -2712,6 +2714,8 @@ class PlayerCtl:
 
                     if self.album_repeat_mode:
 
+                        if self.playlist_playing_position > len(pp) - 1:
+                            self.playlist_playing_position = 0  # Hack fix, race conditon bug?
 
                         ti = self.g(pp[self.playlist_playing_position])
 
@@ -3055,7 +3059,7 @@ class PlayerCtl:
                                 continue
 
                             # Skip a playlist if hidden
-                            if pctl.multi_playlist[k][8]:
+                            if pctl.multi_playlist[k][8] and prefs.tabs_on_top:
                                 continue
 
                             # Set found playlist as playing the first track
@@ -4042,6 +4046,7 @@ class PlexService:
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except:
             show_message("Error connecting to PLEX server", "error", "Try check login credentials and that server is accessible.")
+            self.scanning = False
             return
 
         # from plexapi.server import PlexServer
@@ -7704,7 +7709,6 @@ def lightning_move_test(discard):
 
 def copy_deco():
     line = "Copy"
-
     if key_shift_down:
         line = "Copy" #Folder From Library"
     else:
@@ -7877,6 +7881,20 @@ else:
 # rename_playlist_icon.colour = [149, 119, 255, 255]
 # rename_playlist_icon.xoff = 2
 
+
+# def toggle_pin_deco(pl):
+#
+#     if pctl.multi_playlist[pl][8]:
+#         return [colours.menu_text, colours.menu_background, _("Pin to top panel")]
+#     else:
+#         return [colours.menu_text, colours.menu_background, _('Hide')]
+#
+# def toggle_pin_playlist(pl):
+#     pctl.multi_playlist[pl][8] ^= True
+#
+#
+# tab_menu.add(_('Unpin'), toggle_pin_playlist, toggle_pin_deco, pass_ref=True, pass_ref_deco=True)
+#
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
@@ -8615,8 +8633,13 @@ def gen_last_modified(index):
 
 
 
-tab_menu.add_to_sub(_("File modified"), 0, gen_last_modified, pass_ref=True)
-extra_tab_menu.add_to_sub(_("File modified"), 0, gen_last_modified, pass_ref=True)
+tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
+extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
+
+# tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
+# extra_tab_menu.add_to_sub(_("File Path"), 0, standard_sort, pass_ref=True)
+
+
 
 def gen_love(pl):
     playlist = []
@@ -8661,71 +8684,6 @@ def gen_comment(pl):
                                           hide_title=0))
     else:
         show_message("Nothing of interest was found.")
-
-
-# def gen_most_skip(pl):
-#     playlist = []
-#     for item in pctl.multi_playlist[pl][2]:
-#         if pctl.master_library[item].skips > 0:
-#             playlist.append(item)
-#     if len(playlist) == 0:
-#         show_message("Nothing to show right now.")
-#         return
-#
-#     def worst(index):
-#         return pctl.master_library[index].skips
-#
-#     playlist = sorted(playlist, key=worst, reverse=True)
-#
-#     # pctl.multi_playlist.append(
-#     #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
-#
-#
-#     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
-#                                       playlist=copy.deepcopy(playlist),
-#                                       hide_title=1))
-
-# def gen_most_skip(pl):
-#
-#
-#     folders = []
-#     dick = {}
-#     for track in pctl.multi_playlist[pl][2]:
-#         parent = pctl.master_library[track].parent_folder_path
-#         if parent not in folders:
-#             folders.append(parent)
-#         if parent not in dick:
-#             dick[parent] = []
-#         dick[parent].append(track)
-#
-#     for name, tracks in dick.items():
-#         pt = 0
-#         sk = 0
-#         for track in tracks:
-#             pt += int(star_store.get(track))
-#             sk += pctl.master_library[track].skips
-#
-#
-#         if sk > 4 and pt < 60 * 20:
-#             pass
-#         else:
-#             dick[name] = None
-#
-#     playlist = []
-#
-#     for folder in folders:
-#         if dick[folder] is not None:
-#             playlist += dick[folder]
-#
-#     # pctl.multi_playlist.append(
-#     #     [pctl.multi_playlist[pl][0] + " <Most Skipped>", 0, copy.deepcopy(playlist), 0, 1, 0])
-#
-#
-#     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Skipped>",
-#                                       playlist=copy.deepcopy(playlist),
-#                                       hide_title=0))
-#
-# tab_menu.add_to_sub("Most Skipped", 0, gen_most_skip, pass_ref=True)
 
 
 def gen_sort_len(index):
@@ -8844,17 +8802,20 @@ def gen_sort_date(index, rev=False):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Oldest Year"), 0, gen_sort_date, pass_ref=True)
+tab_menu.add_to_sub(_("Year by Oldest"), 0, gen_sort_date, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Year by Oldest"), 0, gen_sort_date, pass_ref=True)
 
 
 def gen_sort_date_new(index):
     gen_sort_date(index, True)
 
 
-tab_menu.add_to_sub(_("Latest Year"), 0, gen_sort_date_new, pass_ref=True)
-extra_tab_menu.add_to_sub(_("Latest Year"), 0, gen_sort_date_new, pass_ref=True)
+tab_menu.add_to_sub(_("Year by Latest"), 0, gen_sort_date_new, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Year by Latest"), 0, gen_sort_date_new, pass_ref=True)
 
+
+# tab_menu.add_to_sub(_("Year by Artist"), 0, year_sort, pass_ref=True)
+# extra_tab_menu.add_to_sub(_("Year by Artist"), 0, year_sort, pass_ref=True)
 
 def gen_500_random(index):
     global pctl
@@ -9038,6 +8999,8 @@ extra_tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 #tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
+
+
 
 
 
@@ -14117,6 +14080,10 @@ def toggle_extract(mode=0):
     if prefs.auto_extract is False:
         prefs.auto_del_zip = False
 
+def toggle_top_tabs(mode=0):
+    if mode == 1:
+        return prefs.tabs_on_top
+    prefs.tabs_on_top ^= True
 
 def toggle_auto_lyrics(mode=0):
     if mode == 1:
@@ -14476,6 +14443,8 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
 
+        y += 30 * gui.scale
+        self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
 
         x = self.box_x + self.item_x_offset
         y = self.box_y - 10 * gui.scale
@@ -15497,8 +15466,22 @@ class TopPanel:
 
         x_start = x
 
+        if mouse_up and playlist_box.drag:
+
+            if mouse_position[0] > (gui.lspw if gui.lsp else 0) and mouse_position[1] > gui.panelY:
+                playlist_box.drag = False
+
+                if playlist_box.drag_source == 0:
+                    pctl.multi_playlist[playlist_box.drag_on][8] = True
+                else:
+                    pctl.multi_playlist[playlist_box.drag_on][8] = False
+
+
         # TAB INPUT PROCESSING
         for i, tab in enumerate(pctl.multi_playlist):
+
+            if not prefs.tabs_on_top:
+                break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
@@ -15526,22 +15509,30 @@ class TopPanel:
                 if input.mouse_click:
                     gui.pl_update = 1
                     playlist_box.drag = True
+                    playlist_box.drag_source = 0
                     playlist_box.drag_on = i
                     switch_playlist(i)
                     gui.drag_source_position = copy.deepcopy(mouse_position)
 
                 # Drag to move playlist
-                if mouse_up and i != playlist_box.drag_on and playlist_box.drag:
+                if mouse_up and playlist_box.drag:
 
-                    # Reveal the tab in case it has been hidden
-                    pctl.multi_playlist[playlist_box.drag_on][8] = False
+                    if playlist_box.drag_source == 1:
+                        pctl.multi_playlist[playlist_box.drag_on][8] = False
 
-                    if key_shift_down:
-                        pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
-                        delete_playlist(playlist_box.drag_on)
-                    else:
-                        move_playlist(playlist_box.drag_on, i)
+                    if i != playlist_box.drag_on:
+
+                        # # Reveal the tab in case it has been hidden
+                        # pctl.multi_playlist[playlist_box.drag_on][8] = False
+
+                        if key_shift_down:
+                            pctl.multi_playlist[i][2] += pctl.multi_playlist[playlist_box.drag_on][2]
+                            delete_playlist(playlist_box.drag_on)
+                        else:
+                            move_playlist(playlist_box.drag_on, i)
+
                     playlist_box.drag = False
+                    gui.update += 1
 
                 # Delete playlist on wheel click
                 elif tab_menu.active is False and middle_click:
@@ -15568,8 +15559,14 @@ class TopPanel:
         if playlist_box.drag:
             rect = (0, x, self.height, window_size[0])
             fields.add(rect)
+
         if mouse_up and playlist_box.drag and mouse_position[0] > x and mouse_position[1] < self.height:
-            gen_dupe(playlist_box.drag_on)
+            #gen_dupe(playlist_box.drag_on)
+
+            if playlist_box.drag_source == 1:
+                pctl.multi_playlist[playlist_box.drag_on][8] = False
+
+            move_playlist(playlist_box.drag_on, i)
             playlist_box.drag = False
 
         # Need to test length again
@@ -15585,6 +15582,9 @@ class TopPanel:
 
         # TAB DRAWING
         for i, tab in enumerate(pctl.multi_playlist):
+
+            if not prefs.tabs_on_top:
+                break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
@@ -15671,15 +15671,16 @@ class TopPanel:
             x += tab_width + self.tab_spacing
 
         # Quick drag single track onto bar to create new playlist function and indicator
-        if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-            ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [80, 200, 180, 255], True)
+        if prefs.tabs_on_top:
+            if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
+                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [80, 200, 180, 255], True)
 
-            if mouse_up:
-                drop_tracks_to_new_playlist(shift_selection)
+                if mouse_up:
+                    drop_tracks_to_new_playlist(shift_selection)
 
-        # Draw dupelicate tab function indicator
-        if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
-            ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [255, 180, 80, 255], True)
+            # Draw end drag tab indicator
+            if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
+                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [80, 160, 200, 255], True)
 
         # -------------
         # Other input
@@ -15701,7 +15702,7 @@ class TopPanel:
                         on = le - 1
                     if on == p:
                         break
-                    if pctl.multi_playlist[on][8] is False:
+                    if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
                         switch_playlist(on)
                         break
                     on -= 1
@@ -15715,7 +15716,7 @@ class TopPanel:
                         on = 0
                     if on == p:
                         break
-                    if pctl.multi_playlist[on][8] is False:
+                    if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
                         switch_playlist(on)
                         break
                     on += 1
@@ -17923,6 +17924,7 @@ class PlaylistBox:
 
         self.scroll_on = 0
         self.drag = False
+        self.drag_source = 0
         self.drag_on = -1
 
         self.adds = []
@@ -17976,23 +17978,19 @@ class PlaylistBox:
             self.scroll_on = 0
 
 
-
         if show_scroll:
             tab_start += 15 * gui.scale
 
-        # tab_width = w - tab_start - 15 * gui.scale
-        tab_width = w - tab_start
 
-        tab_width = w - tab_start - 11 * gui.scale
-        if colours.lm:
-            tab_width = w - tab_start - 6 * gui.scale
+        tab_width = w - tab_start - 6 * gui.scale
 
+        # Draw scroll bar
         if show_scroll:
             self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
+        draw_pin_indicator = prefs.tabs_on_top
 
-
-        # Drawing
+        # Drawing each tab...
         yy = y + 5 * gui.scale
         for i, pl in enumerate(pctl.multi_playlist):
 
@@ -18002,12 +18000,16 @@ class PlaylistBox:
             if i < self.scroll_on:
                 continue
 
-            if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
-                if input.mouse_click:
-                    switch_playlist(i)
-                    self.drag_on = i
-                    self.drag = True
-                    gui.drag_source_position = copy.deepcopy(mouse_position)
+
+            if draw_pin_indicator:
+                if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
+                    if input.mouse_click:
+                        switch_playlist(i)
+                        self.drag_on = i
+                        self.drag = True
+                        self.drag_source = 1
+                        gui.drag_source_position = copy.deepcopy(mouse_position)
+
 
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
@@ -18017,15 +18019,32 @@ class PlaylistBox:
                     delete_playlist(i)
                     break
 
-                if mouse_up and self.drag and i != self.drag_on:
+                if mouse_up and self.drag:
 
-                    if key_shift_down:
-                        pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
-                        # pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[self.drag_on]))
-                        delete_playlist(self.drag_on)
-                    else:
-                        move_playlist(self.drag_on, i)
+                    # If drag from top bar to side panel, make hidden
+                    if self.drag_source == 0:
+                        pctl.multi_playlist[self.drag_on][8] = True
+                    #
+                    # else:
+
+                    # Move playlist tab
+                    if i != self.drag_on:
+                        if key_shift_down:
+                            pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
+                            delete_playlist(self.drag_on)
+                        else:
+                            move_playlist(self.drag_on, i)
+
                     gui.update += 1
+
+                if not draw_pin_indicator:
+                    if input.mouse_click:
+                        switch_playlist(i)
+                        self.drag_on = i
+                        self.drag = True
+                        self.drag_source = 1
+                        gui.drag_source_position = copy.deepcopy(mouse_position)
+
 
                 # Process input of dragging tracks onto tab
                 elif quick_drag is True:
@@ -18038,7 +18057,7 @@ class PlaylistBox:
 
 
             # Toggle hidden flag on click
-            if input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
+            if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
                 pl[8] ^= True
 
             name = pl[0]
@@ -18054,6 +18073,7 @@ class PlaylistBox:
             if semi_light:
                 bg = [45, 45, 45, 255]
 
+            # Background is insivible by default (for hightlighting if selected)
             bg = [0,0,0,0]
 
             # Additional highlight reasons
@@ -18067,10 +18087,11 @@ class PlaylistBox:
             #     if semi_light:
             #         bg = [55, 55, 55, 255]
 
-
+            # Highlight if playlist selected (viewing)
             if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
                 bg = [255, 255, 255, 25]
 
+                # Adjust highlight for different background brightnesses
                 if dark_mode:
                     bg = [255, 255, 255, 15]
                 if light_mode:
@@ -18078,6 +18099,7 @@ class PlaylistBox:
                 if semi_light:
                     bg = [55, 55, 55, 255]
 
+            # Highlight target playlist when tragging tracks over
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and quick_drag:
                 bg = [255, 255, 255, 15]
                 if light_mode:
@@ -18085,14 +18107,25 @@ class PlaylistBox:
                 if semi_light:
                     bg = [52, 52, 52, 255]
 
+            # Get actual bg from blend for text bg
             real_bg = alpha_blend(bg, colours.side_panel_background)
 
+            # Draw highlight
             ddt.rect_r((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
-            ddt.draw_text((tab_start + 40 * gui.scale, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - 55 * gui.scale, bg=real_bg)
+
+            # Draw title text
+            text_start = 10 * gui.scale
+            if draw_pin_indicator:
+                #text_start = 40 * gui.scale
+                text_start = 32 * gui.scale
+
+
+            ddt.draw_text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - text_start - 15 * gui.scale, bg=real_bg)
 
             # print(light_mode)
             # print(dark_mode)
 
+            # Set and adjust pin indicator colour for different background brightnesses
             indicator_colour = [100, 200, 90, 255]
             if light_mode:
                 indicator_colour = [40, 40, 40, 210]
@@ -18106,22 +18139,39 @@ class PlaylistBox:
             #     if light_mode:
             #         indicator_colour = [100, 60, 180, 255]
 
-            # if i == pctl.active_playlist_playing:
-            #     dia_icon.render(tab_start + 9 * gui.scale, yy + 7 * gui.scale, indicator_colour)
-
             #else:
-            ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
 
+            # Draw pin indicator/toggle
+            if draw_pin_indicator:
+                ddt.rect_r((tab_start + 10 * gui.scale, yy + 8 * gui.scale, 6 * gui.scale, 6 * gui.scale), indicator_colour, True)
+
+
+            # # Draw indicator playing track from this playlist
             # if i == pctl.active_playlist_playing:
-            #     ddt.rect_r((tab_start + tab_width - 2 * gui.scale, yy, 13, self.tab_h - self.indicate_w),
-            #                colours.playlist_panel_background, True)
+            #     ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
+            #                colours.title_playing, True)
 
+            # Draw indicator playing track from this playlist
+
+            if not prefs.tabs_on_top:
+                if i == pctl.active_playlist_playing:
+
+                    indicator_colour = colours.title_playing
+                    if colours.lm:
+                        indicator_colour = colours.seek_bar_fill
+
+                    ddt.rect_r((tab_start + 0 - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w),
+                               indicator_colour, True)
+
+
+            # If mouse over...
             if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))):
-                if quick_drag:
 
+                # Draw indicator for dragging tracks
+                if quick_drag:
                     ddt.rect_r((tab_start + tab_width - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 200, 180, 255], True)
 
-                # Draw tab move indicators
+                # Draw indicators for moving tab
                 if self.drag and i != self.drag_on:
                     if key_shift_down:
                         ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 160, 200, 255], True)
@@ -18150,6 +18200,7 @@ class PlaylistBox:
 
             yy += self.tab_h + self.gap
 
+
         # Create new playlist if drag in blank space after tabs
         rect = (x, yy, w - 10 * gui.scale, h - (yy - y))
         fields.add(rect)
@@ -18162,14 +18213,20 @@ class PlaylistBox:
             if right_click:
                 extra_tab_menu.activate(pctl.active_playlist_viewing)
 
-
+            # Move tab to end playlist if dragged past end
             if self.drag:
                 if mouse_up:
-                    gen_dupe(self.drag_on)
+
+                    # If drag from top bar to side panel, make hidden
+                    if self.drag_source == 0:
+                        pctl.multi_playlist[self.drag_on][8] = True
+
+                    move_playlist(self.drag_on, i)
+                    gui.update += 2
                     self.drag = False
                 else:
                     ddt.rect_r((tab_start, yy, tab_width, self.indicate_w),
-                               [255, 180, 80, 255], True)
+                               [80, 160, 200, 255], True)
 
 
 playlist_box = PlaylistBox()
@@ -18538,7 +18595,7 @@ class MetaBox:
                 gui.update += 1
 
 
-            tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics + "\n", 15, w - 30, True)
+            tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics + "\n", 15, w - 50 * gui.scale, True)
 
             oth = th
 
@@ -20269,7 +20326,8 @@ def save_state():
             prefs.auto_lyrics_checked,
             prefs.show_side_art,
             prefs.window_opacity,
-            prefs.gallery_single_click]
+            prefs.gallery_single_click,
+            prefs.tabs_on_top]
 
     #print(prefs.last_device + "-----")
 
@@ -21191,6 +21249,7 @@ while pctl.running:
 
             #plex.get_albums()
             #print(pctl.playing_object().misc)
+            prefs.tabs_on_top ^= True
 
             #show_message("Test error message 123", 'error', "hello text")
 
