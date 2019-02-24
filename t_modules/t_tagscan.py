@@ -169,9 +169,10 @@ class Flac:
                     # print(b)
 
                     if parse_mbids_from_vorbis(self, a, b.decode()):
-                        print("Found MBID data:")
-                        print(a)
-                        print(b)
+                        pass
+                        # print("Found MBID data:")
+                        # print(a)
+                        # print(b)
                     elif a == "genre":
                         self.genre = b.decode("utf-8")
                     elif a == 'cuesheet':
@@ -429,9 +430,10 @@ class Opus:
                     # print(b)  # Value
 
                     if parse_mbids_from_vorbis(self, a, b.decode()):
-                        print("Found MBID data:")
-                        print(a)
-                        print(b)
+                        pass
+                        # print("Found MBID data:")
+                        # print(a)
+                        # print(b)
 
                     elif a == "genre":
                         self.genre = b.decode("utf-8")
