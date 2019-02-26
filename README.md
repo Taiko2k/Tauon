@@ -41,10 +41,7 @@ For __Other Linux distributions__, a **Flatpak** package is available.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-   
-  > **To uninstall** run `flatpak uninstall com.github.taiko2k.tauonmb`
-
-  > **Upgrading note:** If you are upgrading from the old standalone flatpak package that was previously provided, make sure to uninstall it first, use `sudo flatpak uninstall com.github.taiko2k.tauonmb`. Default permissions have changed, if some functions no longer work, see [Flatpak Permissions](https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions).
+  > **Upgrading note:** If you are upgrading from the old standalone flatpak package that was previously provided, make sure to uninstall it first, use `sudo flatpak uninstall com.github.taiko2k.tauonmb`. Default permissions are now more restricted, if some functions no longer work, see [Flatpak Permissions](https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions).
 
 
 ___
