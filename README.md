@@ -37,17 +37,15 @@ Designed to be simple and streamlined while putting the user in control of their
 
 For __Arch Linux__ based distros, install is avaliable from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
 
-For __Other Linux distributions__, a standalone **Flatpak** package is available.
+For __Other Linux distributions__, a **Flatpak** package is available.
 
- - After downloading *tauon.flatpak* from lastest [release](https://github.com/Taiko2k/tauonmb/releases):    
+<a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-     - Install using: `sudo flatpak install tauon.flatpak`
+   
+  > **To uninstall** run `flatpak uninstall com.github.taiko2k.tauonmb`
 
-     - To uninstall run: `sudo flatpak uninstall com.github.taiko2k.tauonmb`
+  > **Upgrading note:** If you are upgrading from the old standalone flatpak package that was previously provided, make sure to uninstall it first, use `sudo flatpak uninstall com.github.taiko2k.tauonmb`. Default permissions have changed, if some functions no longer work, see [Flatpak Permissions](https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions).
 
-     >**Note:** This standalone Flatpak package won't auto update. You'll need to check back here for updates.
-
-     >**Troubleshooting:** If you're having issues installing, try make sure you have installed and configured Flatpak for your distro as described on https://flatpak.org/setup/. Make sure you have the flathub repo added using `flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo` as this is needed to download the runtimes.
 
 ___
 
