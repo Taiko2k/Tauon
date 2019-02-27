@@ -23,7 +23,7 @@
 159,175,255		folder title
 
 25,25,25,0		playing highlight
-38,38,38,255		select highlight
+120,120,120,33		select highlight
 255,195,50		gallery highlight
 
 25,25,25		buttons off

@@ -35,8 +35,8 @@
 120,120,120		folder title 
 #8,250,134
 
-255,255,255,4		playing highlight
-255,255,255,5		select highlight
+255,255,255,5		playing highlight
+255,255,255,6		select highlight
 255,107,107		gallery highlight
 
 #-Bottom panel------
