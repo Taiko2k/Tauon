@@ -2,17 +2,18 @@
 Changelog-------------------------------------
 
 v3.7.1
-   - todo
-     - tweak themes
+
+ - Added mini mode
  - Added option to disable tabs on top panel
  - Added keyboard shortcut for adding to queue (ctrl + q)
  - Added support for user folder themes
- - Moved two sorting functions from main tab menu into 'sort' sub menu
  - Tweaked playing highlight in some themes
  - Tweaked tab dragging to toggle hidden if dragged between top or side panel
  - Changed tab drag to end function to move instead of duplicate
  - Fixed image menu incorrectly showing items as greyed
  - Fixed PLEX scan status text persisting if failed
+ - Fixed crash on F12 press
+ - Removed F10 to toggle decorations
 
 v3.7.0
 

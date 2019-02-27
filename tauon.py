@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Tauon Music Box
@@ -35,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.7.0"
+t_version = "v 3.7.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -332,8 +333,6 @@ vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
-
-GUI_Mode = 1  # For possible future skins, maybe
 
 worker_save_state = False
 
@@ -912,6 +911,13 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.rename_playlist_box = False
         self.queue_frame_draw = None  # Set when need draw frame later
 
+        self.mode = 1
+
+        self.save_position = [0, 0]
+
+        self.window_control_hit_area_w = 60 * self.scale
+        self.window_control_hit_area_h = 30 * self.scale
+
 gui = GuiVar()
 
 
@@ -1007,6 +1013,7 @@ class Input:    # Used to keep track of button states (or should be)
     def __init__(self):
 
         self.mouse_click = False
+        # self.right_click = False
         self.level_2_enter = False
         self.key_return_press = False
 
@@ -4573,6 +4580,51 @@ class GStats:
 
 stats_gen = GStats()
 
+
+def draw_window_tools():
+
+    global mouse_down
+    global drag_mode
+
+    rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
+    fields.add(rect)
+
+    rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
+    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
+    fields.add(rect)
+    if coll(rect):
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
+        ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                   [160, 160, 160, 160], True)
+        if input.mouse_click or ab_click:
+            SDL_MinimizeWindow(t_window)
+            mouse_down = False
+            input.mouse_click = False
+            drag_mode = False
+    else:
+        ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
+                   [120, 120, 120, 45], True)
+
+    rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
+    ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), colours.window_buttons_bg, True)
+    fields.add(rect)
+    if coll(rect):
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg_over, True)
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
+        if input.mouse_click or ab_click:
+            pctl.running = False
+    else:
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
+
+    if not fullscreen and not gui.maximized and not gui.mode == 3:
+        corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
+
+        colour = [30, 30, 30, 255]
+        ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
+        ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
+        ddt.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
+        ddt.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
+
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
@@ -6190,6 +6242,7 @@ class AlbumArt():
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
             # print(IMG_GetError())
+
             c = SDL_CreateTextureFromSurface(renderer, s_image)
 
             tex_w = pointer(c_int(0))
@@ -15344,17 +15397,14 @@ class TopPanel:
         self.height = gui.panelY
         self.ty = 0
 
-        self.start_space_left = round(46 * gui.scale)  # 9
-        self.start_space_compact_left = 46 * gui.scale  # 25
+        self.start_space_left = round(46 * gui.scale)
+        self.start_space_compact_left = 46 * gui.scale
 
-        self.tab_text_font = fonts.tabs #211 # 211
+        self.tab_text_font = fonts.tabs
         self.tab_extra_width = round(17 * gui.scale)
         self.tab_text_start_space = 8 * gui.scale
         self.tab_text_y_offset = 7 * gui.scale
         self.tab_spacing = 0
-
-        # if gui.scale > 1:
-        #     self.tab_text_y_offset += 8
 
         self.ini_menu_space = 17 * gui.scale  # 17
         self.menu_space = 17 * gui.scale
@@ -15362,11 +15412,8 @@ class TopPanel:
 
         # ---
         self.space_left = 0
-        #playlist_box.drag = False  # !!
         self.tab_text_spaces = []
-        #playlist_box.drag_on = 0
         self.index_playing = -1
-        self.playing_title = ""
         self.drag_zone_start_x = 300 * gui.scale
 
         if gui.scale == 2:
@@ -15875,19 +15922,19 @@ class TopPanel:
 
 
         if status:
-            x += ddt.draw_text((x, y), text, bg, 11)
+            x += ddt.draw_text((x, y), text, bg, 311)
             # x += ddt.get_text_w(text, 11)
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
-            ddt.draw_text((x, y), text, [95, 110, 230, 255], 11) # [70, 85, 230, 255]
+            ddt.draw_text((x, y), text, [95, 110, 230, 255], 311) # [70, 85, 230, 255]
             x += ddt.get_text_w(text, 11) + 6 * gui.scale
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
             trunc = window_size[0] - x - 150 * gui.scale
             #text = trunc_line(text, 11, trunc)
-            ddt.draw_text((x, y), text, colours.grey(130), 11, max_w=trunc)
+            ddt.draw_text((x, y), text, colours.grey(130), 311, max_w=trunc)
             x += ddt.get_text_w(text, 11) + 6* gui.scale
 
             x += 7
@@ -16242,16 +16289,23 @@ class BottomBarType1:
             ddt.draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title, max_w=mx)
             
-            if (input.mouse_click or right_click) and coll((
-                        self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
-                if pctl.playing_state == 3:
-                    copy_to_clipboard(pctl.tag_meta)
-                    show_message("Text copied to clipboard")
-                    if input.mouse_click or right_click:
-                        input.mouse_click = False
-                        right_click = False
+        if (input.mouse_click or right_click) and coll((
+                    self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
+            if pctl.playing_state == 3:
+                copy_to_clipboard(pctl.tag_meta)
+                show_message("Text copied to clipboard")
+                if input.mouse_click or right_click:
+                    input.mouse_click = False
+                    right_click = False
+            else:
+                pctl.show_current()
+
+                if d_click_timer.get() < 0.3:
+                    set_mini_mode()
+                    gui.update += 1
+                    return
                 else:
-                    pctl.show_current()
+                    d_click_timer.set()
 
         # TIME----------------------
 
@@ -16332,7 +16386,7 @@ class BottomBarType1:
         # BUTTONS
         # bottom buttons
 
-        if GUI_Mode == 1:
+        if gui.mode == 1:
 
             # PLAY---
             buttons_x_offset = 0
@@ -16573,6 +16627,144 @@ class BottomBarType1:
 
 
 bottom_bar1 = BottomBarType1()
+
+
+class MiniMode:
+
+    def __init__(self):
+
+        self.save_position = None
+        self.was_borderless = True
+
+    def render(self):
+
+        w = window_size[0]
+        h = window_size[1]
+
+        y1 = w
+        h1 = h - y1
+
+        # Draw background
+        ddt.rect_r((0, 0, w, h), [25, 25, 25, 255], True)
+
+        # Play / Pause when right clicking below art
+        if right_click and mouse_position[1] > y1:
+            pctl.play_pause()
+
+        track = pctl.playing_object()
+
+        if track is not None:
+
+            # Render album art
+            album_art_gen.display(pctl.track_queue[pctl.queue_step],
+                                  (0, 0), (w, w))
+
+            # Double click bottom text to return to full window
+            text_hit_area = (40 * gui.scale, y1 + 4, 260 * gui.scale, 50 * gui.scale)
+            if coll(text_hit_area):
+                if input.mouse_click:
+                    if d_click_timer.get() < 0.3:
+                        restore_full_mode()
+                        gui.update += 1
+                        return
+                    else:
+                        d_click_timer.set()
+
+
+            # Draw title texts
+            line1 = track.artist
+            line2 = track.title
+            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(235), 314)
+            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(235), 214)
+
+            # Calculate seek bar position
+            seek_w = 240 * gui.scale
+            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
+
+            # Test click to seek
+            if input.mouse_click and coll(seek_r):
+
+                click_x = mouse_position[0]
+                if click_x > seek_r[0] + seek_r[2]:
+                    click_x = seek_r[0] + seek_r[2]
+                if click_x < seek_r[0]:
+                    click_x = seek_r[0]
+                click_x -= seek_r[0]
+                seek = click_x / seek_r[2]
+
+                pctl.seek_decimal(seek)
+
+            # Draw progress bar background
+            ddt.rect_r(seek_r, [60, 60, 60, 255], True)
+
+            # Calculate and draw bar foreground
+            progress_w = 0
+            if pctl.playing_length > 1:
+                progress_w = pctl.playing_time * seek_w / pctl.playing_length
+            seek_r[2] = progress_w
+            ddt.rect_r(seek_r, [180, 180, 180, 255], True)
+
+
+        left_area = (1, y1, seek_r[0] - 1, h1)
+        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 1, h1)
+
+        # Forward and back clicking
+        if input.mouse_click:
+            if coll(left_area):
+                pctl.back()
+            if coll(right_area):
+                pctl.advance()
+
+
+        # Show exit/min buttons when mosue over
+        tool_rect = (window_size[0] - 90 * gui.scale, 2, 88 * gui.scale, 45 * gui.scale)
+        fields.add(tool_rect)
+        if coll(tool_rect):
+            draw_window_tools()
+
+
+mini_mode = MiniMode()
+
+
+def set_mini_mode():
+
+    gui.mode = 3
+
+    i_y = pointer(c_int(0))
+    i_x = pointer(c_int(0))
+    SDL_GetWindowPosition(t_window, i_x, i_y)
+    gui.save_position = (i_x.contents.value, i_y.contents.value)
+
+    mini_mode.was_borderless = draw_border
+    SDL_SetWindowBordered(t_window, False)
+
+    window_size[0] = 350
+    window_size[1] = 430
+    SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
+    if mini_mode.save_position:
+        SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
+
+
+def restore_full_mode():
+
+    gui.mode = 1
+
+    i_y = pointer(c_int(0))
+    i_x = pointer(c_int(0))
+    SDL_GetWindowPosition(t_window, i_x, i_y)
+    mini_mode.save_position = [i_x.contents.value, i_y.contents.value]
+
+    if not mini_mode.was_borderless:
+        SDL_SetWindowBordered(t_window, True)
+
+    window_size[0] = gui.save_size[0]
+    window_size[1] = gui.save_size[1]
+    SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
+    SDL_SetWindowMinimumSize(t_window, 560, 330)
+    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
 
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
@@ -16946,7 +17138,6 @@ class StandardPlaylist:
                     if len(line) < 6 and "CD" in line:
                         line = n_track.album
 
-
                     date = ""
                     if prefs.append_date and re.match('.*([1-3][0-9]{3})', n_track.date):
                         date = "(" + n_track.date + ")"
@@ -17254,8 +17445,6 @@ class StandardPlaylist:
             if (input.mouse_click and key_shift_down is False and line_hit or
                         playlist_selected == p_track):
 
-
-
                 playlist_selected = p_track
                 this_line_selected = True
 
@@ -17378,6 +17567,7 @@ class StandardPlaylist:
 
                 line_render(n_track, p_track, gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w,
                             this_line_playing, album_fade, left + inset_left, inset_width, 1, gui.playlist_top + gui.playlist_row_height * w)
+
             else:
                 # NEE ---------------------------------------------------------
 
@@ -19802,6 +19992,13 @@ def display_friend_heart(x, yy, name):
 
 def hit_callback(win, point, data):
 
+    if gui.mode == 3:
+        if point.contents.y < window_size[0]:
+            if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[0] - gui.window_control_hit_area_w:
+                return SDL_HITTEST_NORMAL
+            return SDL_HITTEST_DRAGGABLE
+
+
     if not gui.maximized:
         if point.contents.y < 0 and point.contents.x > window_size[0]:
             return SDL_HITTEST_RESIZE_TOPRIGHT
@@ -21030,13 +21227,8 @@ while pctl.running:
             SDL_SetWindowFullscreen(t_window, 0)
 
         if key_F10:
-            if d_border == 0:
-                d_border = 1
-                SDL_SetWindowBordered(t_window, SDL_TRUE)
 
-            elif d_border == 1:
-                d_border = 0
-                SDL_SetWindowBordered(t_window, SDL_FALSE)
+            pass
 
         if key_F8:
             show_message("This doesn't do anything")
@@ -21224,11 +21416,13 @@ while pctl.running:
 
         if key_F12:
 
-            text = copy_from_clipboard()
-            if text:
-                auto_download.link_queue.append(text)
-            else:
-                show_message("Autodownload Error", 'info', 'Clipboard has no link.')
+            pass
+
+            # text = copy_from_clipboard()
+            # if text:
+            #     auto_download.link_queue.append(text)
+            # else:
+            #     show_message("Autodownload Error", 'info', 'Clipboard has no link.')
 
         if key_ctrl_down and key_z_press:
             undo.undo()
@@ -21249,7 +21443,6 @@ while pctl.running:
 
             #plex.get_albums()
             #print(pctl.playing_object().misc)
-            prefs.tabs_on_top ^= True
 
             #show_message("Test error message 123", 'error', "hello text")
 
@@ -21709,7 +21902,7 @@ while pctl.running:
         fields.clear()
         gui.cursor_want = 0
 
-        if GUI_Mode == 1 or GUI_Mode == 2:
+        if gui.mode == 1 or gui.mode == 2:
 
             ddt.text_background_colour = colours.playlist_panel_background
 
@@ -22902,7 +23095,7 @@ while pctl.running:
             # NEW TOP BAR
             # C-TBR
 
-            if GUI_Mode == 1:
+            if gui.mode == 1:
                 top_panel.render()
 
             # RENDER EXTRA FRAME DOUBLE
@@ -23929,10 +24122,12 @@ while pctl.running:
                         if album_mode:
                             goto_album(pctl.playlist_playing_position)
 
-        elif GUI_Mode == 3:
 
-            album_art_gen.display(pctl.track_queue[pctl.queue_step],
-                                  (0, 0), (window_size[1], window_size[1]))
+        elif gui.mode == 3:
+
+            mini_mode.render()
+            gui.update -= 1  # why is this needed?
+
 
         # Render Menus-------------------------------
         for instance in Menu.instances:
@@ -23943,10 +24138,7 @@ while pctl.running:
 
         tool_tip.render()
 
-
         if gui.cursor_is != gui.cursor_want:
-
-            # if not (gui.cursor_is == 1 and gui.cursor_want == 0 and mouse_down):
 
             gui.cursor_is = gui.cursor_want
 
@@ -23959,47 +24151,8 @@ while pctl.running:
             elif gui.cursor_is == 3:
                 SDL_SetCursor(cursor_hand)
 
-        if draw_border:
-
-            rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
-            fields.add(rect)
-
-            rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
-            fields.add(rect)
-            if coll(rect):
-                ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
-                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                          [160, 160, 160, 160], True)
-                if input.mouse_click or ab_click:
-                    SDL_MinimizeWindow(t_window)
-                    mouse_down = False
-                    input.mouse_click = False
-                    drag_mode = False
-            else:
-                ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                          [120, 120, 120, 45], True)
-
-            rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
-            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), colours.window_buttons_bg, True)
-            fields.add(rect)
-            if coll(rect):
-                ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg_over, True)
-                top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
-                if input.mouse_click or ab_click:
-                    pctl.running = False
-            else:
-                top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
-
-            if not fullscreen and not gui.maximized:
-
-                corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
-
-                colour = [30, 30, 30, 255]
-                ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
-                ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
-                ddt.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
-                ddt.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
+        if draw_border and not gui.mode == 3:
+            draw_window_tools()
 
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
@@ -24029,11 +24182,11 @@ while pctl.running:
             ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
             ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
+
         gui.update -= 1
         if gui.update > 1:
             gui.update = 1
         gui.present = True
-
 
 
         SDL_SetRenderTarget(renderer, None)
