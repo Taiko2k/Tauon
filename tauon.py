@@ -692,6 +692,10 @@ class Prefs:    # Used to hold any kind of settings
         self.tabs_on_top = True
         self.desktop = desktop
 
+        self.dc_device = False  # (BASS) Disconnect device on pause
+        if desktop == "KDE":
+            self.dc_device = True
+
 
 prefs = Prefs()
 
@@ -1814,13 +1818,16 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                 result = p.split('=')[1]
                 prefs.plex_servername = result
 
-            if 'bg-opacity' in p:
+            if 'bg-opacity=' in p:
                 result = p.split('=')[1]
                 try:
                     if 0 < int(result) < 101:
                         prefs.custom_bg_opacity = int(result)
                 except:
                     print("BG opacity setting error")
+
+            if 'dc-device-on-pause' in p:
+                prefs.dc_device = True
 
 else:
     print("Warning: Missing config file")
@@ -14960,7 +14967,10 @@ class Over:
 
             ddt.draw_text((x, y + 1 * gui.scale), "Additional testing", colours.grey(90), 13)
             ddt.draw_text((x +  120 * gui.scale, y + 1 * gui.scale), "Tyzmodo", colours.grey(220), 13)
+            ddt.draw_text((x + 220 * gui.scale, y + 1 * gui.scale), "C0rn3j", colours.grey(220), 13)
+
             ddt.draw_text((x +  120 * gui.scale, y + 21 * gui.scale), "Solarunit", colours.grey(220), 13)
+
 
         ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
@@ -16236,12 +16246,12 @@ class BottomBarType1:
         if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
                                                                                                      self.seek_bar_position + self.seek_bar_size):
 
-            if pctl.player_volume + (mouse_wheel * prefs.volume_wheel_increment) < 1:
+            pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment
+            if pctl.player_volume < 1:
                 pctl.player_volume = 0
-            elif pctl.player_volume + (mouse_wheel * prefs.volume_wheel_increment) > 100:
+            elif pctl.player_volume > 100:
                 pctl.player_volume = 100
-            else:
-                pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment
+
             pctl.player_volume = int(pctl.player_volume)
             pctl.set_volume()
 
@@ -16636,6 +16646,8 @@ class MiniMode:
 
         self.save_position = None
         self.was_borderless = True
+        self.volume_timer = Timer()
+        self.volume_timer.force_set(100)
 
     def render(self):
 
@@ -16647,10 +16659,24 @@ class MiniMode:
 
         # Draw background
         ddt.rect_r((0, 0, w, h), [25, 25, 25, 255], True)
+        ddt.text_background_colour = [25, 25, 25, 255]
 
         # Play / Pause when right clicking below art
         if right_click and mouse_position[1] > y1:
             pctl.play_pause()
+
+        # Volume change on scroll
+        if mouse_wheel != 0:
+            self.volume_timer.set()
+
+            pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment * 3
+            if pctl.player_volume < 1:
+                pctl.player_volume = 0
+            elif pctl.player_volume > 100:
+                pctl.player_volume = 100
+
+            pctl.player_volume = int(pctl.player_volume)
+            pctl.set_volume()
 
         track = pctl.playing_object()
 
@@ -16681,9 +16707,11 @@ class MiniMode:
             # Calculate seek bar position
             seek_w = 240 * gui.scale
             seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
+            seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
+
 
             # Test click to seek
-            if input.mouse_click and coll(seek_r):
+            if input.mouse_click and coll(seek_r_hit):
 
                 click_x = mouse_position[0]
                 if click_x > seek_r[0] + seek_r[2]:
@@ -16691,6 +16719,9 @@ class MiniMode:
                 if click_x < seek_r[0]:
                     click_x = seek_r[0]
                 click_x -= seek_r[0]
+
+                if click_x < 6 * gui.scale:
+                    click_x = 0
                 seek = click_x / seek_r[2]
 
                 pctl.seek_decimal(seek)
@@ -16702,12 +16733,73 @@ class MiniMode:
             progress_w = 0
             if pctl.playing_length > 1:
                 progress_w = pctl.playing_time * seek_w / pctl.playing_length
+            seek_colour = [180, 180, 180, 255]
             seek_r[2] = progress_w
-            ddt.rect_r(seek_r, [180, 180, 180, 255], True)
 
 
-        left_area = (1, y1, seek_r[0] - 1, h1)
-        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 1, h1)
+            if self.volume_timer.get() < 0.7:
+                progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
+                gui.update += 1
+                seek_colour = [180, 180, 180, 255]
+                seek_r[2] = progress_w
+                seek_r[0] += 2 * gui.scale
+                seek_r[1] += 2 * gui.scale
+                seek_r[3] -= 4 * gui.scale
+
+
+
+            ddt.rect_r(seek_r, seek_colour, True)
+
+
+        left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
+        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 1, 45 * gui.scale)
+
+
+        # Shuffle
+        shuffle_area = (seek_r[0] + seek_w, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
+        fields.add(shuffle_area)
+        # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
+
+        if coll(shuffle_area):
+
+            if input.mouse_click:
+                pctl.random_mode ^= True
+
+            sx = seek_r[0] + seek_w + 8 * gui.scale
+            sy = seek_r[1] - 1 * gui.scale
+
+            colour = [60, 60, 60, 255]
+            if pctl.random_mode:
+                colour = [235, 235, 235, 255]
+
+            ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour, True)
+            sy += 4 * gui.scale
+            ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour, True)
+
+
+        # Repeat
+        shuffle_area = (2, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
+        fields.add(shuffle_area)
+
+        if coll(shuffle_area):
+
+            if input.mouse_click:
+                pctl.repeat_mode ^= True
+
+            sx = seek_r[0] - 39 * gui.scale
+            sy = seek_r[1] - 1 * gui.scale
+
+            colour = [60, 60, 60, 255]
+            if pctl.repeat_mode:
+                colour = [235, 235, 235, 255]
+
+            w = 2 * gui.scale
+            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, w), colour, True)
+            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, w), colour, True)
+            ddt.rect_a((sx + 30 * gui.scale - w, sy), (w, 6 * gui.scale), colour, True)
+
+
+
 
         # Forward and back clicking
         if input.mouse_click:
@@ -16729,6 +16821,9 @@ mini_mode = MiniMode()
 
 def set_mini_mode():
 
+    if gui.maximized:
+        return
+
     gui.mode = 3
 
     i_y = pointer(c_int(0))
@@ -16742,15 +16837,17 @@ def set_mini_mode():
     window_size[0] = 350
     window_size[1] = 430
     SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+    SDL_SetWindowResizable(t_window, False)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
     if mini_mode.save_position:
         SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
 
 
-def restore_full_mode():
+restore_ignore_timer = Timer()
+restore_ignore_timer.force_set(100)
 
-    gui.mode = 1
+def restore_full_mode():
 
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
@@ -16764,7 +16861,12 @@ def restore_full_mode():
     window_size[1] = gui.save_size[1]
     SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
     SDL_SetWindowMinimumSize(t_window, 560, 330)
+    SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
+    restore_ignore_timer.set()  # Hacky
+
+    gui.mode = 1
 
     global mouse_down
     mouse_down = False
@@ -18222,7 +18324,7 @@ class PlaylistBox:
                     # else:
 
                     # Move playlist tab
-                    if i != self.drag_on:
+                    if i != self.drag_on and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                         if key_shift_down:
                             pctl.multi_playlist[i][2] += pctl.multi_playlist[self.drag_on][2]
                             delete_playlist(self.drag_on)
@@ -18366,7 +18468,7 @@ class PlaylistBox:
                     ddt.rect_r((tab_start + tab_width - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 200, 180, 255], True)
 
                 # Draw indicators for moving tab
-                if self.drag and i != self.drag_on:
+                if self.drag and i != self.drag_on and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                     if key_shift_down:
                         ddt.rect_r((tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 160, 200, 255], True)
                     else:
@@ -20002,6 +20104,7 @@ def hit_callback(win, point, data):
                 return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
 
+        return SDL_HITTEST_NORMAL
 
     if not gui.maximized:
         if point.contents.y < 0 and point.contents.x > window_size[0]:
@@ -20165,188 +20268,191 @@ def update_layout_do():
     global renderer
 
     #print("TEST")
-    if not gui.maximized:
-        gui.save_size = copy.deepcopy(window_size)
 
 
-    bottom_bar1.update()
+    if gui.mode == 1:
 
-    # if system != 'windows':
-    #     if draw_border:
-    #         gui.panelY = 30 * gui.scale + 3 * gui.scale
-    #         top_panel.ty = 3 * gui.scale
-    #     else:
-    #         gui.panelY = 30 * gui.scale
-    #         top_panel.ty = 0
+        if not gui.maximized:
+            gui.save_size = copy.deepcopy(window_size)
 
-    if gui.set_bar:
-        gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
-    else:
-        gui.playlist_top = gui.playlist_top_bk
+        bottom_bar1.update()
 
-    if gui.artist_info_panel:
-        gui.playlist_top += gui.artist_panel_height
+        # if system != 'windows':
+        #     if draw_border:
+        #         gui.panelY = 30 * gui.scale + 3 * gui.scale
+        #         top_panel.ty = 3 * gui.scale
+        #     else:
+        #         gui.panelY = 30 * gui.scale
+        #         top_panel.ty = 0
 
-    gui.offset_extra = 0
-    if draw_border:
-        gui.offset_extra = 61 * gui.scale
-
-    global album_v_gap
-    if gui.gallery_show_text:
-        album_v_gap = 66 * gui.scale
-    else:
-        album_v_gap = 25 * gui.scale
-
-    gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
-
-    #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
-    gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
-    #gui.spec_x = window_size[0] - gui.offset_extra - 90
-
-    gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
-
-    gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-    gui.playlist_row_height = prefs.playlist_row_height
-    gui.playlist_text_offset = 0
-    gui.row_font_size = prefs.playlist_font_size  # 13
-    # gui.pl_text_real_height = ddt.get_text_w("Testあ9", gui.row_font_size, False, True)
-    # gui.pl_title_real_height = ddt.get_text_w("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
-    # gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
-    # # To improve
-    # if system == 'linux' and gui.scale == 1:
-    #     gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-    #     #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
-    # if system == 'windows':
-    #     gui.playlist_text_offset -= 1
-
-    gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
-    if gui.scale == 2:
-        gui.playlist_text_offset += 3
-    if gui.scale == 1.25:
-        gui.playlist_text_offset += 1
-
-    gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
-
-    # if gui.scale > 1:
-    #     #gui.playlist_text_offset += 17
-    #     #gui.playlist_row_height *= gui.scale
-    #     pass
-
-    gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
-
-
-
-    box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
-
-    if gui.art_aspect_ratio > 1.01:
-        gui.art_unlock_ratio = True
-        if gui.art_aspect_ratio > gui.art_max_ratio_lock:
-            gui.art_max_ratio_lock = gui.art_aspect_ratio
-
-
-
-    # print("Avaliabe: " + str(box_r))
-    elif box_r <= 1:
-        gui.art_unlock_ratio = False
-        gui.art_max_ratio_lock = 1
-
-    if side_drag and key_shift_down:
-        gui.art_unlock_ratio = True
-        gui.art_max_ratio_lock = 5
-
-    # Limit the right side panel width to height of area
-    if gui.rsp:
-        if album_mode:
-            pass
+        if gui.set_bar:
+            gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
         else:
+            gui.playlist_top = gui.playlist_top_bk
 
-            if not gui.art_unlock_ratio:
+        if gui.artist_info_panel:
+            gui.playlist_top += gui.artist_panel_height
 
-                if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
-                    gui.rspw = window_size[1] - gui.panelY - gui.panelBY
+        gui.offset_extra = 0
+        if draw_border:
+            gui.offset_extra = 61 * gui.scale
 
+        global album_v_gap
+        if gui.gallery_show_text:
+            album_v_gap = 66 * gui.scale
+        else:
+            album_v_gap = 25 * gui.scale
 
-    # Determine how wide the playlist need to be
-    gui.plw = window_size[0]
-    gui.playlist_left = 0
-    if gui.lsp:
-        #if gui.plw > gui.lspw:
-        gui.plw -= gui.lspw
-        gui.playlist_left = gui.lspw
-    if gui.rsp:
-        gui.plw -= gui.rspw
+        gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
+        #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
+        gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
+        #gui.spec_x = window_size[0] - gui.offset_extra - 90
 
-    # Shrink side panel if playlist gets too small
-    if window_size[0] > 100:
+        gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
 
-        if gui.plw < 300:
-            if gui.rsp:
+        gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+        gui.playlist_row_height = prefs.playlist_row_height
+        gui.playlist_text_offset = 0
+        gui.row_font_size = prefs.playlist_font_size  # 13
+        # gui.pl_text_real_height = ddt.get_text_w("Testあ9", gui.row_font_size, False, True)
+        # gui.pl_title_real_height = ddt.get_text_w("Testあ9", gui.row_font_size + gui.pl_title_font_offset, False, True)
+        # gui.playlist_text_offset = (int((gui.playlist_row_height - gui.pl_text_real_height) / 2))
+        # # To improve
+        # if system == 'linux' and gui.scale == 1:
+        #     gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+        #     #gui.playlist_text_offset = int(round((gui.playlist_row_height + 0.5 - 0) / 2)) - 11 #* gui.scale
+        # if system == 'windows':
+        #     gui.playlist_text_offset -= 1
 
-                l = 0
-                if gui.lsp:
-                    l = gui.lspw
+        gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
+        if gui.scale == 2:
+            gui.playlist_text_offset += 3
+        if gui.scale == 1.25:
+            gui.playlist_text_offset += 1
 
-                gui.rspw = max(window_size[0] - l - 300, 110)
-                if album_mode:
-                    gui.pref_gallery_w = gui.rspw
+        gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
+        # if gui.scale > 1:
+        #     #gui.playlist_text_offset += 17
+        #     #gui.playlist_row_height *= gui.scale
+        #     pass
 
-    # Determine how wide the playlist need to be (again)
-    gui.plw = window_size[0]
-    gui.playlist_left = 0
-    if gui.lsp:
-        #if gui.plw > gui.lspw:
-        gui.plw -= gui.lspw
-        gui.playlist_left = gui.lspw
-    if gui.rsp:
-        gui.plw -= gui.rspw
-
-
-
-    if window_size[0] < 630 * gui.scale:
-        gui.compact_bar = True
-    else:
-        gui.compact_bar = False
-
-    gui.pl_update = 1
-
-
-    if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-
-        while window_size[0] > gui.max_window_tex:
-            gui.max_window_tex += 1000
-        while window_size[1] > gui.max_window_tex:
-            gui.max_window_tex += 1000
+        gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
 
 
-        gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 
-        SDL_DestroyTexture(gui.ttext)
-        SDL_RenderClear(renderer)
-        gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
-                                      gui.max_window_tex)
+        box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
 
-        SDL_SetRenderTarget(renderer, gui.ttext)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-        SDL_RenderClear(renderer)
-        SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+        if gui.art_aspect_ratio > 1.01:
+            gui.art_unlock_ratio = True
+            if gui.art_aspect_ratio > gui.art_max_ratio_lock:
+                gui.art_max_ratio_lock = gui.art_aspect_ratio
 
-        SDL_SetRenderTarget(renderer, gui.main_texture)
 
-        SDL_RenderClear(renderer)
 
-        SDL_DestroyTexture(gui.main_texture)
-        gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
-                                             gui.max_window_tex)
+        # print("Avaliabe: " + str(box_r))
+        elif box_r <= 1:
+            gui.art_unlock_ratio = False
+            gui.art_max_ratio_lock = 1
 
-        SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_BLEND)
-        SDL_SetRenderTarget(renderer, gui.main_texture)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-        SDL_SetRenderTarget(renderer, gui.main_texture)
-        SDL_RenderClear(renderer)
+        if side_drag and key_shift_down:
+            gui.art_unlock_ratio = True
+            gui.art_max_ratio_lock = 5
 
-    update_set()
+        # Limit the right side panel width to height of area
+        if gui.rsp:
+            if album_mode:
+                pass
+            else:
+
+                if not gui.art_unlock_ratio:
+
+                    if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
+                        gui.rspw = window_size[1] - gui.panelY - gui.panelBY
+
+
+        # Determine how wide the playlist need to be
+        gui.plw = window_size[0]
+        gui.playlist_left = 0
+        if gui.lsp:
+            #if gui.plw > gui.lspw:
+            gui.plw -= gui.lspw
+            gui.playlist_left = gui.lspw
+        if gui.rsp:
+            gui.plw -= gui.rspw
+
+
+        # Shrink side panel if playlist gets too small
+        if window_size[0] > 100:
+
+            if gui.plw < 300:
+                if gui.rsp:
+
+                    l = 0
+                    if gui.lsp:
+                        l = gui.lspw
+
+                    gui.rspw = max(window_size[0] - l - 300, 110)
+                    if album_mode:
+                        gui.pref_gallery_w = gui.rspw
+
+
+        # Determine how wide the playlist need to be (again)
+        gui.plw = window_size[0]
+        gui.playlist_left = 0
+        if gui.lsp:
+            #if gui.plw > gui.lspw:
+            gui.plw -= gui.lspw
+            gui.playlist_left = gui.lspw
+        if gui.rsp:
+            gui.plw -= gui.rspw
+
+
+
+        if window_size[0] < 630 * gui.scale:
+            gui.compact_bar = True
+        else:
+            gui.compact_bar = False
+
+        gui.pl_update = 1
+
+
+        if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+
+            while window_size[0] > gui.max_window_tex:
+                gui.max_window_tex += 1000
+            while window_size[1] > gui.max_window_tex:
+                gui.max_window_tex += 1000
+
+
+            gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+
+            SDL_DestroyTexture(gui.ttext)
+            SDL_RenderClear(renderer)
+            gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                          gui.max_window_tex)
+
+            SDL_SetRenderTarget(renderer, gui.ttext)
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+            SDL_RenderClear(renderer)
+            SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+
+            SDL_RenderClear(renderer)
+
+            SDL_DestroyTexture(gui.main_texture)
+            gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                                 gui.max_window_tex)
+
+            SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_BLEND)
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+            SDL_RenderClear(renderer)
+
+        update_set()
 
 print("Flushing render target...")
 
@@ -21016,11 +21122,12 @@ while pctl.running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_RESIZED:
-                gui.update = 2
 
-                window_size[0] = event.window.data1
-                window_size[1] = event.window.data2
-                update_layout = True
+                if restore_ignore_timer.get() > 1:  # Hacky
+                    gui.update = 2
+                    window_size[0] = event.window.data1
+                    window_size[1] = event.window.data2
+                    update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
 
@@ -21887,9 +21994,11 @@ while pctl.running:
     # GUI DRAWING------
     # print(gui.update)
     # print(gui.lowered)
+    if gui.mode == 3:
+        gui.pl_update = 0
+
     if gui.pl_update and not gui.update:
         gui.update = 1
-
 
     if gui.update > 0 and gui.lowered != True and not resize_mode:
         if gui.update > 2:
@@ -24130,9 +24239,7 @@ while pctl.running:
 
 
         elif gui.mode == 3:
-
             mini_mode.render()
-            gui.update -= 1  # why is this needed?
 
 
         # Render Menus-------------------------------
@@ -24173,7 +24280,7 @@ while pctl.running:
             gui.update += 1
 
         # Drag pl tab next to cursor
-        if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10):
+        if (playlist_box.drag) and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = (0, 0)
             ddt.rect_r((i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225], True)
