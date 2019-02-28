@@ -14,6 +14,9 @@ plex-servname=
 
 #force-mono (libbass only)
 
+### Disconnect from audio device when paused/stopped (Always enabled when KDE detected)
+#dc-device-on-pause
+
 ### Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
 
 #log-volume-scale
