@@ -319,43 +319,41 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b + b'/lib/libbasshls.so', 0)
 
 
-    bass_ready = False
+
 
     BASS_CONFIG_DEV_DEFAULT = 36
     BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, True)
 
-    a = 1
-    # if system == "linux":
-    #     a = 1
     d_info = BASS_DEVICEINFO()
-    while True:
-        if not BASS_GetDeviceInfo(a, d_info):
-            break
-        name = d_info.name.decode('utf-8', 'ignore')
-        flags = d_info.flags
-        enabled = BASS_DEVICE_ENABLED & flags
-        default = BASS_DEVICE_DEFAULT & flags
-        current = BASS_DEVICE_INIT & flags
 
-        if name != "" and name == prefs.last_device:
-            BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
-            pctl.set_device = a
-            print("Set output device as: " + name)
-            bass_ready = True
-
-        # print((name, enabled, default, current))
-        if current > 0:
-            pctl.set_device = a
-        pctl.bass_devices.append((name, enabled, default, current, a))
-        # print(d_info.name.decode('utf-8'))
-        a += 1
-
-    bass_init_success = False
-    if not bass_ready:
-        bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
-        print("Using default sound device")
-    if bass_init_success == True:
-        print("Bass library initialised")
+    # a = 1
+    # while True:
+    #     if not BASS_GetDeviceInfo(a, d_info):
+    #         break
+    #     name = d_info.name.decode('utf-8', 'ignore')
+    #     flags = d_info.flags
+    #     enabled = BASS_DEVICE_ENABLED & flags
+    #     default = BASS_DEVICE_DEFAULT & flags
+    #     current = BASS_DEVICE_INIT & flags
+    #
+    #     if name != "" and name == prefs.last_device:
+    #         BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
+    #         pctl.set_device = a
+    #         print("Set output device as: " + name)
+    #         bass_ready = True
+    #
+    #     # print((name, enabled, default, current))
+    #     if current > 0:
+    #         pctl.set_device = a
+    #     pctl.bass_devices.append((name, enabled, default, current, a))
+    #     a += 1
+    #
+    # bass_init_success = False
+    # if not bass_ready:
+    #     bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
+    #     print("Using default sound device")
+    # if bass_init_success == True:
+    #     print("Bass library initialised")
 
     if prefs.log_vol:
         BASS_SetConfig(7, True)
@@ -423,6 +421,47 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.save_temp = ""
             self.alt = "a"
             self.url = ""
+            self.init = False
+            self.old_target = ""
+
+        def try_init(self):
+
+            if not self.init:
+                a = 1
+                bass_ready = False
+                while True:
+                    if not BASS_GetDeviceInfo(a, d_info):
+                        break
+                    name = d_info.name.decode('utf-8', 'ignore')
+                    flags = d_info.flags
+                    enabled = BASS_DEVICE_ENABLED & flags
+                    default = BASS_DEVICE_DEFAULT & flags
+                    current = BASS_DEVICE_INIT & flags
+
+                    if name != "" and name == prefs.last_device:
+                        BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
+                        pctl.set_device = a
+                        print("Set output device as: " + name)
+                        bass_ready = True
+
+                    # print((name, enabled, default, current))
+                    if current > 0:
+                        pctl.set_device = a
+                    pctl.bass_devices.append((name, enabled, default, current, a))
+                    a += 1
+
+                bass_init_success = False
+                if not bass_ready:
+                    bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
+                    print("Using default sound device")
+                if bass_init_success == True:
+                    print("Bass library initialised")
+                self.init = True
+
+        def try_unload(self):
+            if self.init and not pctl.broadcast_active:
+                BASS_Free()
+                self.init = False
 
         def seek(self):
 
@@ -468,19 +507,28 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             BASS_StreamFree(self.decode_channel)
             self.channel = None
             self.state = 'stopped'
+            # BASS_Free()
+
+            if prefs.desktop == "KDE":
+                self.try_unload()
+
 
         def set_volume(self, volume):
 
             if self.channel is None: return
             BASS_ChannelSlideAttribute(self.channel, 2, volume, prefs.change_volume_fade_time)
 
-        def pause(self):
+        def pause(self, force_suspend=False):
 
             if self.channel is None:
                 return
 
             if self.state == 'stopped':
                 print("Player already stopped")
+                return
+
+            if self.state == 'suspend':
+                self.start(resume=True)
                 return
 
             if self.state == 'playing':
@@ -490,6 +538,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     time.sleep(prefs.pause_fade_time / 1000)
                 BASS_ChannelPause(self.channel)
                 self.state = 'paused'
+
+                if prefs.desktop == "KDE" or force_suspend:
+                    self.try_unload()
+                    if not self.init:
+                        self.state = 'suspend'
 
             elif self.state == 'paused':
 
@@ -516,7 +569,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         f.write(chunk)
             self.dl_ready = True
 
-        def start(self, instant=False):
+        def start(self, instant=False, resume=False):
+
+            self.try_init()
 
             print("Open file...")
 
@@ -572,7 +627,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             else:
 
                 # Get the target filepath and convert to bytes
-                target = pctl.target_open.encode('utf-8')
+                if self.state == "suspend":
+                    target = self.old_target
+                else:
+                    self.old_target = pctl.target_open.encode('utf-8')
+                    target = self.old_target
 
                 # Check if the file exists, mark it as missing if not
                 if os.path.isfile(pctl.target_object.fullpath):
@@ -608,7 +667,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_StreamFree(self.channel)
                 self.state = 'stopped'
 
-            if self.state == 'stopped':
+            if self.state == 'stopped' or self.state == "suspend":
 
                 # Create Mixer
                 mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
@@ -622,19 +681,29 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print(BASS_ErrorGetCode())
 
                 # Set volume
-                BASS_ChannelSetAttribute(mixer, 2, pctl.player_volume / 100)
+                if self.state == 'suspend' and prefs.use_pause_fade:
+                    BASS_ChannelSetAttribute(mixer, 2, 0)
+                else:
+                    BASS_ChannelSetAttribute(mixer, 2, pctl.player_volume / 100)
 
                 # Set replay gain
                 replay_gain(mixer)
 
-                # Start playing
-                BASS_ChannelPlay(mixer, False)
                 # print("Play from rest")
 
                 # Set the starting position
-                if pctl.start_time > 0 or pctl.jump_time > 0:
-                    bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time + pctl.jump_time)
+                if pctl.start_time > 0 or pctl.jump_time > 0 or self.state == 'suspend':
+                    target_time = pctl.start_time + pctl.jump_time
+                    if resume:
+                        target_time += pctl.playing_time
+                    bytes_position = BASS_ChannelSeconds2Bytes(new_handle, target_time)
                     BASS_ChannelSetPosition(new_handle, bytes_position, 0)
+
+                if self.state == 'suspend' and prefs.use_pause_fade:
+                    BASS_ChannelSlideAttribute(mixer, 2, pctl.player_volume / 100, prefs.pause_fade_time)
+
+                # Start playing
+                BASS_ChannelPlay(mixer, False)
 
                 self.channel = mixer
                 self.decode_channel = new_handle
@@ -1081,10 +1150,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             elif command == "setdev":
 
-                BASS_Free()
-                bass_player.state = 'stopped'
-                pctl.playing_state = 0
-                pctl.playing_time = 0
+                bass_player.pause(force_suspend=True)
+                # BASS_Free()
+                # bass_player.state = 'stopped'
+                # pctl.playing_state = 0
+                # pctl.playing_time = 0
                 print("Changing output device")
                 print(BASS_Init(pctl.set_device, 48000, init_flag, gui.window_id, 0))
                 result = BASS_SetDevice(pctl.set_device)
@@ -1093,12 +1163,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     gui.show_message("Device init failed. Try again maybe?", 'error')
                 else:
                     gui.show_message("Set device", 'done', prefs.last_device)
+                bass_player.try_unload()
+
+                if bass_player.state == 'suspend':
+                    bass_player.pause()
 
             # if pctl.playerCommand == "monitor":
             #     pass
 
             if command == "url":
                 bass_player.stop()
+                bass_player.try_init()
 
                 # fileline = str(datetime.datetime.now()) + ".ogg"
                 # print(BASS_ErrorGetCode())
@@ -1139,6 +1214,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     player_timer.hit()
                 else:
                     pctl.playing_status = 0
+                    bass_player.stop()
 
             if command == 'record':
                 if pctl.playing_state != 3:
@@ -1244,6 +1320,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             if command == "encstart":
 
+                bass_player.try_init()
                 port = "8000"
                 bitrate = "128"
 
@@ -1341,7 +1418,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     player_timer.hit()
 
             elif command == 'pauseoff':
-                if bass_player.state == "paused":
+                if bass_player.state == "paused" or bass_player.state == "suspend":
                     bass_player.pause()
                     player_timer.hit()
 

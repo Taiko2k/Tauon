@@ -690,6 +690,7 @@ class Prefs:    # Used to hold any kind of settings
         self.custom_bg_opacity = 40
 
         self.tabs_on_top = True
+        self.desktop = desktop
 
 
 prefs = Prefs()
@@ -14460,7 +14461,7 @@ class Over:
                 y += 14 * gui.scale
 
             y = self.box_y + 225 * gui.scale
-            ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
+            # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
 
 
     def funcs(self):
@@ -16765,6 +16766,9 @@ def restore_full_mode():
     SDL_SetWindowMinimumSize(t_window, 560, 330)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
+    global mouse_down
+    mouse_down = False
+    input.mouse_click = False
 
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
@@ -21445,7 +21449,8 @@ while pctl.running:
             #print(pctl.playing_object().misc)
 
             #show_message("Test error message 123", 'error', "hello text")
-
+            pctl.playerCommand = "unload"
+            pctl.playerCommandReady = True
 
             key_F7 = False
 
@@ -22645,6 +22650,7 @@ while pctl.running:
             # Main Playlist:
 
             if len(load_orders) > 0:
+
                 for i, order in enumerate(load_orders):
                     if order.stage == 2:
                         target_pl = 0
