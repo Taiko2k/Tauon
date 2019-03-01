@@ -63,6 +63,7 @@ user_directory = install_directory
 config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
 home_directory = os.path.join(os.path.expanduser('~'))
+asset_subfolder = "/assets/"
 
 # Detect if we are installed or running portably
 install_mode = False
@@ -4619,13 +4620,14 @@ def draw_window_tools():
     if coll(rect):
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg_over, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
         if input.mouse_click or ab_click:
             pctl.running = False
     else:
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [40, 40, 40, 255])
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [110, 110, 110, 70])
 
     if not fullscreen and not gui.maximized and not gui.mode == 3:
-        corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 160])
+        corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
 
         colour = [30, 30, 30, 255]
         ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
@@ -4703,7 +4705,7 @@ display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
 SDL_GetDisplayBounds(display_index, display_bounds)
 
-icon = IMG_Load(b_active_directory + b"/gui/icon-64.png")
+icon = IMG_Load(b_active_directory + asset_subfolder.encode() + b"icon-64.png")
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
@@ -6688,6 +6690,7 @@ class WhiteModImageAsset:
     def render(self, x, y, colour):
         if colour != self.colour:
             SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+            SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
             self.colour = colour
         self.rect.x = round(x)
         self.rect.y = round(y)
@@ -6695,26 +6698,25 @@ class WhiteModImageAsset:
 
 
 if gui.scale == 2:
-    message_info_icon = LoadImageAsset("/gui/2x/notice.png")
-    message_warning_icon = LoadImageAsset("/gui/2x/warning.png")
-    message_tick_icon = LoadImageAsset("/gui/2x/done.png")
-    message_arrow_icon = LoadImageAsset("/gui/2x/ext.png")
-    message_error_icon = LoadImageAsset("/gui/2x/error.png")
-    message_bubble_icon = LoadImageAsset("/gui/2x/bubble.png")
+    asset_dir = asset_subfolder + "2x/"
 elif gui.scale == 1.25:
-    message_info_icon = LoadImageAsset("/gui/1.25x/notice.png")
-    message_warning_icon = LoadImageAsset("/gui/1.25x/warning.png")
-    message_tick_icon = LoadImageAsset("/gui/1.25x/done.png")
-    message_arrow_icon = LoadImageAsset("/gui/1.25x/ext.png")
-    message_error_icon = LoadImageAsset("/gui/1.25x/error.png")
-    message_bubble_icon = LoadImageAsset("/gui/1.25x/bubble.png")
+    asset_dir = asset_subfolder + "1.25x/"
 else:
-    message_info_icon = LoadImageAsset("/gui/notice.png")
-    message_warning_icon = LoadImageAsset("/gui/warning.png")
-    message_tick_icon = LoadImageAsset("/gui/done.png")
-    message_arrow_icon = LoadImageAsset("/gui/ext.png")
-    message_error_icon = LoadImageAsset("/gui/error.png")
-    message_bubble_icon = LoadImageAsset("/gui/bubble.png")
+    asset_dir = asset_subfolder
+
+
+def asset_loader(name, mod=False):
+
+    if mod:
+        return WhiteModImageAsset(asset_dir + name)
+    return LoadImageAsset(asset_dir + name)
+
+message_info_icon = asset_loader("notice.png")
+message_warning_icon = asset_loader("warning.png")
+message_tick_icon = asset_loader("done.png")
+message_arrow_icon = asset_loader("ext.png")
+message_error_icon = asset_loader("error.png")
+message_bubble_icon = asset_loader("bubble.png")
 
 
 class ToolTip:
@@ -6828,12 +6830,7 @@ class Menu:
         self.down = False
         self.font = 412
         self.show_icons = show_icons
-        if gui.scale == 2:
-            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/2x/sub.png"))
-        elif gui.scale == 1.25:
-            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/1.25x/sub.png"))
-        else:
-            self.sub_arrow = MenuIcon(WhiteModImageAsset("/gui/sub.png"))
+        self.sub_arrow = MenuIcon(asset_loader("sub.png", True))
 
         self.id = Menu.count
         self.break_height = round(4 * gui.scale)
@@ -7218,17 +7215,8 @@ def show_in_playlist():
     pctl.render_playlist()
 
 
-
-
-if gui.scale == 2:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/2x/info.png'))
-elif gui.scale == 1.25:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/info.png'))
-else:
-    folder_icon = MenuIcon(WhiteModImageAsset('/gui/folder.png'))
-    info_icon = MenuIcon(WhiteModImageAsset('/gui/info.png'))
+folder_icon = MenuIcon(asset_loader('folder.png', True))
+info_icon = MenuIcon(asset_loader('info.png', True))
 
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
@@ -7248,10 +7236,7 @@ def open_folder(index):
             subprocess.Popen(['xdg-open', line])
 
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
-
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
-
-
 
 
 def finish_current():
@@ -7934,28 +7919,10 @@ def rename_playlist(index):
 
 
 if gui.scale == 2:
-    delete_icon = MenuIcon(WhiteModImageAsset('/gui/2x/del.png'))
+    delete_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + '2x/del.png'))
 else:
-    delete_icon = MenuIcon(WhiteModImageAsset('/gui/del.png'))
-#     rename_playlist_icon = MenuIcon(WhiteModImageAsset('/gui/pen.png'))
-#
-# rename_playlist_icon.colour = [149, 119, 255, 255]
-# rename_playlist_icon.xoff = 2
+    delete_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + 'del.png'))
 
-
-# def toggle_pin_deco(pl):
-#
-#     if pctl.multi_playlist[pl][8]:
-#         return [colours.menu_text, colours.menu_background, _("Pin to top panel")]
-#     else:
-#         return [colours.menu_text, colours.menu_background, _('Hide')]
-#
-# def toggle_pin_playlist(pl):
-#     pctl.multi_playlist[pl][8] ^= True
-#
-#
-# tab_menu.add(_('Unpin'), toggle_pin_playlist, toggle_pin_deco, pass_ref=True, pass_ref_deco=True)
-#
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
@@ -8458,27 +8425,12 @@ def new_playlist(switch=True):
         switch_playlist(len(pctl.multi_playlist) - 1)
     return len(pctl.multi_playlist) - 1
 
-if gui.scale == 2:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/2x/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/2x/mod_folder.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/2x/settings2.png'))
-    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/2x/pen.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/2x/new.png'))
-elif gui.scale == 1.25:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/mod_folder.png'))
-    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/pen.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/settings2.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/new.png'))
-else:
-    heartx_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
-    transcode_icon = MenuIcon(WhiteModImageAsset('/gui/transcode.png'))
-    mod_folder_icon = MenuIcon(WhiteModImageAsset('/gui/mod_folder.png'))
-    rename_tracks_icon = MenuIcon(WhiteModImageAsset('/gui/pen.png'))
-    settings_icon = MenuIcon(WhiteModImageAsset('/gui/settings2.png'))
-    add_icon = MenuIcon(WhiteModImageAsset('/gui/new.png'))
+heartx_icon = MenuIcon(asset_loader('heart-menu.png', True))
+transcode_icon = MenuIcon(asset_loader('transcode.png', True))
+mod_folder_icon = MenuIcon(asset_loader('mod_folder.png', True))
+settings_icon = MenuIcon(asset_loader('settings2.png', True))
+rename_tracks_icon = MenuIcon(asset_loader('pen.png', True))
+add_icon = MenuIcon(asset_loader('new.png', True))
 
 tab_menu.br()
 
@@ -10324,15 +10276,10 @@ def launch_editor_selection(index):
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
 track_menu.add_to_sub(_("Reload Metadata"), 0, reload_metadata, pass_ref=True)
 
-if gui.scale == 2:
-    mbp_icon = MenuIcon(LoadImageAsset('/gui/2x/mbp-g.png'))
-    mbp_icon.base_asset = LoadImageAsset('/gui/2x/mbp-gs.png')
-elif gui.scale == 1.25:
-    mbp_icon = MenuIcon(LoadImageAsset('/gui/1.25x/mbp-g.png'))
-    mbp_icon.base_asset = LoadImageAsset('/gui/1.25x/mbp-gs.png')
-else:
-    mbp_icon = MenuIcon(LoadImageAsset('/gui/mbp-g.png'))
-    mbp_icon.base_asset = LoadImageAsset('/gui/mbp-gs.png')
+
+mbp_icon = MenuIcon(asset_loader('mbp-g.png'))
+mbp_icon.base_asset = asset_loader('mbp-gs.png')
+
 mbp_icon.xoff = 2
 mbp_icon.yoff = -1
 
@@ -10628,15 +10575,9 @@ track_menu.add(_('Search Artist on Wikipedia'), ser_wiki, pass_ref=True, show_te
 
 track_menu.add(_('Search Track on Genius'), ser_gen, pass_ref=True, show_test=toggle_gen)
 
-if gui.scale == 2:
-    son_icon = MenuIcon(LoadImageAsset('/gui/2x/sonemic-g.png'))
-    son_icon.base_asset = LoadImageAsset('/gui/2x/sonemic-gs.png')
-elif gui.scale == 1.25:
-    son_icon = MenuIcon(LoadImageAsset('/gui/1.25x/sonemic-g.png'))
-    son_icon.base_asset = LoadImageAsset('/gui/1.25x/sonemic-gs.png')
-else:
-    son_icon = MenuIcon(LoadImageAsset('/gui/sonemic-g.png'))
-    son_icon.base_asset = LoadImageAsset('/gui/sonemic-gs.png')
+son_icon = MenuIcon(asset_loader('sonemic-g.png'))
+son_icon.base_asset = asset_loader('sonemic-gs.png')
+
 son_icon.xoff = 1
 track_menu.add(_('Search Artist on Sonemic'), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym)
 
@@ -11335,13 +11276,9 @@ def broadcast_colour():
 
 
 if prefs.backend == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
-    if gui.scale == 2:
-        broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/2x/broadcast.png'))
-    elif gui.scale == 1.25:
-        broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/broadcast.png'))
-    else:
-        broadcast_icon = MenuIcon(WhiteModImageAsset('/gui/broadcast.png'))
-    broadcast_icon.colour = [171, 102, 249, 255]#[182, 116, 223, 255]#[125, 249, 255, 255] #[56, 189, 237, 255]
+
+    broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
+    broadcast_icon.colour = [171, 102, 249, 255]
     broadcast_icon.colour_callback = broadcast_colour
     x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
 
@@ -11381,15 +11318,9 @@ extra_menu.add(_('Random Track'), random_track, hint='COLON')
 def radio_random():
     pctl.advance(rr=True)
 
-if gui.scale == 2:
-    radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/2x/radiorandom.png'))
-    revert_icon = MenuIcon(WhiteModImageAsset('/gui/2x/revert.png'))
-elif gui.scale == 1.25:
-    radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/radiorandom.png'))
-    revert_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/revert.png'))
-else:
-    radiorandom_icon = MenuIcon(WhiteModImageAsset('/gui/radiorandom.png'))
-    revert_icon = MenuIcon(WhiteModImageAsset('/gui/revert.png'))
+
+radiorandom_icon = MenuIcon(asset_loader('radiorandom.png', True))
+revert_icon = MenuIcon(asset_loader('revert.png', True))
 
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
@@ -11430,19 +11361,11 @@ def heart_menu_colour():
             return [255, 200, 200, 255]
         return None
 
-if gui.scale == 2:
-    heart_icon = MenuIcon(WhiteModImageAsset('/gui/2x/heart-menu.png'))
-    heart_row_icon = WhiteModImageAsset('/gui/2x/heart-track.png')
-elif gui.scale == 1.25:
-    heart_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/heart-menu.png'))
-    heart_row_icon = WhiteModImageAsset('/gui/1.25x/heart-track.png')
-else:
-    heart_icon = MenuIcon(WhiteModImageAsset('/gui/heart-menu.png'))
-    heart_row_icon = WhiteModImageAsset('/gui/heart-track.png')
 
+heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
+heart_row_icon = asset_loader('heart-track.png', True)
 
 heart_colours = ColourGenCache(0.7, 0.7)
-
 
 heart_icon.colour = [245, 60, 60, 255]
 heart_icon.xoff = 3
@@ -11580,19 +11503,18 @@ def lastfm_colour():
         return None
 
 
+lastfm_icon = MenuIcon(asset_loader('as.png', True))
+
 if gui.scale == 2:
-    lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/2x/as.png'))
     lastfm_icon.xoff = 0
 elif gui.scale == 1.25:
-    lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/1.25x/as.png'))
     lastfm_icon.xoff = 0
 else:
-    lastfm_icon = MenuIcon(WhiteModImageAsset('/gui/as.png'))
     lastfm_icon.xoff = -1
 
 lastfm_icon.yoff = 1
 
-lastfm_icon.colour = [249, 70, 70, 255]#[250, 60, 60, 255]
+lastfm_icon.colour = [249, 70, 70, 255]
 lastfm_icon.colour_callback = lastfm_colour
 
 def lastfm_menu_test(a):
@@ -14308,21 +14230,11 @@ class Over:
         global window_size
 
         self.init2done = False
-        if gui.scale == 2:
-            self.about_image = LoadImageAsset('/gui/2x/v4-a.png')
-            self.about_image2 = LoadImageAsset('/gui/2x/v4-b.png')
-            self.about_image3 = LoadImageAsset('/gui/2x/v4-c.png')
-            self.about_image4 = LoadImageAsset('/gui/2x/v4-d.png')
-        elif gui.scale == 1.25:
-            self.about_image = LoadImageAsset('/gui/1.25x/v4-a.png')
-            self.about_image2 = LoadImageAsset('/gui/1.25x/v4-b.png')
-            self.about_image3 = LoadImageAsset('/gui/1.25x/v4-c.png')
-            self.about_image4 = LoadImageAsset('/gui/1.25x/v4-d.png')
-        else:
-            self.about_image = LoadImageAsset('/gui/v4-a.png')
-            self.about_image2 = LoadImageAsset('/gui/v4-b.png')
-            self.about_image3 = LoadImageAsset('/gui/v4-c.png')
-            self.about_image4 = LoadImageAsset('/gui/v4-d.png')
+
+        self.about_image = asset_loader('v4-a.png')
+        self.about_image2 = asset_loader('v4-b.png')
+        self.about_image3 = asset_loader('v4-c.png')
+        self.about_image4 = asset_loader('v4-d.png')
 
         self.w = 660 * gui.scale
         self.h = 250 * gui.scale
@@ -15388,17 +15300,10 @@ def update_playlist_call():
 
 pref_box = Over()
 
+inc_arrow = asset_loader("inc.png", True)
+dec_arrow = asset_loader("dec.png", True)
+corner_icon = asset_loader("corner.png", True)
 
-if gui.scale == 2:
-    inc_arrow = WhiteModImageAsset("/gui/2x/inc.png")
-    dec_arrow = WhiteModImageAsset("/gui/2x/dec.png")
-    corner_icon = WhiteModImageAsset("/gui/2x/corner.png")
-else:
-    inc_arrow = WhiteModImageAsset("/gui/inc.png")
-    dec_arrow = WhiteModImageAsset("/gui/dec.png")
-    corner_icon = WhiteModImageAsset("/gui/corner.png")
-
-menu_icon = LoadImageAsset("/gui/menu.png")
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
 
@@ -15427,21 +15332,9 @@ class TopPanel:
         self.index_playing = -1
         self.drag_zone_start_x = 300 * gui.scale
 
-        if gui.scale == 2:
-            self.exit_button = WhiteModImageAsset('/gui/2x/ex.png')
-            self.playlist_icon = WhiteModImageAsset('/gui/2x/playlist.png')
-        elif gui.scale == 1.25:
-            self.exit_button = WhiteModImageAsset('/gui/1.25x/ex.png')
-            self.playlist_icon = WhiteModImageAsset('/gui/1.25x/playlist.png')
-        else:
-            self.exit_button = WhiteModImageAsset('/gui/ex.png')
-            self.playlist_icon = WhiteModImageAsset('/gui/playlist.png')
-
-
-        if gui.scale == 2:
-            self.dl_button = WhiteModImageAsset('/gui/2x/dl.png')
-        else:
-            self.dl_button = WhiteModImageAsset('/gui/dl.png')
+        self.exit_button = asset_loader('ex.png', True)
+        self.playlist_icon = asset_loader('playlist.png', True)
+        self.dl_button = asset_loader('dl.png', True)
 
         self.adds = []
 
@@ -16011,32 +15904,12 @@ class BottomBarType1:
         self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
         self.volume_bar_position = [0, 45 * gui.scale]
 
-        if gui.scale == 2:
-            self.play_button = WhiteModImageAsset('/gui/2x/play.png')
-            self.forward_button = WhiteModImageAsset('/gui/2x/ff.png')
-            self.back_button = WhiteModImageAsset('/gui/2x/bb.png')
-        elif gui.scale == 1.25:
-            self.play_button = WhiteModImageAsset('/gui/1.25x/play.png')
-            self.forward_button = WhiteModImageAsset('/gui/1.25x/ff.png')
-            self.back_button = WhiteModImageAsset('/gui/1.25x/bb.png')
-        else:
-
-            self.play_button = WhiteModImageAsset('/gui/play.png')
-            self.forward_button = WhiteModImageAsset('/gui/ff.png')
-            self.back_button = WhiteModImageAsset('/gui/bb.png')
-
+        self.play_button = asset_loader('play.png', True)
+        self.forward_button = asset_loader('ff.png', True)
+        self.back_button = asset_loader('bb.png', True)
 
         self.scrob_stick = 0
 
-    # def set_mode2(self):
-    #
-    #     self.volume_bar_size[1] = 12
-    #     self.seek_bar_position[0] = 0
-    #     self.seek_bar_size[0] = window_size[0]
-    #     self.seek_bar_size[1] = 12
-    #     self.control_line_bottom = 27
-    #     self.mode = 1
-    #     self.update()
 
     def update(self):
 
@@ -16049,12 +15922,6 @@ class BottomBarType1:
             if gui.bb_show_art:
                 self.seek_bar_position[0] = 300 + gui.panelBY
                 self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
-
-        # elif self.mode == 1:
-        #     self.volume_bar_position[0] = window_size[0] - 210
-        #     self.volume_bar_position[1] = window_size[1] - 27
-        #     self.seek_bar_position[1] = window_size[1] - gui.panelBY
-        #     self.seek_bar_size[0] = window_size[0]
 
     def render(self):
 
@@ -16658,8 +16525,8 @@ class MiniMode:
         h1 = h - y1
 
         # Draw background
-        ddt.rect_r((0, 0, w, h), [25, 25, 25, 255], True)
-        ddt.text_background_colour = [25, 25, 25, 255]
+        ddt.rect_r((0, 0, w, h), [24, 24, 24, 255], True)
+        ddt.text_background_colour = [24, 24, 24, 255]
 
         # Play / Pause when right clicking below art
         if right_click and mouse_position[1] > y1:
@@ -16701,8 +16568,8 @@ class MiniMode:
             # Draw title texts
             line1 = track.artist
             line2 = track.title
-            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(235), 314)
-            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(235), 214)
+            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(238), 314)
+            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(242), 214)
 
             # Calculate seek bar position
             seek_w = 240 * gui.scale
@@ -16727,20 +16594,20 @@ class MiniMode:
                 pctl.seek_decimal(seek)
 
             # Draw progress bar background
-            ddt.rect_r(seek_r, [60, 60, 60, 255], True)
+            ddt.rect_r(seek_r, [55, 55, 55, 255], True)
 
             # Calculate and draw bar foreground
             progress_w = 0
             if pctl.playing_length > 1:
                 progress_w = pctl.playing_time * seek_w / pctl.playing_length
-            seek_colour = [180, 180, 180, 255]
+            seek_colour = [210, 210, 210, 255]
             seek_r[2] = progress_w
 
 
             if self.volume_timer.get() < 0.7:
                 progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
                 gui.update += 1
-                seek_colour = [180, 180, 180, 255]
+                # seek_colour = [180, 180, 180, 255]
                 seek_r[2] = progress_w
                 seek_r[0] += 2 * gui.scale
                 seek_r[1] += 2 * gui.scale
@@ -16793,10 +16660,10 @@ class MiniMode:
             if pctl.repeat_mode:
                 colour = [235, 235, 235, 255]
 
-            w = 2 * gui.scale
-            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, w), colour, True)
-            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, w), colour, True)
-            ddt.rect_a((sx + 30 * gui.scale - w, sy), (w, 6 * gui.scale), colour, True)
+            tw = 2 * gui.scale
+            ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour, True)
+            ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour, True)
+            ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour, True)
 
 
 
@@ -16815,6 +16682,10 @@ class MiniMode:
         if coll(tool_rect):
             draw_window_tools()
 
+
+        ddt.rect_r((0, 0, w, h), [60, 60, 60, 255])
+        if gui.scale == 2:
+            ddt.rect_r((1, 1, w - 2, h - 2), [60, 60, 60, 255])
 
 mini_mode = MiniMode()
 
@@ -18211,9 +18082,6 @@ class RenameBox:
 rename_box = RenameBox()
 
 
-# dia_icon = WhiteModImageAsset("/gui/dia.png")
-
-
 class PlaylistBox:
 
     def __init__(self):
@@ -19087,7 +18955,7 @@ class ArtistInfoBox:
         self.th = 0
         self.w = 0
 
-        self.mini_box = WhiteModImageAsset("/gui/mini-box.png")
+        self.mini_box = WhiteModImageAsset(asset_subfolder + "mini-box.png")
 
     def draw(self, x, y, w, h):
 
@@ -19516,33 +19384,14 @@ class ViewBox:
 
         self.border = 3 * gui.scale
 
-        if gui.scale == 1:
-            self.tracks_img = WhiteModImageAsset("/gui/tracks.png")
-            self.side_img = WhiteModImageAsset("/gui/tracks+side.png")
-            self.gallery1_img = WhiteModImageAsset("/gui/gallery1.png")
-            self.combo_img = WhiteModImageAsset("/gui/combo.png")
-            self.lyrics_img = WhiteModImageAsset("/gui/lyrics.png")
-            self.gallery2_img = WhiteModImageAsset("/gui/gallery2.png")
-            self.col_img = WhiteModImageAsset("/gui/col.png")
-            self.artist_img = WhiteModImageAsset("/gui/artist.png")
-        elif gui.scale == 1.25:
-            self.tracks_img = WhiteModImageAsset("/gui/1.25x/tracks.png")
-            self.side_img = WhiteModImageAsset("/gui/1.25x/tracks+side.png")
-            self.gallery1_img = WhiteModImageAsset("/gui/1.25x/gallery1.png")
-            self.combo_img = WhiteModImageAsset("/gui/1.25x/combo.png")
-            self.lyrics_img = WhiteModImageAsset("/gui/1.25x/lyrics.png")
-            self.gallery2_img = WhiteModImageAsset("/gui/1.25x/gallery2.png")
-            self.col_img = WhiteModImageAsset("/gui/1.25x/col.png")
-            self.artist_img = WhiteModImageAsset("/gui/1.25x/artist.png")
-        else:
-            self.tracks_img = WhiteModImageAsset("/gui/2x/tracks.png")
-            self.side_img = WhiteModImageAsset("/gui/2x/tracks+side.png")
-            self.gallery1_img = WhiteModImageAsset("/gui/2x/gallery1.png")
-            self.combo_img = WhiteModImageAsset("/gui/2x/combo.png")
-            self.lyrics_img = WhiteModImageAsset("/gui/2x/lyrics.png")
-            self.gallery2_img = WhiteModImageAsset("/gui/2x/gallery2.png")
-            self.col_img = WhiteModImageAsset("/gui/2x/col.png")
-            self.artist_img = WhiteModImageAsset("/gui/2x/artist.png")
+        self.tracks_img = asset_loader("tracks.png", True)
+        self.side_img = asset_loader("tracks+side.png", True)
+        self.gallery1_img = asset_loader("gallery1.png", True)
+        self.combo_img = asset_loader("combo.png", True)
+        self.lyrics_img = asset_loader("lyrics.png", True)
+        self.gallery2_img = asset_loader("gallery2.png", True)
+        self.col_img = asset_loader("col.png", True)
+        self.artist_img = asset_loader("artist.png", True)
 
         # _ .15 0
         self.tracks_colour = ColourPulse2() #(0.5) # .5 .6 .75
@@ -24737,10 +24586,14 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 
 save_state()
 
+try:
+    fp.close()
+except:
+    print("No lock object to close")
+
 if de_nofity_support:
     song_notification.close()
     Notify.uninit()
-
 
 print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
