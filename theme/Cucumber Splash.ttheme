@@ -34,7 +34,7 @@
 50,50,50		folder line
 145,177,100		folder title
 
-255,255,255,7		playing highlight
+255,255,255,9		playing highlight
 138,138,138,30		select highlight
 142,209,226		gallery highlight
 #-Bottom panel------

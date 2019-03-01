@@ -3,10 +3,10 @@
 
 #-Backgrounds-----
 
-25,25,25		player background (top panel)
+31,31,31		player background (top panel)
 21,21,21	  	playlist panel
 18,18,18		side panel
-25,25,25		bottom panel
+30,30,30		bottom panel
 
 #-Frame--------
 
@@ -36,7 +36,7 @@
 180,180,180		folder title
 
 255,255,255,0		playing highlight
-255,255,255,8		select highlight
+255,255,255,11		select highlight
 249,190,3		gallery highlight
 
 #-Bottom panel------
@@ -61,9 +61,9 @@
 
 245,245,245		tab active line
 235,235,235		tab line
-31,31,31		tab background
-35,35,35		tab over
-45,45,45		tab active background
+38,38,38		tab background
+45,45,45		tab over
+50,50,50		tab active background
 
 249,190,3,200		music vis
 
