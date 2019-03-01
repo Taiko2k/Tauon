@@ -23,10 +23,10 @@
 8,250,134		album line
 
 241,65,107		track playing
-160,160,160		index playing
+180,180,180		index playing
 32,178,170		artist playing
 8,250,134		album playing
-160,160,160		time playing
+180,180,180		time playing
 
 85,85,85		track missing
 
@@ -68,6 +68,6 @@
 
 #-Side panel--------
 
-210,210,210		title info
+220,220,220		title info
 190,190,190		extra info
 21,21,21		art border
