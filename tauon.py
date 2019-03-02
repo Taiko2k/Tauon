@@ -16516,6 +16516,9 @@ class MiniMode:
         self.volume_timer = Timer()
         self.volume_timer.force_set(100)
 
+        self.left_slide = asset_loader("left-slide.png", True)
+        self.right_slide = asset_loader("right-slide.png", True)
+
     def render(self):
 
         w = window_size[0]
@@ -16568,8 +16571,8 @@ class MiniMode:
             # Draw title texts
             line1 = track.artist
             line2 = track.title
-            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(238), 314)
-            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(242), 214)
+            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(240), 314, window_size[0] - 30 * gui.scale)
+            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(246), 214, window_size[0] - 30 * gui.scale)
 
             # Calculate seek bar position
             seek_w = 240 * gui.scale
@@ -16601,25 +16604,36 @@ class MiniMode:
             if pctl.playing_length > 1:
                 progress_w = pctl.playing_time * seek_w / pctl.playing_length
             seek_colour = [210, 210, 210, 255]
+
+            if pctl.playing_state != 1:
+                seek_colour = [210, 40, 100, 255]
+
             seek_r[2] = progress_w
 
 
-            if self.volume_timer.get() < 0.7:
+            if self.volume_timer.get() < 0.9:
                 progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
                 gui.update += 1
-                # seek_colour = [180, 180, 180, 255]
+                seek_colour = [210, 210, 210, 255]
                 seek_r[2] = progress_w
                 seek_r[0] += 2 * gui.scale
                 seek_r[1] += 2 * gui.scale
                 seek_r[3] -= 4 * gui.scale
 
-
-
             ddt.rect_r(seek_r, seek_colour, True)
 
 
         left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
-        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 1, 45 * gui.scale)
+        right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * gui.scale)
+
+        fields.add(left_area)
+        fields.add(right_area)
+
+        if coll(left_area):
+            self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, 150])
+
+        if coll(right_area):
+            self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, 150])
 
 
         # Shuffle
@@ -18956,6 +18970,7 @@ class ArtistInfoBox:
         self.w = 0
 
         self.mini_box = WhiteModImageAsset(asset_subfolder + "mini-box.png")
+
 
     def draw(self, x, y, w, h):
 

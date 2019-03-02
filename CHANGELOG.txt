@@ -3,15 +3,17 @@ Changelog-------------------------------------
 
 v3.7.1
 
- - Added UI mini mode
+ - Added mini mode UI
  - Added option to disable tabs on top panel
  - Added keyboard shortcut for adding to queue (ctrl + q)
  - Added support for user folder themes
  - Tweaked playing highlight in some themes
+ - Tweaked drag sensitivity for dragging tabs in playlist side panel (reduced)
  - Tweaked tab dragging to toggle hidden if dragged between top or side panel
  - Changed tab drag to end function to move instead of duplicate
  - Improved device switching to allow switching while playing
  - Improved compatibility with KDE to disconnect device when paused
+ - Fixed not being able to restart app immediately
  - Fixed image menu incorrectly showing items as greyed
  - Fixed PLEX scan status text persisting if failed
  - Fixed crash on F12 press

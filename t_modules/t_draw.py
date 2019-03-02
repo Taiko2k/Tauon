@@ -186,10 +186,8 @@ class TDraw:
 
         SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
 
-    def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
-        # perf.set()
-        # print("START")
+    def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
 
         max_x += 12  # Hack
         max_x = round(max_x)
@@ -232,9 +230,6 @@ class TDraw:
                 sd[0].y = y - sd[2]
                 self.__render_text(sd, x, y, range_top, range_height, align)
 
-                # print("CAHE")
-                # print(perf.hit())
-
                 if wrap:
                     return sd[0].h
                 return sd[0].w
@@ -262,9 +257,6 @@ class TDraw:
                 box.x = box.x - int(box.w / 2)
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
-
-            # print("READ")
-            # print(perf.hit())
 
         surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
@@ -312,6 +304,7 @@ class TDraw:
         # options = context.get_font_options()
         # print(options.get_antialias())
 
+
         layout.set_text(text, -1)
 
         y_off = layout.get_baseline() / 1000
@@ -321,9 +314,6 @@ class TDraw:
 
         PangoCairo.show_layout(context, layout)
 
-        # print("TEXT")
-        # print(perf.hit())
-
         sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
         #sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_ARGB8888)
 
@@ -331,8 +321,6 @@ class TDraw:
         if not real_bg:
             ke = SDL_MapRGB(sdl_surface.contents.format, bg[0], bg[1], bg[2])
             SDL_SetColorKey(sdl_surface, True, ke)
-
-
 
         c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
         SDL_FreeSurface(sdl_surface)
@@ -344,13 +332,7 @@ class TDraw:
 
         pack = [dst, c, y_off]
 
-        # print("RENDER")
-        # print(perf.hit())
-
         self.__render_text(pack, x, y, range_top, range_height, align)
-
-        # print("DONE")
-        # print(perf.hit())
 
         # Don't cache if using real background data
         if not real_bg:

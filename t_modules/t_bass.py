@@ -480,7 +480,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_Mixer_ChannelSetPosition(self.decode_channel, pos, 0)
                 BASS_ChannelPlay(self.channel, True)
 
-
         def update_time(self):
 
             bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
@@ -509,7 +508,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.state = 'stopped'
             # BASS_Free()
 
-            if prefs.desktop == "KDE":
+            if prefs.dc_device:
                 self.try_unload()
 
 
@@ -539,7 +538,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_ChannelPause(self.channel)
                 self.state = 'paused'
 
-                if prefs.desktop == "KDE" or force_suspend:
+                if prefs.dc_device or force_suspend:
                     self.try_unload()
                     if not self.init:
                         self.state = 'suspend'
