@@ -76,12 +76,6 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
         t_id = "com.github.taiko2k.tauonmb"
         print("Running as Flatpak")
 
-        # Clear shader cache as workaround for segfault on runtime update
-        shader_cache = os.path.join(os.path.expanduser('~'), ".var/app/com.github.taiko2k.tauonmb/cache/mesa_shader_cache")
-        if os.path.exists(shader_cache):
-            print("-- Removing shader cache as temporary workaround.")
-            shutil.rmtree(shader_cache)
-
         # Copy fontconfig from host system as workaround for poor font rendering
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
             if os.path.exists(os.path.join(home_directory, ".config/fontconfig/fonts.conf")):
@@ -1530,8 +1524,8 @@ try:
         prefs.last_fm_token = save[99]
     if save[100] is not None:
         prefs.last_fm_username = save[100]
-    if save[101] is not None:
-        prefs.use_card_style = save[101]
+    # if save[101] is not None:
+    #     prefs.use_card_style = save[101]
     if save[102] is not None:
         prefs.auto_lyrics = save[102]
     if save[103] is not None:
@@ -1806,29 +1800,35 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                         print("Additional directory: " + path)
                     else:
                         print("Directory was not found: " + path)
+
             if 'force-mono' in p:
                 prefs.mono = True
 
             if 'plex-username=' in p:
-                result = p.split('=')[1]
+                result = p.split('=')[1].strip()
                 prefs.plex_username = result
             if 'plex-password=' in p:
-                result = p.split('=')[1]
+                result = p.split('=')[1].strip()
                 prefs.plex_password = result
             if 'plex-servname=' in p:
-                result = p.split('=')[1]
+                result = p.split('=')[1].strip()
                 prefs.plex_servername = result
 
             if 'bg-opacity=' in p:
-                result = p.split('=')[1]
+                result = p.split('=')[1].strip()
                 try:
                     if 0 < int(result) < 101:
                         prefs.custom_bg_opacity = int(result)
                 except:
                     print("BG opacity setting error")
 
-            if 'dc-device-on-pause' in p:
-                prefs.dc_device = True
+            if 'disconnect-device-pause=' in p:
+                result = p.split('=')[1].strip()
+
+                if result == "ON":
+                    prefs.dc_device = True
+                elif result == "OFF":
+                    prefs.dc_device = False
 
 else:
     print("Warning: Missing config file")
@@ -3282,7 +3282,7 @@ def notify_song(notify_of_end=False, delay=0):
 
         if notify_of_end:
             bottom_line = "Tauon Music Box"
-            top_line = "End of playlist"
+            top_line = _("End of playlist")
 
             song_notification.update(top_line, bottom_line, i_path)
 
@@ -4061,7 +4061,7 @@ class PlexService:
             account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except:
-            show_message("Error connecting to PLEX server", "error", "Try check login credentials and that server is accessible.")
+            show_message(_("Error connecting to PLEX server"), "error", "Try check login credentials and that server is accessible.")
             self.scanning = False
             return
 
@@ -6285,10 +6285,10 @@ class AlbumArt():
 
             self.render(unit, location)
 
-            if len(self.image_cache) > 10:
+            if len(self.image_cache) > 5:
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
-            if prefs.colour_from_image and len(self.image_cache) > 2:
+            if prefs.colour_from_image and len(self.image_cache) > 1:
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
 
@@ -13225,8 +13225,6 @@ def worker1():
             gui.update += 1
 
 
-
-
         # Clean database
         if cm_clean_db is True:
             items_removed = 0
@@ -13846,24 +13844,7 @@ def scale2(mode=0):
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
 
-#
-# def toggle_scale(mode=0):
-#
-#     if mode == 1:
-#         if prefs.ui_scale == 1:
-#             return False
-#         else:
-#             return True
-#
-#     if prefs.ui_scale == 1:
-#         prefs.ui_scale = 2
-#     else:
-#         prefs.ui_scale = 1
-#
-#     if prefs.ui_scale != gui.scale:
-#         show_message(_("Change will be applied on restart."))
-#
-#     pref_box.small_preset()
+
 
 def toggle_borderless(mode=0):
     global draw_border
@@ -13880,9 +13861,6 @@ def toggle_borderless(mode=0):
         SDL_SetWindowBordered(t_window, False)
     else:
         SDL_SetWindowBordered(t_window, True)
-
-        # SDL_SetWindowBordered(t_window, False)
-        # SDL_SetWindowBordered(t_window, True)
 
 
 config_items = [
@@ -13960,10 +13938,6 @@ def toggle_true_shuffle(mode=0):
         return prefs.true_shuffle
     prefs.true_shuffle ^= True
 
-def toggle_finish_current(mode=0):
-    if mode == 1:
-        return prefs.finish_current
-    prefs.finish_current ^= True
 
 def toggle_enable_web(mode=0):
     if mode == 1:
@@ -13981,27 +13955,6 @@ def toggle_enable_web(mode=0):
         requests.post("http://localhost:7590/shutdown")
         time.sleep(0.25)
 
-
-def toggle_allow_remote(mode=0):
-    if mode == 1:
-        return prefs.allow_remote #^ True
-    prefs.allow_remote ^= True
-
-# def toggle_radio_lyrics(mode=0):
-#     if mode == 1:
-#         return prefs.radio_page_lyrics
-#     prefs.radio_page_lyrics ^= True
-
-
-def toggle_expose_web(mode=0):
-    if mode == 1:
-        return prefs.expose_web
-    prefs.expose_web ^= True
-
-    if not gui.web_running:
-        return
-    else:
-        show_message(_("Web server needs restart for this change to take effect."))
 
 def toggle_scrobble_mark(mode=0):
     if mode == 1:
@@ -14198,9 +14151,6 @@ config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
 # config_items.append(['Playback advances to open playlist', toggle_follow])
 
-cursor = "|"
-c_time = 0
-c_blink = 0
 key_shiftr_down = False
 key_ctrl_down = False
 key_rctrl_down = False
@@ -14393,8 +14343,6 @@ class Over:
                            _("Serve webpage for broadcast metadata"))
 
 
-
-
         y += 30 * gui.scale
         # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
         # y += 23 * gui.scale
@@ -14449,10 +14397,8 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
         y += 30 * gui.scale
-
         x += 280 * gui.scale
-        # if toggle_enable_web(1):
-        #     y += 40 * gui.scale
+
         ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
         y += 23 * gui.scale
 
@@ -14463,13 +14409,9 @@ class Over:
         self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
-        # y += 23 * gui.scale
-        # self.toggle_square(x, y, toggle_queue, _("Add to queue"))
-        y += 23 * gui.scale
-        #self.toggle_square(x, y, toggle_transfer, _("Folder transfer"))
-
 
         y = self.box_y + 190 * gui.scale
+
         if key_shift_down:
             self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
                         100 * gui.scale)
@@ -14521,28 +14463,28 @@ class Over:
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
         ddt.draw_text((x, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, "Enable")
+        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, _("Enable"))
 
-        ddt.draw_text((x + 295 * gui.scale, y - 3 * gui.scale, 2), "Username: ", colours.grey_blend_bg(60), 212)
+        ddt.draw_text((x + 295 * gui.scale, y - 3 * gui.scale, 2), _("Username:") + " ", colours.grey_blend_bg(60), 212)
         ddt.draw_text((x + 360 * gui.scale, y - 3 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
         y += 30 * gui.scale
 
         if prefs.last_fm_token is None:
-            self.button(x, y, "Login", lastfm.auth1, 65 * gui.scale)
-            self.button(x + 80 * gui.scale, y, "Done", lastfm.auth2, 65 * gui.scale)
+            self.button(x, y, _("Login"), lastfm.auth1, 65 * gui.scale)
+            self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
 
             y += 30 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), "Click login to open the last.fm ",
+            ddt.draw_text((x + 20 * gui.scale, y), _("Click login to open the last.fm"),
                           colours.grey_blend_bg(90), 11)
             y += 14 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), "web authorisation page.",
+            ddt.draw_text((x + 20 * gui.scale, y), _("web authorisation page."),
                           colours.grey_blend_bg(90), 11)
             y += 14 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), 'Then return here and click "Done".',
+            ddt.draw_text((x + 20 * gui.scale, y), _('Then return here and click "Done".'),
                           colours.grey_blend_bg(90), 11)
         else:
-            self.button(x, y, "Forget account", lastfm.auth3)
+            self.button(x, y, _("Forget account"), lastfm.auth3)
 
 
         # if not prefs.auto_lfm:
@@ -14558,34 +14500,34 @@ class Over:
         #
         # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
-        self.button(x, y, "Get user loves", lastfm.dl_love, width=110 * gui.scale)
+        self.button(x, y, _("Get user loves"), lastfm.dl_love, width=110 * gui.scale)
 
         y += 26 * gui.scale
-        self.button(x, y, "Clear local loves", self.clear_local_loves, width=110 * gui.scale)
+        self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=110 * gui.scale)
 
         y = self.box_y + 45 * gui.scale
         x = self.box_x + self.item_x_offset + 385 * gui.scale
 
-        self.button(x, y, "Get friend loves", self.get_friend_love, width=110 * gui.scale)
+        self.button(x, y, _("Get friend loves"), self.get_friend_love, width=110 * gui.scale)
         # if lastfm.scanning_friends:
         #     ddt.draw_text((x + 120 * gui.scale, y), "scanning...",
         #               colours.grey_blend_bg(111), 11)
 
         y += 26 * gui.scale
-        self.button(x, y, "Clear friend loves", lastfm.clear_friends_love, width=110 * gui.scale)
+        self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
 
 
         y = self.box_y + 130 * gui.scale
         x = self.box_x + self.item_x_offset + 310 * gui.scale
-        self.toggle_square(x, y, toggle_scrobble_mark, "Show threshold marker")
+        self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 170 * gui.scale
         ddt.draw_text((x, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, "Enable")
+        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, _("Enable"))
         y += 30 * gui.scale
-        self.button(x, y, "Paste Token", lb.paste_key)
-        self.button(x + 85 * gui.scale, y, "Clear", lb.clear_key)
+        self.button(x, y, _("Paste Token"), lb.paste_key)
+        self.button(x + 85 * gui.scale, y, _("Clear"), lb.clear_key)
 
         y -= 10 * gui.scale
 
@@ -14633,8 +14575,8 @@ class Over:
 
         y += 30 * gui.scale
         #self.toggle_square(x, y, toggle_transcode, "Show in context menu")
-        ddt.draw_text((x, y + 13 * gui.scale), "Output codec setting:", colours.grey(100), 11)
-        self.button(x + 370 * gui.scale, y - 4 * gui.scale, "Open output folder", open_encode_out)
+        ddt.draw_text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.grey(100), 11)
+        self.button(x + 370 * gui.scale, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
 
 
         y += 40 * gui.scale
@@ -14642,7 +14584,7 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_opus, "OPUS")
         if  prefs.transcode_codec == 'opus':
-            self.toggle_square(x + 250 * gui.scale, y, switch_opus_ogg, "Save opus as .ogg extension")
+            self.toggle_square(x + 250 * gui.scale, y, switch_opus_ogg, _("Save opus as .ogg extension"))
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
@@ -14655,7 +14597,7 @@ class Over:
         if prefs.transcode_codec != 'flac':
             y += 35 * gui.scale
 
-            prefs.transcode_bitrate = self.slide_control(x, y, "Bitrate", "kbs", prefs.transcode_bitrate, 32, 320, 8)
+            prefs.transcode_bitrate = self.slide_control(x, y, _("Bitrate"), "kbs", prefs.transcode_bitrate, 32, 320, 8)
 
             y -= 1 * gui.scale
             x += 280 * gui.scale
@@ -14736,20 +14678,20 @@ class Over:
         y = self.box_y - 5 * gui.scale
         x += 270 * gui.scale
 
-        y += 18 * gui.scale
+        y += 25 * gui.scale
 
 
         ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        self.toggle_square(x, y, toggle_gallery_click, "Single click to play")
+        self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, _("Show titles in gallery"))
-        y += 25 * gui.scale
-
-        self.toggle_square(x + 10 * gui.scale, y, toggle_card_style, _("Use card style (Light theme only)"))
-        y += 24 * gui.scale
+        # y += 25 * gui.scale
+        #
+        # self.toggle_square(x + 10 * gui.scale, y, toggle_card_style, _("Use card style (Light theme only)"))
+        y += 26 * gui.scale
         #y += 28 * gui.scale
 
         ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
@@ -14772,18 +14714,6 @@ class Over:
 
         self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
 
-        y += 26 * gui.scale
-
-        #self.button(x, y, "Reset Layout", standard_size)
-        #x += 100
-
-        # x = self.box_x + self.item_x_offset - 10 * gui.scale
-        # y = self.box_y - 5 * gui.scale
-
-        #x -= 100
-
-        #y += 92
-        #self.toggle_square(x, y, toggle_bba, "Show album art in bottom panel")
 
     def about(self):
 
@@ -16532,7 +16462,7 @@ class MiniMode:
         ddt.text_background_colour = [24, 24, 24, 255]
 
         # Play / Pause when right clicking below art
-        if right_click and mouse_position[1] > y1:
+        if right_click: # and mouse_position[1] > y1:
             pctl.play_pause()
 
         # Volume change on scroll
@@ -16557,7 +16487,8 @@ class MiniMode:
                                   (0, 0), (w, w))
 
             # Double click bottom text to return to full window
-            text_hit_area = (40 * gui.scale, y1 + 4, 260 * gui.scale, 50 * gui.scale)
+            text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
+
             if coll(text_hit_area):
                 if input.mouse_click:
                     if d_click_timer.get() < 0.3:
@@ -16571,12 +16502,13 @@ class MiniMode:
             # Draw title texts
             line1 = track.artist
             line2 = track.title
-            ddt.draw_text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(240), 314, window_size[0] - 30 * gui.scale)
-            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(246), 214, window_size[0] - 30 * gui.scale)
+
+            ddt.draw_text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(180), 313, window_size[0] - 30 * gui.scale)
+            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(249), 214, window_size[0] - 30 * gui.scale)
 
             # Calculate seek bar position
             seek_w = 240 * gui.scale
-            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
+            seek_r = [(w - seek_w) // 2, y1 + 57 * gui.scale, seek_w, 6 * gui.scale]
             seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
 
 
@@ -16719,8 +16651,9 @@ def set_mini_mode():
     mini_mode.was_borderless = draw_border
     SDL_SetWindowBordered(t_window, False)
 
-    window_size[0] = 350
-    window_size[1] = 430
+    window_size[0] = int(350 * gui.scale)
+    window_size[1] = int(429 * gui.scale)
+
     SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
     SDL_SetWindowResizable(t_window, False)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
@@ -20629,7 +20562,7 @@ while pctl.running:
         # print(event.type)
 
         # if event.type == SDL_SYSWMEVENT:
-        #      print(event.syswm.msg.contents) # Not implemented
+        #      print(event.syswm.msg.contents) # Not implemented by pysdl2
 
         if event.type == SDL_DROPTEXT:
 
@@ -20699,7 +20632,13 @@ while pctl.running:
             playlist_target = 0
             #print(event.drop)
 
-            if i_y < gui.panelY and not new_playlist_cooldown:
+            # print("TEST")
+            # print(gui.lsp)
+            # print(gui.panelY < i_y < gui.panelBY)
+            # print(i_x < gui.lspw)
+            # print( gui.mode == 1)
+
+            if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
                 x = top_panel.start_space_left
                 for w in range(len(pctl.multi_playlist)):
                     wid = top_panel.tab_text_spaces[w] + top_panel.tab_extra_width
@@ -20720,6 +20659,29 @@ while pctl.running:
                     else:
                         playlist_target = new_playlist()
                         new_playlist_cooldown = True
+
+            elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
+
+                y = gui.panelY
+                y += 5 * gui.scale
+                y += playlist_box.tab_h + playlist_box.gap
+
+                for i, pl in enumerate(pctl.multi_playlist):
+                    if i_y < y:
+                        playlist_target = i
+                        tab_pulse.pulse()
+                        gui.update += 1
+                        gui.pl_pulse = True
+                        print("Direct drop")
+                        break
+                    y += playlist_box.tab_h + playlist_box.gap
+                else:
+                    if new_playlist_cooldown:
+                        playlist_target = pctl.active_playlist_viewing
+                    else:
+                        playlist_target = new_playlist()
+                        new_playlist_cooldown = True
+
 
             else:
                 playlist_target = pctl.active_playlist_viewing
@@ -21425,23 +21387,23 @@ while pctl.running:
 
             key_F7 = False
 
+        if gui.mode < 3:
+            if key_F3:
+                prefs.colour_from_image ^= True
+                if prefs.colour_from_image:
+                    show_message(_("Enabled auto theme"))
+                else:
+                    show_message(_("Disabled auto theme"))
+                    themeChange = True
+                    gui.theme_temp_current = -1
 
-        if key_F3:
-            prefs.colour_from_image ^= True
-            if prefs.colour_from_image:
-                show_message("Enabled auto theme")
-            else:
-                show_message("Disabled auto theme")
-                themeChange = True
-                gui.theme_temp_current = -1
-
-        if mouse4:
-            toggle_album_mode()
-        if mouse5:
-            if not album_mode:
-                toggle_side_panel()
-            else:
+            if mouse4:
                 toggle_album_mode()
+            if mouse5:
+                if not album_mode:
+                    toggle_side_panel()
+                else:
+                    toggle_album_mode()
 
         ab_click = False
 
@@ -22041,7 +22003,7 @@ while pctl.running:
                     line1_colour = alpha_mod([220, 220, 220, 255], 120)
                     #line1_colour = [200, 200, 200, 255]
 
-                if test_lumi(colours.gallery_background) < 0.5:
+                if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
                     line1_colour = colours.grey(80)
                     line2_colour = colours.grey(40)
 
@@ -22306,6 +22268,7 @@ while pctl.running:
                             if prefs.use_card_style and colours.lm and gui.gallery_show_text:
 
                                 card_mode = True
+                                ddt.text_background_colour = colours.grey(250)
 
 
                             if card_mode:
@@ -22658,7 +22621,7 @@ while pctl.running:
                         gui.update += 2
                         gui.pl_update += 2
                         if order.notify and gui.message_box:
-                            show_message("Rescan folder complete.", 'done', order.target)
+                            show_message(_("Rescan folder complete."), 'done', order.target)
                         reload()
                         del load_orders[i]
 
@@ -23569,17 +23532,16 @@ while pctl.running:
                         else:
                             r_todo.append(item)
 
-                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Track Renaming", colours.grey(230), 213)
+                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Track Renaming"), colours.grey(230), 213)
 
                 #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
-                if rename_files.text != prefs.rename_tracks_template and draw.button("Default", x + w - 85 * gui.scale, y + h - 35 * gui.scale,
+                if rename_files.text != prefs.rename_tracks_template and draw.button(_("Default"), x + w - 85 * gui.scale, y + h - 35 * gui.scale,
                                70 * gui.scale):
                     rename_files.text = prefs.rename_tracks_template
 
                 # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
                 rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
                 NRN = rename_files.text
-                # c_blink = 200
 
                 ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
@@ -23596,11 +23558,11 @@ while pctl.running:
                     if item == rename_index:
                         afterline = parse_template2(NRN, pctl.master_library[item])
 
-                ddt.draw_text((x + 10 * gui.scale, y + 68 * gui.scale), "BEFORE", colours.grey(100), 212)
+                ddt.draw_text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.grey(100), 212)
                 line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
                 ddt.draw_text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
 
-                ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), "AFTER", colours.grey(100), 212)
+                ddt.draw_text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.grey(100), 212)
                 ddt.draw_text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
 
 
@@ -23664,10 +23626,10 @@ while pctl.running:
 
 
                     if total_todo != len(r_todo):
-                        show_message("Error.  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
+                        show_message("Error." + "  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
 
                     else:
-                        show_message("Rename complete.", 'done', str(total_todo) + "/" + str(len(r_todo)) + " filenames were written.")
+                        show_message(_("Rename complete."), 'done', str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."))
 
 
             if radiobox:
@@ -23688,7 +23650,7 @@ while pctl.running:
                 if key_esc_press or (gui.level_2_click and not coll((x, y, w, h))):
                     radiobox = False
 
-                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), "Open HTTP Audio Stream", colours.sys_title, 213)
+                ddt.draw_text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Open HTTP Audio Stream"), colours.sys_title, 213)
                 #ddt.text_background_colour = colours.sys_background_3
 
                 y1 = y
@@ -24190,7 +24152,7 @@ while pctl.running:
 
         gui.level_update = True
 
-    if gui.level_update is True and not resize_mode:
+    if gui.level_update is True and not resize_mode and not gui.mode == 3:
         gui.level_update = False
 
         SDL_SetRenderTarget(renderer, None)
