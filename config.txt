@@ -7,26 +7,26 @@ plex-username=
 plex-password=
 plex-servname=
 
-### --- Playback / Audio  (min 50ms, max 3000ms) --------------------------------------------------------
+### --- Playback / Audio  (min 50ms, max 3000ms) (libbass only)------------------------------------------
 
 #pause-fade-time=400
 #cross-fade-time=700
 
-#force-mono (libbass only)
+#force-mono
 
-### Disconnect from audio device when paused/stopped (Always enabled when KDE detected)
-#dc-device-on-pause
+### Disconnect from audio device when paused/stopped, can be ON or OFF
+### If commented out, will default to OFF except when KDE is detected
+#disconnect-device-pause=ON
 
 ### Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
-
 #log-volume-scale
 
-### --- Media Keys -------------------------------------------------------------
+### --- Media Keys --------------------------------------------------------------------------------------
 
 #disable-mediakey (gnome media keys)
 #disable-linux-mpris
 
-### --- Spectrogram ----------------------------------------------------------
+### --- Spectrogram ----------------------------------------------------------------------------------
 ### Base colour is the background colour. Are R,G,B int values. Must be from 0 to 255.
 ### Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
 
@@ -38,12 +38,12 @@ vis-scroll
 ### Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
 ### Colours of the level meter cannot currently be configured
 
-### --- View -----------------------------------------------------------------
+### --- View -------------------------------------------------------------------------------------------
 
 scroll-gallery-row
 scroll-gallery-wheel=90
 
-### --- Encoding ------------------------------------------------------------------
+### --- Encoding ----------------------------------------------------------------------------------------
 ### Output directory for encoded files. Must have user write permissions. Default is encoder folder in program directory.
 
 #output-dir=/home/example/music/output
@@ -52,14 +52,14 @@ scroll-gallery-wheel=90
 
 #add_download_directory=/home/example/music/downloads
 
-### --- Broadcasting ------------------------------------------------------------------
+### --- Broadcasting -----------------------------------------------------------------------------------
 
 broadcast-bitrate=128
 broadcast-port=8000
 
 ### Changing this port breaks player on web server radio page
 
-### --- Tag Editor ----------------------------------------------------------------
+### --- Tag Editor ------------------------------------------------------------------------------
 ### External Tag editor loading. tag-editor-program is the binary name used on Linux, When program is closed, tags will be updated
 ### provided the filenames of tracks have not changed (filename changes are tracked with Picard)
 

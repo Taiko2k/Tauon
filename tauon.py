@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.7.1"
+t_version = "v 3.8.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -691,6 +691,8 @@ class Prefs:    # Used to hold any kind of settings
         if desktop == "KDE":
             self.dc_device = True
 
+        self.showcase_vis = True
+
 
 prefs = Prefs()
 
@@ -735,9 +737,11 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.time_passed = 0
         self.level_meter_colour_mode = 3
 
-        self.vis = 2  # visualiser mode setting
+        self.vis = 2  # visualiser mode actual
+        self.vis_want = 2  # visualiser mode setting
         self.spec = None
         self.s_spec = [0] * 24
+        self.s4_spec = [0] * 45
         self.update_spec = 0
 
         #self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
@@ -747,7 +751,15 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.spec_h = int(round(20 * self.scale))
         self.spec1_rec = SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
 
+        self.spec4_array = []
+        self.spec4_y = int(round(200 * self.scale))
+        self.spec4_w = int(round(322 * self.scale))
+        self.spec4_h = int(round(100 * self.scale))
+        self.draw_spec4 = False
+        self.spec4_rec = SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
+
         self.bar = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
+        self.bar4 = SDL_Rect(10, 10, round(3 * self.scale), 10) # spec bar bin
 
         self.combo_mode = False
         self.showcase_mode = False
@@ -917,6 +929,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.window_control_hit_area_w = 60 * self.scale
         self.window_control_hit_area_h = 30 * self.scale
+
+        self.draw_vis4_top = False
+        self.vis_4_colour = [0,0,0,255]
 
 gui = GuiVar()
 
@@ -1137,7 +1152,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.status_info_text = [245, 205, 0, 255]
         self.streaming_text = [220, 75, 60, 255]
-        self.lyrics = self.grey(210)
+        self.lyrics = self.grey(235)
 
         self.corner_button = [60, 60, 60, 255]
         self.corner_button_active = [230, 230, 230, 255]
@@ -1371,7 +1386,7 @@ try:
     window_size = save[19]
     gui.rspw = save[20]
     # savetime = save[21]
-    gui.vis = save[22]
+    gui.vis_want = save[22]
     playlist_selected = save[23]
     if save[24] is not None:
         album_mode_art_size = save[24]
@@ -4729,6 +4744,7 @@ SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
 gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
 
 
@@ -10681,28 +10697,31 @@ field_menu.add(_("Clear"), field_clear, pass_ref=True)
 
 
 def vis_off():
-    gui.vis = 0
-    gui.turbo = False
+    gui.vis_want = 0
+    gui.update_layout()
+    # gui.turbo = False
+
 vis_menu.add(_("Off"), vis_off)
 
 def level_on():
-    if gui.vis == 1 and gui.turbo is True:
+    if gui.vis_want == 1 and gui.turbo is True:
         gui.level_meter_colour_mode += 1
         if gui.level_meter_colour_mode > 4:
             gui.level_meter_colour_mode = 0
 
-    gui.vis = 1
-    gui.turbo = True
+    gui.vis_want = 1
+    gui.update_layout()
+    #gui.turbo = True
 vis_menu.add(_("Level Meter"), level_on)
 
 def spec_on():
-    gui.vis = 2
-    gui.turbo = True
+    gui.vis_want = 2
+    gui.update_layout()
 vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 def spec2_def():
-    gui.vis = 3
-    gui.turbo = True
+    gui.vis_want = 3
+    #gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
 vis_menu.add(_("Spectrogram"), spec2_def)
@@ -11439,17 +11458,25 @@ def toggle_mini_lyrics(mode=0):
     prefs.show_lyrics_side ^= True
 
 
+def toggle_showcase_vis(mode=0):
+
+    if mode == 1:
+        return prefs.showcase_vis
+
+    prefs.showcase_vis ^= True
+
+
 def toggle_level_meter(mode=0):
 
     if mode == 1:
-        return gui.turbo
+        return gui.vis_want != 0
 
-    if gui.turbo is True:
-        gui.vis = 0
-        gui.turbo = False
-    elif gui.turbo is False:
-        gui.turbo = True
-        gui.vis = 2
+    if gui.vis_want == 0:
+        gui.vis_want = 2
+    else:
+        gui.vis_want = 0
+
+    gui.update_layout()
 
 
 def level_meter_special_2():
@@ -14647,7 +14674,10 @@ class Over:
         y1 = y
 
 
-        ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+        ddt.draw_text((x, y - 25 * gui.scale), _("Window"), colours.grey_blend_bg(100), 12)
+
+        self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
+
         y += 25 * gui.scale
 
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
@@ -14700,7 +14730,9 @@ class Over:
 
 
         if prefs.backend == 1:
-            self.toggle_square(x, y, toggle_level_meter, _("Show visualisation"))
+            self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
 
 
@@ -14712,7 +14744,7 @@ class Over:
         y += 25 * gui.scale
 
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
+
 
 
     def about(self):
@@ -19152,11 +19184,26 @@ class Showcase:
         bft = colours.grey(235)
         bbt = colours.grey(200)
 
+        t1 = colours.grey(350)
+        gui.vis_4_colour = [120, 100, 190, 255]
+
         if colours.lm:
             bbg = colours.vis_colour
             bfg = alpha_blend([255, 255, 255, 60], colours.vis_colour)
             bft = colours.grey(250)
             bbt = colours.grey(245)
+            #gui.vis_4_colour = [40, 40, 40, 255]
+
+        if test_lumi(colours.playlist_panel_background) < 0.7:
+
+            t1 = colours.grey(30)
+            #gui.vis_4_colour = [180, 160, 250, 255]
+            gui.vis_4_colour = [40, 40, 40, 255]
+
+        # else:
+
+
+
 
         if draw.button("Return", 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
             switch_showcase()
@@ -19201,6 +19248,16 @@ class Showcase:
             # Check for lyrics if auto setting
             test_auto_lyrics(track)
 
+            gui.draw_vis4_top = False
+
+            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                if mouse_wheel != 0:
+                    lyrics_ren.lyrics_position += mouse_wheel * 35 * gui.scale
+                if right_click:
+                    # track = pctl.playing_object()
+                    if track != None:
+                        showcase_menu.activate(track)
+
             if track.lyrics == "":
 
                 w = window_size[0] - (x + box) - 30 * gui.scale
@@ -19210,14 +19267,26 @@ class Showcase:
 
                 if track.artist == "" and track.title == "":
 
-                    ddt.draw_text((x, y, 2), track.filename, colours.side_bar_line1, 216, w)
+                    ddt.draw_text((x, y, 2), track.filename, t1, 216, w)
 
                 else:
 
-                    ddt.draw_text((x, y, 2), track.artist, colours.side_bar_line1, 17, w)
+                    ddt.draw_text((x, y, 2), track.artist, t1, 17, w)
 
                     y += 45 * gui.scale
-                    ddt.draw_text((x, y, 2), track.title, colours.side_bar_line1, 228, w)
+                    ddt.draw_text((x, y, 2), track.title, t1, 228, w)
+
+                gui.spec4_rec.x = x - (gui.spec4_rec.w // 2)
+                gui.spec4_rec.y = y + 50 * gui.scale
+
+
+                if prefs.showcase_vis and window_size[0] > 710 and window_size[1] > 369 and not search_over.active:
+
+                    if showcase_menu.active or gui.message_box or pref_box.enabled:
+                        self.render_vis()
+                    else:
+                        gui.draw_vis4_top = True
+
 
             else:
                 x += box + int(window_size[0] * 0.15) + 20 * gui.scale
@@ -19239,13 +19308,61 @@ class Showcase:
                                   int(window_size[1] - 100 * gui.scale),
                                   0)
 
-            if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-                if mouse_wheel != 0:
-                    lyrics_ren.lyrics_position += mouse_wheel * 35 * gui.scale
-                if right_click:
-                    # track = pctl.playing_object()
-                    if track != None:
-                        showcase_menu.activate(track)
+
+
+    def render_vis(self, top=False):
+
+        SDL_SetRenderTarget(renderer, gui.spec4_tex)
+
+        # SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        # SDL_RenderClear(renderer)
+
+        ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), colours.playlist_panel_background, True)
+        # ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), [255, 0, 0, 244], True)
+
+        bx = 0
+        by = 50
+
+        SDL_SetRenderDrawColor(renderer, gui.vis_4_colour[0], gui.vis_4_colour[1], gui.vis_4_colour[2], gui.vis_4_colour[3])
+
+        if (pctl.playing_time < 0.5 and pctl.playing_state == 1) or (pctl.playing_state == 0 and gui.spec4_array.count(0) != len(gui.spec4_array)):
+            gui.update = 2
+            gui.level_update = True
+
+            for i in range(len(gui.spec4_array)):
+                gui.spec4_array[i] -= 0.1
+                if gui.spec4_array[i] < 0:
+                    gui.spec4_array[i] = 0
+
+        if not top and pctl.playing_state == 1:
+            gui.update = 2
+
+
+        for i, bar in enumerate(gui.spec4_array):
+
+            if i > 40:
+                break
+
+            dis = 2 + math.pow(bar / 2, 1.5)
+
+            gui.bar4.x = int(bx)
+            gui.bar4.y = round(by - dis)
+            gui.bar4.w = round(2 * gui.scale)
+            gui.bar4.h = round(dis * 2)
+
+            SDL_RenderFillRect(renderer, gui.bar4)
+
+            bx += 8
+
+
+        if top:
+            SDL_SetRenderTarget(renderer, None)
+        else:
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+
+        SDL_RenderCopy(renderer, gui.spec4_tex, None, gui.spec4_rec)
+
+
 
 
 showcase = Showcase()
@@ -20066,6 +20183,18 @@ def update_layout_do():
 
     #print("TEST")
 
+    if gui.combo_mode and prefs.showcase_vis:
+        gui.vis = 4
+        gui.turbo = True
+    elif gui.vis_want == 0:
+        gui.turbo = False
+        gui.vis = 0
+    else:
+        gui.vis = gui.vis_want
+        if gui.vis > 0:
+            gui.turbo = True
+
+
 
     if gui.mode == 1:
 
@@ -20346,7 +20475,7 @@ def save_state():
             gui.save_size,
             None,  # old side panel size
             0,  # save time (unused)
-            gui.vis,
+            gui.vis_want,  # gui.vis
             playlist_selected,
             album_mode_art_size,
             draw_border,
@@ -21072,6 +21201,8 @@ while pctl.running:
     else:
         power = 0
 
+
+
     if mouse_down and not k_input:
 
         # Force update (for smooth scrolling) when mouse down (A little hacky)
@@ -21379,11 +21510,12 @@ while pctl.running:
         if key_F7: #  F7 test
 
             #plex.get_albums()
+            gui.vis = 4
             #print(pctl.playing_object().misc)
 
             #show_message("Test error message 123", 'error', "hello text")
-            pctl.playerCommand = "unload"
-            pctl.playerCommandReady = True
+            # pctl.playerCommand = "unload"
+            # pctl.playerCommandReady = True
 
             key_F7 = False
 
@@ -24222,6 +24354,12 @@ while pctl.running:
 
             if pref_box.enabled:
                 ddt.rect_r((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90], True)
+
+        if gui.vis == 4 and gui.draw_vis4_top:
+
+            showcase.render_vis(True)
+
+
 
         if gui.vis == 2 and gui.spec is not None:
 
