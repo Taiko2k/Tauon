@@ -1,9 +1,10 @@
 
 Changelog-------------------------------------
 
-v3.7.1
+v3.8.0
 
  - Added mini mode UI
+ - Added visualizer to showcase view
  - Added option to disable tabs on top panel
  - Added keyboard shortcut for adding to queue (ctrl + q)
  - Added support for user folder themes
@@ -19,6 +20,7 @@ v3.7.1
  - Fixed PLEX scan status text persisting if failed
  - Fixed crash on F12 press
  - Fixed light mode galley text rendering with auto theme
+ - Fixed showcase view text colours with auto theme
  - Removed F10 to toggle decorations
  - Removed gallery card style option (now always on)
 

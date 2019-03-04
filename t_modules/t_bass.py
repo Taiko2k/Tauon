@@ -359,6 +359,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_SetConfig(7, True)
 
     x = (ctypes.c_float * 512)()
+    xx = (ctypes.c_float * 1024)()
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
 
     # print(BASS_GetVersion())
@@ -901,6 +902,58 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     #     gui.update_spec = 0
                     gui.level_update = True
                     continue
+
+                elif gui.vis == 4:
+
+
+                    # # TEMPORARY
+                    # continue
+
+                    if gui.lowered:
+                        continue
+
+                    BASS_ChannelGetData(bass_player.channel, xx, 0x80000003)
+
+                    # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
+                    # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
+                    # BASS_DATA_FFT1024 = 0x80000002# -2147483646# 1024 FFT
+                    # BASS_DATA_FFT2048 = 0x80000003# -2147483645# 2048 FFT
+                    # BASS_DATA_FFT4096 = 0x80000004# -2147483644# 4096 FFT
+                    # BASS_DATA_FFT8192 = 0x80000005# -2147483643# 8192 FFT
+                    # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
+
+                    p_spec = []
+                    BANDS = 42
+                    b0 = 0
+                    i = 0
+
+                    while i < BANDS:
+                        peak = 0
+                        b1 = pow(2, i * 10.0 / (BANDS - 1))
+                        if b1 > 511:
+                            b1 = 511
+                        if b1 <= b0:
+                            b1 = b0 + 1
+                        while b0 < b1 and b0 < 511:
+                            if peak < xx[1 + b0]:
+                                peak = xx[1 + b0]
+                            b0 += 1
+
+                        outp = math.sqrt(peak)
+                        # print(int(outp*20))
+                        p_spec.append(int(outp * 45))
+                        i += 1
+                    gui.spec4_array = p_spec
+
+                    # print(gui.spec)
+                    if pctl.playing_time > 0.5 and pctl.playing_state == 1:
+                        gui.update_spec = 1
+                    # if pctl.playerCommand in ['open', 'stop']:
+                    #     gui.update_spec = 0
+                    gui.level_update = True
+                    #gui.update = 5
+                    continue
+
 
                 # ------------------------------------
                 elif gui.vis == 3:
