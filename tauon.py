@@ -692,6 +692,7 @@ class Prefs:    # Used to hold any kind of settings
             self.dc_device = True
 
         self.showcase_vis = True
+        self.show_lyrics_showcase = True
 
 
 prefs = Prefs()
@@ -1553,6 +1554,8 @@ try:
         prefs.gallery_single_click = save[106]
     if save[107] is not None:
         prefs.tabs_on_top = save[107]
+    if save[108] is not None:
+        prefs.showcase_vis = save[108]
 
     state_file.close()
     del save
@@ -4747,6 +4750,7 @@ gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUR
 gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
 gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
 
+SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 
 SDL_SetRenderTarget(renderer, None)
 
@@ -4893,6 +4897,8 @@ ddt.prime_font(standard_font, 11, 214)
 ddt.prime_font(standard_font, 12, 215)
 ddt.prime_font(standard_font, 13, 216)
 ddt.prime_font(standard_font, 14, 217)
+ddt.prime_font(standard_font, 17, 218)
+ddt.prime_font(standard_font, 19, 219)
 ddt.prime_font(standard_font, 25, 228)
 
 
@@ -5723,6 +5729,8 @@ class ImageObject():
         self.format = ""
 
 
+
+
 class AlbumArt():
     def __init__(self):
         self.image_types = {'jpg', 'JPG', 'jpeg', 'JPEG', 'PNG', 'png', 'BMP', 'bmp', 'GIF', 'gif'}
@@ -5732,6 +5740,9 @@ class AlbumArt():
         self.source_cache = {}
         self.image_cache = []
         self.current_wu = None
+
+        self.blur_texture = None
+        self.blur_rect = None
 
     def get_info(self, index):
 
@@ -6015,6 +6026,23 @@ class AlbumArt():
             a.close()
             return image
 
+    def get_source_raw(self, offset, source, index):
+
+        source_image = None
+        if source[offset][0] == 1:
+            # Target is a embedded image
+            source_image = io.BytesIO(self.get_embed(index))
+        elif source[offset][0] == 2:
+            try:
+                response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                source_image = response
+            except:
+                print("IMAGE NETWORK LOAD ERROR")
+
+        else:
+            source_image = open(source[offset][1], 'rb')
+        return source_image
+
     def get_base64(self, index, size):
 
         filepath = pctl.master_library[index].fullpath
@@ -6025,11 +6053,13 @@ class AlbumArt():
 
         offset = self.get_offset(filepath, sources)
 
-        if sources[offset][0] == True:
-            # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(index))
-        else:
-            source_image = open(sources[offset][1], 'rb')
+        # Get source IO
+        source_image = self.get_source_raw(offset, sources, index)
+
+        if source_image is None:
+            return ""
+
+
 
         im = Image.open(source_image)
         if im.mode != "RGB":
@@ -6039,6 +6069,78 @@ class AlbumArt():
         im.save(buff, format="JPEG")
         sss = base64.b64encode(buff.getvalue())
         return sss
+
+
+    def display_blur(self, index, size):
+
+        if self.blur_texture is not None:
+
+            SDL_RenderCopy(renderer, self.blur_texture, None, self.blur_rect)
+
+            return
+
+        filepath = pctl.master_library[index].fullpath
+        sources = self.get_sources(index)
+
+        if len(sources) == 0:
+            return False
+
+        offset = self.get_offset(filepath, sources)
+
+        source_image = self.get_source_raw(offset, sources, index)
+
+        if source_image is None:
+            return
+
+        im = Image.open(source_image)
+
+        format = im.format
+        if im.format == "JPEG":
+            format = "JPG"
+
+        # print(im.size)
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+
+
+        rim = im.resize((1400, 1400))
+        bim = rim.filter(ImageFilter.GaussianBlur(30))
+        # im.save(save_path + '.jpg', 'JPEG')
+        im = bim
+
+        g = io.BytesIO()
+        g.seek(0)
+
+        im.save(g, 'BMP')
+
+        g.seek(0)
+
+        wop = rw_from_object(g)
+        s_image = IMG_Load_RW(wop, 0)
+        # print(IMG_GetError())
+
+        c = SDL_CreateTextureFromSurface(renderer, s_image)
+
+        tex_w = pointer(c_int(0))
+        tex_h = pointer(c_int(0))
+
+        SDL_QueryTexture(c, None, None, tex_w, tex_h)
+
+        dst = SDL_Rect(round(0, 0))
+        dst.w = int(tex_w.contents.value)
+        dst.h = int(tex_h.contents.value)
+
+        # Clean uo
+        SDL_FreeSurface(s_image)
+        g.close()
+        source_image.close()
+
+        self.blur_texture = c
+        self.blur_rect = dst
+
+        self.display_blur(index, size)
+
+
 
     def save_thumb(self, index, size, save_path):
 
@@ -6050,17 +6152,36 @@ class AlbumArt():
 
         offset = self.get_offset(filepath, sources)
 
-        if sources[offset][0] is True:
+        # Get source IO
+        if source[offset][0] == 1:
             # Target is a embedded image
             source_image = io.BytesIO(self.get_embed(index))
+        elif source[offset][0] == 2:
+            try:
+                response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                source_image = response
+            except:
+                print("IMAGE NETWORK LOAD ERROR")
+
         else:
-            source_image = open(sources[offset][1], 'rb')
+            source_image = open(source[offset][1], 'rb')
 
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
         im.thumbnail(size, Image.ANTIALIAS)
         im.save(save_path + '.jpg', 'JPEG')
+
+        g = io.BytesIO()
+        g.seek(0)
+        #im = Image.open(source_image)
+        #_size = im.size
+
+        #format = im.format
+
+        im.save(g, 'BMP')
+        g.close()
+
 
     def display(self, index, location, box, fast=False):
 
@@ -7319,7 +7440,6 @@ cancel_menu.add("Cancel", cancel_import)
 
 
 def toggle_lyrics_show(a):
-
     return not gui.combo_mode
 
 
@@ -7347,24 +7467,41 @@ showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco, pa
 
 def toggle_lyrics_deco():
 
-    colour = colours.menu_text
-    if prefs.show_lyrics_side:
-        line = "Hide lyrics"
+    if gui.combo_mode:
+
+        colour = colours.menu_text
+        if prefs.show_lyrics_showcase:
+            line = "Hide lyrics"
+        else:
+            line = "Show lyrics"
+        if pctl.playing_object().lyrics == "":
+            colour = colours.menu_text_disabled
+
     else:
-        line = "Show lyrics"
-    if pctl.playing_object().lyrics == "":
-        colour = colours.menu_text_disabled
+
+        colour = colours.menu_text
+        if prefs.show_lyrics_side:
+            line = "Hide lyrics"
+        else:
+            line = "Show lyrics"
+        if pctl.playing_object().lyrics == "":
+            colour = colours.menu_text_disabled
 
     return [colour, colours.menu_background, line]
 
 def toggle_lyrics(track_object):
 
-    prefs.show_lyrics_side ^= True
+    if gui.combo_mode:
+        prefs.show_lyrics_showcase ^= True
+        if prefs.show_lyrics_showcase and track_object.lyrics == "":
+            show_message("No lyrics for this track")
+    else:
 
-    if prefs.show_lyrics_side and track_object.lyrics == "":
-        show_message("No lyrics for this track")
+        prefs.show_lyrics_side ^= True
+        if prefs.show_lyrics_side and track_object.lyrics == "":
+            show_message("No lyrics for this track")
 
-showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, show_test=toggle_lyrics_show)
+showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True)
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -11464,6 +11601,7 @@ def toggle_showcase_vis(mode=0):
         return prefs.showcase_vis
 
     prefs.showcase_vis ^= True
+    gui.update_layout()
 
 
 def toggle_level_meter(mode=0):
@@ -16674,6 +16812,10 @@ def set_mini_mode():
         return
 
     gui.mode = 3
+    gui.vis = 0
+    gui.turbo = False
+    gui.draw_vis4_top = False
+    gui.level_update = False
 
     i_y = pointer(c_int(0))
     i_x = pointer(c_int(0))
@@ -16721,6 +16863,8 @@ def restore_full_mode():
     global mouse_down
     mouse_down = False
     input.mouse_click = False
+
+    gui.update_layout()
 
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
@@ -19175,9 +19319,13 @@ class Showcase:
 
         ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), colours.playlist_panel_background, True)
 
-        box = int(window_size[1] * 0.4 + 120)
+        # album_art_gen.display_blur(pctl.playing_object().index, [200, 200])
+
+        # ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,100], True)
+
+        box = int(window_size[1] * 0.4 + 120 * gui.scale)
         x = int(window_size[0] * 0.15)
-        y = int((window_size[1] / 2) - (box / 2)) - 10
+        y = int((window_size[1] / 2) - (box / 2)) - 10 * gui.scale
 
         bbg = colours.grey(30)
         bfg = colours.grey(40)
@@ -19185,7 +19333,7 @@ class Showcase:
         bbt = colours.grey(200)
 
         t1 = colours.grey(350)
-        gui.vis_4_colour = [120, 100, 190, 255]
+        gui.vis_4_colour = [140, 110, 200, 255]
 
         if colours.lm:
             bbg = colours.vis_colour
@@ -19199,10 +19347,6 @@ class Showcase:
             t1 = colours.grey(30)
             #gui.vis_4_colour = [180, 160, 250, 255]
             gui.vis_4_colour = [40, 40, 40, 255]
-
-        # else:
-
-
 
 
         if draw.button("Return", 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
@@ -19258,12 +19402,17 @@ class Showcase:
                     if track != None:
                         showcase_menu.activate(track)
 
-            if track.lyrics == "":
+            if track.lyrics == "" or not prefs.show_lyrics_showcase:
 
-                w = window_size[0] - (x + box) - 30 * gui.scale
+                w = window_size[0] - (x + box) - round(30 * gui.scale)
                 x = int(x + box + (window_size[0] - x - box) / 2)
                 #x = int((window_size[0]) / 2)
-                y = int(window_size[1] / 2) - 60 * gui.scale
+                y = int(window_size[1] / 2) - round(60 * gui.scale)
+
+                if prefs.showcase_vis:
+                    y -= round(30 * gui.scale)
+
+                # ddt.pretty_rect = (300, 100, window_size[0], window_size[1] - gui.panelBY)
 
                 if track.artist == "" and track.title == "":
 
@@ -19273,12 +19422,20 @@ class Showcase:
 
                     ddt.draw_text((x, y, 2), track.artist, t1, 17, w)
 
-                    y += 45 * gui.scale
-                    ddt.draw_text((x, y, 2), track.title, t1, 228, w)
+                    y += round(45 * gui.scale)
+
+                    if len(track.title) < 35:
+                        ddt.draw_text((x, y, 2), track.title, t1, 228, w)
+                    elif len(track.title) < 50:
+                        ddt.draw_text((x, y, 2), track.title, t1, 219, w)
+                    else:
+                        ddt.draw_text((x, y, 2), track.title, t1, 218, w)
 
                 gui.spec4_rec.x = x - (gui.spec4_rec.w // 2)
-                gui.spec4_rec.y = y + 50 * gui.scale
+                gui.spec4_rec.y = y + round(50 * gui.scale)
 
+
+                # ddt.pretty_rect = None
 
                 if prefs.showcase_vis and window_size[0] > 710 and window_size[1] > 369 and not search_over.active:
 
@@ -19289,9 +19446,9 @@ class Showcase:
 
 
             else:
+
                 x += box + int(window_size[0] * 0.15) + 20 * gui.scale
 
-                #y = 80
                 x -= 100 * gui.scale
                 w = window_size[0] - x - 30 * gui.scale
 
@@ -19314,14 +19471,13 @@ class Showcase:
 
         SDL_SetRenderTarget(renderer, gui.spec4_tex)
 
-        # SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-        # SDL_RenderClear(renderer)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_RenderClear(renderer)
 
-        ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), colours.playlist_panel_background, True)
-        # ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), [255, 0, 0, 244], True)
+        # ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), [255, 0, 0, 100], True)
 
         bx = 0
-        by = 50
+        by = 50 * gui.scale
 
         SDL_SetRenderDrawColor(renderer, gui.vis_4_colour[0], gui.vis_4_colour[1], gui.vis_4_colour[2], gui.vis_4_colour[3])
 
@@ -19343,7 +19499,7 @@ class Showcase:
             if i > 40:
                 break
 
-            dis = 2 + math.pow(bar / 2, 1.5)
+            dis = (2 + math.pow(bar / 2, 1.5)) * gui.scale
 
             gui.bar4.x = int(bx)
             gui.bar4.y = round(by - dis)
@@ -19352,7 +19508,7 @@ class Showcase:
 
             SDL_RenderFillRect(renderer, gui.bar4)
 
-            bx += 8
+            bx += 8 * gui.scale
 
 
         if top:
@@ -19360,8 +19516,8 @@ class Showcase:
         else:
             SDL_SetRenderTarget(renderer, gui.main_texture)
 
+        #SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
         SDL_RenderCopy(renderer, gui.spec4_tex, None, gui.spec4_rec)
-
 
 
 
@@ -20169,6 +20325,7 @@ def update_layout_do():
 
     # w = window_size[0]
     # h = window_size[1]
+
     #
     # if w / h == 16 / 9:
     #     print("YEP")
@@ -20179,11 +20336,14 @@ def update_layout_do():
     # print(w)
 
     #input.mouse_click = False
+
     global renderer
 
     #print("TEST")
 
-    if gui.combo_mode and prefs.showcase_vis:
+    gui.draw_vis4_top = False
+
+    if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
         gui.vis = 4
         gui.turbo = True
     elif gui.vis_want == 0:
@@ -20194,6 +20354,9 @@ def update_layout_do():
         if gui.vis > 0:
             gui.turbo = True
 
+    if gui.mode == 3:
+        gui.vis = 0
+        gui.turbo = False
 
 
     if gui.mode == 1:
@@ -20560,7 +20723,8 @@ def save_state():
             prefs.show_side_art,
             prefs.window_opacity,
             prefs.gallery_single_click,
-            prefs.tabs_on_top]
+            prefs.tabs_on_top,
+            prefs.showcase_vis]
 
     #print(prefs.last_device + "-----")
 
@@ -21189,6 +21353,7 @@ while pctl.running:
 
     if pctl.playing_state > 0 or pctl.broadcast_active:
         power += 400
+
     if power < 500:
 
         SDL_Delay(30)
@@ -21200,7 +21365,6 @@ while pctl.running:
 
     else:
         power = 0
-
 
 
     if mouse_down and not k_input:
@@ -24358,6 +24522,7 @@ while pctl.running:
         if gui.vis == 4 and gui.draw_vis4_top:
 
             showcase.render_vis(True)
+            # gui.level_update = False
 
 
 
