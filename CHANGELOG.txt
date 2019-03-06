@@ -8,6 +8,7 @@ v3.8.0
  - Added option to disable tabs on top panel
  - Added keyboard shortcut for adding to queue (ctrl + q)
  - Added support for user folder themes
+ - Added menu function to hide lyrics in "Lyrics showcase" view
  - Tweaked playing highlight in some themes
  - Tweaked drag sensitivity for dragging tabs in playlist side panel (reduced)
  - Tweaked tab dragging to toggle hidden if dragged between top or side panel
@@ -15,6 +16,7 @@ v3.8.0
  - Improved device switching to allow switching while playing
  - Improved compatibility with KDE to detach audio when paused
  - Improved playlist side panel to allow direct file dropping
+ - Improved showcase title text to scale with text length
  - Fixed not being able to restart app immediately
  - Fixed image menu incorrectly showing items as greyed
  - Fixed PLEX scan status text persisting if failed
@@ -23,6 +25,7 @@ v3.8.0
  - Fixed showcase view text colours with auto theme
  - Removed F10 to toggle decorations
  - Removed gallery card style option (now always on)
+ - Removed jump on stall detection
 
 v3.7.0
 

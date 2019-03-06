@@ -326,28 +326,28 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     d_info = BASS_DEVICEINFO()
 
-    # a = 1
-    # while True:
-    #     if not BASS_GetDeviceInfo(a, d_info):
-    #         break
-    #     name = d_info.name.decode('utf-8', 'ignore')
-    #     flags = d_info.flags
-    #     enabled = BASS_DEVICE_ENABLED & flags
-    #     default = BASS_DEVICE_DEFAULT & flags
-    #     current = BASS_DEVICE_INIT & flags
-    #
-    #     if name != "" and name == prefs.last_device:
-    #         BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
-    #         pctl.set_device = a
-    #         print("Set output device as: " + name)
-    #         bass_ready = True
-    #
-    #     # print((name, enabled, default, current))
-    #     if current > 0:
-    #         pctl.set_device = a
-    #     pctl.bass_devices.append((name, enabled, default, current, a))
-    #     a += 1
-    #
+    a = 1
+    while True:
+        if not BASS_GetDeviceInfo(a, d_info):
+            break
+        name = d_info.name.decode('utf-8', 'ignore')
+        flags = d_info.flags
+        enabled = BASS_DEVICE_ENABLED & flags
+        default = BASS_DEVICE_DEFAULT & flags
+        current = BASS_DEVICE_INIT & flags
+
+        # if name != "" and name == prefs.last_device:
+        #     #BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
+        #     #pctl.set_device = a
+        #     #print("Set output device as: " + name)
+        #     #bass_ready = True
+
+        # print((name, enabled, default, current))
+        # if current > 0:
+        #     pctl.set_device = a
+        pctl.bass_devices.append((name, enabled, default, current, a))
+        a += 1
+
     # bass_init_success = False
     # if not bass_ready:
     #     bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
@@ -1141,19 +1141,20 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_ChannelPlay(bass_player.channel, False)
 
             elif status == 2:
+
                 print("Channel has stalled")
 
                 pctl.playing_time += add_time
 
-                if pctl.playing_time > 20 and pctl.playing_state != 3:
-                    pctl.playing_time = 0
-                    print("Advancing")
-                    bass_player.stop(now=True)
-                    pctl.playing_time = 0
-                    pctl.advance(nolock=True)
-                    continue
+                # if pctl.playing_time > 5 and pctl.playing_state != 3:
+                #     pctl.playing_time = 0
+                #     print("Advancing")
+                #     bass_player.stop(now=True)
+                #     pctl.playing_time = 0
+                #     pctl.advance(nolock=True)
+                #     continue
 
-            # pctl.playing_time += add_time
+
             if status == 1 and not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 bass_player.update_time()
 
