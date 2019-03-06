@@ -40,6 +40,7 @@
 
   <releases>
     <release version="3.7.0" date="2019-02-17"/>
+    <release version="3.8.0" date="2019-03-06"/>
   </releases>
 
   <translation type="gettext">tauon</translation>
