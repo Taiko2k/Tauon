@@ -446,9 +446,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         bass_ready = True
 
                     # print((name, enabled, default, current))
-                    if current > 0:
-                        pctl.set_device = a
-                    pctl.bass_devices.append((name, enabled, default, current, a))
+                    # if current > 0:
+                    #     pctl.set_device = a
+                    # pctl.bass_devices.append((name, enabled, default, current, a))
                     a += 1
 
                 bass_init_success = False
