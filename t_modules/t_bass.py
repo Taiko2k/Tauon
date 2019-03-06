@@ -336,9 +336,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         default = BASS_DEVICE_DEFAULT & flags
         current = BASS_DEVICE_INIT & flags
 
-        # if name != "" and name == prefs.last_device:
-        #     #BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
-        #     #pctl.set_device = a
+        if name != "" and name == prefs.last_device:
+            #BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
+            pctl.set_device = a
         #     #print("Set output device as: " + name)
         #     #bass_ready = True
 
@@ -446,9 +446,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         bass_ready = True
 
                     # print((name, enabled, default, current))
-                    # if current > 0:
-                    #     pctl.set_device = a
-                    # pctl.bass_devices.append((name, enabled, default, current, a))
+                    if current > 0:
+                        pctl.set_device = a
+                    #pctl.bass_devices.append((name, enabled, default, current, a))
                     a += 1
 
                 bass_init_success = False
@@ -1209,6 +1209,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # pctl.playing_state = 0
                 # pctl.playing_time = 0
                 print("Changing output device")
+                result = False
+
                 print(BASS_Init(pctl.set_device, 48000, init_flag, gui.window_id, 0))
                 result = BASS_SetDevice(pctl.set_device)
                 print(result)
@@ -1216,9 +1218,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     gui.show_message("Device init failed. Try again maybe?", 'error')
                 else:
                     gui.show_message("Set device", 'done', prefs.last_device)
+
                 bass_player.try_unload()
 
                 if bass_player.state == 'suspend':
+
                     bass_player.pause()
 
             # if pctl.playerCommand == "monitor":
