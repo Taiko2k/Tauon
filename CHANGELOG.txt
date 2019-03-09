@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+v3.8.1
+
+ - Tweaked rename tracks to ignore bad file renames
+ - Tweaked showcase visualiser to activate more in upper ranges
+ - Improved mini-mode and queue-box to show filename if metadata missing
+ - Fixed enable move folder setting persisting
+ - Fixed rename tracks default template
+
 v3.8.0
 
  - Added mini mode UI

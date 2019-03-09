@@ -443,3 +443,15 @@ def commonprefix(l):
     return '/'.join(cp)
 
 
+def fader_timer(time_point, start, duration, off=True, range=255):
+
+    if time_point < start:
+        fade = range
+    elif time_point < start + duration:
+        p = (time_point - start) / duration
+        fade = int(range - (range * p))
+    else:
+        fade = 0
+
+    return fade
+

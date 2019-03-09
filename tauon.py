@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.8.0"
+t_version = "v 3.8.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -563,7 +563,7 @@ class Prefs:    # Used to hold any kind of settings
         if music_folder is not None:
             self.encoder_output = music_folder + '/encode-output/'
         self.rename_folder_template = "<albumartist> - <album>"
-        self.rename_tracks_template = "<tn>. <album> - <title>.<ext>"
+        self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
 
         self.enable_web = False
         self.allow_remote = False
@@ -1516,8 +1516,8 @@ try:
         gui.remember_library_mode = save[87]
     # if save[88] is not None:
     #     prefs.show_queue = save[88]
-    if save[89] is not None:
-        prefs.show_transfer = save[89]
+    # if save[89] is not None:
+    #     prefs.show_transfer = save[89]
     if save[90] is not None:
         p_force_queue = save[90]
     if save[91] is not None:
@@ -4295,6 +4295,9 @@ if True:
                                     d['mpris:artUrl'] = 'file://' + i_path
                             except:
                                 print("Thumbnail error")
+
+                            self.update_progress()
+
                             self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
                             changed['Metadata'] = self.player_properties['Metadata']
 
@@ -4423,7 +4426,8 @@ if True:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def SetPosition(self, id, position):
                         pctl.seek_time(position / 1000000)
-                        self.update_progress()
+                        #self.update_progress()
+                        self.player_properties['Position'] = dbus.Int64(int(position))
                         self.Seeked(pctl.playing_time)
 
 
@@ -7973,7 +7977,7 @@ def re_template_word(word, tr):
     return ""
 
 
-def parse_template2(string, track_object):
+def parse_template2(string, track_object, strict=False):
 
     temp = ""
     out = ""
@@ -7993,7 +7997,10 @@ def parse_template2(string, track_object):
 
             if c == ">":
 
-                out += re_template_word(temp, track_object)
+                test = re_template_word(temp, track_object)
+                if strict:
+                    assert test
+                out += test
 
                 mode = 0
                 temp = ""
@@ -8005,9 +8012,9 @@ def parse_template2(string, track_object):
     if "<und" in string:
         out = out.replace(" ", "_")
 
-    return parse_template(out, track_object)
+    return parse_template(out, track_object, strict=strict)
 
-def parse_template(string, track_object, up_ext=False):
+def parse_template(string, track_object, up_ext=False, strict=False):
     set = 0
     underscore = False
     output = ""
@@ -8018,17 +8025,27 @@ def parse_template(string, track_object, up_ext=False):
             if string[set] == 'n':
                 if len(str(track_object.track_number)) < 2:
                     output += "0"
+                if strict:
+                    assert str(track_object.track_number)
                 output += str(track_object.track_number)
             elif string[set] == 'a':
                 if up_ext and track_object.album_artist != "": # Context of renaming a folder
                     output += track_object.album_artist
                 else:
+                    if strict:
+                        assert track_object.artist
                     output += track_object.artist
             elif string[set] == 't':
+                if strict:
+                    assert track_object.title
                 output += track_object.title
             elif string[set] == 'd':
+                if strict:
+                    assert track_object.date
                 output += track_object.date
             elif string[set] == 'b':
+                if strict:
+                    assert track_object.album
                 output += track_object.album
             elif string[set] == 'x':
                 if up_ext:
@@ -16619,6 +16636,9 @@ class MiniMode:
         self.left_slide = asset_loader("left-slide.png", True)
         self.right_slide = asset_loader("right-slide.png", True)
 
+        self.shuffle_fade_timer = Timer(100)
+        self.repeat_fade_timer = Timer(100)
+
     def render(self):
 
         w = window_size[0]
@@ -16673,8 +16693,16 @@ class MiniMode:
             line1 = track.artist
             line2 = track.title
 
-            ddt.draw_text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(180), 313, window_size[0] - 30 * gui.scale)
-            ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(249), 214, window_size[0] - 30 * gui.scale)
+            if not line1 and not line2:
+                ddt.draw_text((w // 2, y1 + 18 * gui.scale, 2), track.filename, colours.grey(240), 214,
+                              window_size[0] - 30 * gui.scale)
+            else:
+
+                ddt.draw_text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(180), 313,
+                              window_size[0] - 30 * gui.scale)
+
+                ddt.draw_text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(249), 214,
+                              window_size[0] - 30 * gui.scale)
 
             # Calculate seek bar position
             seek_w = 240 * gui.scale
@@ -16744,6 +16772,15 @@ class MiniMode:
         # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
         if coll(shuffle_area):
+            self.shuffle_fade_timer.set()
+        st = self.shuffle_fade_timer.get()
+        start = 0.5
+        duration = 1.5
+        fade = fader_timer(st, start, duration)
+        if st < start + duration:
+            gui.update = 2
+
+        if fade > 0:
 
             if input.mouse_click:
                 pctl.random_mode ^= True
@@ -16751,9 +16788,9 @@ class MiniMode:
             sx = seek_r[0] + seek_w + 8 * gui.scale
             sy = seek_r[1] - 1 * gui.scale
 
-            colour = [60, 60, 60, 255]
+            colour = [60, 60, 60, fade]
             if pctl.random_mode:
-                colour = [235, 235, 235, 255]
+                colour = [235, 235, 235, fade]
 
             ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour, True)
             sy += 4 * gui.scale
@@ -16764,7 +16801,17 @@ class MiniMode:
         shuffle_area = (2, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
         fields.add(shuffle_area)
 
+
         if coll(shuffle_area):
+            self.repeat_fade_timer.set()
+        st = self.repeat_fade_timer.get()
+        start = 0.5
+        duration = 1.5
+        fade = fader_timer(st, start, duration)
+        if st < start + duration:
+            gui.update = 2
+
+        if fade > 0:
 
             if input.mouse_click:
                 pctl.repeat_mode ^= True
@@ -16772,9 +16819,9 @@ class MiniMode:
             sx = seek_r[0] - 39 * gui.scale
             sy = seek_r[1] - 1 * gui.scale
 
-            colour = [60, 60, 60, 255]
+            colour = [60, 60, 60, fade]
             if pctl.repeat_mode:
-                colour = [235, 235, 235, 255]
+                colour = [235, 235, 235, fade]
 
             tw = 2 * gui.scale
             ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour, True)
@@ -18596,7 +18643,7 @@ class QueueBox:
             ddt.rect_r(rect, self.card_bg, True)
             bg = self.card_bg
 
-        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(26 * gui.scale))
+        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
 
         ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6], True)
 
@@ -18604,14 +18651,22 @@ class QueueBox:
         if fqo[3] == 0:
             line = track.title
 
+        if not line:
+            line = track.filename
+
+        line2y = yy + 14 * gui.scale
+
         artist_line = track.artist
         if fqo[3] == 1 and track.album_artist:
             artist_line = track.album_artist
 
+        if fqo[3] == 0 and not artist_line:
+            line2y -= 7 * gui.scale
+
         ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [90, 90, 90, 255], 210,
                       max_w=rect[2] - 60 * gui.scale, bg=bg)
 
-        ddt.draw_text((rect[0] + (40 * gui.scale), yy + 14 * gui.scale), line, text_colour, 211,
+        ddt.draw_text((rect[0] + (40 * gui.scale), line2y), line, text_colour, 211,
                       max_w=rect[2] - 60 * gui.scale, bg=bg)
 
         if fqo[3] == 1:
@@ -19494,12 +19549,14 @@ class Showcase:
             gui.update = 2
 
 
+        slide = 0
         for i, bar in enumerate(gui.spec4_array):
 
             if i > 40:
                 break
 
-            dis = (2 + math.pow(bar / 2, 1.5)) * gui.scale
+            dis = (2 + math.pow(bar / (2 + slide), 1.5)) * gui.scale
+            slide -= 0.01
 
             gui.bar4.x = int(bx)
             gui.bar4.y = round(by - dis)
@@ -20705,7 +20762,7 @@ def save_state():
             prefs.true_shuffle,
             gui.set_mode,
             None, #prefs.show_queue, # 88
-            prefs.show_transfer,
+            None, # prefs.show_transfer,
             pctl.force_queue, # 90
             prefs.use_pause_fade, # 91
             prefs.append_total_time, # 92
@@ -23878,7 +23935,6 @@ while pctl.running:
 
                 label = "Write (" + str(len(r_todo)) + ")"
 
-
                 if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn, tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
                     input.mouse_click = False
                     total_todo = len(r_todo)
@@ -23889,12 +23945,13 @@ while pctl.running:
                         if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
                             pre_state = pctl.stop(True)
 
-                        afterline = parse_template2(NRN, pctl.master_library[item])
-
-                        oldname = pctl.master_library[item].filename
-                        oldpath = pctl.master_library[item].fullpath
-
                         try:
+
+                            afterline = parse_template2(NRN, pctl.master_library[item], strict=True)
+
+                            oldname = pctl.master_library[item].filename
+                            oldpath = pctl.master_library[item].fullpath
+
                             print('Renaming...')
 
                             star = star_store.full_get(item)
@@ -23903,6 +23960,21 @@ while pctl.running:
                             oldpath = pctl.master_library[item].fullpath
 
                             oldsplit = os.path.split(oldpath)
+
+                            if os.path.exists(os.path.join(oldsplit[0], afterline)):
+                                print("A file with that name already exists")
+                                total_todo -= 1
+                                continue
+
+                            if not afterline:
+                                print("Rename Error")
+                                total_todo -= 1
+                                continue
+
+                            if "." in afterline and not afterline.split(".")[0]:
+                                print("A file does not have a target filename")
+                                total_todo -= 1
+                                continue
 
                             os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
 
@@ -23922,7 +23994,7 @@ while pctl.running:
 
 
                     if total_todo != len(r_todo):
-                        show_message("Error." + "  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
+                        show_message("Rename complete." + "  " + str(total_todo) + "/" + str(len(r_todo)) + " filenames written.", 'warning')
 
                     else:
                         show_message(_("Rename complete."), 'done', str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."))
