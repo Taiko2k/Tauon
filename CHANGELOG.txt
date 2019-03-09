@@ -6,11 +6,13 @@ v3.8.1
  - Tweaked rename tracks to ignore bad file renames
  - Tweaked showcase visualiser to activate more in upper ranges
  - Tweaked showcase visualiser colourisation
+ - Tweaked spectrogram to toggle colours on re-select
  - Improved mini-mode and queue-box to show filename if metadata missing
  - Fixed enable move folder setting persisting
  - Fixed rename tracks default template
  - Fixed a possible crash when importing tracks with stats tab open
  - Fixed clicking between buttons in view box causing it to close
+ - Removed spectrogram colour config
 
 v3.8.0
 

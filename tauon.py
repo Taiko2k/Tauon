@@ -696,6 +696,8 @@ class Prefs:    # Used to hold any kind of settings
         self.showcase_vis = True
         self.show_lyrics_showcase = True
 
+        self.spec2_colour_mode = 0
+
 
 prefs = Prefs()
 
@@ -936,6 +938,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.draw_vis4_top = False
         #self.vis_4_colour = [0,0,0,255]
         self.vis_4_colour = None
+
 
 gui = GuiVar()
 
@@ -1563,6 +1566,8 @@ try:
         prefs.tabs_on_top = save[107]
     if save[108] is not None:
         prefs.showcase_vis = save[108]
+    if save[109] is not None:
+        prefs.spec2_colour_mode = save[109]
 
     state_file.close()
     del save
@@ -1800,12 +1805,12 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'vis-scroll' in p:
                 prefs.spec2_scroll = True
-            if 'vis-base-colour=' in p:
-                result = p.split('=')[1]
-                prefs.spec2_base = list(map(int, result.split(',')))
-            if 'vis-colour-multiply=' in p:
-                result = p.split('=')[1]
-                prefs.spec2_multiply = list(map(float, result.split(',')))
+            # if 'vis-base-colour=' in p:
+            #     result = p.split('=')[1]
+            #     prefs.spec2_base = list(map(int, result.split(',')))
+            # if 'vis-colour-multiply=' in p:
+            #     result = p.split('=')[1]
+            #     prefs.spec2_multiply = list(map(float, result.split(',')))
 
             # if 'rename-tracks-default=' in p:
             #     result = p.split('=')[1]
@@ -10881,10 +10886,17 @@ def spec_on():
 vis_menu.add(_("Spectrum Visualizer"), spec_on)
 
 def spec2_def():
+
+    if gui.vis_want == 3:
+        prefs.spec2_colour_mode += 1
+        if prefs.spec2_colour_mode > 1:
+            prefs.spec2_colour_mode = 0
+
     gui.vis_want = 3
     #gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
+
 vis_menu.add(_("Spectrogram"), spec2_def)
 
 def sa_remove(h):
@@ -20413,6 +20425,16 @@ def update_layout_do():
 
     #print("TEST")
 
+    if prefs.spec2_colour_mode == 0:
+        prefs.spec2_base = [10, 10, 100]
+        prefs.spec2_multiply = [0.5, 1, 1]
+    elif prefs.spec2_colour_mode == 1:
+        prefs.spec2_base = [10, 10, 10]
+        prefs.spec2_multiply = [2, 1.2, 5]
+    # elif prefs.spec2_colour_mode == 2:
+    #     prefs.spec2_base = [10, 100, 10]
+    #     prefs.spec2_multiply = [1, -1, 0.4]
+
     gui.draw_vis4_top = False
 
     if gui.combo_mode and prefs.showcase_vis and not gui.mode == 3:
@@ -20796,7 +20818,8 @@ def save_state():
             prefs.window_opacity,
             prefs.gallery_single_click,
             prefs.tabs_on_top,
-            prefs.showcase_vis]
+            prefs.showcase_vis,
+            prefs.spec2_colour_mode]
 
     #print(prefs.last_device + "-----")
 
