@@ -934,7 +934,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.window_control_hit_area_h = 30 * self.scale
 
         self.draw_vis4_top = False
-        self.vis_4_colour = [0,0,0,255]
+        #self.vis_4_colour = [0,0,0,255]
+        self.vis_4_colour = None
 
 gui = GuiVar()
 
@@ -1240,6 +1241,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
 colours = ColoursClass()
 colours.post_config()
+
+
+def set_colour(colour):
+    SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
 
 def get_themes():
@@ -15082,45 +15087,47 @@ class Over:
             d = 0
 
             # Stats
-            if self.last_db_size != len(pctl.master_library):
-                self.last_db_size = len(pctl.master_library)
-                self.ext_ratio = {}
-                for key, value in pctl.master_library.items():
-                    if value.file_ext in self.ext_ratio:
-                        self.ext_ratio[value.file_ext] += 1
-                    else:
-                        self.ext_ratio[value.file_ext] = 1
+            try:
+                if self.last_db_size != len(pctl.master_library):
+                    self.last_db_size = len(pctl.master_library)
+                    self.ext_ratio = {}
+                    for key, value in pctl.master_library.items():
+                        if value.file_ext in self.ext_ratio:
+                            self.ext_ratio[value.file_ext] += 1
+                        else:
+                            self.ext_ratio[value.file_ext] = 1
 
-            for key, value in self.ext_ratio.items():
+                for key, value in self.ext_ratio.items():
 
-                colour = [200, 200, 200 ,255]
-                if key in format_colours:
-                    colour = format_colours[key]
+                    colour = [200, 200, 200 ,255]
+                    if key in format_colours:
+                        colour = format_colours[key]
 
-                colour = colorsys.rgb_to_hls(colour[0] / 255, colour[1] / 255, colour[2] / 255)
-                colour = colorsys.hls_to_rgb(1 - colour[0], colour[1] * 0.8, colour[2] * 0.8)
-                colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+                    colour = colorsys.rgb_to_hls(colour[0] / 255, colour[1] / 255, colour[2] / 255)
+                    colour = colorsys.hls_to_rgb(1 - colour[0], colour[1] * 0.8, colour[2] * 0.8)
+                    colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-                h = int(round(value / len(pctl.master_library) * full_rect[2]))
-                block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
+                    h = int(round(value / len(pctl.master_library) * full_rect[2]))
+                    block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
 
 
-                ddt.rect_r(block_rect, colour, True)
-                d += h
+                    ddt.rect_r(block_rect, colour, True)
+                    d += h
 
-                block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
-                fields.add(block_rect)
-                if coll(block_rect):
-                    xx = block_rect[0] + int(block_rect[2] / 2)
-                    if xx < x + 30 * gui.scale:
-                        xx = x + 30 * gui.scale
-                    if xx > self.box_x + self.w - 30 * gui.scale:
-                        xx = self.box_x + self.w - 30 * gui.scale
-                    ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
+                    block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
+                    fields.add(block_rect)
+                    if coll(block_rect):
+                        xx = block_rect[0] + int(block_rect[2] / 2)
+                        if xx < x + 30 * gui.scale:
+                            xx = x + 30 * gui.scale
+                        if xx > self.box_x + self.w - 30 * gui.scale:
+                            xx = self.box_x + self.w - 30 * gui.scale
+                        ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
 
-                    if self.click:
-                        gen_codec_pl(key)
-
+                        if self.click:
+                            gen_codec_pl(key)
+            except:
+                print("Error draw ext bar")
 
     def config_v(self):
 
@@ -19264,7 +19271,7 @@ class ArtistInfoBox:
                 rect = (right - 2, yy - 2, 16, 16)
 
                 fields.add(rect)
-                self.mini_box.render(right, yy, item[1])
+                self.mini_box.render(right, yy, alpha_mod(item[1], 100))
                 if coll(rect):
                     if not input.mouse_click:
                         gui.cursor_want = 3
@@ -19390,7 +19397,8 @@ class Showcase:
         bbt = colours.grey(200)
 
         t1 = colours.grey(350)
-        gui.vis_4_colour = [140, 110, 200, 255]
+        #gui.vis_4_colour = [140, 110, 200, 255]
+        gui.vis_4_colour = None
 
         if colours.lm:
             bbg = colours.vis_colour
@@ -19527,16 +19535,14 @@ class Showcase:
     def render_vis(self, top=False):
 
         SDL_SetRenderTarget(renderer, gui.spec4_tex)
-
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
         SDL_RenderClear(renderer)
-
-        # ddt.rect_r((0, 0, gui.spec4_w, gui.spec4_h), [255, 0, 0, 100], True)
 
         bx = 0
         by = 50 * gui.scale
 
-        SDL_SetRenderDrawColor(renderer, gui.vis_4_colour[0], gui.vis_4_colour[1], gui.vis_4_colour[2], gui.vis_4_colour[3])
+        if gui.vis_4_colour is not None:
+            SDL_SetRenderDrawColor(renderer, gui.vis_4_colour[0], gui.vis_4_colour[1], gui.vis_4_colour[2], gui.vis_4_colour[3])
 
         if (pctl.playing_time < 0.5 and pctl.playing_state == 1) or (pctl.playing_state == 0 and gui.spec4_array.count(0) != len(gui.spec4_array)):
             gui.update = 2
@@ -19550,25 +19556,31 @@ class Showcase:
         if not top and pctl.playing_state == 1:
             gui.update = 2
 
-
-        slide = 0
+        slide = 0.7
         for i, bar in enumerate(gui.spec4_array):
 
+            # We wont draw higher bars that may not move
             if i > 40:
                 break
 
-            dis = (2 + math.pow(bar / (2 + slide), 1.5)) * gui.scale
-            slide -= 0.01
+            # Scale input amplitude to pixel distance (Applying a slight exponentional)
+            dis = (2 + math.pow(bar / (2 + slide), 1.5))
+            slide -= 0.03  # Set a slight bias for higher bars
 
+            # Define colour for bar
+            if gui.vis_4_colour is None:
+                set_colour(hsl_to_rgb(0.7 + min(0.15, (bar / 150)) + pctl.total_playtime / 300, min(0.9, 0.7 + (dis / 300)), min(0.9, 0.7 + (dis / 600))))
+
+            # Define bar size and draw
             gui.bar4.x = int(bx)
-            gui.bar4.y = round(by - dis)
+            gui.bar4.y = round(by - dis * gui.scale)
             gui.bar4.w = round(2 * gui.scale)
-            gui.bar4.h = round(dis * 2)
+            gui.bar4.h = round(dis * 2 * gui.scale)
 
             SDL_RenderFillRect(renderer, gui.bar4)
 
+            # Set distance between bars
             bx += 8 * gui.scale
-
 
         if top:
             SDL_SetRenderTarget(renderer, None)
@@ -19832,6 +19844,7 @@ class ViewBox:
 
         if not self.active:
             return
+
         #rect = [self.x, self.y, self.w, self.h]
 
         if x_menu.clicked:
@@ -19844,7 +19857,6 @@ class ViewBox:
 
         border_colour = colours.grey(30)
         if not colours.lm:
-
 
             ddt.rect_r((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), border_colour, True)
         ddt.rect_r(vr, colours.menu_background, True)
@@ -19934,7 +19946,8 @@ class ViewBox:
 
         if func is not None:
             func(True)
-            #self.active = False
+
+        if gui.level_2_click and coll(vr):
             x_menu.clicked = False
 
         gui.level_2_click = False
