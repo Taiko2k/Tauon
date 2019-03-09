@@ -648,6 +648,8 @@ class Prefs:    # Used to hold any kind of settings
         self.use_pause_fade = True
 
         self.show_notifications = False
+        if de_nofity_support:
+            self.show_notifications = True
 
         self.true_shuffle = True
         self.append_total_time = False
@@ -16782,7 +16784,7 @@ class MiniMode:
 
         if fade > 0:
 
-            if input.mouse_click:
+            if input.mouse_click and coll(shuffle_area):
                 pctl.random_mode ^= True
 
             sx = seek_r[0] + seek_w + 8 * gui.scale
@@ -16813,7 +16815,7 @@ class MiniMode:
 
         if fade > 0:
 
-            if input.mouse_click:
+            if input.mouse_click and coll(shuffle_area):
                 pctl.repeat_mode ^= True
 
             sx = seek_r[0] - 39 * gui.scale
