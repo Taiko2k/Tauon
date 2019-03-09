@@ -923,7 +923,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
 
                     p_spec = []
-                    BANDS = 42
+                    BANDS = 45
                     b0 = 0
                     i = 0
 
