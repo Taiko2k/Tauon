@@ -453,15 +453,18 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 bass_init_success = False
 
+                print(prefs.last_device)
+
                 if not bass_ready:
                     bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
                     print("Using default sound device")
                 if bass_init_success == True:
                     print("Bass library initialised")
+
                 else:
-                    if not re and prefs.flatpak_mode and len(pctl.bass_devices) == 2 and prefs.last_device != "PulseAudio Sound Server":
+                    if not re and prefs.flatpak_mode and prefs.last_device != "PulseAudio Sound Server":
                         prefs.last_device = "PulseAudio Sound Server"
-                        # gui.show_message("Device init failed, trying PulseAudio Sound Server...")
+                        #gui.show_message("Setting output as PulseAudio Sound Server...", 'info')
                         self.try_init(re=True)
 
                 self.init = True
