@@ -630,7 +630,9 @@ class Prefs:    # Used to hold any kind of settings
         self.log_vol = False
 
         self.ui_scale = 1
-        self.last_device = ""
+        self.last_device = "PulseAudio Sound Server"
+
+        # if flatpak_mode:
 
         self.transcode_opus_as = False
 
@@ -697,6 +699,7 @@ class Prefs:    # Used to hold any kind of settings
         self.show_lyrics_showcase = True
 
         self.spec2_colour_mode = 0
+        self.flatpak_mode = flatpak_mode
 
 
 prefs = Prefs()
@@ -707,7 +710,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         global update_layout
         update_layout = True
 
-    def show_message(self, line1, type, line2):
+    def show_message(self, line1, type="info", line2=""):
         show_message(line1, type, line2)
 
     def __init__(self):
@@ -3601,7 +3604,7 @@ class LastFMapi:
                             print("      ----- " + friend.name)
 
         except:
-            show_message("There was an error getting friends loves", 'warning')
+            show_message("There was an error getting friends loves", 'warning', "")
 
         self.scanning_friends = False
 
@@ -22194,7 +22197,7 @@ while pctl.running:
                     theme = 0
             except:
                 # raise
-                show_message("Error loading theme file", 'warning')
+                show_message("Error loading theme file", 'warning', "")
 
         if theme == 0:
             gui.theme_name = "Mindaro"
