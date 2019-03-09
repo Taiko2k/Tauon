@@ -27,16 +27,9 @@ plex-servname=
 #disable-linux-mpris
 
 ### --- Spectrogram ----------------------------------------------------------------------------------
-### Base colour is the background colour. Are R,G,B int values. Must be from 0 to 255.
-### Colour multiply values produce the foreground colour. Are R,G,B float values. Can be 0 to 1 or greater.
 
 vis-scroll
 
-#vis-base-colour=10,10,10
-#vis-colour-multiply=2,1.2,5
-
-### Colour of the bar spectrum visualiser is set per theme in the theme files under the 'music vis' label
-### Colours of the level meter cannot currently be configured
 
 ### --- View -------------------------------------------------------------------------------------------
 
