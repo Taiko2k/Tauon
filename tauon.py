@@ -1591,6 +1591,8 @@ try:
         prefs.device_buffer = save[110]
     if save[111] is not None:
         prefs.use_eq = save[111]
+    if save[112] is not None:
+        prefs.eq = save[112]
 
     state_file.close()
     del save
@@ -14642,9 +14644,9 @@ class Over:
         y = self.box_y + 55 * gui.scale
         x = self.box_x + 250 * gui.scale
 
-        base_dis = 160
+        base_dis = 160 * gui.scale
         center = base_dis // 2
-        width = 25
+        width = 25 * gui.scale
 
         range = 12
 
@@ -14660,7 +14662,9 @@ class Over:
             ddt.rect_r(bar, [40, 40, 40, 255], True)
 
             bar[0] -= 2 * gui.scale
+            bar[1] -= 10 * gui.scale
             bar[2] += 4 * gui.scale
+            bar[3] += 20 * gui.scale
 
             if coll(bar):
 
@@ -14710,7 +14714,7 @@ class Over:
 
         if prefs.backend == 1:
 
-            y = self.box_y + 87 * gui.scale
+            y = self.box_y + 92 * gui.scale
             x = self.box_x + 130 * gui.scale
 
             x += 8 * gui.scale
@@ -14783,7 +14787,8 @@ class Over:
                         ddt.draw_text((x, y), line, [100, 100, 100, 255], 10)
                 y += 14 * gui.scale
 
-            y = self.box_y + 225 * gui.scale
+            y = self.box_y + 240 * gui.scale
+            x += 40 * gui.scale
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
             prefs.device_buffer = self.slide_control(x, y, "Device buffer length", 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
@@ -14869,7 +14874,7 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
 
-        y = self.box_y + 190 * gui.scale
+        y = self.box_y + 220 * gui.scale
 
         if key_shift_down:
             self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
@@ -14934,13 +14939,13 @@ class Over:
             self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
 
             y += 30 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), _("Click login to open the last.fm"),
+            ddt.draw_text((x + 17 * gui.scale, y), _("Click login to open the last.fm web"),
                           colours.grey_blend_bg(90), 11)
             y += 14 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), _("web authorisation page."),
+            ddt.draw_text((x + 17 * gui.scale, y), _("authorisation page and follow prompt."),
                           colours.grey_blend_bg(90), 11)
             y += 14 * gui.scale
-            ddt.draw_text((x + 20 * gui.scale, y), _('Then return here and click "Done".'),
+            ddt.draw_text((x + 17 * gui.scale, y), _('Then return here and click "Done".'),
                           colours.grey_blend_bg(90), 11)
         else:
             self.button(x, y, _("Forget account"), lastfm.auth3)
@@ -15124,15 +15129,15 @@ class Over:
         self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
         self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
-
         y += 25 * gui.scale
         self.toggle_square(x, y, scale2, "2x")
+
+        y += 25 * gui.scale
+
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
         ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
 
-        y += 28 * gui.scale
-        y += 10 * gui.scale
 
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
@@ -15170,19 +15175,17 @@ class Over:
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
-        if desktop == 'GNOME' or desktop == 'KDE':
-            self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+        #if desktop == 'GNOME' or desktop == 'KDE':
+        self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
-
-
 
 
 
     def about(self):
 
         x = self.box_x + int(self.w * 0.3) + 65 * gui.scale
-        y = self.box_y + 81 * gui.scale
+        y = self.box_y + 95 * gui.scale
 
         ddt.text_background_colour = colours.sys_background
 
@@ -15450,7 +15453,7 @@ class Over:
         y += 27 * gui.scale
         self.button(x, y, "Thick default", self.large_preset, 124 * gui.scale)
 
-        y += 40 * gui.scale
+        y += 90 * gui.scale
         x -= 90 * gui.scale
 
         ddt.draw_text((x, y), "End of playlist action", colours.grey_blend_bg(90), 12)
@@ -21081,7 +21084,8 @@ def save_state():
             prefs.showcase_vis,
             prefs.spec2_colour_mode,
             prefs.device_buffer,
-            prefs.use_eq]
+            prefs.use_eq,
+            prefs.eq]
 
     #print(prefs.last_device + "-----")
 
