@@ -114,11 +114,15 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     ('fVolume', ctypes.c_float)
                     ]
 
-    # class BASS_DX8_PARAMEQ(ctypes.Structure):
-    #     _fields_ = [('fCenter', ctypes.c_int),
-    #                 ('fBandwidth', ctypes.c_float),
-    #                 ('fGain', ctypes.c_float),
-    #                 ]
+    class BASS_DX8_PARAMEQ(ctypes.Structure):
+        _fields_ = [('fCenter', ctypes.c_float),
+                    ('fBandwidth', ctypes.c_float),
+                    ('fGain', ctypes.c_float),
+                    ]
+
+    para = BASS_DX8_PARAMEQ()
+
+
     #
     # fx_bandwidth = 254
     # eqs = [
@@ -230,6 +234,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_RecordGetDeviceInfo = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_DEVICEINFO))(
         ('BASS_RecordGetDeviceInfo', bass_module))
 
+    BASS_FX_DX8_PARAMEQ = 7
 
     BASS_DEVICE_ENABLED = 1
     BASS_DEVICE_DEFAULT = 2
@@ -323,9 +328,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
         BASS_PluginLoad(b + b'/lib/libbasshls.so', 0)
 
-
-
-
+    BASS_FX_BFX_VOLUME = 65539
     BASS_CONFIG_DEV_DEFAULT = 36
 
     BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, True)
@@ -386,6 +389,27 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     BASS_FX_GetVersion()
 
+    centers = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+    params = [BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ(),
+              BASS_DX8_PARAMEQ()]
+
+    fxs = [None] * 10
+
+
+    for i, item in enumerate(params):
+        item.fCenter = centers[i]
+        item.fBandwidth = 12
+        item.fGain = 0
+
+
     def replay_gain(stream):
         pctl.active_replaygain = 0
         if prefs.replay_gain > 0 and pctl.target_object.track_gain is not None or pctl.target_object.album_gain is not None:
@@ -403,15 +427,44 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if gain is None:
                 return
 
-            BASS_FX_BFX_VOLUME = 65539
-
-            volfx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 0)
+            volfx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 10)
             volparam = BASS_BFX_VOLUME(0, pow(10, gain / 20))
-
             BASS_FXSetParameters(volfx, ctypes.pointer(volparam))
 
             print("Using ReplayGain of " + str(gain))
             pctl.active_replaygain = round(gain, 2)
+
+
+        # volfx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 10)
+        # volparam = BASS_BFX_VOLUME(0, pow(10, gain / 20))
+
+
+        #bass_player.eqfx = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
+        # eqfx = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
+        #
+        # para = BASS_DX8_PARAMEQ()
+        # para.fBandwidth = 12
+        # para.fCenter = 125
+        # para.fGain = 15
+        #
+        # BASS_FXSetParameters(eqfx, ctypes.pointer(para))
+
+        if prefs.use_eq:
+
+            bass_player.vol_fx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 9)
+            bass_player.vol_param.fVolume = pow(10, (min(prefs.eq)) / 20)
+            BASS_FXSetParameters(bass_player.vol_fx, ctypes.pointer(bass_player.vol_param))
+
+            for i in range(len(fxs)):
+
+                fxs[i] = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
+
+
+            for i, item in enumerate(params):
+                item.fGain = float(prefs.eq[i] * -1)
+                BASS_FXSetParameters(fxs[i], ctypes.pointer(params[i]))
+
+
 
     br_timer = Timer()
 
@@ -430,6 +483,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.url = ""
             self.init = False
             self.old_target = ""
+
+            self.vol_fx = None
+            self.vol_param = BASS_BFX_VOLUME(0, 0)
 
         def try_init(self, re=False):
 
@@ -1222,6 +1278,16 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
                 if bass_player.state == 'suspend':
                     bass_player.pause()
+
+            elif command == 'seteq':
+                if fxs[0] is not None:
+
+                    bass_player.vol_param.fVolume = pow(10, (min(prefs.eq)) / 20)
+                    BASS_FXSetParameters(bass_player.vol_fx, ctypes.pointer(bass_player.vol_param))
+
+                    for i, item in enumerate(params):
+                        item.fGain = float(prefs.eq[i] * -1)
+                        BASS_FXSetParameters(fxs[i], ctypes.pointer(params[i]))
 
             elif command == "setdev":
 

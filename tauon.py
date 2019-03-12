@@ -714,6 +714,9 @@ class Prefs:    # Used to hold any kind of settings
 
         self.device_buffer = 40
 
+        self.eq = [0.0] * 10
+        self.use_eq = False
+
 
 prefs = Prefs()
 
@@ -1586,6 +1589,8 @@ try:
         prefs.spec2_colour_mode = save[109]
     if save[110] is not None:
         prefs.device_buffer = save[110]
+    if save[111] is not None:
+        prefs.use_eq = save[111]
 
     state_file.close()
     del save
@@ -14511,6 +14516,14 @@ def toggle_transition_gapless(mode=0):
         return False if prefs.use_transition_crossfade else True
     prefs.use_transition_crossfade ^= True
 
+def toggle_eq(mode=0):
+    if mode == 1:
+        return prefs.use_eq
+    prefs.use_eq ^= True
+    pctl.playerCommand = 'reload'
+    pctl.playerCommandReady = True
+
+
 # config_items.append(['Hide scroll bar', toggle_scroll])
 
 # config_items.append(['Turn off playlist title breaks', toggle_break])
@@ -14566,7 +14579,7 @@ class Over:
         self.about_image4 = asset_loader('v4-d.png')
 
         self.w = 660 * gui.scale
-        self.h = 250 * gui.scale
+        self.h = 275 * gui.scale
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
         self.item_x_offset = 140 * gui.scale
@@ -14594,6 +14607,7 @@ class Over:
             #["Folder Import", self.files],
             [_("Function"), self.funcs],
             [_("Audio"), self.audio],
+            [_("EQ"), self.eq],
             [_("Playlist"), self.config_v],
             [_("View"), self.config_b],
             [_("Transcode"), self.codec_config],
@@ -14617,6 +14631,67 @@ class Over:
         self.ani_fade_off_timer = Timer(force=10)
 
         self.device_scroll_bar_position = 0
+
+
+
+    def eq(self):
+
+        if prefs.backend != 1:
+            return
+
+        y = self.box_y + 55 * gui.scale
+        x = self.box_x + 250 * gui.scale
+
+        base_dis = 160
+        center = base_dis // 2
+        width = 25
+
+        range = 12
+
+        self.toggle_square(x - 90 * gui.scale, y - 35 * gui.scale, toggle_eq, "Enable")
+
+        ddt.draw_text((x - 17 * gui.scale, y + 2 * gui.scale), "+", colours.grey(130), 16)
+        ddt.draw_text((x - 17 * gui.scale, y + base_dis - 15 * gui.scale), "-", colours.grey(130), 16)
+
+        for i, q in enumerate(prefs.eq):
+
+            bar = [x, y, width, base_dis]
+
+            ddt.rect_r(bar, [40, 40, 40, 255], True)
+
+            bar[0] -= 2 * gui.scale
+            bar[2] += 4 * gui.scale
+
+            if coll(bar):
+
+                if mouse_down:
+                    target = mouse_position[1] - y - center
+                    target = (target / center) * range
+                    if target > range:
+                        target = range
+                    if target < range * -1:
+                        target = range * -1
+                    if -0.1 < target < 0.1:
+                        target = 0
+
+                    prefs.eq[i] = target
+
+                    pctl.playerCommand = 'seteq'
+                    pctl.playerCommandReady = True
+
+                if self.right_click:
+                    prefs.eq[i] = 0
+                    pctl.playerCommand = 'seteq'
+                    pctl.playerCommandReady = True
+
+
+            start = (q / range) * center
+
+            bar = [x, y + center, width, start]
+
+            ddt.rect_r(bar, [100, 200, 100, 255], True)
+
+            x += 29 * gui.scale
 
     def audio(self):
 
@@ -19250,7 +19325,9 @@ class MetaBox:
 
                         if tr and tr.lyrics:
                             if draw_internel_link(margin + sp + 6 * gui.scale, block_y + 40 * gui.scale, "Lyrics", colours.side_bar_line2, fonts.side_panel_line2):
+                                prefs.show_lyrics_showcase = True
                                 switch_showcase(tr.index)
+
 
 
 
@@ -21003,7 +21080,8 @@ def save_state():
             prefs.tabs_on_top,
             prefs.showcase_vis,
             prefs.spec2_colour_mode,
-            prefs.device_buffer]
+            prefs.device_buffer,
+            prefs.use_eq]
 
     #print(prefs.last_device + "-----")
 
@@ -23948,16 +24026,14 @@ while pctl.running:
                     ddt.draw_text((x1, y1), "Play time", key_colour_off, 212)
                     ddt.draw_text((x2, y1), str(line), value_colour, value_font)
 
-
-
                     # -------
                     if tc.lyrics != "":
 
                         if draw.button("Lyrics", x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+                            prefs.show_lyrics_showcase = True
                             track_box = False
                             switch_showcase(r_menu_index)
                             input.mouse_click = False
-
 
                     if len(tc.comment) > 0:
                         y1 += 20 * gui.scale
