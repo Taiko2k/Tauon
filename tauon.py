@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.8.1"
+t_version = "v 3.8.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -700,6 +700,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.spec2_colour_mode = 0
         self.flatpak_mode = flatpak_mode
+
+        self.device_buffer = 40
 
 
 prefs = Prefs()
@@ -1571,6 +1573,8 @@ try:
         prefs.showcase_vis = save[108]
     if save[109] is not None:
         prefs.spec2_colour_mode = save[109]
+    if save[110] is not None:
+        prefs.device_buffer = save[110]
 
     state_file.close()
     del save
@@ -14535,7 +14539,12 @@ class Over:
 
             y = self.box_y + 225 * gui.scale
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
+            prefs.device_buffer = self.slide_control(x, y, "Device buffer length", 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
+    def reload_device(self, _):
+
+        pctl.playerCommand = 'reload'
+        pctl.playerCommandReady = True
 
     def funcs(self):
 
@@ -15251,7 +15260,7 @@ class Over:
     def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
 
         if label is not None:
-            ddt.draw_text((x, y), label, colours.grey_blend_bg(220), 11)
+            ddt.draw_text((x + 55 * gui.scale, y, 1), label, colours.grey_blend_bg(220), 11)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
@@ -20822,7 +20831,8 @@ def save_state():
             prefs.gallery_single_click,
             prefs.tabs_on_top,
             prefs.showcase_vis,
-            prefs.spec2_colour_mode]
+            prefs.spec2_colour_mode,
+            prefs.device_buffer]
 
     #print(prefs.last_device + "-----")
 
