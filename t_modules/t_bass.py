@@ -253,7 +253,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_DEVICE_DMIX = 0x2000
     BASS_DEVICE_MONO = 2
 
+    BASS_CONFIG_BUFFER = 0
     BASS_CONFIG_ASYNCFILE_BUFFER = 45
+    BASS_CONFIG_DEV_BUFFER = 27
     BASS_CONFIG_LIBSSL = 64
 
     #print(BASS_ErrorGetCode())
@@ -265,16 +267,19 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     #print(BASS_ErrorGetCode())
 
     #if system != 'windows':
-    open_flag = 0
+    # open_flag = 0
 
-    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 128000)
+    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 327680)
+    BASS_SetConfig(BASS_CONFIG_BUFFER, 2000)
+    BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
+
     #else:
     #    open_flag = BASS_UNICODE
 
-    open_flag |= BASS_ASYNCFILE
-    # open_flag |= BASS_STREAM_DECODE
-    open_flag |= BASS_SAMPLE_FLOAT
-    open_flag |= BASS_STREAM_AUTOFREE
+    # open_flag |= BASS_ASYNCFILE
+    # # open_flag |= BASS_STREAM_DECODE
+    # open_flag |= BASS_SAMPLE_FLOAT
+    # open_flag |= BASS_STREAM_AUTOFREE
 
     init_flag = BASS_DEVICE_DMIX
     if prefs.mono:
@@ -322,6 +327,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
 
     BASS_CONFIG_DEV_DEFAULT = 36
+
     BASS_SetConfig(BASS_CONFIG_DEV_DEFAULT, True)
 
     d_info = BASS_DEVICEINFO()
@@ -452,8 +458,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     a += 1
 
                 bass_init_success = False
-
-                print(prefs.last_device)
 
                 if not bass_ready:
                     bass_init_success = BASS_Init(-1, 48000, init_flag, gui.window_id, 0)
@@ -657,7 +661,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 # print(BASS_ErrorGetCode())
                 # Load new stream
-                new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
+                new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_ASYNCFILE)
 
                 # print("Creade decode chanel")
                 # print(BASS_ErrorGetCode())
@@ -1211,15 +1215,18 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_StreamFree(handle9)
                 pctl.playerCommand = 'done'
 
+            elif command == 'reload':
+
+                bass_player.pause(force_suspend=True)
+                bass_player.try_unload()
+                BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
+                if bass_player.state == 'suspend':
+                    bass_player.pause()
+
             elif command == "setdev":
 
                 bass_player.pause(force_suspend=True)
-                # BASS_Free()
-                # bass_player.state = 'stopped'
-                # pctl.playing_state = 0
-                # pctl.playing_time = 0
                 print("Changing output device")
-                result = False
 
                 print(BASS_Init(pctl.set_device, 48000, init_flag, gui.window_id, 0))
                 result = BASS_SetDevice(pctl.set_device)
@@ -1235,8 +1242,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                     bass_player.pause()
 
-            # if pctl.playerCommand == "monitor":
-            #     pass
 
             if command == "url":
                 bass_player.stop()
