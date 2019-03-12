@@ -162,6 +162,8 @@ if flatpak_mode:
 # -------------------------------
 # Single Instancing
 
+pid = os.getpid()
+
 if system == 'linux':
     if os.path.isfile('.gitignore'):
         print("Dev mode, ignoring single instancing")
@@ -189,11 +191,19 @@ except:
 
 discord_allow = False
 discord_enable = False
+
+# try:
+#     import rpc
+#     discord_allow = True
+# except:
+#     pass
 try:
-    import rpc
+    from pypresence import Presence
+    import asyncio
     discord_allow = True
 except:
     pass
+
 
 import time
 import ctypes
@@ -638,6 +648,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.discord_active = False
         self.discord_ready = False
+        self.disconnect_discord = False
 
         self.monitor_downloads = True
         self.extract_to_music = False
@@ -11739,18 +11750,29 @@ def discord_loop():
 
     prefs.discord_active = True
 
+    if not pctl.playing_ready():
+        show_message("Please start playing a track first")
+        return
+
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     try:
+
         print("Attempting to connect to Discord...")
-        rpc_obj = rpc.DiscordIpcClient.for_platform('434627346574606351')
+
+        client_id = '434627346574606351'
+        RPC = Presence(client_id)
+        RPC.connect()
+
         print("Discord RPC connection successful.")
 
         time.sleep(8)
         start_time = time.time()
-
         idle_time = Timer()
 
         state = 0
         index = -1
+        br = False
 
         while True:
             while True:
@@ -11767,15 +11789,16 @@ def discord_loop():
                         break
 
                 time.sleep(2)
-                # if pctl.playing_state != 0:
-                #     idle_time.set()
-                # if idle_time.get() > 120:
-                #     rpc_obj.close()
-                #     time.sleep(14)
-                #     prefs.discord_active = False
-                #     show_message("Disconnected from Discord due to idling")
-                #     return
 
+                if prefs.disconnect_discord:
+                    RPC.clear(pid)
+                    RPC.close()
+                    prefs.disconnect_discord = False
+                    br = True
+                    break
+
+            if br:
+                break
 
             title = "Unknown Track"
             if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
@@ -11785,33 +11808,115 @@ def discord_loop():
 
             if state == 1:
                 print("PLAYING: " + title)
-                activity = {
-                    "state": "Listening",
-                    "details": title,
-                    "timestamps": {
-                        "start": start_time
-                    },
-                    "assets": {
-                        # "small_text": "Text for small_image",
-                        # "small_image": "img_small",
-                        #"large_text": "Application Icon",
-                        "large_image": "tauon-large"
-                    }
-                }
-                rpc_obj.set_activity(activity)
+
+                print(start_time)
+
+                RPC.update(pid=pid,
+                           state="Listening",
+                           details=title,
+                           start=int(start_time),
+                           large_image="tauon-large",)
+
             else:
                 print("STOPPED")
-                activity = {
-                    "state": "Idle",
-                    "assets": {
-                        "large_image": "tauon-large"
-                    }
-                }
-                rpc_obj.set_activity(activity)
-            time.sleep(16)
+
+                RPC.update(pid=pid,
+                           state="Idle",
+                           large_image="tauon-large",)
+
+            time.sleep(15)
+
+            if prefs.disconnect_discord:
+                RPC.clear(pid)
+                RPC.close()
+                prefs.disconnect_discord = False
+                break
+
     except:
         show_message("Error connecting to Discord", 'error')
+        prefs.disconnect_discord = False
+        raise
+
     prefs.discord_active = False
+
+# def discord_loop():
+#
+#     prefs.discord_active = True
+#
+#     try:
+#         print("Attempting to connect to Discord...")
+#         rpc_obj = rpc.DiscordIpcClient.for_platform('434627346574606351')
+#         print("Discord RPC connection successful.")
+#
+#         time.sleep(8)
+#         start_time = time.time()
+#
+#         idle_time = Timer()
+#
+#         state = 0
+#         index = -1
+#
+#         while True:
+#             while True:
+#                 current_state = 0
+#                 current_index = pctl.playing_object().index
+#                 if pctl.playing_state == 1:
+#                     current_state = 1
+#                 if state != current_state or index != current_index:
+#                     if pctl.playing_time > 4 or current_state != 1:
+#                         state = current_state
+#                         index = current_index
+#                         start_time = time.time()
+#                         idle_time.set()
+#                         break
+#
+#                 time.sleep(2)
+#                 # if pctl.playing_state != 0:
+#                 #     idle_time.set()
+#                 # if idle_time.get() > 120:
+#                 #     rpc_obj.close()
+#                 #     time.sleep(14)
+#                 #     prefs.discord_active = False
+#                 #     show_message("Disconnected from Discord due to idling")
+#                 #     return
+#
+#
+#             title = "Unknown Track"
+#             if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
+#                 title = pctl.playing_object().artist + " - " + pctl.playing_object().title
+#                 if len(title) > 150:
+#                     title = "Unknown Track"
+#
+#             if state == 1:
+#                 print("PLAYING: " + title)
+#                 activity = {
+#                     "state": "Listening",
+#                     "details": title,
+#                     "timestamps": {
+#                         "start": start_time
+#                     },
+#                     "assets": {
+#                         # "small_text": "Text for small_image",
+#                         # "small_image": "img_small",
+#                         #"large_text": "Application Icon",
+#                         "large_image": "tauon-large"
+#                     }
+#                 }
+#                 rpc_obj.set_activity(activity)
+#             else:
+#                 print("STOPPED")
+#                 activity = {
+#                     "state": "Idle",
+#                     "assets": {
+#                         "large_image": "tauon-large"
+#                     }
+#                 }
+#                 rpc_obj.set_activity(activity)
+#             time.sleep(16)
+#     except:
+#         show_message("Error connecting to Discord", 'error')
+#     prefs.discord_active = False
+
 
 
 def activate_discord():
@@ -11821,13 +11926,19 @@ def activate_discord():
         discord_t.daemon = True
         discord_t.start()
 
+    elif not prefs.disconnect_discord:
+        prefs.disconnect_discord = True
+
 def discord_deco():
     tc = colours.menu_text
-    if prefs.discord_active:
-        tc = colours.menu_text_disabled
+    # if prefs.discord_active:
+    #     tc = colours.menu_text_disabled
 
     if prefs.discord_active:
-        return [tc, colours.menu_background, "Discord Connected"]
+        return [tc, colours.menu_background, "Disconnect Discord"]
+    if prefs.disconnect_discord:
+        tc = colours.menu_text_disabled
+        return [tc, colours.menu_background, "Disconnecting..."]
     else:
         return [tc, colours.menu_background, 'Show playing in Discord']
 
