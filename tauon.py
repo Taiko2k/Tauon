@@ -696,7 +696,7 @@ class Prefs:    # Used to hold any kind of settings
         self.user_directory = user_directory
 
         self.window_opacity = 1
-        self.gallery_single_click = False
+        self.gallery_single_click = True
         self.custom_bg_opacity = 40
 
         self.tabs_on_top = True
@@ -9778,7 +9778,17 @@ def s_cut():
 
 playlist_menu.add('Paste', paste, paste_deco)
 
-def del_selected():
+
+def refind_playing():
+    # Refind playing index
+    if pctl.playing_ready():
+        for i, n in enumerate(default_playlist):
+            if pctl.track_queue[pctl.queue_step] == n:
+                pctl.playlist_playing_position = i
+                break
+
+
+def del_selected(force_delete):
     global shift_selection
     global playlist_selected
 
@@ -9800,7 +9810,28 @@ def del_selected():
         li.append((item, default_playlist[item]))
         del default_playlist[item]
 
-    undo.bk_tracks(pctl.active_playlist_viewing, li)
+    if key_shift_down:
+        for item in li:
+
+            tr = pctl.g(item[1])
+            if not tr.is_network:
+                try:
+                    send2trash(tr.fullpath)
+                    show_message("Tracks sent to trash")
+                except:
+                    show_message("One or more tracks could not be sent to trash")
+
+                    if force_delete:
+                        try:
+                            os.remove(tr.fullpath)
+                            show_message("Files deleted", 'info')
+                        except:
+                            show_message("Error deleting one or more files", 'error')
+
+    else:
+        undo.bk_tracks(pctl.active_playlist_viewing, li)
+
+
     reload()
 
     if playlist_selected > len(default_playlist) - 1:
@@ -9808,15 +9839,11 @@ def del_selected():
 
     shift_selection = [playlist_selected]
 
-    # Refind playing index
-    if pctl.playing_ready():
-        for i, n in enumerate(default_playlist):
-            if pctl.track_queue[pctl.queue_step] == n:
-                pctl.playlist_playing_position = i
-                break
+    refind_playing()
 
 
-
+def force_del_selected():
+    del_selected(force_delete=True)
 
 
 
@@ -9924,7 +9951,42 @@ track_menu.add(_('Copy'), s_copy, copy_deco, pass_ref=False)
 track_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
 
 track_menu.add(_('Paste'), menu_paste, paste_deco, pass_ref=True)
+
+def test_shift(_):
+    return key_shift_down
+
+def delete_track(track_ref):
+
+    tr = pctl.g(track_ref)
+    fullpath = tr.fullpath
+
+    if tr.is_network:
+        show_message("Deleting a network track is not supported")
+        return
+
+    while track_ref in default_playlist:
+        default_playlist.remove(track_ref)
+
+    try:
+        send2trash(fullpath)
+        show_message("File moved to trash")
+        return
+    except:
+        pass
+
+    try:
+        os.remove(fullpath)
+        show_message("File deleted", 'info', fullpath)
+    except:
+        show_message("Error deleting file", 'error', fullpath)
+
+    reload()
+    refind_playing()
+
+track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_icon, show_test=test_shift)
+
 track_menu.br()
+
 
 def rename_tracks(index):
     global track_box
@@ -10679,9 +10741,6 @@ def toggle_transfer(mode=0):
 
 transcode_icon.colour = [239, 74, 157, 255]
 
-def test_shift(_):
-    return key_shift_down
-
 
 folder_menu.add(_('Reload Metadata'), reload_metadata, pass_ref=True)
 folder_menu.add(_('Vacuum Playtimes'), vacuum_playtimes, pass_ref=True, show_test=test_shift)
@@ -10705,6 +10764,7 @@ folder_menu.br()
 selection_menu.add(_('Copy'), s_copy)
 selection_menu.add(_('Cut'), s_cut)
 selection_menu.add(_('Remove'), del_selected)
+selection_menu.add(_('Delete Files'), force_del_selected, show_test=test_shift, icon=delete_icon)
 
 folder_menu.add(_('Copy'), s_copy)
 gallery_menu.add(_('Copy'), s_copy)

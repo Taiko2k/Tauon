@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v3.8.2
 
+ - Added function to delete individual tracks physically (hold shift)
  - Added setting to change device buffer length
  - Tweaked file buffers to be larger and enabled async loading
  - Improved Discord rich presence to allow disconnecting
