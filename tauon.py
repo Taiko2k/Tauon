@@ -958,6 +958,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         #self.vis_4_colour = [0,0,0,255]
         self.vis_4_colour = None
 
+        self.layer_focus = 0
+
 
 gui = GuiVar()
 
@@ -1192,7 +1194,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_title_strong = self.grey(230)
         self.lm = False
 
-        self.plus_colour = [244, 212, 66, 255]
+        self.pluse_colour = [244, 212, 66, 255]
 
         #self.post_config()
 
@@ -1256,7 +1258,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.message_box_text = self.grey(20)
         self.gallery_background = self.grey(230)
         self.gallery_artist_line = self.grey(40)
-        self.plus_colour = [212, 66, 244, 255]
+        self.pluse_colour = [212, 66, 244, 255]
 
         #view_box.off_colour = self.grey(200)
 
@@ -8663,11 +8665,16 @@ def rescan_deco(pl):
     return [line_colour, colours.menu_background, None]
 
 
+def open_filter_box(pl):
+    filter_box.active = True
+
 extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
-tab_menu.add_sub(_("Sort…"), 133)
+#tab_menu.add(_("SORT"), open_filter_box, pass_ref=True)
+
+tab_menu.add_sub(_("Sorted…"), 133)
 extra_tab_menu.add_sub(_("From Current…"), 133)
 tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
 tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
@@ -12533,7 +12540,7 @@ class SearchOverlay:
 
         if self.active is False:
 
-            if input_text != "" and \
+            if input_text != "" and gui.layer_focus == 0 and \
                     not key_ctrl_down and not radiobox and not renamebox and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
@@ -16014,7 +16021,7 @@ class TopPanel:
                             ay = y + 4
                             ay -= 6 * self.adds[k][2].get() / 0.3
 
-                            ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.plus_colour, 212, bg=bg)
+                            ddt.draw_text((x + tab_width - 3, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
                             gui.update += 1
 
 
@@ -16159,7 +16166,7 @@ class TopPanel:
 
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if dl > 0:
-                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.plus_colour, 209) #[244, 223, 66, 255]
+                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pluse_colour, 209) #[244, 223, 66, 255]
                 # [166, 244, 179, 255]
 
 
@@ -18300,7 +18307,8 @@ class ArtBox:
                 and pref_box.enabled is False \
                 and gui.rename_playlist_box is False \
                 and gui.message_box is False \
-                and track_box is False:
+                and track_box is False \
+                and gui.layer_focus == 0:
 
             if not key_shift_down:
 
@@ -18499,6 +18507,7 @@ class RenameBox:
         self.y = 300
         self.playlist_index = 0
 
+
     def render(self):
 
         if gui.level_2_click:
@@ -18532,6 +18541,54 @@ class RenameBox:
 
 
 rename_box = RenameBox()
+
+
+class FilterBox:
+
+    def __init__(self):
+
+        self.x = 300
+        self.y = 300
+        self.active = False
+
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        if gui.level_2_click:
+            input.mouse_click = True
+        gui.level_2_click = False
+
+        rect = [self.x, self.y, 400 * gui.scale, 120 * gui.scale]
+
+        border = 4 * gui.scale
+        rect2 = [rect[0] - border, rect[1] - border, rect[2] + border  * 2, rect[3] + border * 2]
+
+        bg = [60, 40, 80, 255]
+        ddt.text_background_colour = bg
+
+        # Draw background
+        ddt.rect_r(rect2, [130, 100, 150, 255], True)
+        ddt.rect_r(rect2, [130, 100, 150, 255], True)
+        ddt.rect_r(rect, bg, True)
+
+        # Draw text entry
+        # rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 8 * gui.scale, colours.alpha_grey(250),
+        #                       width=350 * gui.scale, font=315)
+        #
+        # # Draw accent
+        # rect2 = [self.x, self.y + rect[3] - 4 * gui.scale, rect[2], 4 * gui.scale]
+        # ddt.rect_r(rect2, [255, 255, 255, 60], True)
+
+        # If enter or click outside of box: save and close
+        if input.key_return_press or (key_esc_press and len(editline) == 0) \
+                or ((input.mouse_click or level_2_right_click) and not coll(rect)):
+            self.active = False
+
+
+filter_box = FilterBox()
 
 
 class PlaylistBox:
@@ -18808,7 +18865,7 @@ class PlaylistBox:
                             ay = yy + 4 * gui.scale
                             ay -= 6 * gui.scale * self.adds[k][2].get() / 0.3
 
-                            ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.plus_colour, 212, bg=real_bg)
+                            ddt.draw_text((tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1), '+' + str(self.adds[k][1]), colours.pluse_colour, 212, bg=real_bg)
                             gui.update += 1
 
                             ddt.rect_r((tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w), [244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1], True)
@@ -20369,7 +20426,6 @@ class Fader:
 
         self.total_timer = Timer()
         self.timer = Timer()
-        self.timer.force_set(10)
         self.ani_duration = 0.3
         self.state = 0  # 0 = Want off, 1 = Want fade on
         self.a = 0  # The fade progress (0-1)
@@ -20405,6 +20461,7 @@ class Fader:
         self.timer.hit()
         self.total_timer.set()
 
+
 fader = Fader()
 
 class EdgePulse:
@@ -20416,9 +20473,9 @@ class EdgePulse:
         self.ani_duration = 0.5
 
     def render(self, x, y, w, h, r=200, g=120, b=0):
-        r = colours.plus_colour[0]
-        g = colours.plus_colour[1]
-        b = colours.plus_colour[2]
+        r = colours.pluse_colour[0]
+        g = colours.pluse_colour[1]
+        b = colours.pluse_colour[2]
         time = self.timer.get()
         if time < self.ani_duration:
             alpha = 255 - int(255 * (time / self.ani_duration))
@@ -22088,7 +22145,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or renamebox or view_box.active) and not gui.message_box:
+        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or renamebox or view_box.active or filter_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -22499,6 +22556,11 @@ while pctl.running:
         fields.clear()
         gui.cursor_want = 0
 
+        gui.layer_focus = 0
+        if filter_box.active:
+            gui.layer_focus = 1
+
+
         if gui.mode == 1 or gui.mode == 2:
 
             ddt.text_background_colour = colours.playlist_panel_background
@@ -22530,7 +22592,8 @@ while pctl.running:
                     and not view_box.active \
                     and not folder_menu.active \
                     and not set_menu.active \
-                    and not artist_info_scroll.held:
+                    and not artist_info_scroll.held \
+                    and gui.layer_focus == 0:
 
                 #update_layout = True
 
@@ -23582,7 +23645,8 @@ while pctl.running:
                     not tab_menu.active and \
                     not pref_box.enabled and \
                     not extra_tab_menu.active and \
-                    not gui.rename_playlist_box:
+                    not gui.rename_playlist_box \
+                    and gui.layer_focus == 0:
 
                 scroll_opacity = 255
 
@@ -23723,6 +23787,9 @@ while pctl.running:
 
             if gui.rename_playlist_box:
                 rename_box.render()
+
+            if filter_box.active:
+                filter_box.render()
 
             if track_box:
                 if input.key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
