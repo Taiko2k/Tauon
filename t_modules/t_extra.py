@@ -29,6 +29,7 @@ import zipfile
 import glob
 import locale
 
+
 # A seconds based timer
 class Timer:
     def __init__(self, force=None):
@@ -39,21 +40,21 @@ class Timer:
             self.force_set(force)
 
     def set(self):  # Reset
-        self.start = time.time()
+        self.start = time.monotonic()
 
     def hit(self):  # Return time and reset
 
-        self.end = time.time()
+        self.end = time.monotonic()
         elapsed = self.end - self.start
-        self.start = time.time()
+        self.start = time.monotonic()
         return elapsed
 
     def get(self):  # Return time only
-        self.end = time.time()
+        self.end = time.monotonic()
         return self.end - self.start
 
     def force_set(self, sec):
-        self.start = time.time()
+        self.start = time.monotonic()
         self.start -= sec
 
 
