@@ -9470,6 +9470,10 @@ def s_copy():
     # if key_shift_down:
     gui.lightning_copy = True
 
+    clip = copy_from_clipboard()
+    if "file://" in clip:
+        copy_to_clipboard("")
+
     global cargo
     cargo = []
     for item in shift_selection:
@@ -22024,7 +22028,19 @@ while pctl.running:
 
             if key_v_press and key_ctrl_down:
                 gui.pl_update = 1
-                paste()
+
+                clip = copy_from_clipboard()
+                if clip:
+                    clip = clip.split("\n")
+                    for i, line in enumerate(clip):
+                        if line.startswith("file://"):
+                            target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
+                            load_order = LoadClass()
+                            load_order.target = target
+                            load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+                            load_orders.append(copy.deepcopy(load_order))
+                else:
+                    paste()
 
             if key_space_press:
                 if pctl.playing_state == 0:
@@ -22102,7 +22118,7 @@ while pctl.running:
         if key_F7: #  F7 test
 
             #plex.get_albums()
-            gui.vis = 4
+            #print(copy_from_clipboard())
             #print(pctl.playing_object().misc)
 
             #show_message("Test error message 123", 'error', "hello text")
