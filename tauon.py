@@ -8418,6 +8418,16 @@ def index_key(index):
     s = str(pctl.master_library[index].track_number)
     d = str(pctl.master_library[index].disc_number)
 
+    # Make sure the value for disc number is an interger, make 1 if 0, otherwise ignore
+    if d:
+        try:
+            dd = int(d)
+            if dd < 2:
+                dd = 1
+            d = str(dd)
+        except:
+            d = ""
+
     # Add the disc number for sorting by CD, make it '1' if theres isnt one
     if s or d:
         if not d:
