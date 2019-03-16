@@ -911,26 +911,27 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         else:
             gui.turbo_next += 1
 
-            if gui.vis == 2 or gui.vis == 3:
+
+            if gui.vis == 4:
+                time.sleep(0.015)
+            elif gui.vis == 2 or gui.vis == 3:
                 time.sleep(0.018)
             else:
-                # time.sleep(0.02)
                 time.sleep(0.02)
 
-            if gui.turbo_next < 6 and pctl.playerCommandReady is not True:
+            if gui.turbo_next < 6:
 
                 if bass_player.state != 'playing':
                     gui.level = 0
-                    continue
+                    if pctl.playerCommandReady is not True:
+                        continue
+
+                elif gui.lowered:
+                    if pctl.playerCommandReady is not True:
+                        continue
 
                 # -----------
-                if gui.vis == 2:
-
-                    # # TEMPORARY
-                    # continue
-
-                    if gui.lowered:
-                        continue
+                elif gui.vis == 2:
 
                     BASS_ChannelGetData(bass_player.channel, x, 0x80000002)
 
@@ -971,26 +972,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # if pctl.playerCommand in ['open', 'stop']:
                     #     gui.update_spec = 0
                     gui.level_update = True
-                    continue
+
+                    if pctl.playerCommandReady is not True:
+                        continue
 
                 elif gui.vis == 4:
 
-
-                    # # TEMPORARY
-                    # continue
-
-                    if gui.lowered:
-                        continue
-
                     BASS_ChannelGetData(bass_player.channel, xx, 0x80000003)
-
-                    # BASS_DATA_FFT256 = 0x80000000# -2147483648# 256 sample FFT
-                    # BASS_DATA_FFT512 = 0x80000001# -2147483647# 512 FFT
-                    # BASS_DATA_FFT1024 = 0x80000002# -2147483646# 1024 FFT
-                    # BASS_DATA_FFT2048 = 0x80000003# -2147483645# 2048 FFT
-                    # BASS_DATA_FFT4096 = 0x80000004# -2147483644# 4096 FFT
-                    # BASS_DATA_FFT8192 = 0x80000005# -2147483643# 8192 FFT
-                    # BASS_DATA_FFT16384 = 0x80000006# 16384 FFT
 
                     p_spec = []
                     BANDS = 45
@@ -1010,7 +998,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                             b0 += 1
 
                         outp = math.sqrt(peak)
-                        # print(int(outp*20))
                         p_spec.append(int(outp * 45))
                         i += 1
                     gui.spec4_array = p_spec
@@ -1018,18 +1005,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # print(gui.spec)
                     if pctl.playing_time > 0.5 and pctl.playing_state == 1:
                         gui.update_spec = 1
-                    # if pctl.playerCommand in ['open', 'stop']:
-                    #     gui.update_spec = 0
-                    gui.level_update = True
-                    #gui.update = 5
-                    continue
 
+                    gui.level_update = True
+
+                    if pctl.playerCommandReady is not True:
+                        continue
 
                 # ------------------------------------
                 elif gui.vis == 3:
-
-                    if gui.lowered:
-                        continue
 
                     if pctl.playing_time > 0.0 and (pctl.playing_state == 1 or pctl.playing_state == 3):
 
@@ -1069,12 +1052,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                             gui.spec2 = [0] * gui.spec2_y
 
+                    if pctl.playerCommandReady is not True:
                         continue
 
-                    #gui.spec = p_spec
-
                 # -----------------------------------
-
                 elif gui.vis == 1:
 
                     if bass_player.state == "playing":
@@ -1098,7 +1079,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         gui.level_peak[0] -= 0.35
                         if gui.level_peak[0] < 0:
                             gui.level_peak[0] = 0
-                        #gui.time_passed -= 0.020
+
                         gui.time_passed -= 0.020
 
                     if ppp1 > gui.level_peak[0]:
@@ -1106,16 +1087,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     if ppp2 > gui.level_peak[1]:
                         gui.level_peak[1] = ppp2
 
-                    # gui.level_peak[1] += random.randint(-100, 100) * 0.01
-                    # gui.level_peak[0] += random.randint(-100, 100) * 0.01
-                    #
-                    # if int(gui.level_peak[0]) != int(last_level[0]) or int(gui.level_peak[1]) != int(last_level[1]):
-                    #     #gui.level_update = True
-                    #     pass
-
                     gui.level_update = True
 
-                    # last_level = copy.deepcopy(gui.level_peak)
+                if pctl.playerCommandReady is not True:
                     continue
 
             else:

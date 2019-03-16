@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.8.2"
+t_version = "v 3.9.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -8229,7 +8229,13 @@ def pl_lock_deco(pl):
         return [colours.menu_text, colours.menu_background, 'Lock']
 
 
+def view_pl_is_locked(_):
+    return pctl.multi_playlist[pctl.active_playlist_viewing][9]
+
+
 def pl_is_locked(pl):
+    if not pctl.multi_playlist:
+        return False
     return pctl.multi_playlist[pl][9]
 
 def lock_playlist_toggle(pl):
@@ -8366,6 +8372,7 @@ def get_folder_tracks_local(pl_in):
 
 
 def test_pl_tab_locked(pl):
+    print(pl)
     return pctl.multi_playlist[pl][9]
 
 
@@ -11287,8 +11294,8 @@ def hide_set_bar():
     gui.pl_update = 1
 
 
-set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
-set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.br()
 set_menu.add("Hide bar", hide_set_bar)
 set_menu.br()
@@ -13722,6 +13729,18 @@ def worker1():
 
         if prefs.auto_extract and prefs.monitor_downloads:
             dl_mon.scan()
+
+        if tauon.worker_save_state and \
+                not gui.pl_pulse and \
+                not loading_in_progress and \
+                not to_scan and \
+                not plex.scanning and \
+                not cm_clean_db and \
+                not lastfm.scanning_friends and \
+                not move_in_progress:
+            save_state()
+            cue_list.clear()
+            tauon.worker_save_state = False
 
         # Folder moving
         if len(move_jobs) > 0:
@@ -16738,7 +16757,7 @@ class BottomBarType1:
             else:
                 pctl.show_current()
 
-                if d_click_timer.get() < 0.3:
+                if d_click_timer.get() < 0.3 and pctl.playing_ready():
                     set_mini_mode()
                     gui.update += 1
                     return
@@ -17658,6 +17677,8 @@ class StandardPlaylist:
             mx = 4
             if gui.playlist_view_length < 25:
                 mx = 3
+            if gui.playlist_view_length < 10:
+                mx = 2
             pctl.playlist_view_position -= mouse_wheel * mx
 
 
@@ -18459,7 +18480,7 @@ class ArtBox:
 
 
         # Activate picture context menu on right click
-        if right_click and coll(rect):
+        if right_click and coll(rect) and pctl.playing_ready():
             picture_menu.activate(in_reference=pctl.playing_object().index)
 
         # Draw picture metadata
@@ -21347,6 +21368,11 @@ def save_state():
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 # SDL_EventState(SDL_SYSWMEVENT, 1)
 
+# class AutoSave:
+#
+#     def __init__(self):
+#         auto_save_timer = Timer()
+
 
 def test_show_add_home_music():
 
@@ -22582,17 +22608,17 @@ while pctl.running:
         # C-UL
         update_layout = False
 
-    if tauon.worker_save_state and\
-            not gui.pl_pulse and\
-            not loading_in_progress and\
-            not to_scan and\
-            not plex.scanning and\
-            not cm_clean_db and\
-            not lastfm.scanning_friends and\
-            not move_in_progress:
-        save_state()
-        cue_list.clear()
-        tauon.worker_save_state = False
+    # if tauon.worker_save_state and\
+    #         not gui.pl_pulse and\
+    #         not loading_in_progress and\
+    #         not to_scan and\
+    #         not plex.scanning and\
+    #         not cm_clean_db and\
+    #         not lastfm.scanning_friends and\
+    #         not move_in_progress:
+    #     save_state()
+    #     cue_list.clear()
+    #     tauon.worker_save_state = False
 
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
