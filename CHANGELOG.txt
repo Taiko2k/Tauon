@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v3.8.2
+v3.9.0
 
  - Added EQ control
  - Added function to delete individual tracks physically
@@ -11,15 +11,19 @@ v3.8.2
  - Re-Added function to allow importing via copy and paste
  - Tweaked file buffers to be larger and enabled async loading
  - Tweaked disc number detection to better handle case of inconsistent tagging
+ - Tweaked playlist scroll wheel speed with low vertical space
  - Improved data saving to write to disk immediately on many more functions that modify data
  - Improved Discord rich presence to allow disconnecting (still broken on flatpak)
  - Improved GNOME media key support
+ - Increased showcase visualiser frame rate
+ - Fixed showcase visualiser low frame rate when changing volume
  - Fixed not force showing lyrics when using "Lyrics" button
  - Fixed animations malfunctioning on clock changes
  - Fixed PLEX function caching in data instead of cache directory
  - Fixed and improved symbolic icon
  - Fixed artist info panel sometimes showing previous bio when changing fast
  - Fixed not showing track in MPRIS on startup
+ - Fixed some possible crashes with blank slate
 
 v3.8.1
 
