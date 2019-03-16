@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.8.2"
+t_version = "v 3.9.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -717,6 +717,8 @@ class Prefs:    # Used to hold any kind of settings
         self.eq = [0.0] * 10
         self.use_eq = False
 
+        self.bio_large = False
+
 
 prefs = Prefs()
 
@@ -908,7 +910,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.pref_rspw = 300
 
         self.pref_gallery_w = 600
-        self.artist_panel_height = 200 * self.scale
+        self.artist_panel_height = 320 * self.scale
 
         self.artist_info_panel = False
 
@@ -1595,6 +1597,8 @@ try:
         prefs.use_eq = save[111]
     if save[112] is not None:
         prefs.eq = save[112]
+    if save[113] is not None:
+        prefs.bio_large = save[113]
 
     state_file.close()
     del save
@@ -7353,7 +7357,7 @@ playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
-artist_info_menu = Menu(117)
+artist_info_menu = Menu(135)
 queue_menu = Menu(140)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
@@ -7392,6 +7396,15 @@ shuffle_menu.add("Shuffle OFF", menu_shuffle_off)
 shuffle_menu.add("Shuffle Tracks", menu_set_random)
 shuffle_menu.add("Random Albums", menu_album_random)
 
+def bio_set_large():
+    if window_size[0] >= round(1000 * gui.scale):
+        gui.artist_panel_height = 320 * gui.scale
+        artist_info_box.get_data(artist_info_box.artist_on)
+
+
+def bio_set_small():
+    gui.artist_panel_height = 200 * gui.scale
+    artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def artist_info_panel_close():
@@ -7400,7 +7413,27 @@ def artist_info_panel_close():
     gui.update_layout()
 
 
+def toggle_bio_size_deco():
+    line = _("Make Large Size")
+    if gui.artist_panel_height > 300:
+        line = _("Make Compact Size")
+
+    return [colours.menu_text, colours.menu_background, line]
+
+
+def toggle_bio_size():
+
+    if gui.artist_panel_height > 300:
+        bio_set_small()
+        prefs.bio_large = False
+    else:
+        bio_set_large()
+        prefs.bio_large = True
+    gui.update_layout()
+
 artist_info_menu.add(_("Close Panel"), artist_info_panel_close)
+artist_info_menu.add(_("Make Large"), toggle_bio_size, toggle_bio_size_deco)
+
 
 def show_in_playlist():
     
@@ -14781,7 +14814,7 @@ class Over:
 
             ddt.rect_r(bar, [100, 200, 100, 255], True)
 
-            x += 29 * gui.scale
+            x += round(29 * gui.scale)
 
     def audio(self):
 
@@ -19503,6 +19536,7 @@ class PictureRender:
         self.sdl_rect = None
 
 
+
     def load(self, path, box_size=None):
 
         if not os.path.isfile(path):
@@ -19569,17 +19603,22 @@ class ArtistInfoBox:
         self.processed_text = ""
         self.th = 0
         self.w = 0
+        self.lock = False
 
         self.mini_box = WhiteModImageAsset(asset_subfolder + "mini-box.png")
 
 
     def draw(self, x, y, w, h):
 
+        if gui.artist_panel_height > 300 and w < 500 * gui.scale:
+            bio_set_small()
+            update_layout_do()
 
-        if w < 300:
+        if w < 300 * gui.scale:
             gui.artist_info_panel = False
             gui.update_layout()
             return
+
 
         if right_click and coll((x, y ,w, h)):
             artist_info_menu.activate()
@@ -19594,6 +19633,7 @@ class ArtistInfoBox:
         # Check if the artist has changed.
         artist = track.artist
         wait = False
+
         if artist != self.artist_on:
             if artist == "":
                 return
@@ -19614,10 +19654,10 @@ class ArtistInfoBox:
             #         wait = True
 
 
-            if not wait:
-                self.min_rq_timer.set()
+            if not wait and not self.lock:
+                self.lock = True
+                #self.min_rq_timer.set()
 
-                self.artist_on = artist
                 self.scroll_y = 0
                 self.status = _("Looking up...")
 
@@ -19626,47 +19666,45 @@ class ArtistInfoBox:
                 shoot_dl.start()
 
 
+        if self.process_text_artist != self.artist_on:
+            self.process_text_artist = self.artist_on
+
+            text = self.text
+            lic = ""
+            link = ""
+
+            if "<a" in text:
+                text, ex = text.split('<a href="', 1)
+
+                link, ex = ex.split('">', 1)
+
+                lic = ex.split("</a>. ", 1)[1]
+
+            text += "\n"
+
+            self.urls = [(link, [200, 60, 60, 255], "L")]
+            for word in text.replace("\n", " ").split(" "):
+                if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
+                    word = word.rstrip(".")
+                    if word.strip()[:4] == "www.":
+                        word = "http://" + word
+                    if 'bandcamp' in word:
+                        self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
+                    elif 'soundcloud' in word:
+                        self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
+                    elif 'twitter' in word:
+                        self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
+                    elif 'facebook' in word:
+                        self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
+                    elif 'youtube' in word:
+                        self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
+                    else:
+                        self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
+
+            self.processed_text = text
+            self.w = -1  # trigger text recalc
+
         if self.status == "Ready":
-
-
-            if self.process_text_artist != self.artist_on:
-                self.process_text_artist = self.artist_on
-
-                text = self.text
-                lic = ""
-                link = ""
-
-                if "<a" in text:
-                    text, ex = text.split('<a href="', 1)
-
-                    link, ex = ex.split('">', 1)
-
-                    lic = ex.split("</a>. ", 1)[1]
-
-                text += "\n"
-
-                self.urls = [(link, [200, 60, 60, 255], "L")]
-                for word in text.replace("\n", " ").split(" "):
-                    if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
-                        word = word.rstrip(".")
-                        if word.strip()[:4] == "www.":
-                            word = "http://" + word
-                        if 'bandcamp' in word:
-                            self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
-                        elif 'soundcloud' in word:
-                            self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
-                        elif 'twitter' in word:
-                            self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
-                        elif 'facebook' in word:
-                            self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
-                        elif 'youtube' in word:
-                            self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
-                        else:
-                            self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
-
-                self.processed_text = text
-                self.w = -1  # trigger text recalc
-
 
             if self.w != w:
                 tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
@@ -19683,15 +19721,15 @@ class ArtistInfoBox:
                 self.scroll_y = scroll_max
 
             right = x + w - 25 * gui.scale
-            text_max_w = w - 250 * gui.scale
+            text_max_w = w - gui.artist_panel_height - 50 * gui.scale
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max, True)
                 right -= 15
                 text_max_w -= 15
 
-            artist_picture_render.draw(x + 20, y + 10)
-            ddt.draw_text((x + round(215 * gui.scale), y + 14 * gui.scale, 4, text_max_w - (text_max_w % 20), 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 26, range_top=self.scroll_y)
+            artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
+            ddt.draw_text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, text_max_w - (text_max_w % 20), 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
@@ -19715,13 +19753,20 @@ class ArtistInfoBox:
                     self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
                 # ddt.rect_r(rect, [210, 80, 80, 255], True)
 
-                yy += 19
+                yy += 19 * gui.scale
 
         else:
-            ddt.draw_text((x + w // 2 , y + 100, 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
+            ddt.draw_text((x + w // 2 , y + h // 2 - 7 * gui.scale , 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
 
 
     def get_data(self, artist):
+
+        print("Load Bio Data")
+
+        if artist is None:
+            self.artist_on = artist
+            self.lock = False
+            return
 
         filename = artist + '-lfm.png'
         filename2 = artist + '-lfm.txt'
@@ -19733,13 +19778,16 @@ class ArtistInfoBox:
 
         if os.path.isfile(filepath):
             # print("Load cached bio")
-            artist_picture_render.load(filepath, round(180 * gui.scale))
+            artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
             artist_picture_render.show = True
             if os.path.isfile(filepath2):
                 with open(filepath2) as f:
                     self.text = f.read()
             self.status = "Ready"
             gui.update = 2
+            self.artist_on = artist
+            self.lock = False
+
             return
 
 
@@ -19750,6 +19798,8 @@ class ArtistInfoBox:
             self.text = ""
             artist_picture_render.show = False
             self.status = _("No artist bio found")
+            self.lock = False
+            self.artist_on = artist
             return
         else:
             self.text = data[1]
@@ -19775,17 +19825,21 @@ class ArtistInfoBox:
 
                     # print("written file, now loading...")
 
-                    artist_picture_render.load(filepath, round(180 * gui.scale))
+                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
                     artist_picture_render.show = True
 
                     self.status = "Ready"
                     gui.update = 2
-            except HTTPError as e:
-                self.status = e
-                print("request failed")
+            # except HTTPError as e:
+            #     self.status = e
+            #     print("request failed")
             except:
                 print("request failed")
                 self.status = "Request Failed"
+
+        self.artist_on = artist
+        self.min_rq_timer.set()
+        self.lock = False
 
 
 
@@ -20821,6 +20875,13 @@ class Undo():
 
 undo = Undo()
 
+
+if prefs.bio_large:
+    bio_set_large()
+else:
+    bio_set_small()
+
+
 def update_layout_do():
 
     # w = window_size[0]
@@ -21238,7 +21299,8 @@ def save_state():
             prefs.spec2_colour_mode,
             prefs.device_buffer,
             prefs.use_eq,
-            prefs.eq]
+            prefs.eq,
+            prefs.bio_large]
 
     #print(prefs.last_device + "-----")
 
@@ -22202,6 +22264,7 @@ while pctl.running:
             #plex.get_albums()
             #print(copy_from_clipboard())
             #print(pctl.playing_object().misc)
+
 
             #show_message("Test error message 123", 'error', "hello text")
             # pctl.playerCommand = "unload"
