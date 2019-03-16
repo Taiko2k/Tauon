@@ -13,11 +13,13 @@ v3.9.0
  - Tweaked disc number detection to better handle case of inconsistent tagging
  - Improved data saving to write to disk immediately on many more functions that modify data
  - Improved Discord rich presence to allow disconnecting (still broken on flatpak)
+ - Improved GNOME media key support
  - Fixed not force showing lyrics when using "Lyrics" button
  - Fixed animations malfunctioning on clock changes
  - Fixed PLEX function caching in data instead of cache directory
  - Fixed and improved symbolic icon
  - Fixed artist info panel sometimes showing previous bio when changing fast
+ - Fixed not showing track in MPRIS on startup
 
 v3.8.1
 
