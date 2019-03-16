@@ -19098,7 +19098,7 @@ class QueueBox:
         if fqo[3] == 0 and not artist_line:
             line2y -= 7 * gui.scale
 
-        ddt.draw_text((rect[0] + (40 * gui.scale), yy - 2 * gui.scale), artist_line, [90, 90, 90, 255], 210,
+        ddt.draw_text((rect[0] + (40 * gui.scale), yy - 1 * gui.scale), artist_line, [90, 90, 90, 255], 210,
                       max_w=rect[2] - 60 * gui.scale, bg=bg)
 
         ddt.draw_text((rect[0] + (40 * gui.scale), line2y), line, text_colour, 211,

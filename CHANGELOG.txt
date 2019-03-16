@@ -15,6 +15,7 @@ v3.8.2
  - Fixed not force showing lyrics when using "Lyrics" button
  - Fixed animations malfunctioning on clock changes
  - Fixed PLEX function caching in data instead of cache directory
+ - Fixed and improved symbolic icon
 
 
 v3.8.1
