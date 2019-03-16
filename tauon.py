@@ -12158,16 +12158,15 @@ def activate_discord():
     elif not prefs.disconnect_discord:
         prefs.disconnect_discord = True
 
+
 def discord_deco():
     tc = colours.menu_text
-    # if prefs.discord_active:
-    #     tc = colours.menu_text_disabled
 
-    if prefs.discord_active:
-        return [tc, colours.menu_background, "Disconnect Discord"]
     if prefs.disconnect_discord:
         tc = colours.menu_text_disabled
         return [tc, colours.menu_background, "Disconnecting..."]
+    if prefs.discord_active:
+        return [tc, colours.menu_background, "Disconnect Discord"]
     else:
         return [tc, colours.menu_background, 'Show playing in Discord']
 
