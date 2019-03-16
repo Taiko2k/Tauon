@@ -48,5 +48,10 @@
 
   <content_rating type="oars-1.1" />
 
+  <kudos>
+    <kudo>Notifications</kudo>
+  </kudos>
+
   <update_contact>captain.gxj_AT_gmail.com</update_contact>
+
 </application>

@@ -670,7 +670,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 print(url)
 
-                self.save_temp = prefs.user_directory + "/" + self.alt + "-temp.mp3"
+                self.save_temp = prefs.cache_directory + "/" + self.alt + "-temp.mp3"
 
                 if self.alt == 'a':
                     self.alt = 'b'
