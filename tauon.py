@@ -339,8 +339,6 @@ vis_update = False
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
-worker_save_state = False
-
 draw_border = True
 resize_mode = False
 
@@ -499,6 +497,7 @@ repeat_mode = False
 # 6 Unique id (int)
 # 7 last folder import path (string)
 # 8 hidden (bool)
+# 9 Locked (bool)
 
 
 
@@ -515,7 +514,7 @@ def pl_gen(title='Default',
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False, False])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -1766,6 +1765,12 @@ if db_version > 0:
         # for i in range(len(multi_playlist)):
         #     if len(multi_playlist[i]) < 10:
         #         multi_playlist[i].append(False)
+
+    if db_version <= 26:
+        print("Updating database to version 27")
+        for i in range(len(multi_playlist)):
+            if len(multi_playlist[i]) == 9:
+                multi_playlist[i].append(False)
 
 # Loading Config -----------------
 
@@ -4073,6 +4078,8 @@ class Tauon:
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
         self.gui = gui
+
+        self.worker_save_state = False
 
 tauon = Tauon()
 
@@ -7023,7 +7030,7 @@ class Menu:
         Menu.instances.append(self)
 
     @staticmethod
-    def deco():
+    def deco(_=_):
         return [colours.menu_text, colours.menu_background, None]
 
     def click(self):
@@ -7032,10 +7039,10 @@ class Menu:
         global click_location
         click_location = [0, 0]
 
-    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None, pass_ref_deco=False):
+    def add(self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None, pass_ref_deco=False, disable_test=None):
         if render_func is None:
             render_func = self.deco
-        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test, pass_ref_deco])
+        self.items.append([title, False, func, render_func, no_exit, pass_ref, hint, icon, show_test, pass_ref_deco, disable_test])
 
     def br(self):
         self.items.append(None)
@@ -7127,7 +7134,6 @@ class Menu:
                 #         continue
 
                 # Get properties for menu item
-
                 if len(self.items[i]) > 7 and self.items[i][9]:
                     fx = self.items[i][3](self.reference)
                 else:
@@ -7137,6 +7143,15 @@ class Menu:
                     label = fx[2]
                 else:
                     label = self.items[i][0]
+
+                # Show text as disabled is pass disable test
+                if len(self.items[i]) > 7 and self.items[i][10] is not None:
+                    if self.items[i][9]:
+                        if self.items[i][10](self.reference):
+                            fx[0] = colours.menu_text_disabled
+                    else:
+                        if self.items[i][10]():
+                            fx[0] = colours.menu_text_disabled
 
                 # Draw item background, black by default
                 ddt.rect_a((self.pos[0], y_run), (self.w, self.h),
@@ -8135,6 +8150,24 @@ else:
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
 
+def pl_lock_deco(pl):
+
+    if pctl.multi_playlist[pl][9] == True:
+        return [colours.menu_text, colours.menu_background, "Unlock"]
+    else:
+        return [colours.menu_text, colours.menu_background, 'Lock']
+
+
+def pl_is_locked(pl):
+    return pctl.multi_playlist[pl][9]
+
+def lock_playlist_toggle(pl):
+    pctl.multi_playlist[pl][9] ^= True
+
+
+tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, hint="Ctrl+R", pass_ref_deco=True)
+
+
 def export_xspf(pl):
     if len(pctl.multi_playlist[pl][2]) < 1:
         show_message("There are no tracks in this playlist. Nothing to export")
@@ -8185,6 +8218,10 @@ def reload():
 
 def clear_playlist(index):
     global default_playlist
+
+    if pl_is_locked(index):
+        show_message("Playlist is locked to prevent accidental erasure")
+        return
 
     #pctl.playlist_backup.append(copy.deepcopy(pctl.multi_playlist[index]))
     #undo.bk_playlist(index)
@@ -8257,8 +8294,12 @@ def get_folder_tracks_local(pl_in):
     return selection
 
 
+def test_pl_tab_locked(pl):
+    return pctl.multi_playlist[pl][9]
+
+
 # Clear playlist
-tab_menu.add(_('Clear'), clear_playlist, pass_ref=True)
+tab_menu.add(_('Clear'), clear_playlist, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
 
 def move_playlist(source, dest):
@@ -8281,7 +8322,10 @@ def move_playlist(source, dest):
 
 def delete_playlist(index):
     global default_playlist
-    
+
+    if pl_is_locked(index):
+        show_message("Playlist is locked to prevent accidental deletion")
+        return
 
     if gui.rename_playlist_box:
         return
@@ -8534,6 +8578,11 @@ def export_stats(pl):
 
 
 def standard_sort(pl):
+
+    if pl_is_locked(pl):
+        show_message("Playlist is locked")
+        return
+
     sort_path_pl(pl)
     sort_track_2(pl)
     reload_albums()
@@ -8614,7 +8663,7 @@ def pl_toggle_playlist_break(ref):
 delete_icon.xoff = 3
 delete_icon.colour = [249, 70, 70, 255]
 
-tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon)
+tab_menu.add(_('Delete'), delete_playlist, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 
 def gen_unique_pl_title(base, extra="", start=1):
 
@@ -8686,7 +8735,7 @@ extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 tab_menu.add_sub(_("Sorted…"), 133)
 extra_tab_menu.add_sub(_("From Current…"), 133)
-tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True)
+tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
@@ -9838,7 +9887,7 @@ def del_selected(force_delete):
         li.append((item, default_playlist[item]))
         del default_playlist[item]
 
-    if key_shift_down:
+    if force_delete:
         for item in li:
 
             tr = pctl.g(item[1])
@@ -10099,6 +10148,9 @@ def delete_folder(index, force=False):
         else:
             show_message("Folder could not be trashed.", 'error', "Try again while holding shift to force delete.")
 
+    tauon.worker_save_state = True
+
+
 def rename_parent(index, template):
 
     #template = prefs.rename_folder_template
@@ -10190,6 +10242,7 @@ def rename_parent(index, template):
     if pre_state == 1:
         pctl.revert()
 
+    tauon.worker_save_state = True
 
 def rename_folders(index):
     global track_box
@@ -10400,6 +10453,9 @@ def reload_metadata(index):
         if star is not None and star[0] > 0:
             star_store.insert(track, star)
 
+    tauon.worker_save_state = True
+
+
 def reload_metadata_selection():
 
     cargo = []
@@ -10551,6 +10607,7 @@ def editor(index):
 
     gui.pl_update = 1
     gui.update = 1
+    tauon.worker_save_state = True
 
 
 def launch_editor(index):
@@ -10903,6 +10960,8 @@ def drop_tracks_to_new_playlist(track_list):
     elif len(track_list) == 1 and artists:
         pctl.multi_playlist[pl][0] = artists[0]
 
+    tauon.worker_save_state = True
+
 
 
 def queue_deco():
@@ -11097,7 +11156,10 @@ def key_hl(index):
 
 def sort_ass(h, invert=False):
     global default_playlist
-    
+
+    if pl_is_locked(pctl.active_playlist_viewing):
+        show_message("Playlist is locked")
+        return
 
     name = gui.pl_st[h][0]
     key = None
@@ -11153,8 +11215,8 @@ def hide_set_bar():
     gui.pl_update = 1
 
 
-set_menu.add("Sort Ascending", sort_ass, pass_ref=True)
-set_menu.add("Sort Decending", sort_dec, pass_ref=True)
+set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 set_menu.br()
 set_menu.add("Hide bar", hide_set_bar)
 set_menu.br()
@@ -13678,6 +13740,7 @@ def worker1():
                 # combo_pl_render.prep(True)
             gui.update = 1
             gui.pl_update = 1
+            tauon.worker_save_state = True
 
         # FOLDER ENC
         if transcode_list:
@@ -15918,11 +15981,15 @@ class TopPanel:
                 elif quick_drag is True:
                     if mouse_up:
                         quick_drag = False
+                        modified = False
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
+                            modified = True
                         if len(shift_selection) > 0:
+                            modified = True
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
-
+                        if modified:
+                            tauon.worker_save_state = True
 
             x += tab_width + self.tab_spacing
 
@@ -16048,6 +16115,7 @@ class TopPanel:
 
                 if mouse_up:
                     drop_tracks_to_new_playlist(shift_selection)
+
 
             # Draw end drag tab indicator
             if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
@@ -17745,10 +17813,14 @@ class StandardPlaylist:
                         # Add folder to selection if clicked
                         if input.mouse_click and not (scroll_enable and mouse_position[0] < 30):
 
-
                             quick_drag = True
                             gui.drag_source_position = copy.deepcopy(click_location)
-                            playlist_hold = True
+
+                            if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+
+
+                                playlist_hold = True
+
                             selection_stage = 1
                             temp = get_folder_tracks_local(p_track)
                             # if p_track not in shift_selection: # not key_shift_down:
@@ -17885,12 +17957,14 @@ class StandardPlaylist:
                 gui.update = 2
 
             if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
-                playlist_hold = True
+                if not pl_is_locked(pctl.active_playlist_viewing):
+                    playlist_hold = True
+                elif key_shift_down:
+                    playlist_hold = True
 
             if input.mouse_click and line_hit:
                 quick_drag = True
                 gui.drag_source_position = copy.deepcopy(click_location)
-
 
             if (input.mouse_click and key_shift_down is False and line_hit or
                         playlist_selected == p_track):
@@ -17956,6 +18030,7 @@ class StandardPlaylist:
                             playlist_selected = shift_selection[0]
                             gui.pl_update += 1
                     reload_albums(True)
+                    tauon.worker_save_state = True
 
             # Blue drop line
             if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
@@ -17980,8 +18055,9 @@ class StandardPlaylist:
                     shift_selection.sort()
 
                 # else:
-                playlist_hold = True
-                playlist_hold_position = p_track
+                if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+                    playlist_hold = True
+                    playlist_hold_position = p_track
 
             # Multi Select Highlight
             if p_track in shift_selection and p_track != playlist_selected:
@@ -18737,11 +18813,15 @@ class PlaylistBox:
                 elif quick_drag is True:
                     if mouse_up:
                         quick_drag = False
+                        modified = False
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
+                            modified = True
                         if len(shift_selection) > 0:
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
-
+                            modified = True
+                        if modified:
+                            tauon.worker_save_state = True
 
             # Toggle hidden flag on click
             if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
@@ -21061,7 +21141,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            2.6,  # Version, used for upgrading
+            27,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -22368,7 +22448,7 @@ while pctl.running:
                     break
     elif loading_in_progress is True:
         loading_in_progress = False
-        worker_save_state = True
+        tauon.worker_save_state = True
 
     if loaderCommand == LC_Done:
         loaderCommand = LC_None
@@ -22383,10 +22463,17 @@ while pctl.running:
         # C-UL
         update_layout = False
 
-    if worker_save_state and not gui.pl_pulse:
+    if tauon.worker_save_state and\
+            not gui.pl_pulse and\
+            not loading_in_progress and\
+            not to_scan and\
+            not plex.scanning and\
+            not cm_clean_db and\
+            not lastfm.scanning_friends and\
+            not move_in_progress:
         save_state()
         cue_list.clear()
-        worker_save_state = False
+        tauon.worker_save_state = False
 
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
@@ -24393,7 +24480,7 @@ while pctl.running:
 
                     else:
                         show_message(_("Rename complete."), 'done', str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."))
-
+                    tauon.worker_save_state = True
 
             if radiobox:
 
