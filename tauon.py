@@ -4246,10 +4246,23 @@ def plex_get_album_thread():
 mediaKey = ''
 mediaKey_pressed = False
 
-if True:
 
-    def gnome():
+class Gnome:
 
+    def __init__(self):
+
+        self.bus_object = None
+
+    def focus(self):
+
+        if self.bus_object is not None:
+
+            # this is what gives us the multi media keys.
+            dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
+            self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
+                                           dbus_interface=dbus_interface)
+
+    def main(self):
 
         from gi.repository import GObject
         import dbus
@@ -4263,17 +4276,34 @@ if True:
             global mediaKey_pressed
 
             if what == 'Play':
-                mediaKey = 'play'
+                mediaKey = 'Play'
+                mediaKey_pressed = True
+            elif what == 'Pause':
+                mediaKey = 'Pause'
                 mediaKey_pressed = True
             elif what == 'Stop':
-                mediaKey = 'stop'
+                mediaKey = 'Stop'
                 mediaKey_pressed = True
             elif what == 'Next':
-                mediaKey = 'forward'
+                mediaKey = 'Next'
                 mediaKey_pressed = True
             elif what == 'Previous':
-                mediaKey = 'back'
+                mediaKey = 'Previous'
                 mediaKey_pressed = True
+
+            elif what == 'Rewind':
+                mediaKey = 'Rewind'
+                mediaKey_pressed = True
+            elif what == 'FastForward':
+                mediaKey = 'FastForward'
+                mediaKey_pressed = True
+            elif what == 'Repeat':
+                mediaKey = 'Repeat'
+                mediaKey_pressed = True
+            elif what == 'Shuffle':
+                mediaKey = 'Shuffle'
+                mediaKey_pressed = True
+
             if mediaKey_pressed:
                 gui.update = 1
 
@@ -4285,6 +4315,8 @@ if True:
                 bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
                 bus_object = bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
                                             '/org/gnome/SettingsDaemon/MediaKeys')
+
+                self.bus_object = bus_object
 
                 # this is what gives us the multi media keys.
                 dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
@@ -4399,6 +4431,8 @@ if True:
 
                         }
 
+                        # self.update()
+
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Raise(self):
                         gui.request_raise = True
@@ -4500,14 +4534,17 @@ if True:
         mainloop = GLib.MainLoop()
         mainloop.run()
 
-    try:
 
-        gnomeThread = threading.Thread(target=gnome)
-        gnomeThread.daemon = True
-        gnomeThread.start()
+gnome = Gnome()
 
-    except:
-        print("ERROR: Could not start Dbus thread")
+try:
+
+    gnomeThread = threading.Thread(target=gnome.main)
+    gnomeThread.daemon = True
+    gnomeThread.start()
+
+except:
+    print("ERROR: Could not start Dbus thread")
 
 
 
@@ -21344,6 +21381,8 @@ if reload_state:
 
 print("Setup done. Entering main loop")
 
+pctl.notify_update()
+
 while pctl.running:
     # bm.get('main')
 
@@ -21802,6 +21841,8 @@ while pctl.running:
             # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
+
+                gnome.focus()
 
                 mouse_enter_window = True
                 focused = True
@@ -22479,17 +22520,30 @@ while pctl.running:
     #     mouse_down = False
 
     if mediaKey_pressed:
-        if mediaKey == 'play':
+        if mediaKey == 'Play':
             if pctl.playing_state == 0:
                 pctl.play()
             else:
                 pctl.pause()
-        elif mediaKey == 'stop':
+        elif mediaKey == 'Pause':
+            pctl.pause_only()
+        elif mediaKey == 'Stop':
             pctl.stop()
-        elif mediaKey == 'forward':
+        elif mediaKey == 'Next':
             pctl.advance()
-        elif mediaKey == 'back':
+        elif mediaKey == 'Previous':
             pctl.back()
+
+        elif mediaKey == 'Rewind':
+            pctl.seek_time(pctl.playing_time - 10)
+        elif mediaKey == 'FastForward':
+            pctl.seek_time(pctl.playing_time + 10)
+        elif mediaKey == 'Repeat':
+            pctl.repeat_mode ^= True
+        elif mediaKey == 'Shuffle':
+            pctl.shuffle_mode ^= True
+
+
         mediaKey_pressed = False
 
     if len(load_orders) > 0:
@@ -23805,7 +23859,7 @@ while pctl.running:
             # if not scroll_enable:
             top = gui.panelY
             if gui.artist_info_panel:
-                top += 200
+                top += gui.artist_panel_height
 
             x = 0
             if gui.lsp:  # Move left so it sits over panel divide
