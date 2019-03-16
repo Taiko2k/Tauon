@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v3.9.0
+v3.8.2
 
  - Added EQ control
  - Added function to delete individual tracks physically
