@@ -14,6 +14,8 @@ v3.8.2
  - Improved Discord rich presence to allow disconnecting (still broken on flatpak)
  - Fixed not force showing lyrics when using "Lyrics" button
  - Fixed animations malfunctioning on clock changes
+ - Fixed PLEX function caching in data instead of cache directory
+
 
 v3.8.1
 

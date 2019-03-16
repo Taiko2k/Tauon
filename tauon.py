@@ -693,6 +693,7 @@ class Prefs:    # Used to hold any kind of settings
         self.always_pin_playlists = True
 
         self.user_directory = user_directory
+        self.cache_directory = cache_directory
 
         self.window_opacity = 1
         self.gallery_single_click = True
@@ -10059,6 +10060,7 @@ def delete_track(track_ref):
 
     reload()
     refind_playing()
+    tauon.worker_save_state = True
 
 track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_icon, show_test=test_shift)
 
