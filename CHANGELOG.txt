@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+v3.9.1
+
+ - Fixed crash when deleting track using delete key
+ - Fixed track drag to playlist not working when tabs disabled
+ - Fixed track drag to viewed playlist not triggering redraw
+ - Set default settings panel to "Function"
+
+
 v3.9.0
 
  - Added EQ control

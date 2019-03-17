@@ -36,7 +36,7 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.9.0"
+t_version = "v 3.9.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -9943,7 +9943,7 @@ def refind_playing():
                 break
 
 
-def del_selected(force_delete):
+def del_selected(force_delete=False):
     global shift_selection
     global playlist_selected
 
@@ -14778,7 +14778,7 @@ class Over:
         self.temp_lastfm_pass = ""
         self.lastfm_input_box = 0
 
-        self.tab_active = 2
+        self.tab_active = 0
         self.tabs = [
             #["Folder Import", self.files],
             [_("Function"), self.funcs],
@@ -16072,6 +16072,7 @@ class TopPanel:
                     if mouse_up:
                         quick_drag = False
                         modified = False
+                        gui.pl_update += 1
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
@@ -18847,6 +18848,8 @@ class PlaylistBox:
 
         # Drawing each tab...
         yy = y + 5 * gui.scale
+        delete_pl = None
+
         for i, pl in enumerate(pctl.multi_playlist):
 
             if yy + self.tab_h > y + h:
@@ -18871,8 +18874,9 @@ class PlaylistBox:
                     tab_menu.activate(i, mouse_position)
 
                 if tab_menu.active is False and middle_click:
-                    delete_playlist(i)
-                    break
+                    delete_pl = i
+                    #delete_playlist(i)
+                    #break
 
                 if mouse_up and self.drag:
 
@@ -18902,10 +18906,11 @@ class PlaylistBox:
 
 
                 # Process input of dragging tracks onto tab
-                elif quick_drag is True:
+                if quick_drag is True:
                     if mouse_up:
                         quick_drag = False
                         modified = False
+                        gui.pl_update += 1
                         for item in shift_selection:
                             pctl.multi_playlist[i][2].append(default_playlist[item])
                             modified = True
@@ -19059,6 +19064,9 @@ class PlaylistBox:
 
             yy += self.tab_h + self.gap
 
+        if delete_pl is not None:
+            delete_playlist(delete_pl)
+            gui.update += 1
 
         # Create new playlist if drag in blank space after tabs
         rect = (x, yy, w - 10 * gui.scale, h - (yy - y))
