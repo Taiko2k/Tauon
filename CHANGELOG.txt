@@ -6,6 +6,7 @@ v3.9.2
  - Added lock icon and indicator for locked playlists
  - Fixed animation jutter with drop tracks on tab
  - Reverted some buffer changes for more accurate time positioning
+ - [Flatpak] Improved fontconfg detection
 
 v3.9.1
 
@@ -13,7 +14,6 @@ v3.9.1
  - Fixed track drag to playlist not working when tabs disabled
  - Fixed track drag to viewed playlist not triggering redraw
  - Set default settings panel to "Function"
-
 
 v3.9.0
 

@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v3.9.1"
+t_version = "v3.9.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -80,15 +80,21 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
         t_id = "com.github.taiko2k.tauonmb"
         print("Running as Flatpak")
 
-        # Copy fontconfig from host system as workaround for poor font rendering
+        # Symlink fontconfig from host system as workaround for poor font rendering
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
-            if os.path.exists(os.path.join(home_directory, ".config/fontconfig/")):
-                print("-- Symlink user fonconfig")
 
-                fontcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
-                os.symlink(".config/fontconfig", fontcfg)
+            host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
+            flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
 
-                #shutil.copy(os.path.join(home_directory, ".config/fontconfig/fonts.conf"), os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf"))
+            if os.path.exists(host_fcfg):
+
+                if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
+                    shutil.rmtree(flatpak_fcfg)
+                if os.path.islink(flatpak_fcfg):
+                    pass
+                else:
+                    print("-- Symlink user fonconfig")
+                    os.symlink(host_fcfg, flatpak_fcfg)
 
         flatpak_mode = True
 
