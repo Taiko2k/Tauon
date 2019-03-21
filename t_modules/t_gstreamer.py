@@ -85,6 +85,7 @@ def player3(tauon):  # GStreamer
             self.pctl.test_progress()  # This function triggers an advance if we are near end of track
 
             if self.pctl.playerCommandReady:
+                self.pctl.playerCommandReady = False
                 if self.pctl.playerCommand == 'open' and self.pctl.target_open != '':
 
                     # Check if the file exists, mark it as missing if not
@@ -130,7 +131,6 @@ def player3(tauon):  # GStreamer
                                             (self.pctl.start_time + self.pctl.jump_time) * Gst.SECOND)
                         self.pctl.playing_time = self.pctl.jump_time
                         self.gui.update = 1
-
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
@@ -184,7 +184,6 @@ def player3(tauon):  # GStreamer
                     self.pl.set_state(Gst.State.PLAYING)
                     self.play_state = 1
 
-                self.pctl.playerCommandReady = False
 
             if self.play_state == 1:
 
@@ -203,7 +202,6 @@ def player3(tauon):  # GStreamer
                 # We could get the seek bar to absolutely what the backend gives us... causes problems?
                 # Like, if the playback stalls, the advance will never trigger, so we would need to detect that
                 # then manually progress the playing time or trigger an advance.
-                # This is what the BASS backend currently does.
 
                 # self.pctl.playing_time = self.pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
 
