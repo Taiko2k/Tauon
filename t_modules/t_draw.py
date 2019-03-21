@@ -294,7 +294,11 @@ class TDraw:
             print("Font not loaded: " + str(font))
             return 10
 
+        # desc = Pango.FontDescription(self.f_dict[font][0])
+        # desc.set_family("Arial")
+
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+
 
         # This seems broken, it always uses the system fonconfig and override here does not work?
         # options = context.get_font_options()

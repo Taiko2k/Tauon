@@ -36,7 +36,8 @@ import shutil
 import gi
 from gi.repository import GLib
 
-t_version = "v 3.9.1"
+
+t_version = "v3.9.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -450,8 +451,8 @@ if whicher('unrar'):
 if whicher('7z'):
     Archive_Formats.add("7z")
 
-# if system == 'windows':
-#     DA_Formats.add('wma')  # Bass on Linux does not support WMA
+if system == 'windows':
+    DA_Formats.add('wma')  # Bass on Linux does not support WMA
 
 cargo = []
 
@@ -1612,10 +1613,10 @@ except:
         time.sleep(0.01)
         os.makedirs(cache_directory)
 
-# Check is bass is present
-if prefs.backend == 1:
-    if not os.path.isfile(install_directory + '/lib/libbass.so'):
-        prefs.backend = 2
+# # Check is bass is present
+# if prefs.backend == 1:
+#     if not os.path.isfile(install_directory + '/lib/libbass.so'):
+#         prefs.backend = 2
 
 if prefs.backend == 2:
     # gi.require_version('Gst', '1.0')
@@ -2701,8 +2702,8 @@ class PlayerCtl:
             self.playerCommandReady = True
             self.playing_time = self.new_time
 
-            if system == 'windows' and taskbar_progress:
-                windows_progress.update(True)
+            # if system == 'windows' and taskbar_progress:
+            #     windows_progress.update(True)
 
             if self.mpris is not None:
                 self.mpris.seek_do(self.playing_time)
@@ -4090,8 +4091,9 @@ tauon = Tauon()
 
 # Check if BASS is present and fall back to Gstreamer if not
 if prefs.backend == 1 and not os.path.isfile(install_directory + '/lib/libbass.so'):
-    print("BASS not found")
-    prefs.backend = 2
+    if system != "windows":
+        print("BASS not found")
+        prefs.backend = 2
 
 if prefs.backend == 2:
     from t_modules.t_gstreamer import player3
@@ -8242,7 +8244,7 @@ def lock_playlist_toggle(pl):
     pctl.multi_playlist[pl][9] ^= True
 
 
-tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, hint="Ctrl+R", pass_ref_deco=True)
+tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def export_xspf(pl):
@@ -13736,7 +13738,8 @@ def worker1():
                 not plex.scanning and \
                 not cm_clean_db and \
                 not lastfm.scanning_friends and \
-                not move_in_progress:
+                not move_in_progress and \
+                gui.update == 0:
             save_state()
             cue_list.clear()
             tauon.worker_save_state = False
@@ -19711,12 +19714,12 @@ class ArtistInfoBox:
                     wait = True
 
 
-            # if pctl.playing_time < 0.1:
-            #     if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
-            #         pass
-            #     else:
-            #         self.status = "..."
-            #         wait = True
+            if pctl.playing_time < 0.5:
+                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+                    pass
+                else:
+                    self.status = "..."
+                    wait = True
 
 
             if not wait and not self.lock:
@@ -19840,67 +19843,72 @@ class ArtistInfoBox:
 
 
         # Check for cache
+        try:
 
-        if os.path.isfile(filepath):
-            # print("Load cached bio")
-            artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-            artist_picture_render.show = True
-            if os.path.isfile(filepath2):
-                with open(filepath2) as f:
-                    self.text = f.read()
-            self.status = "Ready"
-            gui.update = 2
-            self.artist_on = artist
-            self.lock = False
+            if os.path.isfile(filepath):
+                # print("Load cached bio")
+                artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                artist_picture_render.show = True
+                if os.path.isfile(filepath2):
+                    with open(filepath2) as f:
+                        self.text = f.read()
+                self.status = "Ready"
+                gui.update = 2
+                self.artist_on = artist
+                self.lock = False
 
-            return
+                return
 
 
 
-        # Get new from last.fm
-        data = lastfm.artist_info(artist)
-        if data[0] is False:
-            self.text = ""
-            artist_picture_render.show = False
-            self.status = _("No artist bio found")
-            self.lock = False
-            self.artist_on = artist
-            return
-        else:
-            self.text = data[1]
-            cover_link = data[2]
+            # Get new from last.fm
+            data = lastfm.artist_info(artist)
+            if data[0] is False:
+                self.text = ""
+                artist_picture_render.show = False
+                self.status = _("No artist bio found")
+                self.artist_on = artist
+                self.lock = False
+                return
+            else:
+                self.text = data[1]
+                cover_link = data[2]
 
-            # Save text as file
-            f = open(filepath2, 'w')
-            f.write(self.text)
-            f.close()
+                # Save text as file
+                f = open(filepath2, 'w')
+                f.write(self.text)
+                f.close()
 
-        if 'http' in cover_link:
-            # Fetch cover_link
-            try:
-                # print("Fetching artist image...")
-                response = urllib.request.urlopen(cover_link)
-                info = response.info()
-                # print("got response")
-                if info.get_content_maintype() == 'image':
+            if 'http' in cover_link:
+                # Fetch cover_link
+                try:
+                    # print("Fetching artist image...")
+                    response = urllib.request.urlopen(cover_link)
+                    info = response.info()
+                    # print("got response")
+                    if info.get_content_maintype() == 'image':
 
-                    f = open(filepath, 'wb')
-                    f.write(response.read())
-                    f.close()
+                        f = open(filepath, 'wb')
+                        f.write(response.read())
+                        f.close()
 
-                    # print("written file, now loading...")
+                        # print("written file, now loading...")
 
-                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
+                        artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                        artist_picture_render.show = True
 
-                    self.status = "Ready"
-                    gui.update = 2
-            # except HTTPError as e:
-            #     self.status = e
-            #     print("request failed")
-            except:
-                print("request failed")
-                self.status = "Request Failed"
+                        self.status = "Ready"
+                        gui.update = 2
+                # except HTTPError as e:
+                #     self.status = e
+                #     print("request failed")
+                except:
+                    print("request failed")
+                    self.status = "Request Failed"
+
+
+        except:
+            self.status = "Load Failed"
 
         self.artist_on = artist
         self.min_rq_timer.set()

@@ -487,6 +487,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.vol_fx = None
             self.vol_param = BASS_BFX_VOLUME(0, 0)
 
+            self.open_file_flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_ASYNCFILE
+            if pctl.system == "windows":
+                self.open_file_flags |= BASS_UNICODE
+
         def try_init(self, re=False):
 
             if not self.init:
@@ -717,7 +721,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 # print(BASS_ErrorGetCode())
                 # Load new stream
-                new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_ASYNCFILE)
+                if pctl.system == "windows":
+                    target = target.decode()
+
+                new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
 
                 # print("Creade decode chanel")
                 # print(BASS_ErrorGetCode())
@@ -1512,7 +1519,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             # OPEN COMMAND
 
-            if command == 'open':# and pctl.target_open != '':
+            if command == 'open':
 
                 bass_player.start(transition_instant)
 
