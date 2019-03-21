@@ -1,13 +1,17 @@
 
 Changelog-------------------------------------
 
-v3.9.1
+v3.9.2
 
  - Added lock icon and indicator for locked playlists
+ - Fixed animation jutter with drop tracks on tab
+ - Reverted some buffer changes for more accurate time positioning
+
+v3.9.1
+
  - Fixed crash when deleting track using delete key
  - Fixed track drag to playlist not working when tabs disabled
  - Fixed track drag to viewed playlist not triggering redraw
- - Reverted some buffer changes for more accurate time positioning
  - Set default settings panel to "Function"
 
 
