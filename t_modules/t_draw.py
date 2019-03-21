@@ -554,6 +554,7 @@ class TDraw:
         return self.f_dict[font].get_metrics(text, max_x, wrap)
 
     def __win_render_text(self, key, x, y, range_top, range_height, align):
+   
 
         sd = key
         
@@ -567,14 +568,6 @@ class TDraw:
         if range_height is not None and range_height < sd[0].h - 20:
         
 
-            #if range_top < 0:
-            #    range_top = 0
-
-            #if range_top > sd[0].h - range_height:
-            #    range_top = sd[0].h - range_height
-            dst = sd[0]
-            print(dst)
-
             self.source_rect.y = sd[0].h - round(range_height) - round(range_top)
             self.source_rect.w = sd[0].w
             self.source_rect.h = round(range_height)
@@ -584,10 +577,6 @@ class TDraw:
             self.dest_rect.w = sd[0].w
             self.dest_rect.h = round(range_height)
             
-            
-
-            #SDL_RenderCopyEx(self.renderer, sd[1], None , None, 0, None, SDL_FLIP_VERTICAL)
-            #SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
             SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
             return
 
@@ -699,6 +688,8 @@ class TDraw:
     
     
     def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
+
+        #print((text, font))
 
         if not text:
             return 0

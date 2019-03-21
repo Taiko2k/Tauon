@@ -5008,22 +5008,23 @@ else:
     ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 16, 12, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 13, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 18, 14, weight=standard_weight, y_offset=-1)
-    ddt.win_prime_font(standard_font, 18, 14.5, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 18, 15, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 14, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=0)
     ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-1)
     ddt.win_prime_font(standard_font, 21, 17, weight=standard_weight, y_offset=-1)
 
-    ddt.win_prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=-12)
-    ddt.win_prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
-    ddt.win_prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
-    ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 16 + 4, 216, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
+    ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font('Arial', 10 + 4, 210, weight=600, y_offset=2)
+    ddt.win_prime_font('Arial', 11 + 3, 211, weight=600, y_offset=2)
+    ddt.win_prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
+    ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
     ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
     ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
@@ -17480,8 +17481,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
     # In windows (arial?) draws numbers too high (hack fix)
     num_y_offset = 0
-    if system == 'windows':
-        num_y_offset = 1
+    #if system == 'windows':
+    #    num_y_offset = 1
 
 
     if True or style == 1:
@@ -19931,7 +19932,7 @@ class ArtistInfoBox:
                 artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
                 artist_picture_render.show = True
                 if os.path.isfile(filepath2):
-                    with open(filepath2) as f:
+                    with open(filepath2, encoding="utf-8") as f:
                         self.text = f.read()
                 self.status = "Ready"
                 gui.update = 2
@@ -20033,7 +20034,7 @@ class Showcase:
         bft = colours.grey(235)
         bbt = colours.grey(200)
 
-        t1 = colours.grey(350)
+        t1 = colours.grey(250)
         #gui.vis_4_colour = [140, 110, 200, 255]
         gui.vis_4_colour = None
 
