@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 # Tauon Music Box
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
@@ -33,10 +34,6 @@ import os
 import pickle
 import shutil
 
-import gi
-from gi.repository import GLib
-
-
 t_version = "v3.9.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -46,11 +43,17 @@ print(t_version)
 print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
 # Detect platform
+windows_native = False
 if sys.platform == 'win32':
     system = 'windows'
+    windows_native = True
 else:
     system = 'linux'
     import fcntl
+
+if not windows_native:
+    import gi
+    from gi.repository import GLib
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
@@ -79,19 +82,18 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
 
         # Copy fontconfig from host system as workaround for poor font rendering
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
-            if os.path.exists(os.path.join(home_directory, ".config/fontconfig/fonts.conf")):
-                print("-- COPYING FONTCONFIG TO FLATPAK")
+            if os.path.exists(os.path.join(home_directory, ".config/fontconfig/")):
+                print("-- Symlink user fonconfig")
 
                 fontcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
+                os.symlink(".config/fontconfig", fontcfg)
 
-                if not os.path.exists(fontcfg):
-                    os.makedirs(fontcfg)
-                shutil.copy(os.path.join(home_directory, ".config/fontconfig/fonts.conf"), os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf"))
+                #shutil.copy(os.path.join(home_directory, ".config/fontconfig/fonts.conf"), os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig/fonts.conf"))
 
         flatpak_mode = True
 
 # If we're installed, use home data locations
-if install_mode:
+if install_mode and system == 'linux':
 
     old_user_directory = os.path.expanduser('~') + "/.tauonmb-user"
 
@@ -270,7 +272,6 @@ else:
 # ------------------------------------------------
 
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
-import gi
 
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
@@ -280,7 +281,6 @@ else:
 
 
 # Other imports
-import gi
 from sdl2 import *
 from sdl2.sdlimage import *
 from PIL import Image, ImageDraw, ImageFilter
@@ -962,6 +962,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.vis_4_colour = None
 
         self.layer_focus = 0
+        self.tab_menu_pl = 0
 
 
 gui = GuiVar()
@@ -2185,6 +2186,7 @@ class PlayerCtl:
 
         self.running = True
         self.system = system
+        self.windows_native = windows_native
         self.install_directory = install_directory
         self.config_directory = config_directory
 
@@ -4948,54 +4950,93 @@ print("Scanning fonts...")
 
 draw = Drawing()
 
-standard_font = prefs.linux_font
+if system == "linux":
+    standard_font = prefs.linux_font
+    ddt.prime_font(standard_font, 8, 9)
+    ddt.prime_font(standard_font, 8, 10)
+    ddt.prime_font(standard_font, 8.5, 11)
+    ddt.prime_font(standard_font, 9, 12)
+    ddt.prime_font(standard_font, 10, 13)
+    ddt.prime_font(standard_font, 10, 14)
+    ddt.prime_font(standard_font, 10.2, 14.5)
+    ddt.prime_font(standard_font, 11, 15)
+    ddt.prime_font(standard_font, 12, 16)
+    ddt.prime_font(standard_font, 12, 17)
+    ddt.prime_font(standard_font, 12, 18)
+    ddt.prime_font(standard_font, 24, 30)
 
-ddt.prime_font(standard_font, 8, 9)
-ddt.prime_font(standard_font, 8, 10)
-ddt.prime_font(standard_font, 8.5, 11)
-ddt.prime_font(standard_font, 9, 12)
-ddt.prime_font(standard_font, 10, 13)
-ddt.prime_font(standard_font, 10, 14)
-ddt.prime_font(standard_font, 10.2, 14.5)
-ddt.prime_font(standard_font, 11, 15)
-ddt.prime_font(standard_font, 12, 16)
-ddt.prime_font(standard_font, 12, 17)
-ddt.prime_font(standard_font, 12, 18)
-ddt.prime_font(standard_font, 24, 30)
+    ddt.prime_font(standard_font, 9, 412)
+    ddt.prime_font(standard_font, 10, 413)
 
-ddt.prime_font(standard_font, 9, 412)
-ddt.prime_font(standard_font, 10, 413)
-
-standard_font = "Noto Sans Medium"
-ddt.prime_font(standard_font, 8, 309)
-ddt.prime_font(standard_font, 8, 310)
-ddt.prime_font(standard_font, 8.5, 311)
-ddt.prime_font(standard_font, 9, 312)
-ddt.prime_font(standard_font, 10, 313)
-ddt.prime_font(standard_font, 10.5, 314)
-ddt.prime_font(standard_font, 11, 315)
-ddt.prime_font(standard_font, 12, 316)
-ddt.prime_font(standard_font, 12, 317)
-ddt.prime_font(standard_font, 12, 318)
-ddt.prime_font(standard_font, 24, 330)
-
-
-standard_font = prefs.linux_bold_font
-
-ddt.prime_font(standard_font, 6, 209)
-ddt.prime_font(standard_font, 7, 210)
-ddt.prime_font(standard_font, 8, 211)
-ddt.prime_font(standard_font, 9, 212)
-ddt.prime_font(standard_font, 10, 213)
-ddt.prime_font(standard_font, 11, 214)
-ddt.prime_font(standard_font, 12, 215)
-ddt.prime_font(standard_font, 13, 216)
-ddt.prime_font(standard_font, 14, 217)
-ddt.prime_font(standard_font, 17, 218)
-ddt.prime_font(standard_font, 19, 219)
-ddt.prime_font(standard_font, 25, 228)
+    standard_font = "Noto Sans Medium"
+    ddt.prime_font(standard_font, 8, 309)
+    ddt.prime_font(standard_font, 8, 310)
+    ddt.prime_font(standard_font, 8.5, 311)
+    ddt.prime_font(standard_font, 9, 312)
+    ddt.prime_font(standard_font, 10, 313)
+    ddt.prime_font(standard_font, 10.5, 314)
+    ddt.prime_font(standard_font, 11, 315)
+    ddt.prime_font(standard_font, 12, 316)
+    ddt.prime_font(standard_font, 12, 317)
+    ddt.prime_font(standard_font, 12, 318)
+    ddt.prime_font(standard_font, 24, 330)
 
 
+    standard_font = prefs.linux_bold_font
+
+    ddt.prime_font(standard_font, 6, 209)
+    ddt.prime_font(standard_font, 7, 210)
+    ddt.prime_font(standard_font, 8, 211)
+    ddt.prime_font(standard_font, 9, 212)
+    ddt.prime_font(standard_font, 10, 213)
+    ddt.prime_font(standard_font, 11, 214)
+    ddt.prime_font(standard_font, 12, 215)
+    ddt.prime_font(standard_font, 13, 216)
+    ddt.prime_font(standard_font, 14, 217)
+    ddt.prime_font(standard_font, 17, 218)
+    ddt.prime_font(standard_font, 19, 219)
+    ddt.prime_font(standard_font, 25, 228)
+
+
+else:
+    standard_font = "Meiryo"
+    standard_font = "Arial"
+    semibold_font = "Meiryo Semibold"
+    semibold_font = "Arial Semibold"
+    standard_weight = 500
+    bold_weight = 600
+    ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 16, 12, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 17, 13, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 18, 14, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 18, 14.5, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 18, 15, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 21, 17, weight=standard_weight, y_offset=-1)
+
+    ddt.win_prime_font(standard_font, 30 + 6, 30, weight=standard_weight, y_offset=-12)
+    ddt.win_prime_font('Arial', 10 + 4, 210, weight=600, y_offset=1)
+    ddt.win_prime_font('Arial', 11 + 3, 211, weight=600, y_offset=1)
+    ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 13 + 5, 213, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 14 + 4, 214, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 15 + 4, 215, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 16 + 4, 216, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 28 + 4, 228, weight=bold_weight, y_offset=1)
+
+    ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
+    ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
+
+    standard_weight = 550
+    ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
 
 class DropShadow:
 
@@ -7030,6 +7071,7 @@ class MenuIcon:
         self.asset = asset
         self.colour = [170, 170, 170, 255]
         self.base_asset = None
+        self.base_asset_mod = None
         self.colour_callback = None
         self.xoff = 0
         self.yoff = 0
@@ -7114,22 +7156,32 @@ class Menu:
         if colours.lm:
             selected = True
 
-
         if icon is not None:
 
             x += icon.xoff * gui.scale
             y += icon.yoff * gui.scale
 
+            colour = None
+
             if icon.base_asset is None:
                 # Colourise mode
 
-                colour = [50, 50, 50, 255]
-
-                if icon.colour_callback is not None and icon.colour_callback() is not None:
+                if icon.colour_callback is not None: #and icon.colour_callback() is not None:
                     colour = icon.colour_callback()
 
                 elif selected:
                     colour = icon.colour
+
+
+                if colour is None and icon.base_asset_mod:
+                    colour = [50, 50, 50, 255]
+                    if colours.lm:
+                        colour = [160, 160, 160, 255]
+                    icon.base_asset_mod.render(x, y, colour)
+                    return
+
+                if colour is None:
+                    colour = [50, 50, 50, 255]
 
                 icon.asset.render(x, y, colour)
 
@@ -8244,7 +8296,24 @@ def lock_playlist_toggle(pl):
     pctl.multi_playlist[pl][9] ^= True
 
 
-tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True)
+def lock_colour_callback():
+    if pctl.multi_playlist[gui.tab_menu_pl][9]:
+        if colours.lm:
+            return [230, 180, 60, 255]
+        return [230, 190, 10, 255]
+    else:
+        return None
+
+lock_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + 'lock.png'))
+lock_icon.base_asset_mod = WhiteModImageAsset(asset_subfolder + 'unlock.png')
+lock_icon.colour = [240, 190, 10, 255]
+lock_icon.colour_callback = lock_colour_callback
+lock_icon.xoff = 3
+lock_icon.yoff = -1
+
+
+
+tab_menu.add(_('Lock'), lock_playlist_toggle, pl_lock_deco, pass_ref=True, pass_ref_deco=True, icon=lock_icon)
 
 
 def export_xspf(pl):
@@ -16069,6 +16138,7 @@ class TopPanel:
                 # Activate menu on right click
                 elif right_click:
                     tab_menu.activate(copy.deepcopy(i))
+                    gui.tab_menu_pl = i
 
                 # Quick drop tracks
                 elif quick_drag is True:
@@ -18790,6 +18860,8 @@ class PlaylistBox:
 
         self.indicate_w = round(2 * gui.scale)
 
+        self.lock_icon = WhiteModImageAsset(asset_subfolder + 'lock-corner.png')
+
         #if gui.scale == 1.25:
         self.tab_h = round(25 * gui.scale)
         self.gap = round(2 * gui.scale)
@@ -18875,6 +18947,7 @@ class PlaylistBox:
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
                 if right_click:
                     tab_menu.activate(i, mouse_position)
+                    gui.tab_menu_pl = i
 
                 if tab_menu.active is False and middle_click:
                     delete_pl = i
@@ -18980,6 +19053,13 @@ class PlaylistBox:
             # Draw highlight
             ddt.rect_r((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
 
+            # Draw lock icon
+            if pl[9]:
+                cl = [255, 255, 255, 24]
+                if light_mode:
+                    cl = [0, 0, 0, 50]
+                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+
             # Draw title text
             text_start = 10 * gui.scale
             if draw_pin_indicator:
@@ -19082,6 +19162,7 @@ class PlaylistBox:
 
             if right_click:
                 extra_tab_menu.activate(pctl.active_playlist_viewing)
+
 
             # Move tab to end playlist if dragged past end
             if self.drag:
@@ -19875,7 +19956,7 @@ class ArtistInfoBox:
                 cover_link = data[2]
 
                 # Save text as file
-                f = open(filepath2, 'w')
+                f = open(filepath2, 'w', encoding='utf-8')
                 f.write(self.text)
                 f.close()
 
@@ -19908,6 +19989,7 @@ class ArtistInfoBox:
 
 
         except:
+            raise
             self.status = "Load Failed"
 
         self.artist_on = artist

@@ -18,16 +18,190 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import sys
 from sdl2 import *
 from t_modules.t_extra import *
 import ctypes
-import cairo
-import gi
-gi.require_version('Pango', '1.0')
-gi.require_version('PangoCairo', '1.0')
-from gi.repository import Pango
-from gi.repository import PangoCairo
+
+system = "linux"
+if sys.platform == 'win32':
+    system = "windows"
+
+if system == "linux":
+    import cairo
+    import gi
+    gi.require_version('Pango', '1.0')
+    gi.require_version('PangoCairo', '1.0')
+    from gi.repository import Pango
+    from gi.repository import PangoCairo
+else:
+    from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
+    import win32con, win32api, win32gui, win32ui
+    import struct
+    
+if system == "windows":
+
+    class RECT(ctypes.Structure):
+        _fields_ = [('left', ctypes.c_long),
+                    ('top', ctypes.c_long),
+                    ('right', ctypes.c_long),
+                    ('bottom', ctypes.c_long)
+                    ]
+
+    def RGB(r, g, b):
+        return r | (g << 8) | (b << 16)
+
+    def Wcolour(colour):
+        return colour[0] | (colour[1] << 8) | (colour[2] << 16)
+
+    def native_bmp_to_sdl(hdc, bitmap_handle, width, height):
+
+        bmpheader = struct.pack("LHHHH", struct.calcsize("LHHHH"),
+                                width, height, 1, 24) #w,h, planes=1, bitcount)
+
+        c_bmpheader = ctypes.c_buffer(bmpheader)
+
+        #3 bytes per pixel, pad lines to 4 bytes
+        c_bits = ctypes.c_buffer(b" " * (height * ((width*3 + 3) & -4)))
+
+        res = ctypes.windll.gdi32.GetDIBits(
+            hdc, bitmap_handle, 0, height,
+            c_bits, c_bmpheader,
+            win32con.DIB_RGB_COLORS)
+
+        if not res:
+            raise IOError("native_bmp_to_pil failed: GetDIBits")
+
+        # We need to keep c_bits pass else it may be garbage collected
+        return SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , SDL_PIXELFORMAT_BGR24), c_bits
+
+
+    class Win32Font:
+
+        def __init__(self, name, height, weight=win32con.FW_NORMAL,
+                     italic=False, underline=False):
+                     
+            self.font = win32ui.CreateFont({
+                'name': name, 'height': height,
+                'weight': weight, 'italic': italic, 'underline': underline,}) #'charset': win32con.MAC_CHARSET})
+
+            #create a compatible DC we can use to draw:
+
+            self.desktopHwnd = win32gui.GetDesktopWindow()
+            self.desktopDC = win32gui.GetWindowDC(self.desktopHwnd)
+            self.mfcDC = win32ui.CreateDCFromHandle(self.desktopDC)
+            self.drawDC = self.mfcDC.CreateCompatibleDC()
+
+            #initialize it
+
+            self.drawDC.SelectObject(self.font)
+
+        def get_metrics(self, text, max_x, wrap):
+
+            #return self.drawDC.GetTextExtent(text)
+            
+            rect = RECT(0,0,0,0)
+            rect.left = 0
+            rect.right = max_x
+            rect.top = 0
+            rect.bottom = 0
+
+                #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
+            t = self.drawDC.GetSafeHdc()
+            
+            if wrap:
+                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK | win32con.DT_CALCRECT)
+            else:
+                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_CALCRECT | win32con.DT_END_ELLIPSIS)
+                
+            return rect.right, rect.bottom
+            
+          
+
+        def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
+
+            self.drawDC.SetTextColor(Wcolour(fg))
+
+            t = self.drawDC.GetSafeHdc()
+
+            win32gui.SetBkMode(t, win32con.TRANSPARENT)
+
+
+            #create the compatible bitmap:
+
+            #w,h = self.drawDC.GetTextExtent(text)
+            w, h = self.get_metrics(text, max_x, wrap)
+
+            #print(self.drawDC.GetTextFace())
+
+            #w += 1
+            #if wrap:
+            #    h = int((w / max_x) * h) + h
+            #    w = max_x + 1
+            if max_y != None:
+                h = max_y
+
+            saveBitMap = win32ui.CreateBitmap()
+
+            saveBitMap.CreateCompatibleBitmap(self.mfcDC, w, h)
+
+            self.drawDC.SelectObject(saveBitMap)
+
+            #draw it
+
+            br = win32ui.CreateBrush(win32con.BS_SOLID, Wcolour(bg), 0)
+
+            self.drawDC.FillRect((0, 0, w, h), br)
+
+            #self.drawDC.DrawText(text, (0, 0, w, h), win32con.DT_LEFT)
+
+            #windll.gdi32.TextOutW(t, 0, 0, "test", 5)
+
+            if wrap:
+                rect = RECT(0,0,0,0)
+                rect.left = 0
+                rect.right = max_x
+                rect.top = 0
+                rect.bottom = h
+
+                #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
+                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK)
+            else:
+                
+                rect = RECT(0,0,0,0)
+                rect.left = 0
+                rect.right = max_x
+                rect.top = 0
+                rect.bottom = h
+
+                #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
+                windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_END_ELLIPSIS)                
+                
+                
+                #windll.gdi32.TextOutW(t, 0, 0, text, len(text))
+
+            # print(rects)
+            #print(text)
+            #windll.gdi32.ExtTextOutW(t, 0, 0, None, rect, text, len(text), None)
+            #convert to SDL surface
+            im, c_bits = native_bmp_to_sdl(self.drawDC.GetSafeHdc(), saveBitMap.GetHandle(), w, h)
+            #clean-up
+            win32gui.DeleteObject(saveBitMap.GetHandle())
+
+            return im, c_bits
+
+
+        def __del__(self):
+
+            self.mfcDC.DeleteDC()
+            self.drawDC.DeleteDC()
+            win32gui.ReleaseDC(self.desktopHwnd, self.desktopDC)
+            win32gui.DeleteObject(self.font.GetSafeHandle())
+
+        def __del__(self):
+
+            win32gui.DeleteObject(self.font.GetSafeHandle())
+
 
 
 # Performs alpha blending of one colour (RGB-A) onto another (RGB)
@@ -54,13 +228,17 @@ class TDraw:
         # Text and Fonts
         self.source_rect = SDL_Rect(0, 0, 0, 0)
         self.dest_rect = SDL_Rect(0, 0, 0, 0)
-        self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
-        self.context = cairo.Context(self.surf)
-        self.layout = PangoCairo.create_layout(self.context)
-        # self.layout_context = self.layout.get_context()
-        # fo = cairo.FontOptions()
-        # fo.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-        # PangoCairo.context_set_font_options(self.layout_context, fo)
+        
+        if system == "linux":
+            self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
+            self.context = cairo.Context(self.surf)
+            self.layout = PangoCairo.create_layout(self.context)
+       
+            
+        else:
+            self.cache = {}
+            self.ca_li = []
+            self.y_offset_dict = {}
 
         self.text_background_colour = [0, 0, 0, 255]
         #self.pretty_rect = [0, 0, 0, 0]
@@ -119,22 +297,31 @@ class TDraw:
         self.ttc.clear()
         self.ttl.clear()
 
+    def win_prime_font(self, name, size, user_handle, weight, y_offset=0):
+    
+        self.f_dict[user_handle] = Win32Font(name, size, weight)
+        self.y_offset_dict[user_handle] = y_offset
+
     def prime_font(self, name, size, user_handle, offset=0):
 
         self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size)
 
     def get_text_wh(self, text, font, max_x, wrap=False):
 
-        self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-        self.layout.set_ellipsize(Pango.EllipsizeMode.END)
-        self.layout.set_width(max_x * 1000)
-        if wrap:
-            self.layout.set_height(20000 * 1000)
-        else:
-            self.layout.set_height(0)
-        self.layout.set_text(text, -1)
+        if system == "linux":
+            self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+            self.layout.set_ellipsize(Pango.EllipsizeMode.END)
+            self.layout.set_width(max_x * 1000)
+            if wrap:
+                self.layout.set_height(20000 * 1000)
+            else:
+                self.layout.set_height(0)
+            self.layout.set_text(text, -1)
 
-        return self.layout.get_pixel_size()
+            return self.layout.get_pixel_size()
+        else:
+            #return self.__win_text_xy(text, font)
+            return self.__win_text_xy(text, font, max_x, wrap)
 
     def get_y_offset(self, text, font, max_x, wrap=False):  # HACKY
 
@@ -352,6 +539,165 @@ class TDraw:
             return dst.h
         return dst.w
 
+
+    # WINDOWS --------------------------------------------------------
+
+    def __win_text_xy(self, text, font, max_x, wrap):
+
+        if font == None or font not in self.f_dict:
+
+            print("Missing Font")
+            print(font)
+
+            return
+
+        return self.f_dict[font].get_metrics(text, max_x, wrap)
+
+    def __win_render_text(self, key, x, y, range_top, range_height, align):
+
+        sd = key
+        
+        sd[0].x = x
+        sd[0].y = y
+        if align == 1:
+            sd[0].x = x - sd[0].w
+        elif align == 2:
+            sd[0].x = sd[0].x - int(sd[0].w / 2)
+
+        if range_height is not None and range_height < sd[0].h - 20:
+        
+
+            #if range_top < 0:
+            #    range_top = 0
+
+            #if range_top > sd[0].h - range_height:
+            #    range_top = sd[0].h - range_height
+            dst = sd[0]
+            print(dst)
+
+            self.source_rect.y = sd[0].h - round(range_height) - round(range_top)
+            self.source_rect.w = sd[0].w
+            self.source_rect.h = round(range_height)
+
+            self.dest_rect.x = sd[0].x
+            self.dest_rect.y = sd[0].y
+            self.dest_rect.w = sd[0].w
+            self.dest_rect.h = round(range_height)
+            
+            
+
+            #SDL_RenderCopyEx(self.renderer, sd[1], None , None, 0, None, SDL_FLIP_VERTICAL)
+            #SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
+            SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
+            return
+
+        SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
+
+
+    def __draw_text_windows(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
+
+        y += self.y_offset_dict[font]
+        #y += self.y_offset_dict[font]
+        key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[1], bg[2], bg[3], max_x)
+
+        if key in self.cache:
+            sd = self.cache[key]
+
+
+            self.__win_render_text(sd, x, y, range_top, range_height, align)
+            if wrap:
+                return sd[0].h
+            return sd[0].w
+
+
+            #sd[0].x = x
+            #sd[0].y = y
+            #if align == 1:
+            #    sd[0].x = x - sd[0].w
+            #elif align == 2:
+            #    sd[0].x = sd[0].x - int(sd[0].w / 2)
+            #SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
+            #return sd[0].w
+
+
+        if font == None or font not in self.f_dict:
+
+            print("Missing Font")
+            print(font)
+            return 0
+
+        #perf_timer.set()
+
+        f = self.f_dict[font]
+        
+        w, h = f.get_metrics(text, max_x, wrap)
+        if max_y and max_y > h:
+            max_y = h
+
+        im, c_bits = f.renderText(text, bg, fg, wrap, max_x, max_y)
+
+        #buff = io.BytesIO()
+
+        #im.save(buff, format="BMP")
+
+        #buff.seek(0)
+
+        #wop = rw_from_object(buff)
+
+        #s_image = IMG_Load_RW(wop, 0)
+
+        s_image = im
+
+        ke = SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
+
+        SDL_SetColorKey(s_image, True, ke)
+
+        c = SDL_CreateTextureFromSurface(self.renderer, s_image)
+
+        tex_w = pointer(c_int(0))
+
+        tex_h = pointer(c_int(0))
+
+        SDL_QueryTexture(c, None, None, tex_w, tex_h)
+
+        dst = SDL_Rect(x, y)
+
+        dst.w = int(tex_w.contents.value)
+
+        dst.h = int(tex_h.contents.value)
+
+        SDL_FreeSurface(s_image)
+
+        #im.close()
+
+        if align == 1:
+            dst.x = x - dst.w
+
+        elif align == 2:
+            dst.x = dst.x - int(dst.w / 2)
+
+        #SDL_RenderCopy(renderer, c, None, dst)
+
+        #SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
+
+
+        #print(perf_timer.get())
+        self.cache[key] = [dst, c]
+
+        self.__win_render_text([dst, c], x, y, range_top, range_height, align)
+
+
+        self.ca_li.append(key)
+
+        if len(self.ca_li) > 350:
+            SDL_DestroyTexture(self.cache[self.ca_li[0]][1])
+            del self.cache[self.ca_li[0]]
+            del self.ca_li[0]
+
+        return dst.w    
+    
+    
+    
     def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
         if not text:
@@ -374,8 +720,15 @@ class TDraw:
                 max_h = None
                 if len(location) > 4:
                     max_h = location[4]
-                return self.__draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
-                                              range_top=range_top, range_height=range_height)
+                    
+                if system == "linux":
+                    return self.__draw_text_cairo(location, text, colour, font, location[3], bg, max_y=max_h, wrap=True,
+                                                  range_top=range_top, range_height=range_height)
+                else:
+                    return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, 0, True, location[3], max_y=max_h,
+                                                     range_top=range_top, range_height=range_height)
 
-        return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align)
-
+        if system == "linux":
+            return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align)
+        else:
+            return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)

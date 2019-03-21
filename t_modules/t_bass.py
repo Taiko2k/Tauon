@@ -275,7 +275,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     # open_flag = 0
 
     BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 327680)
-    BASS_SetConfig(BASS_CONFIG_BUFFER, 2000)
+    #BASS_SetConfig(BASS_CONFIG_BUFFER, 2000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
 
     #else:
