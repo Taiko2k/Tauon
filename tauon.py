@@ -213,8 +213,6 @@ try:
 except:
     print("Could not set process title.")
 
-discord_allow = False
-discord_enable = False
 
 # try:
 #     import rpc
@@ -226,7 +224,7 @@ try:
     import asyncio
     discord_allow = True
 except:
-    pass
+    discord_allow = False
 
 if system == "windows":
     import win32con, win32api, win32gui, win32ui, comtypes
@@ -325,15 +323,6 @@ from t_modules.t_extra import *
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
 warnings.simplefilter('ignore', stagger.errors.Warning)
-
-# Check to see if Discord is running
-if discord_allow:
-    if system == 'linux':
-        pl = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE).communicate()[0]
-        if not 'Discord' in pl.decode('utf-8', 'ignore'):
-            discord_allow = False
-    else:
-        discord_allow = False
 
 # Setting various timers
 
@@ -743,6 +732,8 @@ class Prefs:    # Used to hold any kind of settings
         self.use_eq = False
 
         self.bio_large = False
+        self.discord_allow = discord_allow
+        self.discord_show = False
 
 
 prefs = Prefs()
@@ -1625,6 +1616,8 @@ try:
         prefs.eq = save[112]
     if save[113] is not None:
         prefs.bio_large = save[113]
+    if save[114] is not None:
+        prefs.discord_show = save[114]
 
     state_file.close()
     del save
@@ -11197,6 +11190,11 @@ def toggle_wiki(mode=0):
     prefs.show_wiki ^= True
 
 
+def toggle_show_discord(mode=0):
+    if mode == 1:
+        return prefs.discord_show
+    prefs.discord_show ^= True
+
 def toggle_gen(mode=0):
     if mode == 1:
         return prefs.show_gen
@@ -12312,87 +12310,10 @@ def discord_loop():
     except:
         show_message("Error connecting to Discord", 'error')
         prefs.disconnect_discord = False
-        raise
+        # raise
 
     prefs.discord_active = False
 
-# def discord_loop():
-#
-#     prefs.discord_active = True
-#
-#     try:
-#         print("Attempting to connect to Discord...")
-#         rpc_obj = rpc.DiscordIpcClient.for_platform('434627346574606351')
-#         print("Discord RPC connection successful.")
-#
-#         time.sleep(8)
-#         start_time = time.time()
-#
-#         idle_time = Timer()
-#
-#         state = 0
-#         index = -1
-#
-#         while True:
-#             while True:
-#                 current_state = 0
-#                 current_index = pctl.playing_object().index
-#                 if pctl.playing_state == 1:
-#                     current_state = 1
-#                 if state != current_state or index != current_index:
-#                     if pctl.playing_time > 4 or current_state != 1:
-#                         state = current_state
-#                         index = current_index
-#                         start_time = time.time()
-#                         idle_time.set()
-#                         break
-#
-#                 time.sleep(2)
-#                 # if pctl.playing_state != 0:
-#                 #     idle_time.set()
-#                 # if idle_time.get() > 120:
-#                 #     rpc_obj.close()
-#                 #     time.sleep(14)
-#                 #     prefs.discord_active = False
-#                 #     show_message("Disconnected from Discord due to idling")
-#                 #     return
-#
-#
-#             title = "Unknown Track"
-#             if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
-#                 title = pctl.playing_object().artist + " - " + pctl.playing_object().title
-#                 if len(title) > 150:
-#                     title = "Unknown Track"
-#
-#             if state == 1:
-#                 print("PLAYING: " + title)
-#                 activity = {
-#                     "state": "Listening",
-#                     "details": title,
-#                     "timestamps": {
-#                         "start": start_time
-#                     },
-#                     "assets": {
-#                         # "small_text": "Text for small_image",
-#                         # "small_image": "img_small",
-#                         #"large_text": "Application Icon",
-#                         "large_image": "tauon-large"
-#                     }
-#                 }
-#                 rpc_obj.set_activity(activity)
-#             else:
-#                 print("STOPPED")
-#                 activity = {
-#                     "state": "Idle",
-#                     "assets": {
-#                         "large_image": "tauon-large"
-#                     }
-#                 }
-#                 rpc_obj.set_activity(activity)
-#             time.sleep(16)
-#     except:
-#         show_message("Error connecting to Discord", 'error')
-#     prefs.discord_active = False
 
 
 
@@ -12419,8 +12340,11 @@ def discord_deco():
         return [tc, colours.menu_background, 'Show playing in Discord']
 
 
-if discord_allow:
-    x_menu.add("Show playing in Discord", activate_discord, discord_deco)
+
+def discord_show_test(_):
+    return prefs.discord_show
+
+x_menu.add("Show playing in Discord", activate_discord, discord_deco, show_test=discord_show_test)
 
 def exit_func():
     pctl.running = False
@@ -15255,6 +15179,8 @@ class Over:
         y += 30 * gui.scale
         self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
 
+
+
         x = self.box_x + self.item_x_offset
         y = self.box_y - 10 * gui.scale
 
@@ -15297,6 +15223,9 @@ class Over:
         self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
+        if not flatpak_mode and discord_allow:
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
 
         y = self.box_y + 220 * gui.scale
 
@@ -20169,7 +20098,7 @@ class ArtistInfoBox:
 
 
         except:
-            raise
+            # raise
             self.status = "Load Failed"
 
         self.artist_on = artist
@@ -21635,7 +21564,8 @@ def save_state():
             prefs.device_buffer,
             prefs.use_eq,
             prefs.eq,
-            prefs.bio_large]
+            prefs.bio_large,
+            prefs.discord_show]
 
     #print(prefs.last_device + "-----")
 
