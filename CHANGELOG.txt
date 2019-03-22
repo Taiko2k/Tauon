@@ -5,9 +5,11 @@ v4.0.0
 
  - Added lock icon and indicator for locked playlists
  - Fixed animation jutter with drop tracks on tab
+ - Fixed drop files not saving state
  - Reverted some buffer changes for more accurate time positioning
  - Restored Windows support
  - Fixed crash when transcoding with gallery open first time
+ - Fixed crash when using folder mover
  - [Flatpak] Improved fontconfg detection
 
 v3.9.1
