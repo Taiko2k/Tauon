@@ -7,6 +7,7 @@ v4.0.0
  - Fixed animation jutter with drop tracks on tab
  - Reverted some buffer changes for more accurate time positioning
  - Restored Windows support
+ - Fixed crash when transcoding with gallery open first time
  - [Flatpak] Improved fontconfg detection
 
 v3.9.1
