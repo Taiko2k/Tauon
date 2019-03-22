@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.0.0"
+t_version = "v4.0.0-beta1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -151,6 +151,13 @@ elif system == 'windows' and ('Program Files' in install_directory or
     print("User Directroy: ", end="")
     print(user_directory)
     install_mode = True
+    if not os.path.isdir(user_directory):
+        os.makedirs(user_directory)
+
+    if not os.path.isfile(os.path.join(config_directory, "config.txt")):
+        print("Config file is missing... copying template from program files")
+        import shutil
+        shutil.copy(install_directory + "\\config.txt", config_directory)
 
 else:
     print("Running in portable mode")
@@ -201,6 +208,35 @@ if system == 'linux':
             print("Program is already running")
             pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
             sys.exit()
+
+
+if system == 'windows':
+    from win32event import CreateMutex
+    from win32api import CloseHandle, GetLastError
+    from winerror import ERROR_ALREADY_EXISTS
+
+
+    class singleinstance:
+        """ Limits application to single instance """
+
+        def __init__(self):
+            self.mutexname = "tauonmusicbox_{A0E858DF-985E-4907-B7FB-7D732C3FC3B9}"
+            self.mutex = CreateMutex(None, False, self.mutexname)
+            self.lasterror = GetLastError()
+
+        def aleradyrunning(self):
+            return (self.lasterror == ERROR_ALREADY_EXISTS)
+
+        def __del__(self):
+            if self.mutex:
+                CloseHandle(self.mutex)
+
+    lock = singleinstance()
+
+    if lock.aleradyrunning():
+        print("Program is already running")
+        pickle.dump(sys.argv, open(user_directory + "/transfer.p", "wb"))
+        sys.exit()
 
 # ------------------------------------
 # Continue startup
@@ -5153,7 +5189,7 @@ else:
     standard_font = "Meiryo"
     standard_font = "Arial"
     semibold_font = "Meiryo Semibold"
-    semibold_font = "Arial Semibold"
+    semibold_font = "Arial Bold"
     standard_weight = 500
     bold_weight = 600
     ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
@@ -5170,8 +5206,8 @@ else:
     ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
     ddt.win_prime_font('Arial', 10 + 4, 210, weight=600, y_offset=2)
     ddt.win_prime_font('Arial', 11 + 3, 211, weight=600, y_offset=2)
-    ddt.win_prime_font(semibold_font, 12 + 3, 212, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
+    ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=-1)
     ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
@@ -16987,14 +17023,23 @@ class BottomBarType1:
             text_time = get_display_time(pctl.playing_time)
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-            ddt.draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
+                      
+            offset1 = 10 * gui.scale
+            
+            if system == "windows":
+                offset1 += 2 * gui.scale
+            
+            offset2 = offset1 + 7 * gui.scale
+            
+            
+            ddt.draw_text((x + offset1, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(pctl.playing_length)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
-            ddt.draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
+            ddt.draw_text((x + offset2, y), text_time, colours.time_sub,
                       fonts.bottom_panel_time)
 
         elif gui.display_time_mode == 3:
@@ -17021,14 +17066,20 @@ class BottomBarType1:
             text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-            ddt.draw_text((x + 10 * gui.scale, y), "/", colours.time_sub,
+                      
+            offset1 = 10 * gui.scale
+            if system == "windows":
+                offset1 += 2 * gui.scale           
+            offset2 = offset1 + 7 * gui.scale
+                      
+            ddt.draw_text((x + offset1, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(gui.dtm3_total)
             if pctl.playing_state == 0:
                 text_time = get_display_time(0)
             elif pctl.playing_state == 3:
                 text_time = "-- : --"
-            ddt.draw_text((x + 17 * gui.scale, y), text_time, colours.time_sub,
+            ddt.draw_text((x + offset2, y), text_time, colours.time_sub,
                       fonts.bottom_panel_time)
 
 

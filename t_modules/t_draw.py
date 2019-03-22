@@ -674,7 +674,7 @@ class TDraw:
     
     def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
-        # print((text, font))
+        #print((text, font))
 
         if not text:
             return 0
