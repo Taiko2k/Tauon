@@ -9980,6 +9980,14 @@ def lightning_paste():
     c = base
     del s[0]
 
+    to_move = []
+    for pl in pctl.multi_playlist:
+        for i in reversed(range(len(pl[2]))):
+            if pctl.g(pl[2][i]).parent_folder_path == move_track.parent_folder_path:
+                to_move.append(pl[2][i])
+
+    to_move = list(set(to_move))
+
 
     for level in s:
         upper = c
@@ -10023,7 +10031,7 @@ def lightning_paste():
                 show_message("Folder size safety limit reached! (1.5GB)", 'warning', move_path)
                 return
 
-            if len(os.walk(move_path)) > min(20, len(cargo) * 2):
+            if len(next(os.walk(move_path))[2]) > max(20, len(to_move) * 2):
                 show_message("Safety interupt! The source folder seems to have many files.", 'warning', move_path)
                 return
 
@@ -23901,6 +23909,7 @@ while pctl.running:
 
                         if not load_orders:
                             loading_in_progress = False
+                            tauon.worker_save_state = True
                         break
 
             if gui.show_playlist:
