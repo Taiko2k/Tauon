@@ -8424,10 +8424,9 @@ def rename_playlist(index):
     rename_text_area.highlight_all()
 
 
-if gui.scale == 2:
-    delete_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + '2x/del.png'))
-else:
-    delete_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + 'del.png'))
+
+delete_icon = MenuIcon(asset_loader('del.png', True))
+
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
@@ -8457,15 +8456,15 @@ def lock_colour_callback():
     if pctl.multi_playlist[gui.tab_menu_pl][9]:
         if colours.lm:
             return [230, 180, 60, 255]
-        return [230, 190, 10, 255]
+        return [240, 190, 10, 255]
     else:
         return None
 
-lock_icon = MenuIcon(WhiteModImageAsset(asset_subfolder + 'lock.png'))
-lock_icon.base_asset_mod = WhiteModImageAsset(asset_subfolder + 'unlock.png')
+lock_icon = MenuIcon(asset_loader('lock.png', True))
+lock_icon.base_asset_mod = asset_loader('unlock.png', True)
 lock_icon.colour = [240, 190, 10, 255]
 lock_icon.colour_callback = lock_colour_callback
-lock_icon.xoff = 3
+lock_icon.xoff = 4
 lock_icon.yoff = -1
 
 
