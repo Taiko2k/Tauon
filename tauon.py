@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.0.0-beta1"
+t_version = "v4.0.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -172,6 +172,8 @@ b_active_directory = install_directory.encode('utf-8')
 music_folder = None
 if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
     music_folder = os.path.expanduser('~').replace("\\", '/') + "/Music"
+    if system == "windows":
+        music_folder = music_folder.replace("/", "\\")
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
@@ -855,6 +857,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.universal_y_text_offset = 0
 
         self.star_text_y_offset = 0
+        if system == "windows":
+            self.star_text_y_offset = -2
 
         self.set_bar = False
         self.set_mode = False
@@ -10879,6 +10883,12 @@ def editor(index):
     if system == "linux":
         ok = whicher(prefs.tag_editor_target)
     else:
+        
+        if not os.path.isfile(prefs.tag_editor_target.strip('"')):
+            print(prefs.tag_editor_target)
+            show_message("Application not found", "info", prefs.tag_editor_target)
+            return
+        
         ok = True
 
     # if flatpak_mode:
@@ -10915,7 +10925,7 @@ def editor(index):
 
     complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if prefs.tag_editor_target == 'picard':
+    if 'picard' in prefs.tag_editor_target:
         r = complete.stderr.decode()
         for line in r.split("\n"):
             if 'file._rename' in line and ' Moving file ' in line:
@@ -15578,7 +15588,8 @@ class Over:
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
         #if desktop == 'GNOME' or desktop == 'KDE':
-        self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+        if system == "linux":
+            self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
 
@@ -20802,8 +20813,14 @@ class DLMon:
                     del self.watching[path]
                     continue
 
-                min_age = (time.time() - os.stat(path)[stat.ST_MTIME]) / 60
+                #stamp = os.stat(path)[stat.ST_MTIME]
+                stamp = os.path.getmtime(path)
+
+                min_age = (time.time() - stamp) / 60
                 ext = os.path.splitext(path)[1][1:].lower()
+                    
+                if system == "windows" and "TauonMusicBox" in path:
+                    continue
 
                 if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
                     size = os.path.getsize(path)
@@ -20851,7 +20868,7 @@ class DLMon:
                                 imported = False
                                 for pl in pctl.multi_playlist:
                                     for i in pl[2]:
-                                        if path == pctl.master_library[i].fullpath[:len(path)]:
+                                        if path.replace("\\", "/") == pctl.master_library[i].fullpath[:len(path)]:
                                             imported = True
                                         if imported:
                                             break
