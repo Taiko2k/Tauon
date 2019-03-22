@@ -62,6 +62,10 @@ de_nofity_support = desktop == 'GNOME' or desktop == 'KDE'
 # Find the directory we are running from
 install_directory = sys.path[0]
 
+# Workaround for Py-Installer
+if 'base_library' in install_directory:
+    install_directory = os.path.dirname(install_directory)
+
 # Set data folders (portable mode)
 user_directory = install_directory
 config_directory = user_directory
