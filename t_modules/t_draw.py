@@ -102,7 +102,7 @@ if system == "windows":
             
             rect = RECT(0,0,0,0)
             rect.left = 0
-            rect.right = max_x
+            rect.right = round(max_x)
             rect.top = 0
             rect.bottom = 0
 
@@ -160,9 +160,9 @@ if system == "windows":
             if wrap:
                 rect = RECT(0,0,0,0)
                 rect.left = 0
-                rect.right = max_x
+                rect.right = round(max_x)
                 rect.top = 0
-                rect.bottom = h
+                rect.bottom = round(h)
 
                 #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK)
@@ -170,9 +170,9 @@ if system == "windows":
                 
                 rect = RECT(0,0,0,0)
                 rect.left = 0
-                rect.right = max_x
+                rect.right = round(max_x)
                 rect.top = 0
-                rect.bottom = h
+                rect.bottom = round(h)
 
                 #windll.User32.DrawTextW(t, text, len(text)) #, rect, win32con.DT_WORDBREAK)
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_END_ELLIPSIS)                
@@ -299,7 +299,7 @@ class TDraw:
 
     def win_prime_font(self, name, size, user_handle, weight, y_offset=0):
     
-        self.f_dict[user_handle] = Win32Font(name, size, weight)
+        self.f_dict[user_handle] = Win32Font(name, int(size * self.scale), weight)
         self.y_offset_dict[user_handle] = y_offset
 
     def prime_font(self, name, size, user_handle, offset=0):
@@ -346,7 +346,7 @@ class TDraw:
 
         sd = key
         if align == 1:
-            sd[0].x = x - sd[0].w
+            sd[0].x = round(x) - sd[0].w
 
         elif align == 2:
             sd[0].x = sd[0].x - int(sd[0].w / 2)
@@ -413,8 +413,8 @@ class TDraw:
         if not real_bg:
             if key in self.ttc:
                 sd = self.ttc[key]
-                sd[0].x = x
-                sd[0].y = y - sd[2]
+                sd[0].x = round(x)
+                sd[0].y = round(y) - sd[2]
                 self.__render_text(sd, x, y, range_top, range_height, align)
 
                 if wrap:
@@ -516,10 +516,10 @@ class TDraw:
         c = SDL_CreateTextureFromSurface(self.renderer, sdl_surface)
         SDL_FreeSurface(sdl_surface)
 
-        dst = SDL_Rect(x, y)
-        dst.w = w
-        dst.h = h
-        dst.y = y - y_off
+        dst = SDL_Rect(round(x), round(y))
+        dst.w = round(w)
+        dst.h = round(h)
+        dst.y = round(y) - y_off
 
         pack = [dst, c, y_off]
 
@@ -558,10 +558,10 @@ class TDraw:
 
         sd = key
         
-        sd[0].x = x
-        sd[0].y = y
+        sd[0].x = round(x)
+        sd[0].y = round(y)
         if align == 1:
-            sd[0].x = x - sd[0].w
+            sd[0].x = round(x) - sd[0].w
         elif align == 2:
             sd[0].x = sd[0].x - int(sd[0].w / 2)
 
@@ -586,7 +586,7 @@ class TDraw:
     def __draw_text_windows(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
 
         y += self.y_offset_dict[font]
-        #y += self.y_offset_dict[font]
+
         key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[1], bg[2], bg[3], max_x)
 
         if key in self.cache:
@@ -636,45 +636,30 @@ class TDraw:
         #s_image = IMG_Load_RW(wop, 0)
 
         s_image = im
-
         ke = SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
-
         SDL_SetColorKey(s_image, True, ke)
-
         c = SDL_CreateTextureFromSurface(self.renderer, s_image)
-
         tex_w = pointer(c_int(0))
-
         tex_h = pointer(c_int(0))
-
         SDL_QueryTexture(c, None, None, tex_w, tex_h)
-
-        dst = SDL_Rect(x, y)
-
+        dst = SDL_Rect(round(x), round(y))
         dst.w = int(tex_w.contents.value)
-
         dst.h = int(tex_h.contents.value)
-
         SDL_FreeSurface(s_image)
-
         #im.close()
 
         if align == 1:
-            dst.x = x - dst.w
+            dst.x = round(x) - dst.w
 
         elif align == 2:
             dst.x = dst.x - int(dst.w / 2)
 
         #SDL_RenderCopy(renderer, c, None, dst)
-
         #SDL_RenderCopyEx(self.renderer, c, None, dst, 0, None, SDL_FLIP_VERTICAL)
-
 
         #print(perf_timer.get())
         self.cache[key] = [dst, c]
-
         self.__win_render_text([dst, c], x, y, range_top, range_height, align)
-
 
         self.ca_li.append(key)
 
@@ -685,11 +670,11 @@ class TDraw:
 
         return dst.w    
     
-    
+   
     
     def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
-        #print((text, font))
+        # print((text, font))
 
         if not text:
             return 0
