@@ -105,7 +105,10 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
         return send_file(install_directory + "/gui/favicon.ico", mimetype='image/x-icon')
 
     if prefs.expose_web is True:
-        app.run(host='0.0.0.0 ', port=prefs.server_port)
+        if pctl.system == "linux":
+            app.run(host='0.0.0.0', port=prefs.server_port)
+        else:
+            app.run(host='127.0.0.1', port=prefs.server_port)
     else:
         app.run(port=prefs.server_port)
 

@@ -4122,12 +4122,15 @@ class PlexService:
 
         if not prefs.plex_username:
             show_message("PLEX Account - No username in config", 'warning', 'Enter details in config file then restart app to apply.')
+            self.scanning = False
             return
         if not prefs.plex_password:
             show_message("PLEX Account - No password in config", 'warning', 'Enter details in config file then restart app to apply.')
+            self.scanning = False
             return
         if not prefs.plex_servername:
             show_message("PLEX - No name of plex server in config", 'warning', 'Enter details in config file then restart app to apply.')
+            self.scanning = False
             return
 
         try:
@@ -5011,11 +5014,11 @@ else:
     semibold_font = "Arial Semibold"
     standard_weight = 500
     bold_weight = 600
-    ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 12, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
+    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=0)
+    ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 15, 14, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=-1)
     ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=0)
     ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-1)
@@ -5234,6 +5237,9 @@ def draw_linked_text(location, text, colour, font):
         tweak += 4
     if gui.scale == 1.25:
         tweak = round(tweak * 1.25)
+        tweak += 1
+       
+    if system == "windows":
         tweak += 1
 
     ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
@@ -10192,6 +10198,9 @@ def delete_track(track_ref):
 
     tr = pctl.g(track_ref)
     fullpath = tr.fullpath
+    
+    if system == "windows":
+        fullpath = fullpath.replace("/", "\\")
 
     if tr.is_network:
         show_message("Deleting a network track is not supported")
@@ -10252,6 +10261,7 @@ def delete_folder(index, force=False):
     old = track.parent_folder_path
 
 
+
     if len(old) < 5:
         show_message("This folder path seems short, I don't wanna try delete that", 'warning')
         return
@@ -10280,7 +10290,10 @@ def delete_folder(index, force=False):
         if force:
             shutil.rmtree(old)
         else:
-            send2trash(old)
+            if system == "windows":
+                send2trash(old.replace("/", "\\"))
+            else:
+                send2trash(old)
 
         for i in reversed(range(len(default_playlist))):
 
@@ -14961,8 +14974,9 @@ class Over:
         ddt.draw_text((x, y - 2 * gui.scale), "BASS Audio Library", [220, 220, 220, 255], 213)
         self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                          ")
 
-        ddt.draw_text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
-        self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+        if system == "linux":
+            ddt.draw_text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
+            self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
 
         if prefs.backend == 1:
@@ -15379,11 +15393,14 @@ class Over:
 
         y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
-        self.toggle_square(x, y, scale1, "1x")
+        if system == "linux":
+            self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
+        if system == "linux":
+            self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
         y += 25 * gui.scale
-        self.toggle_square(x, y, scale2, "2x")
+        if system == "linux":
+            self.toggle_square(x, y, scale2, "2x")
 
         y += 25 * gui.scale
 
