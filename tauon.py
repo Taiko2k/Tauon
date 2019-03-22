@@ -5157,7 +5157,7 @@ else:
     standard_weight = 500
     bold_weight = 600
     ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
-    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=0)
+    ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=-1)
@@ -5177,8 +5177,12 @@ else:
     ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
-    ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
-    ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
+    if gui.scale == 1:
+        ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
+        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
+    else:
+        ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=2)
+        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=2)   
 
     standard_weight = 550
     ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
@@ -7365,6 +7369,7 @@ class Menu:
                 self.h = self.vertical_size
 
             for i in range(len(self.items)):
+                # print(self.items[i])
                 if self.items[i] is None:
 
 
@@ -8599,7 +8604,6 @@ def get_folder_tracks_local(pl_in):
 
 
 def test_pl_tab_locked(pl):
-    print(pl)
     return pctl.multi_playlist[pl][9]
 
 
@@ -12585,9 +12589,12 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     target_out = output + 'output' + str(track) + "." + codec
 
     command = user_directory + "/encoder/ffmpeg "
+    
 
-    # if system != 'windows':
-    command = "ffmpeg "
+    if system != 'windows':
+        command = "ffmpeg "
+    else:
+        command = command.replace("/", "\\")
 
     if not pctl.master_library[track].is_cue:
         command += '-i "'
@@ -12623,7 +12630,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if system == 'windows':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
+        
+    if system == "linux":
+        command = shlex.split(command)
+        
+    subprocess.call(command, stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
     print("ffmpeg finished")
@@ -15478,10 +15489,10 @@ class Over:
 
         y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
-        if system == "linux":
+        if system == "linux" or True:
             self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        if system == "linux":
+        if system == "linux" or True:
             self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
         y += 25 * gui.scale
         if system == "linux":
@@ -23479,7 +23490,7 @@ while pctl.running:
                                            colours.gallery_background, True)
 
                             # Draw transcode highlight
-                            if transcode_list:
+                            if transcode_list and os.path.isdir(prefs.encoder_output):
 
                                 track = pctl.master_library[default_playlist[album_dex[album_on]]]
                                 tr = False
