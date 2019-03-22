@@ -5200,10 +5200,10 @@ else:
     ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
     ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
-    ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=0)
-    ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
     ddt.win_prime_font(standard_font, 21, 17, weight=standard_weight, y_offset=-1)
 
     ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
