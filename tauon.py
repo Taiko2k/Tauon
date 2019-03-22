@@ -10832,6 +10832,8 @@ def editor(index):
         file_line += pctl.master_library[track].fullpath
         file_line += '"'
 
+    if system == "windows":
+        file_line = file_line.replace("/", "\\")
 
     prefix = ""
     app = prefs.tag_editor_target
@@ -10841,7 +10843,11 @@ def editor(index):
 
 
     prefix = launch_prefix
-    ok = whicher(prefs.tag_editor_target)
+
+    if system == "linux":
+        ok = whicher(prefs.tag_editor_target)
+    else:
+        ok = True
 
     # if flatpak_mode:
     #     print("Finding app from within Flatpak...")
@@ -10867,7 +10873,7 @@ def editor(index):
 
         return
 
-    if prefs.tag_editor_target == 'picard':
+    if 'picard' in prefs.tag_editor_target:
         app_switch = " --d "
 
     line = prefix + app + app_switch + file_line
