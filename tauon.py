@@ -12006,7 +12006,9 @@ def broadcast_colour():
     if pctl.broadcast_active:
         return [56, 189, 237, 255]
     else:
-        return None
+        if colours.lm:
+            return [171, 102, 249, 255]
+        return None #[171, 102, 249, 255]
 
 
 if prefs.backend == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
