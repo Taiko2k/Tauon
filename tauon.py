@@ -141,6 +141,17 @@ if install_mode and system == 'linux':
             not os.path.isfile(os.path.join(user_directory, 'star.p')):
                 shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
+
+elif system == 'windows' and ('Program Files' in install_directory or
+                                  os.path.isfile(install_directory + '\\unins000.exe')):
+
+    user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+    config_directory = user_directory
+    cache_directory = user_directory + "\\cache"
+    print("User Directroy: ", end="")
+    print(user_directory)
+    install_mode = True
+
 else:
     print("Running in portable mode")
 
@@ -217,6 +228,9 @@ try:
 except:
     pass
 
+if system == "windows":
+    import win32con, win32api, win32gui, win32ui, comtypes
+    import atexit
 
 import time
 import ctypes
@@ -2279,6 +2293,8 @@ class PlayerCtl:
         self.enable_eq = True  # not used
 
         self.playing_time_int = 0  # playing time but with no decimel
+        
+        self.windows_progress = None
 
     def notify_update(self):
 
@@ -2301,9 +2317,8 @@ class PlayerCtl:
 
     def render_playlist(self):
 
-        # if taskbar_progress and system == 'windows':
-        #     global windows_progress
-        #     windows_progress.update(True)
+        if taskbar_progress and system == 'windows' and self.windows_progress:
+            self.windows_progress.update(True)
         gui.pl_update = 1
 
     def show_selected(self):
@@ -2714,8 +2729,8 @@ class PlayerCtl:
             self.playerCommandReady = True
             self.playing_time = self.new_time
 
-            # if system == 'windows' and taskbar_progress:
-            #     windows_progress.update(True)
+            if system == 'windows' and taskbar_progress and self.windows_progress:
+                self.windows_progress.update(True)
 
             if self.mpris is not None:
                 self.mpris.seek_do(self.playing_time)
@@ -2788,6 +2803,9 @@ class PlayerCtl:
 
         if prefs.backend == 2: # (gstreamer)
             gap_extra = 2
+
+        if system == 'windows' and taskbar_progress and self.windows_progress:
+            self.windows_progress.update(True)
 
         if self.playing_state == 1 and self.playing_time + gap_extra >= self.playing_length and self.playing_time > 0.2:
 
@@ -4554,16 +4572,87 @@ class Gnome:
 
 gnome = Gnome()
 
-try:
+if system == "linux":
+    try:
 
-    gnomeThread = threading.Thread(target=gnome.main)
-    gnomeThread.daemon = True
-    gnomeThread.start()
+        gnomeThread = threading.Thread(target=gnome.main)
+        gnomeThread.daemon = True
+        gnomeThread.start()
 
-except:
-    print("ERROR: Could not start Dbus thread")
+    except:
+        print("ERROR: Could not start Dbus thread")
+
+if system == "windows":
+    def keyboard_hook():
+        from collections import namedtuple
+
+        KeyboardEvent = namedtuple('KeyboardEvent', ['event_type', 'key_code',
+                                                     'scan_code', 'alt_pressed',
+                                                     'time'])
+
+        handlers = []
+
+        def listen():
+            # Adapted from http://www.hackerthreads.org/Topic-42395
+
+            event_types = {win32con.WM_KEYDOWN: 'key down',
+                           win32con.WM_KEYUP: 'key up',
+                           0x104: 'key down',  # WM_SYSKEYDOWN, used for Alt key.
+                           0x105: 'key up',  # WM_SYSKEYUP, used for Alt key.
+                           }
+
+            def low_level_handler(nCode, wParam, lParam):
+                global mediaKey
+                global mediaKey_pressed
+
+                event = KeyboardEvent(event_types[wParam], lParam[0], lParam[1],
+                                      lParam[2] == 32, lParam[3])
+
+                if event[1] == 179 and event[0] == 'key down':
+                    mediaKey = 'play'
+                    mediaKey_pressed = True
+                elif event[1] == 178 and event[0] == 'key down':
+                    mediaKey = 'stop'
+                    mediaKey_pressed = True
+                elif event[1] == 177 and event[0] == 'key down':
+                    mediaKey = 'back'
+                    mediaKey_pressed = True
+                elif event[1] == 176 and event[0] == 'key down':
+                    mediaKey = 'forward'
+                    mediaKey_pressed = True
+                if mediaKey_pressed:
+                    gui.update += 1
+                # Be a good neighbor and call the next hook.
+                return windll.user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
+
+            # Our low level handler signature.
+            CMPFUNC = CFUNCTYPE(c_int, c_int, c_int, POINTER(c_void_p))
+            # Convert the Python handler into C pointer.
+            pointer = CMPFUNC(low_level_handler)
+
+            # Hook both key up and key down events for common keys (non-system).
+            hook_id = windll.user32.SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer,
+                                                      win32api.GetModuleHandle(None), 0)
+
+            # Register to remove the hook when the interpreter exits. Unfortunately a
+            # try/finally block doesn't seem to work here.
+            atexit.register(windll.user32.UnhookWindowsHookEx, hook_id)
+
+            while True:
+                msg = win32gui.GetMessage(None, 0, 0)
+                win32gui.TranslateMessage(byref(msg))
+                win32gui.DispatchMessage(byref(msg))
+                time.sleep(5)
+
+        listen()
+        
 
 
+if system == 'windows':
+    print('Starting hook thread for Windows')
+    keyboardHookThread = threading.Thread(target=keyboard_hook)
+    keyboardHookThread.daemon = True
+    keyboardHookThread.start()
 
 class GStats:
     def __init__(self):
@@ -4901,6 +4990,62 @@ elif prefs.backend == 2:
     playerThread.daemon = True
     playerThread.start()
 
+
+if system == 'windows' and taskbar_progress:
+
+    class WinTask:
+
+        def __init__(self, ):
+            self.start = time.time()
+            self.updated_state = 0
+            self.window_id = gui.window_id
+            import comtypes.client as cc
+            cc.GetModule("TaskbarLib.tlb")
+            import comtypes.gen.TaskbarLib as tbl
+            self.taskbar = cc.CreateObject(
+                "{56FDF344-FD6D-11d0-958A-006097C9A090}",
+                interface=tbl.ITaskbarList3)
+            self.taskbar.HrInit()
+
+            self.d_timer = Timer()
+
+        def update(self, force=False):
+            if self.d_timer.get() > 2 or force:
+                self.d_timer.set()
+
+                if pctl.playing_state == 1 and self.updated_state != 1:
+                    self.taskbar.SetProgressState(self.window_id, 0x2)
+
+                if pctl.playing_state == 1:
+                    self.updated_state = 1
+                    if pctl.playing_length > 2:
+                        perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
+                        if perc < 2:
+                            perc = 1
+                        elif perc > 100:
+                            prec = 100
+                    else:
+                        perc = 0
+
+                    self.taskbar.SetProgressValue(self.window_id, perc, 100)
+
+                elif pctl.playing_state == 2 and self.updated_state != 2:
+                    self.updated_state = 2
+                    self.taskbar.SetProgressState(self.window_id, 0x8)
+
+                elif pctl.playing_state == 0 and self.updated_state != 0:
+                    self.updated_state = 0
+                    self.taskbar.SetProgressState(self.window_id, 0x2)
+                    self.taskbar.SetProgressValue(self.window_id, 0, 100)
+
+
+    if os.path.isfile("TaskbarLib.tlb"):
+        print("Taskbar progress enabled")
+        pctl.windows_progress = WinTask()
+        
+    else:
+        pctl.taskbar_progress = False
+        print("Could not find TaskbarLib.tlb")
 
 # ---------------------------------------------------------------------------------------------
 # ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
