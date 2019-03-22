@@ -1,11 +1,12 @@
 
 Changelog-------------------------------------
 
-v3.9.2
+v4.0.0
 
  - Added lock icon and indicator for locked playlists
  - Fixed animation jutter with drop tracks on tab
  - Reverted some buffer changes for more accurate time positioning
+ - Restored Windows support
  - [Flatpak] Improved fontconfg detection
 
 v3.9.1

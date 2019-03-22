@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v3.9.2"
+t_version = "v4.0.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -82,7 +82,7 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
         # Flatpak mode
 
         t_id = "com.github.taiko2k.tauonmb"
-        print("Running as Flatpak")
+        print("Detected running as Flatpak")
 
         # Symlink fontconfig from host system as workaround for poor font rendering
         if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
@@ -95,9 +95,9 @@ if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or insta
                 if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
                     shutil.rmtree(flatpak_fcfg)
                 if os.path.islink(flatpak_fcfg):
-                    pass
+                    print("-- Symlink to user fonconfig exists")
                 else:
-                    print("-- Symlink user fonconfig")
+                    print("-- Symlinking user fonconfig")
                     os.symlink(host_fcfg, flatpak_fcfg)
 
         flatpak_mode = True
@@ -7652,12 +7652,14 @@ shuffle_menu.add("Random Albums", menu_album_random)
 def bio_set_large():
     if window_size[0] >= round(1000 * gui.scale):
         gui.artist_panel_height = 320 * gui.scale
-        artist_info_box.get_data(artist_info_box.artist_on)
+        if gui.artist_info_panel:
+            artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def bio_set_small():
     gui.artist_panel_height = 200 * gui.scale
-    artist_info_box.get_data(artist_info_box.artist_on)
+    if gui.artist_info_panel:
+        artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def artist_info_panel_close():
@@ -19940,7 +19942,6 @@ class ArtistInfoBox:
             gui.artist_info_panel = False
             gui.update_layout()
             return
-
 
         if right_click and coll((x, y ,w, h)):
             artist_info_menu.activate()
