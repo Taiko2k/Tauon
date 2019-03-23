@@ -132,9 +132,6 @@ if system == "windows":
 
             #w,h = self.drawDC.GetTextExtent(text)
             w, h = self.get_metrics(text, max_x, wrap)
-            
-            print("CALC")
-            print(h)
 
             #print(self.drawDC.GetTextFace())
 
@@ -649,9 +646,7 @@ class TDraw:
         dst = SDL_Rect(round(x), round(y))
         dst.w = int(tex_w.contents.value)
         dst.h = int(tex_h.contents.value)
-        print("REAL")
-        print(dst.h)
-        print(text)
+
         SDL_FreeSurface(s_image)
         #im.close()
 
