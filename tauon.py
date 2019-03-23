@@ -19245,13 +19245,6 @@ class PlaylistBox:
             # Draw highlight
             ddt.rect_r((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
 
-            # Draw lock icon
-            if pl[9]:
-                cl = [255, 255, 255, 24]
-                if light_mode:
-                    cl = [0, 0, 0, 50]
-                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
-
             # Draw title text
             text_start = 10 * gui.scale
             if draw_pin_indicator:
@@ -19292,6 +19285,9 @@ class PlaylistBox:
 
             # Draw indicator playing track from this playlist
 
+            # Is mouse collided with tab?
+            hit = coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1)))
+
             if not prefs.tabs_on_top:
                 if i == pctl.active_playlist_playing:
 
@@ -19304,8 +19300,7 @@ class PlaylistBox:
 
 
             # If mouse over...
-            if coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))):
-
+            if hit:
                 # Draw indicator for dragging tracks
                 if quick_drag:
                     ddt.rect_r((tab_start + tab_width - 2 * gui.scale, yy, self.indicate_w, self.tab_h - self.indicate_w), [80, 200, 180, 255], True)
@@ -19320,6 +19315,13 @@ class PlaylistBox:
                         else:
                             ddt.rect_r((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255], True)
 
+
+            # Draw lock icon (but not if shift append indicator)
+            if pl[9] and not (key_shift_down and self.drag and hit and i != self.drag_on):
+                cl = [255, 255, 255, 24]
+                if light_mode:
+                    cl = [0, 0, 0, 50]
+                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
 
             # Draw effect of adding tracks to playlist
             if len(self.adds) > 0:

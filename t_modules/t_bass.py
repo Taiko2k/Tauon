@@ -694,9 +694,12 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     self.stop()
                     return
 
-                #new_handle = BASS_StreamCreateURL(url, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT, None, 0)
+                target = self.save_temp.encode()
 
-                new_handle = BASS_StreamCreateFile(False, self.save_temp.encode(), 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
+                if pctl.system == "windows":
+                    target = target.decode().replace("/", "\\")
+
+                new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
 
             else:
 
