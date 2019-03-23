@@ -110,6 +110,7 @@ if system == "windows":
             t = self.drawDC.GetSafeHdc()
             
             if wrap:
+        
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_WORDBREAK | win32con.DT_CALCRECT)
             else:
                 windll.User32.DrawTextW(t, text, len(text), pointer(rect), win32con.DT_CALCRECT | win32con.DT_END_ELLIPSIS)
@@ -131,6 +132,9 @@ if system == "windows":
 
             #w,h = self.drawDC.GetTextExtent(text)
             w, h = self.get_metrics(text, max_x, wrap)
+            
+            print("CALC")
+            print(h)
 
             #print(self.drawDC.GetTextFace())
 
@@ -645,6 +649,9 @@ class TDraw:
         dst = SDL_Rect(round(x), round(y))
         dst.w = int(tex_w.contents.value)
         dst.h = int(tex_h.contents.value)
+        print("REAL")
+        print(dst.h)
+        print(text)
         SDL_FreeSurface(s_image)
         #im.close()
 
