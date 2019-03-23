@@ -568,6 +568,10 @@ class TDraw:
 
         if range_height is not None and range_height < sd[0].h - 20:
         
+            if range_top + range_height > sd[0].h:
+                # range_top = 0
+                range_height = sd[0].h - range_top
+                
 
             self.source_rect.y = sd[0].h - round(range_height) - round(range_top)
             self.source_rect.w = sd[0].w
@@ -577,6 +581,8 @@ class TDraw:
             self.dest_rect.y = sd[0].y
             self.dest_rect.w = sd[0].w
             self.dest_rect.h = round(range_height)
+            
+            
             
             SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
             return

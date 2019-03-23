@@ -5211,7 +5211,7 @@ else:
     ddt.win_prime_font('Arial', 10 + 4, 210, weight=600, y_offset=2)
     ddt.win_prime_font('Arial', 11 + 3, 211, weight=600, y_offset=2)
     ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-    ddt.win_prime_font(semibold_font, 13 + 4, 213, weight=bold_weight, y_offset=-1)
+    ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
     ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
