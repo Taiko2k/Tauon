@@ -20048,8 +20048,15 @@ class ArtistInfoBox:
 
         if self.status == "Ready":
 
+            # if self.w != w:
+            #     tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
+            #     self.th = th
+            #     self.w = w
+
+            text_max_w = w - gui.artist_panel_height - 50 * gui.scale
+
             if self.w != w:
-                tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
+                tw, th = ddt.get_text_wh(self.processed_text, 14.5, text_max_w - (text_max_w % 20), True)
                 self.th = th
                 self.w = w
 
@@ -20063,7 +20070,11 @@ class ArtistInfoBox:
                 self.scroll_y = scroll_max
 
             right = x + w - 25 * gui.scale
-            text_max_w = w - gui.artist_panel_height - 50 * gui.scale
+
+
+
+
+
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max, True)
