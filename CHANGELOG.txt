@@ -11,6 +11,7 @@ v4.0.0
  - Restored Windows support
  - Fixed crash when transcoding with gallery open first time
  - Fixed crash when using folder mover
+ - Fixed playlist status text position not respecting artist info box
  - [Flatpak] Improved fontconfg detection
 
 v3.9.1
