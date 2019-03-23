@@ -17958,19 +17958,35 @@ class StandardPlaylist:
 
         # Show notice if playlist empty
 
+
         if len(default_playlist) == 0:
             colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
 
+            top_a = gui.panelY
+            if gui.artist_info_panel:
+                top_a += gui.artist_panel_height
 
-            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65), 2),
+            b = window_size[1] - top_a - gui.panelBY
+            half = int(top_a + (b * 0.60))
+
+
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half, 2),
                       _("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
-            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int((window_size[1] - gui.panelY - gui.panelBY) * 0.65 + (30 * gui.scale)), 2),
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half + 30 * gui.scale, 2),
                       _("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
 
         # Show notice if at end of playlist
         elif pctl.playlist_view_position > len(default_playlist) - 1:
             colour = alpha_mod(colours.index_text, 200)
-            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, int(window_size[1] * 0.18), 2), _("End of Playlist"),
+
+            top_a = gui.panelY
+            if gui.artist_info_panel:
+                top_a += gui.artist_panel_height
+
+            b = window_size[1] - top_a - gui.panelBY
+            half = int(top_a + (b * 0.17))
+
+            ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half, 2), _("End of Playlist"),
                       colour, 213)
 
         # For every track in view
@@ -20053,7 +20069,7 @@ class ArtistInfoBox:
             #     self.th = th
             #     self.w = w
 
-            text_max_w = w - gui.artist_panel_height - 50 * gui.scale
+            text_max_w = w - gui.artist_panel_height - 75 * gui.scale
 
             if self.w != w:
                 tw, th = ddt.get_text_wh(self.processed_text, 14.5, text_max_w - (text_max_w % 20), True)
@@ -20079,7 +20095,7 @@ class ArtistInfoBox:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
                                                         self.scroll_y, scroll_max, True)
                 right -= 15
-                text_max_w -= 15
+                #text_max_w -= 15
 
             artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
             ddt.draw_text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, text_max_w - (text_max_w % 20), 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
