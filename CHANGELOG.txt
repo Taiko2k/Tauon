@@ -6,7 +6,7 @@ v4.0.0
  - Added lock icon and indicator for locked playlists
  - Fixed animation jitter with drop tracks on tab
  - Fixed drop files not saving state
- - Fixed artist bio scroll bar possibly not scrolling full width
+ - Fixed artist bio scroll bar possibly not scrolling full height
  - Reverted some buffer changes for more accurate time positioning
  - Restored Windows support
  - Fixed crash when transcoding with gallery open first time
