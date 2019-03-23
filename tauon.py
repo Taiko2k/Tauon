@@ -21099,6 +21099,9 @@ def hit_callback(win, point, data):
         if tab_menu.active: # or pctl.broadcast_active:
             return SDL_HITTEST_NORMAL
 
+        if gui.vis != 0 and point.contents.x > window_size[0] - 160 and system == "windows":
+            return SDL_HITTEST_NORMAL
+
         return SDL_HITTEST_DRAGGABLE
 
     if not gui.maximized:
