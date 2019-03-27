@@ -772,6 +772,8 @@ class Prefs:    # Used to hold any kind of settings
         self.bio_large = False
         self.discord_allow = discord_allow
         self.discord_show = False
+        
+        self.min_to_tray = False
 
 
 prefs = Prefs()
@@ -1658,6 +1660,8 @@ try:
         prefs.bio_large = save[113]
     if save[114] is not None:
         prefs.discord_show = save[114]
+    if save[115] is not None:
+        prefs.min_to_tray = save[115]
 
     state_file.close()
     del save
@@ -4309,6 +4313,62 @@ def plex_get_album_thread():
     shoot_dl.start()
 
 
+if system == "windows":
+    from infi.systray import SysTrayIcon
+
+class STray:
+
+    def __init__(self):
+
+        self.active = False
+
+    def up(self, systray):
+        SDL_ShowWindow(t_window)
+        #SDL_MinimizeWindow(t_window)
+        #time.sleep(1)
+        SDL_RaiseWindow(t_window)
+        SDL_RestoreWindow(t_window)
+
+        gui.lowered = False
+        
+    def down(self):
+        if self.active:
+            SDL_HideWindow(t_window)
+
+    def advance(self, systray):
+        pctl.advance()
+
+    def back(self, systray):
+        pctl.back()
+
+    def pause(self, systray):
+         pctl.play_pause()
+
+
+    def on_quit_callback(self, systray):
+        pctl.running = False
+
+    def start(self):
+
+        menu_options = (("Show Window", None, self.up),
+                        ("Play/Pause", None, self.pause),
+                        ("Advance", None, self.advance),
+                        ("Previous", None, self.back))
+        self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
+        self.systray.start()
+        self.active = True
+
+
+    def stop(self):
+        self.systray.shutdown()
+        self.active = False
+
+
+tray = STray()
+
+if system == "windows":
+    tray.start()
+
 
 # ----------------------------------------------------------------------------------------------------
 mediaKey = ''
@@ -4855,7 +4915,13 @@ def draw_window_tools():
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                    [160, 160, 160, 160], True)
         if input.mouse_click or ab_click:
-            SDL_MinimizeWindow(t_window)
+            #SDL_MinimizeWindow(t_window)
+            
+            if tray.active and prefs.min_to_tray:
+                tray.down()
+            else:
+                SDL_MinimizeWindow(t_window)
+                
             mouse_down = False
             input.mouse_click = False
             drag_mode = False
@@ -5204,7 +5270,7 @@ else:
     ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
     ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
-    ddt.win_prime_font(standard_font, 21, 17, weight=standard_weight, y_offset=-1)
+    ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
 
     ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
     ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
@@ -14629,7 +14695,11 @@ def scale125(mode=0):
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
 
-
+def toggle_min_tray(mode=0):
+    if mode == 1:
+        return prefs.min_to_tray
+    prefs.min_to_tray ^= True
+    
 def scale2(mode=0):
     if mode == 1:
         if prefs.ui_scale == 2:
@@ -15555,6 +15625,7 @@ class Over:
             self.toggle_square(x, y, scale2, "2x")
 
         y += 25 * gui.scale
+              
 
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
@@ -15583,6 +15654,7 @@ class Over:
         y += 26 * gui.scale
         #y += 28 * gui.scale
 
+
         ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
 
         y += 25 * gui.scale
@@ -15593,7 +15665,8 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
-
+        if system == "windows":
+            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")  
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
@@ -21312,7 +21385,7 @@ def update_layout_do():
 
     if gui.mode == 1:
 
-        if not gui.maximized:
+        if not gui.maximized and not gui.lowered:
             gui.save_size = copy.deepcopy(window_size)
 
         bottom_bar1.update()
@@ -21681,7 +21754,8 @@ def save_state():
             prefs.use_eq,
             prefs.eq,
             prefs.bio_large,
-            prefs.discord_show]
+            prefs.discord_show,
+            prefs.min_to_tray]
 
     #print(prefs.last_device + "-----")
 
@@ -22226,6 +22300,8 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
                 gui.lowered = True
+                if prefs.min_to_tray:
+                    tray.down()
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
@@ -25888,6 +25964,9 @@ pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.mon
 
 
 save_state()
+
+if system == "windows":
+    tray.stop()
 
 try:
     fp.close()
