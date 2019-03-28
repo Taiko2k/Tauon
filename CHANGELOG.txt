@@ -1,6 +1,12 @@
 
 Changelog-------------------------------------
 
+
+v4.0.1
+
+ - Changed portable mode to use a subfolder for user data
+ - [Windows] Add system tray with min to tray option
+
 v4.0.0
 
  - Added lock icon and indicator for locked playlists

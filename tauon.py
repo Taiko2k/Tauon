@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.0.0"
+t_version = "v4.0.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -123,11 +123,6 @@ if install_mode and system == 'linux':
     print("Running from installed location")
     print("User files location: " + user_directory)
 
-    if not os.path.isfile(os.path.join(config_directory, "config.txt")):
-        print("Config file is missing... copying template from program files")
-        import shutil
-        shutil.copy(install_directory + "/config.txt", config_directory)
-
     if not os.path.isdir(os.path.join(user_directory, "encoder")):
         os.makedirs(os.path.join(user_directory, "encoder"))
 
@@ -154,13 +149,15 @@ elif system == 'windows' and ('Program Files' in install_directory or
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
 
-    if not os.path.isfile(os.path.join(config_directory, "config.txt")):
-        print("Config file is missing... copying template from program files")
-        import shutil
-        shutil.copy(install_directory + "\\config.txt", config_directory)
 
 else:
     print("Running in portable mode")
+
+    user_directory = os.path.join(install_directory, "user-data")
+    config_directory = user_directory
+
+    if not os.path.isdir(user_directory):
+        os.makedirs(user_directory)
 
 
 transfer_target = user_directory + "/transfer.p"
@@ -169,11 +166,9 @@ print('Install directory: ' + install_directory)
 b_active_directory = install_directory.encode('utf-8')
 
 # Find home music folder
-music_folder = None
-if os.path.isdir(os.path.expanduser('~').replace("\\", '/') + "/Music"):
-    music_folder = os.path.expanduser('~').replace("\\", '/') + "/Music"
-    if system == "windows":
-        music_folder = music_folder.replace("/", "\\")
+music_folder = os.path.join(os.path.expanduser('~'), "Music")
+if not os.path.isdir(music_folder):
+    music_folder = None
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
@@ -242,6 +237,10 @@ if system == 'windows':
 
 # ------------------------------------
 # Continue startup
+
+if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
+    print("Config file is missing... copying template from program files")
+    shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
 
 last_fm_enable = False
 
@@ -4324,8 +4323,6 @@ class STray:
 
     def up(self, systray):
         SDL_ShowWindow(t_window)
-        #SDL_MinimizeWindow(t_window)
-        #time.sleep(1)
         SDL_RaiseWindow(t_window)
         SDL_RestoreWindow(t_window)
 
@@ -4344,14 +4341,17 @@ class STray:
     def pause(self, systray):
          pctl.play_pause()
 
+    def stop(self, systray):
+         pctl.stop()
 
     def on_quit_callback(self, systray):
         pctl.running = False
 
     def start(self):
 
-        menu_options = (("Show Window", None, self.up),
+        menu_options = (("Show", None, self.up),
                         ("Play/Pause", None, self.pause),
+                        ("Stop", None, self.stop),
                         ("Advance", None, self.advance),
                         ("Previous", None, self.back))
         self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
