@@ -8052,7 +8052,11 @@ def paste_chord_lyrics(track_object):
 def chord_lyrics_paste_show_test(_):
     return gui.combo_mode and prefs.guitar_chords
 
+def clear_chord_lyrics(track_object):
+    gc.clear(track_object)
+
 showcase_menu.add(_('Paste Chord Lyrics'), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
+showcase_menu.add(_('Clear Chord Lyrics'), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 
 showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
@@ -20340,6 +20344,24 @@ class GuitarChords:
         self.scroll_position = 0
 
         self.ready = {}
+
+
+    def clear(self, track):
+
+        cache_title = track.artist + " " + track.title
+        self.prep_folders()
+        self.current = ""
+        self.scroll_position = 0
+
+        self.ready[cache_title] = 0
+
+        for item in os.listdir(self.store_a):
+            if item == cache_title:
+                os.remove(os.path.join(self.store_a, cache_title))
+
+        for item in os.listdir(self.store_b):
+            if item == cache_title:
+                os.remove(os.path.join(self.store_b, cache_title))
 
 
     def save_format_b(self, track):
