@@ -20345,6 +20345,8 @@ class GuitarChords:
 
         self.ready = {}
 
+        self.widespace = "　"
+
 
     def clear(self, track):
 
@@ -20387,10 +20389,35 @@ class GuitarChords:
 
         for line in lines:
 
-            if len(line) < 6 or "    " in line:
-                last = line
-                continue
 
+            if line == " " or line == "" or line == "\n":
+                line = "                                          "
+
+            line = line.replace("\n", "")
+            line = line.replace("\r", "")
+
+            print(line)
+            if not last and (len(line) < 6 or \
+                    "    " in line \
+                    or "D " in line \
+                    or "Am " in line \
+                    or  "Em " in line \
+                    or "C " in line \
+                    or "G " in line \
+                    or "F " in line \
+                    or "Dm " in line) and any(c.isalpha() for c in line):
+                last = line
+                print("YES")
+                continue
+            print("NO")
+
+            w = list(line)
+            for i, c in enumerate(w):
+                if i > 0 and c == " ":
+                    if w[i - 1] == " " or w[i - 1] == self.widespace:
+                        w[i - 1] = self.widespace
+                        w[i] = self.widespace
+            line = "".join(w)
 
             if not last:
                 final.append((line, []))
@@ -20401,7 +20428,9 @@ class GuitarChords:
             mode = 0
             distance = 0
             chords = []
+
             while on < len(last):
+
 
                 if mode == 0:
                     if last[on] == " ":
@@ -20423,6 +20452,7 @@ class GuitarChords:
 
 
             final.append((line, chords))
+            last = ""
         self.data = final
 
 
@@ -20499,13 +20529,13 @@ class GuitarChords:
             #while "  " in line:
             #line = line.replace("  ", "　　")
             w = list(line)
-            widespace = "　"
+
             for i, c in enumerate(w):
                 if i > 0 and c == " ":
 
-                    if w[i - 1] == " " or w[i - 1] == widespace:
-                        w[i - 1] = widespace
-                        w[i] = widespace
+                    if w[i - 1] == " " or w[i - 1] == self.widespace:
+                        w[i - 1] = self.widespace
+                        w[i] = self.widespace
 
             lyrics = []
             chords = []
@@ -20611,7 +20641,11 @@ class GuitarChords:
                 min_space = 0
                 for ch in line[1]:
                     xx = max(x + ch[1], min_space)
-                    min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
+
+                    if len(ch[0]) == 2 and ch[0][1].lower() == "x":
+                        min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [220, 120, 240, 255], 214)
+                    else:
+                        min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
                 y += 15 * gui.scale
 
                 ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
