@@ -20610,9 +20610,6 @@ class GuitarChords:
                 return False
 
 
-        #x = 630
-        #y = 120
-
         if self.auto_scroll:
 
             if pctl.playing_length > 20:
@@ -20637,17 +20634,19 @@ class GuitarChords:
 
             for line in self.data:
 
-                min_space = 0
-                for ch in line[1]:
-                    xx = max(x + ch[1], min_space)
+                if window_size[0] > y > 0:
+                    min_space = 0
+                    for ch in line[1]:
+                        xx = max(x + ch[1], min_space)
 
-                    if len(ch[0]) == 2 and ch[0][1].lower() == "x":
-                        min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [220, 120, 240, 255], 214)
-                    else:
-                        min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
+                        if len(ch[0]) == 2 and ch[0][1].lower() == "x":
+                            min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [220, 120, 240, 255], 214)
+                        else:
+                            min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
                 y += 15 * gui.scale
 
-                ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
+                if window_size[0] > y > 0:
+                    ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
 
                 y += 18 * gui.scale
 
