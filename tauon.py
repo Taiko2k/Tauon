@@ -291,10 +291,9 @@ import base64
 import re
 import zipfile
 import warnings
-# import struct
 import colorsys
 import html
-# import csv
+import requests
 import stat
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -774,6 +773,8 @@ class Prefs:    # Used to hold any kind of settings
         
         self.min_to_tray = False
 
+        self.guitar_chords = False
+
 
 prefs = Prefs()
 
@@ -1019,6 +1020,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.layer_focus = 0
         self.tab_menu_pl = 0
+
+        self.tool_tip_lock_off_f = False
+        self.tool_tip_lock_off_b = False
 
 
 gui = GuiVar()
@@ -1661,6 +1665,8 @@ try:
         prefs.discord_show = save[114]
     if save[115] is not None:
         prefs.min_to_tray = save[115]
+    if save[116] is not None:
+        prefs.guitar_chords = save[116]
 
     state_file.close()
     del save
@@ -4348,12 +4354,11 @@ class STray:
         pctl.running = False
 
     def start(self):
-
         menu_options = (("Show", None, self.up),
                         ("Play/Pause", None, self.pause),
                         ("Stop", None, self.stop),
-                        ("Advance", None, self.advance),
-                        ("Previous", None, self.back))
+                        ("Forward", None, self.advance),
+                        ("Back", None, self.back))
         self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
         self.systray.start()
         self.active = True
@@ -4498,6 +4503,7 @@ class Gnome:
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
+                                'xesam:url': "file://" + track.fullpath
                             }
 
                             try:
@@ -14890,6 +14896,13 @@ def toggle_top_tabs(mode=0):
         return prefs.tabs_on_top
     prefs.tabs_on_top ^= True
 
+
+def toggle_guitar_chords(mode=0):
+    if mode == 1:
+        return prefs.guitar_chords
+    prefs.guitar_chords ^= True
+
+
 def toggle_auto_lyrics(mode=0):
     if mode == 1:
         return prefs.auto_lyrics
@@ -15315,6 +15328,8 @@ class Over:
         y += 30 * gui.scale
         self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
 
+        y += 28 * gui.scale
+        self.toggle_square(x, y, toggle_guitar_chords, _("Enable guitar chord lyrics"))
 
 
         x = self.box_x + self.item_x_offset
@@ -17216,6 +17231,7 @@ class BottomBarType1:
                         pctl.show_current(highlight=True)
                     else:
                         pctl.play()
+                tool_tip.test(33 * gui.scale, y - 35 * gui.scale, _("Play"))
 
                 if right_click:
                     pctl.show_current(highlight=True)
@@ -17233,8 +17249,7 @@ class BottomBarType1:
                 pause_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.pause()
-                # tool_tip.test(x + 25 * gui.scale,
-                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Pause")
+                tool_tip.test(x, y - 35 * gui.scale, _("Pause"))
 
 
             # ddt.rect_r(rect,[255,0,0,255], True)
@@ -17251,8 +17266,8 @@ class BottomBarType1:
                     pctl.stop()
                 if right_click:
                     pctl.auto_stop ^= True
-                # tool_tip.test(x + gui.scale + 25 * gui.scale,
-                #               window_size[1] - self.control_line_bottom - 20 * gui.scale, "Stop")
+                tool_tip.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+
 
             ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
             # ddt.rect_r(rect,[255,0,0,255], True)
@@ -17264,11 +17279,18 @@ class BottomBarType1:
                 forward_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.advance()
+                    gui.tool_tip_lock_off_f = True
                 if right_click:
                     pctl.random_mode ^= True
+                    gui.tool_tip_lock_off_f = True
                 if middle_click:
                     pctl.advance(rr=True)
+                    gui.tool_tip_lock_off_f = True
                 #tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
+                if not gui.tool_tip_lock_off_f:
+                    tool_tip.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+            else:
+                gui.tool_tip_lock_off_f = False
 
             self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
 
@@ -17281,12 +17303,17 @@ class BottomBarType1:
                 back_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.back()
+                    gui.tool_tip_lock_off_b = True
                 if right_click:
                     pctl.repeat_mode ^= True
+                    gui.tool_tip_lock_off_b = True
                 if middle_click:
                     pctl.revert()
-                #tool_tip.test(buttons_x_offset + 170 * gui.scale + 50 * gui.scale,
-                #              window_size[1] - self.control_line_bottom - 20 * gui.scale, "Back")
+                    gui.tool_tip_lock_off_b = True
+                if not gui.tool_tip_lock_off_b:
+                    tool_tip.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
+            else:
+                gui.tool_tip_lock_off_b = False
 
             self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
             # ddt.rect_r(rect,[255,0,0,255], True)
@@ -17385,17 +17412,17 @@ class BottomBarType1:
                     rpbc = colours.mode_button_active
                     if coll(rect):
                         if pctl.album_repeat_mode:
-                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
                         else:
-                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
                 elif coll(rect):
 
                     # Tooltips. But don't show tooltips if menus open
                     if not repeat_menu.active and not shuffle_menu.active:
                         if pctl.album_repeat_mode:
-                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Album"))
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
                         else:
-                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat Track"))
+                            tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
 
                     if self.repeat_click_off is True:
                         rpbc = colours.mode_button_off
@@ -20291,6 +20318,185 @@ class ArtistInfoBox:
 artist_info_box = ArtistInfoBox()
 
 
+
+class GuitarChords:
+
+    def __init__(self):
+        self.store = os.path.join(user_directory, "guitar-chords")
+
+        self.data = []
+        self.current = ""
+        self.auto_scroll = True
+
+        self.scroll_position = 0
+
+        self.ready = {}
+
+
+    def fetch(self, track):
+
+        if self.test_ready_status(track) != 0:
+            return
+
+        if not os.path.exists(self.store):
+            os.makedirs(self.store)
+
+        cache_title = track.artist + " " + track.title
+
+        try:
+
+            r = requests.get('http://api.guitarparty.com/v2/songs/?query=' + urllib.parse.quote(cache_title), headers={"Guitarparty-Api-Key":"e9c0e543798c4249c24f698022ced5dd0c583ec7"})
+            d = r.json()['objects'][0]['body']
+
+            f = open(os.path.join(self.store, cache_title), "w")
+            f.write(d)
+            f.close()
+
+            self.ready[cache_title] = 1
+
+        except:
+            show_message("Could not find matching track on GuitarParty")
+            input.mouse_click = False
+            self.ready[cache_title] = 2
+
+    def test_ready_status(self, track):
+
+        # 0 not searched
+        # 1 ready
+        # 2 failed
+
+        cache_title = track.artist + " " + track.title
+
+        if cache_title in self.ready:
+            if self.ready[cache_title] == 1:
+                return 1
+            if self.ready[cache_title] == 2:
+                return 2
+            return 0
+
+
+        if cache_title in os.listdir(self.store):
+            self.ready[cache_title] = 1
+            return 1
+        else:
+            self.ready[cache_title] = 0
+            return 0
+
+
+    def parse(self, lines):
+
+        final = []
+
+        for line in lines:
+            w = list(line.strip())
+            lyrics = []
+            chords = []
+
+            on = 0
+            mode = 0
+
+            chord_part = []
+
+            while on < len(w):
+                if mode == 0:
+                    # If normal, add to lyric list
+                    if w[on] != "[":
+                        lyrics.append(w[on])
+                        on += 1
+                        continue
+
+                    # Start of [, delete it
+                    mode = 1
+                    del w[on]
+                    continue
+
+                if w[on] == "]":
+                    del w[on]
+                    mode = 0
+
+                    distance = 0
+                    if on > 0:
+                        distance = ddt.get_text_w("".join(w[:on]), 16)
+
+                    chords.append(("".join(chord_part), distance))
+                    chord_part = []
+                    continue
+
+                chord_part.append(w[on])
+                del w[on]
+
+            final.append(("".join(lyrics), chords))
+
+
+        print(final)
+        self.data = final
+
+
+
+    def render(self, track, x, y):
+
+        cache_title = track.artist + " " + track.title
+
+
+        if self.current == cache_title:
+            if not self.data:
+                return False
+        else:
+            if not os.path.exists(self.store):
+                os.makedirs(self.store)
+            if cache_title in os.listdir(self.store):
+                f = open(os.path.join(self.store, cache_title))
+                lines = f.readlines()
+                f.close()
+                self.parse(lines)
+                self.current = cache_title
+                self.scroll_position = 0
+            else:
+                return False
+
+
+        #x = 630
+        #y = 120
+
+        if self.auto_scroll:
+
+            if pctl.playing_length > 20:
+                progress = max(0, pctl.playing_time - 12) / (pctl.playing_length - 3)
+                height = len(self.data) * (18 + 15)
+
+                self.scroll_position = height * progress
+                #gui.update += 1
+                gui.frame_callback_list.append(TestTimer(0.3))
+                #time.sleep(0.032)
+
+
+
+        if mouse_wheel:
+            self.scroll_position += mouse_wheel * 20 * -1
+            self.auto_scroll = False
+        y = y - self.scroll_position
+
+        if self.data:
+
+            for line in self.data:
+
+                min_space = 0
+                for ch in line[1]:
+                    xx = max(x + ch[1], min_space)
+                    min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
+                y += 15
+
+                ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
+
+                y += 18
+
+            return True
+        return False
+
+gc = GuitarChords()
+
+
+
 class Showcase:
 
     def __init__(self):
@@ -20393,7 +20599,27 @@ class Showcase:
                     if track != None:
                         showcase_menu.activate(track)
 
-            if track.lyrics == "" or not prefs.show_lyrics_showcase:
+
+            gcx = x + box + int(window_size[0] * 0.15) + 20 * gui.scale
+            gcx -= 100 * gui.scale
+
+            if prefs.guitar_chords:
+                if gc.test_ready_status(track) == 0:
+                    if draw.button("Query GuitarParty", 25 * gui.scale, window_size[1] - gui.panelBY - 100 * gui.scale,
+                                   bg=bbg, fg=bfg,
+                                   fore_text=bft, back_text=bbt):
+                        gc.fetch(track)
+
+
+            if prefs.guitar_chords and gc.render(track, gcx, y):
+
+                if not gc.auto_scroll:
+                    if draw.button("Auto-Scroll", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
+                                   fore_text=bft, back_text=bbt):
+                        gc.auto_scroll = True
+
+
+            elif track.lyrics == "" or not prefs.show_lyrics_showcase:
 
                 w = window_size[0] - (x + box) - round(30 * gui.scale)
                 x = int(x + box + (window_size[0] - x - box) / 2)
@@ -20439,7 +20665,6 @@ class Showcase:
             else:
 
                 x += box + int(window_size[0] * 0.15) + 20 * gui.scale
-
                 x -= 100 * gui.scale
                 w = window_size[0] - x - 30 * gui.scale
 
@@ -20839,7 +21064,7 @@ class ViewBox:
         if colours.lm:
             high = (.7, .75, .75)
 
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics View", False, low=low, high=high)
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics view", False, low=low, high=high)
         if test is not None:
             func = test
 
@@ -21755,7 +21980,8 @@ def save_state():
             prefs.eq,
             prefs.bio_large,
             prefs.discord_show,
-            prefs.min_to_tray]
+            prefs.min_to_tray,
+            prefs.guitar_chords]
 
     #print(prefs.last_device + "-----")
 
@@ -22701,7 +22927,6 @@ while pctl.running:
             #show_message("This function has been removed", 'info')
 
         if key_F12:
-
             pass
 
             # text = copy_from_clipboard()
@@ -22727,10 +22952,10 @@ while pctl.running:
 
         if key_F7: #  F7 test
 
-            #plex.get_albums()
-            #print(copy_from_clipboard())
-            #print(pctl.playing_object().misc)
+            # r = requests.get('http://api.guitarparty.com/v2/songs/?query=Coldplay Clocks', headers={"Guitarparty-Api-Key":"e9c0e543798c4249c24f698022ced5dd0c583ec7"})
+            # print(r.json()['objects'][0]['body'])
 
+            #gc.get()
 
             #show_message("Test error message 123", 'error', "hello text")
             # pctl.playerCommand = "unload"

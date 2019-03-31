@@ -4,6 +4,7 @@ Changelog-------------------------------------
 
 v4.0.1
 
+ - Added feature to fetch and display guitar chord lyrics from GuitarParty
  - Changed portable mode to use a subfolder for user data
  - [Windows] Add system tray with min to tray option
 
