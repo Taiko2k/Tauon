@@ -8045,8 +8045,16 @@ def paste_lyrics(track_object):
     else:
         print('NO TEXT TO PASTE')
 
-showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
+def paste_chord_lyrics(track_object):
+    gc.save_format_b(track_object)
+
+def chord_lyrics_paste_show_test(_):
+    return gui.combo_mode and prefs.guitar_chords
+
+showcase_menu.add(_('Paste Chord Lyrics'), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
+
+showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
 def copy_lyrics_deco():
 
@@ -20322,7 +20330,8 @@ artist_info_box = ArtistInfoBox()
 class GuitarChords:
 
     def __init__(self):
-        self.store = os.path.join(user_directory, "guitar-chords")
+        self.store_a = os.path.join(user_directory, "guitar-chords-a")  # inline format
+        self.store_b = os.path.join(user_directory, "guitar-chords-b")  # 2 lines format
 
         self.data = []
         self.current = ""
@@ -20333,13 +20342,83 @@ class GuitarChords:
         self.ready = {}
 
 
+    def save_format_b(self, track):
+
+        t = copy_from_clipboard()
+        if not t:
+            show_message("Clipboard has no text")
+            input.mouse_click = False
+            return
+
+        cache_title = track.artist + " " + track.title
+
+        f = open(os.path.join(self.store_b, cache_title), 'w')
+        f.write(t)
+        f.close()
+
+
+    def parse_b(self, lines):
+
+        final = []
+
+        last = ""
+
+        for line in lines:
+
+            if len(line) < 6 or "    " in line:
+                last = line
+                continue
+
+
+            if not last:
+                final.append((line, []))
+                continue
+
+
+            on = 0
+            mode = 0
+            distance = 0
+            chords = []
+            while on < len(last):
+
+                if mode == 0:
+                    if last[on] == " ":
+                        on += 1
+                        continue
+                    mode = 1
+                    distance = ddt.get_text_w(line[:on], 16)
+
+                on2 = on
+                while on2 < len(last) and last[on2] != " ":
+                    on2 += 1
+
+                grab = last[on:on2]
+
+                chords.append((grab, distance))
+                mode = 0
+                on = on2
+                on += 1
+
+
+            final.append((line, chords))
+        self.data = final
+
+
+
+    def prep_folders(self):
+
+        if not os.path.exists(self.store_a):
+            os.makedirs(self.store_a)
+
+        if not os.path.exists(self.store_b):
+            os.makedirs(self.store_b)
+
     def fetch(self, track):
 
         if self.test_ready_status(track) != 0:
             return
 
-        if not os.path.exists(self.store):
-            os.makedirs(self.store)
+
 
         cache_title = track.artist + " " + track.title
 
@@ -20348,7 +20427,8 @@ class GuitarChords:
             r = requests.get('http://api.guitarparty.com/v2/songs/?query=' + urllib.parse.quote(cache_title), headers={"Guitarparty-Api-Key":"e9c0e543798c4249c24f698022ced5dd0c583ec7"})
             d = r.json()['objects'][0]['body']
 
-            f = open(os.path.join(self.store, cache_title), "w")
+            self.prep_folders()
+            f = open(os.path.join(self.store_a, cache_title), "w")
             f.write(d)
             f.close()
 
@@ -20375,7 +20455,11 @@ class GuitarChords:
             return 0
 
 
-        if cache_title in os.listdir(self.store):
+        self.prep_folders()
+        if cache_title in os.listdir(self.store_a):
+            self.ready[cache_title] = 1
+            return 1
+        if cache_title in os.listdir(self.store_b):
             self.ready[cache_title] = 1
             return 1
         else:
@@ -20383,12 +20467,24 @@ class GuitarChords:
             return 0
 
 
+
     def parse(self, lines):
 
         final = []
 
         for line in lines:
-            w = list(line.strip())
+            line = line.rstrip()
+            #while "  " in line:
+            #line = line.replace("  ", "　　")
+            w = list(line)
+            widespace = "　"
+            for i, c in enumerate(w):
+                if i > 0 and c == " ":
+
+                    if w[i - 1] == " " or w[i - 1] == widespace:
+                        w[i - 1] = widespace
+                        w[i] = widespace
+
             lyrics = []
             chords = []
 
@@ -20416,6 +20512,7 @@ class GuitarChords:
 
                     distance = 0
                     if on > 0:
+
                         distance = ddt.get_text_w("".join(w[:on]), 16)
 
                     chords.append(("".join(chord_part), distance))
@@ -20442,13 +20539,20 @@ class GuitarChords:
             if not self.data:
                 return False
         else:
-            if not os.path.exists(self.store):
-                os.makedirs(self.store)
-            if cache_title in os.listdir(self.store):
-                f = open(os.path.join(self.store, cache_title))
+            self.prep_folders()
+            if cache_title in os.listdir(self.store_a):
+                f = open(os.path.join(self.store_a, cache_title))
                 lines = f.readlines()
                 f.close()
                 self.parse(lines)
+                self.current = cache_title
+                self.scroll_position = 0
+
+            elif cache_title in os.listdir(self.store_b):
+                f = open(os.path.join(self.store_b, cache_title))
+                lines = f.readlines()
+                f.close()
+                self.parse_b(lines)
                 self.current = cache_title
                 self.scroll_position = 0
             else:
@@ -20462,7 +20566,7 @@ class GuitarChords:
 
             if pctl.playing_length > 20:
                 progress = max(0, pctl.playing_time - 12) / (pctl.playing_length - 3)
-                height = len(self.data) * (18 + 15)
+                height = len(self.data) * (18 + 15) * gui.scale
 
                 self.scroll_position = height * progress
                 #gui.update += 1
@@ -20472,11 +20576,13 @@ class GuitarChords:
 
 
         if mouse_wheel:
-            self.scroll_position += mouse_wheel * 20 * -1
+            self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
             self.auto_scroll = False
         y = y - self.scroll_position
 
         if self.data:
+
+            self.ready[cache_title] = 1
 
             for line in self.data:
 
@@ -20484,11 +20590,11 @@ class GuitarChords:
                 for ch in line[1]:
                     xx = max(x + ch[1], min_space)
                     min_space = 1 + xx + ddt.draw_text((xx, y), ch[0], [140, 120, 240, 255], 213)
-                y += 15
+                y += 15 * gui.scale
 
                 ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
 
-                y += 18
+                y += 18 * gui.scale
 
             return True
         return False
@@ -22951,6 +23057,8 @@ while pctl.running:
             update_layout_do()
 
         if key_F7: #  F7 test
+
+            #gc.save_format_b(pctl.playing_object())
 
             # r = requests.get('http://api.guitarparty.com/v2/songs/?query=Coldplay Clocks', headers={"Guitarparty-Api-Key":"e9c0e543798c4249c24f698022ced5dd0c583ec7"})
             # print(r.json()['objects'][0]['body'])
