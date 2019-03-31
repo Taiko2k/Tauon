@@ -20401,11 +20401,12 @@ class GuitarChords:
                     "    " in line \
                     or "D " in line \
                     or "Am " in line \
+                    or "Fm" in line \
                     or  "Em " in line \
                     or "C " in line \
                     or "G " in line \
                     or "F " in line \
-                    or "Dm " in line) and any(c.isalpha() for c in line):
+                    or "Dm" in line) and any(c.isalpha() for c in line):
                 last = line
                 print("YES")
                 continue
