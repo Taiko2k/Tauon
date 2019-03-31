@@ -20396,21 +20396,19 @@ class GuitarChords:
             line = line.replace("\n", "")
             line = line.replace("\r", "")
 
-            print(line)
             if not last and (len(line) < 6 or \
                     "    " in line \
                     or "D " in line \
                     or "Am " in line \
                     or "Fm" in line \
-                    or  "Em " in line \
+                    or "Em " in line \
                     or "C " in line \
                     or "G " in line \
                     or "F " in line \
                     or "Dm" in line) and any(c.isalpha() for c in line):
+
                 last = line
-                print("YES")
                 continue
-            print("NO")
 
             w = list(line)
             for i, c in enumerate(w):
