@@ -1,4 +1,4 @@
-Release packages under releases page are subject to additional restrictions as per the BASS license.
+Release packages under releases page are subject to additional restrictions as per the BASS license. Release packages for Windows are licenced under CC BY-NC-ND 4.0 http://creativecommons.org/licenses/by-nc-nd/4.0/.
 
 License for this repository alone is as below.
 __________________________________________________
