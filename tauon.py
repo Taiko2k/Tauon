@@ -383,6 +383,7 @@ gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
 d_click_timer.force_set(10)
 lyrics_check_timer = Timer()
+scroll_hide_timer = Timer(100)
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -1605,8 +1606,8 @@ try:
         prefs.use_transition_crossfade = save[84]
     if save[85] is not None:
         prefs.show_notifications = save[85]
-    if save[86] is not None:
-        prefs.true_shuffle = save[86]
+    # if save[86] is not None:
+    #     prefs.true_shuffle = save[86]
     if save[87] is not None:
         gui.remember_library_mode = save[87]
     # if save[88] is not None:
@@ -2337,6 +2338,11 @@ class PlayerCtl:
         self.playing_time_int = 0  # playing time but with no decimel
         
         self.windows_progress = None
+
+    def update_shuffle_pool(self, pl_id, track_list):
+
+        if pl_id in self.shuffle_pools:
+            self.shuffle_pools[pl_id] += track_list
 
     def notify_update(self):
 
@@ -8047,13 +8053,16 @@ def paste_lyrics(track_object):
 
 
 def paste_chord_lyrics(track_object):
-    gc.save_format_b(track_object)
+    if track_object.title:
+        gc.save_format_b(track_object)
 
 def chord_lyrics_paste_show_test(_):
+
     return gui.combo_mode and prefs.guitar_chords
 
 def clear_chord_lyrics(track_object):
-    gc.clear(track_object)
+    if track_object.title:
+        gc.clear(track_object)
 
 showcase_menu.add(_('Paste Chord Lyrics'), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 showcase_menu.add(_('Clear Chord Lyrics'), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
@@ -15047,7 +15056,7 @@ config_items.append([_('Use double digit track indices'), toggle_dd])
 config_items.append([_('Add release year to folder title'), toggle_append_date])
 config_items.append([_('Add total duration to folder title'), toggle_append_total_time])
 
-config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
+# config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
 # config_items.append([_('Show finish current when queuing album option'), toggle_finish_current])
 
@@ -16431,6 +16440,7 @@ class TopPanel:
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
                         if modified:
                             tauon.worker_save_state = True
+                            pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
 
             x += tab_width + self.tab_spacing
 
@@ -18068,6 +18078,11 @@ class StandardPlaylist:
                 pctl.playlist_view_position = 0
                 edge_playlist.pulse()
 
+            scroll_hide_timer.set()
+            gui.frame_callback_list.append(TestTimer(0.9))
+
+
+
         # Show notice if playlist empty
 
 
@@ -19315,6 +19330,7 @@ class PlaylistBox:
                             modified = True
                         if modified:
                             tauon.worker_save_state = True
+                            pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
 
             # Toggle hidden flag on click
             if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
@@ -20763,7 +20779,7 @@ class Showcase:
             gcx = x + box + int(window_size[0] * 0.15) + 20 * gui.scale
             gcx -= 100 * gui.scale
 
-            if prefs.guitar_chords:
+            if prefs.guitar_chords and track.title:
                 if gc.test_ready_status(track) == 0:
                     if draw.button("Query GuitarParty", 25 * gui.scale, window_size[1] - gui.panelBY - 100 * gui.scale,
                                    bg=bbg, fg=bfg,
@@ -20771,7 +20787,7 @@ class Showcase:
                         gc.fetch(track)
 
 
-            if prefs.guitar_chords and gc.render(track, gcx, y):
+            if prefs.guitar_chords and track.title and gc.render(track, gcx, y):
 
                 if not gc.auto_scroll:
                     if draw.button("Auto-Scroll", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
@@ -23377,6 +23393,7 @@ while pctl.running:
                             to_get = 1
                     loaderCommandReady = True
                     break
+
     elif loading_in_progress is True:
         loading_in_progress = False
         tauon.worker_save_state = True
@@ -24380,6 +24397,7 @@ while pctl.running:
 
 
                             pctl.multi_playlist[target_pl][2] += order.tracks
+                            pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6], order.tracks)
 
 
                         gui.update += 2
@@ -24684,7 +24702,7 @@ while pctl.running:
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
 
             fields.add(gui.scroll_hide_box)
-            if (coll(
+            if scroll_hide_timer.get() < 0.9 or (coll(
                     gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
                     not x_menu.active and \
                     not tab_menu.active and \
@@ -25817,8 +25835,13 @@ while pctl.running:
 
                     if pctl.playlist_view_position > 0 and playlist_selected < pctl.playlist_view_position + 2:
                         pctl.playlist_view_position -= 1
+
+                        scroll_hide_timer.set()
+                        gui.frame_callback_list.append(TestTimer(0.9))
+
                     if playlist_selected > len(default_playlist):
                         playlist_selected = len(default_playlist)
+
 
                 if key_down_press and playlist_selected < len(default_playlist):
                     shift_selection = []
@@ -25831,6 +25854,9 @@ while pctl.running:
                     if pctl.playlist_view_position < len(
                             default_playlist) and playlist_selected > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
                         pctl.playlist_view_position += 1
+
+                        scroll_hide_timer.set()
+                        gui.frame_callback_list.append(TestTimer(0.9))
 
                     if playlist_selected < 0:
                         playlist_selected = 0
