@@ -20366,7 +20366,7 @@ class GuitarChords:
 
     def clear(self, track):
 
-        cache_title = track.artist + " " + track.title
+        cache_title = self.get_cache_title(track)
         self.prep_folders()
         self.current = ""
         self.scroll_position = 0
@@ -20390,7 +20390,7 @@ class GuitarChords:
             input.mouse_click = False
             return
 
-        cache_title = track.artist + " " + track.title
+        cache_title = self.get_cache_title(track)
 
         f = open(os.path.join(self.store_b, cache_title), 'w')
         f.write(t)
@@ -20485,9 +20485,7 @@ class GuitarChords:
         if self.test_ready_status(track) != 0:
             return
 
-
-
-        cache_title = track.artist + " " + track.title
+        cache_title = self.get_cache_title(track)
 
         try:
 
@@ -20512,7 +20510,7 @@ class GuitarChords:
         # 1 ready
         # 2 failed
 
-        cache_title = track.artist + " " + track.title
+        cache_title = self.get_cache_title(track)
 
         if cache_title in self.ready:
             if self.ready[cache_title] == 1:
@@ -20595,12 +20593,18 @@ class GuitarChords:
         print(final)
         self.data = final
 
+    def get_cache_title(self, track):
+
+        name = track.artist + " " + track.title
+        for char in name:
+            if char in '\\/:*?"<>|':
+                name = name.replace(char, '_')
+        return name
 
 
     def render(self, track, x, y):
 
-        cache_title = track.artist + " " + track.title
-
+        cache_title = self.get_cache_title(track)
 
         if self.current == cache_title:
             if not self.data:
