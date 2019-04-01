@@ -274,8 +274,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     #if system != 'windows':
     # open_flag = 0
 
-    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 327680)
-    #BASS_SetConfig(BASS_CONFIG_BUFFER, 2000)
+    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 1000000000)
+    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 157286400)
+    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 30000)
+    #BASS_SetConfig(BASS_CONFIG_BUFFER, 20000)
+    #BASS_SetConfig(BASS_CONFIG_BUFFER, 5000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
 
     #else:
@@ -728,6 +731,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     target = target.decode()
 
                 new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
+
 
                 # print("Creade decode chanel")
                 # print(BASS_ErrorGetCode())
@@ -1184,10 +1188,12 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if add_time > 2 or add_time < 0:
                 add_time = 0
 
+            #print("test")
             status = BASS_ChannelIsActive(bass_player.channel)
 
             if status == 1:
                 # Playing
+                #print("Channel is playing " + str(pctl.playing_time))
                 pass
             elif status == 3 or status == 0:
                 # Paused? Stopped? Try unpause
