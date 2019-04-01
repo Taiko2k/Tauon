@@ -137,6 +137,11 @@ def player3(tauon):  # GStreamer
                         while self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
                             time.sleep(0.1)
                             t += 1
+
+                            #print(self.pl.get_state(0))
+                            if self.pl.get_state(0).state != Gst.State.PLAYING:
+                                break
+
                             if t > 40:
                                 print("Gonna stop waiting...")  # Cant wait forever
                                 break
@@ -197,13 +202,12 @@ def player3(tauon):  # GStreamer
                     add_time = 0
 
                 # Progress main seek head
-                self.pctl.playing_time += add_time
+                if self.pl.get_state(0).state == Gst.State.PLAYING:
+                    self.pctl.playing_time = self.pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
 
-                # We could get the seek bar to absolutely what the backend gives us... causes problems?
-                # Like, if the playback stalls, the advance will never trigger, so we would need to detect that
-                # then manually progress the playing time or trigger an advance.
-
-                # self.pctl.playing_time = self.pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
+                else:
+                    self.pl.set_state(Gst.State.PLAYING)
+                    self.pctl.playing_time += add_time
 
                 # Other things we need to progress such as scrobbling
                 self.pctl.a_time += add_time
