@@ -5487,36 +5487,30 @@ class TimedLyricsRen:
 
             es = 0
             s = 0
-            t = ""
             try:
-                a = line.lstrip("[")
-                a = a.split("]")[0]
-                mm, b = a.split(":")
-                ss, ms = b.split(".")
 
-                s = int(mm) * 60 + int(ss) + int(ms) / 100
-                t = line[10:].rstrip("\n")
+                text = line.split("]")[-1].rstrip("\n")
+                t = line
 
-                if t[0] != "[" or t[9] != "]" or ":" not in t or "." not in t:
-                    pass
-                else:
+                while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
+
                     a = t.lstrip("[")
+                    t = t.split("]")[1] + "]"
+
                     a = a.split("]")[0]
                     mm, b = a.split(":")
                     ss, ms = b.split(".")
 
-                    es = int(mm) * 60 + int(ss) + int(ms) / 100
-                    t = line[20:].rstrip("\n")
-                    self.data.append((es, t))
+                    s = int(mm) * 60 + int(ss) + int(ms) / 100
+                    self.data.append((s, text))
 
-                self.data.append((s, t))
-
+                    if len(t) < 10:
+                        break
             except:
                 continue
 
         self.data = sorted(self.data, key=lambda x: x[0])
         # print(self.data)
-
 
         self.ready = True
         return True
