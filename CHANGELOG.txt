@@ -2,13 +2,14 @@
 Changelog-------------------------------------
 
 
-v4.0.1
+v4.1.0
 
  - Added support for displaying timed lyrics from .lrc files
  - Added feature to display guitar chord lyrics
  - Added fetch guitar chord lyrics from GuitarParty
  - Changed portable mode to use a subfolder for user data
  - Fixed audio timing (for real this time)
+ - Fixed showcase title text position when using GStreamer
  - Increased file buffer for audio to reduce stuttering
  - Improved shuffling to update when tracks are added to playlist
  - Improved time display at end of track with CUE tracks

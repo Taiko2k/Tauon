@@ -5485,6 +5485,9 @@ class TimedLyricsRen:
             if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
                 continue
 
+            es = 0
+            s = 0
+            t = ""
             try:
                 a = line.lstrip("[")
                 a = a.split("]")[0]
@@ -5494,12 +5497,26 @@ class TimedLyricsRen:
                 s = int(mm) * 60 + int(ss) + int(ms) / 100
                 t = line[10:].rstrip("\n")
 
+                if t[0] != "[" or t[9] != "]" or ":" not in t or "." not in t:
+                    pass
+                else:
+                    a = t.lstrip("[")
+                    a = a.split("]")[0]
+                    mm, b = a.split(":")
+                    ss, ms = b.split(".")
+
+                    es = int(mm) * 60 + int(ss) + int(ms) / 100
+                    t = line[20:].rstrip("\n")
+                    self.data.append((es, t))
+
                 self.data.append((s, t))
 
             except:
                 continue
 
-        print(self.data)
+        self.data = sorted(self.data, key=lambda x: x[0])
+        # print(self.data)
+
 
         self.ready = True
         return True
@@ -5524,17 +5541,22 @@ class TimedLyricsRen:
         line_active = -1
         last = -1
 
+        highlight = True
+
         for i, line in (enumerate(self.data)):
             if line[0] < pctl.playing_time:
+
                 last = i
 
             if line[0] > pctl.playing_time:
                 line_active = last
                 if not gui.frame_callback_list:
                     gui.frame_callback_list.append(TestTimer(line[0] - pctl.playing_time + 0.001))
+
                 break
         else:
             line_active = len(self.data) - 1
+
 
         if pctl.playing_state == 1:
             self.scroll_position = (max(0, line_active)) * 23 * gui.scale * -1
@@ -5549,7 +5571,7 @@ class TimedLyricsRen:
                 if test_lumi(colours.gallery_background) < 0.5:
                     colour = colours.grey(40)
 
-                if i == line_active:
+                if i == line_active and highlight:
                     colour = [255, 210, 50, 255]
 
 
@@ -20958,7 +20980,7 @@ class Showcase:
                 #x = int((window_size[0]) / 2)
                 y = int(window_size[1] / 2) - round(60 * gui.scale)
 
-                if prefs.showcase_vis:
+                if prefs.showcase_vis and prefs.backend == 1:
                     y -= round(30 * gui.scale)
 
                 # ddt.pretty_rect = (300, 100, window_size[0], window_size[1] - gui.panelBY)
