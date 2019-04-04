@@ -62,6 +62,18 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         function_type = ctypes.CFUNCTYPE
 
+    QWORD = ctypes.c_int64
+    DWORD = ctypes.c_ulong
+    HMUSIC = ctypes.c_ulong
+    HSAMPLE = ctypes.c_ulong
+    HCHANNEL = ctypes.c_ulong
+    HSTREAM = ctypes.c_ulong
+    HRECORD = ctypes.c_ulong
+    HSYNC = ctypes.c_ulong
+    HDSP = ctypes.c_ulong
+    HFX = ctypes.c_ulong
+    HPLUGIN = ctypes.c_ulong
+
     BASS_Init = function_type(ctypes.c_bool, ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_void_p,
                               ctypes.c_void_p)(('BASS_Init', bass_module))
 
@@ -166,6 +178,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_Mixer_ChannelFlags = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_Mixer_ChannelFlags', mix_module))
 
+
+    BASS_Mixer_ChannelGetPositionEx = function_type(QWORD, DWORD, DWORD, DWORD)(
+        ('BASS_Mixer_ChannelGetPositionEx', mix_module))
+
     DownloadProc = function_type(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p)
 
     # BASS_StreamCreateURL = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong,
@@ -174,6 +190,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                                          ctypes.c_void_p, ctypes.c_void_p)(('BASS_StreamCreateURL', bass_module))
     BASS_ChannelGetTags = function_type(ctypes.c_char_p, ctypes.c_ulong, ctypes.c_ulong)(
         ('BASS_ChannelGetTags', bass_module))
+
+    BASS_ChannelLock = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_bool)(
+        ('BASS_ChannelLock', bass_module))
+
 
 
     def py_down(buffer, length, user):
@@ -234,6 +254,26 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_RecordGetDeviceInfo = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.POINTER(BASS_DEVICEINFO))(
         ('BASS_RecordGetDeviceInfo', bass_module))
 
+    BASS_StreamGetFilePosition = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong)(
+        ('BASS_StreamGetFilePosition', bass_module))
+
+
+
+
+    # BASS_StreamGetFilePosition
+
+    BASS_FILEPOS_CURRENT = 0
+    BASS_FILEPOS_DOWNLOAD = 1
+    BASS_FILEPOS_END = 2
+    BASS_FILEPOS_START = 3
+    BASS_FILEPOS_CONNECTED = 4
+    BASS_FILEPOS_BUFFER = 5
+    BASS_FILEPOS_SOCKET = 6
+    BASS_FILEPOS_ASYNCBUF = 7
+    BASS_FILEPOS_SIZE = 8
+    BASS_FILEPOS_BUFFERING = 9
+
+
     BASS_FX_DX8_PARAMEQ = 7
 
     BASS_DEVICE_ENABLED = 1
@@ -244,13 +284,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_DEVICE_DEFAULT = 2
     BASS_DEVICE_INIT = 4
 
+    BASS_POS_BYTE = 0
+
     BASS_MIXER_END = 0x10000
     BASS_SYNC_END = 2
+    BASS_SYNC_STALL = 6
     BASS_SYNC_MIXTIME = 0x40000000
     BASS_UNICODE = 0x80000000
     BASS_STREAM_DECODE = 0x200000
     BASS_ASYNCFILE = 0x40000000
     BASS_SAMPLE_FLOAT = 256
+    BASS_DATA_AVAILABLE = 0
     BASS_STREAM_AUTOFREE = 0x40000
     BASS_MIXER_NORAMPIN = 0x800000
     BASS_MIXER_PAUSE = 0x20000
@@ -263,22 +307,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     BASS_CONFIG_DEV_BUFFER = 27
     BASS_CONFIG_LIBSSL = 64
 
-    #print(BASS_ErrorGetCode())
 
-    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so"))
-    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0"))
-    #print(BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.1"))
-    #
     #print(BASS_ErrorGetCode())
 
     #if system != 'windows':
     # open_flag = 0
 
-    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 1000000000)
-    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 157286400)
-    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 30000)
-    #BASS_SetConfig(BASS_CONFIG_BUFFER, 20000)
-    #BASS_SetConfig(BASS_CONFIG_BUFFER, 5000)
+    BASS_SetConfig(BASS_CONFIG_BUFFER, 8000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
 
     #else:
@@ -293,14 +328,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     if prefs.mono:
         init_flag |= BASS_DEVICE_MONO
 
-    # gap1
-    class BassGapless:
-        def __init__(self):
-            self.mixer = None
-            self.source = None
-            self.gap_next = None
-
-    bass_gap = BassGapless()
 
     if pctl.system == 'windows':
         # print(BASS_ErrorGetCode())
@@ -312,7 +339,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b'basswv.dll', 0)
         BASS_PluginLoad(b'bassalac.dll', 0)
 
-        # bassenc_opus
     elif pctl.system == 'mac':
         b = pctl.install_directory.encode('utf-8')
         BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
@@ -320,6 +346,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
         BASS_PluginLoad(b + b'/lib/libbasswv.dylib', 0)
+
     else:
         b = pctl.install_directory.encode('utf-8')
         BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
@@ -375,8 +402,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     ctypes.cast(x, ctypes.POINTER(ctypes.c_float))
 
     # print(BASS_GetVersion())
-    # print(hex(BASS_GetVersion()))
-    # print(bin(BASS_GetVersion()))
 
     def broadcast_connect(handle, connect, client, headers, user):
 
@@ -406,12 +431,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     fxs = [None] * 10
 
-
     for i, item in enumerate(params):
         item.fCenter = centers[i]
         item.fBandwidth = 12
         item.fGain = 0
-
 
     def replay_gain(stream):
         pctl.active_replaygain = 0
@@ -437,21 +460,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             print("Using ReplayGain of " + str(gain))
             pctl.active_replaygain = round(gain, 2)
 
-
-        # volfx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 10)
-        # volparam = BASS_BFX_VOLUME(0, pow(10, gain / 20))
-
-
-        #bass_player.eqfx = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
-        # eqfx = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
-        #
-        # para = BASS_DX8_PARAMEQ()
-        # para.fBandwidth = 12
-        # para.fCenter = 125
-        # para.fGain = 15
-        #
-        # BASS_FXSetParameters(eqfx, ctypes.pointer(para))
-
         if prefs.use_eq:
 
             bass_player.vol_fx = BASS_ChannelSetFX(stream, BASS_FX_BFX_VOLUME, 9)
@@ -462,12 +470,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 fxs[i] = BASS_ChannelSetFX(stream, BASS_FX_DX8_PARAMEQ, 5)
 
-
             for i, item in enumerate(params):
                 item.fGain = float(prefs.eq[i] * -1)
                 BASS_FXSetParameters(fxs[i], ctypes.pointer(params[i]))
-
-
 
     br_timer = Timer()
 
@@ -490,7 +495,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.vol_fx = None
             self.vol_param = BASS_BFX_VOLUME(0, 0)
 
-            self.open_file_flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT | BASS_ASYNCFILE
+            self.open_file_flags = BASS_STREAM_DECODE | BASS_ASYNCFILE | BASS_SAMPLE_FLOAT
             if pctl.system == "windows":
                 self.open_file_flags |= BASS_UNICODE
 
@@ -531,7 +536,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 else:
                     if not re and prefs.flatpak_mode and prefs.last_device != "PulseAudio Sound Server":
                         prefs.last_device = "PulseAudio Sound Server"
-                        #gui.show_message("Setting output as PulseAudio Sound Server...", 'info')
                         self.try_init(re=True)
 
                 self.init = True
@@ -560,10 +564,23 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         def update_time(self):
 
-            bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
-            tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
+            # bpos = BASS_ChannelGetPosition(self.channel, 0)
+            # tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
+            # if tpos >= 0:
+            #     pctl.playing_time = tpos - pctl.start_time
+
+            BASS_ChannelLock(self.channel, True)
+            buffered = BASS_ChannelGetData(self.channel, 0, BASS_DATA_AVAILABLE)
+            pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
+            BASS_ChannelLock(self.channel, False)
+
+            tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
             if tpos >= 0:
                 pctl.playing_time = tpos - pctl.start_time
+
+            # print("---")
+            # print(BASS_StreamGetFilePosition(self.decode_channel, BASS_FILEPOS_SIZE))
+            # print(BASS_StreamGetFilePosition(self.decode_channel, BASS_FILEPOS_ASYNCBUF))
 
         def stop(self, end=False, now=False):
 
@@ -732,10 +749,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
 
-
-                # print("Creade decode chanel")
-                # print(BASS_ErrorGetCode())
-
                 # Verify length if very short
                 if pctl.target_object.length < 1:
                     blen = BASS_ChannelGetLength(new_handle, 0)
@@ -788,6 +801,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 # Start playing
                 BASS_ChannelPlay(mixer, False)
+
+                # BASS_ChannelSetSync(mixer, BASS_SYNC_STALL, 0, Stall_Sync, new_handle)
+                # print(BASS_ErrorGetCode())
+                #
+                # while True:
+                #     time.sleep(1)
+                #     print(BASS_StreamGetFilePosition(new_handle, BASS_FILEPOS_ASYNCBUF))
 
                 self.channel = mixer
                 self.decode_channel = new_handle
@@ -900,7 +920,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_ChannelRemoveSync(channel, handle)
         # print("Sync GO!")
         print("Do transition GAPLESS")
-        BASS_ErrorGetCode()
+        # BASS_ErrorGetCode()
         # BASS_ChannelPlay(user, True)
         BASS_Mixer_StreamAddChannel(channel, user, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
         # print("Add channel")
@@ -917,6 +937,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         # print(BASS_ErrorGetCode())
 
     GapSync = SyncProc(sync_gapless_transition)
+
+    def stall_sync(handle, channel, data, user):
+
+        print("STALL SYNC")
+        print(BASS_StreamGetFilePosition(user, BASS_FILEPOS_ASYNCBUF))
+
+    Stall_Sync = SyncProc(stall_sync)
+
 
     while True:
 

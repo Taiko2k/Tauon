@@ -64,7 +64,7 @@ def player3(tauon):  # GStreamer
             if current_track.length < 1:
 
                 result = self.pl.query_duration(Gst.Format.TIME)
-                print(result)
+                # print(result)
                 if result[0] is True:
                     print("Updating track duration")
                     current_track.length = result[1] / Gst.SECOND
@@ -72,7 +72,7 @@ def player3(tauon):  # GStreamer
                 else:  # still loading? I guess we wait.
                     time.sleep(1.5)
                     result = self.pl.query_duration(Gst.Format.TIME)
-                    print(result)
+                    # print(result)
                     if result[0] is True:
                         print("Updating track duration")
                         current_track.length = result[1] / Gst.SECOND
@@ -129,7 +129,7 @@ def player3(tauon):  # GStreamer
                     if self.pctl.start_time > 0 or self.pctl.jump_time > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             (self.pctl.start_time + self.pctl.jump_time) * Gst.SECOND)
-                        self.pctl.playing_time = self.pctl.jump_time
+                        self.pctl.playing_time = 0 #self.pctl.jump_time
                         self.gui.update = 1
 
                     if gapless:  # Hold thread while a gapless transition is in progress
@@ -189,7 +189,6 @@ def player3(tauon):  # GStreamer
                     self.pl.set_state(Gst.State.PLAYING)
                     self.play_state = 1
 
-
             if self.play_state == 1:
 
                 # Get jump in time since last call
@@ -203,7 +202,7 @@ def player3(tauon):  # GStreamer
 
                 # Progress main seek head
                 if self.pl.get_state(0).state == Gst.State.PLAYING:
-                    self.pctl.playing_time = self.pctl.start_time + (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND)
+                    self.pctl.playing_time = max(0, (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND) - self.pctl.start_time)
 
                 else:
                     self.pl.set_state(Gst.State.PLAYING)
