@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.0.1"
+t_version = "v4.1.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -775,6 +775,7 @@ class Prefs:    # Used to hold any kind of settings
         self.min_to_tray = False
 
         self.guitar_chords = False
+        self.prefer_synced_lyrics = True
 
 
 prefs = Prefs()
@@ -2922,6 +2923,11 @@ class PlayerCtl:
                                 self.master_library[pp[self.playlist_playing_position]].filename and int(
                     self.master_library[pp[self.playlist_playing_position]].track_number) == int(
                     self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
+
+                    # We can shave it closer
+                    if not self.playing_time + 0.1 >= self.playing_length:
+                        return
+
                     print("Do transition CUE")
                     self.playlist_playing_position += 1
                     self.queue_step += 1
@@ -2936,12 +2942,7 @@ class PlayerCtl:
                     gui.pl_update = 1
 
                 else:
-                    if False:  # self.playing_time < self.playing_length:
-                        print("advance gapless")
-                        self.advance(quiet=True, gapless=True, end=True)
-                    else:
-                        #print("advance normal")
-                        self.advance(quiet=True, end=True)
+                    self.advance(quiet=True, end=True)
 
                     self.playing_time = 0
 
@@ -5435,6 +5436,134 @@ class LyricsRen:
 lyrics_ren = LyricsRen()
 
 
+
+class TimedLyricsRen:
+
+    def __init__(self):
+
+        self.index = -1
+
+        self.scanned = {}
+        self.ready = False
+        self.data = []
+
+        self.scroll_position = 0
+
+
+    def generate(self, index):
+
+        if self.index == index:
+            return self.ready
+
+        self.index = index
+
+        if pctl.master_library[index].is_network:
+            return False
+
+        track = pctl.master_library[index]
+        direc = track.parent_folder_path
+        name = track.filename.split(".")[0] + ".lrc"
+
+        for file in os.listdir(direc):
+            if file == name:
+                f = open(os.path.join(direc, name), 'r')
+                data = f.readlines()
+                f.close()
+
+                break
+        else:
+            return False
+
+        self.data = []
+        self.scroll_position = 0
+
+        for line in data:
+            if len(line) < 9:
+                continue
+
+            #print(line)
+            if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+                continue
+
+            try:
+                a = line.lstrip("[")
+                a = a.split("]")[0]
+                mm, b = a.split(":")
+                ss, ms = b.split(".")
+
+                s = int(mm) * 60 + int(ss) + int(ms) / 100
+                t = line[10:].rstrip("\n")
+
+                self.data.append((s, t))
+
+            except:
+                continue
+
+        print(self.data)
+
+        self.ready = True
+        return True
+
+
+    def render(self, index, x, y):
+
+        if index != self.index:
+            #self.index = index
+            self.ready = False
+            self.generate(index)
+
+        if not self.ready:
+            return
+
+
+        if mouse_wheel and pctl.playing_state != 1:
+            self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+
+
+
+        line_active = -1
+        last = -1
+
+        for i, line in (enumerate(self.data)):
+            if line[0] < pctl.playing_time:
+                last = i
+
+            if line[0] > pctl.playing_time:
+                line_active = last
+                if not gui.frame_callback_list:
+                    gui.frame_callback_list.append(TestTimer(line[0] - pctl.playing_time + 0.001))
+                break
+        else:
+            line_active = len(self.data) - 1
+
+        if pctl.playing_state == 1:
+            self.scroll_position = (max(0, line_active)) * 23 * gui.scale * -1
+
+        yy = y + self.scroll_position
+
+        for i, line in enumerate(self.data):
+
+            if 0 < yy < window_size[1]:
+
+                colour = colours.lyrics
+                if test_lumi(colours.gallery_background) < 0.5:
+                    colour = colours.grey(40)
+
+                if i == line_active:
+                    colour = [255, 210, 50, 255]
+
+
+                ddt.draw_text((x, yy), line[1], colour, 17, 2000, colours.playlist_panel_background)
+
+            yy += 23 * gui.scale
+
+
+
+
+timed_lyrics_ren = TimedLyricsRen()
+
+
+
 def draw_internel_link(x, y, text, colour, font):
 
     tweak = font
@@ -7319,6 +7448,8 @@ class ToolTip:
         self.called = False
 
 tool_tip = ToolTip()
+tool_tip2 = ToolTip()
+tool_tip2.trigger = 1.8
 track_box_path_tool_timer = Timer()
 
 def ex_tool_tip(x, y, text1_width, text, font):
@@ -17253,7 +17384,7 @@ class BottomBarType1:
                         pctl.show_current(highlight=True)
                     else:
                         pctl.play()
-                tool_tip.test(33 * gui.scale, y - 35 * gui.scale, _("Play"))
+                tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play"))
 
                 if right_click:
                     pctl.show_current(highlight=True)
@@ -17271,7 +17402,7 @@ class BottomBarType1:
                 pause_colour = colours.media_buttons_over
                 if input.mouse_click:
                     pctl.pause()
-                tool_tip.test(x, y - 35 * gui.scale, _("Pause"))
+                tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
 
             # ddt.rect_r(rect,[255,0,0,255], True)
@@ -17288,7 +17419,7 @@ class BottomBarType1:
                     pctl.stop()
                 if right_click:
                     pctl.auto_stop ^= True
-                tool_tip.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+                tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 
             ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
@@ -17310,7 +17441,7 @@ class BottomBarType1:
                     gui.tool_tip_lock_off_f = True
                 #tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
                 if not gui.tool_tip_lock_off_f:
-                    tool_tip.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+                    tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
             else:
                 gui.tool_tip_lock_off_f = False
 
@@ -17333,7 +17464,7 @@ class BottomBarType1:
                     pctl.revert()
                     gui.tool_tip_lock_off_b = True
                 if not gui.tool_tip_lock_off_b:
-                    tool_tip.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
+                    tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
             else:
                 gui.tool_tip_lock_off_b = False
 
@@ -20783,21 +20914,42 @@ class Showcase:
             gcx = x + box + int(window_size[0] * 0.15) + 20 * gui.scale
             gcx -= 100 * gui.scale
 
-            if prefs.guitar_chords and track.title:
-                if gc.test_ready_status(track) == 0:
-                    if draw.button("Query GuitarParty", 25 * gui.scale, window_size[1] - gui.panelBY - 100 * gui.scale,
-                                   bg=bbg, fg=bfg,
-                                   fore_text=bft, back_text=bbt):
-                        gc.fetch(track)
 
 
-            if prefs.guitar_chords and track.title and gc.render(track, gcx, y):
+            timed_ready = False
+            if True and prefs.show_lyrics_showcase:
+                timed_ready = timed_lyrics_ren.generate(track.index)
+
+            if timed_ready and track.lyrics:
+
+                if draw.button("Toggle Synced", 25 * gui.scale, window_size[1] - gui.panelBY - 100 * gui.scale,
+                               bg=bbg, fg=bfg,
+                               fore_text=bft, back_text=bbt):
+                    prefs.prefer_synced_lyrics ^= True
+
+                timed_ready = prefs.prefer_synced_lyrics
+
+            elif not timed_ready:
+
+                if prefs.guitar_chords and track.title:
+                    if gc.test_ready_status(track) == 0:
+                        if draw.button("Query GuitarParty", 25 * gui.scale,
+                                       window_size[1] - gui.panelBY - 100 * gui.scale,
+                                       bg=bbg, fg=bfg,
+                                       fore_text=bft, back_text=bbt):
+                            gc.fetch(track)
+
+
+            if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
 
                 if not gc.auto_scroll:
                     if draw.button("Auto-Scroll", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
                                    fore_text=bft, back_text=bbt):
                         gc.auto_scroll = True
 
+            elif True and prefs.show_lyrics_showcase and timed_ready:
+
+                timed_lyrics_ren.render(track.index, gcx, y)
 
             elif track.lyrics == "" or not prefs.show_lyrics_showcase:
 
@@ -25888,6 +26040,7 @@ while pctl.running:
             view_box.render()
 
         tool_tip.render()
+        tool_tip2.render()
 
         if gui.cursor_is != gui.cursor_want:
 
