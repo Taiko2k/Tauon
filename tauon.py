@@ -3365,7 +3365,7 @@ class PlayerCtl:
 
         self.notify_update()
         lfm_scrobbler.start_queue()
-        notify_song(end_of_playlist, delay=1.2)
+        notify_song(end_of_playlist, delay=3.5)
 
 
 pctl = PlayerCtl()
@@ -17077,6 +17077,7 @@ class BottomBarType1:
         # ddt.rect_r(rect, [255, 255, 255, 5], True)
 
         # Scrobble marker
+        print(pctl.a_time)
 
         if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
@@ -17089,6 +17090,7 @@ class BottomBarType1:
                 l_x = self.seek_bar_position[0] + int(math.ceil(
                     pctl.playing_time * self.seek_bar_size[0] / int(pctl.playing_length)))
                 l_x += int(math.ceil(self.seek_bar_size[0] / int(pctl.playing_length) * l_lead))
+
                 if abs(self.scrob_stick - l_x) < 2:
                     l_x = self.scrob_stick
                 else:
