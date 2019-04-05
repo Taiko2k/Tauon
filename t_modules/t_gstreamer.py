@@ -203,10 +203,12 @@ def player3(tauon):  # GStreamer
                 # Progress main seek head
                 if self.pl.get_state(0).state == Gst.State.PLAYING:
                     self.pctl.playing_time = max(0, (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND) - self.pctl.start_time)
+                    self.pctl.decode_time = self.pctl.playing_time
 
                 else:
                     self.pl.set_state(Gst.State.PLAYING)
                     self.pctl.playing_time += add_time
+                    self.pctl.decode_time = self.pctl.playing_time
 
                 # Other things we need to progress such as scrobbling
                 self.pctl.a_time += add_time
