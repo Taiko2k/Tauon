@@ -108,7 +108,7 @@ def player3(tauon):  # GStreamer
                     # If we are close to the end of the track, try transition gaplessly
                     gapless = False
                     if self.play_state == 1 and self.pctl.start_time == 0 and self.pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 4.5:
+                            0.2 < current_duration - current_time < 5.5:
                         print("Use GStreamer Gapless transition")
                         gapless = True
 
