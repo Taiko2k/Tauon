@@ -2340,6 +2340,19 @@ class PlayerCtl:
         
         self.windows_progress = None
 
+        self.callback_update = False
+        self.queue_target = 0
+        self.start_time_target = 0
+
+    # def finalise(self):
+    #
+    #     if self.callback_update:
+    #         self.callback_update = False
+    #         self.queue_step = self.queue_target
+    #         self.start_time = self.start_time_target
+    #         self.playing_length = pctl.g(pctl.track_queue[self.queue_step])
+
+
     def update_shuffle_pool(self, pl_id, track_list):
 
         if pl_id in self.shuffle_pools:
@@ -2571,6 +2584,7 @@ class PlayerCtl:
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
+        self.start_time_target = self.start_time
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.playerCommand = 'open'
         self.playerCommandReady = True
@@ -2593,6 +2607,7 @@ class PlayerCtl:
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
+        self.start_time_target = self.start_time
         self.jump_time = random_start
         self.playerCommand = 'open'
         if not prefs.use_jump_crossfade:
@@ -2613,6 +2628,7 @@ class PlayerCtl:
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
+        self.start_time_target = self.start_time
         # if not gapless:
         self.playerCommand = 'open'
         if jump and not prefs.use_jump_crossfade:
@@ -2846,12 +2862,10 @@ class PlayerCtl:
             self.playing_time_int = next_round
 
         if not prefs.use_transition_crossfade:
-            gap_extra = 0.9
+            gap_extra = 4
         else:
             gap_extra = prefs.cross_fade_time / 1000
 
-        if prefs.backend == 2: # (gstreamer)
-            gap_extra = 2
 
         if system == 'windows' and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
@@ -2936,6 +2950,7 @@ class PlayerCtl:
                     self.playing_time = 0
                     self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
                     self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
+                    self.start_time_target = self.start_time
                     lfm_scrobbler.start_queue()
 
                     gui.update += 1
@@ -2951,6 +2966,7 @@ class PlayerCtl:
 
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
+
 
         # Trim the history if it gets too long
         while len(self.track_queue) > 250:
@@ -3002,6 +3018,7 @@ class PlayerCtl:
                     self.playlist_playing_position = q[1]
                     self.track_queue.append(target_index)
                     self.queue_step = len(self.track_queue) - 1
+                    #self.queue_target = len(self.track_queue) - 1
                     self.play_target(jump=not end)
 
                     #  Set the flag that we have entered the album
@@ -3036,8 +3053,10 @@ class PlayerCtl:
                         del self.force_queue[0]
                         self.advance(nolock=True)
                         return
+
                     self.track_queue.append(pl[self.playlist_playing_position])
                     self.queue_step = len(self.track_queue) - 1
+                    #self.queue_target = len(self.track_queue) - 1
                     self.play_target(jump=not end)
 
                     if not ok_continue:
@@ -3065,6 +3084,7 @@ class PlayerCtl:
                 self.playlist_playing_position = q[1]
                 self.track_queue.append(target_index)
                 self.queue_step = len(self.track_queue) - 1
+                #self.queue_target = len(self.track_queue) - 1
                 self.play_target(jump= not end)
                 del self.force_queue[0]
                 if queue_box.scroll_position > 0:
@@ -3184,6 +3204,7 @@ class PlayerCtl:
             else:
                 self.queue_step = new_step
 
+
             if rr:
                 self.play_target_rr()
             else:
@@ -3260,6 +3281,7 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                 self.queue_step = len(self.track_queue) - 1
+                #self.queue_target = len(self.track_queue) - 1
 
                 self.play_target(jump= not end)
 
@@ -3289,6 +3311,7 @@ class PlayerCtl:
                         self.playlist_playing_position += 1
                         self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                         self.queue_step = len(self.track_queue) - 1
+                        #self.queue_target = len(self.track_queue) - 1
                         self.play_target(jump=not end)
 
                     else:
@@ -3312,6 +3335,7 @@ class PlayerCtl:
                                 self.playlist_playing_position = a
                                 self.track_queue.append(self.playing_playlist()[a])
                                 self.queue_step = len(self.track_queue) - 1
+                                #self.queue_target = len(self.track_queue) - 1
                                 self.play_target(jump=not end)
                                 break
                             else:
@@ -5567,6 +5591,8 @@ class TimedLyricsRen:
 
                 if i == line_active and highlight:
                     colour = [255, 210, 50, 255]
+                    if colours.lm:
+                        colour = [200, 150, 0, 255]
 
 
                 ddt.draw_text((x, yy), line[1], colour, 17, 2000, colours.playlist_panel_background)

@@ -313,7 +313,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     #if system != 'windows':
     # open_flag = 0
 
-    BASS_SetConfig(BASS_CONFIG_BUFFER, 8000000)
+    #BASS_SetConfig(BASS_CONFIG_BUFFER, 8000000)
+    BASS_SetConfig(BASS_CONFIG_BUFFER, 30000)
+    #BASS_SetConfig(BASS_CONFIG_BUFFER, 100000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
 
     #else:
@@ -484,6 +486,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.decode_channel = None
             self.state = 'stopped'
             self.syncing = False
+            self.new_handle_for_sync = None
 
             self.dl_ready = False
             self.save_temp = ""
@@ -494,6 +497,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             self.vol_fx = None
             self.vol_param = BASS_BFX_VOLUME(0, 0)
+
+            self.end_hit_timer = Timer(10)
 
             self.open_file_flags = BASS_STREAM_DECODE | BASS_ASYNCFILE | BASS_SAMPLE_FLOAT
             if pctl.system == "windows":
@@ -564,20 +569,20 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         def update_time(self):
 
-            # bpos = BASS_ChannelGetPosition(self.channel, 0)
-            # tpos = BASS_ChannelBytes2Seconds(self.channel, bpos)
+            # bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
+            # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
             # if tpos >= 0:
             #     pctl.playing_time = tpos - pctl.start_time
 
-            BASS_ChannelLock(self.channel, True)
+
+            #BASS_ChannelLock(self.channel, True)
             buffered = BASS_ChannelGetData(self.channel, 0, BASS_DATA_AVAILABLE)
             pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
-            BASS_ChannelLock(self.channel, False)
-
+            #BASS_ChannelLock(self.channel, False)
+            #
             tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
             if tpos >= 0:
                 pctl.playing_time = tpos - pctl.start_time
-
             # print("---")
             # print(BASS_StreamGetFilePosition(self.decode_channel, BASS_FILEPOS_SIZE))
             # print(BASS_StreamGetFilePosition(self.decode_channel, BASS_FILEPOS_ASYNCBUF))
@@ -788,6 +793,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 # print("Play from rest")
 
+                # Add end callback
+                BASS_ChannelSetSync(mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync2, 0)
+
                 # Set the starting position
                 if pctl.start_time > 0 or pctl.jump_time > 0 or self.state == 'suspend':
                     target_time = pctl.start_time + pctl.jump_time
@@ -817,7 +825,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             elif self.state == 'playing':
 
                 self.state = 'playing'
-                pctl.playing_time = 0
+                #pctl.playing_time = 0
 
                 # A track is already playing, so we need to transition it...
 
@@ -825,31 +833,50 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_ErrorGetCode()  # Flush any existing error
                 blen = BASS_ChannelGetLength(self.decode_channel, 0)
                 tlen = BASS_ChannelBytes2Seconds(self.decode_channel, blen)
-                bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
-                tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
+                # bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
+                # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
+
+                BASS_ChannelLock(self.channel, True)
+                buffered = BASS_ChannelGetData(self.channel, 0, BASS_DATA_AVAILABLE)
+                pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
+                BASS_ChannelLock(self.channel, False)
+                tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
+
                 err = BASS_ErrorGetCode()
+                #print(err)
 
                 print("Track transition...")
                 print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
-                if not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 2.5:
+                if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 5:
 
-                    # print(BASS_ErrorGetCode())
+                    #print(BASS_ErrorGetCode())
                     # Start sync on end
-                    #print(self.channel)
-                    sync = BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
-                    # print("Set sync...")
+                    #print(BASS_ChannelIsActive(self.channel))
+                    #sync = BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
+                    #print(sync)
+                    print("Activate sync...")
+                    #print(BASS_ErrorGetCode())
                     # print(BASS_ErrorGetCode())
+
+                    self.new_handle_for_sync = new_handle
                     self.syncing = True
                     br_timer.set()
 
                     while self.syncing:
                         time.sleep(0.001)
-                        if br_timer.get() > 6 and self.syncing:
+
+                        # add_time = player_timer.hit()
+                        # if add_time > 2 or add_time < 0:
+                        #     add_time = 0
+                        # pctl.playing_time += add_time
+
+                        #print(BASS_ChannelIsActive(self.channel))
+                        if self.end_hit_timer.get() < 1 or (br_timer.get() > 6 and self.syncing):
                             self.syncing = False
                             print("Sync taking too long!")
-                            sync_gapless_transition(sync, self.channel, 0, new_handle)
+                            sync_gapless_transition(None, self.channel, 0, new_handle)
                             break
 
                     # BASS_ChannelStop(self.channel)
@@ -868,6 +895,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # Create Mixer
                     new_mixer = BASS_Mixer_StreamCreate(44100, 2, BASS_MIXER_END)
 
+
                     # print("Create Mixer")
                     # print(BASS_ErrorGetCode())
 
@@ -882,6 +910,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # Start playing
                     BASS_ChannelPlay(new_mixer, False)
                     # print("Play from rest")
+
+                    # Add end callback
+                    BASS_ChannelSetSync(new_mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync2, 0)
 
                     # Set replay gain
                     replay_gain(new_mixer)
@@ -912,12 +943,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     self.channel = new_mixer
                     self.decode_channel = new_handle
 
+            #pctl.finalise()
+
     bass_player = BASSPlayer()
 
     def sync_gapless_transition(handle, channel, data, user):
 
         bass_player.syncing = False
-        BASS_ChannelRemoveSync(channel, handle)
+        #BASS_ChannelRemoveSync(channel, handle)
         # print("Sync GO!")
         print("Do transition GAPLESS")
         # BASS_ErrorGetCode()
@@ -937,6 +970,43 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         # print(BASS_ErrorGetCode())
 
     GapSync = SyncProc(sync_gapless_transition)
+
+    def sync_gapless_transition2(handle, channel, data, user):
+
+        print("End callback")
+        bass_player.end_hit_timer.set()
+        if bass_player.syncing and bass_player.new_handle_for_sync:
+            print("Gapless mode")
+            BASS_Mixer_StreamAddChannel(channel, bass_player.new_handle_for_sync, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
+            if pctl.start_time > 0 or pctl.jump_time > 0:
+                bytes_position = BASS_ChannelSeconds2Bytes(bass_player.new_handle_for_sync, pctl.start_time + pctl.jump_time)
+                BASS_ChannelSetPosition(bass_player.new_handle_for_sync, bytes_position, 0)
+
+            pctl.playing_time = pctl.jump_time
+            pctl.jump_time = 0
+            BASS_ChannelSetPosition(channel, 0, 0)
+
+            bass_player.syncing = False
+            bass_player.new_handle_for_sync = None
+
+            print("Do transition GAPLESS")
+
+
+        #bass_player.syncing = False
+        #BASS_ChannelRemoveSync(channel, handle)
+        # print("Sync GO!")
+
+        # BASS_ErrorGetCode()
+        # BASS_ChannelPlay(user, True)
+
+        # print("Add channel")
+        # print(BASS_ErrorGetCode())
+
+        # print("Set position")
+        # print(BASS_ErrorGetCode())
+
+    GapSync2 = SyncProc(sync_gapless_transition2)
+
 
     def stall_sync(handle, channel, data, user):
 
