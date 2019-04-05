@@ -776,6 +776,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.guitar_chords = False
         self.prefer_synced_lyrics = True
+        self.sync_lyrics_time_offset = 0.5
 
 
 prefs = Prefs()
@@ -1966,6 +1967,10 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
                     prefs.dc_device = True
                 elif result == "OFF":
                     prefs.dc_device = False
+
+            if 'lyrics-time-offset=' in p:
+                result = p.split('=')[1].strip()
+                prefs.sync_lyrics_time_offset = int(result)
 
 else:
     print("Warning: Missing config file")
@@ -5561,15 +5566,17 @@ class TimedLyricsRen:
 
         highlight = True
 
+        test_time = max(0, pctl.playing_time - prefs.sync_lyrics_time_offset)
+
         for i, line in (enumerate(self.data)):
-            if line[0] < pctl.playing_time:
+            if line[0] < test_time:
 
                 last = i
 
             if line[0] > pctl.playing_time:
                 line_active = last
                 if not gui.frame_callback_list:
-                    gui.frame_callback_list.append(TestTimer(line[0] - pctl.playing_time + 0.001))
+                    gui.frame_callback_list.append(TestTimer(line[0] - test_time + 0.001))
 
                 break
         else:
