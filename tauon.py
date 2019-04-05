@@ -2349,6 +2349,8 @@ class PlayerCtl:
         self.queue_target = 0
         self.start_time_target = 0
 
+        self.decode_time = 0
+
     # def finalise(self):
     #
     #     if self.callback_update:
@@ -2867,16 +2869,19 @@ class PlayerCtl:
             self.playing_time_int = next_round
 
         if not prefs.use_transition_crossfade:
-            gap_extra = 4
+            gap_extra = 0.9
         else:
             gap_extra = prefs.cross_fade_time / 1000
 
+        if prefs.backend == 2:  # (gstreamer)
+            gap_extra = 2
 
         if system == 'windows' and taskbar_progress and self.windows_progress:
             self.windows_progress.update(True)
 
-        if self.playing_state == 1 and self.playing_time + gap_extra >= self.playing_length and self.playing_time > 0.2:
+        if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
+            self.decode_time = 0
             if self.playing_length == 0 and self.playing_time < 4:
                 # If the length is unknown, allow backend some time to provide a duration
                 pass

@@ -569,10 +569,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         def update_time(self):
 
-            # bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
-            # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
-            # if tpos >= 0:
-            #     pctl.playing_time = tpos - pctl.start_time
+            bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
+            tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
+            if tpos >= 0:
+                pctl.decode_time = tpos - pctl.start_time
 
 
             #BASS_ChannelLock(self.channel, True)
@@ -833,14 +833,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_ErrorGetCode()  # Flush any existing error
                 blen = BASS_ChannelGetLength(self.decode_channel, 0)
                 tlen = BASS_ChannelBytes2Seconds(self.decode_channel, blen)
-                # bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
-                # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
+                bpos = BASS_ChannelGetPosition(self.decode_channel, 0)
+                tpos = BASS_ChannelBytes2Seconds(self.decode_channel, bpos)
 
-                BASS_ChannelLock(self.channel, True)
-                buffered = BASS_ChannelGetData(self.channel, 0, BASS_DATA_AVAILABLE)
-                pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
-                BASS_ChannelLock(self.channel, False)
-                tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
+                # BASS_ChannelLock(self.channel, True)
+                # buffered = BASS_ChannelGetData(self.channel, 0, BASS_DATA_AVAILABLE)
+                # pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
+                # BASS_ChannelLock(self.channel, False)
+                # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
 
                 err = BASS_ErrorGetCode()
                 #print(err)
@@ -849,7 +849,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 print("We are " + str(tlen - tpos)[:5] + " seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
-                if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 5:
+                if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 3:
 
                     #print(BASS_ErrorGetCode())
                     # Start sync on end
@@ -873,7 +873,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         # pctl.playing_time += add_time
 
                         #print(BASS_ChannelIsActive(self.channel))
-                        if self.end_hit_timer.get() < 1 or (br_timer.get() > 6 and self.syncing):
+                        if (br_timer.get() > 6 and self.syncing):
                             self.syncing = False
                             print("Sync taking too long!")
                             sync_gapless_transition(None, self.channel, 0, new_handle)
@@ -1303,6 +1303,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 print("Channel has stalled")
 
                 pctl.playing_time += add_time
+                pctl.decode_time += add_time
 
                 # if pctl.playing_time > 5 and pctl.playing_state != 3:
                 #     pctl.playing_time = 0
@@ -1311,7 +1312,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 #     pctl.playing_time = 0
                 #     pctl.advance(nolock=True)
                 #     continue
-
 
             if status == 1 and not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
                 bass_player.update_time()
