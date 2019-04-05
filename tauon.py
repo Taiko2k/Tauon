@@ -17077,7 +17077,6 @@ class BottomBarType1:
         # ddt.rect_r(rect, [255, 255, 255, 5], True)
 
         # Scrobble marker
-        print(pctl.a_time)
 
         if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
