@@ -1318,7 +1318,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             if pctl.playing_state == 1:
 
-                pctl.a_time += add_time
+                if pctl.playing_time < 3 and pctl.a_time < 3:
+                    # This makes sure it syncs up correctly when starting track
+                    pctl.a_time = pctl.playing_time
+                else:
+                    pctl.a_time += add_time
                 pctl.total_playtime += add_time
 
                 lfm_scrobbler.update(add_time)

@@ -211,7 +211,11 @@ def player3(tauon):  # GStreamer
                     self.pctl.decode_time = self.pctl.playing_time
 
                 # Other things we need to progress such as scrobbling
-                self.pctl.a_time += add_time
+                if self.pctl.playing_time < 3 and self.pctl.a_time < 3:
+                    self.pctl.a_time = self.pctl.playing_time
+                else:
+                    self.pctl.a_time += add_time
+
                 self.pctl.total_playtime += add_time
                 self.lfm_scrobbler.update(add_time)
 
