@@ -107,7 +107,7 @@ def player3(tauon):  # GStreamer
 
                     # If we are close to the end of the track, try transition gaplessly
                     gapless = False
-                    if self.play_state == 1 and self.pctl.start_time == 0 and self.pctl.jump_time == 0 and \
+                    if self.play_state == 1 and self.pctl.start_time_target == 0 and self.pctl.jump_time == 0 and \
                             0.2 < current_duration - current_time < 5.5:
                         print("Use GStreamer Gapless transition")
                         gapless = True
@@ -126,9 +126,9 @@ def player3(tauon):  # GStreamer
                     time.sleep(0.1)  # Setting and querying position right away seems to fail, so wait a small moment
 
                     # Due to CUE sheets, the position to start is not always the beginning of the file
-                    if self.pctl.start_time > 0 or self.pctl.jump_time > 0:
+                    if self.pctl.start_time_target > 0 or self.pctl.jump_time > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                            (self.pctl.start_time + self.pctl.jump_time) * Gst.SECOND)
+                                            (self.pctl.start_time_target + self.pctl.jump_time) * Gst.SECOND)
                         self.pctl.playing_time = 0 #self.pctl.jump_time
                         self.gui.update = 1
 
@@ -177,7 +177,7 @@ def player3(tauon):  # GStreamer
                 elif self.pctl.playerCommand == 'seek':
                     if self.play_state > 0:
                         self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                            (self.pctl.new_time + self.pctl.start_time) * Gst.SECOND)
+                                            (self.pctl.new_time + self.pctl.start_time_target) * Gst.SECOND)
 
                 elif self.pctl.playerCommand == 'pauseon':
                     self.player_timer.hit()
@@ -202,7 +202,7 @@ def player3(tauon):  # GStreamer
 
                 # Progress main seek head
                 if self.pl.get_state(0).state == Gst.State.PLAYING:
-                    self.pctl.playing_time = max(0, (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND) - self.pctl.start_time)
+                    self.pctl.playing_time = max(0, (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND) - self.pctl.start_time_target)
                     self.pctl.decode_time = self.pctl.playing_time
 
                 else:
