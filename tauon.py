@@ -5604,7 +5604,7 @@ class TimedLyricsRen:
                 if i == line_active and highlight:
                     colour = [255, 210, 50, 255]
                     if colours.lm:
-                        colour = [200, 150, 0, 255]
+                        colour = [180, 130, 210, 255]
 
 
                 ddt.draw_text((x, yy), line[1], colour, 17, 2000, colours.playlist_panel_background)
@@ -6454,28 +6454,29 @@ class AlbumArt():
             pass
 
         if not tr.is_network:
-            for i in range(len(items_in_dir)):
 
+            dirs_in_dir = [subdirec for subdirec in items_in_dir if
+                           os.path.isdir(os.path.join(direc, subdirec)) and subdirec.lower() in self.art_folder_names]
+
+            for i in range(len(items_in_dir)):
                 if os.path.splitext(items_in_dir[i])[1][1:] in self.image_types:
                     dir_path = os.path.join(direc, items_in_dir[i]).replace('\\', "/")
+                    #print(dir_path)
                     source_list.append([0, dir_path])
 
-                elif os.path.isdir(os.path.join(direc, items_in_dir[i])) and \
-                                items_in_dir[i].lower() in self.art_folder_names:
+            for i in range(len(dirs_in_dir)):
+                subdirec = os.path.join(direc, dirs_in_dir[i])
+                items_in_dir2 = os.listdir(subdirec)
 
-                    subdirec = os.path.join(direc, items_in_dir[i])
-                    items_in_dir2 = os.listdir(subdirec)
-
-                    for y in range(len(items_in_dir2)):
-                        if os.path.splitext(items_in_dir2[y])[1][1:] in self.image_types:
-                            dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
-                            source_list.append([0, dir_path])
+                for y in range(len(items_in_dir2)):
+                    if os.path.splitext(items_in_dir2[y])[1][1:] in self.image_types:
+                        dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
+                        source_list.append([0, dir_path])
 
         self.source_cache[index] = source_list
 
-        # print(source_list)
-
         return source_list
+
 
     def fast_display(self, index, location, box, source, offset):
 
