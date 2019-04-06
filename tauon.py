@@ -2657,6 +2657,7 @@ class PlayerCtl:
     def play_target(self, gapless=False, jump=False):
 
         # print(self.track_queue)
+        self.playing_time = 0
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
@@ -3023,6 +3024,7 @@ class PlayerCtl:
         #if pctl.playing_length <= 0:
         pctl.playing_length = 100
         pctl.playing_time = 0
+
 
         gui.update_spec = 0
 
