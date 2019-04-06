@@ -2345,19 +2345,21 @@ class PlayerCtl:
         
         self.windows_progress = None
 
-        self.callback_update = False
-        self.queue_target = 0
+        self.finish_transition = False
+        # self.queue_target = 0
         self.start_time_target = 0
 
         self.decode_time = 0
 
-    # def finalise(self):
-    #
-    #     if self.callback_update:
-    #         self.callback_update = False
-    #         self.queue_step = self.queue_target
-    #         self.start_time = self.start_time_target
-    #         self.playing_length = pctl.g(pctl.track_queue[self.queue_step])
+    def finalise(self):
+
+        if self.finish_transition:
+            self.playing_time = 0
+            self.decode_time = 0
+            self.queue_step = len(self.track_queue) - 1
+            self.start_time = self.start_time_target
+            self.playing_length = pctl.g(pctl.track_queue[self.queue_step]).length
+            self.finish_transition = False
 
 
     def update_shuffle_pool(self, pl_id, track_list):
@@ -2628,14 +2630,17 @@ class PlayerCtl:
             update_title_do()
 
 
-    def play_target(self, gapless=False, jump=False):
+    def play_target_gapless(self, jump=False):
 
-        self.playing_time = 0
-        # print(self.track_queue)
-        self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
-        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
-        self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
-        self.start_time_target = self.start_time
+
+        queue_target = len(self.track_queue) - 1
+        self.target_open = pctl.master_library[self.track_queue[queue_target]].fullpath
+        self.target_object = pctl.master_library[self.track_queue[queue_target]]
+        self.start_time_target = pctl.master_library[self.track_queue[queue_target]].start_time
+
+        # dont set self.start_time yet
+        # dont set queue step yet
+
         # if not gapless:
         self.playerCommand = 'open'
         if jump and not prefs.use_jump_crossfade:
@@ -2644,8 +2649,30 @@ class PlayerCtl:
         # else:
         #     self.playerCommand = 'gapless'
         self.playing_state = 1
+        #self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
+        self.last_playing_time = 0
+        self.finish_transition = True
+
+
+    def play_target(self, gapless=False, jump=False):
+
+        # print(self.track_queue)
+        self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
+        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
+        self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
+        self.start_time_target = self.start_time
+        # if not gapless:
+        self.playerCommand = 'open'
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
         self.last_playing_time = 0
+
+        if jump and not prefs.use_jump_crossfade:
+            self.playerSubCommand = 'now'
+        self.playerCommandReady = True
+        # else:
+        #     self.playerCommand = 'gapless'
+        self.playing_state = 1
+
 
         if update_title:
             update_title_do()
@@ -2993,8 +3020,9 @@ class PlayerCtl:
             pctl.master_library[self.left_index].skips += 1
             # print('skip registered')
 
-        pctl.playing_length = 100
-        pctl.playing_time = 0
+        if pctl.playing_length <= 0:
+            pctl.playing_length = 100
+        #pctl.playing_time = 0
 
         gui.update_spec = 0
 
@@ -3290,9 +3318,13 @@ class PlayerCtl:
 
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
-                self.queue_step = len(self.track_queue) - 1
-                #self.queue_target = len(self.track_queue) - 1
 
+                print("standand advance")
+                #self.queue_target = len(self.track_queue) - 1
+                # if end:
+                #     self.play_target_gapless(jump= not end)
+                # else:
+                self.queue_step = len(self.track_queue) - 1
                 self.play_target(jump= not end)
 
         else:
