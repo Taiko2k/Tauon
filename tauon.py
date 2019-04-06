@@ -3020,9 +3020,9 @@ class PlayerCtl:
             pctl.master_library[self.left_index].skips += 1
             # print('skip registered')
 
-        if pctl.playing_length <= 0:
-            pctl.playing_length = 100
-        #pctl.playing_time = 0
+        #if pctl.playing_length <= 0:
+        pctl.playing_length = 100
+        pctl.playing_time = 0
 
         gui.update_spec = 0
 

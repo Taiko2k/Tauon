@@ -829,7 +829,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             elif self.state == 'playing':
 
                 self.state = 'playing'
-                #pctl.playing_time = 0
+                pctl.playing_time = 0
 
                 # A track is already playing, so we need to transition it...
 
