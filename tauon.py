@@ -776,7 +776,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.guitar_chords = False
         self.prefer_synced_lyrics = True
-        self.sync_lyrics_time_offset = 0.5
+        self.sync_lyrics_time_offset = 0.0
 
 
 prefs = Prefs()
