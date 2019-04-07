@@ -21053,7 +21053,10 @@ class Showcase:
 
                 if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
 
-                    if draw.button("Toggle Synced", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+                    line = "Prefer synced"
+                    if prefs.prefer_synced_lyrics:
+                        line = "Prefer static"
+                    if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
                                    bg=bbg, fg=bfg,
                                    fore_text=bft, back_text=bbt):
                         prefs.prefer_synced_lyrics ^= True
