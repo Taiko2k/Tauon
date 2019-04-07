@@ -1632,8 +1632,8 @@ try:
     #     prefs.finish_current = save[96]
     if save[97] is not None:
         reload_state = save[97]
-    if save[98] is not None:
-        prefs.reload_play_state = save[98]
+    # if save[98] is not None:
+    #     prefs.reload_play_state = save[98]
     if save[99] is not None:
         prefs.last_fm_token = save[99]
     if save[100] is not None:
@@ -1971,6 +1971,9 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'lyrics-time-offset=' in p:
                 result = p.split('=')[1].strip()
                 prefs.sync_lyrics_time_offset = int(result)
+
+            if 'resume-on-restart' in p:
+                prefs.reload_play_state = True
 
 else:
     print("Warning: Missing config file")
@@ -5523,7 +5526,10 @@ class TimedLyricsRen:
         if self.index == index:
             return self.ready
 
+        self.ready = False
         self.index = index
+        self.data = []
+        self.scroll_position = 0
 
         if pctl.master_library[index].is_network:
             return False
@@ -5541,9 +5547,6 @@ class TimedLyricsRen:
                 break
         else:
             return False
-
-        self.data = []
-        self.scroll_position = 0
 
         for line in data:
             if len(line) < 9:
@@ -5592,10 +5595,10 @@ class TimedLyricsRen:
             self.generate(index)
 
         if not self.ready:
-            return
+            return False
 
 
-        if mouse_wheel and pctl.playing_state != 1:
+        if pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index:
             self.scroll_position += int(mouse_wheel * 30 * gui.scale)
 
 
@@ -5607,23 +5610,25 @@ class TimedLyricsRen:
 
         test_time = max(0, pctl.playing_time - prefs.sync_lyrics_time_offset)
 
-        for i, line in (enumerate(self.data)):
-            if line[0] < test_time:
+        if pctl.track_queue[pctl.queue_step] == index:
 
-                last = i
+            for i, line in (enumerate(self.data)):
+                if line[0] < test_time:
 
-            if line[0] > pctl.playing_time:
-                line_active = last
-                if not gui.frame_callback_list:
-                    gui.frame_callback_list.append(TestTimer(line[0] - test_time + 0.001))
+                    last = i
 
-                break
-        else:
-            line_active = len(self.data) - 1
+                if line[0] > pctl.playing_time:
+                    line_active = last
+                    if not gui.frame_callback_list:
+                        gui.frame_callback_list.append(TestTimer(line[0] - test_time + 0.001))
+
+                    break
+            else:
+                line_active = len(self.data) - 1
 
 
-        if pctl.playing_state == 1:
-            self.scroll_position = (max(0, line_active)) * 23 * gui.scale * -1
+            if pctl.playing_state == 1:
+                self.scroll_position = (max(0, line_active)) * 23 * gui.scale * -1
 
         yy = y + self.scroll_position
 
@@ -8249,7 +8254,19 @@ def get_bio(track_object):
     if track_object.artist != "":
         lastfm.get_bio(track_object.artist)
 
+
 showcase_menu.add(_('Search LyricWiki'), get_lyric_wiki, pass_ref=True)
+
+
+def search_guitarparty(track_object):
+    if not track_object.title:
+        show_message("Insufitent metadata to search")
+    gc.fetch(track_object)
+
+def search_guitarparty_showtest(_):
+    return gui.combo_mode and prefs.guitar_chords
+
+showcase_menu.add(_('Search GuitarParty'), search_guitarparty, pass_ref=True, show_test=search_guitarparty_showtest)
 
 
 def paste_lyrics_deco():
@@ -15100,10 +15117,10 @@ def toggle_lb(mode=0):
         lb.hold = True
 
 
-def toggle_resume_state(mode=0):
-    if mode == 1:
-        return prefs.reload_play_state
-    prefs.reload_play_state ^= True
+# def toggle_resume_state(mode=0):
+#     if mode == 1:
+#         return prefs.reload_play_state
+#     prefs.reload_play_state ^= True
 
 def toggle_ex_del(mode=0):
     if mode == 1:
@@ -15544,18 +15561,18 @@ class Over:
         self.toggle_square(x, y, toggle_enable_web,
                            _("Serve webpage for broadcast metadata"))
 
-
         y += 30 * gui.scale
+        self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
+        #y += 30 * gui.scale
         # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
         # y += 23 * gui.scale
         # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
         # y += 23 * gui.scale
 
-        self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
+        # self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
+        #
+        # y += 30 * gui.scale
 
-        y += 30 * gui.scale
-
-        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
 
         y += 30 * gui.scale
         self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
@@ -15566,11 +15583,11 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
 
-        y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
 
-        y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_guitar_chords, _("Enable guitar chord lyrics"))
+        y += 30 * gui.scale
+        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
 
         x = self.box_x + self.item_x_offset
@@ -15630,7 +15647,6 @@ class Over:
         self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
         #x = self.box_x + self.item_x_offset
-        self.button(x + 0 * gui.scale , y - 4 * gui.scale, _("Import PLEX music"), plex_get_album_thread)
 
     def button(self, x, y, text, plug, width=0):
 
@@ -15726,12 +15742,12 @@ class Over:
         self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
 
 
-        y = self.box_y + 130 * gui.scale
+        y = self.box_y + 120 * gui.scale
         x = self.box_x + self.item_x_offset + 310 * gui.scale
         self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y + 170 * gui.scale
+        y = self.box_y + 140 * gui.scale
         ddt.draw_text((x, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
         self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, _("Enable"))
         y += 30 * gui.scale
@@ -15755,6 +15771,12 @@ class Over:
 
             if self.click:
                 webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
+        x = self.box_x + self.item_x_offset
+        y = self.box_y + 215 * gui.scale
+        ddt.draw_text((x, y - 3 * gui.scale), 'PLEX', colours.grey_blend_bg(220), 213)
+        y += 20 * gui.scale
+        self.button(x , y, _("Import PLEX music"), plex_get_album_thread)
 
 
     def clear_local_loves(self):
@@ -18968,7 +18990,12 @@ class StandardPlaylist:
                                 yy += 1
 
                             if get_love(n_track):
-                                display_you_heart(run + 6 * gui.scale, yy)
+
+                                j = 0  # justify right
+                                if run < start + 100 * gui.scale:
+                                    j = 1  # justify left
+
+                                display_you_heart(run + 6 * gui.scale, yy, j)
                                 u += 18 * gui.scale
 
                             count = 0
@@ -18978,7 +19005,12 @@ class StandardPlaylist:
                                     break
 
                                 x = run + u + (heart_row_icon.w + spacing) * count
-                                display_friend_heart(x, yy, name)
+
+                                j = 0  # justify right
+                                if run < start + 100 * gui.scale:
+                                    j = 1  # justify left
+
+                                display_friend_heart(x, yy, name, j)
                                 count += 1
 
 
@@ -20703,6 +20735,9 @@ class GuitarChords:
 
     def fetch(self, track):
 
+        if track is None:
+            return
+
         if self.test_ready_status(track) != 0:
             return
 
@@ -20887,7 +20922,10 @@ class GuitarChords:
                 y += 15 * gui.scale
 
                 if window_size[0] > y > 0:
-                    ddt.draw_text((x,y), line[0], [230, 230, 230, 255], 16)
+                    colour = colours.lyrics
+                    if colours.lm:
+                        colour = [30, 30, 30, 255]
+                    ddt.draw_text((x,y), line[0], colour, 16)
 
                 y += 18 * gui.scale
 
@@ -21010,24 +21048,27 @@ class Showcase:
             if True and prefs.show_lyrics_showcase:
                 timed_ready = timed_lyrics_ren.generate(track.index)
 
+
             if timed_ready and track.lyrics:
 
-                if draw.button("Toggle Synced", 25 * gui.scale, window_size[1] - gui.panelBY - 100 * gui.scale,
-                               bg=bbg, fg=bfg,
-                               fore_text=bft, back_text=bbt):
-                    prefs.prefer_synced_lyrics ^= True
+                if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
+
+                    if draw.button("Toggle Synced", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+                                   bg=bbg, fg=bfg,
+                                   fore_text=bft, back_text=bbt):
+                        prefs.prefer_synced_lyrics ^= True
 
                 timed_ready = prefs.prefer_synced_lyrics
 
-            elif not timed_ready:
-
-                if prefs.guitar_chords and track.title:
-                    if gc.test_ready_status(track) == 0:
-                        if draw.button("Query GuitarParty", 25 * gui.scale,
-                                       window_size[1] - gui.panelBY - 100 * gui.scale,
-                                       bg=bbg, fg=bfg,
-                                       fore_text=bft, back_text=bbt):
-                            gc.fetch(track)
+            # elif not timed_ready:
+            #
+            #     if prefs.guitar_chords and track.title:
+            #         if gc.test_ready_status(track) == 0:
+            #             if draw.button("Query GuitarParty", 25 * gui.scale,
+            #                            window_size[1] - gui.panelBY - 100 * gui.scale,
+            #                            bg=bbg, fg=bfg,
+            #                            fore_text=bft, back_text=bbt):
+            #                 gc.fetch(track)
 
 
             if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
@@ -21775,7 +21816,7 @@ def download_img(link, target_folder):
         gui.image_downloading = False
 
 
-def display_you_heart(x, yy):
+def display_you_heart(x, yy, just=0):
 
     rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
     gui.heart_fields.append(rect)
@@ -21784,6 +21825,10 @@ def display_you_heart(x, yy):
         gui.pl_update += 1
         w = ddt.get_text_w("You", 13)
         xx = (x - w) - 5 * gui.scale
+
+        if just == 1:
+            xx += w + 15 * gui.scale
+
         # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
                    True)
@@ -21794,7 +21839,7 @@ def display_you_heart(x, yy):
                           yy, [244, 100, 100, 255])
 
 
-def display_friend_heart(x, yy, name):
+def display_friend_heart(x, yy, name, just=0):
 
     heart_row_icon.render(x,
                           yy, heart_colours.get(name))
@@ -21806,6 +21851,10 @@ def display_friend_heart(x, yy, name):
         gui.pl_update += 1
         w = ddt.get_text_w(name, 13)
         xx = (x - w) - 5 * gui.scale
+
+        if just == 1:
+            xx += w + 15 * gui.scale
+
         # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
         # ddt.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
         ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
@@ -22385,7 +22434,7 @@ def save_state():
             pctl.album_repeat_mode, # 95
             prefs.finish_current,  # Not used
             prefs.reload_state,  # 97
-            prefs.reload_play_state,
+            None, # prefs.reload_play_state,
             prefs.last_fm_token,
             prefs.last_fm_username,
             prefs.use_card_style,

@@ -6,14 +6,16 @@ v4.1.0
  - Added support for displaying timed lyrics from .lrc files
  - Added feature to display guitar chord lyrics
  - Added fetch guitar chord lyrics from GuitarParty
+ - [Windows] Add system tray with min to tray option
  - Changed portable mode to use a subfolder for user data
  - Fixed audio timing (for real this time)
  - Fixed showcase title text position when using GStreamer
  - Fixed scrobble marker jumping on first tick
+ - Fixed love heart text alignment when at left side of playlist
  - Increased file buffer for audio to reduce stuttering
  - Improved shuffling to update when tracks are added to playlist
  - Improved time display at end of track with CUE tracks
- - [Windows] Add system tray with min to tray option
+ - Moved "Resume playback on launch" option to config file
  - Removed "Shuffle avoids repeats" option (now always on)
 
 v4.0.0
