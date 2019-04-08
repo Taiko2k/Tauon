@@ -1346,11 +1346,12 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 lfm_scrobbler.update(add_time)
 
-            # Trigger track advance once end of track is reached
-            pctl.test_progress()
-
             if pctl.playing_state == 1 and len(pctl.track_queue) > 0 and 2 > add_time > 0:
                 star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+
+            if not pctl.playerCommandReady or (pctl.playerCommandReady and pctl.playerCommand == 'volume'):
+                # Trigger track advance once end of track is reached
+                pctl.test_progress()
 
         if pctl.playerCommandReady:
             pctl.playerCommandReady = False
