@@ -12,10 +12,13 @@ v4.1.0
  - Fixed showcase title text position when using GStreamer
  - Fixed scrobble marker jumping on first tick
  - Fixed love heart text alignment when at left side of playlist
+ - Fixed album art display not preferring upper level files (thanks gSilas for fix)
+ - Fixed click on folder title causing unnecessary processing
  - Increased file buffer for audio to reduce stuttering
  - Improved shuffling to update when tracks are added to playlist
  - Improved time display at end of track with CUE tracks
  - Moved "Resume playback on launch" option to config file
+ - Moved "Import PLEX music" to "accounts" tab
  - Removed "Shuffle avoids repeats" option (now always on)
 
 v4.0.0

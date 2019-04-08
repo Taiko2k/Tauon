@@ -19,12 +19,6 @@
 
 # The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
 
-# Functionality status:
-# Tags: Vorbis(FLAC, OPUS, OGG), APEv2(APE, WV, TTA)
-# Pictures: FLAC, APE
-# Properties: FLAC, OGG, OPUS, APE, WV, WAV, TTA
-
-
 import struct
 import wave
 import io
@@ -209,7 +203,6 @@ class Flac:
                     elif 'replaygain_album_gain' == a:
                         self.album_gain = float(b.decode("utf-8").strip(" dB"))
                         # print("\n-------------------------------------------\n")
-
 
         f.seek(block_position * -1, 1)
 
@@ -502,6 +495,8 @@ class Opus:
                 self.length = header[3] / self.sample_rate
                 break
 
+        f.close()
+
 # file = 'a.ogg'
 #
 # item = Opus(file)
@@ -696,7 +691,6 @@ class Ape:
             if version >= 3980:
 
                 audio_info = struct.unpack("<IIIHHI", start[56:76])
-                #print(audio_info)
 
                 self.bit_depth = audio_info[3]
                 self.sample_rate = audio_info[5]
@@ -753,6 +747,8 @@ class Ape:
 
         else:
             print("Tag Scanner: Does not appear to be an APE file")
+
+        a.close()
 
 
 class Wav:
