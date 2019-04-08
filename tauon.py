@@ -778,6 +778,8 @@ class Prefs:    # Used to hold any kind of settings
         self.prefer_synced_lyrics = True
         self.sync_lyrics_time_offset = 0.0
 
+        self.playback_follow_cursor = False
+
 
 prefs = Prefs()
 
@@ -1670,6 +1672,8 @@ try:
         prefs.min_to_tray = save[115]
     if save[116] is not None:
         prefs.guitar_chords = save[116]
+    if save[117] is not None:
+        prefs.playback_follow_cursor = save[117]
 
     state_file.close()
     del save
@@ -3147,6 +3151,17 @@ class PlayerCtl:
             return 0
 
         # If random, jump to random track
+        elif prefs.playback_follow_cursor and self.playing_ready() \
+                and self.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected] != self.playing_object().index \
+                and 0 < playlist_selected < len(default_playlist):
+
+            print("FOLLOW CURSOR")
+            self.active_playlist_playing = self.active_playlist_viewing
+            self.playlist_playing_position = playlist_selected
+
+            self.track_queue.append(default_playlist[playlist_selected])
+            self.queue_step = len(self.track_queue) - 1
+            self.play_target(jump=not end)
 
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
             #self.queue_step += 1
@@ -15059,6 +15074,12 @@ def toggle_scroll(mode=0):
 #             prefs.end_setting = 'stop'
 
 
+def toggle_playback_follow(mode=0):
+    if mode == 1:
+        return prefs.playback_follow_cursor
+    prefs.playback_follow_cursor ^= True
+
+
 def toggle_append_total_time(mode=0):
     if mode == 1:
         return prefs.append_total_time
@@ -15299,6 +15320,10 @@ config_items.append([_('Use double digit track indices'), toggle_dd])
 
 config_items.append([_('Add release year to folder title'), toggle_append_date])
 config_items.append([_('Add total duration to folder title'), toggle_append_total_time])
+
+config_items.append(None)
+
+config_items.append([_('Playback follows cursor'), toggle_playback_follow])
 
 # config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
@@ -22459,7 +22484,8 @@ def save_state():
             prefs.bio_large,
             prefs.discord_show,
             prefs.min_to_tray,
-            prefs.guitar_chords]
+            prefs.guitar_chords,
+            prefs.playback_follow_cursor]
 
     #print(prefs.last_device + "-----")
 
