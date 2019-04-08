@@ -2592,6 +2592,7 @@ class PlayerCtl:
             self.queue_step -= 1
             self.jump_time = 0
             self.playing_time = 0
+            self.decode_time = 0
 
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
@@ -2661,6 +2662,7 @@ class PlayerCtl:
 
         # print(self.track_queue)
         self.playing_time = 0
+        self.decode_time = 0
         self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
         self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
         self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
@@ -2769,6 +2771,7 @@ class PlayerCtl:
             self.left_index = self.track_queue[self.queue_step]
         previous_state = self.playing_state
         self.playing_time = 0
+        self.decode_time = 0
         self.playing_state = 0
         self.render_playlist()
 
@@ -2963,6 +2966,7 @@ class PlayerCtl:
                     else:
 
                         self.playing_time = 0
+                        self.decode_time = 0
                         self.new_time = 0
                         self.playerCommand = 'seek'
                         self.playerCommandReady = True
@@ -2989,6 +2993,7 @@ class PlayerCtl:
                     self.track_queue.append(pp[self.playlist_playing_position])
                     self.playing_state = 1
                     self.playing_time = 0
+                    self.decode_time = 0
                     self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
                     self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
                     self.start_time_target = self.start_time
@@ -3001,6 +3006,7 @@ class PlayerCtl:
                     self.advance(quiet=True, end=True)
 
                     self.playing_time = 0
+                    self.decode_time = 0
 
 
     def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False):
@@ -3025,8 +3031,10 @@ class PlayerCtl:
             # print('skip registered')
 
         #if pctl.playing_length <= 0:
-        pctl.playing_length = 100
         pctl.playing_time = 0
+        pctl.decode_time = 0
+        pctl.playing_length = 100
+
 
 
         gui.update_spec = 0
@@ -23307,6 +23315,7 @@ while pctl.running:
                     else:
                         pctl.new_time = 0
                         pctl.playing_time = 0
+                        pctl.decode_time = 0
                         pctl.playerCommand = 'seek'
                         pctl.playerCommandReady = True
             if key_end_press:
@@ -23603,6 +23612,7 @@ while pctl.running:
                     if pctl.new_time < 0:
                         pctl.new_time = 0
                         pctl.playing_time = 0
+                        pctl.decode_time = 0
                     pctl.playerCommand = 'seek'
                     pctl.playerCommandReady = True
 
@@ -25818,6 +25828,7 @@ while pctl.running:
                         pctl.playerCommandReady = True
                         pctl.playing_state = 3
                         pctl.playing_time = 0
+                        pctl.decode_time = 0
                         pctl.playing_length = 0
 
                     elif radio_field.text == "":
