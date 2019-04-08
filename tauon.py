@@ -8960,7 +8960,6 @@ def convert_playlist(pl):
                     show_message("This includes the conversion of a lossy codec to a lossless one!")
 
         transcode_list.append(folder)
-        print(1)
         print(transcode_list)
 
 
@@ -18562,7 +18561,6 @@ class StandardPlaylist:
 
                             if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
 
-
                                 playlist_hold = True
 
                             selection_stage = 1
@@ -18582,7 +18580,7 @@ class StandardPlaylist:
                                             shift_selection.append(item)
 
                             else:
-                                shift_selection = copy.deepcopy(temp)
+                                shift_selection = copy.copy(temp)
 
 
                     # # Shade ever other line for folder row
@@ -18773,8 +18771,9 @@ class StandardPlaylist:
 
                             playlist_selected = shift_selection[0]
                             gui.pl_update += 1
-                    reload_albums(True)
-                    tauon.worker_save_state = True
+
+                        reload_albums(True)
+                        tauon.worker_save_state = True
 
             # Blue drop line
             if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
@@ -21042,12 +21041,9 @@ class Showcase:
             gcx = x + box + int(window_size[0] * 0.15) + 20 * gui.scale
             gcx -= 100 * gui.scale
 
-
-
             timed_ready = False
             if True and prefs.show_lyrics_showcase:
                 timed_ready = timed_lyrics_ren.generate(track.index)
-
 
             if timed_ready and track.lyrics:
 
@@ -23545,13 +23541,6 @@ while pctl.running:
                 gui.pl_update = 1
 
 
-
-        if input.mouse_click:
-            n_click_time = time.time()
-            if n_click_time - click_time < 0.42:
-                d_mouse_click = True
-            click_time = n_click_time
-
         if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled:
 
             if key_ctrl_down:
@@ -23919,6 +23908,14 @@ while pctl.running:
         if filter_box.active:
             gui.layer_focus = 1
 
+        if input.mouse_click:
+            n_click_time = time.time()
+            if n_click_time - click_time < 0.42:
+                d_mouse_click = True
+            click_time = n_click_time
+
+        if input.mouse_click or mouse_wheel or right_click:
+            mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
 
         if gui.mode == 1 or gui.mode == 2:
 
