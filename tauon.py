@@ -3150,12 +3150,11 @@ class PlayerCtl:
             self.stop()
             return 0
 
-        # If random, jump to random track
+        # Playback follow cursor
         elif prefs.playback_follow_cursor and self.playing_ready() \
                 and self.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected] != self.playing_object().index \
-                and 0 < playlist_selected < len(default_playlist):
+                and -1 < playlist_selected < len(default_playlist):
 
-            print("FOLLOW CURSOR")
             self.active_playlist_playing = self.active_playlist_viewing
             self.playlist_playing_position = playlist_selected
 
@@ -3163,6 +3162,7 @@ class PlayerCtl:
             self.queue_step = len(self.track_queue) - 1
             self.play_target(jump=not end)
 
+        # If random, jump to random track
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
             #self.queue_step += 1
             new_step = self.queue_step + 1
