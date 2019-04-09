@@ -315,7 +315,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     #BASS_SetConfig(BASS_CONFIG_BUFFER, 8000000)
     #BASS_SetConfig(BASS_CONFIG_BUFFER, 30000)
-    #BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 100000000)
 
     BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 8000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
@@ -1306,7 +1305,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
 
             status = BASS_ChannelIsActive(bass_player.channel)
-            #print(BASS_GetCPU())
 
             if status == 1:
                 # Playing
