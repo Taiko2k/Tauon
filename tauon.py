@@ -2932,7 +2932,7 @@ class PlayerCtl:
                     gui.update += 2
                     pctl.auto_stop = False
 
-                elif self.force_queue:
+                elif self.force_queue and not self.pause_queue:
                     self.advance(end=True)
 
                 elif self.repeat_mode is True:
@@ -2967,7 +2967,7 @@ class PlayerCtl:
                             i = 0
                         self.jump(pp[i], i)
 
-                    elif  (not self.force_queue or (self.force_queue and self.pause_queue)) and prefs.playback_follow_cursor and self.playing_ready() \
+                    elif prefs.playback_follow_cursor and self.playing_ready() \
                             and self.multi_playlist[pctl.active_playlist_viewing][2][
                         playlist_selected] != self.playing_object().index \
                             and -1 < playlist_selected < len(default_playlist):
@@ -3002,13 +3002,14 @@ class PlayerCtl:
                             self.a_time = 0
 
 
-                elif not (self.force_queue and not self.pause_queue) and \
-                        self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
+                elif    self.random_mode is False and len(pp) > self.playlist_playing_position + 1 and \
                         self.master_library[pp[self.playlist_playing_position]].is_cue is True \
                         and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
                         self.master_library[pp[self.playlist_playing_position]].filename and int(
                     self.master_library[pp[self.playlist_playing_position]].track_number) == int(
                     self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
+
+                    #  not (self.force_queue and not self.pause_queue) and \
 
                     # We can shave it closer
                     if not self.playing_time + 0.1 >= self.playing_length:
