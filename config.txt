@@ -59,3 +59,11 @@ broadcast-port=8000
 tag-editor-name=Picard
 tag-editor-program=picard
 
+### --- Misc ------------------------------------------------------------------------------------
+
+### Offset for timed lyrics in seconds. Default is 0. 
+#lyrics-time-offset=0.5
+
+### Resume playback when launching if app was closed while playing. 
+#resume-on-restart
+
