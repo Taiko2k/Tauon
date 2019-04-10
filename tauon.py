@@ -20701,6 +20701,8 @@ class GuitarChords:
 
         cache_title = self.get_cache_title(track)
 
+        t = t.replace("\r", "")
+
         f = open(os.path.join(self.store_b, cache_title), 'w')
         f.write(t)
         f.close()
