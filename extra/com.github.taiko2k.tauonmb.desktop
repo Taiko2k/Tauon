@@ -1,6 +1,6 @@
 [Desktop Entry]
 Comment=
-Exec=com.github.taiko2k.tauonmb.sh
+Exec=com.github.taiko2k.tauonmb.sh %U
 GenericName=Audio Player
 Icon=com.github.taiko2k.tauonmb
 MimeType=audio/ogg;audio/flac;audio/wav;audio/x-tta;audio/mp3;audio/m4a;audio/x-ape

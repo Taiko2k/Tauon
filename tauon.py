@@ -398,7 +398,6 @@ side_panel_text_align = 0
 album_mode = False
 spec_smoothing = True
 
-auto_play_import = False
 # gui.offset_extra = 0
 
 old_album_pos = -55
@@ -783,6 +782,48 @@ class Prefs:    # Used to hold any kind of settings
 
 prefs = Prefs()
 
+def check_transfer_p():
+
+    if check_file_timer.get() > 1.1:
+        global arg_queue
+        check_file_timer.set()
+        if os.path.isfile(transfer_target):
+            r_arg_queue = pickle.load(open(transfer_target, "rb"))
+            os.remove(user_directory + "/transfer.p")
+            arg_queue = []
+            i = 0
+            for item in r_arg_queue:
+                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+                    arg_queue.append(item)
+                    i += 1
+
+            if i == 0:
+                SDL_RaiseWindow(t_window)
+                SDL_RestoreWindow(t_window)
+
+
+        if arg_queue:
+            i = 0
+            while i < len(arg_queue):
+                load_order = LoadClass()
+
+                for w in range(len(pctl.multi_playlist)):
+                    if pctl.multi_playlist[w][0] == "Default":
+                        load_order.playlist = pctl.multi_playlist[w][6]  # copy.deepcopy(w)
+                        break
+                else:
+                    # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+                    pctl.multi_playlist.append(pl_gen())
+                    load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
+                    switch_playlist(len(pctl.multi_playlist) - 1)
+
+                load_order.target = arg_queue[i]
+                load_orders.append(copy.deepcopy(load_order))
+
+                i += 1
+            arg_queue = []
+            gui.auto_play_import = True
+
 
 class GuiVar:   # Use to hold any variables for use in relation to UI
     def update_layout(self):
@@ -1028,6 +1069,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.tool_tip_lock_off_f = False
         self.tool_tip_lock_off_b = False
+
+        self.auto_play_import = False
 
 
 gui = GuiVar()
@@ -2590,6 +2633,7 @@ class PlayerCtl:
                 self.queue_step = len(self.track_queue) - 1 - prev
                 self.jump_time = self.left_time
                 self.playing_time = self.left_time
+                self.decode_time = self.left_time
                 break
             prev += 1
         else:
@@ -14104,7 +14148,6 @@ def worker1():
         global master_count
         global DA_Formats
         global to_got
-        global auto_play_import
 
         if not os.path.isfile(path):
             print("file to import missing")
@@ -14231,10 +14274,10 @@ def worker1():
                 # bm.get("File has an associated .cue file... Skipping")
                 return
             added.append(de)
-            if auto_play_import:
+            if gui.auto_play_import:
                 pctl.jump(copy.deepcopy(de))
 
-                auto_play_import = False
+                gui.auto_play_import = False
             # bm.get("dupe track")
             return
 
@@ -14264,9 +14307,9 @@ def worker1():
             master_count += 1
 
         # bm.get("fill entry")
-        if auto_play_import:
+        if gui.auto_play_import:
             pctl.jump(master_count - 1)
-            auto_play_import = False
+            gui.auto_play_import = False
 
     # Count the approx number of files to be imported, recursively
     def pre_get(direc):
@@ -23159,6 +23202,8 @@ while pctl.running:
         if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
                 SDL_WaitEventTimeout(None, 1000)
 
+                check_transfer_p()
+
         continue
 
     else:
@@ -23184,43 +23229,45 @@ while pctl.running:
 
     new_playlist_cooldown = False
 
-    if check_file_timer.get() > 1.1:
-        check_file_timer.set()
-        if os.path.isfile(transfer_target):
-            r_arg_queue = pickle.load(open(transfer_target, "rb"))
-            os.remove(user_directory + "/transfer.p")
-            arg_queue = []
-            i = 0
-            for item in r_arg_queue:
-                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-                    arg_queue.append(item)
-                    i += 1
+    check_transfer_p()
 
-            if i == 0:
-                SDL_RaiseWindow(t_window)
-                SDL_RestoreWindow(t_window)
-
-        if arg_queue:
-            i = 0
-            while i < len(arg_queue):
-                load_order = LoadClass()
-
-                for w in range(len(pctl.multi_playlist)):
-                    if pctl.multi_playlist[w][0] == "Default":
-                        load_order.playlist = pctl.multi_playlist[w][6] # copy.deepcopy(w)
-                        break
-                else:
-                    # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-                    pctl.multi_playlist.append(pl_gen())
-                    load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-                    switch_playlist(len(pctl.multi_playlist) - 1)
-
-                load_order.target = arg_queue[i]
-                load_orders.append(copy.deepcopy(load_order))
-
-                i += 1
-            arg_queue = []
-            auto_play_import = True
+    # if check_file_timer.get() > 1.1:
+    #     check_file_timer.set()
+    #     if os.path.isfile(transfer_target):
+    #         r_arg_queue = pickle.load(open(transfer_target, "rb"))
+    #         os.remove(user_directory + "/transfer.p")
+    #         arg_queue = []
+    #         i = 0
+    #         for item in r_arg_queue:
+    #             if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+    #                 arg_queue.append(item)
+    #                 i += 1
+    #
+    #         if i == 0:
+    #             SDL_RaiseWindow(t_window)
+    #             SDL_RestoreWindow(t_window)
+    #
+    #     if arg_queue:
+    #         i = 0
+    #         while i < len(arg_queue):
+    #             load_order = LoadClass()
+    #
+    #             for w in range(len(pctl.multi_playlist)):
+    #                 if pctl.multi_playlist[w][0] == "Default":
+    #                     load_order.playlist = pctl.multi_playlist[w][6] # copy.deepcopy(w)
+    #                     break
+    #             else:
+    #                 # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+    #                 pctl.multi_playlist.append(pl_gen())
+    #                 load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
+    #                 switch_playlist(len(pctl.multi_playlist) - 1)
+    #
+    #             load_order.target = arg_queue[i]
+    #             load_orders.append(copy.deepcopy(load_order))
+    #
+    #             i += 1
+    #         arg_queue = []
+    #         gui.auto_play_import = True
 
 
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
