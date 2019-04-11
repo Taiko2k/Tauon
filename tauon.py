@@ -9023,16 +9023,16 @@ def convert_playlist(pl):
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
-            show_message("Error: Missing lame.exe from '/encoder' directory")
-            return
+        # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
+        #     show_message("Error: Missing lame.exe from '/encoder' directory")
+        #     return
     else:
         if shutil.which('ffmpeg') is None:
             show_message("Error: ffmpeg does not appear to be installed")
             return
-        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-            show_message("Error: LAME does not appear to be installed")
-            return
+        # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
+        #     show_message("Error: LAME does not appear to be installed")
+        #     return
 
     paths = []
 
@@ -10167,9 +10167,9 @@ def convert_folder(index):
             # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
             #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
             return
-        if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
-            show_message("Error: Missing lame.exe from '/encoder' directory")
-            return
+        # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
+        #     show_message("Error: Missing lame.exe from '/encoder' directory")
+        #     return
         # if prefs.transcode_codec == 'ogg' and not os.path.isfile(user_directory + '/encoder/oggenc2.exe'):
         #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
         #     return
@@ -10177,9 +10177,9 @@ def convert_folder(index):
         if shutil.which('ffmpeg') is None:
             show_message("Error: ffmpeg does not appear to be installed")
             return
-        if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-            show_message("Error: LAME does not appear to be installed")
-            return
+        # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
+        #     show_message("Error: LAME does not appear to be installed")
+        #     return
 
     folder = []
     r_folder = pctl.master_library[index].parent_folder_path
@@ -10191,7 +10191,8 @@ def convert_folder(index):
                 show_message("Transcoding tracks from network locations is not currenty supported")
                 return
 
-            folder.append(item)
+            if item not in folder:
+                folder.append(item)
             print(prefs.transcode_codec)
             print(track_object.file_ext)
             if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
@@ -14533,7 +14534,7 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
-                if prefs.transcode_codec in ('opus', 'ogg', 'flac'):
+                if prefs.transcode_codec in ('opus', 'ogg', 'flac', 'mp3'):
                     global core_use
                     cores = os.cpu_count()
 
@@ -14557,93 +14558,95 @@ def worker1():
                         if q == len(folder_items) and core_use == 0:
                             break
 
-                else:
-                    for item in folder_items:
-
-                        if os.path.isfile(full_wav_out_p):
-                            os.remove(full_wav_out_p)
-                        if os.path.isfile(full_target_out_p):
-                            os.remove(full_target_out_p)
-
-                        command = user_directory + "/encoder/ffmpeg "
-
-                        if system != 'windows':
-                            command = "ffmpeg "
-
-                        if not pctl.master_library[item].is_cue:
-                            command += '-i "'
-                            command += pctl.master_library[item].fullpath
-                            command += '" '
-                            command += full_wav_out
-                            # command += ' -'
-                        else:
-                            command += '-ss ' + str(pctl.master_library[item].start_time)
-                            command += ' -t ' + str(pctl.master_library[item].length)
-
-                            command += ' -i "'
-                            command += pctl.master_library[item].fullpath
-                            command += '" '
-                            command += full_wav_out
-
-                            # command += " -"
-
-                        transcode_state = "(Decoding)"
-                        gui.update += 1
-
-                        # print(shlex.split(command))
-                        startupinfo = None
-                        if system == 'windows':
-                            startupinfo = subprocess.STARTUPINFO()
-                            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
-                                        startupinfo=startupinfo)
-
-                        transcode_state = "(Encoding)"
-                        gui.update += 1
-
-                        if prefs.transcode_codec == 'mp3':
-
-                            command = user_directory + '/encoder/lame --silent --abr ' + str(
-                                prefs.transcode_bitrate) + ' '
-
-                            if system != 'windows':
-                                command = 'lame --silent --abr ' + str(prefs.transcode_bitrate) + ' '
-
-                            if pctl.master_library[item].title != "":
-                                command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
-
-                                                                                                               "") + '" '
-                            if len(str(pctl.master_library[item].track_number)) < 4 and str(
-                                    pctl.master_library[item].track_number).isdigit():
-                                command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
-
-                            if len(str(pctl.master_library[item].date)) == 4 and str(
-                                    pctl.master_library[item].date).isdigit():
-                                command += '--ty ' + str(pctl.master_library[item].date) + ' '
-
-                            if pctl.master_library[item].artist != "":
-                                command += '--ta "' + pctl.master_library[item].artist.replace('"', "").replace("'",
-                                                                                                                "") + '" '
-
-                            if pctl.master_library[item].album != "":
-                                command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
-                                                                                                               "") + '" '
-                            command += full_wav_out + ' ' + full_target_out
-
-                            print(shlex.split(command))
-                            subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                            print('done')
-
-                            os.remove(full_wav_out_p)
-                            output_dir = prefs.encoder_output + folder_name + "/"
-
-                            out_line = os.path.splitext(pctl.master_library[item].filename)[0]
-                            if pctl.master_library[item].is_cue:
-                                out_line = str(pctl.master_library[item].track_number) + ". "
-                                out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
-
-                            print(output_dir)
-                            shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
+                # else:
+                #     # this code section is no longer used
+                #
+                #     for item in folder_items:
+                #
+                #         if os.path.isfile(full_wav_out_p):
+                #             os.remove(full_wav_out_p)
+                #         if os.path.isfile(full_target_out_p):
+                #             os.remove(full_target_out_p)
+                #
+                #         command = user_directory + "/encoder/ffmpeg "
+                #
+                #         if system != 'windows':
+                #             command = "ffmpeg "
+                #
+                #         if not pctl.master_library[item].is_cue:
+                #             command += '-i "'
+                #             command += pctl.master_library[item].fullpath
+                #             command += '" '
+                #             command += full_wav_out
+                #             # command += ' -'
+                #         else:
+                #             command += '-ss ' + str(pctl.master_library[item].start_time)
+                #             command += ' -t ' + str(pctl.master_library[item].length)
+                #
+                #             command += ' -i "'
+                #             command += pctl.master_library[item].fullpath
+                #             command += '" '
+                #             command += full_wav_out
+                #
+                #             # command += " -"
+                #
+                #         transcode_state = "(Decoding)"
+                #         gui.update += 1
+                #
+                #         # print(shlex.split(command))
+                #         startupinfo = None
+                #         if system == 'windows':
+                #             startupinfo = subprocess.STARTUPINFO()
+                #             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                #         subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
+                #                         startupinfo=startupinfo)
+                #
+                #         transcode_state = "(Encoding)"
+                #         gui.update += 1
+                #
+                #         if prefs.transcode_codec == 'mp3':
+                #
+                #             command = user_directory + '/encoder/lame --silent --abr ' + str(
+                #                 prefs.transcode_bitrate) + ' '
+                #
+                #             if system != 'windows':
+                #                 command = 'lame --silent --abr ' + str(prefs.transcode_bitrate) + ' '
+                #
+                #             if pctl.master_library[item].title != "":
+                #                 command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
+                #
+                #                                                                                                "") + '" '
+                #             if len(str(pctl.master_library[item].track_number)) < 4 and str(
+                #                     pctl.master_library[item].track_number).isdigit():
+                #                 command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
+                #
+                #             if len(str(pctl.master_library[item].date)) == 4 and str(
+                #                     pctl.master_library[item].date).isdigit():
+                #                 command += '--ty ' + str(pctl.master_library[item].date) + ' '
+                #
+                #             if pctl.master_library[item].artist != "":
+                #                 command += '--ta "' + pctl.master_library[item].artist.replace('"', "").replace("'",
+                #                                                                                                 "") + '" '
+                #
+                #             if pctl.master_library[item].album != "":
+                #                 command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
+                #                                                                                                "") + '" '
+                #             command += full_wav_out + ' ' + full_target_out
+                #
+                #             print(shlex.split(command))
+                #             subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
+                #             print('done')
+                #
+                #             os.remove(full_wav_out_p)
+                #             output_dir = prefs.encoder_output + folder_name + "/"
+                #
+                #             out_line = os.path.splitext(pctl.master_library[item].filename)[0]
+                #             if pctl.master_library[item].is_cue:
+                #                 out_line = str(pctl.master_library[item].track_number) + ". "
+                #                 out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
+                #
+                #             print(output_dir)
+                #             shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
 
 
                 output_dir = prefs.encoder_output + folder_name + "/"
@@ -15919,10 +15922,10 @@ class Over:
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
 
-        if not flatpak_mode:
-            self.toggle_square(x, y, switch_mp3, "MP3")
-            if prefs.transcode_codec == 'mp3' and not shutil.which("lame"):
-                ddt.draw_text((x + 90 * gui.scale, y - 3 * gui.scale), "LAME not detected!", [220, 110, 110, 255], 12)
+        #if not flatpak_mode:
+        self.toggle_square(x, y, switch_mp3, "MP3")
+            # if prefs.transcode_codec == 'mp3' and not shutil.which("lame"):
+            #     ddt.draw_text((x + 90 * gui.scale, y - 3 * gui.scale), "LAME not detected!", [220, 110, 110, 255], 12)
 
         if prefs.transcode_codec != 'flac':
             y += 35 * gui.scale

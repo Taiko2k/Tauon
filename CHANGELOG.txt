@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.1.1
+
+ - Fixed transcode stalling when duplicate tracks present
+ - Removed LAME requirement for MP3 encoding
+
 v4.1.0
 
  - Added playback setting "Playback follows cursor"
