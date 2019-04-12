@@ -6879,10 +6879,10 @@ class AlbumArt():
         offset = self.get_offset(filepath, sources)
 
         # Get source IO
-        if source[offset][0] == 1:
+        if sources[offset][0] == 1:
             # Target is a embedded image
             source_image = io.BytesIO(self.get_embed(index))
-        elif source[offset][0] == 2:
+        elif sources[offset][0] == 2:
             try:
                 response = urllib.request.urlopen(get_network_thumbnail_url(tr))
                 source_image = response
@@ -6890,7 +6890,7 @@ class AlbumArt():
                 print("IMAGE NETWORK LOAD ERROR")
 
         else:
-            source_image = open(source[offset][1], 'rb')
+            source_image = open(sources[offset][1], 'rb')
 
         im = Image.open(source_image)
         if im.mode != "RGB":
