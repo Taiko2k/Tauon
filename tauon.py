@@ -415,7 +415,7 @@ time_last_save = 0
 window_default_size = [1110, 540]
 window_size = window_default_size
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
-fullscreen = 0
+fullscreen = False
 
 volume_store = 50  # Used to save the previous volume when muted
 
@@ -17462,7 +17462,7 @@ class BottomBarType1:
             else:
                 pctl.show_current()
 
-                if d_click_timer.get() < 0.3 and pctl.playing_ready():
+                if d_click_timer.get() < 0.3 and pctl.playing_ready() and not gui.maximized and not fullscreen == 1:
                     set_mini_mode()
                     gui.update += 1
                     return
@@ -18049,7 +18049,7 @@ mini_mode = MiniMode()
 
 def set_mini_mode():
 
-    if gui.maximized:
+    if gui.maximized or fullscreen == 1:
         return
 
     gui.mode = 3
@@ -23296,14 +23296,15 @@ while pctl.running:
             click_location = copy.deepcopy(mouse_position)
 
         if key_F11:
-            if fullscreen == 0:
-                fullscreen = 1
+            if not fullscreen and not gui.mode == 3:
+                fullscreen = True
                 SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-            elif fullscreen == 1:
-                fullscreen = 0
+            elif fullscreen:
+                fullscreen = False
                 SDL_SetWindowFullscreen(t_window, 0)
-        if fullscreen == 1 and key_esc_press:
-            fullscreen = 0
+
+        if fullscreen and key_esc_press:
+            fullscreen = False
             SDL_SetWindowFullscreen(t_window, 0)
 
         if key_F10:

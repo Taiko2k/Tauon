@@ -4,7 +4,8 @@ Changelog-------------------------------------
 v4.1.1
 
  - Fixed transcode stalling when duplicate tracks present
- - Removed LAME requirement for MP3 encoding
+ - Fixed being able to enter mini-mode in full-screen
+ - Improved MP3 encoding to not require separate LAME encoder
 
 v4.1.0
 
