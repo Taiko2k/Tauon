@@ -316,7 +316,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     #BASS_SetConfig(BASS_CONFIG_BUFFER, 8000000)
     #BASS_SetConfig(BASS_CONFIG_BUFFER, 30000)
 
-    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 8000000)
+    BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 4000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
 
     #else:
@@ -501,7 +501,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             self.end_hit_timer = Timer(10)
 
-            self.open_file_flags = BASS_STREAM_DECODE | BASS_ASYNCFILE | BASS_SAMPLE_FLOAT
+            self.open_file_flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT
+            if not prefs.short_buffer:
+                print("BASS - Enable async loading")
+                self.open_file_flags |= BASS_ASYNCFILE
             if pctl.system == "windows":
                 self.open_file_flags |= BASS_UNICODE
 
@@ -1028,7 +1031,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     def stall_sync(handle, channel, data, user):
 
         print("STALL SYNC")
-        print(BASS_StreamGetFilePosition(user, BASS_FILEPOS_ASYNCBUF))
+        #print(BASS_StreamGetFilePosition(user, BASS_FILEPOS_ASYNCBUF))
 
     Stall_Sync = SyncProc(stall_sync)
 
