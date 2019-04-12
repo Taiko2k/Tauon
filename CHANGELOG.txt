@@ -6,6 +6,7 @@ v4.1.1
  - Fixed transcode stalling when duplicate tracks present
  - Fixed transcode not producing thumbnail
  - Fixed being able to enter mini-mode in full-screen
+ - Added config option to use small file buffering
  - Improved MP3 encoding to not require separate LAME encoder
 
 v4.1.0

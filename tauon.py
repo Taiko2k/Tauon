@@ -778,6 +778,7 @@ class Prefs:    # Used to hold any kind of settings
         self.sync_lyrics_time_offset = 0.0
 
         self.playback_follow_cursor = False
+        self.short_buffer = False
 
 
 prefs = Prefs()
@@ -2021,6 +2022,10 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'resume-on-restart' in p:
                 prefs.reload_play_state = True
+
+            if 'short-buffering' in p:
+                prefs.short_buffer = True
+
 
 else:
     print("Warning: Missing config file")
