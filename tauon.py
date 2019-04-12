@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.1.0"
+t_version = "v4.1.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -531,6 +531,8 @@ playlist_playing = -1
 playlist_selected = -1
 
 loading_in_progress = False
+
+core_use = 0
 
 random_mode = False
 repeat_mode = False
@@ -1072,6 +1074,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.tool_tip_lock_off_b = False
 
         self.auto_play_import = False
+
+        self.transcoding_batch_total = 0
+        self.transcoding_bach_done = 0
 
 
 gui = GuiVar()
@@ -13035,8 +13040,6 @@ def toggle_playlist_break():
 
 # ---------------------------------------------------------------------------------------
 
-core_use = 0
-
 
 def transcode_single(item, manual_directroy=None, manual_name=None):
     global core_use
@@ -13128,7 +13131,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         os.rename(target_out, output + out_line + "." + codec)
     else:
         os.rename(target_out, output + manual_name + "." + codec)
+
+
+    gui.transcoding_bach_done += 1
     core_use -= 1
+    gui.update += 1
 
 
 # ---------------------
@@ -14544,6 +14551,9 @@ def worker1():
                     cores = os.cpu_count()
 
                     total = len(folder_items)
+                    gui.transcoding_batch_total = total
+                    gui.transcoding_bach_done = 0
+
                     q = 0
                     while True:
 
@@ -14555,12 +14565,14 @@ def worker1():
                             loaderThread.start()
                             # transcode_single([folder_items[q], folder_name])
                             q += 1
-                        time.sleep(0.5)
+                            gui.update += 1
+                        time.sleep(0.05)
                         if gui.tc_cancel:
                             while core_use > 0:
                                 time.sleep(1)
                             break
                         if q == len(folder_items) and core_use == 0:
+                            gui.update += 1
                             break
 
                 # else:
@@ -17086,23 +17098,26 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
-        elif transcode_list:
-            # if key_ctrl_down and key_c_press:
-            #     del transcode_list[1:]
-            #     gui.tc_cancel = True
-            if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
-                cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-
-            text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
-            if len(transcode_list) > 1:
-                text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
-            if not gui.tc_cancel:
-                bg = colours.status_info_text
-            else:
-                text = "Stopping transcode..."
+        # elif transcode_list:
+        #     # if key_ctrl_down and key_c_press:
+        #     #     del transcode_list[1:]
+        #     #     gui.tc_cancel = True
+        #     if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
+        #         cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
+        #
+        #     text = "Transcoding... " + str(len(transcode_list)) + " Folder Remaining " + transcode_state
+        #     if len(transcode_list) > 1:
+        #         text = "Transcoding... " + str(len(transcode_list)) + " Folders Remaining " + transcode_state
+        #     if not gui.tc_cancel:
+        #         bg = colours.status_info_text
+        #     else:
+        #         text = "Stopping transcode..."
         # elif pctl.join_broadcast and pctl.broadcast_active:
         #     text = "Streaming Synced"
         #     bg = [60, 75, 220, 255]  # colours.streaming_text
+        elif transcode_list and gui.tc_cancel:
+            bg = [150, 150, 150, 255]
+            text = "Stopping transcode..."
         elif pctl.encoder_pause == 1 and pctl.broadcast_active:
             text = "Streaming Paused"
             bg = colours.streaming_text
@@ -17116,6 +17131,44 @@ class TopPanel:
         if status:
             x += ddt.draw_text((x, y), text, bg, 311)
             # x += ddt.get_text_w(text, 11)
+
+        elif transcode_list:
+            bg = colours.status_info_text
+            # if key_ctrl_down and key_c_press:
+            #     del transcode_list[1:]
+            #     gui.tc_cancel = True
+            if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
+                cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
+
+
+            w = 100 * gui.scale
+            x += ddt.draw_text((x, y), "Transcoding", bg, 311) + 8 * gui.scale
+
+
+            if gui.transcoding_batch_total:
+
+                yy = y + 4 * gui.scale
+                h = 9 * gui.scale
+                box = [x, yy, w, h]
+                ddt.rect_r(box, [100, 100, 100, 255])
+
+                done = round(gui.transcoding_bach_done / gui.transcoding_batch_total * 100)
+                doing = round(core_use / gui.transcoding_batch_total * 100)
+
+                ddt.rect_r([x, yy, done, h], [80, 80, 80, 255], True)
+
+                ddt.rect_r([x + done, yy, doing, h], [69, 69, 69, 100], True)
+
+            x += w + 8 * gui.scale
+
+
+            text = str(len(transcode_list)) + " Folder Remaining " + transcode_state
+            if len(transcode_list) > 1:
+                text = str(len(transcode_list)) + " Folders Remaining " + transcode_state
+
+            x += ddt.draw_text((x, y), text, bg, 311) + 8 * gui.scale
+
+
 
         elif pctl.broadcast_active:
             text = "Now Streaming:"
@@ -23179,7 +23232,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list: # or mouse_moved:
         power = 1000
 
     if mouse_down:
