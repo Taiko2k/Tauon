@@ -21,6 +21,9 @@ plex-servname=
 ### Use logarithmic volume instead of linear. (Provides wider range of control for lower volumes) (Bass Only)
 #log-volume-scale
 
+### Don't buffer large chuncks of the audio file (so source does not sleep and uses slightly less RAM)
+#short-buffering
+
 ### --- Media Keys --------------------------------------------------------------------------------------
 
 #disable-mediakey (gnome media keys)

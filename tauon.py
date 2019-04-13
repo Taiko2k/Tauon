@@ -14563,7 +14563,6 @@ def worker1():
                             loaderThread = threading.Thread(target=transcode_single, args=agg)
                             loaderThread.daemon = True
                             loaderThread.start()
-                            # transcode_single([folder_items[q], folder_name])
                             q += 1
                             gui.update += 1
                         time.sleep(0.05)
@@ -14575,96 +14574,8 @@ def worker1():
                             gui.update += 1
                             break
 
-                # else:
-                #     # this code section is no longer used
-                #
-                #     for item in folder_items:
-                #
-                #         if os.path.isfile(full_wav_out_p):
-                #             os.remove(full_wav_out_p)
-                #         if os.path.isfile(full_target_out_p):
-                #             os.remove(full_target_out_p)
-                #
-                #         command = user_directory + "/encoder/ffmpeg "
-                #
-                #         if system != 'windows':
-                #             command = "ffmpeg "
-                #
-                #         if not pctl.master_library[item].is_cue:
-                #             command += '-i "'
-                #             command += pctl.master_library[item].fullpath
-                #             command += '" '
-                #             command += full_wav_out
-                #             # command += ' -'
-                #         else:
-                #             command += '-ss ' + str(pctl.master_library[item].start_time)
-                #             command += ' -t ' + str(pctl.master_library[item].length)
-                #
-                #             command += ' -i "'
-                #             command += pctl.master_library[item].fullpath
-                #             command += '" '
-                #             command += full_wav_out
-                #
-                #             # command += " -"
-                #
-                #         transcode_state = "(Decoding)"
-                #         gui.update += 1
-                #
-                #         # print(shlex.split(command))
-                #         startupinfo = None
-                #         if system == 'windows':
-                #             startupinfo = subprocess.STARTUPINFO()
-                #             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                #         subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False,
-                #                         startupinfo=startupinfo)
-                #
-                #         transcode_state = "(Encoding)"
-                #         gui.update += 1
-                #
-                #         if prefs.transcode_codec == 'mp3':
-                #
-                #             command = user_directory + '/encoder/lame --silent --abr ' + str(
-                #                 prefs.transcode_bitrate) + ' '
-                #
-                #             if system != 'windows':
-                #                 command = 'lame --silent --abr ' + str(prefs.transcode_bitrate) + ' '
-                #
-                #             if pctl.master_library[item].title != "":
-                #                 command += '--tt "' + pctl.master_library[item].title.replace('"', "").replace("'",
-                #
-                #                                                                                                "") + '" '
-                #             if len(str(pctl.master_library[item].track_number)) < 4 and str(
-                #                     pctl.master_library[item].track_number).isdigit():
-                #                 command += '--tn ' + str(pctl.master_library[item].track_number) + ' '
-                #
-                #             if len(str(pctl.master_library[item].date)) == 4 and str(
-                #                     pctl.master_library[item].date).isdigit():
-                #                 command += '--ty ' + str(pctl.master_library[item].date) + ' '
-                #
-                #             if pctl.master_library[item].artist != "":
-                #                 command += '--ta "' + pctl.master_library[item].artist.replace('"', "").replace("'",
-                #                                                                                                 "") + '" '
-                #
-                #             if pctl.master_library[item].album != "":
-                #                 command += '--tl "' + pctl.master_library[item].album.replace('"', "").replace("'",
-                #                                                                                                "") + '" '
-                #             command += full_wav_out + ' ' + full_target_out
-                #
-                #             print(shlex.split(command))
-                #             subprocess.call(shlex.split(command), stdout=subprocess.PIPE, startupinfo=startupinfo)
-                #             print('done')
-                #
-                #             os.remove(full_wav_out_p)
-                #             output_dir = prefs.encoder_output + folder_name + "/"
-                #
-                #             out_line = os.path.splitext(pctl.master_library[item].filename)[0]
-                #             if pctl.master_library[item].is_cue:
-                #                 out_line = str(pctl.master_library[item].track_number) + ". "
-                #                 out_line += pctl.master_library[item].artist + " - " + pctl.master_library[item].title
-                #
-                #             print(output_dir)
-                #             shutil.move(full_target_out_p, output_dir + out_line + "." + prefs.transcode_codec)
-
+                else:
+                    print("Codec error")
 
                 output_dir = prefs.encoder_output + folder_name + "/"
                 album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
@@ -17137,7 +17048,7 @@ class TopPanel:
             # if key_ctrl_down and key_c_press:
             #     del transcode_list[1:]
             #     gui.tc_cancel = True
-            if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
+            if right_click and coll([x, y, 280 * gui.scale, 18 * gui.scale]):
                 cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 
 
@@ -17147,17 +17058,35 @@ class TopPanel:
 
             if gui.transcoding_batch_total:
 
+                # c1 = [40, 40, 40, 255]
+                # c2 = [60, 60, 60, 255]
+                # c3 = [130, 130, 130, 255]
+                #
+                # if colours.lm:
+                #     c1 = [100, 100, 100, 255]
+                #     c2 = [130, 130, 130, 255]
+                #     c3 = [180, 180, 180, 255]
+
+                c1 = [40, 40, 40, 255]
+                c2 = [100, 59, 200, 200]
+                c3 = [150, 70, 200, 255]
+
+                if colours.lm:
+                    c1 = [100, 100, 100, 255]
+                    c2 = [170, 140, 255, 255]
+                    c3 = [230, 170, 255, 255]
+
                 yy = y + 4 * gui.scale
                 h = 9 * gui.scale
                 box = [x, yy, w, h]
-                ddt.rect_r(box, [100, 100, 100, 255])
+                #ddt.rect_r(box, [100, 100, 100, 255])
+                ddt.rect_r(box, c1, True)
 
                 done = round(gui.transcoding_bach_done / gui.transcoding_batch_total * 100)
                 doing = round(core_use / gui.transcoding_batch_total * 100)
 
-                ddt.rect_r([x, yy, done, h], [80, 80, 80, 255], True)
-
-                ddt.rect_r([x + done, yy, doing, h], [69, 69, 69, 100], True)
+                ddt.rect_r([x, yy, done, h], c3, True)
+                ddt.rect_r([x + done, yy, doing, h], c2, True)
 
             x += w + 8 * gui.scale
 

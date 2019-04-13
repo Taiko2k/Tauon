@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v4.1.1
 
+ - Added progress bar for transcoding
  - Fixed transcode stalling when duplicate tracks present
  - Fixed transcode not producing thumbnail
  - Fixed being able to enter mini-mode in full-screen
