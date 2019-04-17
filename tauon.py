@@ -4526,7 +4526,7 @@ class STray:
     def pause(self, systray):
          pctl.play_pause()
 
-    def stop(self, systray):
+    def track_stop(self, systray):
          pctl.stop()
 
     def on_quit_callback(self, systray):
@@ -4535,7 +4535,7 @@ class STray:
     def start(self):
         menu_options = (("Show", None, self.up),
                         ("Play/Pause", None, self.pause),
-                        ("Stop", None, self.stop),
+                        ("Stop", None, self.track_stop),
                         ("Forward", None, self.advance),
                         ("Back", None, self.back))
         self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
@@ -5099,9 +5099,8 @@ def draw_window_tools():
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                    [160, 160, 160, 160], True)
-        if input.mouse_click or ab_click:
-            #SDL_MinimizeWindow(t_window)
-            
+        if mouse_up or ab_click:
+
             if tray.active and prefs.min_to_tray:
                 tray.down()
             else:
@@ -22864,7 +22863,9 @@ while pctl.running:
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_click = True
                 right_down = True
+                #print("RIGHT DOWN")
             elif event.button.button == SDL_BUTTON_LEFT:
+                #print("LEFT DOWN")
 
                 # if mouse_position[1] > 1 and mouse_position[0] > 1:
                 #     mouse_down = True
@@ -22885,8 +22886,9 @@ while pctl.running:
             gui.update += 1
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_down = False
+                #print("RIGHT UP")
             elif event.button.button == SDL_BUTTON_LEFT:
-
+                #print("LEFT UP")
                 mouse_down = False
                 mouse_up = True
         elif event.type == SDL_KEYDOWN:
@@ -23075,6 +23077,11 @@ while pctl.running:
                     gui.update = 2
                     window_size[0] = event.window.data1
                     window_size[1] = event.window.data2
+
+                    if gui.mode != 3:
+                        window_size[0] = max(560, window_size[0])
+                        window_size[1] = max(330, window_size[1])
+
                     update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
