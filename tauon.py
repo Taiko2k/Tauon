@@ -820,8 +820,11 @@ def check_transfer_p():
                     load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
                     switch_playlist(len(pctl.multi_playlist) - 1)
 
-                load_order.target = arg_queue[i]
-                load_orders.append(copy.deepcopy(load_order))
+
+                target = str(urllib.parse.unquote(arg_queue[i])).replace("file:///", "/").replace("\r", "")
+                load_order.target = target
+
+                load_orders.append(copy.deepcopy(load_order))git a
 
                 i += 1
             arg_queue = []
@@ -22042,9 +22045,10 @@ power = 0
 key_F7 = False
 
 r_arg_queue = copy.deepcopy(sys.argv)
+
 arg_queue = []
 for item in r_arg_queue:
-    if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item and 'tauon.exe' not in item:
+    if (os.path.isdir(item) or os.path.isfile(item) or "file://" in item) and '.py' not in item and 'tauon.exe' not in item:
         arg_queue.append(item)
 
 
