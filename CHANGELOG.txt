@@ -5,6 +5,7 @@ v4.1.2
 
  - Fixed "Stop" function in Windows tray not working
  - Fixed click not working after minimize and raise
+ - Fixed open with not working with some file managers
 
 v4.1.1
 
