@@ -24817,15 +24817,23 @@ while pctl.running:
 
 
                         if order.play and order.tracks:
+
+                            for p, plst in enumerate(pctl.multi_playlist):
+                                if order.tracks[0] in plst[2]:
+                                    target_pl = p
+                                    break
+
                             switch_playlist(target_pl)
+
                             pctl.active_playlist_playing = pctl.active_playlist_viewing
 
-                            # If already in playlist, delete latest add
-                            if default_playlist.count(order.tracks[0]) > 1:
-                                for q in reversed(range(len(default_playlist))):
-                                    if default_playlist[q] == order.tracks[0]:
-                                        del default_playlist[q]
-                                        break
+                            # # If already in playlist, delete latest add
+                            # if "Default" == pctl.multi_playlist[target_pl][0]:
+                            #     if default_playlist.count(order.tracks[0]) > 1:
+                            #         for q in reversed(range(len(default_playlist))):
+                            #             if default_playlist[q] == order.tracks[0]:
+                            #                 del default_playlist[q]
+                            #                 break
 
 
                             pctl.jump(order.tracks[0], pl_position=default_playlist.index(order.tracks[0]))
