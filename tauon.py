@@ -796,7 +796,7 @@ def check_transfer_p():
             arg_queue = []
             i = 0
             for item in r_arg_queue:
-                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
+                if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item or 'file://' in item:
                     arg_queue.append(item)
                     i += 1
 
@@ -806,6 +806,7 @@ def check_transfer_p():
 
 
         if arg_queue:
+
             i = 0
             while i < len(arg_queue):
                 load_order = LoadClass()
@@ -821,12 +822,16 @@ def check_transfer_p():
                     switch_playlist(len(pctl.multi_playlist) - 1)
 
                 load_order.target = str(urllib.parse.unquote(arg_queue[i])).replace("file:///", "/").replace("\r", "")
+                if gui.auto_play_import is False:
+                    load_order.play = True
+                    gui.auto_play_import = True
 
                 load_orders.append(copy.deepcopy(load_order))
 
                 i += 1
             arg_queue = []
-            gui.auto_play_import = True
+
+            #gui.auto_play_import = True
 
 
 class GuiVar:   # Use to hold any variables for use in relation to UI
@@ -1475,6 +1480,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
         self.playlist_position = None
         self.replace_stem = False
         self.notify = False
+        self.play = False
 
 
 url_saves = []
@@ -14287,10 +14293,10 @@ def worker1():
                 # bm.get("File has an associated .cue file... Skipping")
                 return
             added.append(de)
-            if gui.auto_play_import:
-                pctl.jump(copy.deepcopy(de))
-
-                gui.auto_play_import = False
+            # if gui.auto_play_import:
+            #     pctl.jump(copy.deepcopy(de))
+            #
+            #     gui.auto_play_import = False
             # bm.get("dupe track")
             return
 
@@ -14634,7 +14640,6 @@ def worker1():
                         loaderCommand = LC_Done
                         loaderCommandReady = False
                         break
-
 
                     loaderCommand = LC_Done
                     order.tracks = added
@@ -24809,6 +24814,19 @@ while pctl.running:
                         if order.notify and gui.message_box:
                             show_message(_("Rescan folder complete."), 'done', order.target)
                         reload()
+
+
+                        if order.play and order.tracks:
+                            switch_playlist(target_pl)
+                            pctl.active_playlist_playing = pctl.active_playlist_viewing
+
+                            while default_playlist.count(order.tracks[0]) > 1:
+                                default_playlist.remove(order.tracks[0])
+
+                            pctl.jump(order.tracks[0], pl_position=default_playlist.index(order.tracks[0]))
+
+                            pctl.show_current(True, True, True, True, True)
+
                         del load_orders[i]
 
                         # Are there more orders for this playlist?
@@ -24824,6 +24842,7 @@ while pctl.running:
                             loading_in_progress = False
                             tauon.worker_save_state = True
                         break
+                gui.auto_play_import = False
 
             if gui.show_playlist:
 
