@@ -820,11 +820,9 @@ def check_transfer_p():
                     load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
                     switch_playlist(len(pctl.multi_playlist) - 1)
 
+                load_order.target = str(urllib.parse.unquote(arg_queue[i])).replace("file:///", "/").replace("\r", "")
 
-                target = str(urllib.parse.unquote(arg_queue[i])).replace("file:///", "/").replace("\r", "")
-                load_order.target = target
-
-                load_orders.append(copy.deepcopy(load_order))git a
+                load_orders.append(copy.deepcopy(load_order))
 
                 i += 1
             arg_queue = []
