@@ -5122,7 +5122,7 @@ def draw_window_tools():
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
                    [160, 160, 160, 160], True)
-        if mouse_up or ab_click:
+        if (mouse_up or ab_click) and coll_point(click_location, rect):
 
             if tray.active and prefs.min_to_tray:
                 tray.down()
@@ -6850,7 +6850,7 @@ class AlbumArt():
         source_image = self.get_source_raw(offset, sources, index)
 
         if source_image is None:
-            return
+            return None
 
         im = Image.open(source_image)
 
@@ -7342,7 +7342,7 @@ class StyleOverlay:
             if pctl.playing_ready():
                 index = pctl.playing_object().index
                 self.im = album_art_gen.get_blur_im(index)
-                if self.im is None:
+                if self.im is None or self.im is False:
                     self.min_on_timer.force_set(-8)
                     return
                 self.window_size = copy.copy(window_size)
