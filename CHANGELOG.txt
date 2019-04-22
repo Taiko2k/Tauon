@@ -1,13 +1,15 @@
 
 Changelog-------------------------------------
 
-v4.1.2
-
- - Added auto bg function
+v4.2.0
+    todo - fix bg crash TypeError("obj must have a read(len) -> data method"
+ - Added skin background using album art function
  - Tweaked behavior when launching with file
  - Fixed "Stop" function in Windows tray not working
  - Fixed click not working after minimize and raise
  - Fixed open with not working with some file managers
+ - Fixed repeat album mode not working with "playback follows cursor"
+ - Fixed repeat and shuffle settings not persisting on app restart
 
 v4.1.1
 

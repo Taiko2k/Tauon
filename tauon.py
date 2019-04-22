@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.1.1"
+t_version = "v4.2.0"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -677,7 +677,7 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_lfm = False
         self.scrobble_mark = False
         self.enable_mpris = True
-        
+
         self.server_port = 7590
         self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
@@ -772,7 +772,7 @@ class Prefs:    # Used to hold any kind of settings
         self.bio_large = False
         self.discord_allow = discord_allow
         self.discord_show = False
-        
+
         self.min_to_tray = False
 
         self.guitar_chords = False
@@ -781,6 +781,10 @@ class Prefs:    # Used to hold any kind of settings
 
         self.playback_follow_cursor = False
         self.short_buffer = False
+
+        self.art_bg = False
+        self.random_mode = False
+        self.repeat_mode = False
 
 
 prefs = Prefs()
@@ -992,7 +996,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.force_showcase_index = -1
 
         self.frame_callback_list = []
-        
+
         self.playlist_left = None
         self.image_downloading = False
         self.tc_cancel = False
@@ -1730,6 +1734,12 @@ try:
         prefs.guitar_chords = save[116]
     if save[117] is not None:
         prefs.playback_follow_cursor = save[117]
+    if save[118] is not None:
+        prefs.art_bg = save[118]
+    if save[119] is not None:
+        prefs.random_mode = save[119]
+    if save[120] is not None:
+        prefs.repeat_mode = save[120]
 
     state_file.close()
     del save
@@ -2362,8 +2372,8 @@ class PlayerCtl:
         self.playing_state = 0
         self.playing_length = 0
         self.jump_time = 0
-        self.random_mode = random_mode
-        self.repeat_mode = repeat_mode
+        self.random_mode = prefs.random_mode
+        self.repeat_mode = prefs.repeat_mode
         self.album_repeat_mode = prefs.album_repeat_mode
         self.album_shuffle_mode = prefs.album_shuffle_mode
         # self.album_shuffle_pool = []
@@ -2409,7 +2419,7 @@ class PlayerCtl:
         self.enable_eq = True  # not used
 
         self.playing_time_int = 0  # playing time but with no decimel
-        
+
         self.windows_progress = None
 
         self.finish_transition = False
@@ -2464,7 +2474,7 @@ class PlayerCtl:
         if gui.playlist_view_length < 1:
             return 0
 
-        
+
         global playlist_selected
         global shift_selection
 
@@ -2498,7 +2508,7 @@ class PlayerCtl:
             return self.master_library[self.track_queue[self.queue_step]]
         else:
             return None
-        
+
     def title_text(self):
 
         line = ""
@@ -2514,7 +2524,7 @@ class PlayerCtl:
                 line += title
         elif not gui.combo_mode:
             line = self.tag_meta
-        
+
         return line
 
 
@@ -2956,6 +2966,8 @@ class PlayerCtl:
 
     def test_progress(self):
 
+        global playlist_selected
+
         # Fuzzy reload lastfm for rescrobble
         if lfm_scrobbler.a_sc and self.playing_time < 1:
             lfm_scrobbler.a_sc = False
@@ -3026,6 +3038,10 @@ class PlayerCtl:
                             i -= 1
                         if i < 0:
                             i = 0
+
+                        playlist_selected = i
+                        shift_selection = [i]
+
                         self.jump(pp[i], i)
 
                     elif prefs.playback_follow_cursor and self.playing_ready() \
@@ -4519,7 +4535,7 @@ class STray:
         SDL_RestoreWindow(t_window)
 
         gui.lowered = False
-        
+
     def down(self):
         if self.active:
             SDL_HideWindow(t_window)
@@ -4930,7 +4946,7 @@ if system == "windows":
                 time.sleep(5)
 
         listen()
-        
+
 
 
 if system == 'windows':
@@ -5112,7 +5128,7 @@ def draw_window_tools():
                 tray.down()
             else:
                 SDL_MinimizeWindow(t_window)
-                
+
             mouse_down = False
             input.mouse_click = False
             drag_mode = False
@@ -5338,7 +5354,7 @@ if system == 'windows' and taskbar_progress:
     if os.path.isfile("TaskbarLib.tlb"):
         print("Taskbar progress enabled")
         pctl.windows_progress = WinTask()
-        
+
     else:
         pctl.taskbar_progress = False
         print("Could not find TaskbarLib.tlb")
@@ -5485,7 +5501,7 @@ else:
         ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
     else:
         ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=2)
-        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=2)   
+        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=2)
 
     standard_weight = 550
     ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
@@ -5837,7 +5853,7 @@ def draw_linked_text(location, text, colour, font):
     if gui.scale == 1.25:
         tweak = round(tweak * 1.25)
         tweak += 1
-       
+
     if system == "windows":
         tweak += 1
 
@@ -6857,7 +6873,7 @@ class AlbumArt():
 
         im = im.resize((new_x, new_y))
 
-        if ox_size < 401:
+        if ox_size < 500:
             im = im.filter(ImageFilter.GaussianBlur(7))
 
         g = io.BytesIO()
@@ -7301,7 +7317,7 @@ class StyleOverlay:
     def __init__(self):
 
         self.min_on_timer = Timer()
-        self.fade_on_timer = Timer()
+        self.fade_on_timer = Timer(0)
 
         self.stage = 0
 
@@ -7317,7 +7333,7 @@ class StyleOverlay:
         self.parent_path = None
 
         self.hole_punches = []
-        
+
 
 
     def worker(self):
@@ -7332,15 +7348,11 @@ class StyleOverlay:
                 self.window_size = copy.copy(window_size)
                 self.parent_path = pctl.playing_object().parent_folder_path
                 self.stage = 1
-
+                gui.update += 1
                 return
 
 
     def display(self):
-
-        # if self.stage == 0:
-        #     # Blank Start
-        #     pass
 
         if self.stage == 1:
 
@@ -7354,7 +7366,7 @@ class StyleOverlay:
 
             SDL_QueryTexture(c, None, None, tex_w, tex_h)
 
-            dst = SDL_Rect(round(0, 0))
+            dst = SDL_Rect(round(-40, 0))
             dst.w = int(tex_w.contents.value)
             dst.h = int(tex_h.contents.value)
 
@@ -7378,31 +7390,23 @@ class StyleOverlay:
         if self.stage == 2:
 
             if self.b_texture is None and self.window_size != window_size or self.parent_path != pctl.playing_object().parent_folder_path:
-                #SDL_DestroyTexture(self.a_texture)
-                #self.min_on_timer.force_set(0)
                 self.stage = 0
-
 
         t = self.fade_on_timer.get()
         SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+        SDL_RenderClear(renderer)
+
 
         if self.b_texture is not None:
 
-            self.b_rect.y = 0 - self.b_rect.h // 3
-            if t < 1:
+            self.b_rect.y = 0 - self.b_rect.h // 4
 
-                fade = 255 - round(t / 1 * 255)
-                gui.update += 1
-                #fade = 255
+            if t < 0.4:
 
-
-                SDL_SetTextureAlphaMod(self.b_texture, fade)
-                SDL_RenderClear(renderer)
                 SDL_RenderCopy(renderer, self.b_texture, None, self.b_rect)
 
             else:
-                fade = 0
                 SDL_DestroyTexture(self.b_texture)
                 self.b_texture = None
                 self.b_rect = None
@@ -7410,11 +7414,12 @@ class StyleOverlay:
 
         if self.a_texture is not None:
 
-            self.a_rect.y = 0 - self.a_rect.h // 3
+            self.a_rect.y = 0 - self.a_rect.h // 4
 
-            if t < 0.3:
-                fade = round(t / 0.3 * 255)
+            if t < 0.4:
+                fade = round(t / 0.4 * 255)
                 gui.update += 1
+
             else:
                 fade = 255
 
@@ -8359,7 +8364,7 @@ artist_info_menu.add(_("Make Large"), toggle_bio_size, toggle_bio_size_deco)
 
 
 def show_in_playlist():
-    
+
 
     pctl.playlist_view_position = playlist_selected
     shift_selection.clear()
@@ -11050,7 +11055,7 @@ def delete_track(track_ref):
 
     tr = pctl.g(track_ref)
     fullpath = tr.fullpath
-    
+
     if system == "windows":
         fullpath = fullpath.replace("/", "\\")
 
@@ -11548,12 +11553,12 @@ def editor(index):
     if system == "linux":
         ok = whicher(prefs.tag_editor_target)
     else:
-        
+
         if not os.path.isfile(prefs.tag_editor_target.strip('"')):
             print(prefs.tag_editor_target)
             show_message("Application not found", "info", prefs.tag_editor_target)
             return
-        
+
         ok = True
 
     # if flatpak_mode:
@@ -12820,6 +12825,15 @@ def toggle_auto_theme(mode=0):
     global themeChange
     themeChange = True
 
+def toggle_auto_bg(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg
+    prefs.art_bg ^= True
+    if prefs.art_bg:
+        gui.update = 60
+
+
 def toggle_notifications(mode=0):
 
     if mode == 1:
@@ -13071,7 +13085,7 @@ x_menu.add(_("Exit"), exit_func, hint="Alt+F4")
 
 def switch_playlist(number, cycle=False):
     global default_playlist
-    
+
     global playlist_selected
     global search_index
     global shift_selection
@@ -13300,7 +13314,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     target_out = output + 'output' + str(track) + "." + codec
 
     command = user_directory + "/encoder/ffmpeg "
-    
+
 
     if system != 'windows':
         command = "ffmpeg "
@@ -13341,10 +13355,10 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
     if system == 'windows':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        
+
     if system == "linux":
         command = shlex.split(command)
-        
+
     subprocess.call(command, stdout=subprocess.PIPE, shell=False,
                     startupinfo=startupinfo)
 
@@ -13542,7 +13556,7 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        
+
         input.key_return_press = False
 
     def click_meta(self, name):
@@ -13577,14 +13591,14 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-        
+
         input.key_return_press = False
 
     def click_album(self, index):
 
         pctl.jump(index)
         pctl.show_current()
-        
+
         input.key_return_press = False
 
     def render(self):
@@ -13947,8 +13961,8 @@ def worker2():
         time.sleep(0.07)
 
         gall_ren.worker_render()
-
-        style_overlay.worker()
+        if prefs.art_bg:
+            style_overlay.worker()
 
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
@@ -15210,7 +15224,7 @@ def toggle_min_tray(mode=0):
     if mode == 1:
         return prefs.min_to_tray
     prefs.min_to_tray ^= True
-    
+
 def scale2(mode=0):
     if mode == 1:
         if prefs.ui_scale == 2:
@@ -16137,7 +16151,11 @@ class Over:
 
         ddt.draw_text((x, y - 25 * gui.scale), _("Window"), colours.grey_blend_bg(100), 12)
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Auto theme from album art"))
+        self.toggle_square(x, y, toggle_auto_theme, _("Use album art for theme colours"))
+
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
 
         y += 25 * gui.scale
 
@@ -16159,8 +16177,8 @@ class Over:
         if system == "linux":
             self.toggle_square(x, y, scale2, "2x")
 
-        y += 25 * gui.scale
-              
+        #y += 25 * gui.scale
+
 
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
@@ -16201,7 +16219,7 @@ class Over:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
         if system == "windows":
-            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")  
+            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
 
         # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
         # y += 28 * gui.scale
@@ -17177,7 +17195,7 @@ class TopPanel:
                         if len(dl_mon.ready) > 0:
                             dl_mon.ready.clear()
                             switch_playlist(pln)
-                            
+
                             pctl.playlist_view_position = len(default_playlist)
                             gui.update += 1
                 else:
@@ -17664,7 +17682,7 @@ class BottomBarType1:
             #line = trunc_line(line, 213, mx)
             ddt.draw_text((x, self.seek_bar_position[1] + 24 * gui.scale), line, colours.bar_title_text,
                       fonts.panel_title, max_w=mx)
-            
+
         if (input.mouse_click or right_click) and coll((
                     self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
             if pctl.playing_state == 3:
@@ -17713,15 +17731,15 @@ class BottomBarType1:
             text_time = get_display_time(pctl.playing_time)
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-                      
+
             offset1 = 10 * gui.scale
-            
+
             if system == "windows":
                 offset1 += 2 * gui.scale
-            
+
             offset2 = offset1 + 7 * gui.scale
-            
-            
+
+
             ddt.draw_text((x + offset1, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(pctl.playing_length)
@@ -17756,12 +17774,12 @@ class BottomBarType1:
             text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
-                      
+
             offset1 = 10 * gui.scale
             if system == "windows":
-                offset1 += 2 * gui.scale           
+                offset1 += 2 * gui.scale
             offset2 = offset1 + 7 * gui.scale
-                      
+
             ddt.draw_text((x + offset1, y), "/", colours.time_sub,
                       fonts.bottom_panel_time)
             text_time = get_display_time(gui.dtm3_total)
@@ -18554,7 +18572,7 @@ class StandardPlaylist:
 
         global highlight_left
         global highlight_right
-        
+
         global playlist_hold
         global playlist_hold_position
         global playlist_selected
@@ -22047,7 +22065,7 @@ class DLMon:
 
                 min_age = (time.time() - stamp) / 60
                 ext = os.path.splitext(path)[1][1:].lower()
-                    
+
                 if system == "windows" and "TauonMusicBox" in path:
                     continue
 
@@ -22692,8 +22710,8 @@ def update_layout_do():
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             SDL_SetRenderTarget(renderer, gui.main_texture)
             SDL_RenderClear(renderer)
-            
-            
+
+
 
             SDL_DestroyTexture(gui.main_texture_overlay_temp)
             gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
@@ -22896,7 +22914,11 @@ def save_state():
             prefs.discord_show,
             prefs.min_to_tray,
             prefs.guitar_chords,
-            prefs.playback_follow_cursor]
+            prefs.playback_follow_cursor,
+            prefs.art_bg,
+            pctl.random_mode,
+            pctl.repeat_mode,
+            ]
 
     #print(prefs.last_device + "-----")
 
@@ -23522,6 +23544,9 @@ while pctl.running:
         power = 1000
 
     if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list: # or mouse_moved:
+        power = 1000
+
+    if prefs.art_bg and style_overlay.fade_on_timer.get() < 3:
         power = 1000
 
     if mouse_down:
@@ -25634,7 +25659,8 @@ while pctl.running:
             ddt.text_background_colour = colours.bottom_panel_colour
             bottom_bar1.render()
 
-            style_overlay.display()
+            if prefs.art_bg:
+                style_overlay.display()
             style_overlay.hole_punches.clear()
 
             # Overlay GUI ----------------------
@@ -25656,7 +25682,7 @@ while pctl.running:
                 gui.level_2_click = False
 
                 tc = pctl.master_library[r_menu_index]
-                
+
 
                 w = 540 * gui.scale
                 h = 240 * gui.scale
