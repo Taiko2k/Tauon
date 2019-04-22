@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v4.1.2
 
+ - Added auto bg function
  - Tweaked behavior when launching with file
  - Fixed "Stop" function in Windows tray not working
  - Fixed click not working after minimize and raise
