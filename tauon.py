@@ -5243,9 +5243,15 @@ SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 SDL_SetRenderTarget(renderer, None)
 
 gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 
 SDL_SetRenderTarget(renderer, gui.main_texture)
 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+
+SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+
 SDL_RenderClear(renderer)
 
 gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
@@ -6672,6 +6678,7 @@ class AlbumArt():
 
         # render the image
         SDL_RenderCopy(renderer, unit.texture, None, temp_dest)
+        style_overlay.hole_punches.append(temp_dest)
 
     def open_external(self, index):
 
@@ -6813,13 +6820,8 @@ class AlbumArt():
         return sss
 
 
-    def display_blur(self, index, size):
+    def get_blur_im(self, index):
 
-        if self.blur_texture is not None:
-
-            SDL_RenderCopy(renderer, self.blur_texture, None, self.blur_rect)
-
-            return
 
         filepath = pctl.master_library[index].fullpath
         sources = self.get_sources(index)
@@ -6836,6 +6838,9 @@ class AlbumArt():
 
         im = Image.open(source_image)
 
+        ox_size = im.size[0]
+        oy_size = im.size[1]
+
         format = im.format
         if im.format == "JPEG":
             format = "JPG"
@@ -6844,43 +6849,108 @@ class AlbumArt():
         if im.mode != "RGB":
             im = im.convert("RGB")
 
+        ratio = window_size[0] / ox_size
+        ratio += 0.2
 
-        rim = im.resize((1400, 1400))
-        bim = rim.filter(ImageFilter.GaussianBlur(30))
-        # im.save(save_path + '.jpg', 'JPEG')
-        im = bim
+        new_x = round(ox_size * ratio)
+        new_y = round(oy_size * ratio)
+
+        im = im.resize((new_x, new_y))
+
+        if ox_size < 401:
+            im = im.filter(ImageFilter.GaussianBlur(7))
 
         g = io.BytesIO()
         g.seek(0)
 
-        im.save(g, 'BMP')
+        a_channel = Image.new('L', im.size, 255)  # 'L' 8-bit pixels, black and white
+        im.putalpha(a_channel)
+
+        im.save(g, 'PNG')
 
         g.seek(0)
 
-        wop = rw_from_object(g)
-        s_image = IMG_Load_RW(wop, 0)
-        # print(IMG_GetError())
-
-        c = SDL_CreateTextureFromSurface(renderer, s_image)
-
-        tex_w = pointer(c_int(0))
-        tex_h = pointer(c_int(0))
-
-        SDL_QueryTexture(c, None, None, tex_w, tex_h)
-
-        dst = SDL_Rect(round(0, 0))
-        dst.w = int(tex_w.contents.value)
-        dst.h = int(tex_h.contents.value)
-
-        # Clean uo
-        SDL_FreeSurface(s_image)
-        g.close()
         source_image.close()
 
-        self.blur_texture = c
-        self.blur_rect = dst
+        return g
 
-        self.display_blur(index, size)
+
+    # def display_blur(self, index, size):
+    #
+    #     if self.blur_texture is not None:
+    #
+    #         self.blur_rect.y = 0 - self.blur_rect.h // 3
+    #         SDL_RenderCopy(renderer, self.blur_texture, None, self.blur_rect)
+    #
+    #         return
+    #
+    #     filepath = pctl.master_library[index].fullpath
+    #     sources = self.get_sources(index)
+    #
+    #     if len(sources) == 0:
+    #         return False
+    #
+    #     offset = self.get_offset(filepath, sources)
+    #
+    #     source_image = self.get_source_raw(offset, sources, index)
+    #
+    #     if source_image is None:
+    #         return
+    #
+    #     im = Image.open(source_image)
+    #
+    #     format = im.format
+    #     if im.format == "JPEG":
+    #         format = "JPG"
+    #
+    #     # print(im.size)
+    #     if im.mode != "RGB":
+    #         im = im.convert("RGB")
+    #
+    #
+    #     rim = im.resize((1400, 1400))
+    #     #bim = rim.filter(ImageFilter.GaussianBlur())
+    #     # im.save(save_path + '.jpg', 'JPEG')
+    #     #im = bim
+    #     im = rim
+    #
+    #     g = io.BytesIO()
+    #     g.seek(0)
+    #
+    #     a_channel = Image.new('L', im.size, 255)  # 'L' 8-bit pixels, black and white
+    #     im.putalpha(a_channel)
+    #
+    #     im.save(g, 'PNG')
+    #
+    #     g.seek(0)
+    #
+    #     wop = rw_from_object(g)
+    #     s_image = IMG_Load_RW(wop, 0)
+    #     # print(IMG_GetError())
+    #
+    #     c = SDL_CreateTextureFromSurface(renderer, s_image)
+    #
+    #     tex_w = pointer(c_int(0))
+    #     tex_h = pointer(c_int(0))
+    #
+    #     SDL_QueryTexture(c, None, None, tex_w, tex_h)
+    #
+    #     dst = SDL_Rect(round(0, 0))
+    #     dst.w = int(tex_w.contents.value)
+    #     dst.h = int(tex_h.contents.value)
+    #
+    #     # Clean uo
+    #     SDL_FreeSurface(s_image)
+    #     g.close()
+    #     source_image.close()
+    #
+    #     print(SDL_SetTextureAlphaMod(c, 10))
+    #     #print(SDL_SetTextureAlphaMod(c, 40))
+    #
+    #     self.blur_texture = c
+    #     self.blur_rect = dst
+    #
+    #     self.display_blur(index, size)
 
 
 
@@ -7204,6 +7274,8 @@ class AlbumArt():
         rect.x = round(int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0])
         rect.y = round(int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1])
 
+        style_overlay.hole_punches.append(rect)
+
         SDL_RenderCopy(renderer, unit.texture, None, rect)
 
     def clear_cache(self):
@@ -7217,6 +7289,154 @@ class AlbumArt():
 
 
 album_art_gen = AlbumArt()
+
+
+# 0 - blank
+# 1 - preparing first
+# 2 - render first
+# 3 - preparing 2nd
+
+class StyleOverlay:
+
+    def __init__(self):
+
+        self.min_on_timer = Timer()
+        self.fade_on_timer = Timer()
+
+        self.stage = 0
+
+        self.im = None
+
+        self.a_texture = None
+        self.a_rect = None
+
+        self.b_texture = None
+        self.b_rect = None
+
+        self.window_size = None
+        self.parent_path = None
+
+        self.hole_punches = []
+        
+
+
+    def worker(self):
+
+        if self.stage == 0:
+            if pctl.playing_ready():
+                index = pctl.playing_object().index
+                self.im = album_art_gen.get_blur_im(index)
+                if self.im is None:
+                    self.min_on_timer.force_set(-8)
+                    return
+                self.window_size = copy.copy(window_size)
+                self.parent_path = pctl.playing_object().parent_folder_path
+                self.stage = 1
+
+                return
+
+
+    def display(self):
+
+        # if self.stage == 0:
+        #     # Blank Start
+        #     pass
+
+        if self.stage == 1:
+
+            wop = rw_from_object(self.im)
+            s_image = IMG_Load_RW(wop, 0)
+
+            c = SDL_CreateTextureFromSurface(renderer, s_image)
+
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+
+            SDL_QueryTexture(c, None, None, tex_w, tex_h)
+
+            dst = SDL_Rect(round(0, 0))
+            dst.w = int(tex_w.contents.value)
+            dst.h = int(tex_h.contents.value)
+
+            # Clean uo
+            SDL_FreeSurface(s_image)
+            self.im.close()
+
+            #SDL_SetTextureAlphaMod(c, 10)
+            self.fade_on_timer.set()
+
+            if self.a_texture is not None:
+                self.b_texture = self.a_texture
+                self.b_rect = self.a_rect
+
+            self.a_texture = c
+            self.a_rect = dst
+            self.stage = 2
+
+            gui.update += 1
+
+        if self.stage == 2:
+
+            if self.b_texture is None and self.window_size != window_size or self.parent_path != pctl.playing_object().parent_folder_path:
+                #SDL_DestroyTexture(self.a_texture)
+                #self.min_on_timer.force_set(0)
+                self.stage = 0
+
+
+        t = self.fade_on_timer.get()
+        SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+
+        if self.b_texture is not None:
+
+            self.b_rect.y = 0 - self.b_rect.h // 3
+            if t < 1:
+
+                fade = 255 - round(t / 1 * 255)
+                gui.update += 1
+                #fade = 255
+
+
+                SDL_SetTextureAlphaMod(self.b_texture, fade)
+                SDL_RenderClear(renderer)
+                SDL_RenderCopy(renderer, self.b_texture, None, self.b_rect)
+
+            else:
+                fade = 0
+                SDL_DestroyTexture(self.b_texture)
+                self.b_texture = None
+                self.b_rect = None
+
+
+        if self.a_texture is not None:
+
+            self.a_rect.y = 0 - self.a_rect.h // 3
+
+            if t < 0.3:
+                fade = round(t / 0.3 * 255)
+                gui.update += 1
+            else:
+                fade = 255
+
+            SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+            SDL_SetTextureAlphaMod(self.a_texture, fade)
+            SDL_RenderCopy(renderer, self.a_texture, None, self.a_rect)
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+            for rect in self.hole_punches:
+                SDL_RenderFillRect(renderer, rect)
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, 10)
+            SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
+
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+
+
+style_overlay = StyleOverlay()
+
 
 
 def trunc_line(line, font, px, dots=True):  # This old function is slow and should be avoided
@@ -13728,6 +13948,8 @@ def worker2():
 
         gall_ren.worker_render()
 
+        style_overlay.worker()
+
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
 
@@ -19867,6 +20089,121 @@ class PlaylistBox:
 
 playlist_box = PlaylistBox()
 
+
+class ArtistList:
+
+    def __init__(self):
+
+        self.tab_h = round(60 * gui.scale)
+        self.thumb_size = round(55 * gui.scale)
+
+        self.current_artists = []
+
+        self.thumb_cache = {}
+
+    def load_img(self, artist):
+
+        filename = artist + '-lfm.png'
+        filepath = os.path.join(cache_directory, filename)
+
+        if os.path.isfile(filepath):
+            g = io.BytesIO()
+            g.seek(0)
+
+            im = Image.open(filepath)
+
+            im.thumbnail((self.thumb_size, self.thumb_size), Image.ANTIALIAS)
+
+            bigsize = (im.size[0] * 4, im.size[1] * 4)
+            mask = Image.new('L', bigsize, 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0) + bigsize, fill=255)
+            mask = mask.resize(im.size, Image.ANTIALIAS)
+            im.putalpha(mask)
+
+            im.save(g, 'PNG')
+            g.seek(0)
+
+            wop = rw_from_object(g)
+            s_image = IMG_Load_RW(wop, 0)
+            texture = SDL_CreateTextureFromSurface(renderer, s_image)
+            SDL_FreeSurface(s_image)
+            tex_w = pointer(c_int(0))
+            tex_h = pointer(c_int(0))
+            SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+            sdl_rect = SDL_Rect(0, 0)
+            sdl_rect.w = int(tex_w.contents.value)
+            sdl_rect.h = int(tex_h.contents.value)
+
+            self.thumb_cache[artist] = [texture, sdl_rect]
+
+        else:
+            self.thumb_cache[artist] = None
+
+
+    def prep(self):
+
+        self.current_artists.clear()
+
+        all = []
+        for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
+            artist = get_artist_strip_feat(pctl.g(item))
+            if artist:
+                all.append(artist)
+
+        a_set = set(all)
+
+        for item in a_set:
+
+            if all.count(item) > 4:
+                self.current_artists.append(item)
+
+        self.current_artists.sort()
+
+        print(self.current_artists)
+
+    def draw_artist(self, x, y, d):
+        pass
+
+
+    def draw_card(self, artist, x, y, w):
+
+        if artist not in self.thumb_cache:
+            self.load_img(artist)
+
+        thumb = self.thumb_cache[artist]
+
+        if thumb is not None:
+            thumb[1].x = round(x + 10 * gui.scale)
+            thumb[1].y = round(y)
+            SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
+
+        x_text = x + self.thumb_size + 25 * gui.scale
+        ddt.draw_text((x_text, y + self.tab_h // 2 - 15 * gui.scale), artist, [240, 240, 240, 255], 312, w - x_text - 10 * gui.scale)
+
+    def render(self, x, y ,w ,h):
+
+        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
+
+        yy = y + 12 * gui.scale
+
+        for artist in self.current_artists:
+
+            self.draw_card(artist, x, yy, w)
+
+            yy += self.tab_h
+
+            if yy > h:
+                break
+
+
+artist_list_box = ArtistList()
+
+
+
+
+
+
 def queue_pause_deco():
 
     if pctl.pause_queue:
@@ -22344,18 +22681,27 @@ def update_layout_do():
             SDL_RenderClear(renderer)
             SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
 
-            SDL_SetRenderTarget(renderer, gui.main_texture)
-
-            SDL_RenderClear(renderer)
+            # SDL_SetRenderTarget(renderer, gui.main_texture)
+            # SDL_RenderClear(renderer)
 
             SDL_DestroyTexture(gui.main_texture)
-            gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+            gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
                                                  gui.max_window_tex)
-
             SDL_SetTextureBlendMode(gui.main_texture, SDL_BLENDMODE_BLEND)
             SDL_SetRenderTarget(renderer, gui.main_texture)
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             SDL_SetRenderTarget(renderer, gui.main_texture)
+            SDL_RenderClear(renderer)
+            
+            
+
+            SDL_DestroyTexture(gui.main_texture_overlay_temp)
+            gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                                 gui.max_window_tex)
+            SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+            SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+            SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
             SDL_RenderClear(renderer)
 
         update_set()
@@ -23534,6 +23880,8 @@ while pctl.running:
             update_layout_do()
 
         if key_F7: #  F7 test
+
+            artist_list_box.prep()
 
             #gc.save_format_b(pctl.playing_object())
 
@@ -25103,18 +25451,23 @@ while pctl.running:
 
                 pl_box_h = full
 
-                if pctl.force_queue:
+                if True and False:
+                    artist_list_box.render(0, gui.panelY, gui.lspw, pl_box_h)
 
-                    if h_estimate < half:
-                        pl_box_h = h_estimate
-                    else:
-                        pl_box_h = half
+                else:
 
-                playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+                    if pctl.force_queue:
 
-                if pctl.force_queue:
+                        if h_estimate < half:
+                            pl_box_h = h_estimate
+                        else:
+                            pl_box_h = half
 
-                    queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+                    playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+
+                    if pctl.force_queue:
+
+                        queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
 
             if gui.artist_info_panel and not gui.combo_mode:
@@ -25281,14 +25634,16 @@ while pctl.running:
             ddt.text_background_colour = colours.bottom_panel_colour
             bottom_bar1.render()
 
+            style_overlay.display()
+            style_overlay.hole_punches.clear()
 
             # Overlay GUI ----------------------
 
             if gui.rename_playlist_box:
                 rename_box.render()
 
-            if filter_box.active:
-                filter_box.render()
+            # if filter_box.active:
+            #     filter_box.render()
 
             if track_box:
                 if input.key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
@@ -26372,7 +26727,6 @@ while pctl.running:
         if gui.update > 1:
             gui.update = 1
         gui.present = True
-
 
         SDL_SetRenderTarget(renderer, None)
         SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
