@@ -2,7 +2,7 @@
 Changelog-------------------------------------
 
 v4.2.0
-    todo - fix bg crash TypeError("obj must have a read(len) -> data method"
+
  - Added skin background using album art function
  - Tweaked behavior when launching with file
  - Fixed "Stop" function in Windows tray not working
