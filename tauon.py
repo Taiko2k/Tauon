@@ -8320,7 +8320,7 @@ artist_info_menu = Menu(135)
 queue_menu = Menu(140)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
-
+artist_list_menu = Menu(150)
 
 def menu_repeat_off():
     pctl.repeat_mode = False
@@ -16854,6 +16854,7 @@ class TopPanel:
 
         self.exit_button = asset_loader('ex.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
+        self.artist_list_icon = asset_loader('artist-list.png', True)
         self.dl_button = asset_loader('dl.png', True)
 
         self.adds = []
@@ -16893,7 +16894,10 @@ class TopPanel:
         if gui.lsp:
             colour = colours.corner_button_active
 
-        self.playlist_icon.render(13 * gui.scale, 8 * gui.scale, colour)
+        if prefs.artist_list:
+            self.artist_list_icon.render(13 * gui.scale, 8 * gui.scale, colour)
+        else:
+            self.playlist_icon.render(13 * gui.scale, 8 * gui.scale, colour)
 
         if playlist_box.drag:
             drag_mode = False
@@ -20184,6 +20188,24 @@ class PlaylistBox:
 playlist_box = PlaylistBox()
 
 
+def create_artist_pl(artist):
+
+    playlist = []
+
+    for item in default_playlist:
+        track = pctl.g(item)
+        if track.artist == artist or track.album_artist == artist:
+            playlist.append(item)
+
+
+    pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
+                                      playlist=playlist,
+                                      hide_title=0))
+
+    switch_playlist(len(pctl.multi_playlist) - 1)
+
+artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True)
+
 class ArtistList:
 
     def __init__(self):
@@ -20204,6 +20226,9 @@ class ArtistList:
 
         self.d_click_timer = Timer()
         self.d_click_ref = -1
+
+        self.click_ref = -1
+        self.click_highlight_timer = Timer()
 
     def load_img(self, artist):
 
@@ -20340,18 +20365,33 @@ class ArtistList:
 
     def draw_card(self, artist, x, y, w):
 
-        area = (x, y, w - 25 * gui.scale, self.tab_h - 2)
+        area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
+
+        t = self.click_highlight_timer.get()
+        if self.click_ref == artist and (t < 3 or artist_list_menu.active):
+
+            if t < 2.8 or artist_list_menu.active:
+                fade = 50
+            else:
+                fade = 50 - round((t - 2.8) / 0.2 * 50)
+
+            gui.update += 1
+            ddt.rect_r(area, [50, 50, 50, fade], True)
 
         if artist not in self.thumb_cache:
             self.load_img(artist)
 
-        ddt.rect_r((round(x + 10 * gui.scale), round(y), self.thumb_size, self.thumb_size), [30, 30, 30, 255], True)
-        ddt.rect_r((round(x + 10 * gui.scale), round(y), self.thumb_size, self.thumb_size), [60, 60, 60, 255])
+        thumb_x = round(x + 10 * gui.scale)
+        # if alt:
+        #     thumb_x = round(x + w - self.thumb_size - 2 * gui.scale)
+
+        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [30, 30, 30, 255], True)
+        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [60, 60, 60, 255])
 
         if artist in self.thumb_cache:
             thumb = self.thumb_cache[artist]
             if thumb is not None:
-                thumb[1].x = round(x + 10 * gui.scale)
+                thumb[1].x = thumb_x
                 thumb[1].y = round(y)
                 SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
 
@@ -20369,10 +20409,14 @@ class ArtistList:
 
 
         if coll(area) and input.mouse_click:
+            self.click_ref = artist
             for i, index in enumerate(default_playlist):
+
                 if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
                     pctl.playlist_view_position = i
                     gui.pl_update += 1
+
+                    self.click_highlight_timer.set()
 
                     if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
                         pctl.jump(default_playlist[i])
@@ -20384,8 +20428,12 @@ class ArtistList:
                         self.d_click_timer.set()
                         self.d_click_ref = i
 
-
                     break
+
+        if coll(area) and right_click:
+            self.click_ref = artist
+            self.click_highlight_timer.set()
+            artist_list_menu.activate(in_reference=artist)
 
     def render(self, x, y ,w ,h):
 
@@ -20399,6 +20447,7 @@ class ArtistList:
         area2 = (x + 1, y, w - 3, h)
 
         ddt.rect_r(area, colours.side_panel_background, True)
+        ddt.text_background_colour = colours.side_panel_background
 
         if coll(area) and mouse_wheel:
             self.scroll_position -= mouse_wheel
@@ -20421,7 +20470,12 @@ class ArtistList:
             self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range)
 
         if not self.current_artists:
-            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), "No artists in playlist", [90, 90, 90, 255], 212)
+            text = _("No artists in playlist")
+
+            if default_playlist:
+                text = _("Artist threashhold not met")
+
+            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, [90, 90, 90, 255], 212)
 
         yy = y + 12 * gui.scale
 
@@ -20430,10 +20484,13 @@ class ArtistList:
         prefetch_mode = False
         prefetch_distance = 40
 
+
+
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
             if not prefetch_mode:
                 self.draw_card(artist, x, yy, w)
+
 
                 yy += self.tab_h
 
