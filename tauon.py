@@ -14025,6 +14025,7 @@ def worker2():
         if prefs.art_bg:
             style_overlay.worker()
 
+        #if core_timer.get() > 2:
         artist_list_box.worker()
 
         if len(search_over.search_text.text) > 1:
@@ -20230,6 +20231,10 @@ class ArtistList:
         self.click_ref = -1
         self.click_highlight_timer = Timer()
 
+        self.saves = {}
+
+        self.load = False
+
     def load_img(self, artist):
 
         filename = artist + '-lfm.png'
@@ -20279,6 +20284,13 @@ class ArtistList:
 
 
     def worker(self):
+
+        if self.load:
+            print("start")
+            self.prep()
+            print("finish")
+            self.load = False
+            return
 
         if self.to_fetch:
             time.sleep(0.3)
@@ -20331,37 +20343,47 @@ class ArtistList:
 
     def prep(self):
 
-        self.current_artists.clear()
+        #self.current_artists.clear()
         self.scroll_position = 0
+
+        current_pl = pctl.multi_playlist[pctl.active_playlist_viewing]
 
         all = []
         artist_parents = {}
-        for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
+        counts = {}
+
+        for item in current_pl[2]:
+            time.sleep(0.00001)
             track = pctl.g(item)
             artist = get_artist_strip_feat(track)
             if artist:
-                all.append(artist)
+                if artist not in all:
+
+                    if artist not in counts:
+                        counts[artist] = 0
+                    counts[artist] += 1
+                    if counts[artist] > 4:
+                        all.append(artist)
 
                 if artist not in artist_parents:
                     artist_parents[artist] = []
                 if track.parent_folder_path not in artist_parents[artist]:
                     artist_parents[artist].append(track.parent_folder_path)
 
-        self.current_album_counts = artist_parents
-        a_set = set(all)
+        #self.current_album_counts = artist_parents
+        current_album_counts = artist_parents
 
-        for item in a_set:
+        all.sort()
 
-            if all.count(item) > 4:
-                self.current_artists.append(item)
+        save = [all, current_album_counts, 0]
 
-        self.current_artists.sort()
+        self.saves[current_pl[6]] = save
+        #self.current_artists.sort()
 
-        print(self.current_artists)
+        #print(self.current_artists)
 
     def draw_artist(self, x, y, d):
         pass
-
 
     def draw_card(self, artist, x, y, w):
 
@@ -20439,9 +20461,23 @@ class ArtistList:
 
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
-        if self.current_pl != viewing_pl_id:
-            self.prep()
+
+        if viewing_pl_id in self.saves:
+            self.current_artists = self.saves[viewing_pl_id][0]
+            self.current_album_counts = self.saves[viewing_pl_id][1]
+            self.scroll_position = self.saves[viewing_pl_id][2]
+
+        else:
+
+            # if self.current_pl != viewing_pl_id:
             self.current_pl = viewing_pl_id
+            if not self.load:
+
+                #self.prep()
+                self.current_artists = []
+                self.current_album_counts = []
+                self.load = True
+
 
         area = (x, y, w, h)
         area2 = (x + 1, y, w - 3, h)
@@ -20474,12 +20510,17 @@ class ArtistList:
 
             if default_playlist:
                 text = _("Artist threashhold not met")
+            if self.load:
+                text = _("Loading...")
 
             ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, [90, 90, 90, 255], 212)
 
         yy = y + 12 * gui.scale
 
         i = self.scroll_position
+
+        if viewing_pl_id in self.saves:
+            self.saves[viewing_pl_id][2] = self.scroll_position
 
         prefetch_mode = False
         prefetch_distance = 40
