@@ -7350,7 +7350,7 @@ class StyleOverlay:
 
                 self.im = album_art_gen.get_blur_im(index)
                 if self.im is None or self.im is False:
-                    self.min_on_timer.force_set(-8)
+                    self.min_on_timer.force_set(-4)
                     return
 
                 self.stage = 1
@@ -7461,6 +7461,7 @@ class StyleOverlay:
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
         SDL_SetRenderTarget(renderer, gui.main_texture)
+
 
 
 style_overlay = StyleOverlay()
@@ -23608,7 +23609,7 @@ while pctl.running:
     if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list: # or mouse_moved:
         power = 1000
 
-    if prefs.art_bg and style_overlay.fade_on_timer.get() < 3:
+    if prefs.art_bg and core_timer.get() < 3:
         power = 1000
 
     if mouse_down:
