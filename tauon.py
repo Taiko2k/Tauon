@@ -12866,6 +12866,17 @@ def toggle_auto_bg(mode=0):
     if prefs.art_bg:
         gui.update = 60
 
+def toggle_auto_bg_strong(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg_stronger == 2
+
+    if prefs.art_bg_stronger == 2:
+        prefs.art_bg_stronger = 1
+    else:
+        prefs.art_bg_stronger = 2
+    gui.update_layout()
+
 def toggle_auto_bg_strong1(mode=0):
 
     if mode == 1:
@@ -16223,11 +16234,13 @@ class Over:
 
         y += 25 * gui.scale
 
-        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
-        self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
-        self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+        #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
+        #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
+        #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
 
-        self.toggle_square(x + 159 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
+        #self.toggle_square(x + 159 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
+        self.toggle_square(x + 100 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
 
 
         y += 28 * gui.scale
@@ -20378,6 +20391,7 @@ class ArtistList:
         save = [all, current_album_counts, 0]
 
         self.saves[current_pl[6]] = save
+        gui.update += 1
         #self.current_artists.sort()
 
         #print(self.current_artists)
@@ -20416,6 +20430,13 @@ class ArtistList:
                 thumb[1].x = thumb_x
                 thumb[1].y = round(y)
                 SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
+                if prefs.art_bg:
+                    rect = SDL_Rect(thumb_x, round(y), self.thumb_size, self.thumb_size)
+                    if (rect.y + rect.h) > window_size[1] - gui.panelBY:
+                        diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
+                        rect.h -= diff
+                    style_overlay.hole_punches.append(rect)
+
 
 
         x_text = x + self.thumb_size + 22 * gui.scale
