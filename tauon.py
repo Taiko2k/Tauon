@@ -6185,10 +6185,6 @@ if rename_folder_previous:
 temp_dest = SDL_Rect(0, 0)
 
 
-
-
-
-
 class GallClass:
     def __init__(self, size=250, save_out=True):
         self.gall = {}
@@ -7339,7 +7335,7 @@ class StyleOverlay:
     def worker(self):
 
         if self.stage == 0:
-            if pctl.playing_ready():
+            if pctl.playing_ready() and self.min_on_timer.get() > 0:
                 index = pctl.playing_object().index
                 self.im = album_art_gen.get_blur_im(index)
                 if self.im is None or self.im is False:
@@ -7353,6 +7349,7 @@ class StyleOverlay:
 
 
     def display(self):
+
 
         if self.stage == 1:
 
@@ -7389,7 +7386,7 @@ class StyleOverlay:
 
         if self.stage == 2:
 
-            if self.b_texture is None and self.window_size != window_size or self.parent_path != pctl.playing_object().parent_folder_path:
+            if self.b_texture is None and self.parent_path != pctl.playing_object().parent_folder_path:
                 self.stage = 0
 
         t = self.fade_on_timer.get()
@@ -7397,6 +7394,14 @@ class StyleOverlay:
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
         SDL_RenderClear(renderer)
 
+        if self.a_texture is not None:
+            if self.window_size != window_size:
+                SDL_DestroyTexture(self.a_texture)
+                if self.b_texture is not None:
+                    SDL_DestroyTexture(self.b_texture)
+                self.min_on_timer.force_set(-1)
+                self.parent_path = "None"
+                self.stage = 0
 
         if self.b_texture is not None:
 
@@ -20771,6 +20776,7 @@ class PictureRender:
             self.sdl_rect.x = round(x)
             self.sdl_rect.y = round(y)
             SDL_RenderCopy(renderer, self.texture, None, self.sdl_rect)
+            style_overlay.append(self.sdl_rect)
 
 artist_picture_render = PictureRender()
 
@@ -21587,6 +21593,16 @@ class Showcase:
                     lyrics_ren.lyrics_position += 35 * gui.scale
                 if key_down_press:
                     lyrics_ren.lyrics_position -= 35 * gui.scale
+
+                tw, th = ddt.get_text_wh(lyrics_ren.text + "\n", 17,
+                                         w, True)
+
+                if lyrics_ren.lyrics_position < th * -1 + 100 * gui.scale:
+                    lyrics_ren.lyrics_position = th * -1 + 100 * gui.scale
+
+                if lyrics_ren.lyrics_position > 50 * gui.scale:
+                    lyrics_ren.lyrics_position = 50 * gui.scale
+
 
                 lyrics_ren.render(index,
                                   x,
@@ -24577,6 +24593,8 @@ while pctl.running:
                 render_pos = 0
                 album_on = 0
 
+                max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - 55
+
                 if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                     if prefs.gallery_row_scroll:
                         album_pos_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
@@ -24586,6 +24604,9 @@ while pctl.running:
                     if album_pos_px < -55:
                         album_pos_px = -55
                         gallery_pulse_top.pulse()
+
+                    if album_pos_px > max_scroll:
+                        album_pos_px = max_scroll
 
                 gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
 
@@ -24918,7 +24939,8 @@ while pctl.running:
                                       [255, 255, 255, 11])
 
                             # Draw album art
-                            if gall_ren.render(default_playlist[album_dex[album_on]], (x, y)) is False and gui.gallery_show_text is False:
+                            drawn_art = gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
+                            if drawn_art is False and gui.gallery_show_text is False:
 
 
 
@@ -24929,6 +24951,20 @@ while pctl.running:
                                            13,
                                            album_mode_art_size - 10 * gui.scale,
                                            )
+                            if prefs.art_bg and drawn_art:
+                                rect = SDL_Rect(x, y, album_mode_art_size, album_mode_art_size)
+                                if rect.y < gui.panelY:
+                                    diff = gui.panelY - rect.y
+                                    rect.y += diff
+                                    rect.h -= diff
+                                elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
+                                    diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
+                                    rect.h -= diff
+
+
+                                if rect.h > 0:
+                                    style_overlay.hole_punches.append(rect)
+
 
                             if gui.album_tab_mode or gallery_menu.active:
                                 if info[2] is False and info[0] != 1 and not colours.lm:
