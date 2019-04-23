@@ -783,7 +783,7 @@ class Prefs:    # Used to hold any kind of settings
         self.short_buffer = False
 
         self.art_bg = False
-        self.art_bg_stronger = False
+        self.art_bg_stronger = 1
         self.art_bg_opacity = 10
         self.art_bg_always_blur = False
 
@@ -6878,7 +6878,7 @@ class AlbumArt():
         im = im.resize((new_x, new_y))
 
         if ox_size < 500 or prefs.art_bg_always_blur:
-            im = im.filter(ImageFilter.GaussianBlur(7))
+            im = im.filter(ImageFilter.GaussianBlur(9))
 
         g = io.BytesIO()
         g.seek(0)
@@ -12857,11 +12857,25 @@ def toggle_auto_bg(mode=0):
     if prefs.art_bg:
         gui.update = 60
 
-def toggle_auto_bg_strong(mode=0):
+def toggle_auto_bg_strong1(mode=0):
 
     if mode == 1:
-        return prefs.art_bg_stronger
-    prefs.art_bg_stronger ^= True
+        return prefs.art_bg_stronger == 1
+    prefs.art_bg_stronger = 1
+    gui.update_layout()
+
+def toggle_auto_bg_strong2(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg_stronger == 2
+    prefs.art_bg_stronger = 2
+    gui.update_layout()
+
+def toggle_auto_bg_strong3(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg_stronger == 3
+    prefs.art_bg_stronger = 3
     gui.update_layout()
 
 def toggle_auto_bg_blur(mode=0):
@@ -16197,9 +16211,11 @@ class Over:
 
         y += 25 * gui.scale
 
-        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
+        self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
+        self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
 
-        self.toggle_square(x + 100 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
+        self.toggle_square(x + 159 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
 
 
         y += 28 * gui.scale
@@ -22544,7 +22560,9 @@ def update_layout_do():
     # w = window_size[0]
     # h = window_size[1]
 
-    if prefs.art_bg_stronger:
+    if prefs.art_bg_stronger == 3:
+        prefs.art_bg_opactiy = 29
+    elif prefs.art_bg_stronger == 2:
         prefs.art_bg_opactiy = 19
     else:
         prefs.art_bg_opactiy = 10
@@ -23997,7 +24015,9 @@ while pctl.running:
             if mouse4:
                 toggle_album_mode()
             if mouse5:
-                if not album_mode:
+                if gui.combo_mode:
+                    switch_showcase()
+                elif not album_mode:
                     toggle_side_panel()
                 else:
                     toggle_album_mode()
