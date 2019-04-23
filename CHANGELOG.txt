@@ -10,6 +10,7 @@ v4.2.0
  - Fixed open with not working with some file managers
  - Fixed repeat album mode not working with "playback follows cursor"
  - Fixed repeat and shuffle settings not persisting on app restart
+ - Fixed gallery and lyrics not having scrolling bounds
 
 v4.1.1
 
