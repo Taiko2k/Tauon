@@ -783,6 +783,10 @@ class Prefs:    # Used to hold any kind of settings
         self.short_buffer = False
 
         self.art_bg = False
+        self.art_bg_stronger = False
+        self.art_bg_opacity = 10
+        self.art_bg_always_blur = False
+
         self.random_mode = False
         self.repeat_mode = False
 
@@ -1740,6 +1744,10 @@ try:
         prefs.random_mode = save[119]
     if save[120] is not None:
         prefs.repeat_mode = save[120]
+    if save[121] is not None:
+        prefs.art_bg_stronger = save[121]
+    if save[122] is not None:
+        prefs.art_bg_always_blur = save[122]
 
     state_file.close()
     del save
@@ -6869,7 +6877,7 @@ class AlbumArt():
 
         im = im.resize((new_x, new_y))
 
-        if ox_size < 500:
+        if ox_size < 500 or prefs.art_bg_always_blur:
             im = im.filter(ImageFilter.GaussianBlur(7))
 
         g = io.BytesIO()
@@ -7337,19 +7345,34 @@ class StyleOverlay:
         if self.stage == 0:
             if pctl.playing_ready() and self.min_on_timer.get() > 0:
                 index = pctl.playing_object().index
+                self.window_size = copy.copy(window_size)
+                self.parent_path = pctl.playing_object().parent_folder_path
+
                 self.im = album_art_gen.get_blur_im(index)
                 if self.im is None or self.im is False:
                     self.min_on_timer.force_set(-8)
                     return
-                self.window_size = copy.copy(window_size)
-                self.parent_path = pctl.playing_object().parent_folder_path
+
                 self.stage = 1
                 gui.update += 1
                 return
 
+    def flush(self):
+
+        if self.a_texture is not None:
+            SDL_DestroyTexture(self.a_texture)
+            self.a_texture = None
+        if self.b_texture is not None:
+            SDL_DestroyTexture(self.b_texture)
+            self.b_texture = None
+        self.min_on_timer.force_set(-1)
+        self.parent_path = "None"
+        self.stage = 0
 
     def display(self):
 
+        if self.min_on_timer.get() < 0:
+            return
 
         if self.stage == 1:
 
@@ -7396,12 +7419,7 @@ class StyleOverlay:
 
         if self.a_texture is not None:
             if self.window_size != window_size:
-                SDL_DestroyTexture(self.a_texture)
-                if self.b_texture is not None:
-                    SDL_DestroyTexture(self.b_texture)
-                self.min_on_timer.force_set(-1)
-                self.parent_path = "None"
-                self.stage = 0
+                self.flush()
 
         if self.b_texture is not None:
 
@@ -7439,7 +7457,7 @@ class StyleOverlay:
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
-            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, 10)
+            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opactiy)
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
         SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -12838,6 +12856,20 @@ def toggle_auto_bg(mode=0):
     if prefs.art_bg:
         gui.update = 60
 
+def toggle_auto_bg_strong(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg_stronger
+    prefs.art_bg_stronger ^= True
+    gui.update_layout()
+
+def toggle_auto_bg_blur(mode=0):
+
+    if mode == 1:
+        return prefs.art_bg_always_blur
+    prefs.art_bg_always_blur ^= True
+    style_overlay.flush()
+
 
 def toggle_notifications(mode=0):
 
@@ -16164,6 +16196,13 @@ class Over:
 
         y += 25 * gui.scale
 
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+
+        self.toggle_square(x + 100 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
+
+
+        y += 28 * gui.scale
+
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
 
@@ -16178,12 +16217,12 @@ class Over:
         y += 25 * gui.scale
         if system == "linux" or True:
             self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
-        y += 25 * gui.scale
-        if system == "linux":
-            self.toggle_square(x, y, scale2, "2x")
-
         #y += 25 * gui.scale
+        if system == "linux":
+            self.toggle_square(x + 70 * gui.scale, y, scale2, "2x")
 
+
+        y -= 5 * gui.scale
 
         self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
@@ -22504,6 +22543,11 @@ def update_layout_do():
     # w = window_size[0]
     # h = window_size[1]
 
+    if prefs.art_bg_stronger:
+        prefs.art_bg_opactiy = 19
+    else:
+        prefs.art_bg_opactiy = 10
+
     #
     # if w / h == 16 / 9:
     #     print("YEP")
@@ -22934,6 +22978,8 @@ def save_state():
             prefs.art_bg,
             pctl.random_mode,
             pctl.repeat_mode,
+            prefs.art_bg_stronger,
+            prefs.art_bg_always_blur,
             ]
 
     #print(prefs.last_device + "-----")
