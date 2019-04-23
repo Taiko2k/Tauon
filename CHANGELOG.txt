@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v4.2.0
 
+ - Added artist list to left side panel
  - Added skin background using album art function
  - Tweaked behavior when launching with file
  - Fixed "Stop" function in Windows tray not working
@@ -11,6 +12,7 @@ v4.2.0
  - Fixed repeat album mode not working with "playback follows cursor"
  - Fixed repeat and shuffle settings not persisting on app restart
  - Fixed gallery and lyrics not having scrolling bounds
+ - Fixed bug with side panel toggling in lyrics showcase view
 
 v4.1.1
 
