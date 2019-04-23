@@ -790,6 +790,10 @@ class Prefs:    # Used to hold any kind of settings
         self.random_mode = False
         self.repeat_mode = False
 
+        self.failed_artists = []
+
+        self.artist_list = False
+
 
 prefs = Prefs()
 
@@ -1748,6 +1752,10 @@ try:
         prefs.art_bg_stronger = save[121]
     if save[122] is not None:
         prefs.art_bg_always_blur = save[122]
+    if save[123] is not None:
+        prefs.failed_artists = save[123]
+    if save[124] is not None:
+        prefs.artist_list = save[124]
 
     state_file.close()
     del save
@@ -1755,11 +1763,11 @@ try:
 except:
 
     print('Error loading save file')
-    if os.path.exists(cache_directory):
-        print("clearing old cache")
-        shutil.rmtree(cache_directory)
-        time.sleep(0.01)
-        os.makedirs(cache_directory)
+    # if os.path.exists(cache_directory):
+    #     print("clearing old cache")
+    #     # shutil.rmtree(cache_directory)
+    #     time.sleep(0.01)
+    #     #os.makedirs(cache_directory)
 
 # # Check is bass is present
 # if prefs.backend == 1:
@@ -6464,6 +6472,7 @@ def img_slide_update_gall(value):
 def clear_img_cache(delete_disk=True):
     global album_art_gen
     album_art_gen.clear_cache()
+    prefs.failed_artists.clear()
     gall_ren.key_list = []
     while len(gall_ren.queue) > 0:
         time.sleep(0.01)
@@ -14016,6 +14025,8 @@ def worker2():
         if prefs.art_bg:
             style_overlay.worker()
 
+        artist_list_box.worker()
+
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
 
@@ -16873,6 +16884,9 @@ class TopPanel:
                 gui.lsp = True
                 update_layout = True
                 gui.update += 1
+
+            if right_click:
+                prefs.artist_list ^= True
 
         colour = colours.corner_button #[230, 230, 230, 255]
 
@@ -19736,6 +19750,7 @@ mini_lyrics_scroll = ScrollBox()
 playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
 device_scroll = ScrollBox()
+artist_list_scroll = ScrollBox()
 
 
 class RenameBox:
@@ -20177,8 +20192,18 @@ class ArtistList:
         self.thumb_size = round(55 * gui.scale)
 
         self.current_artists = []
+        self.current_album_counts = {}
 
         self.thumb_cache = {}
+
+        self.to_fetch = ""
+
+        self.scroll_position = 0
+
+        self.current_pl = ""
+
+        self.d_click_timer = Timer()
+        self.d_click_ref = -1
 
     def load_img(self, artist):
 
@@ -20186,50 +20211,118 @@ class ArtistList:
         filepath = os.path.join(cache_directory, filename)
 
         if os.path.isfile(filepath):
-            g = io.BytesIO()
-            g.seek(0)
 
-            im = Image.open(filepath)
+            try:
+                g = io.BytesIO()
+                g.seek(0)
 
-            im.thumbnail((self.thumb_size, self.thumb_size), Image.ANTIALIAS)
+                im = Image.open(filepath)
 
-            bigsize = (im.size[0] * 4, im.size[1] * 4)
-            mask = Image.new('L', bigsize, 0)
-            draw = ImageDraw.Draw(mask)
-            draw.ellipse((0, 0) + bigsize, fill=255)
-            mask = mask.resize(im.size, Image.ANTIALIAS)
-            im.putalpha(mask)
+                im.thumbnail((self.thumb_size, self.thumb_size), Image.ANTIALIAS)
 
-            im.save(g, 'PNG')
-            g.seek(0)
+                # bigsize = (im.size[0] * 4, im.size[1] * 4)
+                # mask = Image.new('L', bigsize, 0)
+                # draw = ImageDraw.Draw(mask)
+                # draw.ellipse((0, 0) + bigsize, fill=255)
+                # mask = mask.resize(im.size, Image.ANTIALIAS)
+                # im.putalpha(mask)
 
-            wop = rw_from_object(g)
-            s_image = IMG_Load_RW(wop, 0)
-            texture = SDL_CreateTextureFromSurface(renderer, s_image)
-            SDL_FreeSurface(s_image)
-            tex_w = pointer(c_int(0))
-            tex_h = pointer(c_int(0))
-            SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-            sdl_rect = SDL_Rect(0, 0)
-            sdl_rect.w = int(tex_w.contents.value)
-            sdl_rect.h = int(tex_h.contents.value)
+                im.save(g, 'PNG')
+                g.seek(0)
 
-            self.thumb_cache[artist] = [texture, sdl_rect]
+                wop = rw_from_object(g)
+                s_image = IMG_Load_RW(wop, 0)
+                texture = SDL_CreateTextureFromSurface(renderer, s_image)
+                SDL_FreeSurface(s_image)
+                tex_w = pointer(c_int(0))
+                tex_h = pointer(c_int(0))
+                SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+                sdl_rect = SDL_Rect(0, 0)
+                sdl_rect.w = int(tex_w.contents.value)
+                sdl_rect.h = int(tex_h.contents.value)
 
-        else:
+                self.thumb_cache[artist] = [texture, sdl_rect]
+            except:
+                print("Artist thumbnail processing error")
+                self.thumb_cache[artist] = None
+
+        elif artist in prefs.failed_artists:
             self.thumb_cache[artist] = None
+        else:
+            if not self.to_fetch:
+                self.to_fetch = artist
+
+
+    def worker(self):
+
+        if self.to_fetch:
+            time.sleep(0.3)
+            artist = self.to_fetch
+            filename = artist + '-lfm.png'
+            filename2 = artist + '-lfm.txt'
+            filepath = os.path.join(cache_directory, filename)
+            filepath2 = os.path.join(cache_directory, filename2)
+            try:
+                data = lastfm.artist_info(artist)
+                if data[0] is not False:
+                    cover_link = data[2]
+                    text = data[1]
+
+                    if not os.path.exists(filepath2):
+                        f = open(filepath2, 'w', encoding='utf-8')
+                        f.write(text)
+                        f.close()
+
+                    if cover_link and 'http' in cover_link:
+
+                        print("Fetching artist image... " + artist)
+                        response = urllib.request.urlopen(cover_link)
+                        info = response.info()
+                        # print("got response")
+
+                        t = io.BytesIO()
+                        t.seek(0)
+                        t.write(response.read())
+                        l = 0
+                        t.seek(0, 2)
+                        l = t.tell()
+                        t.seek(0)
+
+                        if info.get_content_maintype() == 'image' and l > 1000:
+                            f = open(filepath, 'wb')
+                            f.write(t.read())
+                            f.close()
+            except:
+                print("Fetch artist image failed")
+
+            if os.path.exists(filepath):
+                gui.update += 1
+            else:
+                if artist not in prefs.failed_artists:
+                    print("Failed featching: " + artist)
+                    prefs.failed_artists.append(artist)
+            self.to_fetch = ""
 
 
     def prep(self):
 
         self.current_artists.clear()
+        self.scroll_position = 0
 
         all = []
+        artist_parents = {}
         for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
-            artist = get_artist_strip_feat(pctl.g(item))
+            track = pctl.g(item)
+            artist = get_artist_strip_feat(track)
             if artist:
                 all.append(artist)
 
+                if artist not in artist_parents:
+                    artist_parents[artist] = []
+                if track.parent_folder_path not in artist_parents[artist]:
+                    artist_parents[artist].append(track.parent_folder_path)
+
+        self.current_album_counts = artist_parents
         a_set = set(all)
 
         for item in a_set:
@@ -20247,33 +20340,114 @@ class ArtistList:
 
     def draw_card(self, artist, x, y, w):
 
+        area = (x, y, w - 25 * gui.scale, self.tab_h - 2)
+
         if artist not in self.thumb_cache:
             self.load_img(artist)
 
-        thumb = self.thumb_cache[artist]
+        ddt.rect_r((round(x + 10 * gui.scale), round(y), self.thumb_size, self.thumb_size), [30, 30, 30, 255], True)
+        ddt.rect_r((round(x + 10 * gui.scale), round(y), self.thumb_size, self.thumb_size), [60, 60, 60, 255])
 
-        if thumb is not None:
-            thumb[1].x = round(x + 10 * gui.scale)
-            thumb[1].y = round(y)
-            SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
+        if artist in self.thumb_cache:
+            thumb = self.thumb_cache[artist]
+            if thumb is not None:
+                thumb[1].x = round(x + 10 * gui.scale)
+                thumb[1].y = round(y)
+                SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
 
-        x_text = x + self.thumb_size + 25 * gui.scale
-        ddt.draw_text((x_text, y + self.tab_h // 2 - 15 * gui.scale), artist, [240, 240, 240, 255], 312, w - x_text - 10 * gui.scale)
+
+        x_text = x + self.thumb_size + 22 * gui.scale
+        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, [235, 235, 235, 255], 212, w - x_text - 35 * gui.scale)
+
+        album_count = len(self.current_album_counts[artist])
+        text = str(album_count) + " album"
+        if album_count > 1:
+            text += "s"
+
+        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, [150, 150, 150, 255], 312, w - x_text - 15 * gui.scale)
+
+
+
+        if coll(area) and input.mouse_click:
+            for i, index in enumerate(default_playlist):
+                if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
+                    pctl.playlist_view_position = i
+                    gui.pl_update += 1
+
+                    if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
+                        pctl.jump(default_playlist[i])
+                        global playlist_selected
+                        playlist_selected = i
+                        shift_selection.clear()
+                        self.d_click_timer.force_set(10)
+                    else:
+                        self.d_click_timer.set()
+                        self.d_click_ref = i
+
+
+                    break
 
     def render(self, x, y ,w ,h):
 
-        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
+        viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+        if self.current_pl != viewing_pl_id:
+            self.prep()
+            self.current_pl = viewing_pl_id
+
+        area = (x, y, w, h)
+        area2 = (x + 1, y, w - 3, h)
+
+        ddt.rect_r(area, colours.side_panel_background, True)
+
+        if coll(area) and mouse_wheel:
+            self.scroll_position -= mouse_wheel
+        if self.scroll_position < 0:
+            self.scroll_position = 0
+
+        range = (h // self.tab_h) - 1
+
+        if range > 4 and self.scroll_position > len(self.current_artists) - range:
+            self.scroll_position = len(self.current_artists) - range
+
+        if range > len(self.current_artists):
+            self.scroll_position = 0
+
+        fields.add(area2)
+        scroll_x = x + w - 18 * gui.scale
+        if colours.lm:
+            scroll_x = x + w - 22 * gui.scale
+        if coll(area2) or artist_list_scroll.held:
+            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range)
+
+        if not self.current_artists:
+            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), "No artists in playlist", [90, 90, 90, 255], 212)
 
         yy = y + 12 * gui.scale
 
-        for artist in self.current_artists:
+        i = self.scroll_position
 
-            self.draw_card(artist, x, yy, w)
+        prefetch_mode = False
+        prefetch_distance = 40
 
-            yy += self.tab_h
+        for i, artist in enumerate(self.current_artists[i:], start=i):
 
-            if yy > h:
-                break
+            if not prefetch_mode:
+                self.draw_card(artist, x, yy, w)
+
+                yy += self.tab_h
+
+                if yy > h:
+                    prefetch_mode = True
+                    continue
+
+            if prefetch_mode:
+                prefetch_distance -= 1
+                if prefetch_distance < 1:
+                    break
+                if artist not in self.thumb_cache:
+                    self.load_img(artist)
+                    break
 
 
 artist_list_box = ArtistList()
@@ -20832,7 +21006,7 @@ class PictureRender:
             self.sdl_rect.x = round(x)
             self.sdl_rect.y = round(y)
             SDL_RenderCopy(renderer, self.texture, None, self.sdl_rect)
-            style_overlay.append(self.sdl_rect)
+            style_overlay.hole_punches.append(self.sdl_rect)
 
 artist_picture_render = PictureRender()
 
@@ -21068,7 +21242,7 @@ class ArtistInfoBox:
                 f.write(self.text)
                 f.close()
 
-            if 'http' in cover_link:
+            if cover_link and 'http' in cover_link:
                 # Fetch cover_link
                 try:
                     # print("Fetching artist image...")
@@ -21103,8 +21277,6 @@ class ArtistInfoBox:
         self.artist_on = artist
         self.min_rq_timer.set()
         self.lock = False
-
-
 
 
 artist_info_box = ArtistInfoBox()
@@ -22999,7 +23171,8 @@ def save_state():
             pctl.repeat_mode,
             prefs.art_bg_stronger,
             prefs.art_bg_always_blur,
-            ]
+            prefs.failed_artists,
+            prefs.artist_list]
 
     #print(prefs.last_device + "-----")
 
@@ -25579,7 +25752,7 @@ while pctl.running:
 
                 pl_box_h = full
 
-                if True and False:
+                if prefs.artist_list:
                     artist_list_box.render(0, gui.panelY, gui.lspw, pl_box_h)
 
                 else:
@@ -25609,10 +25782,14 @@ while pctl.running:
             if gui.artist_info_panel:
                 top += gui.artist_panel_height
 
+            width = 16 * gui.scale
+
+
             x = 0
             if gui.lsp:  # Move left so it sits over panel divide
                 x = gui.lspw - 7 * gui.scale
-                if colours.lm:  # Alligns with frame
+                if gui.lsp: #colours.lm or prefs.artist_list:  # Alligns with frame
+                    width = 11 * gui.scale
                     x = gui.lspw - 1 * gui.scale
 
             gui.scroll_hide_box = (
@@ -25726,14 +25903,14 @@ while pctl.running:
                         bg = [200, 200, 200, 100]
                         fg = [100, 100, 100, 200]
 
-                    ddt.rect_a((x, top), (17 * gui.scale, window_size[1] - top - gui.panelBY), bg,
+                    ddt.rect_a((x, top), (width + 1 * gui.scale, window_size[1] - top - gui.panelBY), bg,
                                True)
-                    ddt.rect_a((x + 1, sbp), (16 * gui.scale, sbl),
+                    ddt.rect_a((x + 1, sbp), (width, sbl),
                                alpha_mod(fg, scroll_opacity), True)
 
                     if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
                         0] != 0) or scroll_hold:
-                        ddt.rect_a((x + 1 * gui.scale, sbp), (16 * gui.scale, sbl), [255, 255, 255, 16], True)
+                        ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 16], True)
 
             # NEW TOP BAR
             # C-TBR
