@@ -21720,7 +21720,7 @@ class GuitarChords:
 
 
 
-        if mouse_wheel:
+        if mouse_wheel and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
             self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
             self.auto_scroll = False
         y = y - self.scroll_position
