@@ -7339,6 +7339,7 @@ class StyleOverlay:
 
         self.min_on_timer = Timer()
         self.fade_on_timer = Timer(0)
+        self.fade_off_timer = Timer()
 
         self.stage = 0
 
@@ -7355,6 +7356,7 @@ class StyleOverlay:
 
         self.hole_punches = []
 
+        self.go_to_sleep = False
 
 
     def worker(self):
@@ -7367,8 +7369,15 @@ class StyleOverlay:
 
                 self.im = album_art_gen.get_blur_im(index)
                 if self.im is None or self.im is False:
-                    self.min_on_timer.force_set(-4)
-                    return
+                    if self.a_texture:
+                        self.stage = 2
+                        self.fade_off_timer.set()
+                        self.go_to_sleep = True
+                        return
+                    else:
+                        self.flush()
+                        self.min_on_timer.force_set(-8)
+                        return
 
                 self.stage = 1
                 gui.update += 1
@@ -7426,7 +7435,7 @@ class StyleOverlay:
 
         if self.stage == 2:
 
-            if self.b_texture is None and self.parent_path != pctl.playing_object().parent_folder_path:
+            if not self.go_to_sleep and self.b_texture is None and self.parent_path != pctl.playing_object().parent_folder_path:
                 self.stage = 0
 
         t = self.fade_on_timer.get()
@@ -7462,6 +7471,19 @@ class StyleOverlay:
 
             else:
                 fade = 255
+
+            if self.go_to_sleep:
+                t = self.fade_off_timer.get()
+                gui.update += 1
+
+                if t < 1:
+                    fade = 255
+                elif t < 1.4:
+                    fade = 255 - round((t - 1) / 0.4 * 255)
+                else:
+                    self.go_to_sleep = False
+                    self.flush()
+                    return
 
             SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
             SDL_SetTextureAlphaMod(self.a_texture, fade)
@@ -12866,6 +12888,9 @@ def toggle_auto_theme(mode=0):
     global themeChange
     themeChange = True
 
+    if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+        toggle_auto_bg()
+
 def toggle_auto_bg(mode=0):
 
     if mode == 1:
@@ -12873,6 +12898,9 @@ def toggle_auto_bg(mode=0):
     prefs.art_bg ^= True
     if prefs.art_bg:
         gui.update = 60
+
+    if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+        toggle_auto_theme()
 
 def toggle_auto_bg_strong(mode=0):
 
