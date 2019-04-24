@@ -13,6 +13,7 @@ v4.2.0
  - Fixed repeat and shuffle settings not persisting on app restart
  - Fixed gallery and lyrics not having scrolling bounds
  - Fixed bug with side panel toggling in lyrics showcase view
+ - Fixed scroll with chord lyrics applying to whole window
 
 v4.1.1
 
