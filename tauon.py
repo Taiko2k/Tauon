@@ -2656,7 +2656,7 @@ class PlayerCtl:
             else:
                 goto_album(playlist_selected)
 
-        if prefs.artist_list and not quiet:
+        if prefs.artist_list and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
 
         return 0
@@ -13718,6 +13718,12 @@ class SearchOverlay:
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
+                if gui.lsp and prefs.artist_list and 2 < mouse_position[0] < gui.lspw \
+                        and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+
+                    artist_list_box.locate_artist_letter(input_text)
+                    return
+
                 self.active = True
                 self.old_mouse = copy.deepcopy(mouse_position)
 
@@ -20438,6 +20444,22 @@ class ArtistList:
         #self.current_artists.sort()
 
         #print(self.current_artists)
+
+    def locate_artist_letter(self, text):
+
+        if not text:
+            return
+
+        letter = text[0].lower()
+        letter_upper = letter.upper()
+        for i, item in enumerate(self.current_artists):
+            if item and (item[0] == letter or item[0] == letter_upper):
+                self.scroll_position = i
+                break
+
+        viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if viewing_pl_id in self.saves:
+            self.saves[viewing_pl_id][2] = self.scroll_position
 
     def locate_artist(self, track):
 
