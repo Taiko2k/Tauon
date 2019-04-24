@@ -2656,6 +2656,9 @@ class PlayerCtl:
             else:
                 goto_album(playlist_selected)
 
+        if prefs.artist_list and not quiet:
+            artist_list_box.locate_artist(pctl.playing_object())
+
         return 0
 
     def set_volume(self, notify=True):
@@ -20299,9 +20302,7 @@ class ArtistList:
     def worker(self):
 
         if self.load:
-            print("start")
             self.prep()
-            print("finish")
             self.load = False
             return
 
@@ -20365,30 +20366,39 @@ class ArtistList:
         artist_parents = {}
         counts = {}
 
-        for item in current_pl[2]:
-            time.sleep(0.00001)
-            track = pctl.g(item)
-            artist = get_artist_strip_feat(track)
-            if artist:
-                if artist not in all:
+        try:
 
-                    if artist not in counts:
-                        counts[artist] = 0
-                    counts[artist] += 1
-                    if counts[artist] > 4:
-                        all.append(artist)
+            for item in current_pl[2]:
+                time.sleep(0.00001)
+                track = pctl.g(item)
+                artist = get_artist_strip_feat(track)
+                if artist:
+                    if artist not in all:
 
-                if artist not in artist_parents:
-                    artist_parents[artist] = []
-                if track.parent_folder_path not in artist_parents[artist]:
-                    artist_parents[artist].append(track.parent_folder_path)
+                        if artist not in counts:
+                            counts[artist] = 0
+                        counts[artist] += 1
+                        if counts[artist] > 4:
+                            all.append(artist)
 
-        #self.current_album_counts = artist_parents
-        current_album_counts = artist_parents
+                    if artist not in artist_parents:
+                        artist_parents[artist] = []
+                    if track.parent_folder_path not in artist_parents[artist]:
+                        artist_parents[artist].append(track.parent_folder_path)
 
-        all.sort()
+            #self.current_album_counts = artist_parents
+            current_album_counts = artist_parents
 
-        save = [all, current_album_counts, 0]
+            all.sort()
+
+        except:
+            print("Album scan failure")
+            time.sleep(4)
+            return
+
+        # Artist-list, album-counts, scroll-position, playlist-length
+        save = [all, current_album_counts, 0, len(current_pl[2])]
+
 
         self.saves[current_pl[6]] = save
         gui.update += 1
@@ -20396,8 +20406,16 @@ class ArtistList:
 
         #print(self.current_artists)
 
-    def draw_artist(self, x, y, d):
-        pass
+    def locate_artist(self, track):
+
+        for i, item in enumerate(self.current_artists):
+            if item == track.artist or item == track.album_artist:
+                self.scroll_position = i
+                break
+
+        viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if viewing_pl_id in self.saves:
+            self.saves[viewing_pl_id][2] = self.scroll_position
 
     def draw_card(self, artist, x, y, w):
 
@@ -20449,34 +20467,30 @@ class ArtistList:
 
         ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, [150, 150, 150, 255], 312, w - x_text - 15 * gui.scale)
 
+        if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
+            if input.mouse_click:
+                self.click_ref = artist
+                for i, index in enumerate(default_playlist):
+                    if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
+                        pctl.playlist_view_position = i
+                        gui.pl_update += 1
 
+                        self.click_highlight_timer.set()
+                        if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
+                            pctl.jump(default_playlist[i])
+                            global playlist_selected
+                            playlist_selected = i
+                            shift_selection.clear()
+                            self.d_click_timer.force_set(10)
+                        else:
+                            self.d_click_timer.set()
+                            self.d_click_ref = i
+                        break
 
-        if coll(area) and input.mouse_click:
-            self.click_ref = artist
-            for i, index in enumerate(default_playlist):
-
-                if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
-                    pctl.playlist_view_position = i
-                    gui.pl_update += 1
-
-                    self.click_highlight_timer.set()
-
-                    if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
-                        pctl.jump(default_playlist[i])
-                        global playlist_selected
-                        playlist_selected = i
-                        shift_selection.clear()
-                        self.d_click_timer.force_set(10)
-                    else:
-                        self.d_click_timer.set()
-                        self.d_click_ref = i
-
-                    break
-
-        if coll(area) and right_click:
-            self.click_ref = artist
-            self.click_highlight_timer.set()
-            artist_list_menu.activate(in_reference=artist)
+            if right_click:
+                self.click_ref = artist
+                self.click_highlight_timer.set()
+                artist_list_menu.activate(in_reference=artist)
 
     def render(self, x, y ,w ,h):
 
@@ -20487,6 +20501,10 @@ class ArtistList:
             self.current_artists = self.saves[viewing_pl_id][0]
             self.current_album_counts = self.saves[viewing_pl_id][1]
             self.scroll_position = self.saves[viewing_pl_id][2]
+
+            if self.saves[viewing_pl_id][3] != len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                del self.saves[viewing_pl_id]
+                return
 
         else:
 
@@ -20512,7 +20530,6 @@ class ArtistList:
             self.scroll_position = 0
 
         range = (h // self.tab_h) - 1
-
         if range > 4 and self.scroll_position > len(self.current_artists) - range:
             self.scroll_position = len(self.current_artists) - range
 
