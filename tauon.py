@@ -6884,8 +6884,14 @@ class AlbumArt():
         ratio = window_size[0] / ox_size
         ratio += 0.2
 
+        if (oy_size * ratio) - ((oy_size * ratio) // 4)  < window_size[1]:
+            print("Adjust bg vertical")
+            ratio = window_size[1] / (oy_size - (oy_size // 4))
+            ratio += 0.2
+
         new_x = round(ox_size * ratio)
         new_y = round(oy_size * ratio)
+
 
         im = im.resize((new_x, new_y))
 
@@ -6899,7 +6905,6 @@ class AlbumArt():
         im.putalpha(a_channel)
 
         im.save(g, 'PNG')
-
         g.seek(0)
 
         source_image.close()
@@ -20421,16 +20426,31 @@ class ArtistList:
 
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
 
+        light_mode = False
+        line1_colour = [235, 235, 235, 255]
+        line2_colour = [150, 150, 150, 255]
+        fade_max = 50
+        # print(test_lumi(colours.side_panel_background))
+        if test_lumi(colours.side_panel_background) < 0.55:
+            light_mode = True
+            fade_max = 20
+            line1_colour = [35, 35, 35, 255]
+            line2_colour = [100, 100, 100, 255]
+
+
+        fade = 0
         t = self.click_highlight_timer.get()
         if self.click_ref == artist and (t < 3 or artist_list_menu.active):
 
             if t < 2.8 or artist_list_menu.active:
-                fade = 50
+                fade = fade_max
             else:
-                fade = 50 - round((t - 2.8) / 0.2 * 50)
+                fade = fade_max - round((t - 2.8) / 0.2 * fade_max)
 
             gui.update += 1
             ddt.rect_r(area, [50, 50, 50, fade], True)
+
+        bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
 
         if artist not in self.thumb_cache:
             self.load_img(artist)
@@ -20456,16 +20476,15 @@ class ArtistList:
                     style_overlay.hole_punches.append(rect)
 
 
-
         x_text = x + self.thumb_size + 22 * gui.scale
-        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, [235, 235, 235, 255], 212, w - x_text - 35 * gui.scale)
+        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, 212, w - x_text - 35 * gui.scale, bg=bg)
 
         album_count = len(self.current_album_counts[artist])
         text = str(album_count) + " album"
         if album_count > 1:
             text += "s"
 
-        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, [150, 150, 150, 255], 312, w - x_text - 15 * gui.scale)
+        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, 312, w - x_text - 15 * gui.scale, bg=bg)
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if input.mouse_click:
@@ -21078,12 +21097,8 @@ class MetaBox:
                                 switch_showcase(tr.index)
 
 
-
-
-
-
-
 meta_box = MetaBox()
+
 
 class PictureRender:
 
