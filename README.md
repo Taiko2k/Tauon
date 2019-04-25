@@ -3,34 +3,33 @@
 
 ## Tauon Music Box
 
-A desktop music player for playback of local audio files.
+A desktop music player for playback of local audio files. Playlist oriented. 
 Designed to be simple and streamlined while putting the user in control of their music collection. Uses BASS Audio Library (proprietary) for playback. 
 
-<img src="https://user-images.githubusercontent.com/17271572/51880647-f1eb0780-23dc-11e9-8bb0-c3e888f8e52b.jpg" hspace="0px" vspace="160px">
+<img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
+
+> **Note**: Screenshot is from an in-development version
 
 ## Features :sparkles:
 
   - Import tracks and create playlists by simple **drag and drop**.
+  - Large album art and gallery displays!
   - Support for **gapless playback**.
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP.
   - Last.fm **scrobbling** with track love support :heart:. See which of your tracks your friends loved too! :purple_heart:
-  - **Lyrics** display with support for fetching lyrics from LyricWiki.
+  - Fast and responsive UI.
+  - **Lyrics** display with support for displaying **guitar chord** lyrics and synced `.lrc` files.
   - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on Rate Your Music and tracks on Genius.
-  - Desktop integration with MPRIS2
+  - Desktop integration with MPRIS2.
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
 #### File type compatibility :milky_way:
 
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
-- [x] XSPF, CUE (automatic detection), LRC
-
-
-### Dark theme:
-
-![turbo1](https://user-images.githubusercontent.com/17271572/48976940-492ade00-f0f5-11e8-9e93-b8dcb9cdbd8c.jpg)
+- [x] XSPF, CUE (automatic detection)
 
 
 ## Download and Install :dizzy:
@@ -41,12 +40,9 @@ For __Other Linux distributions__, a **Flatpak** package is available.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-  > **Upgrading note:** If you are upgrading from the old standalone flatpak package that was previously provided, make sure to uninstall it first, use `sudo flatpak uninstall com.github.taiko2k.tauonmb`. Default permissions are now more restricted, if some functions no longer work, see [Flatpak Permissions](https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions).
-
-
 ___
 
-For further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
+For manual and further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
