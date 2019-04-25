@@ -382,7 +382,7 @@ gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
 d_click_timer.force_set(10)
-gall_render_last_timer = Timer(10)
+#gall_render_last_timer = Timer(10)
 lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
@@ -6247,7 +6247,7 @@ class GallClass:
 
             img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0]) + "-" + str(source[2])
 
-            gall_render_last_timer.set()
+            # gall_render_last_timer.set()
 
             try:
                 if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
@@ -14085,8 +14085,6 @@ def worker2():
 
         #if core_timer.get() > 2:
 
-        artist_list_box.worker()
-
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
 
@@ -14760,6 +14758,8 @@ def worker1():
 
     while True:
         time.sleep(0.15)
+
+        artist_list_box.worker()
 
         if prefs.auto_extract and prefs.monitor_downloads:
             dl_mon.scan()
@@ -20341,8 +20341,8 @@ class ArtistList:
             self.thumb_cache[artist] = None
         else:
             if not self.to_fetch:
-                if gall_render_last_timer.get() < 4:
-                    return
+                # if gall_render_last_timer.get() < 4:
+                #     return
                 self.to_fetch = artist
 
 
@@ -20481,6 +20481,7 @@ class ArtistList:
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         if viewing_pl_id in self.saves:
             self.saves[viewing_pl_id][2] = self.scroll_position
+        #gui.update += 1
 
     def draw_card(self, artist, x, y, w):
 
@@ -20612,10 +20613,13 @@ class ArtistList:
             self.scroll_position = 0
 
         range = (h // self.tab_h) - 1
+
+        whole_rage = math.floor(h // self.tab_h)
+
         if range > 4 and self.scroll_position > len(self.current_artists) - range:
             self.scroll_position = len(self.current_artists) - range
 
-        if range > len(self.current_artists):
+        if len(self.current_artists) <= whole_rage :
             self.scroll_position = 0
 
         fields.add(area2)
@@ -20631,7 +20635,7 @@ class ArtistList:
             if default_playlist:
                 text = _("Artist threashhold not met")
             if self.load:
-                text = _("Loading...")
+                text = _("Busy...")
 
             ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, [90, 90, 90, 255], 212)
 
