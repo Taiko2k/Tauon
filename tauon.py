@@ -795,6 +795,7 @@ class Prefs:    # Used to hold any kind of settings
         self.failed_artists = []
 
         self.artist_list = False
+        self.auto_sort = False
 
 
 prefs = Prefs()
@@ -1758,6 +1759,8 @@ try:
         prefs.failed_artists = save[123]
     if save[124] is not None:
         prefs.artist_list = save[124]
+    if save[125] is not None:
+        prefs.auto_sort = save[125]
 
     state_file.close()
     del save
@@ -15442,6 +15445,14 @@ def toggle_playback_follow(mode=0):
     prefs.playback_follow_cursor ^= True
 
 
+def toggle_auto_import_sort(mode=0):
+    if mode == 1:
+        return prefs.auto_sort
+    prefs.auto_sort ^= True
+    if prefs.auto_sort:
+        show_message("This will automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist when importing.")
+
+
 def toggle_append_total_time(mode=0):
     if mode == 1:
         return prefs.append_total_time
@@ -15685,7 +15696,9 @@ config_items.append([_('Add total duration to folder title'), toggle_append_tota
 
 config_items.append(None)
 
-config_items.append([_('Playback follows cursor'), toggle_playback_follow])
+config_items.append([_('Playback follows selected'), toggle_playback_follow])
+
+config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
 
 # config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
@@ -23390,7 +23403,8 @@ def save_state():
             prefs.art_bg_stronger,
             prefs.art_bg_always_blur,
             prefs.failed_artists,
-            prefs.artist_list]
+            prefs.artist_list,
+            prefs.auto_sort]
 
     #print(prefs.last_device + "-----")
 
@@ -25717,6 +25731,14 @@ while pctl.running:
                         else:
                             if "New Playlist" in pctl.multi_playlist[target_pl][0]:
                                 auto_name_pl(target_pl)
+
+                            if prefs.auto_sort:
+                                if pctl.multi_playlist[target_pl][9]:
+                                    show_message("Auto sort skipped because playlist is locked.")
+                                else:
+                                    print("Auto sorting")
+                                    standard_sort(target_pl)
+                                    year_sort(target_pl)
 
                         if not load_orders:
                             loading_in_progress = False

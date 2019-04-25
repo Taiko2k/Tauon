@@ -5,6 +5,7 @@ v4.2.0
 
  - Added artist list to left side panel
  - Added skin background using album art function
+ - Added setting "Auto sort on import"
  - Tweaked behavior when launching with file
  - Fixed "Stop" function in Windows tray not working
  - Fixed click not working after minimize and raise
