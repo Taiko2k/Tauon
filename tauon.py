@@ -382,8 +382,10 @@ gall_pl_switch_timer = Timer()
 gall_pl_switch_timer.force_set(999)
 d_click_timer = Timer()
 d_click_timer.force_set(10)
+gall_render_last_timer = Timer(10)
 lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
+get_lfm_wait_timer = Timer(10)
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -6244,6 +6246,8 @@ class GallClass:
                 continue
 
             img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0]) + "-" + str(source[2])
+
+            gall_render_last_timer.set()
 
             try:
                 if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
@@ -14075,10 +14079,12 @@ def worker2():
         time.sleep(0.07)
 
         gall_ren.worker_render()
+
         if prefs.art_bg:
             style_overlay.worker()
 
         #if core_timer.get() > 2:
+
         artist_list_box.worker()
 
         if len(search_over.search_text.text) > 1:
@@ -20335,6 +20341,8 @@ class ArtistList:
             self.thumb_cache[artist] = None
         else:
             if not self.to_fetch:
+                if gall_render_last_timer.get() < 4:
+                    return
                 self.to_fetch = artist
 
 
@@ -20346,7 +20354,8 @@ class ArtistList:
             return
 
         if self.to_fetch:
-            time.sleep(0.3)
+            if get_lfm_wait_timer.get() < 0.3:
+                return
             artist = self.to_fetch
             filename = artist + '-lfm.png'
             filename2 = artist + '-lfm.txt'
@@ -20354,6 +20363,7 @@ class ArtistList:
             filepath2 = os.path.join(cache_directory, filename2)
             try:
                 data = lastfm.artist_info(artist)
+                get_lfm_wait_timer.set()
                 if data[0] is not False:
                     cover_link = data[2]
                     text = data[1]
@@ -20543,6 +20553,9 @@ class ArtistList:
                     if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
                         pctl.playlist_view_position = i
                         gui.pl_update += 1
+
+                        if album_mode:
+                            goto_album(i)
 
                         self.click_highlight_timer.set()
                         if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
