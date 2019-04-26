@@ -15,6 +15,7 @@ v4.2.0
  - Fixed gallery and lyrics not having scrolling bounds
  - Fixed bug with side panel toggling in lyrics showcase view
  - Fixed scroll with chord lyrics applying to whole window
+ - Fixed scroll bar jitter when mouse held down on bar center
 
 v4.1.1
 
