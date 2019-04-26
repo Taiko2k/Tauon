@@ -797,6 +797,9 @@ class Prefs:    # Used to hold any kind of settings
         self.artist_list = False
         self.auto_sort = False
 
+        self.transcode_inplace = False
+
+
 
 prefs = Prefs()
 
@@ -1098,6 +1101,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.transcoding_batch_total = 0
         self.transcoding_bach_done = 0
+
 
 
 gui = GuiVar()
@@ -10493,26 +10497,43 @@ def convert_folder(index):
         #     return
 
     folder = []
-    r_folder = pctl.master_library[index].parent_folder_path
-    for item in default_playlist:
-        if r_folder == pctl.master_library[item].parent_folder_path:
+    if key_shift_down or key_shiftr_down:
+        track_object = pctl.g(index)
+        if track_object.is_network:
+            show_message("Transcoding tracks from network locations is not currenty supported")
+            return
+        folder = [index]
 
-            track_object = pctl.g(item)
-            if track_object.is_network:
-                show_message("Transcoding tracks from network locations is not currenty supported")
-                return
+        if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
+                                                                                 'mp4', 'ogg',
+                                                                                 'aac'):
+            show_message("NO! Bad user!",
+                         'warning', "Im not going to let you transcode a lossy codec to a lossless one!")
 
-            if item not in folder:
-                folder.append(item)
-            print(prefs.transcode_codec)
-            print(track_object.file_ext)
-            if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
-                                                                                                  'mp4', 'ogg',
-                                                                                                  'aac'):
-                show_message("NO! Bad user!",
-                             'warning', "Im not going to let you transcode a lossy codec to a lossless one!")
+            return
+        folder = [index]
 
-                return
+    else:
+        r_folder = pctl.master_library[index].parent_folder_path
+        for item in default_playlist:
+            if r_folder == pctl.master_library[item].parent_folder_path:
+
+                track_object = pctl.g(item)
+                if track_object.is_network:
+                    show_message("Transcoding tracks from network locations is not currenty supported")
+                    return
+
+                if item not in folder:
+                    folder.append(item)
+                print(prefs.transcode_codec)
+                print(track_object.file_ext)
+                if prefs.transcode_codec == 'flac' and track_object.file_ext.lower() in ('mp3', 'opus',
+                                                                                                      'mp4', 'ogg',
+                                                                                                      'aac'):
+                    show_message("NO! Bad user!",
+                                 'warning', "Im not going to let you transcode a lossy codec to a lossless one!")
+
+                    return
 
     print(folder)
     transcode_list.append(folder)
@@ -11935,11 +11956,18 @@ def toggle_transfer(mode=0):
 
 transcode_icon.colour = [239, 74, 157, 255]
 
+def transcode_deco():
+
+    if key_shift_down or key_shiftr_down:
+        return [colours.menu_text, colours.menu_background, _("Transcode Single")]
+    else:
+        return [colours.menu_text, colours.menu_background, _('Transcode Folder')]
+
 
 folder_menu.add(_('Reload Metadata'), reload_metadata, pass_ref=True)
 folder_menu.add(_('Vacuum Playtimes'), vacuum_playtimes, pass_ref=True, show_test=test_shift)
-folder_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
-gallery_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+folder_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+gallery_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 folder_menu.br()
 
 # Copy album title text to clipboard
@@ -12109,7 +12137,7 @@ if prefs.enable_transcode or prefs.backend == 1:
     track_menu.br()
 
 
-track_menu.add(_('Transcode Folder'), convert_folder, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
+track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
 if prefs.backend == 1:
     track_menu.add(_('Broadcast This'), broadcast_select_track, broadcast_feature_deco, pass_ref=True)
@@ -12825,6 +12853,8 @@ def toggle_random():
 extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
 
 
+
+
 def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
         if colours.lm:
@@ -13482,10 +13512,50 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
         codec = 'opus.ogg'
 
     print(target_out)
+
     if manual_name is None:
-        os.rename(target_out, output + out_line + "." + codec)
+        final_out = output + out_line + "." + codec
+        final_name = out_line + "." + codec
+        os.rename(target_out, final_out)
     else:
-        os.rename(target_out, output + manual_name + "." + codec)
+        final_out = output + manual_name + "." + codec
+        final_name = manual_name + "." + codec
+        os.rename(target_out, final_out)
+
+    if prefs.transcode_inplace:
+        print("MOVE AND REPLACE!")
+        if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
+            new_name = os.path.join(pctl.master_library[track].parent_folder_path, final_name)
+            print(new_name)
+            shutil.move(final_out, new_name)
+
+            old_key = star_store.key(track)
+            old_star = star_store.full_get(track)
+
+            try:
+                send2trash(pctl.master_library[track].fullpath)
+            except:
+                os.remove(pctl.master_library[track].fullpath)
+
+            pctl.master_library[track].fullpath = new_name
+            pctl.master_library[track].file_ext = codec.upper()
+
+            # Update and merge playtimes
+            new_key = star_store.key(track)
+            if old_star and (new_key != old_key):
+
+                new_star = star_store.full_get(track)
+                if new_star is None:
+                    new_star = [0, ""]
+
+                new_star[0] += old_star[0]
+                new_star[1] = "".join(set(new_star[1] + old_star[1]))
+
+                if old_key in star_store.db:
+                    del star_store.db[old_key]
+
+                star_store.db[new_key] = new_star
+
 
 
     gui.transcoding_bach_done += 1
@@ -14914,6 +14984,7 @@ def worker1():
                 if os.path.isfile(full_target_out_p):
                     os.remove(full_target_out_p)
 
+
                 if prefs.transcode_codec in ('opus', 'ogg', 'flac', 'mp3'):
                     global core_use
                     cores = os.cpu_count()
@@ -14946,7 +15017,13 @@ def worker1():
                     print("Codec error")
 
                 output_dir = prefs.encoder_output + folder_name + "/"
-                album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
+                if prefs.transcode_inplace:
+                    os.remove(output_dir.rstrip("/"))
+                    reload_metadata(folder_items[0])
+                else:
+                    album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
+
+                print(transcode_list[0])
 
                 del transcode_list[0]
                 transcode_state = ""
@@ -15611,6 +15688,19 @@ def switch_opus_ogg(mode=0):
             return False
     prefs.transcode_opus_as ^= True
 
+def toggle_transcode_inplace(mode=0):
+    if mode == 1:
+        if prefs.transcode_inplace:
+            return True
+        else:
+            return False
+    prefs.transcode_inplace ^= True
+    if prefs.transcode_inplace:
+        transcode_icon.colour = [250, 20, 20, 255]
+        show_message("DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
+                     'warning', "For safety, this setting will reset to 'off' on restart. Embedded thumbnails are not kept so you may want to extract them first.")
+    else:
+        transcode_icon.colour = [239, 74, 157, 255]
 
 def switch_flac(mode=0):
     if mode == 1:
@@ -16243,6 +16333,9 @@ class Over:
                     system != 'windows' and shutil.which('ffmpeg') is None):
                 ddt.draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
+        x = self.box_x + self.item_x_offset
+        y = self.box_y - 5 * gui.scale + 230 * gui.scale
+        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Transcode files inplace"))
 
     def devance_theme(self):
         global theme
@@ -20674,7 +20767,7 @@ class ArtistList:
             text = _("No artists in playlist")
 
             if default_playlist:
-                text = _("Artist threashhold not met")
+                text = _("Artist threshold not met")
             if self.load:
                 text = _("Loading...")
                 if loading_in_progress or transcode_list:
