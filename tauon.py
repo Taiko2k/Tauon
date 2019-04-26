@@ -19719,7 +19719,7 @@ class ScrollBox():
         self.source_click_y = 0
         self.source_bar_y = 0
 
-    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False):
 
         if max_value < 2:
             return 0
@@ -19749,10 +19749,29 @@ class ScrollBox():
         mi = y + half
         mo = y + h - half
         distance = mo - mi
-
         position = int(round(distance * ratio))
 
         if coll((x, y, w, h)):
+
+            if r_click:
+
+                p = mouse_position[1] - half - y
+                p = max(0, p)
+
+                range = h - bar_height
+                p = min(p, range)
+
+                per = p / range
+
+                value = int(round(max_value * per))
+
+                ratio = value / max_value
+
+                mi = y + half
+                mo = y + h - half
+                distance = mo - mi
+                position = int(round(distance * ratio))
+
 
             if coll((x, mi + position - half, w, bar_height)):
                 if click:
@@ -19763,31 +19782,40 @@ class ScrollBox():
                     self.source_click_y = p_y.contents.value
                     self.source_bar_y = position
 
+
+            if pctl.playlist_view_position < 0:
+                pctl.playlist_view_position = 0
+
+
             elif mouse_down and not self.held:
 
-                    direction = 0
-                    if mouse_position[1] < mi + position:
-                        position -= 1 if h < 400 else 2
-                    else:
-                        position += 1 if h < 400 else 2
-                        direction = 1
+                    if mouse_position[1] - y < (position + half - 2) or mouse_position[1] - y > position + half + 2:
 
-                    if position < 0:
-                        position = 0
-                    if position > distance:
-                        position = distance
+                        direction = 0
+                        if mouse_position[1] < mi + position:
+                            position -= 1 if h < 400 else 2
+                        else:
+                            position += 1 if h < 400 else 2
+                            direction = 1
 
-                    old_value = value
+                        if position < 0:
+                            position = 0
+                        if position > distance:
+                            position = distance
 
-                    ratio = position / distance
-                    value = int(round(max_value * ratio))
+                        old_value = value
 
-                    # This forced the scroll bar to move in a direction so
-                    # we dont get stuck due to rounding to same value
-                    if direction == 1 and old_value >= value:
-                        value += 1
-                    if direction == 0 and old_value <= value:
-                        value -= 1
+                        ratio = position / distance
+                        value = int(round(max_value * ratio))
+
+                        # This forced the scroll bar to move in a direction so
+                        # we dont get stuck due to rounding to same value
+                        if direction == 1 and old_value >= value:
+                            value += 1
+                        if direction == 0 and old_value <= value:
+                            value -= 1
+                        value = max(0, value)
+                        value = min(max_value, value)
 
         if self.held and mouse_up or not mouse_down:
             self.held = False
@@ -20640,7 +20668,7 @@ class ArtistList:
         if colours.lm:
             scroll_x = x + w - 22 * gui.scale
         if coll(area2) or artist_list_scroll.held:
-            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range)
+            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click)
 
         if not self.current_artists:
             text = _("No artists in playlist")
@@ -20648,7 +20676,9 @@ class ArtistList:
             if default_playlist:
                 text = _("Artist threashhold not met")
             if self.load:
-                text = _("Busy...")
+                text = _("Loading...")
+                if loading_in_progress or transcode_list:
+                    text = _("Busy...")
 
             ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, [90, 90, 90, 255], 212)
 
