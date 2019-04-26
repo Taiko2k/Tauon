@@ -20667,7 +20667,7 @@ class ArtistList:
                     rect = SDL_Rect(thumb_x, round(y), self.thumb_size, self.thumb_size)
                     if (rect.y + rect.h) > window_size[1] - gui.panelBY:
                         diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
-                        rect.h -= diff
+                        rect.h -= round(diff)
                     style_overlay.hole_punches.append(rect)
 
 
