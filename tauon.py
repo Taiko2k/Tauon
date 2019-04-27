@@ -19811,10 +19811,12 @@ class ScrollBox():
     def __init__(self):
 
         self.held = False
+        self.slide_hold = False
         self.source_click_y = 0
         self.source_bar_y = 0
+        self.direction_lock = -1
 
-    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=None):
 
         if max_value < 2:
             return 0
@@ -19822,7 +19824,11 @@ class ScrollBox():
         if click is None:
             click = input.mouse_click
 
-        bar_height = 90
+        bar_height = round(90 * gui.scale)
+
+        if h > 400 * gui.scale and max_value < 20:
+            bar_height = round(180 * gui.scale)
+
 
         bg = [255, 255, 255, 7]
         fg = [255, 255, 255, 30]
@@ -19867,8 +19873,9 @@ class ScrollBox():
                 distance = mo - mi
                 position = int(round(distance * ratio))
 
-
+            in_bar = False
             if coll((x, mi + position - half, w, bar_height)):
+                in_bar = True
                 if click:
                     self.held = True
 
@@ -19884,14 +19891,32 @@ class ScrollBox():
 
             elif mouse_down and not self.held:
 
-                    if mouse_position[1] - y < (position + half - 2) or mouse_position[1] - y > position + half + 2:
+                #if mouse_position[1] - y < (position + half - 2) or mouse_position[1] - y > position + half + 2:
 
-                        direction = 0
-                        if mouse_position[1] < mi + position:
-                            position -= 1 if h < 400 else 2
+                if click and not in_bar:
+                    self.slide_hold = True
+                    self.direction_lock = 1
+                    if mouse_position[1] - y < position:
+                        self.direction_lock = 0
+
+                if self.slide_hold:
+                    if (self.direction_lock == 1 and mouse_position[1] - y < position + half) or \
+                        (self.direction_lock == 0 and mouse_position[1] - y > position + half):
+                        pass
+                    else:
+
+                #if self.slide_hold:
+                        if jump_distance is None:
+                            jump_distance = 1 if h < 400 else 1
+
+
+                        if self.direction_lock == 0:
+                            position -= jump_distance
                         else:
-                            position += 1 if h < 400 else 2
-                            direction = 1
+                            position += jump_distance
+
+                        # if self.lock_direction == 0:
+                        #     self.lock_directio
 
                         if position < 0:
                             position = 0
@@ -19905,12 +19930,18 @@ class ScrollBox():
 
                         # This forced the scroll bar to move in a direction so
                         # we dont get stuck due to rounding to same value
-                        if direction == 1 and old_value >= value:
+                        if self.direction_lock == 1 and old_value >= value:
                             value += 1
-                        if direction == 0 and old_value <= value:
+                        elif self.direction_lock == 0 and old_value <= value:
                             value -= 1
                         value = max(0, value)
                         value = min(max_value, value)
+
+            else:
+                self.slide_hold = False
+
+            # else:
+            #     self.lock_direction = 0
 
         if self.held and mouse_up or not mouse_down:
             self.held = False
@@ -20437,6 +20468,14 @@ class ArtistList:
         filename = artist + '-lfm.png'
         filepath = os.path.join(cache_directory, filename)
 
+        if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
+            filename = artist + ".png"
+
+        elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
+            filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
+            filename = artist + ".png"
+
         if os.path.isfile(filepath):
 
             try:
@@ -20762,8 +20801,8 @@ class ArtistList:
         scroll_x = x + w - 18 * gui.scale
         if colours.lm:
             scroll_x = x + w - 22 * gui.scale
-        if coll(area2) or artist_list_scroll.held:
-            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click)
+        if (coll(area2) or artist_list_scroll.held) and not pref_box.enabled:
+            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=1)
 
         if not self.current_artists:
             text = _("No artists in playlist")
@@ -20779,15 +20818,13 @@ class ArtistList:
 
         yy = y + 12 * gui.scale
 
-        i = self.scroll_position
+        i = int(self.scroll_position)
 
         if viewing_pl_id in self.saves:
             self.saves[viewing_pl_id][2] = self.scroll_position
 
         prefetch_mode = False
         prefetch_distance = 40
-
-
 
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
@@ -25558,13 +25595,13 @@ while pctl.running:
                                            album_mode_art_size - 10 * gui.scale,
                                            )
                             if prefs.art_bg and drawn_art:
-                                rect = SDL_Rect(x, y, album_mode_art_size, album_mode_art_size)
+                                rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
                                 if rect.y < gui.panelY:
-                                    diff = gui.panelY - rect.y
+                                    diff = round(gui.panelY - rect.y)
                                     rect.y += diff
                                     rect.h -= diff
                                 elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
-                                    diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
+                                    diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
                                     rect.h -= diff
 
 
