@@ -13535,7 +13535,13 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
             try:
                 send2trash(pctl.master_library[track].fullpath)
             except:
-                os.remove(pctl.master_library[track].fullpath)
+                print("File trash error")
+               
+            if os.path.isfile(pctl.master_library[track].fullpath):
+                try:
+                    os.remove(pctl.master_library[track].fullpath)
+                except:
+                    print("File detete error")
 
             pctl.master_library[track].fullpath = new_name
             pctl.master_library[track].file_ext = codec.upper()
@@ -15018,7 +15024,11 @@ def worker1():
 
                 output_dir = prefs.encoder_output + folder_name + "/"
                 if prefs.transcode_inplace:
-                    os.remove(output_dir.rstrip("/"))
+                    remove_target = output_dir.rstrip("/")
+                    try:
+                        os.remove(remove_target)
+                    except:
+                        print("Encode folder not removed")
                     reload_metadata(folder_items[0])
                 else:
                     album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
@@ -15045,7 +15055,8 @@ def worker1():
                     line = "Press F9 to show output."
                     if prefs.transcode_codec == 'flac':
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
-                    show_message("Encoding complete.", 'done', line)
+                    if not gui.message_box:
+                        show_message("Encoding complete.", 'done', line)
                     if system == 'linux' and not window_is_focused() and de_nofity_support:
                         g_tc_notify.show()
 
@@ -15094,15 +15105,6 @@ def worker1():
                     loaderCommandReady = False
                     break
 
-print("Starting worker threads...")
-
-worker1Thread = threading.Thread(target=worker1)
-worker1Thread.daemon = True
-worker1Thread.start()
-
-worker2Thread = threading.Thread(target=worker2)
-worker2Thread.daemon = True
-worker2Thread.start()
 
 
 def get_album_info(position):
@@ -22967,6 +22969,15 @@ c_hit_callback = SDL_HitTest(hit_callback)
 SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 
+print("Starting worker threads...")
+
+worker1Thread = threading.Thread(target=worker1)
+worker1Thread.daemon = True
+worker1Thread.start()
+
+worker2Thread = threading.Thread(target=worker2)
+worker2Thread.daemon = True
+worker2Thread.start()
 
 # MAIN LOOP---------------------------------------------------------------------------
 
