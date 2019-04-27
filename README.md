@@ -8,8 +8,6 @@ Designed to be simple and streamlined while putting the user in control of their
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
-> **Note**: Screenshot is from an in-development version
-
 ## Features :sparkles:
 
   - Import tracks and create playlists by simple **drag and drop**.
