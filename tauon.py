@@ -7376,6 +7376,9 @@ class StyleOverlay:
 
         self.go_to_sleep = False
 
+        self.current_track_album = "none"
+        self.current_track_id = -1
+
 
     def worker(self):
 
@@ -7384,6 +7387,8 @@ class StyleOverlay:
                 index = pctl.playing_object().index
                 self.window_size = copy.copy(window_size)
                 self.parent_path = pctl.playing_object().parent_folder_path
+                self.current_track_id = pctl.playing_object().index
+                self.current_track_album = pctl.playing_object().album
 
                 self.im = album_art_gen.get_blur_im(index)
                 if self.im is None or self.im is False:
@@ -7452,9 +7457,15 @@ class StyleOverlay:
             gui.update += 1
 
         if self.stage == 2:
+            track = pctl.playing_object()
+            if not self.go_to_sleep and self.b_texture is None and self.current_track_id != track.index:
 
-            if not self.go_to_sleep and self.b_texture is None and self.parent_path != pctl.playing_object().parent_folder_path:
-                self.stage = 0
+                if not track.album:
+                    self.stage = 0
+                else:
+                    self.current_track_id = track.index
+                    if (self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
+                        self.stage = 0
 
         t = self.fade_on_timer.get()
         SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
@@ -24619,7 +24630,7 @@ while pctl.running:
 
         if key_F7: #  F7 test
 
-            artist_list_box.prep()
+            style_overlay.stage = 0
 
             #gc.save_format_b(pctl.playing_object())
 
