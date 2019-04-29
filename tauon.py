@@ -552,7 +552,7 @@ repeat_mode = False
 # 7 last folder import path (string)
 # 8 hidden (bool)
 # 9 Locked (bool)
-
+# 10 Filter parent playlist id (string)
 
 
 def uid_gen():
@@ -563,12 +563,13 @@ def pl_gen(title='Default',
            playlist=None,
            position=0,
            hide_title=0,
-           selected=0,):
+           selected=0,
+           parent=""):
 
     if playlist == None:
         playlist = []
 
-    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False, False])
+    return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False, False, parent])
 
 multi_playlist = [pl_gen()] # Create default playlist
 
@@ -1942,6 +1943,12 @@ if db_version > 0:
         for i in range(len(multi_playlist)):
             if len(multi_playlist[i]) == 9:
                 multi_playlist[i].append(False)
+
+    if db_version <= 27:
+        print("Updating database to version 28")
+        for i in range(len(multi_playlist)):
+            if len(multi_playlist[i]) <= 10:
+                multi_playlist[i].append("")
 
 # Loading Config -----------------
 
@@ -20417,21 +20424,45 @@ class PlaylistBox:
 playlist_box = PlaylistBox()
 
 
-def create_artist_pl(artist):
+def create_artist_pl(artist, replace=False):
+
+    #replace = False
+
+    source_pl = pctl.active_playlist_viewing
+    this_pl = pctl.active_playlist_viewing
+
+    if pctl.multi_playlist[source_pl][10]:
+        if pctl.multi_playlist[source_pl][0].startswith("Artist:"):
+            new = id_to_pl(pctl.multi_playlist[source_pl][10])
+            if new is None:
+                # The original playlist is now gone
+                pctl.multi_playlist[source_pl][10] = ""
+            else:
+                source_pl = new
+                #replace = True
+
 
     playlist = []
 
-    for item in default_playlist:
+    for item in pctl.multi_playlist[source_pl][2]:
         track = pctl.g(item)
         if track.artist == artist or track.album_artist == artist:
             playlist.append(item)
 
+    if replace:
+        pctl.multi_playlist[this_pl][2][:] = playlist[:]
+        pctl.multi_playlist[this_pl][0] = "Artist: " + artist
+        if album_mode:
+            reload_albums()
 
-    pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
-                                      playlist=playlist,
-                                      hide_title=0))
+    else:
 
-    switch_playlist(len(pctl.multi_playlist) - 1)
+        pctl.multi_playlist.append(pl_gen(title="Artist: " + artist,
+                                          playlist=playlist,
+                                          hide_title=0,
+                                          parent=pl_to_id(pctl.active_playlist_viewing)))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
 
 artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True)
 
@@ -20451,7 +20482,7 @@ class ArtistList:
 
         self.scroll_position = 0
 
-        self.current_pl = ""
+        self.id_to_load = ""
 
         self.d_click_timer = Timer()
         self.d_click_ref = -1
@@ -20584,7 +20615,10 @@ class ArtistList:
         #self.current_artists.clear()
         self.scroll_position = 0
 
-        current_pl = pctl.multi_playlist[pctl.active_playlist_viewing]
+        curren_pl_no = id_to_pl(self.id_to_load)
+        if curren_pl_no is None:
+            return
+        current_pl = pctl.multi_playlist[curren_pl_no]
 
         all = []
         artist_parents = {}
@@ -20725,8 +20759,16 @@ class ArtistList:
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if input.mouse_click:
                 self.click_ref = artist
+
+                if pctl.multi_playlist[pctl.active_playlist_viewing][10] and \
+                        pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
+                    create_artist_pl(artist, replace=True)
+
+                # else:
+
                 for i, index in enumerate(default_playlist):
                     if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
+
                         pctl.playlist_view_position = i
                         gui.pl_update += 1
 
@@ -20734,7 +20776,7 @@ class ArtistList:
                             goto_album(i)
 
                         self.click_highlight_timer.set()
-                        if self.d_click_timer.get() < 0.5 and self.d_click_ref == i:
+                        if self.d_click_timer.get() < 0.5 and self.d_click_ref == artist:
                             pctl.jump(default_playlist[i])
                             global playlist_selected
                             playlist_selected = i
@@ -20742,7 +20784,7 @@ class ArtistList:
                             self.d_click_timer.force_set(10)
                         else:
                             self.d_click_timer.set()
-                            self.d_click_ref = i
+                            self.d_click_ref = artist
                         break
 
             if right_click:
@@ -20754,20 +20796,34 @@ class ArtistList:
 
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
+        # use parent playlst is set
+        if pctl.multi_playlist[pctl.active_playlist_viewing][10]:
+
+            # test if parent still exsists
+            new = id_to_pl(pctl.multi_playlist[pctl.active_playlist_viewing][10])
+            if new is None:
+                pctl.multi_playlist[pctl.active_playlist_viewing][10] = ""
+            else:
+                if not pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
+                    pctl.multi_playlist[pctl.active_playlist_viewing][10] = ""
+                else:
+                    viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][10]
+
+
 
         if viewing_pl_id in self.saves:
             self.current_artists = self.saves[viewing_pl_id][0]
             self.current_album_counts = self.saves[viewing_pl_id][1]
             self.scroll_position = self.saves[viewing_pl_id][2]
 
-            if self.saves[viewing_pl_id][3] != len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+            if self.saves[viewing_pl_id][3] != len(pctl.multi_playlist[id_to_pl(viewing_pl_id)][2]):
                 del self.saves[viewing_pl_id]
                 return
 
         else:
 
             # if self.current_pl != viewing_pl_id:
-            self.current_pl = viewing_pl_id
+            self.id_to_load = viewing_pl_id
             if not self.load:
 
                 #self.prep()
@@ -23467,7 +23523,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            27,  # Version, used for upgrading
+            28,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size

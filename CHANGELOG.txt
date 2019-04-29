@@ -1,6 +1,13 @@
 
 Changelog-------------------------------------
 
+v4.2.1
+
+ - Added loading of user artist thumbnails from "artist-pictures" folder
+ - Changed artist filter playlists to link to parent
+ - Tweaked artist list scroll bar behavior
+
+
 v4.2.0
 
  - Added artist list to left side panel
