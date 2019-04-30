@@ -6,6 +6,7 @@ v4.2.1
  - Added loading of user artist thumbnails from "artist-pictures" folder
  - Changed artist filter playlists to link to parent
  - Tweaked artist list scroll bar behavior
+ - Fixed album image cache resets clearing artist thumbnails
  - Fixed background skin not changing on singles
  - Fixed crash when using gallery and 1.25x scaling with background skin on
 
