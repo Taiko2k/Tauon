@@ -800,6 +800,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.transcode_inplace = False
 
+        self.bg_showcase_only = False
+
 
 
 prefs = Prefs()
@@ -6505,8 +6507,12 @@ def clear_img_cache(delete_disk=True):
     if prefs.cache_gallery and delete_disk:
         direc = os.path.join(cache_directory)
         if os.path.isdir(direc):
-            shutil.rmtree(direc)
-        os.makedirs(direc)
+            for item in os.listdir(direc):
+                if "lfm" not in item:
+                    os.remove(os.path.join(direc, item))
+                    #shutil.rmtree(direc)
+        else:
+            os.makedirs(direc)
 
     gui.update += 1
 
@@ -7513,6 +7519,14 @@ class StyleOverlay:
                     self.go_to_sleep = False
                     self.flush()
                     return
+
+
+            if prefs.bg_showcase_only:
+                tb = SDL_Rect(0, 0, window_size[0], gui.panelY)
+                bb = SDL_Rect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
+                self.hole_punches.append(tb)
+                self.hole_punches.append(bb)
+
 
             SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
             SDL_SetTextureAlphaMod(self.a_texture, fade)
