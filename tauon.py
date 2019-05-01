@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.2.0"
+t_version = "v4.2.1"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -159,6 +159,8 @@ else:
     if not os.path.isdir(user_directory):
         os.makedirs(user_directory)
 
+if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
+    os.makedirs(os.path.join(user_directory, "artist-pictures"))
 
 transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
