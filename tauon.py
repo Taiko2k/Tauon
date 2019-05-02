@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.2.1"
+t_version = "v4.2.2"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -321,7 +321,11 @@ if lc[0] is not None and 'en' not in lc[0]:  # Remember to handle LANG potention
         lang = gettext.translation('tauon', os.path.join(install_directory, "locale"), lc)
         lang.install()
 
+        print("Translation file loaded")
+
     except:
+        raise
+        print("No translation file available for this locale")
         def _(message):
             return message
 else:
@@ -11579,7 +11583,7 @@ def vacuum_playtimes(index):
 
 
 
-def reload_metadata(index):
+def reload_metadata(index, keep_star=True):
     global todo
 
     # vacuum_playtimes(index)
@@ -11593,19 +11597,20 @@ def reload_metadata(index):
             if pctl.master_library[k].is_cue == False:
                 todo.append(k)
 
-    for track in todo:
+    if keep_star:
+        for track in todo:
 
-        print('Reloading Metadata for ' + pctl.master_library[track].filename)
+            print('Reloading Metadata for ' + pctl.master_library[track].filename)
 
-        star = star_store.full_get(track)
-        star_store.remove(track)
+            star = star_store.full_get(track)
+            star_store.remove(track)
 
-        pctl.master_library[track] = tag_scan(pctl.master_library[track])
+            pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        if star is not None and star[0] > 0:
-            star_store.insert(track, star)
+            if star is not None and (star[0] > 0 or star[1]):
+                star_store.insert(track, star)
 
-    tauon.worker_save_state = True
+        tauon.worker_save_state = True
 
 
 def reload_metadata_selection():
@@ -11628,7 +11633,7 @@ def reload_metadata_selection():
         star_store.remove(track)
         pctl.master_library[track] = tag_scan(pctl.master_library[track])
 
-        if star is not None and star[0] > 0:
+        if star is not None and (star[0] > 0 or star[1]):
             star_store.insert(track, star)
 
 
@@ -11740,7 +11745,7 @@ def editor(index):
                     print("External Edit: A file rename was detected but track was not found.")
 
     gui.message_box = False
-    reload_metadata(index)
+    reload_metadata(index, keep_star=False)
 
     # Re apply playtime data in case file names change
     for item in old_stars:
