@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v4.2.2
 
- - Fix playtimes doubling when using edit with Picard
+ - Fixed playtimes doubling when using edit with Picard
+ - Fixed tracks in folder with other folders not being sorted together
 
 
 v4.2.1

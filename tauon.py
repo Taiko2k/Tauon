@@ -9644,7 +9644,8 @@ def sort_track_2(pl, custom_list=None):
 def sort_path_pl(pl):
 
     def path(index):
-        return pctl.master_library[index].fullpath
+        track = pctl.master_library[index]
+        return (track.parent_folder_path, track.filename)
 
     pctl.multi_playlist[pl][2].sort(key=path)
 
