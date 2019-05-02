@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.2.2
+
+ - Fix playtimes doubling when using edit with Picard
+
+
 v4.2.1
 
  - Added loading of user artist thumbnails from "artist-pictures" folder
