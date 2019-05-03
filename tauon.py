@@ -20766,7 +20766,7 @@ class ArtistList:
         line1_colour = [235, 235, 235, 255]
         line2_colour = [150, 150, 150, 255]
         fade_max = 50
-        # print(test_lumi(colours.side_panel_background))
+
         if test_lumi(colours.side_panel_background) < 0.55:
             light_mode = True
             fade_max = 20
@@ -20792,8 +20792,6 @@ class ArtistList:
             self.load_img(artist)
 
         thumb_x = round(x + 10 * gui.scale)
-        # if alt:
-        #     thumb_x = round(x + w - self.thumb_size - 2 * gui.scale)
 
         ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [30, 30, 30, 255], True)
         ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [60, 60, 60, 255])
@@ -20826,58 +20824,71 @@ class ArtistList:
             if input.mouse_click:
                 self.click_ref = artist
 
-                cycle = False
-                if -1 < playlist_selected < len(default_playlist):
-                    track = pctl.g(default_playlist[playlist_selected])
-                    if track.artist == artist or track.album_artist == artist:
-                        cycle = True
+                double_click = False
+                if self.d_click_timer.get() < 0.4 and self.d_click_ref == artist:
+                    double_click = True
+                    print("DCLICK")
+
+                self.click_highlight_timer.set()
 
                 if pctl.multi_playlist[pctl.active_playlist_viewing][10] and \
                         pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
                     create_artist_pl(artist, replace=True)
-                    cycle = False
 
-                # else:
-
-
-                click_time = self.d_click_timer.get()
+                block_starts = []
+                current = False
                 for i in range(len(default_playlist)):
-
-                    if cycle:
-                        i = (i + playlist_selected) % (len(default_playlist) - 1)
-
                     track = pctl.g(default_playlist[i])
-                    if track.artist == artist or track.album_artist == artist:
+                    if current is False:
+                        if track.artist == artist or track.album_artist == artist:
+                            block_starts.append(i)
+                            current = True
+                    else:
+                        if track.artist != artist and track.album_artist != artist:
+                            current = False
 
-                        double_click = False
-                        if click_time < 0.4 and self.d_click_ref == artist:
-                            double_click = True
+                if not block_starts:
+                    print("No matching artists found in playlist")
+                    return
 
-                        if cycle and not double_click and playlist_selected == i:
-                            continue
+                select = block_starts[0]
 
-                        pctl.playlist_view_position = i
-                        gui.pl_update += 1
+                if len(block_starts) > 1:
+                    if -1 < playlist_selected < len(default_playlist):
+                        if playlist_selected in block_starts:
+                            if block_starts[-1] == playlist_selected:
+                                pass
+                            else:
+                                select = block_starts[block_starts.index(playlist_selected) + 1]
 
-                        if album_mode:
-                            goto_album(i)
+                gui.pl_update += 1
+                if album_mode:
+                    goto_album(i)
 
-                        self.click_highlight_timer.set()
-                        if double_click:
-                            pctl.jump(default_playlist[i])
-                            playlist_selected = i
-                            shift_selection.clear()
-                            self.d_click_timer.force_set(10)
-                        else:
-                            self.d_click_timer.set()
-                            playlist_selected = i
-                            self.d_click_ref = artist
-                        break
+                self.click_highlight_timer.set()
+
+                if double_click:
+                    select = block_starts[0]
+                    pctl.jump(default_playlist[select])
+                    pctl.playlist_view_position = select
+                    playlist_selected = select
+
+                    shift_selection.clear()
+                    self.d_click_timer.force_set(10)
+                else:
+                    #playlist_selected = i
+                    pctl.playlist_view_position = select
+                    playlist_selected = select
+                    self.d_click_ref = artist
+                    self.d_click_timer.set()
+
 
             if right_click:
                 self.click_ref = artist
                 self.click_highlight_timer.set()
+
                 artist_list_menu.activate(in_reference=artist)
+
 
     def render(self, x, y ,w ,h):
 
