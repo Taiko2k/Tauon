@@ -4,7 +4,12 @@ Changelog-------------------------------------
 v4.2.2
 
  - Fixed playtimes doubling when using edit with Picard
+ - Fixed metadata reload with Picard not working when switching playlist before closing
  - Fixed tracks in folder with other folders not being sorted together
+ - Tweaked artist list click highlight animation time
+ - Tweaked artist list to open on playing artist is possible
+ - Changed artist list click to cycle artist tracks in playlist
+ - Changed reset image cache to partial reset artist thumbnails
 
 
 v4.2.1

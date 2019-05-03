@@ -6516,10 +6516,17 @@ def clear_img_cache(delete_disk=True):
             for item in os.listdir(direc):
                 if "lfm" not in item:
                     os.remove(os.path.join(direc, item))
-                    #shutil.rmtree(direc)
+                elif item.endswith("lfm.png") and os.path.getsize(os.path.join(direc, item)) < 5000:
+                    os.remove(os.path.join(direc, item))
+
         else:
             os.makedirs(direc)
 
+    prefs.failed_artists.clear()
+    for key, value in artist_list_box.thumb_cache.items():
+        if value:
+            SDL_DestroyTexture(value[0])
+    artist_list_box.thumb_cache.clear()
     gui.update += 1
 
 
@@ -11584,34 +11591,41 @@ def vacuum_playtimes(index):
 
 
 
-def reload_metadata(index, keep_star=True):
+def reload_metadata(input, keep_star=True):
     global todo
 
     # vacuum_playtimes(index)
     # return
-
-
     todo = []
-    for k in default_playlist:
 
-        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
-            if pctl.master_library[k].is_cue == False:
-                todo.append(k)
+    if isinstance(input, list):
+        todo = input
 
-    if keep_star:
-        for track in todo:
+    else:
+        for k in default_playlist:
+            if pctl.master_library[input].parent_folder_name == pctl.master_library[k].parent_folder_name:
+                #if pctl.master_library[k].is_cue == False:
+                    todo.append(pctl.master_library[input])
 
-            print('Reloading Metadata for ' + pctl.master_library[track].filename)
+    for i in reversed(range(len(todo))):
+        if todo[i].is_cue:
+            del todo[i]
 
-            star = star_store.full_get(track)
-            star_store.remove(track)
+    for track in todo:
 
-            pctl.master_library[track] = tag_scan(pctl.master_library[track])
+        print('Reloading Metadata for ' + track.filename)
 
+        if keep_star:
+            star = star_store.full_get(track.index)
+            star_store.remove(track.index)
+
+        pctl.master_library[track.index] = tag_scan(track)
+
+        if keep_star:
             if star is not None and (star[0] > 0 or star[1]):
-                star_store.insert(track, star)
+                star_store.insert(track.index, star)
 
-        tauon.worker_save_state = True
+            tauon.worker_save_state = True
 
 
 def reload_metadata_selection():
@@ -11641,10 +11655,12 @@ def reload_metadata_selection():
 
 def editor(index):
     todo = []
+    obs = []
 
     if index is None:
         for item in shift_selection:
             todo.append(default_playlist[item])
+            obs.append(pctl.master_library[default_playlist[item]])
         if len(todo) > 0:
             index = todo[0]
     else:
@@ -11652,6 +11668,7 @@ def editor(index):
             if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
                 if pctl.master_library[k].is_cue == False:
                     todo.append(k)
+                    obs.append(pctl.master_library[k])
 
     # Keep copy of play times
     old_stars = []
@@ -11746,7 +11763,7 @@ def editor(index):
                     print("External Edit: A file rename was detected but track was not found.")
 
     gui.message_box = False
-    reload_metadata(index, keep_star=False)
+    reload_metadata(obs, keep_star=False)
 
     # Re apply playtime data in case file names change
     for item in old_stars:
@@ -20595,6 +20612,7 @@ class ArtistList:
         if self.to_fetch:
             if get_lfm_wait_timer.get() < 0.3:
                 return
+
             artist = self.to_fetch
             filename = artist + '-lfm.png'
             filename2 = artist + '-lfm.txt'
@@ -20617,7 +20635,6 @@ class ArtistList:
                         print("Fetching artist image... " + artist)
                         response = urllib.request.urlopen(cover_link)
                         info = response.info()
-                        # print("got response")
 
                         t = io.BytesIO()
                         t.seek(0)
@@ -20640,6 +20657,7 @@ class ArtistList:
                 if artist not in prefs.failed_artists:
                     print("Failed featching: " + artist)
                     prefs.failed_artists.append(artist)
+
             self.to_fetch = ""
 
 
@@ -20690,6 +20708,19 @@ class ArtistList:
         # Artist-list, album-counts, scroll-position, playlist-length
         save = [all, current_album_counts, 0, len(current_pl[2])]
 
+        # Scroll to playing artist
+        scroll = 0
+        if pctl.playing_ready():
+            track = pctl.playing_object()
+            for i, item in enumerate(save[0]):
+                if item == track.artist or item == track.album_artist:
+                    scroll = i
+                    break
+        save[2] = scroll
+
+        viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if viewing_pl_id in self.saves:
+            self.saves[viewing_pl_id][2] = self.scroll_position
 
         self.saves[current_pl[6]] = save
         gui.update += 1
@@ -20727,6 +20758,8 @@ class ArtistList:
 
     def draw_card(self, artist, x, y, w):
 
+        global playlist_selected
+
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
 
         light_mode = False
@@ -20743,12 +20776,12 @@ class ArtistList:
 
         fade = 0
         t = self.click_highlight_timer.get()
-        if self.click_ref == artist and (t < 3 or artist_list_menu.active):
+        if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
 
-            if t < 2.8 or artist_list_menu.active:
+            if t < 1.9 or artist_list_menu.active:
                 fade = fade_max
             else:
-                fade = fade_max - round((t - 2.8) / 0.2 * fade_max)
+                fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
 
             gui.update += 1
             ddt.rect_r(area, [50, 50, 50, fade], True)
@@ -20793,14 +20826,35 @@ class ArtistList:
             if input.mouse_click:
                 self.click_ref = artist
 
+                cycle = False
+                if -1 < playlist_selected < len(default_playlist):
+                    track = pctl.g(default_playlist[playlist_selected])
+                    if track.artist == artist or track.album_artist == artist:
+                        cycle = True
+
                 if pctl.multi_playlist[pctl.active_playlist_viewing][10] and \
                         pctl.multi_playlist[pctl.active_playlist_viewing][0].startswith("Artist:"):
                     create_artist_pl(artist, replace=True)
+                    cycle = False
 
                 # else:
 
-                for i, index in enumerate(default_playlist):
-                    if pctl.g(index).artist == artist or pctl.g(index).album_artist == artist:
+
+                click_time = self.d_click_timer.get()
+                for i in range(len(default_playlist)):
+
+                    if cycle:
+                        i = (i + playlist_selected) % (len(default_playlist) - 1)
+
+                    track = pctl.g(default_playlist[i])
+                    if track.artist == artist or track.album_artist == artist:
+
+                        double_click = False
+                        if click_time < 0.4 and self.d_click_ref == artist:
+                            double_click = True
+
+                        if cycle and not double_click and playlist_selected == i:
+                            continue
 
                         pctl.playlist_view_position = i
                         gui.pl_update += 1
@@ -20809,14 +20863,14 @@ class ArtistList:
                             goto_album(i)
 
                         self.click_highlight_timer.set()
-                        if self.d_click_timer.get() < 0.5 and self.d_click_ref == artist:
+                        if double_click:
                             pctl.jump(default_playlist[i])
-                            global playlist_selected
                             playlist_selected = i
                             shift_selection.clear()
                             self.d_click_timer.force_set(10)
                         else:
                             self.d_click_timer.set()
+                            playlist_selected = i
                             self.d_click_ref = artist
                         break
 
