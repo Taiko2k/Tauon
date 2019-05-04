@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.2.2"
+t_version = "v4.2.3"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -324,7 +324,6 @@ if lc[0] is not None and 'en' not in lc[0]:  # Remember to handle LANG potention
         print("Translation file loaded")
 
     except:
-        raise
         print("No translation file available for this locale")
         def _(message):
             return message

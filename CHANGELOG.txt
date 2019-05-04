@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.2.3
+
+ - Fixed startup crash when non en locale detected
+
 v4.2.2
 
  - Fixed playtimes doubling when using edit with Picard
