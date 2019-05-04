@@ -10,6 +10,8 @@ v4.2.2
  - Tweaked artist list to open on playing artist is possible
  - Changed artist list click to cycle artist blocks in playlist
  - Changed reset image cache to partial reset artist thumbnails
+ - Disabled artist image downloading
+ - Disabled artist info panel
 
 
 v4.2.1
