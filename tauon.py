@@ -20610,55 +20610,60 @@ class ArtistList:
             return
 
         if self.to_fetch:
-            if get_lfm_wait_timer.get() < 0.3:
-                return
 
-            artist = self.to_fetch
-            filename = artist + '-lfm.png'
-            filename2 = artist + '-lfm.txt'
-            filepath = os.path.join(cache_directory, filename)
-            filepath2 = os.path.join(cache_directory, filename2)
-            try:
-                data = lastfm.artist_info(artist)
-                get_lfm_wait_timer.set()
-                if data[0] is not False:
-                    cover_link = data[2]
-                    text = data[1]
-
-                    if not os.path.exists(filepath2):
-                        f = open(filepath2, 'w', encoding='utf-8')
-                        f.write(text)
-                        f.close()
-
-                    if cover_link and 'http' in cover_link:
-
-                        print("Fetching artist image... " + artist)
-                        response = urllib.request.urlopen(cover_link)
-                        info = response.info()
-
-                        t = io.BytesIO()
-                        t.seek(0)
-                        t.write(response.read())
-                        l = 0
-                        t.seek(0, 2)
-                        l = t.tell()
-                        t.seek(0)
-
-                        if info.get_content_maintype() == 'image' and l > 1000:
-                            f = open(filepath, 'wb')
-                            f.write(t.read())
-                            f.close()
-            except:
-                print("Fetch artist image failed")
-
-            if os.path.exists(filepath):
-                gui.update += 1
-            else:
-                if artist not in prefs.failed_artists:
-                    print("Failed featching: " + artist)
-                    prefs.failed_artists.append(artist)
-
+            self.thumb_cache[self.to_fetch] = None
             self.to_fetch = ""
+            return
+
+            # if get_lfm_wait_timer.get() < 0.3:
+            #     return
+            #
+            # artist = self.to_fetch
+            # filename = artist + '-lfm.png'
+            # filename2 = artist + '-lfm.txt'
+            # filepath = os.path.join(cache_directory, filename)
+            # filepath2 = os.path.join(cache_directory, filename2)
+            # try:
+            #     data = lastfm.artist_info(artist)
+            #     get_lfm_wait_timer.set()
+            #     if data[0] is not False:
+            #         cover_link = data[2]
+            #         text = data[1]
+            #
+            #         if not os.path.exists(filepath2):
+            #             f = open(filepath2, 'w', encoding='utf-8')
+            #             f.write(text)
+            #             f.close()
+            #
+            #         if cover_link and 'http' in cover_link:
+            #
+            #             print("Fetching artist image... " + artist)
+            #             response = urllib.request.urlopen(cover_link)
+            #             info = response.info()
+            #
+            #             t = io.BytesIO()
+            #             t.seek(0)
+            #             t.write(response.read())
+            #             l = 0
+            #             t.seek(0, 2)
+            #             l = t.tell()
+            #             t.seek(0)
+            #
+            #             if info.get_content_maintype() == 'image' and l > 1000:
+            #                 f = open(filepath, 'wb')
+            #                 f.write(t.read())
+            #                 f.close()
+            # except:
+            #     print("Fetch artist image failed")
+            #
+            # if os.path.exists(filepath):
+            #     gui.update += 1
+            # else:
+            #     if artist not in prefs.failed_artists:
+            #         print("Failed featching: " + artist)
+            #         prefs.failed_artists.append(artist)
+            #
+            # self.to_fetch = ""
 
 
     def prep(self):
@@ -20827,7 +20832,6 @@ class ArtistList:
                 double_click = False
                 if self.d_click_timer.get() < 0.4 and self.d_click_ref == artist:
                     double_click = True
-                    print("DCLICK")
 
                 self.click_highlight_timer.set()
 
@@ -20856,10 +20860,13 @@ class ArtistList:
                 if len(block_starts) > 1:
                     if -1 < playlist_selected < len(default_playlist):
                         if playlist_selected in block_starts:
+                            scroll_hide_timer.set()
+                            gui.frame_callback_list.append(TestTimer(0.9))
                             if block_starts[-1] == playlist_selected:
                                 pass
                             else:
                                 select = block_starts[block_starts.index(playlist_selected) + 1]
+
 
                 gui.pl_update += 1
                 if album_mode:
@@ -22709,7 +22716,8 @@ class ViewBox:
 
         x = self.x - 40 * gui.scale
 
-        vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
+        #vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
+        vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
         border_colour = colours.grey(30)
         if not colours.lm:
@@ -22796,9 +22804,9 @@ class ViewBox:
         if gui.scale == 1.25:
             x-= 1
 
-        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
-        if test is not None:
-            func = test
+        # test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
+        # if test is not None:
+        #     func = test
 
         if func is not None:
             func(True)
