@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.2.3"
+t_version = "v4.2.4"
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -391,6 +391,7 @@ d_click_timer.force_set(10)
 lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
+lyrics_fetch_timer = Timer(10)
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -806,6 +807,9 @@ class Prefs:    # Used to hold any kind of settings
         self.transcode_inplace = False
 
         self.bg_showcase_only = False
+
+        self.lyrics_enables = []
+        self.apsed_ke = "4daMG8Oas53LFqXEaeFh8mA8UNGVg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
 
 
 
@@ -2087,6 +2091,11 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
             if 'short-buffering' in p:
                 prefs.short_buffer = True
 
+            if 'enable-apiseeds' in p:
+                prefs.lyrics_enables.append("apiseeds")
+
+            if 'enable-lyricwiki' in p:
+                prefs.lyrics_enables.append("lyricwiki")
 
 else:
     print("Warning: Missing config file")
@@ -8644,25 +8653,92 @@ showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_re
 
 def get_lyric_fire(track_object, silent=False):
 
-    print("Query Lyric Wiki...")
+    if not prefs.lyrics_enables:
+        if not silent:
+            show_message(_("There are no lyric sources enabled. See 'lyrics sources' in config file."), 'info',
+                           'You can find this by clicking "open config file" in settings. If details missing, hold shift when clicking to reset.')
+        return
+
+    t = lyrics_fetch_timer.get()
+    print("Lyric rate limit timer is: " + str(t) + " / -60")
+    if t < -40:
+        print("Lets try again later")
+        if not silent:
+            show_message(_("Let's be polite and try later."))
+
+            if t < -62:
+                show_message("Stop requesting lyrics AAAAAA.", 'error')
+
+        # If the user keeps pressing, lets mess with them haha
+        lyrics_fetch_timer.force_set(t - 5)
+
+        return 'later'
+
+    if t > 0:
+        lyrics_fetch_timer.set()
+        t = 0
+
+    lyrics_fetch_timer.force_set(t - 20)
+
     if not silent:
         show_message(_("Searching..."))
-    try:
 
-        lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+    found = False
+    for source in prefs.lyrics_enables:
 
-        if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
-            lyrics = "[Instrumental]"
+        if source == 'lyricwiki':
 
-        track_object.lyrics = lyrics
+            print("Query Lyric Wiki...")
+            try:
 
+                lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+
+                if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
+                    lyrics = "[Instrumental]"
+
+                track_object.lyrics = lyrics
+
+                found = True
+                print("Found")
+                break
+
+            except:
+                if not silent:
+                    print("LyricWiki does not appear to have lyrics for this song")
+                continue
+
+        if source == 'apiseeds':
+
+            print("Query Apiseeds...")
+            try:
+
+                point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(track_object.artist) + \
+                    "/" + urllib.parse.quote(track_object.title) + "?apikey=" + prefs.apsed_ke
+
+                r = requests.get(point)
+                d = r.json()['result']['track']['text'].replace("\r\n", "\n")
+
+                track_object.lyrics = d
+
+                print("Found")
+                found = True
+                break
+
+            except:
+                if not silent:
+                    print("Apiseeds does not appear to have lyrics for this song")
+                continue
+
+    if not found:
+        print("no lyrics found")
+        if not silent:
+            show_message("No lyrics for this track were found")
+    else:
         gui.message_box = False
         if not gui.showcase_mode:
             prefs.show_lyrics_side = True
+        gui.update += 1
         lyrics_ren.lyrics_position = 0
-    except:
-        if not silent:
-            show_message("LyricWiki does not appear to have lyrics for this song")
 
 
 def get_lyric_wiki(track_object):
@@ -8679,7 +8755,7 @@ def get_lyric_wiki(track_object):
 
 def get_lyric_wiki_silent(track_object):
 
-    print("Searching LyricWiki...")
+    print("Searching for lyrics...")
 
     if track_object.artist == "" or track_object.title == "":
         return
@@ -8694,9 +8770,12 @@ def test_auto_lyrics(track_object):
 
     if prefs.auto_lyrics and not track_object.lyrics and track_object.index not in prefs.auto_lyrics_checked:
         if lyrics_check_timer.get() > 5 and pctl.playing_time > 1:
-            get_lyric_wiki_silent(track_object)
-            lyrics_check_timer.set()
-            prefs.auto_lyrics_checked.append(track_object.index)
+            result = get_lyric_wiki_silent(track_object)
+            if result == "later":
+                pass
+            else:
+                lyrics_check_timer.set()
+                prefs.auto_lyrics_checked.append(track_object.index)
 
 
 def get_bio(track_object):
@@ -8705,7 +8784,7 @@ def get_bio(track_object):
         lastfm.get_bio(track_object.artist)
 
 
-showcase_menu.add(_('Search LyricWiki'), get_lyric_wiki, pass_ref=True)
+showcase_menu.add(_('Search Lyrics'), get_lyric_wiki, pass_ref=True)
 
 
 def search_guitarparty(track_object):
@@ -10465,11 +10544,11 @@ def open_license():
 
 
 def reset_config_file():
-    if install_mode:
-        shutil.copy(install_directory + "/config.txt", config_directory)
-        show_message("Config reset", 'done')
-    else:
-        show_message("Running in portable mode", 'warning', 'Already using original config')
+    #if install_mode:
+    shutil.copy(install_directory + "/config.txt", config_directory)
+    show_message("Config reset", 'done')
+    #else:
+    #    show_message("Running in portable mode", 'warning', 'Already using original config')
 
 def open_config_file():
     target = os.path.join(config_directory, "config.txt")

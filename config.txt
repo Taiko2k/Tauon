@@ -1,5 +1,20 @@
 ﻿#### Tauon Music Box config file
 
+### --- Lyric Sources -----------------------------------------------------
+
+## Here you can enable the available lyric sources. Uncomment to enable.
+## The order listed will be the order searched.
+##
+## Reminder: 3rd party sites may track and record your usage.
+## Reminder: Lyrics are likely subject to copyright.
+##
+## Lyric Wiki note: There is no official api available, thus sourcing
+## from here requires scraping, which is against their terms of service,
+## therefore, enable at your own discretion.
+
+#enable-apiseeds
+#enable-lyricwiki
+
 
 ### --- PLEX Account ------------------------------------------------------------------------------------
 
