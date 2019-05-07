@@ -15,13 +15,14 @@ Design concepts would be great, but you should check with me before investing to
 
 There are currently no translations available. But you can contribute one if you like.
 
-The translation framework used is gettext. Contact me or open an issue and I can give you a `.po` file to translate.
-
-Not all strings are marked for translation yet. Language will be detected based on locale environment variables. Only left to right text is supported at this time.
+Contact me or open an issue and I can give you details on how to help.
 
 ### Code Contributions
 
-The current code base is very (very) messy, as such I don't expect any code contributions. 
+The current code base is very (very) messy, as such I don't expect anyone would want to work on code contributions. 
 
-If you really want to contribute code you should message me about what you want to work on beforehand.
+PR's are welcome, just try make sure they a consice and focused and well commented. (IK my code isn't always isn't, but you should strive to a higher standard!)
 
+### Other
+
+Other areas for contribution could include website design, UI concepts, icon design and documentation.
