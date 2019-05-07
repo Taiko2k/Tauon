@@ -19851,7 +19851,9 @@ class ArtBox:
         if len(pctl.track_queue) > 0:
 
             # Cycle images on click
-            if coll(gui.main_art_box) and input.mouse_click is True:
+
+            if coll(gui.main_art_box) and input.mouse_click is True and key_focused == 0:
+
                 album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
 
                 if pctl.mpris:
@@ -23866,6 +23868,8 @@ print("Setup done. Entering main loop")
 
 pctl.notify_update()
 
+key_focused = 0
+
 while pctl.running:
     # bm.get('main')
 
@@ -23936,6 +23940,9 @@ while pctl.running:
         input.level_2_enter = False
 
         mouse_enter_window = False
+        if key_focused:
+            key_focused -= 1
+
 
 
     #f not mouse_down:
@@ -24329,9 +24336,12 @@ while pctl.running:
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
 
                 gnome.focus()
+                k_input = True
 
                 mouse_enter_window = True
+                print("FOCUS")
                 focused = True
+                key_focused = 2
                 mouse_down = False
                 gui.album_tab_mode = False
                 gui.pl_update = 1
