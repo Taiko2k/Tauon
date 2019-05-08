@@ -4,7 +4,7 @@ Changelog-------------------------------------
 v4.2.4
 
  - Added lyric provider Apiseeds
- - Changed lyric search to require enabling in config file
+ - Added lyrics settings panel to settings
  - Tweaked album art cycle to ignore click on window focus
 
 v4.2.3

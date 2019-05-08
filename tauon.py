@@ -1777,6 +1777,8 @@ try:
         prefs.artist_list = save[124]
     if save[125] is not None:
         prefs.auto_sort = save[125]
+    if save[126] is not None:
+        prefs.lyrics_enables = save[126]
 
     state_file.close()
     del save
@@ -2090,12 +2092,6 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'short-buffering' in p:
                 prefs.short_buffer = True
-
-            if 'enable-apiseeds' in p:
-                prefs.lyrics_enables.append("apiseeds")
-
-            if 'enable-lyricwiki' in p:
-                prefs.lyrics_enables.append("lyricwiki")
 
 else:
     print("Warning: Missing config file")
@@ -8655,8 +8651,8 @@ def get_lyric_fire(track_object, silent=False):
 
     if not prefs.lyrics_enables:
         if not silent:
-            show_message(_("There are no lyric sources enabled. See 'lyrics sources' in config file."), 'info',
-                           'You can find this by clicking "open config file" in settings. If details missing, hold shift when clicking to reset.')
+            show_message(_("There are no lyric sources enabled."), 'info',
+                           "See 'lyrics settings' under 'functions' tab in settings.")
         return
 
     t = lyrics_fetch_timer.get()
@@ -8666,7 +8662,7 @@ def get_lyric_fire(track_object, silent=False):
         if not silent:
             show_message(_("Let's be polite and try later."))
 
-            if t < -62:
+            if t < -65:
                 show_message("Stop requesting lyrics AAAAAA.", 'error')
 
         # If the user keeps pressing, lets mess with them haha
@@ -15782,6 +15778,26 @@ def toggle_auto_lyrics(mode=0):
     prefs.auto_lyrics ^= True
 
 
+def toggle_lyricwiki(mode=0):
+    if mode == 1:
+        return 'lyricwiki' in prefs.lyrics_enables
+
+    if 'lyricwiki' in prefs.lyrics_enables:
+        prefs.lyrics_enables.clear()
+    else:
+        prefs.lyrics_enables.append("lyricwiki")
+
+
+def toggle_apiseeds(mode=0):
+    if mode == 1:
+        return 'apiseeds' in prefs.lyrics_enables
+
+    if 'apiseeds' in prefs.lyrics_enables:
+        prefs.lyrics_enables.clear()
+    else:
+        prefs.lyrics_enables.append("apiseeds")
+
+
 def switch_single(mode=0):
     if mode == 1:
         if prefs.transcode_mode == 'single':
@@ -16022,6 +16038,8 @@ class Over:
 
         self.device_scroll_bar_position = 0
 
+        self.lyrics_panel = False
+
 
 
     def eq(self):
@@ -16186,101 +16204,139 @@ class Over:
         pctl.playerCommand = 'reload'
         pctl.playerCommandReady = True
 
+    def toggle_lyrics_view(self):
+        self.lyrics_panel ^= True
+
+
     def funcs(self):
 
         x = self.box_x + self.item_x_offset
         y = self.box_y - 10 * gui.scale
 
-        y += 35 * gui.scale
-        self.toggle_square(x, y, toggle_enable_web,
-                           _("Serve webpage for broadcast metadata"))
+        if self.lyrics_panel:
 
-        y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
-        #y += 30 * gui.scale
-        # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
-        # y += 23 * gui.scale
-        # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
-        # y += 23 * gui.scale
+            y += 30 * gui.scale
 
-        # self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
-        #
-        # y += 30 * gui.scale
-
-
-        y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
-        y += 23 * gui.scale
-        self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
-
-
-        y += 30 * gui.scale
-        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
-
-
-        x = self.box_x + self.item_x_offset
-        y = self.box_y - 10 * gui.scale
-
-        y += 30 * gui.scale
-
-        if toggle_enable_web(1):
-
-            # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
-            # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
-            # fields.add(link_rect)
-
-            link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
-            link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
-            fields.add(link_rect2)
-
-            # if coll(link_rect):
-            #     if not self.click:
-            #         gui.cursor_want = 3
-            #
-            #     if self.click:
-            #         webbrowser.open(link_pa[2], new=2, autoraise=True)
-
-            if coll(link_rect2):
-                if not self.click:
-                    gui.cursor_want = 3
-
-                if self.click:
-                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
-
-        y += 30 * gui.scale
-        x += 280 * gui.scale
-
-        ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
-        y += 23 * gui.scale
-
-        self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
-        y += 23 * gui.scale
-        self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
-        if not flatpak_mode and discord_allow:
+            self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
+            self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
-        y = self.box_y + 220 * gui.scale
+            y += 40 * gui.scale
+            ddt.draw_text((x, y), _("Sources:"), colours.grey(100), 11)
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_apiseeds, _("Apiseeds"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_lyricwiki, _("LyricWiki*"))
 
-        if key_shift_down:
-            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
-                        100 * gui.scale)
+            y += 30 * gui.scale
+            ddt.draw_text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
+                          colours.grey_blend_bg(90), 11)
+            y += 20 * gui.scale
+            ddt.draw_text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
+                          colours.grey_blend_bg(90), 11)
+            y += 20 * gui.scale
+            ddt.draw_text((x + 12 * gui.scale, y), _("Note: Remember, websites may track and record your usage."),
+                          colours.grey_blend_bg(90), 11)
+
+            y += 34 * gui.scale
+
+            self.button(x, y, "Back", self.toggle_lyrics_view, width=65*gui.scale)
+
         else:
-            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
-        y += 26 * gui.scale
-        self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
 
-        #x = self.box_x + self.item_x_offset
+            y += 35 * gui.scale
+            self.toggle_square(x, y, toggle_enable_web,
+                               _("Serve webpage for broadcast metadata"))
+
+            y += 30 * gui.scale
+            self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
+            #y += 30 * gui.scale
+            # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
+            # y += 23 * gui.scale
+            # self.toggle_square(x + 10 * gui.scale, y, toggle_allow_remote, _("Allow remote control"))
+            # y += 23 * gui.scale
+
+            # self.toggle_square(x, y, toggle_resume_state, _("Resume playback on launch"))
+            #
+            # y += 30 * gui.scale
+
+
+            y += 30 * gui.scale
+            self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
+
+
+            y += 35 * gui.scale
+
+            self.button(x, y, "Lyrics settings...", self.toggle_lyrics_view)
+
+            # self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
+            # y += 23 * gui.scale
+            # self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+
+
+            x = self.box_x + self.item_x_offset
+            y = self.box_y - 10 * gui.scale
+
+            y += 30 * gui.scale
+
+            if toggle_enable_web(1):
+
+                # link_pa = draw_linked_text((x + 280 * gui.scale, y), "http://localhost:" + str(prefs.server_port) + "/remote", colours.grey_blend_bg3(190), 12)
+                # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
+                # fields.add(link_rect)
+
+                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
+                link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
+                fields.add(link_rect2)
+
+                # if coll(link_rect):
+                #     if not self.click:
+                #         gui.cursor_want = 3
+                #
+                #     if self.click:
+                #         webbrowser.open(link_pa[2], new=2, autoraise=True)
+
+                if coll(link_rect2):
+                    if not self.click:
+                        gui.cursor_want = 3
+
+                    if self.click:
+                        webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
+            y += 30 * gui.scale
+            x += 280 * gui.scale
+
+            ddt.draw_text((x, y), _("Show in context menus:"), colours.grey(100), 11)
+            y += 23 * gui.scale
+
+            self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
+            if not flatpak_mode and discord_allow:
+                y += 23 * gui.scale
+                self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
+
+            y = self.box_y + 220 * gui.scale
+
+            if key_shift_down:
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
+                            100 * gui.scale)
+            else:
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
+            y += 26 * gui.scale
+            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
+
+            #x = self.box_x + self.item_x_offset
 
     def button(self, x, y, text, plug, width=0):
 
@@ -17041,6 +17097,7 @@ class Over:
 
             if self.click and coll(box2):
                 self.tab_active = current_tab
+                self.lyrics_panel = False
 
             if current_tab == self.tab_active:
                 colour = copy.deepcopy(colours.sys_tab_hl)
@@ -23817,7 +23874,8 @@ def save_state():
             prefs.art_bg_always_blur,
             prefs.failed_artists,
             prefs.artist_list,
-            prefs.auto_sort]
+            prefs.auto_sort,
+            prefs.lyrics_enables]
 
     #print(prefs.last_device + "-----")
 
