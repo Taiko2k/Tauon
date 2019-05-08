@@ -21,7 +21,7 @@ Contact me or open an issue and I can give you details on how to help.
 
 The current code base is very (very) messy, as such I don't expect anyone would want to work on code contributions. 
 
-PR's are welcome, just try make sure they a consice and focused and well commented. (IK my code isn't always isn't, but you should strive to a higher standard!)
+PR's are welcome, just try make sure they are concise, focused and well commented. (IK my code isn't always isn't, but you should strive to a higher standard!)
 
 ### Other
 
