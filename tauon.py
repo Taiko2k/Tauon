@@ -794,6 +794,7 @@ class Prefs:    # Used to hold any kind of settings
         self.art_bg = False
         self.art_bg_stronger = 1
         self.art_bg_opacity = 10
+        self.art_bg_blur = 9
         self.art_bg_always_blur = False
 
         self.random_mode = False
@@ -1784,6 +1785,8 @@ try:
         prefs.lyrics_enables = save[126]
     if save[127] is not None:
         prefs.fanart_notify = save[127]
+    if save[128] is not None:
+        prefs.bg_showcase_only = save[128]
 
     state_file.close()
     del save
@@ -6959,7 +6962,7 @@ class AlbumArt():
         im = im.resize((new_x, new_y))
 
         if ox_size < 500 or prefs.art_bg_always_blur:
-            im = im.filter(ImageFilter.GaussianBlur(9))
+            im = im.filter(ImageFilter.GaussianBlur(prefs.art_bg_blur))
 
         g = io.BytesIO()
         g.seek(0)
@@ -7468,6 +7471,17 @@ class StyleOverlay:
         if self.min_on_timer.get() < 0:
             return
 
+        # if prefs.bg_showcase_only:
+        #     if not gui.combo_mode:
+        #
+        #         if self.a_texture is not None:
+        #                 print("FLUSH")
+        #                 self.flush()
+        #                 self.fade_off_timer.set()
+        #                 self.go_to_sleep = True
+        #
+        #         return
+
         if self.stage == 1:
 
             wop = rw_from_object(self.im)
@@ -7501,6 +7515,9 @@ class StyleOverlay:
 
             gui.update += 1
 
+
+
+
         if self.stage == 2:
             track = pctl.playing_object()
             if not self.go_to_sleep and self.b_texture is None and self.current_track_id != track.index:
@@ -7511,6 +7528,11 @@ class StyleOverlay:
                     self.current_track_id = track.index
                     if (self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
                         self.stage = 0
+
+
+        if prefs.bg_showcase_only:
+            if not gui.combo_mode:
+                return
 
         t = self.fade_on_timer.get()
         SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
@@ -13131,6 +13153,13 @@ def toggle_auto_bg_blur(mode=0):
     prefs.art_bg_always_blur ^= True
     style_overlay.flush()
 
+def toggle_auto_bg_showcase(mode=0):
+
+    if mode == 1:
+        return prefs.bg_showcase_only
+    prefs.bg_showcase_only ^= True
+    gui.update_layout()
+
 
 def toggle_notifications(mode=0):
 
@@ -16609,7 +16638,9 @@ class Over:
         #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
 
         #self.toggle_square(x + 159 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
-        self.toggle_square(x + 100 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
+        self.toggle_square(x + 90 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+
+        self.toggle_square(x + 145 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
 
 
         y += 28 * gui.scale
@@ -18293,7 +18324,7 @@ class BottomBarType1:
                         pctl.show_current(highlight=True)
                     else:
                         pctl.play()
-                tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play"))
+                tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
                 if right_click:
                     pctl.show_current(highlight=True)
@@ -18349,8 +18380,8 @@ class BottomBarType1:
                     pctl.advance(rr=True)
                     gui.tool_tip_lock_off_f = True
                 #tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
-                if not gui.tool_tip_lock_off_f:
-                    tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+                # if not gui.tool_tip_lock_off_f:
+                #     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
             else:
                 gui.tool_tip_lock_off_f = False
 
@@ -23036,7 +23067,7 @@ class ViewBox:
         if colours.lm:
             high = (.7, .75, .75)
 
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Lyrics view", False, low=low, high=high)
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", False, low=low, high=high)
         if test is not None:
             func = test
 
@@ -23562,6 +23593,12 @@ def update_layout_do():
     else:
         prefs.art_bg_opactiy = 10
 
+    if prefs.bg_showcase_only:
+        prefs.art_bg_opactiy += 8
+
+    # prefs.art_bg_blur = 9
+    # if prefs.bg_showcase_only:
+    #     prefs.art_bg_blur = 15
     #
     # if w / h == 16 / 9:
     #     print("YEP")
@@ -23998,7 +24035,8 @@ def save_state():
             prefs.artist_list,
             prefs.auto_sort,
             prefs.lyrics_enables,
-            prefs.fanart_notify]
+            prefs.fanart_notify,
+            prefs.bg_showcase_only]
 
     #print(prefs.last_device + "-----")
 
