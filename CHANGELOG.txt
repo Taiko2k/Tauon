@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v4.2.4
 
+ - Added setting to apply art background to showcase view only
  - Enabled artist image downloading and artist panel (now uses fanart.tv)
  - Added lyric provider Apiseeds
  - Added lyrics settings button to settings
  - Tweaked album art cycle to ignore click on window focus
+ - Disabled tooltip for forward button
 
 v4.2.3
 
