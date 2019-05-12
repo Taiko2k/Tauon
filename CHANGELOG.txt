@@ -3,8 +3,9 @@ Changelog-------------------------------------
 
 v4.2.4
 
+ - Enabled artist image downloading and artist panel (now uses fanart.tv)
  - Added lyric provider Apiseeds
- - Added lyrics settings panel to settings
+ - Added lyrics settings button to settings
  - Tweaked album art cycle to ignore click on window focus
 
 v4.2.3
