@@ -810,6 +810,9 @@ class Prefs:    # Used to hold any kind of settings
 
         self.lyrics_enables = []
         self.apsed_ke = "4daMG8Oas53LFqXEaeFh8mA8UNGVg22JdJXCKxpxp8GtLcVJv29d3fAFYucaALk2"
+        self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
+
+        self.fanart_notify = True
 
 
 
@@ -1779,6 +1782,8 @@ try:
         prefs.auto_sort = save[125]
     if save[126] is not None:
         prefs.lyrics_enables = save[126]
+    if save[127] is not None:
+        prefs.fanart_notify = save[127]
 
     state_file.close()
     del save
@@ -3820,19 +3825,34 @@ class LastFMapi:
             if self.no_user_connect() is False:
                 return False, "", ""
 
-        # print(artist)
         try:
             if artist != "":
                 l_artist = pylast.Artist(artist, self.network)
-                #print(artist.get_bio_summary(language="en"))
                 bio = l_artist.get_bio_content()
                 cover_link = l_artist.get_cover_image()
-                return True, bio, cover_link
+                mbid = l_artist.get_mbid()
+
+                return True, bio, cover_link, mbid
         except:
             print("last.fm get artist info failed")
 
-        return False, "", ""
+        return False, "", "", ""
 
+    def artist_mbid(self, artist):
+
+        if self.network is None:
+            if self.no_user_connect() is False:
+                return ""
+
+        try:
+            if artist != "":
+                l_artist = pylast.Artist(artist, self.network)
+                mbid = l_artist.get_mbid()
+                return mbid
+        except:
+            print("last.fm get artist mbid info failed")
+
+        return ""
 
     def scrobble(self, track_object, timestamp=None):
         if self.hold:
@@ -6518,8 +6538,10 @@ def clear_img_cache(delete_disk=True):
         direc = os.path.join(cache_directory)
         if os.path.isdir(direc):
             for item in os.listdir(direc):
-                if "lfm" not in item:
+                if "-lfm" not in item and "-ftv" not in item:
                     os.remove(os.path.join(direc, item))
+
+                # Get rid of those annoying star images
                 elif item.endswith("lfm.png") and os.path.getsize(os.path.join(direc, item)) < 5000:
                     os.remove(os.path.join(direc, item))
 
@@ -20653,6 +20675,40 @@ def create_artist_pl(artist, replace=False):
 
 artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True)
 
+
+def save_fanart_artist_thumb(mbid, filepath, preview=False):
+
+    print("get thumb from fanart")
+    print("mbid is " + mbid)
+    r = requests.get("http://webservice.fanart.tv/v3/music/" \
+                     + mbid + "?api_key=" + prefs.fatvap)
+    # print(r.json())
+    thumblink = r.json()['artistthumb'][0]['url']
+    if preview:
+        thumblink = thumblink.replace("/fanart/music", "/preview/music")
+
+    response = urllib.request.urlopen(thumblink)
+    info = response.info()
+
+    t = io.BytesIO()
+    t.seek(0)
+    t.write(response.read())
+    l = 0
+    t.seek(0, 2)
+    l = t.tell()
+    t.seek(0)
+
+    if info.get_content_maintype() == 'image' and l > 1000:
+        f = open(filepath, 'wb')
+        f.write(t.read())
+        f.close()
+
+        if prefs.fanart_notify:
+            prefs.fanart_notify = False
+            show_message("Notice: Artist images are sourced from fanart.tv", 'link',
+                         'They encrouge you to contribute at https://fanart.tv')
+
+
 class ArtistList:
 
     def __init__(self):
@@ -20666,6 +20722,7 @@ class ArtistList:
         self.thumb_cache = {}
 
         self.to_fetch = ""
+        self.to_fetch_mbid_a = ""
 
         self.scroll_position = 0
 
@@ -20683,16 +20740,19 @@ class ArtistList:
 
     def load_img(self, artist):
 
-        filename = artist + '-lfm.png'
-        filepath = os.path.join(cache_directory, filename)
+        filepath = os.path.join(cache_directory, artist + "-lfm.png")
 
         if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
-            filename = artist + ".png"
 
         elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
             filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
-            filename = artist + ".png"
+
+        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv-full.jpg")):
+            filepath = os.path.join(cache_directory, artist + "-ftv-full.jpg")
+
+        elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv.jpg")):
+            filepath = os.path.join(cache_directory, artist + "-ftv.jpg")
 
         if os.path.isfile(filepath):
 
@@ -20748,9 +20808,53 @@ class ArtistList:
 
         if self.to_fetch:
 
-            self.thumb_cache[self.to_fetch] = None
+            #self.thumb_cache[self.to_fetch] = None
+            #self.to_fetch = ""
+            #return
+
+            if get_lfm_wait_timer.get() < 3:
+                return
+
+            artist = self.to_fetch
+            filename = artist + '-lfm.png'
+            filename2 = artist + '-lfm.txt'
+            filename3 = artist + '-ftv.jpg'
+            filepath = os.path.join(cache_directory, filename)
+            filepath2 = os.path.join(cache_directory, filename2)
+            filepath3 = os.path.join(cache_directory, filename3)
+            try:
+
+                # Lookup artist info on last.fm
+                print("lastfm lookup artist: " + artist)
+                mbid = lastfm.artist_mbid(artist)
+                get_lfm_wait_timer.set()
+                # if data[0] is not False:
+                #     #cover_link = data[2]
+                #     text = data[1]
+                #
+                #     if not os.path.exists(filepath2):
+                #         f = open(filepath2, 'w', encoding='utf-8')
+                #         f.write(text)
+                #         f.close()
+
+
+                if mbid:
+                    save_fanart_artist_thumb(mbid, filepath3, preview=True)
+
+
+            except:
+                #raise
+                print("Fetch artist image failed")
+
+            if os.path.exists(filepath3):
+                gui.update += 1
+            else:
+                if artist not in prefs.failed_artists:
+                    print("Failed featching: " + artist)
+                    prefs.failed_artists.append(artist)
+
             self.to_fetch = ""
-            return
+            #self.to_fetch_mbid_a = ""
 
             # if get_lfm_wait_timer.get() < 0.3:
             #     return
@@ -21753,21 +21857,19 @@ class ArtistInfoBox:
             if artist == "":
                 return
 
-            if self.min_rq_timer.get() < 2:  # Limit rate
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+            if self.min_rq_timer.get() < 5:  # Limit rate
+                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
                     pass
                 else:
-                    self.status = _("Changing too fast...")
+                    self.status = _("Cooldown...")
                     wait = True
 
-
             if pctl.playing_time < 0.5:
-                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.png')):
+                if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
                     pass
                 else:
                     self.status = "..."
                     wait = True
-
 
             if not wait and not self.lock:
                 self.lock = True
@@ -21890,30 +21992,36 @@ class ArtistInfoBox:
             self.lock = False
             return
 
-        filename = artist + '-lfm.png'
-        filename2 = artist + '-lfm.txt'
-        filepath = os.path.join(cache_directory, filename)
-        filepath2 = os.path.join(cache_directory, filename2)
-
+        #filename = artist + '-lfm.png'
+        img_filename = artist + '-ftv-full.jpg'
+        text_filename = artist + '-lfm.txt'
+        img_filepath_lfm = os.path.join(cache_directory, artist + '-lfm.png')
+        img_filepath = os.path.join(cache_directory, img_filename)
+        text_filepath = os.path.join(cache_directory, text_filename)
 
         # Check for cache
         try:
 
-            if os.path.isfile(filepath):
-                # print("Load cached bio")
-                artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                artist_picture_render.show = True
-                if os.path.isfile(filepath2):
-                    with open(filepath2, encoding="utf-8") as f:
-                        self.text = f.read()
+            if os.path.isfile(text_filepath):
+                print("Load cached bio and image")
+
+                artist_picture_render.show = False
+                if os.path.isfile(img_filepath):
+                    artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                    artist_picture_render.show = True
+
+                elif os.path.isfile(img_filepath_lfm):
+                    artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
+                    artist_picture_render.show = True
+
+                with open(text_filepath, encoding="utf-8") as f:
+                    self.text = f.read()
                 self.status = "Ready"
                 gui.update = 2
                 self.artist_on = artist
                 self.lock = False
 
                 return
-
-
 
             # Get new from last.fm
             data = lastfm.artist_info(artist)
@@ -21926,43 +22034,57 @@ class ArtistInfoBox:
                 return
             else:
                 self.text = data[1]
-                cover_link = data[2]
-
+                #cover_link = data[2]
                 # Save text as file
-                f = open(filepath2, 'w', encoding='utf-8')
+                f = open(text_filepath, 'w', encoding='utf-8')
                 f.write(self.text)
                 f.close()
+                print("save bio text")
 
-            if cover_link and 'http' in cover_link:
-                # Fetch cover_link
-                try:
-                    # print("Fetching artist image...")
-                    response = urllib.request.urlopen(cover_link)
-                    info = response.info()
-                    # print("got response")
-                    if info.get_content_maintype() == 'image':
-
-                        f = open(filepath, 'wb')
-                        f.write(response.read())
-                        f.close()
-
-                        # print("written file, now loading...")
-
-                        artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                artist_picture_render.show = False
+                if data[3]:
+                    try:
+                        save_fanart_artist_thumb(data[3], img_filepath)
+                        artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
                         artist_picture_render.show = True
+                    except:
+                        print("No artist img found")
 
-                        self.status = "Ready"
-                        gui.update = 2
-                # except HTTPError as e:
-                #     self.status = e
-                #     print("request failed")
-                except:
-                    print("request failed")
-                    self.status = "Request Failed"
+                self.status = "Ready"
+                gui.update = 2
+
+
+
+
+            # if cover_link and 'http' in cover_link:
+            #     # Fetch cover_link
+            #     try:
+            #         # print("Fetching artist image...")
+            #         response = urllib.request.urlopen(cover_link)
+            #         info = response.info()
+            #         # print("got response")
+            #         if info.get_content_maintype() == 'image':
+            #
+            #             f = open(filepath, 'wb')
+            #             f.write(response.read())
+            #             f.close()
+            #
+            #             # print("written file, now loading...")
+            #
+            #             artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+            #             artist_picture_render.show = True
+            #
+            #             self.status = "Ready"
+            #             gui.update = 2
+            #     # except HTTPError as e:
+            #     #     self.status = e
+            #     #     print("request failed")
+            #     except:
+            #         print("request failed")
+            #         self.status = "Request Failed"
 
 
         except:
-            # raise
             self.status = "Load Failed"
 
         self.artist_on = artist
@@ -22853,8 +22975,8 @@ class ViewBox:
 
         x = self.x - 40 * gui.scale
 
-        #vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
-        vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
+        vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
+        #vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
         border_colour = colours.grey(30)
         if not colours.lm:
@@ -22941,9 +23063,9 @@ class ViewBox:
         if gui.scale == 1.25:
             x-= 1
 
-        # test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
-        # if test is not None:
-        #     func = test
+        test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, "Toggle artist info", False, low=low, high=high)
+        if test is not None:
+            func = test
 
         if func is not None:
             func(True)
@@ -23875,7 +23997,8 @@ def save_state():
             prefs.failed_artists,
             prefs.artist_list,
             prefs.auto_sort,
-            prefs.lyrics_enables]
+            prefs.lyrics_enables,
+            prefs.fanart_notify]
 
     #print(prefs.last_device + "-----")
 
@@ -24397,7 +24520,7 @@ while pctl.running:
                 k_input = True
 
                 mouse_enter_window = True
-                print("FOCUS")
+
                 focused = True
                 key_focused = 2
                 mouse_down = False
@@ -24870,15 +24993,6 @@ while pctl.running:
             update_layout_do()
 
         if key_F7: #  F7 test
-
-            style_overlay.stage = 0
-
-            #gc.save_format_b(pctl.playing_object())
-
-            # r = requests.get('http://api.guitarparty.com/v2/songs/?query=Coldplay Clocks', headers={"Guitarparty-Api-Key":"e9c0e543798c4249c24f698022ced5dd0c583ec7"})
-            # print(r.json()['objects'][0]['body'])
-
-            #gc.get()
 
             #show_message("Test error message 123", 'error', "hello text")
             # pctl.playerCommand = "unload"
@@ -27420,11 +27534,12 @@ while pctl.running:
                     message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
                 elif gui.message_mode == 'bubble':
                     message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
-
+                elif gui.message_mode == 'link':
+                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
 
                 if len(gui.message_subtext) > 0:
                     ddt.draw_text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
-                    if gui.message_mode == "bubble":
+                    if gui.message_mode == "bubble" or gui.message_mode == 'link':
                         link_pa = draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
                         link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
                     else:
