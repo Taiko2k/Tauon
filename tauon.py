@@ -23402,12 +23402,16 @@ def display_friend_heart(x, yy, name, just=0):
         if just == 1:
             xx += w + 15 * gui.scale
 
-        # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-        # ddt.rect_r((xx, yy - 26 * gui.scale, w + 10 * gui.scale, 19 * gui.scale), [15, 15, 15, 255], True)
-        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
+        ty = yy - 28 * gui.scale
+        tx = xx
+        if ty < gui.panelY + 5 * gui.scale:
+            ty = gui.panelY + 5 * gui.scale
+            tx -= 20 * gui.scale
+
+        ddt.rect_r((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
                    True)
-        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+        ddt.rect_r((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+        ddt.draw_text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
 
 # Set SDL window drag areas
