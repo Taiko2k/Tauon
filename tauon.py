@@ -20843,7 +20843,7 @@ class ArtistList:
             #self.to_fetch = ""
             #return
 
-            if get_lfm_wait_timer.get() < 3:
+            if get_lfm_wait_timer.get() < 1.5:
                 return
 
             artist = self.to_fetch
@@ -23358,6 +23358,7 @@ def download_img(link, target_folder):
 
 def display_you_heart(x, yy, just=0):
 
+
     rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
     gui.heart_fields.append(rect)
     fields.add(rect, update_playlist_call)
@@ -23369,11 +23370,17 @@ def display_you_heart(x, yy, just=0):
         if just == 1:
             xx += w + 15 * gui.scale
 
+        ty = yy - 28 * gui.scale
+        tx = xx
+        if ty < gui.panelY + 5 * gui.scale:
+            ty = gui.panelY + 5 * gui.scale
+            tx -= 20 * gui.scale
+
         # ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
+        ddt.rect_r((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255],
                    True)
-        ddt.rect_r((xx - 5 * gui.scale, yy - 28 * gui.scale, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-        ddt.draw_text((xx + 5 * gui.scale, yy - 24 * gui.scale), "You", [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+        ddt.rect_r((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+        ddt.draw_text((tx + 5 * gui.scale, ty + 4 * gui.scale), "You", [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
     heart_row_icon.render(x,
                           yy, [244, 100, 100, 255])

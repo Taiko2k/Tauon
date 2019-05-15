@@ -9,6 +9,7 @@ v4.2.4
  - Added lyrics settings button to settings
  - Tweaked album art cycle to ignore click on window focus
  - Disabled tooltip for forward button
+ - Fixed top row heart tooltip position
 
 v4.2.3
 
