@@ -1,0 +1,77 @@
+# Keybinds for Tauon Music Box
+#
+# The format is FUNCTIONNAME KEYNAME MODIFIER(optional)
+# Modifiers can be one of either Shift, Ctrl or Alt
+#
+# Functions may be bound multiple times
+#
+# Note that modifier, select direction, ctrl+c/v/a/z, escape and delete keys currently have hard coded functions.
+
+seek-forward =
+seek-back -
+
+goto-playing '
+goto-previous ' Ctrl
+
+toggle-shuffle .
+toggle-repeat ,
+
+random-track ;
+random-track-start /
+revert / Shift
+
+cycle-playlist-left Left
+cycle-playlist-right Right
+
+vol-up Up Shift
+vol-down Down Shift
+
+start Home
+previous Left Shift
+advance Right Shift
+advance End
+
+goto-top Home Shift
+goto-bottom End Shift
+
+quick-find \
+
+info-show I Ctrl
+info-playing P Ctrl
+
+pageup PageUp
+pagedown PageDown
+
+delete-playlist W Ctrl
+rename-playlist R Ctrl
+
+add-to-queue Q Ctrl
+playpause Space
+
+toggle-left-panel ~
+toggle-right-panel
+toggle-gallery
+toggle-gallery-keycontrol Tab
+toggle-showcase F5
+toggle-minimode
+toggle-columns
+toggle-artistinfo
+cycle-layouts ]
+cycle-layouts-reverse [
+
+playlist-toggle-breaks F1
+cycle-theme F2
+toggle-auto-theme F3
+find-playing-artist F4
+
+toggle-broadcast F6
+testkey F7
+show-encode-folder F9
+toggle-fullscreen F11
+
+opacity-up = Ctrl
+opacity-down - Ctrl
+
+
+
+
