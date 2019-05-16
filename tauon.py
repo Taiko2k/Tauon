@@ -244,6 +244,10 @@ if install_directory != config_directory and not os.path.isfile(os.path.join(con
     print("Config file is missing... copying template from program files")
     shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
 
+if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "input.txt")):
+    print("Input config file is missing... copying template from program files")
+    shutil.copy(os.path.join(install_directory, "input.txt"), config_directory)
+
 last_fm_enable = False
 
 try:
@@ -1223,6 +1227,62 @@ class Input:    # Used to keep track of button states (or should be)
 
 input = Input()
 
+
+class KeyMap:
+
+    def __init__(self):
+
+        self.hits = [] # The keys hit this frame
+        self.maps = {} # Loaded from input.txt
+
+    def load(self):
+
+        path = os.path.join(config_directory, "input.txt")
+        with open(path, encoding="utf_8") as f:
+            content = f.read().splitlines()
+            for p in content:
+                if len(p) == 0 or len(p) > 100:
+                    continue
+                if p[0] == " " or p[0] == "#":
+                    continue
+
+                items = p.split()
+                if 1 < len(items) < 4:
+                    function = items[0]
+                    key = SDL_GetKeyFromName(items[1].encode())
+                    if key == 0:
+                        continue
+                    mod = ""
+                    if len(items) > 2:
+                        mod = items[2].lower()
+
+                    if function in self.maps:
+                        self.maps[function].append((key, mod))
+                    else:
+                        self.maps[function] = [(key, mod)]
+
+    def test(self, function):
+
+        if not self.hits:
+            return False
+        if function not in self.maps:
+            return False
+
+        for code, mod in self.maps[function]:
+
+            if (mod == "" and not (key_ctrl_down or key_rctrl_down or key_shift_down or key_shiftr_down or key_lalt or key_ralt)) \
+                    or (mod == "ctrl" and (key_ctrl_down or key_rctrl_down)) or \
+                    (mod == "shift" and (key_shift_down or key_shiftr_down)) or \
+                    (mod == "alt" and (key_lalt or key_ralt)):
+
+                if code in self.hits:
+                    return True
+
+        return False
+
+
+keymaps = KeyMap()
+keymaps.load()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
@@ -15345,8 +15405,13 @@ def gal_jump_select(up=False, num=1):
     if not default_playlist:
         return
 
+    on = playlist_selected
+    if on > len(default_playlist) - 1:
+        on = 0
+        playlist_selected = 0
+
     if up is False:
-        on = playlist_selected
+
 
         while num > 0:
             while pctl.master_library[
@@ -15361,7 +15426,7 @@ def gal_jump_select(up=False, num=1):
             playlist_selected = on
             num -= 1
     else:
-        on = playlist_selected
+
 
 
         if num > 1:
@@ -22037,7 +22102,18 @@ class ArtistInfoBox:
                 print("Load cached bio and image")
 
                 artist_picture_render.show = False
-                if os.path.isfile(img_filepath):
+
+                if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
+                    filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
+                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                    artist_picture_render.show = True
+
+                elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
+                    filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
+                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                    artist_picture_render.show = True
+
+                elif os.path.isfile(img_filepath):
                     artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
                     artist_picture_render.show = True
 
@@ -24104,6 +24180,9 @@ while pctl.running:
     # bm.get('main')
 
     if k_input:
+
+        keymaps.hits.clear()
+
         d_mouse_click = False
         mouse4 = False
         mouse5 = False
@@ -24113,55 +24192,20 @@ while pctl.running:
         middle_click = False
         mouse_up = False
         input.key_return_press = False
-        key_space_press = False
         key_down_press = False
         key_up_press = False
         key_right_press = False
         key_left_press = False
-        key_backslash_press = False
         key_esc_press = False
-        key_F11 = False
-        key_F12 = False
-        key_F8 = False
-        key_F10 = False
-        key_F2 = False
-        key_F3 = False
-        key_F4 = False
-        key_F5 = False
-        key_F6 = False
-        # key_F7 = False
-        key_F9 = False
-        key_F1 = False
-        key_PGU = False
-        key_PGD = False
         key_del = False
         key_backspace_press = False
-        # key_1_press = False
-        # key_2_press = False
-        # key_3_press = False
-        # key_4_press = False
-        # key_5_press = False
         key_c_press = False
         key_v_press = False
         key_f_press = False
         key_a_press = False
-        key_w_press = False
         key_t_press = False
         key_z_press = False
         key_x_press = False
-        key_r_press = False
-        key_i_press = False
-        key_p_press = False
-        key_q_press = False
-        key_dash_press = False
-        key_eq_press = False
-        key_slash_press = False
-        key_period_press = False
-        key_comma_press = False
-        key_quote_hit = False
-        key_col_hit = False
-        key_tab = False
-        key_tilde = False
         key_home_press = False
         key_end_press = False
         mouse_wheel = 0
@@ -24172,7 +24216,6 @@ while pctl.running:
         mouse_enter_window = False
         if key_focused:
             key_focused -= 1
-
 
 
     #f not mouse_down:
@@ -24404,10 +24447,12 @@ while pctl.running:
             k_input = True
             power += 5
             gui.update += 2
+            keymaps.hits.append(event.key.keysym.sym)
+
             if event.key.keysym.sym == SDLK_RETURN and len(editline) == 0:
                 input.key_return_press = True
-            elif event.key.keysym.sym == SDLK_SPACE:
-                key_space_press = True
+            # elif event.key.keysym.sym == SDLK_SPACE:
+            #     key_space_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
@@ -24418,34 +24463,6 @@ while pctl.running:
                 key_ralt = True
             elif event.key.keysym.sym == SDLK_LALT:
                 key_lalt = True
-            elif event.key.keysym.sym == SDLK_F11:
-                key_F11 = True
-            elif event.key.keysym.sym == SDLK_F12:
-                key_F12 = True
-            elif event.key.keysym.sym == SDLK_F10:
-                key_F10 = True
-            elif event.key.keysym.sym == SDLK_F8:
-                key_F8 = True
-            elif event.key.keysym.sym == SDLK_F2:
-                key_F2 = True
-            elif event.key.keysym.sym == SDLK_F1:
-                key_F1 = True
-            elif event.key.keysym.sym == SDLK_F3:
-                key_F3 = True
-            elif event.key.keysym.sym == SDLK_F4:
-                key_F4 = True
-            elif event.key.keysym.sym == SDLK_F5:
-                key_F5 = True
-            elif event.key.keysym.sym == SDLK_F6:
-                key_F6 = True
-            elif event.key.keysym.sym == SDLK_F7:
-                key_F7 = True
-            elif event.key.keysym.sym == SDLK_F9:
-                key_F9 = True
-            elif event.key.keysym.sym == SDLK_PAGEUP:
-                key_PGU = True
-            elif event.key.keysym.sym == SDLK_PAGEDOWN:
-                key_PGD = True
             elif event.key.keysym.sym == SDLK_v:
                 key_v_press = True
             elif event.key.keysym.sym == SDLK_f:
@@ -24454,24 +24471,16 @@ while pctl.running:
                 key_a_press = True
             elif event.key.keysym.sym == SDLK_c:
                 key_c_press = True
-            elif event.key.keysym.sym == SDLK_w:
-                key_w_press = True
-            elif event.key.keysym.sym == SDLK_q:
-                key_q_press = True
+            # elif event.key.keysym.sym == SDLK_w:
+            #     key_w_press = True
+            # elif event.key.keysym.sym == SDLK_q:
+            #     key_q_press = True
             elif event.key.keysym.sym == SDLK_t:
                 key_t_press = True
             elif event.key.keysym.sym == SDLK_z:
                 key_z_press = True
             elif event.key.keysym.sym == SDLK_x:
                 key_x_press = True
-            elif event.key.keysym.sym == SDLK_r:
-                key_r_press = True
-            elif event.key.keysym.sym == SDLK_i:
-                key_i_press = True
-            elif event.key.keysym.sym == SDLK_p:
-                key_p_press = True
-            elif event.key.keysym.sym == SDLK_BACKSLASH:
-                key_backslash_press = True
             elif event.key.keysym.sym == SDLK_DOWN:
                 key_down_press = True
             elif event.key.keysym.sym == SDLK_UP:
@@ -24480,42 +24489,14 @@ while pctl.running:
                 key_left_press = True
             elif event.key.keysym.sym == SDLK_RIGHT:
                 key_right_press = True
-            # elif event.key.keysym.sym == SDLK_1:
-            #     key_1_press = True
-            # elif event.key.keysym.sym == SDLK_2:
-            #     key_2_press = True
-            # elif event.key.keysym.sym == SDLK_3:
-            #     key_3_press = True
-            # elif event.key.keysym.sym == SDLK_4:
-            #     key_4_press = True
-            # elif event.key.keysym.sym == SDLK_5:
-            #     key_5_press = True
-            elif event.key.keysym.sym == SDLK_MINUS:
-                key_dash_press = True
-            elif event.key.keysym.sym == SDLK_EQUALS:
-                key_eq_press = True
             elif event.key.keysym.sym == SDLK_LSHIFT:
                 key_shift_down = True
             elif event.key.keysym.sym == SDLK_RSHIFT:
                 key_shiftr_down = True
-            elif event.key.keysym.sym == SDLK_SLASH:
-                key_slash_press = True
-            elif event.key.keysym.sym == SDLK_PERIOD:
-                key_period_press = True
-            elif event.key.keysym.sym == SDLK_COMMA:
-                key_comma_press = True
-            elif event.key.keysym.sym == SDLK_QUOTE:
-                key_quote_hit = True
-            elif event.key.keysym.sym == SDLK_SEMICOLON:
-                key_col_hit = True
-            elif event.key.keysym.sym == SDLK_TAB:
-                key_tab = True
             elif event.key.keysym.sym == SDLK_LCTRL:
                 key_ctrl_down = True
             elif event.key.keysym.sym == SDLK_RCTRL:
                 key_rctrl_down = True
-            elif event.key.keysym.sym == SDLK_BACKQUOTE:
-                key_tilde = True
             elif event.key.keysym.sym == SDLK_HOME:
                 key_home_press = True
             elif event.key.keysym.sym == SDLK_END:
@@ -24804,7 +24785,7 @@ while pctl.running:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
 
-        if key_F11:
+        if keymaps.test("toggle-fullscreen"):
             if not fullscreen and not gui.mode == 3:
                 fullscreen = True
                 SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
@@ -24816,30 +24797,9 @@ while pctl.running:
             fullscreen = False
             SDL_SetWindowFullscreen(t_window, 0)
 
-        if key_F10:
-
-            pass
-
-        if key_F8:
-            show_message("This doesn't do anything")
 
         # Disable keys for text cursor control
         if not gui.rename_folder_box and not renamebox and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
-
-            if key_tab and not (key_ralt or key_lalt):
-                #gui.album_tab_mode ^= True
-                if not album_mode:
-                    toggle_album_mode()
-                    gui.gall_tab_enter = True
-                    gui.album_tab_mode = True
-                    show_in_gal(playlist_selected, silent=True)
-                elif gui.gall_tab_enter:
-                    # Exit gallery and tab mode
-                    toggle_album_mode()
-                else:
-                    gui.album_tab_mode ^= True
-                    if gui.album_tab_mode:
-                        show_in_gal(playlist_selected, silent=True)
 
 
             if not quick_search_mode and not search_over.active:
@@ -24881,12 +24841,12 @@ while pctl.running:
                 gui.pl_update = 1
                 gui.update += 1
                 if gui.lsp:
-                    if key_left_press:
+                    if keymaps.test('cycle-playlist-left'):
                         switch_playlist(-1, True)
-                    if key_right_press:
+                    if keymaps.test('cycle-playlist-right'):
                         switch_playlist(1, True)
                 else:
-                    if key_left_press:
+                    if keymaps.test('cycle-playlist-left'):
                         p = pctl.active_playlist_viewing
                         le = len(pctl.multi_playlist)
                         on = p
@@ -24900,7 +24860,8 @@ while pctl.running:
                                 switch_playlist(on)
                                 break
                             on -= 1
-                    if key_right_press:
+
+                    if keymaps.test('cycle-playlist-right'):
                         p = pctl.active_playlist_viewing
                         le = len(pctl.multi_playlist)
                         on = p
@@ -24915,31 +24876,30 @@ while pctl.running:
                                 break
                             on += 1
 
+            if keymaps.test("start"):
+                if pctl.playing_time < 4:
+                    pctl.back()
+                else:
+                    pctl.new_time = 0
+                    pctl.playing_time = 0
+                    pctl.decode_time = 0
+                    pctl.playerCommand = 'seek'
+                    pctl.playerCommandReady = True
 
-            if key_home_press:
-                if key_shift_down or key_shiftr_down:
-                    pctl.playlist_view_position = 0
-                    playlist_selected = 0
-                    gui.pl_update = 1
-                else:
-                    if pctl.playing_time < 4:
-                        pctl.back()
-                    else:
-                        pctl.new_time = 0
-                        pctl.playing_time = 0
-                        pctl.decode_time = 0
-                        pctl.playerCommand = 'seek'
-                        pctl.playerCommandReady = True
-            if key_end_press:
-                if key_shift_down or key_shiftr_down:
-                    n = len(default_playlist) - gui.playlist_view_length + 1
-                    if n < 0:
-                        n = 0
-                    pctl.playlist_view_position = n
-                    playlist_selected = len(default_playlist) - 1
-                    gui.pl_update = 1
-                else:
-                    pctl.advance()
+            if keymaps.test("goto-top"):
+                pctl.playlist_view_position = 0
+                playlist_selected = 0
+                gui.pl_update = 1
+
+            if keymaps.test("goto-bottom"):
+                n = len(default_playlist) - gui.playlist_view_length + 1
+                if n < 0:
+                    n = 0
+                pctl.playlist_view_position = n
+                playlist_selected = len(default_playlist) - 1
+                gui.pl_update = 1
+
+
 
         if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
                 and not gui.rename_folder_box \
@@ -24969,13 +24929,13 @@ while pctl.running:
                 else:
                     paste()
 
-            if key_space_press:
+            if keymaps.test("playpause"):
                 if pctl.playing_state == 0:
                     pctl.play()
                 else:
                     pctl.pause()
 
-            if key_q_press and key_ctrl_down and pctl.selected_ready():
+            if keymaps.test("add-to-queue") and pctl.selected_ready():
 
                 gui.pl_update += 1
 
@@ -24992,39 +24952,19 @@ while pctl.running:
             input.key_return_press = False
             input.level_2_enter = True
 
-        if key_F1:
+        if keymaps.test("playlist-toggle-breaks"):
             # Toggle force off folder break for viewed playlist
             pctl.multi_playlist[pctl.active_playlist_viewing][4] ^= 1
             gui.pl_update = 1
 
-        if key_F5:
-            view_box.lyrics(True)
-            #show_message("This button doesn't do anything.")
-            # pctl.playerCommand = 'encpause'
-            # pctl.playerCommandReady = True
 
-        if key_F6:
-            show_message("Broadcast sync feature was removed.")
-            # pctl.join_broadcast ^= True
-            # print("Join brodcast commands:" + str(pctl.join_broadcast))
-
-        if key_F4:
+        if keymaps.test("find-playing-artist"):
             #standard_size()
             if len(pctl.track_queue) > 0:
                 quick_search_mode = True
                 search_text.text = ""
                 input_text = pctl.playing_object().artist
 
-            #show_message("This function has been removed", 'info')
-
-        if key_F12:
-            pass
-
-            # text = copy_from_clipboard()
-            # if text:
-            #     auto_download.link_queue.append(text)
-            # else:
-            #     show_message("Autodownload Error", 'info', 'Clipboard has no link.')
 
         if key_ctrl_down and key_z_press:
             undo.undo()
@@ -25033,24 +24973,26 @@ while pctl.running:
             # else:
             #     show_message("There are no more playlists to un-delete.")
 
-        if key_F9:
+        if keymaps.test("show-encode-folder"):
             open_encode_out()
 
-        if key_tilde:
-
+        if keymaps.test('toggle-left-panel'):
             gui.lsp ^= True
             update_layout_do()
 
-        if key_F7: #  F7 test
+        if keymaps.test("toggle-broadcast"):
+            toggle_broadcast()
 
-            #show_message("Test error message 123", 'error', "hello text")
-            # pctl.playerCommand = "unload"
-            # pctl.playerCommandReady = True
+        # print(keymaps.maps)
+        # print(keymaps.hits)
 
-            key_F7 = False
+        if keymaps.test('testkey'): #  F7 test
+
+            print(SDL_GetKeyFromName(b"PageDown"))
+            pass
 
         if gui.mode < 3:
-            if key_F3:
+            if keymaps.test("toggle-auto-theme"):
                 prefs.colour_from_image ^= True
                 if prefs.colour_from_image:
                     show_message(_("Enabled auto theme"))
@@ -25059,15 +25001,71 @@ while pctl.running:
                     themeChange = True
                     gui.theme_temp_current = -1
 
-            if mouse4:
+            if mouse4 or keymaps.test("toggle-gallery"):
                 toggle_album_mode()
-            if mouse5:
+
+            if mouse5 or keymaps.test("toggle-right-panel"):
                 if gui.combo_mode:
                     switch_showcase()
                 elif not album_mode:
                     toggle_side_panel()
                 else:
                     toggle_album_mode()
+
+            if keymaps.test("toggle-minimode"):
+                set_mini_mode()
+                gui.update += 1
+
+            if keymaps.test("cycle-layouts"):
+
+                if view_box.tracks():
+                    view_box.side(True)
+                elif view_box.side():
+                    view_box.gallery1(True)
+                elif view_box.gallery1():
+                    view_box.lyrics(True)
+                else:
+                    view_box.tracks(True)
+
+            if keymaps.test("cycle-layouts-reverse"):
+
+                if view_box.tracks():
+                    view_box.lyrics(True)
+                elif view_box.lyrics():
+                    view_box.gallery1(True)
+                elif view_box.gallery1():
+                    view_box.side(True)
+                else:
+                    view_box.tracks(True)
+
+
+            if keymaps.test("toggle-columns"):
+                view_box.col(True)
+
+            if keymaps.test("toggle-artistinfo"):
+                view_box.artist_info(True)
+
+            if keymaps.test("toggle-showcase"):
+                view_box.lyrics(True)
+
+            if keymaps.test("toggle-gallery-keycontrol"):
+                if not album_mode:
+                    toggle_album_mode()
+                    gui.gall_tab_enter = True
+                    gui.album_tab_mode = True
+                    show_in_gal(playlist_selected, silent=True)
+                elif gui.gall_tab_enter:
+                    # Exit gallery and tab mode
+                    toggle_album_mode()
+                else:
+                    gui.album_tab_mode ^= True
+                    if gui.album_tab_mode:
+                        show_in_gal(playlist_selected, silent=True)
+
+        elif gui.mode == 3:
+            if keymaps.test("toggle-minimode"):
+                restore_full_mode()
+                gui.update += 1
 
         ab_click = False
 
@@ -25079,10 +25077,10 @@ while pctl.running:
         if key_t_press and key_ctrl_down:
             new_playlist()
 
-        if key_w_press and key_ctrl_down:
+        if keymaps.test("delete-playlist"):
             delete_playlist(pctl.active_playlist_viewing)
 
-        if key_r_press and key_ctrl_down:
+        if keymaps.test("rename-playlist"):
             rename_playlist(pctl.active_playlist_viewing)
             rename_box.x = 60 * gui.scale
             rename_box.y = 60 * gui.scale
@@ -25143,13 +25141,13 @@ while pctl.running:
         if mouse_down is True:
             gui.update += 1
 
-        if key_PGD:
+        if keymaps.test('pagedown'): #key_PGD:
             if len(default_playlist) > 10:
                 pctl.playlist_view_position += gui.playlist_view_length - 4
                 if pctl.playlist_view_position > len(default_playlist):
                     pctl.playlist_view_position = len(default_playlist) - 2
                 gui.pl_update = 1
-        if key_PGU:
+        if keymaps.test('pageup'):
             if len(default_playlist) > 0:
                 pctl.playlist_view_position -= gui.playlist_view_length - 4
                 if pctl.playlist_view_position < 0:
@@ -25157,89 +25155,91 @@ while pctl.running:
                 gui.pl_update = 1
 
 
-        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled:
+        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
 
-            if key_ctrl_down:
-                if key_i_press:
-                    if playlist_selected < len(default_playlist):
-                        r_menu_index = pctl.g(default_playlist[playlist_selected]).index
-                        track_box = True
 
-                if key_p_press:
-                    if pctl.playing_ready():
-                        r_menu_index = pctl.playing_object().index
-                        track_box = True
+            if keymaps.test("info-playing"):
+                if playlist_selected < len(default_playlist):
+                    r_menu_index = pctl.g(default_playlist[playlist_selected]).index
+                    track_box = True
 
-            if (key_shiftr_down or key_shift_down) and key_right_press:
+            if keymaps.test("info-show"):
+                if playlist_selected < len(default_playlist):
+                    r_menu_index = pctl.g(default_playlist[playlist_selected]).index
+                    track_box = True
+
+            if keymaps.test("advance"):
                 key_right_press = False
                 pctl.advance()
-                # print('hit')
-            if (key_shiftr_down or key_shift_down) and key_left_press:
+
+            if keymaps.test("previous"):
                 key_left_press = False
                 pctl.back()
 
-            if (key_shiftr_down or key_shift_down) and key_up_press:
-                key_up_press = False
-                pctl.player_volume += 3
-                if pctl.player_volume > 100:
-                    pctl.player_volume = 100
-                pctl.set_volume()
-
-            if (key_shiftr_down or key_shift_down) and key_down_press:
-                key_down_press = False
+            if keymaps.test("vol-down"):
                 if pctl.player_volume > 3:
                     pctl.player_volume -= 3
                 else:
                     pctl.player_volume = 0
                 pctl.set_volume()
 
-            if not radiobox:
-                if key_slash_press:
-                    if key_shiftr_down or key_shift_down:
-                        pctl.revert()
-                    else:
-                        pctl.advance(rr=True)
-                if key_period_press:
-                    pctl.random_mode ^= True
-                if key_quote_hit:
-                    if key_ctrl_down:
-                        if pctl.queue_step > 1:
-                            pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
-                    else:
-                        pctl.show_current()
-                if key_comma_press:
-                    pctl.repeat_mode ^= True
-                if key_col_hit:
-                    random_track()
+            if keymaps.test("vol-up"):
+                pctl.player_volume += 3
+                if pctl.player_volume > 100:
+                    pctl.player_volume = 100
+                pctl.set_volume()
 
-            if not key_ctrl_down:
-                if key_dash_press:
-                    pctl.new_time = pctl.playing_time - 15
-                    pctl.playing_time -= 15
-                    if pctl.new_time < 0:
-                        pctl.new_time = 0
-                        pctl.playing_time = 0
-                        pctl.decode_time = 0
-                    pctl.playerCommand = 'seek'
-                    pctl.playerCommandReady = True
 
-                if key_eq_press:
-                    pctl.new_time = pctl.playing_time + 15
-                    pctl.playing_time += 15
-                    pctl.playerCommand = 'seek'
-                    pctl.playerCommandReady = True
-            else:
-                if key_dash_press:
-                    prefs.window_opacity -= .05
-                    if prefs.window_opacity < .30:
-                        prefs.window_opacity = .30
-                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
-                if key_eq_press:
-                    prefs.window_opacity += .05
-                    if prefs.window_opacity > 1:
-                        prefs.window_opacity = 1
-                    SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+            if keymaps.test("revert"):
+                pctl.revert()
+            if keymaps.test("random-track-start"):
+                pctl.advance(rr=True)
+
+            if keymaps.test("toggle-shuffle"):
+                pctl.random_mode ^= True
+
+            if keymaps.test("goto-playing"):
+                pctl.show_current()
+            if keymaps.test("goto-previous"):
+                if pctl.queue_step > 1:
+                    pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
+
+            if keymaps.test("toggle-repeat"):
+                pctl.repeat_mode ^= True
+
+            if keymaps.test("random-track"):
+                random_track()
+
+
+            if keymaps.test('opacity-up'):
+                prefs.window_opacity += .05
+                if prefs.window_opacity > 1:
+                    prefs.window_opacity = 1
+                SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+            if keymaps.test('opacity-down'):
+                prefs.window_opacity -= .05
+                if prefs.window_opacity < .30:
+                    prefs.window_opacity = .30
+                SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+            if keymaps.test("seek-forward"):
+                pctl.new_time = pctl.playing_time + 15
+                pctl.playing_time += 15
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
+
+            if keymaps.test("seek-back"):
+                pctl.new_time = pctl.playing_time - 15
+                pctl.playing_time -= 15
+                if pctl.new_time < 0:
+                    pctl.new_time = 0
+                    pctl.playing_time = 0
+                    pctl.decode_time = 0
+                pctl.playerCommand = 'seek'
+                pctl.playerCommandReady = True
+
 
 
     # if mouse_position[1] < 1:
@@ -25329,7 +25329,7 @@ while pctl.running:
 
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
-    if key_F2:
+    if keymaps.test("cycle-theme"):
         themeChange = True
         gui.theme_temp_current = -1
         gui.temp_themes.clear()
@@ -26834,7 +26834,7 @@ while pctl.running:
             #     filter_box.render()
 
             if track_box:
-                if input.key_return_press or right_click or key_esc_press or key_backspace_press or key_backslash_press:
+                if input.key_return_press or right_click or key_esc_press or key_backspace_press or keymaps.test("quick-find"):
                     track_box = False
 
                     input.key_return_press = False
@@ -27548,7 +27548,7 @@ while pctl.running:
 
             if gui.message_box:
                 if input.mouse_click or input.key_return_press or right_click or key_esc_press or key_backspace_press \
-                        or key_backslash_press or (k_input and message_box_min_timer.get() > 1.2):
+                        or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
                     gui.message_box = False
                     input.key_return_press = False
 
@@ -27603,16 +27603,27 @@ while pctl.running:
 
             search_over.render()
 
-            if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
+            if (keymaps.test("quick-find") or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
                 if not search_over.active:
                     quick_search_mode = True
                 if search_clear_timer.get() > 3:
                     search_text.text = ""
                 input_text = ""
-            elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
+            elif ((keymaps.test("quick-find") or (key_ctrl_down and key_f_press)) or (
                         key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
                 quick_search_mode = False
                 search_text.text = ""
+
+            # if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
+            #     if not search_over.active:
+            #         quick_search_mode = True
+            #     if search_clear_timer.get() > 3:
+            #         search_text.text = ""
+            #     input_text = ""
+            # elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
+            #             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
+            #     quick_search_mode = False
+            #     search_text.text = ""
 
             if quick_search_mode is True:
 
