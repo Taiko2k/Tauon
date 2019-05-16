@@ -10659,6 +10659,22 @@ def open_config_file():
     else:
         subprocess.call(["xdg-open", target])
 
+def open_keymap_file():
+
+    target = os.path.join(config_directory, "input.txt")
+
+    if not os.path.isfile(target):
+        show_message("Input file missing")
+        return
+
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
+
+
 def open_data_directory():
     target = user_directory
     if system == "windows":
@@ -16444,13 +16460,21 @@ class Over:
 
             y = self.box_y + 220 * gui.scale
 
+
             if key_shift_down:
                 self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
-                            100 * gui.scale)
+                            105 * gui.scale)
             else:
-                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 100 * gui.scale)
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
+
             y += 26 * gui.scale
-            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 100 * gui.scale)
+
+            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open keymap file"), open_keymap_file,
+                        105 * gui.scale)
+
+            #y += 26 * gui.scale
+
+            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 105 * gui.scale)
 
             #x = self.box_x + self.item_x_offset
 
@@ -24829,14 +24853,15 @@ while pctl.running:
 
             # Arrow keys to change playlist
             if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 \
-                    and not key_shiftr_down\
-                    and not key_shift_down\
-                    and not search_over.active\
-                    and not key_ctrl_down\
-                    and not key_rctrl_down\
-                    and not key_meta\
-                    and not key_lalt\
-                    and not key_ralt:
+                    and not search_over.active:
+                    #and not key_shiftr_down\
+                    #and not key_shift_down\
+
+                    #and not key_ctrl_down\
+                    #and not key_rctrl_down\
+                    # and not key_meta\
+                    # and not key_lalt\
+                    # and not key_ralt:
 
                 gui.pl_update = 1
                 gui.update += 1
@@ -24989,6 +25014,7 @@ while pctl.running:
         if keymaps.test('testkey'): #  F7 test
 
             print(SDL_GetKeyFromName(b"PageDown"))
+            show_message("You pressed the test key.")
             pass
 
         if gui.mode < 3:
@@ -27776,7 +27802,14 @@ while pctl.running:
 
                         gui.force_search = False
 
-                if key_up_press is True:
+                if key_up_press is True \
+                        and not key_shiftr_down \
+                        and not key_shift_down \
+                        and not key_ctrl_down\
+                        and not key_rctrl_down\
+                        and not key_meta\
+                        and not key_lalt\
+                        and not key_ralt:
 
                     gui.pl_update = 1
                     oi = search_index
@@ -27816,7 +27849,14 @@ while pctl.running:
 
             elif not search_over.active:
 
-                if key_up_press:
+                if key_up_press  \
+                        and not key_shiftr_down \
+                        and not key_shift_down \
+                        and not key_ctrl_down\
+                        and not key_rctrl_down\
+                        and not key_meta\
+                        and not key_lalt\
+                        and not key_ralt:
                     shift_selection = []
 
                     pctl.show_selected()
@@ -27835,7 +27875,15 @@ while pctl.running:
                         playlist_selected = len(default_playlist)
 
 
-                if key_down_press and playlist_selected < len(default_playlist):
+                if key_down_press and playlist_selected < len(default_playlist)  \
+                        and not key_shiftr_down \
+                        and not key_shift_down \
+                        and not key_ctrl_down\
+                        and not key_rctrl_down\
+                        and not key_meta\
+                        and not key_lalt\
+                        and not key_ralt:
+
                     shift_selection = []
                     pctl.show_selected()
                     gui.pl_update = 1
