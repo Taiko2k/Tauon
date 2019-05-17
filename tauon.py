@@ -18240,6 +18240,7 @@ class BottomBarType1:
         if right_click and coll((
                     self.volume_bar_position[0] - 15 * gui.scale, self.volume_bar_position[1] - 10 * gui.scale, self.volume_bar_size[0] + 30 * gui.scale,
                     self.volume_bar_size[1] + 20 * gui.scale)):
+
             if pctl.player_volume > 0:
                 volume_store = pctl.player_volume
                 pctl.player_volume = 0
@@ -25282,7 +25283,17 @@ while pctl.running:
                 pctl.playerCommand = 'seek'
                 pctl.playerCommandReady = True
 
+            if keymaps.test("play"):
+                pctl.play()
 
+            if keymaps.test("stop"):
+                pctl.stop()
+
+            if keymaps.test("pause"):
+                pctl.pause_only()
+
+            if keymaps.test("love-playing"):
+                bar_love()
 
     # if mouse_position[1] < 1:
     #     mouse_down = False
