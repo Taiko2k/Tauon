@@ -70,3 +70,8 @@
 225,225,225		title info
 200,200,200		extra info
 21,21,21		art border
+
+#-Mini Mode---------
+
+19,19,19        mini bg
+45,45,45        mini border

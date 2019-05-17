@@ -72,3 +72,8 @@
 240,240,240		title info
 215,215,215		extra info
 26,26,26		art border
+
+#-Mini Mode---------
+
+24,24,24        mini bg
+60,60,60        mini border

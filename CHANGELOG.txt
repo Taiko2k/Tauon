@@ -11,6 +11,7 @@ v4.2.4
  - Enhanced "Open with Picard" to work with selections (and single tracks using shift)
  - Enabled artist image downloading and artist panel (now uses fanart.tv)
  - Disabled tooltip for forward button (was annoying)
+ - Added mini mode background colour to theme files
  - Fixed album art cycle to ignore click on window focus
  - Fixed top row heart tooltip position
  - Fixed a possible crash when using gallery key control mode
@@ -24,7 +25,7 @@ v4.2.2
  - Fixed playtimes doubling when using edit with Picard
  - Fixed metadata reload with Picard not working when switching playlist before closing
  - Fixed tracks in folder with other folders not being sorted together
- - Tweaked artist list click highlight animation time
+ - Tweaked artist list click hkighlight animation time
  - Tweaked artist list to open on playing artist is possible
  - Changed artist list click to cycle artist blocks in playlist
  - Changed reset image cache to partial reset artist thumbnails

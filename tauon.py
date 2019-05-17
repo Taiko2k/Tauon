@@ -1415,6 +1415,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.pluse_colour = [244, 212, 66, 255]
 
+        self.mini_mode_background = [24, 24, 24, 255]
+        self.mini_mode_border = [60, 60, 60, 255]
+
         #self.post_config()
 
     def post_config(self):
@@ -18670,8 +18673,8 @@ class MiniMode:
         h1 = h - y1
 
         # Draw background
-        ddt.rect_r((0, 0, w, h), [24, 24, 24, 255], True)
-        ddt.text_background_colour = [24, 24, 24, 255]
+        ddt.rect_r((0, 0, w, h), colours.mini_mode_background, True)
+        ddt.text_background_colour = colours.mini_mode_background
 
         # Play / Pause when right clicking below art
         if right_click: # and mouse_position[1] > y1:
@@ -18868,9 +18871,9 @@ class MiniMode:
             draw_window_tools()
 
 
-        ddt.rect_r((0, 0, w, h), [60, 60, 60, 255])
+        ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
         if gui.scale == 2:
-            ddt.rect_r((1, 1, w - 2, h - 2), [60, 60, 60, 255])
+            ddt.rect_r((1, 1, w - 2, h - 2), colours.mini_mode_border)
 
 mini_mode = MiniMode()
 
@@ -25509,6 +25512,10 @@ while pctl.running:
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
                                     colours.menu_background = colours.bottom_panel_colour
+                                if 'mini bg' in p:
+                                    colours.mini_mode_background = get_colour_from_line(p)
+                                if 'mini border' in p:
+                                    colours.mini_mode_border = get_colour_from_line(p)
 
                             colours.post_config()
                             if colours.lm:
