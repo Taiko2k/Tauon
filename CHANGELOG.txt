@@ -6,11 +6,12 @@ v4.2.4
  - Added input config file. Many keyboard shortcuts can now be remapped.
  - Added various key functions for switching layouts and for "Toggle Broadcast"
  - Added setting to apply art background to showcase view only
- - Enabled artist image downloading and artist panel (now uses fanart.tv)
  - Added lyric provider Apiseeds
  - Added lyrics settings button to settings
- - Tweaked album art cycle to ignore click on window focus
- - Disabled tooltip for forward button
+ - Enhanced "Open with Picard" to work with selections (and single tracks using shift)
+ - Enabled artist image downloading and artist panel (now uses fanart.tv)
+ - Disabled tooltip for forward button (was annoying)
+ - Fixed album art cycle to ignore click on window focus
  - Fixed top row heart tooltip position
  - Fixed a possible crash when using gallery key control mode
 
