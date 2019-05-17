@@ -11851,18 +11851,22 @@ def editor(index):
     todo = []
     obs = []
 
-    if index is None:
-        for item in shift_selection:
-            todo.append(default_playlist[item])
-            obs.append(pctl.master_library[default_playlist[item]])
-        if len(todo) > 0:
-            index = todo[0]
+    if key_shift_down and index is not None:
+        todo = [index]
+        obs = [pctl.master_library[index]]
     else:
-        for k in default_playlist:
-            if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
-                if pctl.master_library[k].is_cue == False:
-                    todo.append(k)
-                    obs.append(pctl.master_library[k])
+        if index is None:
+            for item in shift_selection:
+                todo.append(default_playlist[item])
+                obs.append(pctl.master_library[default_playlist[item]])
+            if len(todo) > 0:
+                index = todo[0]
+        else:
+            for k in default_playlist:
+                if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
+                    if pctl.master_library[k].is_cue == False:
+                        todo.append(k)
+                        obs.append(pctl.master_library[k])
 
     # Keep copy of play times
     old_stars = []
@@ -12018,7 +12022,14 @@ edit_icon = None
 if prefs.tag_editor_name == "Picard":
     edit_icon = mbp_icon
 
-track_menu.add_to_sub(_("Edit with ") + prefs.tag_editor_name, 0, launch_editor, pass_ref=True, icon=edit_icon)
+def edit_deco():
+
+    if key_shift_down or key_shiftr_down:
+        return [colours.menu_text, colours.menu_background, prefs.tag_editor_name + " (Single track)"]
+    else:
+        return [colours.menu_text, colours.menu_background, _("Edit with ") + prefs.tag_editor_name]
+
+track_menu.add_to_sub("Edit with", 0, launch_editor, pass_ref=True, icon=edit_icon, render_func=edit_deco)
 
 
 
@@ -12181,8 +12192,8 @@ gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_
 
 folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
 
-folder_menu.add(_("Edit with ") + prefs.tag_editor_name, launch_editor_selection, pass_ref=True,
-                   icon=edit_icon)
+folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
+                   icon=edit_icon, render_func=edit_deco)
 
 def lightning_copy():
     s_copy()
@@ -12227,6 +12238,8 @@ folder_menu.add(_('Copy "Album Title"'), clip_title, pass_ref=True)
 folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
 
 selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
+
+selection_menu.add("Edit with ", launch_editor_selection, pass_ref=True, icon=edit_icon, render_func=edit_deco)
 
 selection_menu.br()
 folder_menu.br()
