@@ -1,16 +1,27 @@
 # Keybinds for Tauon Music Box
 #
 # The format is FUNCTIONNAME KEYNAME MODIFIER(optional)
-# Modifiers can be one of either Shift, Ctrl or Alt.
+# Modifier can be one of either Shift, Ctrl or Alt.
 #
 # Note that modifier, select direction, ctrl+c/v/a/z, escape and delete keys currently have hard coded functions.
 # Note that you must not bind letter/number keys without a modifier as this is used to trigger the search overlay.
+# Note that global hotkeys are not supported.
 #
 # Restart required to apply changes.
 
 
 seek-forward =
 seek-back -
+
+play
+pause
+playpause Space
+stop
+
+start Home
+previous Left Shift
+advance Right Shift
+advance End
 
 vol-up Up Shift
 vol-down Down Shift
@@ -24,11 +35,6 @@ revert / Shift
 
 cycle-playlist-left Left
 cycle-playlist-right Right
-
-start Home
-previous Left Shift
-advance Right Shift
-advance End
 
 goto-playing '
 goto-previous ' Ctrl
@@ -46,7 +52,7 @@ rename-playlist R Ctrl
 
 quick-find \
 add-to-queue Q Ctrl
-playpause Space
+love-playing
 
 toggle-left-panel ~
 toggle-right-panel
