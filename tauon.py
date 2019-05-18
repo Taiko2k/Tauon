@@ -2417,6 +2417,8 @@ def tag_scan(nt):
                                 if "'musicbrainz_artistids'" not in nt.misc:
                                     nt.misc['musicbrainz_artistids'] = []
                                 nt.misc['musicbrainz_artistids'].append(item.value)
+                            if item.description == "MusicBrainz Release Group Id":
+                                nt.misc['musicbrainz_releasegroupid'] = item.value
 
                 if USLT in tag:
                     lyrics = tag[USLT][0].text
@@ -9116,6 +9118,14 @@ picture_menu.add(_("Previous"), cycle_offset_b, cycle_image_deco)
 picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco)
 
 
+def dl_art_deco(index):
+
+    tr = pctl.master_library[index]
+    if 'musicbrainz_releasegroupid' not in tr.misc:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+    return [colours.menu_text, colours.menu_background, None]
+
+
 def remove_embed_deco():
     info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
 
@@ -9130,6 +9140,72 @@ def remove_embed_deco():
     return [line_colour, colours.menu_background, None]
 
 
+def download_art1(index):
+
+    tr = pctl.master_library[index]
+
+    if tr.is_network:
+        show_message("Cannot download art for network tracks.")
+        return
+
+    if not os.path.isdir(tr.parent_folder_path):
+        show_message("Directroy missing.")
+        return
+
+    if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
+        show_message("We need tagged MusicBrainz ID data for this.", 'info', "Try use \"Reload Metadata\" function if you're sure tags have it.")
+        return
+
+    album_id = tr.misc['musicbrainz_releasegroupid']
+    artist_id = tr.misc['musicbrainz_artistids'][0]
+
+    try:
+
+        r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
+                         + artist_id + "?api_key=" + prefs.fatvap)
+
+        artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
+        id = r.json()['albums'][album_id]['albumcover'][0]['id']
+
+        response = urllib.request.urlopen(artlink)
+        info = response.info()
+
+        t = io.BytesIO()
+        t.seek(0)
+        t.write(response.read())
+        l = 0
+        t.seek(0, 2)
+        l = t.tell()
+        t.seek(0)
+
+        if info.get_content_maintype() == 'image' and l > 1000:
+
+            if info.get_content_subtype() == 'jpeg':
+                filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
+            elif info.get_content_subtype() == 'png':
+                filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
+            else:
+                show_message("Could not detect downloaded filetype.", 'error')
+                return
+
+            f = open(filepath, 'wb')
+            f.write(t.read())
+            f.close()
+
+            show_message("Cover art downloaded sucessfully", 'done')
+            clear_img_cache()
+
+    except:
+        raise
+        show_message("Matching cover art could not be found.")
+
+def download_art1_fire(index):
+    show_message("Searching fanart.tv for cover art...")
+    shoot_dl = threading.Thread(target=download_art, args=[index])
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+
 def remove_embed_picture(index):
     tracks = get_like_folder(index)
     removed = 0
@@ -9137,6 +9213,10 @@ def remove_embed_picture(index):
     processed = False
     try:
         for item in tracks:
+
+            if pctl.master_library[item].is_network:
+                continue
+
             if "MP3" == pctl.master_library[item].file_ext:
                 tag = stagger.read_tag(pctl.master_library[item].fullpath)
                 remove = False
@@ -9208,6 +9288,8 @@ def remove_embed_picture(index):
 
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
+
+picture_menu.add(_('Auto Download Cover Art'), download_art1, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
 def toggle_gimage(mode=0):
     if mode == 1:
@@ -11802,7 +11884,7 @@ def reload_metadata(input, keep_star=True):
         for k in default_playlist:
             if pctl.master_library[input].parent_folder_name == pctl.master_library[k].parent_folder_name:
                 #if pctl.master_library[k].is_cue == False:
-                    todo.append(pctl.master_library[input])
+                    todo.append(pctl.master_library[k])
 
     for i in reversed(range(len(todo))):
         if todo[i].is_cue:
@@ -13318,8 +13400,6 @@ def set_theme_vape():
             theme = i + 1
             themeChange = True
             break
-
-
 
 
 def last_fm_menu_deco():
@@ -24242,7 +24322,7 @@ while pctl.running:
         key_backspace_press = False
         key_c_press = False
         key_v_press = False
-        key_f_press = False
+        #key_f_press = False
         key_a_press = False
         key_t_press = False
         key_z_press = False
@@ -24506,16 +24586,10 @@ while pctl.running:
                 key_lalt = True
             elif event.key.keysym.sym == SDLK_v:
                 key_v_press = True
-            elif event.key.keysym.sym == SDLK_f:
-                key_f_press = True
             elif event.key.keysym.sym == SDLK_a:
                 key_a_press = True
             elif event.key.keysym.sym == SDLK_c:
                 key_c_press = True
-            # elif event.key.keysym.sym == SDLK_w:
-            #     key_w_press = True
-            # elif event.key.keysym.sym == SDLK_q:
-            #     key_q_press = True
             elif event.key.keysym.sym == SDLK_t:
                 key_t_press = True
             elif event.key.keysym.sym == SDLK_z:
@@ -27660,13 +27734,13 @@ while pctl.running:
 
             search_over.render()
 
-            if (keymaps.test("quick-find") or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
+            if keymaps.test("quick-find") and quick_search_mode is False:
                 if not search_over.active:
                     quick_search_mode = True
                 if search_clear_timer.get() > 3:
                     search_text.text = ""
                 input_text = ""
-            elif ((keymaps.test("quick-find") or (key_ctrl_down and key_f_press)) or (
+            elif (keymaps.test("quick-find") or (
                         key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
                 quick_search_mode = False
                 search_text.text = ""
