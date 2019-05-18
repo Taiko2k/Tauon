@@ -45,6 +45,10 @@ def parse_mbids_from_vorbis(object, key, value):
         object.misc['musicbrainz_albumid'] = value
         return True
 
+    if key == "musicbrainz_releasegroupid":
+        object.misc['musicbrainz_releasegroupid'] = value
+        return True
+
     return False
 
 
