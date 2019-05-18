@@ -15,6 +15,7 @@ v4.2.4
  - Fixed album art cycle to ignore click on window focus
  - Fixed top row heart tooltip position
  - Fixed a possible crash when using gallery key control mode
+ - Fixed reload metadata function not functioning for whole album when triggered manually
 
 v4.2.3
 
