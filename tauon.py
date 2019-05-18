@@ -34,7 +34,8 @@ import os
 import pickle
 import shutil
 
-t_version = "v4.2.4"
+version = "4.3.0"
+t_version = "v" + version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -307,6 +308,8 @@ from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
+import musicbrainzngs
+musicbrainzngs.set_useragent("TauonMusicBox", version, "https://github.com/Taiko2k/TauonMusicBox")
 
 # -----------------------------------------------------------
 # Detect locale for translations (currently none availiable)
@@ -9121,7 +9124,7 @@ picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco)
 def dl_art_deco(index):
 
     tr = pctl.master_library[index]
-    if 'musicbrainz_releasegroupid' not in tr.misc:
+    if pctl.playing_state == 0 or not tr.album or not tr.artist:
         return [colours.menu_text_disabled, colours.menu_background, None]
     return [colours.menu_text, colours.menu_background, None]
 
@@ -9152,56 +9155,97 @@ def download_art1(index):
         show_message("Directroy missing.")
         return
 
-    if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
-        show_message("We need tagged MusicBrainz ID data for this.", 'info', "Try use \"Reload Metadata\" function if you're sure tags have it.")
-        return
-
-    album_id = tr.misc['musicbrainz_releasegroupid']
-    artist_id = tr.misc['musicbrainz_artistids'][0]
-
     try:
+        show_message("Looking up MusicBrainz ID...")
+        if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
+            #show_message("We need tagged MusicBrainz ID data for this.", 'info', "Try use \"Reload Metadata\" function if you're sure tags have it.")
+            print("MusicBrainz ID lookup...")
 
-        r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
-                         + artist_id + "?api_key=" + prefs.fatvap)
 
-        artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
-        id = r.json()['albums'][album_id]['albumcover'][0]['id']
+            artist = tr.album_artist
+            if not tr.album:
+                return
+            if not artist:
+                artist = tr.artist
 
-        response = urllib.request.urlopen(artlink)
-        info = response.info()
+            s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
 
-        t = io.BytesIO()
-        t.seek(0)
-        t.write(response.read())
+            album_id = s['release-group-list'][0]['id']
+            artist_id = s['release-group-list'][0]['artist-credit'][0]['artist']['id']
+
+            print("Found release group ID: " + album_id)
+            print("Found artist ID: " + artist_id)
+
+        else:
+
+            album_id = tr.misc['musicbrainz_releasegroupid']
+            artist_id = tr.misc['musicbrainz_artistids'][0]
+
+            print("Using tagged release group ID: " + album_id)
+            print("Using tagged artist ID: " + artist_id)
+
+        try:
+            show_message("Searching fanart.tv for cover art...")
+
+            r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
+                             + artist_id + "?api_key=" + prefs.fatvap)
+
+            artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
+            id = r.json()['albums'][album_id]['albumcover'][0]['id']
+
+            response = urllib.request.urlopen(artlink)
+            info = response.info()
+
+            t = io.BytesIO()
+            t.seek(0)
+            t.write(response.read())
+            l = 0
+            t.seek(0, 2)
+            l = t.tell()
+            t.seek(0)
+
+            if info.get_content_maintype() == 'image' and l > 1000:
+
+                if info.get_content_subtype() == 'jpeg':
+                    filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
+                elif info.get_content_subtype() == 'png':
+                    filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
+                else:
+                    show_message("Could not detect downloaded filetype.", 'error')
+                    return
+
+                f = open(filepath, 'wb')
+                f.write(t.read())
+                f.close()
+
+                show_message("Cover art downloaded from fanart.tv", 'done')
+                clear_img_cache()
+                return
+        except:
+            print("Failed to get from fanart.tv")
+
+        show_message("Searching MusicBrainz for cover art...")
+        t = io.BytesIO(musicbrainzngs.get_release_group_image_front(album_id, size=None))
         l = 0
         t.seek(0, 2)
         l = t.tell()
         t.seek(0)
-
-        if info.get_content_maintype() == 'image' and l > 1000:
-
-            if info.get_content_subtype() == 'jpeg':
-                filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
-            elif info.get_content_subtype() == 'png':
-                filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
-            else:
-                show_message("Could not detect downloaded filetype.", 'error')
-                return
-
+        if l > 1000:
+            filepath = os.path.join(tr.parent_folder_path, album_id + ".jpg")
             f = open(filepath, 'wb')
             f.write(t.read())
             f.close()
 
-            show_message("Cover art downloaded sucessfully", 'done')
+            show_message("Cover art downloaded from MusicBrainz", 'done')
             clear_img_cache()
+            return
 
     except:
-        raise
-        show_message("Matching cover art could not be found.")
+        show_message("Matching cover art or ID could not be found.")
 
 def download_art1_fire(index):
-    show_message("Searching fanart.tv for cover art...")
-    shoot_dl = threading.Thread(target=download_art, args=[index])
+
+    shoot_dl = threading.Thread(target=download_art1, args=[index])
     shoot_dl.daemon = True
     shoot_dl.start()
 
@@ -9289,7 +9333,8 @@ def remove_embed_picture(index):
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
 
-picture_menu.add(_('Auto Download Cover Art'), download_art1, dl_art_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_('Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
+
 
 def toggle_gimage(mode=0):
     if mode == 1:
@@ -9311,7 +9356,7 @@ def ser_gimage(index):
     line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
     webbrowser.open(line, new=2, autoraise=True)
 
-picture_menu.add(_('Search Google for Image'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+# picture_menu.add(_('Search Google for Image'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
 
 
 def append_here():
@@ -16546,8 +16591,8 @@ class Over:
             self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
+            # y += 23 * gui.scale
+            # self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
             if not flatpak_mode and discord_allow:

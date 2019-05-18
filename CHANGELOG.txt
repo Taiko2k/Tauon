@@ -1,9 +1,10 @@
 
 Changelog-------------------------------------
 
-v4.2.4
+v4.3.0
 
- - Added input config file. Many keyboard shortcuts can now be remapped.
+ - Added quick cover art download feature
+ - Added input config file. Many keyboard shortcuts can now be remapped
  - Added various key functions for switching layouts and for "Toggle Broadcast"
  - Added setting to apply art background to showcase view only
  - Added lyric provider Apiseeds
@@ -16,6 +17,7 @@ v4.2.4
  - Fixed top row heart tooltip position
  - Fixed a possible crash when using gallery key control mode
  - Fixed reload metadata function not functioning for whole album when triggered manually
+ - Removed "Search Images on Google" function
 
 v4.2.3
 
