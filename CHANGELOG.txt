@@ -9,15 +9,16 @@ v4.3.0
  - Added setting to apply art background to showcase view only
  - Added lyric provider Apiseeds
  - Added lyrics settings button to settings
- - Enhanced "Open with Picard" to work with selections (and single tracks using shift)
  - Enabled artist image downloading and artist panel (now uses fanart.tv)
  - Disabled tooltip for forward button (was annoying)
  - Added mini mode background colour to theme files
+ - Tweaked discord RP to show album field
+ - Improved discord RP to suspend when idle
+ - Improved "Open with Picard" button to work with selections (and single tracks using shift)
  - Fixed album art cycle to ignore click on window focus
  - Fixed top row heart tooltip position
  - Fixed a possible crash when using gallery key control mode
  - Fixed reload metadata function not functioning for whole album when triggered manually
- - Removed "Search Images on Google" function
 
 v4.2.3
 

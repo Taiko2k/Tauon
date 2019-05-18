@@ -699,7 +699,7 @@ class Prefs:    # Used to hold any kind of settings
         self.replay_gain = 0  # 0=off 1=track 2=album
         self.radio_page_lyrics = True
 
-        self.show_gimage = True
+        self.show_gimage = False
         self.end_setting = "stop"
         self.show_gen = False
         self.show_lyrics_side = True
@@ -9158,9 +9158,8 @@ def download_art1(index):
     try:
         show_message("Looking up MusicBrainz ID...")
         if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
-            #show_message("We need tagged MusicBrainz ID data for this.", 'info', "Try use \"Reload Metadata\" function if you're sure tags have it.")
-            print("MusicBrainz ID lookup...")
 
+            print("MusicBrainz ID lookup...")
 
             artist = tr.album_artist
             if not tr.album:
@@ -9333,7 +9332,7 @@ def remove_embed_picture(index):
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
 
-picture_menu.add(_('Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_('Auto-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def toggle_gimage(mode=0):
@@ -9356,7 +9355,7 @@ def ser_gimage(index):
     line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
     webbrowser.open(line, new=2, autoraise=True)
 
-# picture_menu.add(_('Search Google for Image'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+picture_menu.add(_('Search Google'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
 
 
 def append_here():
@@ -13523,19 +13522,44 @@ def discord_loop():
         index = -1
         br = False
 
+        current_state = 0
+
         while True:
             while True:
-                current_state = 0
+
+
                 current_index = pctl.playing_object().index
-                if pctl.playing_state == 1:
+
+                if current_state == 0 and pctl.playing_state == 1:
                     current_state = 1
+                elif current_state == 1 and pctl.playing_state != 1:
+                    current_state = 0
+                    idle_time.set()
+
                 if state != current_state or index != current_index:
                     if pctl.playing_time > 4 or current_state != 1:
                         state = current_state
                         index = current_index
-                        start_time = time.time()
-                        idle_time.set()
+                        start_time = time.time() - pctl.playing_time
+
                         break
+
+                if current_state == 0 and idle_time.get() > 13:
+                    print("Pause discord RPC...")
+                    RPC.clear(pid)
+                    #RPC.close()
+
+                    while True:
+                        if prefs.disconnect_discord:
+                            break
+                        if pctl.playing_state == 1:
+                            print("Reconnect discord...")
+                            RPC.connect()
+                            break
+                        time.sleep(2)
+
+                    if not prefs.disconnect_discord:
+                        continue
 
                 time.sleep(2)
 
@@ -13550,10 +13574,16 @@ def discord_loop():
                 break
 
             title = "Unknown Track"
-            if pctl.playing_object().title != "" and pctl.playing_object().artist != "":
-                title = pctl.playing_object().artist + " - " + pctl.playing_object().title
+            tr = pctl.playing_object()
+            if tr.artist != "" and tr.title != "":
+                title = tr.artist + " - " + tr.title
                 if len(title) > 150:
                     title = "Unknown Track"
+
+            if tr.album:
+                album = tr.album
+            else:
+                album = "Unknown Album"
 
             if state == 1:
                 print("PLAYING: " + title)
@@ -13561,7 +13591,7 @@ def discord_loop():
                 print(start_time)
 
                 RPC.update(pid=pid,
-                           state="Listening",
+                           state=album,
                            details=title,
                            start=int(start_time),
                            large_image="tauon-large",)
@@ -13582,6 +13612,7 @@ def discord_loop():
                 break
 
     except:
+        raise
         show_message("Error connecting to Discord", 'error')
         prefs.disconnect_discord = False
         # raise
@@ -16508,7 +16539,7 @@ class Over:
             ddt.draw_text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
                           colours.grey_blend_bg(90), 11)
             y += 20 * gui.scale
-            ddt.draw_text((x + 12 * gui.scale, y), _("Note: Remember, websites may track and record your usage."),
+            ddt.draw_text((x + 12 * gui.scale, y), _("Remember, websites may track and record your usage."),
                           colours.grey_blend_bg(90), 11)
 
             y += 34 * gui.scale
@@ -16591,8 +16622,8 @@ class Over:
             self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
-            # y += 23 * gui.scale
-            # self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
+            y += 23 * gui.scale
+            self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
             if not flatpak_mode and discord_allow:
