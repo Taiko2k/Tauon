@@ -10,6 +10,7 @@ v4.3.0
  - Added lyric provider Apiseeds
  - Added lyrics settings button to settings
  - Added artist image sources farnart.tv and Discogs
+ - Added delete image function
  - Enabled artist image downloading and artist panel
  - Disabled tooltip for forward button (was annoying)
  - Added mini mode background colour to theme files
