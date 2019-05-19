@@ -4,10 +4,10 @@
 # Modifier can be one of either Shift, Ctrl or Alt.
 #
 # Note that modifier, return, direction, ctrl+c/x/v/a/z, escape and delete keys currently have hard coded functions.
-# Note that you must not bind letter/number keys without a modifier as this is used to trigger the search overlay.
+# Note that you should not bind letter/number keys without a modifier as this is used to trigger the search overlay.
 #
 # Note that global hotkeys are not supported. You may be able to assign global hotkeys in your desktop environment
-# for controls exposed via MPRIS2.
+# to controls exposed via MPRIS2.
 #
 # Restart required to apply changes.
 

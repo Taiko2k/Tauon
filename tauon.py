@@ -1127,6 +1127,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.transcoding_batch_total = 0
         self.transcoding_bach_done = 0
 
+        self.seek_bar_rect = (0,0,0,0)
+        self.volume_bar_rect = (0,0,0,0)
+
 
 
 gui = GuiVar()
@@ -1287,7 +1290,10 @@ class KeyMap:
 
 
 keymaps = KeyMap()
-keymaps.load()
+
+shoot = threading.Thread(target=keymaps.load)
+shoot.daemon = True
+shoot.start()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
@@ -7669,17 +7675,25 @@ class StyleOverlay:
             SDL_SetTextureAlphaMod(self.a_texture, fade)
             SDL_RenderCopy(renderer, self.a_texture, None, self.a_rect)
 
+
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
             for rect in self.hole_punches:
                 SDL_RenderFillRect(renderer, rect)
+
+
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
             SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opactiy)
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
-        SDL_SetRenderTarget(renderer, gui.main_texture)
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+
+        else:
+            SDL_SetRenderTarget(renderer, gui.main_texture)
+
+
 
 
 
@@ -9340,6 +9354,37 @@ def remove_embed_picture(index):
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
 
+delete_icon = MenuIcon(asset_loader('del.png', True))
+
+def test_shift(_):
+    return key_shift_down or key_shiftr_down
+
+def delete_file_image_deco(tid):
+
+    info = album_art_gen.get_info(tid)
+    if pctl.playing_state > 0 and info and info[0] == 0:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def delete_file_image(tid):
+
+    try:
+        tid = pctl.track_queue[pctl.queue_step]
+        showc = album_art_gen.get_info(tid)
+        if showc is not None and showc[0] == 0:
+            source = album_art_gen.get_sources(tid)[showc[2]][1]
+            os.remove(source)
+            clear_img_cache()
+            print("Deleted file: " + source)
+    except:
+        show_message("Something went wrong", 'error')
+
+
+picture_menu.add(_('Delete Image File'), delete_file_image, delete_file_image_deco, pass_ref=True, pass_ref_deco=True, icon=delete_icon)
+
 picture_menu.add(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
 
@@ -9566,7 +9611,6 @@ def rename_playlist(index):
 
 
 
-delete_icon = MenuIcon(asset_loader('del.png', True))
 
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
@@ -11516,8 +11560,6 @@ track_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_
 
 track_menu.add(_('Paste'), menu_paste, paste_deco, pass_ref=True)
 
-def test_shift(_):
-    return key_shift_down
 
 def delete_track(track_ref):
 
@@ -16548,8 +16590,6 @@ class Over:
             ddt.draw_text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
                           colours.grey_blend_bg(90), 11)
             y += 20 * gui.scale
-            ddt.draw_text((x + 12 * gui.scale, y), _("Remember, websites may track and record your usage."),
-                          colours.grey_blend_bg(90), 11)
 
             y += 34 * gui.scale
 
@@ -17170,18 +17210,15 @@ class Over:
 
         else:
 
-            y += 10 * gui.scale
+            y += 20 * gui.scale
 
             ddt.draw_text((x, y + 1 * gui.scale), "Created by", colours.grey(90), 13)
             ddt.draw_text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey(220), 13)
 
-            y += 22 * gui.scale
+            y += 12 * gui.scale
 
-            ddt.draw_text((x, y + 1 * gui.scale), "Additional testing", colours.grey(90), 13)
-            ddt.draw_text((x +  120 * gui.scale, y + 1 * gui.scale), "Tyzmodo", colours.grey(220), 13)
-            ddt.draw_text((x + 220 * gui.scale, y + 1 * gui.scale), "C0rn3j", colours.grey(220), 13)
+            #ddt.draw_text((x, y + 1 * gui.scale), "Additional testing", colours.grey(90), 13)
 
-            ddt.draw_text((x +  120 * gui.scale, y + 21 * gui.scale), "Solarunit", colours.grey(220), 13)
 
 
         ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
@@ -18427,9 +18464,10 @@ class BottomBarType1:
             self.seek_time = pctl.playing_time
 
         if pctl.playing_length > 0:
-            ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1]),
-                      (int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
-                       self.seek_bar_size[1]),
+            gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
+                                  int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
+                       self.seek_bar_size[1])
+            ddt.rect_r(gui.seek_bar_rect,
                       colours.seek_bar_fill, True)
 
         if gui.seek_cur_show:
@@ -18514,8 +18552,11 @@ class BottomBarType1:
 
         ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size,
                   colours.volume_bar_background, True)  # 22
-        ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
-                  (int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1]),
+
+        gui.volume_bar_rect = (self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
+                  int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1])
+
+        ddt.rect_r(gui.volume_bar_rect,
                   colours.volume_bar_fill, True)
 
 
@@ -25351,10 +25392,9 @@ while pctl.running:
         # print(keymaps.maps)
         # print(keymaps.hits)
 
-        if keymaps.test('testkey'): #  F7 test
+        if keymaps.test('testkey'): #  F7: test
 
-            print(SDL_GetKeyFromName(b"PageDown"))
-            show_message("You pressed the test key.")
+
             pass
 
         if gui.mode < 3:
@@ -27203,6 +27243,12 @@ while pctl.running:
 
             if prefs.art_bg:
                 style_overlay.display()
+                # if key_shift_down:
+                #     ddt.rect_r(gui.seek_bar_rect,
+                #                alpha_mod([150, 150, 150 ,255], 20), True)
+                #     ddt.rect_r(gui.volume_bar_rect,
+                #                alpha_mod(colours.volume_bar_fill, 100), True)
+
             style_overlay.hole_punches.clear()
 
             # Overlay GUI ----------------------
