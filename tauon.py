@@ -16771,6 +16771,8 @@ class Over:
                     show_message("There is no text in the clipboard", "error")
                 elif len(text) == 40:
                     prefs.discogs_pat = text
+
+                    # Reset caches -------------------
                     prefs.failed_artists.clear()
                     artist_list_box.to_fetch = ""
                     for key, value in artist_list_box.thumb_cache.items():
@@ -16778,6 +16780,13 @@ class Over:
                             SDL_DestroyTexture(value[0])
                     artist_list_box.thumb_cache.clear()
                     artist_list_box.to_fetch = ""
+
+                    direc = os.path.join(cache_directory)
+                    if os.path.isdir(direc):
+                        for item in os.listdir(direc):
+                            if "-lfm.txt" in item:
+                                os.remove(os.path.join(direc, item))
+                    # -----------------------------------
 
                 else:
                     show_message("That is not a valid token", "error")
