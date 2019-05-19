@@ -34,8 +34,8 @@ import os
 import pickle
 import shutil
 
-version = "4.3.0"
-t_version = "v" + version
+n_version = "4.3.0"
+t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
@@ -310,7 +310,7 @@ from PyLyrics import *
 from send2trash import send2trash
 import musicbrainzngs
 import discogs_client
-musicbrainzngs.set_useragent("TauonMusicBox", version, "https://github.com/Taiko2k/TauonMusicBox")
+musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 # -----------------------------------------------------------
 # Detect locale for translations (currently none availiable)
@@ -21074,7 +21074,7 @@ def save_discogs_artist_thumb(artist, filepath):
 
     print("Searching discogs for artist image...")
 
-    d = discogs_client.Client('TauonMusicBox/' + version, user_token=prefs.discogs_pat)
+    d = discogs_client.Client('TauonMusicBox/' + n_version, user_token=prefs.discogs_pat)
 
     results = d.search(artist, type='artist')
 
@@ -21116,8 +21116,8 @@ def save_discogs_artist_thumb(artist, filepath):
 
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 
-    print("get thumb from fanart")
-    print("mbid is " + mbid)
+    print("Searching fanart.tv for image...")
+    #print("mbid is " + mbid)
     r = requests.get("http://webservice.fanart.tv/v3/music/" \
                      + mbid + "?api_key=" + prefs.fatvap)
     # print(r.json())
@@ -21143,7 +21143,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 
         if prefs.fanart_notify:
             prefs.fanart_notify = False
-            show_message("Notice: Artist images are sourced from fanart.tv", 'link',
+            show_message("Notice: Artist image sourced from fanart.tv", 'link',
                          'They encrouge you to contribute at https://fanart.tv')
         print("Found artist thumbnail from fanart.tv")
 
