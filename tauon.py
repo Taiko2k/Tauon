@@ -309,6 +309,7 @@ from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
 import musicbrainzngs
+import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", version, "https://github.com/Taiko2k/TauonMusicBox")
 
 # -----------------------------------------------------------
@@ -821,6 +822,7 @@ class Prefs:    # Used to hold any kind of settings
         self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
         self.fanart_notify = True
+        self.discogs_pat = ""
 
 
 
@@ -1853,6 +1855,8 @@ try:
         prefs.fanart_notify = save[127]
     if save[128] is not None:
         prefs.bg_showcase_only = save[128]
+    if save[129] is not None:
+        prefs.discogs_pat = save[129]
 
     state_file.close()
     del save
@@ -2166,6 +2170,10 @@ if os.path.isfile(os.path.join(config_directory, "config.txt")):
 
             if 'short-buffering' in p:
                 prefs.short_buffer = True
+
+            # if 'discogs_personal_access_token=' in p:
+            #     result = p.split('=')[1].strip()
+            #     prefs.discogs_pat = int(result)
 
 else:
     print("Warning: Missing config file")
@@ -16343,6 +16351,7 @@ class Over:
         self.device_scroll_bar_position = 0
 
         self.lyrics_panel = False
+        self.account_view = 0
 
 
 
@@ -16666,6 +16675,23 @@ class Over:
         else:
             ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
 
+    def button2(self, x, y, text, width=0):
+        w = width
+        if w == 0:
+            w = ddt.get_text_w(text, 211) + 10 * gui.scale
+        rect = (x, y, w, 20 * gui.scale)
+        ddt.rect_r(rect, colours.alpha_grey(11), True)
+        fields.add(rect)
+        hit = False
+        if coll(rect):
+            ddt.rect_r(rect, [255, 255, 255, 15], True)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
+            if self.click:
+                hit = True
+        else:
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
+        return hit
+
     def toggle_square(self, x, y, function, text):
 
         x = round(x)
@@ -16689,96 +16715,160 @@ class Over:
 
         x = self.box_x + self.item_x_offset
         y = self.box_y + 20 * gui.scale
-        ddt.draw_text((x, y - 3 * gui.scale), 'Last.fm', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lfm_auto, _("Enable"))
 
-        ddt.draw_text((x + 295 * gui.scale, y - 3 * gui.scale, 2), _("Username:") + " ", colours.grey_blend_bg(60), 212)
-        ddt.draw_text((x + 360 * gui.scale, y - 3 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
-        y += 30 * gui.scale
+        if self.button2(x, y, "Last.fm"):
+            self.account_view = 1
+        self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
+        y += 30
 
-        if prefs.last_fm_token is None:
-            self.button(x, y, _("Login"), lastfm.auth1, 65 * gui.scale)
-            self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
+        if self.button2(x, y, "ListenBrainz"):
+            self.account_view = 2
+        self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lb, _("Enable"))
+
+        y += 30
+
+        if self.button2(x, y, "Discogs"):
+            self.account_view = 3
+
+
+        y += 150
+        self.button(x, y, _("Import PLEX music"), plex_get_album_thread)
+
+        x = self.box_x + self.item_x_offset + 230 * gui.scale
+        y = self.box_y + 20 * gui.scale
+
+        if self.account_view == 3:
+
+            ddt.draw_text((x, y), 'Discogs', colours.grey_blend_bg(220), 213)
+
+            y += 25 * gui.scale
+            ddt.draw_text((x + 0 * gui.scale, y), _("Discogs can be used for sourcing artist images."),
+                          colours.grey_blend_bg(90), 11)
+            y += 22 * gui.scale
+            ddt.draw_text((x + 0 * gui.scale, y), _("For this you will need a \"Personal Access Token\""),
+                          colours.grey_blend_bg(90), 11)
+
+            y += 14 * gui.scale
+            ddt.draw_text((x + 0 * gui.scale, y), _("You can generate one with a Discogs account here:"),
+                          colours.grey_blend_bg(90), 11)
+
+            y += 20 * gui.scale
+            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers", colours.grey_blend_bg3(190), 12)
+            link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+            fields.add(link_rect2)
+            if coll(link_rect2):
+                if not self.click:
+                    gui.cursor_want = 3
+                if self.click:
+                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
+            y += 40 * gui.scale
+            if self.button2(x, y, "Paste Token"):
+
+                text = copy_from_clipboard()
+                if text == "":
+                    show_message("There is no text in the clipboard", "error")
+                elif len(text) == 40:
+                    prefs.discogs_pat = text
+                else:
+                    show_message("That is not a valid token", "error")
+            y += 30 * gui.scale
+            if self.button2(x, y, "Clear"):
+                if not prefs.discogs_pat:
+                    show_message("There wasn't any token saved.")
+                prefs.discogs_pat = ""
 
             y += 30 * gui.scale
-            ddt.draw_text((x + 17 * gui.scale, y), _("Click login to open the last.fm web"),
-                          colours.grey_blend_bg(90), 11)
-            y += 14 * gui.scale
-            ddt.draw_text((x + 17 * gui.scale, y), _("authorisation page and follow prompt."),
-                          colours.grey_blend_bg(90), 11)
-            y += 14 * gui.scale
-            ddt.draw_text((x + 17 * gui.scale, y), _('Then return here and click "Done".'),
-                          colours.grey_blend_bg(90), 11)
-        else:
-            self.button(x, y, _("Forget account"), lastfm.auth3)
+            if prefs.discogs_pat:
+                ddt.draw_text((x + 0 * gui.scale, y - 0 * gui.scale), prefs.discogs_pat, colours.grey_blend_bg(180), 211)
 
 
-        # if not prefs.auto_lfm:
-        #     x = self.box_x + 50 * gui.scale + int(self.w / 2)
-        #     y += 85 * gui.scale
-        #     ddt.draw_text((x,y, 2), "Events will ONLY be sent once activated from MENU per session", colours.grey_blend_bg(90), 11)
 
-        x = self.box_x + self.item_x_offset + 250 * gui.scale
-        y = self.box_y + 45 * gui.scale
+        if self.account_view == 1:
 
+            ddt.draw_text((x, y), 'Last.fm', colours.grey_blend_bg(220), 213)
 
-        # y += 26 * gui.scale
-        #
-        # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
+            ddt.draw_text((x + 100 * gui.scale, y - 0 * gui.scale, 2), _("Username:") + " ", colours.grey_blend_bg(60), 212)
+            ddt.draw_text((x + 165 * gui.scale, y - 0 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
-        self.button(x, y, _("Get user loves"), lastfm.dl_love, width=110 * gui.scale)
+            y += 30 * gui.scale
 
-        y += 26 * gui.scale
-        self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=110 * gui.scale)
+            if prefs.last_fm_token is None:
+                self.button(x, y, _("Login"), lastfm.auth1, 65 * gui.scale)
+                self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
 
-        y = self.box_y + 45 * gui.scale
-        x = self.box_x + self.item_x_offset + 385 * gui.scale
-
-        self.button(x, y, _("Get friend loves"), self.get_friend_love, width=110 * gui.scale)
-        # if lastfm.scanning_friends:
-        #     ddt.draw_text((x + 120 * gui.scale, y), "scanning...",
-        #               colours.grey_blend_bg(111), 11)
-
-        y += 26 * gui.scale
-        self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
+                y += 30 * gui.scale
+                ddt.draw_text((x + 2 * gui.scale, y), _("Click login to open the last.fm web"),
+                              colours.grey_blend_bg(90), 11)
+                y += 14 * gui.scale
+                ddt.draw_text((x + 2 * gui.scale, y), _("authorisation page and follow prompt."),
+                              colours.grey_blend_bg(90), 11)
+                y += 14 * gui.scale
+                ddt.draw_text((x + 2 * gui.scale, y), _('Then return here and click "Done".'),
+                              colours.grey_blend_bg(90), 11)
+            else:
+                self.button(x, y, _("Forget account"), lastfm.auth3)
 
 
-        y = self.box_y + 120 * gui.scale
-        x = self.box_x + self.item_x_offset + 310 * gui.scale
-        self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
+            x = self.box_x + self.item_x_offset + 230 * gui.scale
+            y = self.box_y + 160 * gui.scale
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y + 140 * gui.scale
-        ddt.draw_text((x, y - 3 * gui.scale), 'ListenBrainz', colours.grey_blend_bg(220), 213)
-        self.toggle_square(x + 130 * gui.scale, y - 1 * gui.scale, toggle_lb, _("Enable"))
-        y += 30 * gui.scale
-        self.button(x, y, _("Paste Token"), lb.paste_key)
-        self.button(x + 85 * gui.scale, y, _("Clear"), lb.clear_key)
 
-        y -= 10 * gui.scale
+            # y += 26 * gui.scale
+            #
+            # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
-        if lb.key != None:
-            line = lb.key
-            ddt.draw_text((x + 370 * gui.scale, y - 0 * gui.scale, 2), line, colours.grey_blend_bg(180), 212)
+            self.button(x, y, _("Get user loves"), lastfm.dl_love, width=110 * gui.scale)
 
-        y += 20 * gui.scale
-        link_pa2 = draw_linked_text((x + 285 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
-        link_rect2 = [x + 285 * gui.scale, y, link_pa2[1], 20 * gui.scale]
-        fields.add(link_rect2)
+            y += 26 * gui.scale
+            self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=110 * gui.scale)
 
-        if coll(link_rect2):
-            if not self.click:
-                gui.cursor_want = 3
+            y = self.box_y + 160 * gui.scale
+            x = self.box_x + self.item_x_offset + 365 * gui.scale
 
-            if self.click:
-                webbrowser.open(link_pa2[2], new=2, autoraise=True)
+            self.button(x, y, _("Get friend loves"), self.get_friend_love, width=110 * gui.scale)
+            # if lastfm.scanning_friends:
+            #     ddt.draw_text((x + 120 * gui.scale, y), "scanning...",
+            #               colours.grey_blend_bg(111), 11)
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y + 215 * gui.scale
-        ddt.draw_text((x, y - 3 * gui.scale), 'PLEX', colours.grey_blend_bg(220), 213)
-        y += 20 * gui.scale
-        self.button(x , y, _("Import PLEX music"), plex_get_album_thread)
+            y += 26 * gui.scale
+            self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
+
+
+            y = self.box_y + 230 * gui.scale
+            x = self.box_x + self.item_x_offset + 230 * gui.scale
+            self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
+
+        if self.account_view == 2:
+
+            ddt.draw_text((x, y), 'ListenBrainz', colours.grey_blend_bg(220), 213)
+
+            y += 30 * gui.scale
+            self.button(x, y, _("Paste Token"), lb.paste_key)
+            self.button(x + 85 * gui.scale, y, _("Clear"), lb.clear_key)
+
+            y += 35 * gui.scale
+
+            if lb.key != None:
+                line = lb.key
+                ddt.draw_text((x + 0 * gui.scale, y - 0 * gui.scale), line, colours.grey_blend_bg(180), 212)
+
+            y += 25 * gui.scale
+            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://listenbrainz.org/profile/", colours.grey_blend_bg3(190), 12)
+            link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
+            fields.add(link_rect2)
+
+            if coll(link_rect2):
+                if not self.click:
+                    gui.cursor_want = 3
+
+                if self.click:
+                    webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
+            y = self.box_y + 230 * gui.scale
+            x = self.box_x + self.item_x_offset + 230 * gui.scale
+            self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
 
     def clear_local_loves(self):
@@ -20969,6 +21059,53 @@ def create_artist_pl(artist, replace=False):
 artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True)
 
 
+def verify_discogs():
+    return len(prefs.discogs_pat) == 40
+
+def save_discogs_artist_thumb(artist, filepath):
+
+    print("Searching discogs for artist image...")
+
+    d = discogs_client.Client('TauonMusicBox/4.2.2', user_token=prefs.discogs_pat)
+
+    results = d.search(artist, type='artist')
+
+    images = results[0].images
+    #print(results)
+
+    for image in images:
+        if image['height'] == image['width']:
+            print("Found square")
+            url = image['uri']
+            break
+    else:
+        url = images[0]['uri']
+
+    response = urllib.request.urlopen(url)
+    im = Image.open(response)
+
+    width, height = im.size
+    if width > height:
+        delta = width - height
+        left = int(delta/2)
+        upper = 0
+        right = height + left
+        lower = height
+    else:
+        delta = height - width
+        left = 0
+        upper = int(delta/2)
+        right = width
+        lower = width + upper
+
+    im = im.crop((left, upper, right, lower))
+    im.save(filepath, 'JPEG', quality=90)
+    im.close()
+    print("Found artist image from Discogs")
+
+
+
+
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 
     print("get thumb from fanart")
@@ -21000,7 +21137,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
             prefs.fanart_notify = False
             show_message("Notice: Artist images are sourced from fanart.tv", 'link',
                          'They encrouge you to contribute at https://fanart.tv')
-
+        print("Found artist thumbnail from fanart.tv")
 
 class ArtistList:
 
@@ -21046,6 +21183,9 @@ class ArtistList:
 
         elif os.path.isfile(os.path.join(cache_directory, artist + "-ftv.jpg")):
             filepath = os.path.join(cache_directory, artist + "-ftv.jpg")
+
+        elif os.path.isfile(os.path.join(cache_directory, artist + "-dcg.jpg")):
+            filepath = os.path.join(cache_directory, artist + "-dcg.jpg")
 
         if os.path.isfile(filepath):
 
@@ -21105,16 +21245,18 @@ class ArtistList:
             #self.to_fetch = ""
             #return
 
-            if get_lfm_wait_timer.get() < 1.5:
+            if get_lfm_wait_timer.get() < 2:
                 return
 
             artist = self.to_fetch
             filename = artist + '-lfm.png'
             filename2 = artist + '-lfm.txt'
             filename3 = artist + '-ftv.jpg'
+            filename4 = artist + '-dcg.jpg'
             filepath = os.path.join(cache_directory, filename)
             filepath2 = os.path.join(cache_directory, filename2)
             filepath3 = os.path.join(cache_directory, filename3)
+            filepath4 = os.path.join(cache_directory, filename4)
             try:
 
                 # Lookup artist info on last.fm
@@ -21137,9 +21279,14 @@ class ArtistList:
 
             except:
                 #raise
-                print("Fetch artist image failed")
+                print("Failed to find image from fanart.tv")
+                if verify_discogs():
+                    try:
+                        save_discogs_artist_thumb(artist, filepath4)
+                    except:
+                        print("Failed to find image from discogs")
 
-            if os.path.exists(filepath3):
+            if os.path.exists(filepath3) or os.path.exists(filepath4):
                 gui.update += 1
             else:
                 if artist not in prefs.failed_artists:
@@ -21147,6 +21294,7 @@ class ArtistList:
                     prefs.failed_artists.append(artist)
 
             self.to_fetch = ""
+
             #self.to_fetch_mbid_a = ""
 
             # if get_lfm_wait_timer.get() < 0.3:
@@ -21519,7 +21667,7 @@ class ArtistList:
             self.saves[viewing_pl_id][2] = self.scroll_position
 
         prefetch_mode = False
-        prefetch_distance = 40
+        prefetch_distance = 22
 
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
@@ -22289,6 +22437,7 @@ class ArtistInfoBox:
         img_filename = artist + '-ftv-full.jpg'
         text_filename = artist + '-lfm.txt'
         img_filepath_lfm = os.path.join(cache_directory, artist + '-lfm.png')
+        img_filepath_dcg = os.path.join(cache_directory, artist + '-dcg.jpg')
         img_filepath = os.path.join(cache_directory, img_filename)
         text_filepath = os.path.join(cache_directory, text_filename)
 
@@ -22314,8 +22463,8 @@ class ArtistInfoBox:
                     artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
                     artist_picture_render.show = True
 
-                elif os.path.isfile(img_filepath_lfm):
-                    artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
+                elif os.path.isfile(img_filepath_dcg):
+                    artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
                     artist_picture_render.show = True
 
                 with open(text_filepath, encoding="utf-8") as f:
@@ -22352,12 +22501,18 @@ class ArtistInfoBox:
                         artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
                         artist_picture_render.show = True
                     except:
-                        print("No artist img found")
+                        print("Failed to find image from fanart.tv")
+                if not artist_picture_render.show:
+                    if verify_discogs():
+                        try:
+                            save_discogs_artist_thumb(artist, img_filepath_dcg)
+                            artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
+                            artist_picture_render.show = True
+                        except:
+                            print("Failed to find image from discogs")
 
                 self.status = "Ready"
                 gui.update = 2
-
-
 
 
             # if cover_link and 'http' in cover_link:
@@ -24320,7 +24475,8 @@ def save_state():
             prefs.auto_sort,
             prefs.lyrics_enables,
             prefs.fanart_notify,
-            prefs.bg_showcase_only]
+            prefs.bg_showcase_only,
+            prefs.discogs_pat]
 
     #print(prefs.last_device + "-----")
 
