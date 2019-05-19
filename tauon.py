@@ -6617,7 +6617,7 @@ def clear_img_cache(delete_disk=True):
         direc = os.path.join(cache_directory)
         if os.path.isdir(direc):
             for item in os.listdir(direc):
-                if "-lfm" not in item and "-ftv" not in item:
+                if "-lfm" not in item and "-ftv" not in item and "-dcg" not in item:
                     os.remove(os.path.join(direc, item))
 
                 # Get rid of those annoying star images
@@ -9340,7 +9340,7 @@ def remove_embed_picture(index):
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
 
-picture_menu.add(_('Auto-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def toggle_gimage(mode=0):
@@ -9363,7 +9363,7 @@ def ser_gimage(index):
     line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
     webbrowser.open(line, new=2, autoraise=True)
 
-picture_menu.add(_('Search Google'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
 
 
 def append_here():
@@ -16771,6 +16771,14 @@ class Over:
                     show_message("There is no text in the clipboard", "error")
                 elif len(text) == 40:
                     prefs.discogs_pat = text
+                    prefs.failed_artists.clear()
+                    artist_list_box.to_fetch = ""
+                    for key, value in artist_list_box.thumb_cache.items():
+                        if value:
+                            SDL_DestroyTexture(value[0])
+                    artist_list_box.thumb_cache.clear()
+                    artist_list_box.to_fetch = ""
+
                 else:
                     show_message("That is not a valid token", "error")
             y += 30 * gui.scale
@@ -21066,7 +21074,7 @@ def save_discogs_artist_thumb(artist, filepath):
 
     print("Searching discogs for artist image...")
 
-    d = discogs_client.Client('TauonMusicBox/4.2.2', user_token=prefs.discogs_pat)
+    d = discogs_client.Client('TauonMusicBox/' + version, user_token=prefs.discogs_pat)
 
     results = d.search(artist, type='artist')
 
