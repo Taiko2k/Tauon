@@ -23981,7 +23981,7 @@ if system == 'linux':
         )
 
 
-print("Almost done...")
+# print("Almost done...")
 
 gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
 
@@ -24581,7 +24581,7 @@ if reload_state:
     # if reload_state[0] == 2:
     #     pctl.playing_state = 2
 
-print("Setup done. Entering main loop")
+print("Setup done. Entering main loop\n")
 
 pctl.notify_update()
 
