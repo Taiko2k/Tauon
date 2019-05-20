@@ -34,7 +34,6 @@ def parse_mbids_from_vorbis(object, key, value):
 
     if key == "musicbrainz_trackid":
         object.misc['musicbrainz_recordingid'] = value
-        print(object.filepath)
         return True
 
     if key == "musicbrainz_releasetrackid":
