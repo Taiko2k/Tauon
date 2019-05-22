@@ -824,6 +824,7 @@ class Prefs:    # Used to hold any kind of settings
         self.fanart_notify = True
         self.discogs_pat = ""
 
+        self.artist_list_prefer_album_artist = False
 
 
 prefs = Prefs()
@@ -5337,7 +5338,7 @@ if draw_border:
 print("Creating window...")
 
 t_window = SDL_CreateWindow(window_title,
-                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_size[0], window_size[1],
                             flags)
 
@@ -13342,12 +13343,6 @@ def bar_love():
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
 def toggle_search():
-    # global quick_search_mode
-    # global input_text
-    # quick_search_mode ^= True
-    # search_text.text = ""
-    # input_text = ""
-    #search_over.search_text.text = " "
     search_over.active = True
 
 extra_menu.add(_('Global Search'), toggle_search)
@@ -13439,6 +13434,14 @@ def toggle_notifications(mode=0):
     if prefs.show_notifications:
         if not de_nofity_support:
             show_message("I'm not sure notifications are supported by this DE", 'warning', 'You should probably leave this disabled.')
+
+def toggle_al_pref_album_artist(mode=0):
+
+    if mode == 1:
+        return prefs.artist_list_prefer_album_artist
+
+    prefs.artist_list_prefer_album_artist ^= True
+    artist_list_box.saves.clear()
 
 
 def toggle_mini_lyrics(mode=0):
@@ -14688,7 +14691,7 @@ def worker2():
                         filename = t.filename.lower()
 
                         stem = os.path.dirname(t.parent_folder_path)
-                        # 5 = meta
+
 
                         if len(s_text) > 2 and s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
 
@@ -17122,6 +17125,9 @@ class Over:
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
         y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_al_pref_album_artist, _("Artist list prefers album-artist"))
+
+
 
 
 
@@ -21426,9 +21432,12 @@ class ArtistList:
                 time.sleep(0.00001)
                 track = pctl.g(item)
                 artist = get_artist_strip_feat(track)
-                if artist:
-                    if artist not in all:
+                if prefs.artist_list_prefer_album_artist and track.album_artist:
+                    artist = track.album_artist
 
+                if artist:
+                    # Confirm to final list if appeared at least 5 times
+                    if artist not in all:
                         if artist not in counts:
                             counts[artist] = 0
                         counts[artist] += 1
@@ -21440,7 +21449,7 @@ class ArtistList:
                     if track.parent_folder_path not in artist_parents[artist]:
                         artist_parents[artist].append(track.parent_folder_path)
 
-            #self.current_album_counts = artist_parents
+
             current_album_counts = artist_parents
 
             all.sort()

@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.3.1
+
+ - Added option to prefer using album-artist in artist list panel
+
 v4.3.0
 
  - Added quick cover art download feature
