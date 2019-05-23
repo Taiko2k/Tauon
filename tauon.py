@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.3.0"
+n_version = "4.3.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -21619,7 +21619,7 @@ class ArtistList:
 
                 gui.pl_update += 1
                 if album_mode:
-                    goto_album(i)
+                    goto_album(select)
 
                 self.click_highlight_timer.set()
 
