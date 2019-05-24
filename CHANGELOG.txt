@@ -3,8 +3,11 @@ Changelog-------------------------------------
 
 v4.3.1
 
+ - Added square layout to mini mode
  - Added option to prefer using album-artist in artist list panel
+ - Tweaked mini mode controls to always display when cursor enters panel
  - Fixed gallery not jumping to artist when using artist list
+ - Fixed cached last.fm artist images not appearing in artist bio panel
 
 v4.3.0
 
