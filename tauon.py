@@ -13294,6 +13294,7 @@ mode_menu.add(_('Mini Mode'), set_mini_mode_A1)
 mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
 mode_menu.add(_('Mini Mode Square'), set_mini_mode_B1)
 mode_menu.add(_('Mini Mode Square Large'), set_mini_mode_B2)
+mode_menu.add(_('Mini Mode Square Large'), set_mini_mode_B2)
 mode_menu.add(_('Mini Mode Micro'), set_mini_mode_D)
 # x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(175, show_icons=True)
@@ -16735,7 +16736,7 @@ class Over:
             self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
-            if not flatpak_mode and discord_allow:
+            if discord_allow:
                 y += 23 * gui.scale
                 self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
 
