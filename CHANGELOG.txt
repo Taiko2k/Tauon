@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.3.1
 
  - Added mini mode selector menu with new options
+ - Added restore button to mini mode
  - Added option to prefer using album-artist in artist list panel
  - Tweaked mini mode controls to always display when cursor enters panel
  - Fixed gallery not jumping to artist when using artist list

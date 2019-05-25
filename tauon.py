@@ -1116,7 +1116,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.save_position = [0, 0]
 
-        self.window_control_hit_area_w = 60 * self.scale
+        self.window_control_hit_area_w = 100 * self.scale
         self.window_control_hit_area_h = 30 * self.scale
 
         self.draw_vis4_top = False
@@ -5276,6 +5276,23 @@ def draw_window_tools():
     rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     fields.add(rect)
 
+    if gui.mode == 3:
+
+        rect = (window_size[0] - 96 * gui.scale, 1 * gui.scale, 30 * gui.scale, 28 * gui.scale)
+        ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
+        fields.add(rect)
+        if coll(rect):
+            ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), [70, 70, 70, 100], True)
+            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, [160, 160, 160, 160])
+            if (input.mouse_click or ab_click) and coll_point(click_location, rect):
+
+                restore_full_mode()
+                gui.update += 2
+
+        else:
+            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, [120, 120, 120, 45])
+
+
     rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg, True)
     fields.add(rect)
@@ -5303,11 +5320,15 @@ def draw_window_tools():
     if coll(rect):
         ddt.rect_a((rect[0], rect[1]), (rect[2] + 1 * gui.scale, rect[3]), colours.window_buttons_bg_over, True)
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
+        #top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, colours.artist_playing)
         if input.mouse_click or ab_click:
             pctl.running = False
     else:
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [110, 110, 110, 70])
+
+
+
+
 
     if not fullscreen and not gui.maximized and not gui.mode == 3:
         corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
@@ -13269,11 +13290,11 @@ def set_mini_mode_D():
     prefs.mini_mode_mode = 4
     set_mini_mode()
 
-mode_menu.add(_('Mini Mode A'), set_mini_mode_A1)
-mode_menu.add(_('Mini Mode A Large'), set_mini_mode_A2)
-mode_menu.add(_('Mini Mode B'), set_mini_mode_B1)
-mode_menu.add(_('Mini Mode B Large'), set_mini_mode_B2)
-mode_menu.add(_('Mini Mode D'), set_mini_mode_D)
+mode_menu.add(_('Mini Mode'), set_mini_mode_A1)
+mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
+mode_menu.add(_('Mini Mode Square'), set_mini_mode_B1)
+mode_menu.add(_('Mini Mode Square Large'), set_mini_mode_B2)
+mode_menu.add(_('Mini Mode Micro'), set_mini_mode_D)
 # x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(175, show_icons=True)
 
@@ -17715,6 +17736,7 @@ class TopPanel:
         self.drag_zone_start_x = 300 * gui.scale
 
         self.exit_button = asset_loader('ex.png', True)
+        self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
         self.dl_button = asset_loader('dl.png', True)
@@ -19225,7 +19247,7 @@ class MiniMode:
 
 
         # Show exit/min buttons when mosue over
-        tool_rect = (window_size[0] - 90 * gui.scale, 2, 88 * gui.scale, 45 * gui.scale)
+        tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
@@ -19329,120 +19351,10 @@ class MiniMode2:
                     ddt.draw_text((x1 + 15 * gui.scale, 50 * gui.scale), line1, colours.grey(110), 314,
                                   window_size[0] - x1 -  30 * gui.scale)
 
-        #
-        #         # Test click to seek
-        #         if input.mouse_click and coll(seek_r_hit):
-        #
-        #             click_x = mouse_position[0]
-        #             if click_x > seek_r[0] + seek_r[2]:
-        #                 click_x = seek_r[0] + seek_r[2]
-        #             if click_x < seek_r[0]:
-        #                 click_x = seek_r[0]
-        #             click_x -= seek_r[0]
-        #
-        #             if click_x < 6 * gui.scale:
-        #                 click_x = 0
-        #             seek = click_x / seek_r[2]
-        #
-        #             pctl.seek_decimal(seek)
-        #
-        #         # Draw progress bar background
-        #         ddt.rect_r(seek_r, [55, 55, 55, 255], True)
-        #
-        #         # Calculate and draw bar foreground
-        #         progress_w = 0
-        #         if pctl.playing_length > 1:
-        #             progress_w = pctl.playing_time * seek_w / pctl.playing_length
-        #         seek_colour = [210, 210, 210, 255]
-        #
-        #         if pctl.playing_state != 1:
-        #             seek_colour = [210, 40, 100, 255]
-        #
-        #         seek_r[2] = progress_w
-        #
-        #
-        #         if self.volume_timer.get() < 0.9:
-        #             progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
-        #             gui.update += 1
-        #             seek_colour = [210, 210, 210, 255]
-        #             seek_r[2] = progress_w
-        #             seek_r[0] += 2 * gui.scale
-        #             seek_r[1] += 2 * gui.scale
-        #             seek_r[3] -= 4 * gui.scale
-        #
-        #         ddt.rect_r(seek_r, seek_colour, True)
-        #
-        #
-        # left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
-        # right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * gui.scale)
-        #
-        # fields.add(left_area)
-        # fields.add(right_area)
-        #
-        # hint = 0
-        # if coll(control_hit_area):
-        #     hint = 30
-        # if coll(left_area):
-        #     hint = 230
-        # if hint:
-        #     self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
-        #
-        # hint = 0
-        # if coll(control_hit_area):
-        #     hint = 30
-        # if coll(right_area):
-        #     hint = 230
-        # if hint:
-        #     self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
-        #
-        #
-        # # Shuffle
-        #
-        # shuffle_area = (seek_r[0] + seek_w, seek_r[1] - 10 * gui.scale, 50 * gui.scale, 30 * gui.scale)
-        # #fields.add(shuffle_area)
-        # # ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
-        #
-        # if coll(control_hit_area):
-        #     colour = [255, 255, 255, 20]
-        #     if input.mouse_click and coll(shuffle_area):
-        #         pctl.random_mode ^= True
-        #     if pctl.random_mode:
-        #         colour = [255, 255, 255, 220]
-        #
-        #     sx = seek_r[0] + seek_w + 8 * gui.scale
-        #     sy = seek_r[1] - 1 * gui.scale
-        #     ddt.rect_a((sx, sy), (14 * gui.scale, 2 * gui.scale), colour, True)
-        #     sy += 4 * gui.scale
-        #     ddt.rect_a((sx, sy), (28 * gui.scale, 2 * gui.scale), colour, True)
-        #
-        #
-        # shuffle_area = (seek_r[0] - 41 * gui.scale, seek_r[1] - 10 * gui.scale, 40 * gui.scale, 30 * gui.scale)
-        # if coll(control_hit_area):
-        #     colour = [255, 255, 255, 20]
-        #     if input.mouse_click and coll(shuffle_area):
-        #         pctl.repeat_mode ^= True
-        #     if pctl.repeat_mode:
-        #         colour = [255, 255, 255, 220]
-        #
-        #     sx = seek_r[0] - 39 * gui.scale
-        #     sy = seek_r[1] - 1 * gui.scale
-        #
-        #     tw = 2 * gui.scale
-        #     ddt.rect_a((sx + 15 * gui.scale, sy), (13 * gui.scale, tw), colour, True)
-        #     ddt.rect_a((sx + 4 * gui.scale, sy + 4 * gui.scale), (25 * gui.scale, tw), colour, True)
-        #     ddt.rect_a((sx + 30 * gui.scale - tw, sy), (tw, 6 * gui.scale), colour, True)
-        #
-        #
-        # # Forward and back clicking
-        # if input.mouse_click:
-        #     if coll(left_area):
-        #         pctl.back()
-        #     if coll(right_area):
-        #         pctl.advance()
 
 
         # Show exit/min buttons when mosue over
-        tool_rect = (window_size[0] - 90 * gui.scale, 2, 88 * gui.scale, 45 * gui.scale)
+        tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
@@ -19524,6 +19436,7 @@ def restore_full_mode():
     SDL_SetWindowMinimumSize(t_window, 560, 330)
     SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
 
     restore_ignore_timer.set()  # Hacky
 
@@ -24209,10 +24122,8 @@ def hit_callback(win, point, data):
     # Special layout modes
     if gui.mode == 3:
 
-        # Small rectangle mode
-        if prefs.mini_mode_mode == 4:
-            if point.contents.x < window_size[1]:
-                return SDL_HITTEST_DRAGGABLE
+        if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[
+            0] - gui.window_control_hit_area_w:
             return SDL_HITTEST_NORMAL
 
         # Square modes
@@ -24220,8 +24131,6 @@ def hit_callback(win, point, data):
         if window_size[0] == window_size[1]:
             y1 = window_size[1] - 79 * gui.scale
         if point.contents.y < y1:
-            if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[0] - gui.window_control_hit_area_w:
-                return SDL_HITTEST_NORMAL
             return SDL_HITTEST_DRAGGABLE
 
         return SDL_HITTEST_NORMAL
