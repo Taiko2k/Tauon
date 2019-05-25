@@ -13,16 +13,20 @@
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/52980219-fa63ba80-343d-11e9-853b-06de62ba03c7.png</icon>
 
   <description>
-    <p>Tauon Music Box is a music player for playback of audio files. Designed to be streamlined but powerful while putting the user in control of their music collection.</p>
+    <p>Tauon Music Box is a music player for playback of audio files. Designed to put the user in control of their music collection. Packed with features while maintaining a modern streamlined interface.</p>
     <p>Features:</p>
     <ul>
+      <li>Compatible with most common audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
       <li>Simple drag and drop file importing</li>
+      <li>Gapless playback</li>
       <li>Built in CUE sheet detection</li>
       <li>Groups tracks by folder</li>
+      <li>Download cover art function</li>
       <li>Easily create and manage playlists</li>
       <li>Quick and powerful searching</li>
       <li>Scrobble and love tracks to last.fm</li>
-      <li>Large album art and gallery layouts avaliable</li>
+      <li>Large album art and gallery layouts available</li>
+      <li>And more!</li>
     </ul>
   </description>
 
@@ -39,6 +43,7 @@
   </categories>
 
   <releases>
+    <release version="4.3.1" date="2019-05-25"/>
     <release version="4.3.0" date="2019-05-20"/>
     <release version="4.2.3" date="2019-05-04"/>
     <release version="4.2.2" date="2019-05-04"/>

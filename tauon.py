@@ -19076,7 +19076,7 @@ class MiniMode:
 
         track = pctl.playing_object()
 
-        control_hit_area = (3, y1, w - 6, h1 - 3)
+        control_hit_area = (3, y1 - 15 * gui.scale, w - 6, h1 - 3 + 15 * gui.scale)
         mouse_in_area = coll(control_hit_area)
         fields.add(control_hit_area)
 
@@ -19252,10 +19252,10 @@ class MiniMode:
         if coll(tool_rect):
             draw_window_tools()
 
-
-        ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
-        if gui.scale == 2:
-            ddt.rect_r((1, 1, w - 2, h - 2), colours.mini_mode_border)
+        if w != h:
+            ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
+            if gui.scale == 2:
+                ddt.rect_r((1, 1, w - 2, h - 2), colours.mini_mode_border)
 
 mini_mode = MiniMode()
 

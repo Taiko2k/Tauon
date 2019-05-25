@@ -16,6 +16,7 @@ Designed to be simple and streamlined while putting the user in control of their
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music for easy copying to a PMP.
   - Last.fm **scrobbling** with track love support :heart:. See which of your tracks your friends loved too! :purple_heart:
   - Fast and responsive UI.
+  - Download cover art function.
   - **Lyrics** display with support for displaying **guitar chord** lyrics and synced `.lrc` files.
   - Edit tags with MusicBrainz **Picard** (when also installed).
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
