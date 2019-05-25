@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.3.2
+
+ - Fixed and enabled mini mode with maximizing
+
 v4.3.1
 
  - Added mini mode selector menu with new options

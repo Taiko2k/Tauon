@@ -833,6 +833,7 @@ class Prefs:    # Used to hold any kind of settings
 
 
 
+
 prefs = Prefs()
 
 def check_transfer_p():
@@ -1136,6 +1137,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.seek_bar_rect = (0,0,0,0)
         self.volume_bar_rect = (0,0,0,0)
+
+        self.mini_mode_return_maximized = False
+
+
 
 
 
@@ -1657,6 +1662,7 @@ try:
     db_version = save[17]
     view_prefs = save[18]
     window_size = save[19]
+    gui.save_size = copy.copy(save[19])
     gui.rspw = save[20]
     # savetime = save[21]
     gui.vis_want = save[22]
@@ -18662,7 +18668,7 @@ class BottomBarType1:
             else:
                 pctl.show_current()
 
-                if pctl.playing_ready() and not gui.maximized and not fullscreen == 1:
+                if pctl.playing_ready() and not fullscreen == 1:
 
                     if right_click:
                         mode_menu.activate()
@@ -19370,8 +19376,14 @@ mini_mode2 = MiniMode2()
 
 def set_mini_mode():
 
-    if gui.maximized or fullscreen == 1:
+    if fullscreen == 1:
         return
+
+    if gui.maximized:
+        SDL_RestoreWindow(t_window)
+        update_layout_do()
+
+
 
     gui.mode = 3
     gui.vis = 0
@@ -19432,6 +19444,7 @@ def restore_full_mode():
 
     window_size[0] = gui.save_size[0]
     window_size[1] = gui.save_size[1]
+
     SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
     SDL_SetWindowMinimumSize(t_window, 560, 330)
     SDL_SetWindowResizable(t_window, True)
@@ -19445,6 +19458,16 @@ def restore_full_mode():
     global mouse_down
     mouse_down = False
     input.mouse_click = False
+
+    if gui.maximized:
+        SDL_MaximizeWindow(t_window)
+        time.sleep(0.05)
+        SDL_PumpEvents()
+        SDL_GetWindowSize(t_window, i_x, i_y)
+        window_size[0] = i_x.contents.value
+        window_size[1] = i_y.contents.value
+
+        print(window_size)
 
     gui.update_layout()
 
@@ -24364,8 +24387,9 @@ def update_layout_do():
 
     if gui.mode == 1:
 
-        if not gui.maximized and not gui.lowered:
-            gui.save_size = copy.deepcopy(window_size)
+        if not gui.maximized and not gui.lowered and not gui.mode == 3:
+            gui.save_size[0] = window_size[0]
+            gui.save_size[1] = window_size[1]
 
         bottom_bar1.update()
 
@@ -24811,6 +24835,9 @@ pctl.notify_update()
 
 key_focused = 0
 
+
+
+
 while pctl.running:
     # bm.get('main')
 
@@ -25204,6 +25231,7 @@ while pctl.running:
                         window_size[0] = max(560, window_size[0])
                         window_size[1] = max(330, window_size[1])
 
+
                     update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
@@ -25246,6 +25274,7 @@ while pctl.running:
 
             elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
                 gui.maximized = True
+                print("Maximize window")
                 update_layout = True
                 gui.pl_update = 1
                 gui.update += 1
