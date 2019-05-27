@@ -162,9 +162,6 @@ class Flac:
                     a = buffer[0:position].decode("utf-8").lower()
                     b = buffer[position + 1:]
 
-                    # print(a)
-                    # print(b)
-
                     if parse_mbids_from_vorbis(self, a, b.decode()):
                         pass
                         # print("Found MBID data:")
@@ -236,7 +233,7 @@ class Flac:
             return
 
         i = 0
-        while i < 7:
+        while i < 20:
             i += 1
 
             z = self.read_block(f)
@@ -263,7 +260,6 @@ class Flac:
                 # f.seek(z[2], 1)
 
             if z[1] == 6 and get_picture:
-
                 self.picture = parse_picture_block(f)
                 self.has_picture = True
 

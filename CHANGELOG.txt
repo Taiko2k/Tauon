@@ -4,6 +4,9 @@ Changelog-------------------------------------
 v4.3.2
 
  - Fixed and enabled mini mode with maximizing
+ - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
+ - Fixed artist list sorting with case sensitivity
+ - Fixed artist list sort by album-artist setting not remembering on restart
 
 v4.3.1
 
