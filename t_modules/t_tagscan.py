@@ -116,6 +116,7 @@ class Flac:
         self.disc_total = ""
         self.lyrics = ""
         self.cue_sheet = ""
+        self.composer = ""
         self.misc = {}
 
         self.sample_rate = 48000
@@ -202,6 +203,11 @@ class Flac:
                         self.track_gain = float(b.decode("utf-8").strip(" dB"))
                     elif 'replaygain_album_gain' == a:
                         self.album_gain = float(b.decode("utf-8").strip(" dB"))
+                    elif 'composer' == a:
+                        self.composer = b.decode("utf-8")
+                    # else:
+                    #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
+                    #     print(b)
                         # print("\n-------------------------------------------\n")
 
         f.seek(block_position * -1, 1)
@@ -315,6 +321,7 @@ class Opus:
         self.disc_total = ""
         self.picture = ""
         self.lyrics = ""
+        self.composer = ""
         self.track_gain = None
         self.album_gain = None
         self.misc = {}
@@ -467,6 +474,8 @@ class Opus:
                         self.disc_total = b.decode("utf-8")
                     elif a == 'lyrics' or a == 'unsyncedlyrics':
                         self.lyrics = b.decode("utf-8")
+                    elif a == "composer":
+                        self.composer = b.decode("utf-8")
                     else:
                         print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                         print(b.decode("utf-8"))
@@ -529,6 +538,7 @@ class Ape:
         self.track_gain = None
         self.album_gain = None
         self.misc = {}
+        self.composer = ""
 
         self.sample_rate = 48000
         self.bit_rate = 0
@@ -647,6 +657,8 @@ class Ape:
                     self.album = value
                 elif key.lower() == "artist":
                     self.artist = value
+                elif key.lower() == "composer":
+                    self.composer = value
                 elif key.lower() == "album artist":
                     self.album_artist = value
                 elif key.lower() == "label":
@@ -942,6 +954,7 @@ class M4a:
         self.track_gain = None
         self.album_gain = None
         self.misc = {}
+        self.composer = ""
 
         self.sample_rate = 0
         self.bit_rate = 0
@@ -1003,6 +1016,9 @@ class M4a:
 
             if name == b'\xa9ART':
                 self.artist = meta_get(f, size).decode()
+
+            if name == b'\xa9wrt':
+                self.composer = meta_get(f, size).decode()
 
             if name == b'\xa9cmt':
                 self.comment = meta_get(f, size).decode()

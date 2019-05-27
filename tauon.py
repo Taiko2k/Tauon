@@ -1566,6 +1566,7 @@ class TrackClass:   # This is the fundamental object/data structure of a track
         self.artist = ""
         self.album_artist = ""
         self.title = ""
+        self.composer = ""
         self.length = 0
         self.bitrate = 0
         self.samplerate = 0
@@ -2064,6 +2065,10 @@ if db_version > 0:
             if len(multi_playlist[i]) <= 10:
                 multi_playlist[i].append("")
 
+    if db_version <= 28:
+        print("Updating database to version 29")
+        for key, value in master_library.items():
+            setattr(master_library[key], 'composer', "")
 # Loading Config -----------------
 
 download_directories = []
@@ -2259,6 +2264,7 @@ def tag_scan(nt):
             nt.title = audio.title
             nt.artist = audio.artist
             nt.album = audio.album
+            nt.composer = audio.composer
             nt.date = audio.date
             nt.samplerate = audio.sample_rate
             nt.bit_depth = audio.bit_depth
@@ -2302,6 +2308,7 @@ def tag_scan(nt):
             nt.title = audio.title
             nt.artist = audio.artist
             nt.album = audio.album
+            nt.composer = audio.composer
             nt.date = audio.date
             nt.samplerate = audio.sample_rate
             nt.size = os.path.getsize(nt.fullpath)
@@ -2333,6 +2340,7 @@ def tag_scan(nt):
             nt.artist = audio.artist
             nt.album = audio.album
             nt.date = audio.date
+            nt.composer = audio.composer
             nt.samplerate = audio.sample_rate
             nt.bit_depth = audio.bit_depth
             nt.size = os.path.getsize(nt.fullpath)
@@ -2379,6 +2387,7 @@ def tag_scan(nt):
             nt.title = audio.title
             nt.artist = audio.artist
             nt.album = audio.album
+            nt.composer = audio.composer
             nt.date = audio.date
             nt.samplerate = audio.sample_rate
             nt.size = os.path.getsize(nt.fullpath)
@@ -2428,7 +2437,9 @@ def tag_scan(nt):
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
                 nt.genre = tag.genre
-                nt.date = tag.date
+                if tag.date:
+                    nt.date = tag.date
+                nt.composer = tag.composer
 
                 if UFID in tag:
                     for item in tag[UFID]:
@@ -12697,11 +12708,20 @@ def sa_remove(h):
 def sa_artist():
     gui.pl_st.append(["Artist", 220, False])
     gui.update_layout()
+def sa_album_artist():
+    gui.pl_st.append(["Album-Artist", 220, False])
+    gui.update_layout()
+def sa_composer():
+    gui.pl_st.append(["Composer", 220, False])
+    gui.update_layout()
 def sa_title():
     gui.pl_st.append(["Title", 220, False])
     gui.update_layout()
 def sa_album():
     gui.pl_st.append(["Album", 220, False])
+    gui.update_layout()
+def sa_comment():
+    gui.pl_st.append(["Comment", 300, False])
     gui.update_layout()
 def sa_track():
     gui.pl_st.append(["T", 25, True])
@@ -12742,6 +12762,15 @@ def key_love(index):
 
 def key_artist(index):
     return pctl.master_library[index].artist
+
+def key_album_artist(index):
+    return pctl.master_library[index].album_artist
+
+def key_composer(index):
+    return pctl.master_library[index].composer
+
+def key_comment(index):
+    return pctl.master_library[index].comment
 
 def key_title(index):
     return pctl.master_library[index].title
@@ -12789,10 +12818,14 @@ def sort_ass(h, invert=False):
 
     if name == "Artist":
         key = key_artist
+    if name == "Album-Artist":
+        key = key_album_artist
     if name == "Title":
         key = key_title
     if name == "Album":
         key = key_album
+    if name == "Composer":
+        key = key_composer
     if name == "Time":
         key = key_duration
     if name == "Date":
@@ -12805,6 +12838,8 @@ def sort_ass(h, invert=False):
         key = key_playcount
     if name == 'Starline':
         key = best
+    if name == 'Comment':
+        key = key_comment
     if name == "Codec":
         key = key_codec
     if name == "Bitrate":
@@ -12846,6 +12881,8 @@ set_menu.br()
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
 set_menu.add("+ Album", sa_album)
+set_menu.add("+ Album-Artist", sa_album_artist)
+set_menu.add("+ Composer", sa_composer)
 set_menu.add("+ Duration", sa_time)
 set_menu.add("+ Date", sa_date)
 set_menu.add("+ Genre", sa_genre)
@@ -12854,6 +12891,7 @@ set_menu.add("+ Play Count", sa_count)
 set_menu.add("+ Codec", sa_codec)
 set_menu.add("+ Bitrate", sa_bitrate)
 set_menu.add("+ Has Lyrics", sa_lyrics)
+set_menu.add("+ Comment", sa_comment)
 set_menu.add("+ Filepath", sa_file)
 set_menu.add("+ Starline", sa_star)
 set_menu.add("+ Loved", sa_love)
@@ -13622,6 +13660,18 @@ def discord_loop():
 
     asyncio.set_event_loop(asyncio.new_event_loop())
 
+    if system == 'linux' and not flatpak_mode:
+        try:
+            print("Try to create link for Flatpak Discord RP")
+            xdg_run = os.environ.get('XDG_RUNTIME_DIR')
+            if xdg_run:
+                discord_link_command = "ln -s discord/ipc-0 $XDG_RUNTIME_DIR/discord-ipc-0"
+                print("Link command: " + discord_link_command)
+                os.system(discord_link_command)
+                print("Symlink command run")
+        except:
+            print("Discord flatpak link failed (may already exist)")
+
     try:
 
         print("Attempting to connect to Discord...")
@@ -13730,7 +13780,6 @@ def discord_loop():
                 break
 
     except:
-        raise
         show_message("Error connecting to Discord", 'error')
         prefs.disconnect_discord = False
         # raise
@@ -20407,6 +20456,21 @@ class StandardPlaylist:
                             colour = colours.album_text
                             if this_line_playing is True:
                                 colour = colours.album_playing
+                        elif item[0] == "Album-Artist":
+                            text = n_track.album_artist
+                            colour = colours.artist_text
+                            if this_line_playing is True:
+                                colour = colours.artist_playing
+                        elif item[0] == "Composer":
+                            text = n_track.composer
+                            colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
+                        elif item[0] == "Comment":
+                            text = n_track.comment
+                            colour = colours.index_text
+                            if this_line_playing is True:
+                                colour = colours.index_playing
                         elif item[0] == "T":
                             text = track_number_process(n_track.track_number)
                             colour = colours.index_text
@@ -20509,11 +20573,12 @@ class StandardPlaylist:
 
                         #text = trunc_line(text, gui.row_font_size, wid)
                         #text = trunc_line2(text, gui.row_font_size, wid)
-                        ddt.draw_text((run + 6, y + y_off),
-                                  text,
-                                  colour,
-                                  font,
-                                  max_w=wid)
+                        if text:
+                            ddt.draw_text((run + 6, y + y_off),
+                                      text,
+                                      colour,
+                                      font,
+                                      max_w=wid)
                     run += item[1]
 
 
@@ -24671,7 +24736,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            28,  # Version, used for upgrading
+            29,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -27529,6 +27594,7 @@ while pctl.running:
 
 
                 w = 540 * gui.scale
+                #w = 550 * gui.scale
                 h = 240 * gui.scale
                 comment_mode = 0
 
@@ -27709,7 +27775,7 @@ while pctl.running:
                     # -----------
                     if tc.artist != tc.album_artist != "":
                         x += int(170 * gui.scale)
-                        rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 160 * gui.scale, 14 * gui.scale]
+                        rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if coll(rect):
                             ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_on, 212)
@@ -27719,8 +27785,11 @@ while pctl.running:
                                 input.mouse_click = False
                         else:
                             ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_off, 212)
-                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1), tc.album_artist,
+
+                        q = ddt.draw_text((x + (8 + 88)  * gui.scale, y1), tc.album_artist,
                                   value_colour, value_font, max_w=120 * gui.scale)
+                        if coll(rect):
+                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font_a)
                         x -= int(170 * gui.scale)
 
                     y1 += int(15 * gui.scale)
@@ -27744,7 +27813,7 @@ while pctl.running:
                         line = str(tc.track_number) + " of " + str(
                             tc.track_total)
                         ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", key_colour_off, 212)
-                        ddt.draw_text((x + (8 + 90)  * gui.scale, y1), line,
+                        ddt.draw_text((x + (8 + 88)  * gui.scale, y1), line,
                                   value_colour, value_font)
                         x -= int(170 * gui.scale)
 
@@ -27761,7 +27830,7 @@ while pctl.running:
                         line = str(tc.disc_number) + " of " + str(
                             tc.disc_total)
                         ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", key_colour_off, 212)
-                        ddt.draw_text((x + (8 + 90) * gui.scale, y1), line,
+                        ddt.draw_text((x + (8 + 88) * gui.scale, y1), line,
                                   value_colour, value_font)
                         x -= int(170 * gui.scale)
 
@@ -27795,6 +27864,25 @@ while pctl.running:
                     ddt.draw_text((x2, y1), str(tc.date),
                               value_colour, value_font)
 
+
+                    if tc.composer and tc.composer != tc.artist:
+                        x += int(170 * gui.scale)
+                        rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
+                        fields.add(rect)
+                        if coll(rect):
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Composer", key_colour_on, 212)
+                            if input.mouse_click:
+                                show_message("Composer copied to clipboard")
+                                copy_to_clipboard(tc.album_artist)
+                                input.mouse_click = False
+                        else:
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Composer", key_colour_off, 212)
+                        q = ddt.draw_text((x + (8 + 88)  * gui.scale, y1), tc.composer,
+                                  value_colour, value_font, max_w=120 * gui.scale)
+                        if coll(rect):
+                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.composer, value_font_a)
+
+                        x -= int(170 * gui.scale)
 
                     y1 += int(23 * gui.scale)
 
