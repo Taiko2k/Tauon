@@ -1878,6 +1878,8 @@ try:
         prefs.discogs_pat = save[129]
     if save[130] is not None:
         prefs.mini_mode_mode = save[130]
+    if save[131] is not None:
+        prefs.artist_list_prefer_album_artist = save[131]
 
     state_file.close()
     del save
@@ -21674,7 +21676,7 @@ class ArtistList:
 
             current_album_counts = artist_parents
 
-            all.sort()
+            all.sort(key=lambda y: y.lower())
 
         except:
             print("Album scan failure")
@@ -24782,7 +24784,8 @@ def save_state():
             prefs.fanart_notify,
             prefs.bg_showcase_only,
             prefs.discogs_pat,
-            prefs.mini_mode_mode]
+            prefs.mini_mode_mode,
+            prefs.artist_list_prefer_album_artist]
 
     #print(prefs.last_device + "-----")
 
