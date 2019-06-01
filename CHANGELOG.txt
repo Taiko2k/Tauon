@@ -9,7 +9,6 @@ v4.3.2
  - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
  - Fixed artist list sorting with case sensitivity
  - Fixed artist list sort by album-artist setting not remembering on restart
- - Added workaround for Flatpak Discord > System Tauon RP (Tauon must be started first)
 
 v4.3.1
 
