@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.3.1"
+n_version = "4.3.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -4538,6 +4538,7 @@ class Tauon:
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
         self.gui = gui
+        self.prefs = prefs
 
         self.worker_save_state = False
 
@@ -13660,17 +13661,17 @@ def discord_loop():
 
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    if system == 'linux' and not flatpak_mode:
-        try:
-            print("Try to create link for Flatpak Discord RP")
-            xdg_run = os.environ.get('XDG_RUNTIME_DIR')
-            if xdg_run:
-                discord_link_command = "ln -s discord/ipc-0 $XDG_RUNTIME_DIR/discord-ipc-0"
-                print("Link command: " + discord_link_command)
-                os.system(discord_link_command)
-                print("Symlink command run")
-        except:
-            print("Discord flatpak link failed (may already exist)")
+    # if system == 'linux' and not flatpak_mode:
+    #     try:
+    #         print("Try to create link for Flatpak Discord RP")
+    #         xdg_run = os.environ.get('XDG_RUNTIME_DIR')
+    #         if xdg_run:
+    #             discord_link_command = "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0"
+    #             print("Link command: " + discord_link_command)
+    #             os.system(discord_link_command)
+    #             print("Symlink command run")
+    #     except:
+    #         print("Discord flatpak link failed (may already exist)")
 
     try:
 
@@ -13782,7 +13783,7 @@ def discord_loop():
     except:
         show_message("Error connecting to Discord", 'error')
         prefs.disconnect_discord = False
-        # raise
+        #raise
 
     prefs.discord_active = False
 
@@ -20467,7 +20468,7 @@ class StandardPlaylist:
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Comment":
-                            text = n_track.comment
+                            text = n_track.comment.replace("\n", " ").replace("\r", " ")
                             colour = colours.index_text
                             if this_line_playing is True:
                                 colour = colours.index_playing
