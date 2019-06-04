@@ -5,6 +5,7 @@ v4.3.2
 
  - Added "Composer" field to track box
  - Added "Album-Artist", "Composer" and "Comment" to columns mode
+ - Improved "delete embedded image" function to only remove from single file when shift key down
  - Fixed and enabled mini mode with maximizing
  - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
  - Fixed artist list sorting with case sensitivity

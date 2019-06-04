@@ -9212,7 +9212,11 @@ def remove_embed_deco():
     else:
         line_colour = colours.menu_text_disabled
 
-    return [line_colour, colours.menu_background, None]
+    text = _("Delete Embedded | Folder")
+    if key_shift_down or key_shiftr_down:
+        text = _("Delete Embedded | Track")
+
+    return [line_colour, colours.menu_background, text]
 
 
 def download_art1(index):
@@ -9322,18 +9326,37 @@ def download_art1_fire(index):
 
 
 def remove_embed_picture(index):
-    tracks = get_like_folder(index)
+
+
+    if key_shift_down or key_shiftr_down:
+        tracks = [index]
+        if pctl.g(index).is_cue or pctl.g(index).is_network:
+            show_message("Error - No handling for this kind of track", 'warning')
+            return
+    else:
+        tracks = []
+        original_parent_folder = pctl.master_library[index].parent_folder_name
+        for k in default_playlist:
+            tr = pctl.g(k)
+            if original_parent_folder == tr.parent_folder_name:
+                tracks.append(k)
+
     removed = 0
     pr = pctl.stop(True)
     processed = False
     try:
         for item in tracks:
 
-            if pctl.master_library[item].is_network:
+            tr = pctl.g(item)
+
+            if tr.is_cue:
                 continue
 
-            if "MP3" == pctl.master_library[item].file_ext:
-                tag = stagger.read_tag(pctl.master_library[item].fullpath)
+            if tr.is_network:
+                continue
+
+            if "MP3" == tr.file_ext:
+                tag = stagger.read_tag(tr.fullpath)
                 remove = False
                 try:
                     del tag[APIC]
@@ -9353,7 +9376,7 @@ def remove_embed_picture(index):
                     tag.write()
                     removed += 1
 
-            if "FLAC" == pctl.master_library[item].file_ext:
+            if "FLAC" == tr.file_ext:
 
                 if flatpak_mode:
                     print("Finding app from within Flatpak...")
@@ -9366,7 +9389,7 @@ def remove_embed_picture(index):
                     if "/metaflac" in r:
 
                         command = 'flatpak-spawn --host metaflac --remove --block-type=PICTURE "' \
-                                  + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
+                                  + tr.fullpath.replace('"', '\\"') + '"'
 
                     else:
                         show_message("Please install Flac on your host system for this.", 'info', "e.g. sudo apt install flac")
@@ -9374,7 +9397,7 @@ def remove_embed_picture(index):
 
                 else:
                     command = 'metaflac --remove --block-type=PICTURE "' \
-                              + pctl.master_library[item].fullpath.replace('"', '\\"') + '"'
+                              + tr.fullpath.replace('"', '\\"') + '"'
 
                 subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
                 removed += 1
@@ -9402,7 +9425,7 @@ def remove_embed_picture(index):
     clear_img_cache()
 
 # Delete all embedded album artwork from all files in the same folder as this track
-picture_menu.add(_('Folder Purge Embedded'), remove_embed_picture, remove_embed_deco, pass_ref=True)
+picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_deco, pass_ref=True)
 
 delete_icon = MenuIcon(asset_loader('del.png', True))
 
@@ -11965,17 +11988,6 @@ def reset_play_count(index):
 
 
 #track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
-
-
-def get_like_folder(index):
-    tracks = []
-
-    for k in default_playlist:
-
-        if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
-            if pctl.master_library[k].is_cue is False:
-                tracks.append(k)
-    return tracks
 
 
 def vacuum_playtimes(index):
