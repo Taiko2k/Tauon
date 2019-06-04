@@ -9127,7 +9127,7 @@ def save_embed_img():
     except:
         show_message("Image save error.", "error", "A mysterious error occurred")
 
-picture_menu = Menu(165)
+picture_menu = Menu(170)
 
 def open_image_deco():
 
@@ -27418,15 +27418,15 @@ while pctl.running:
             if gui.artist_info_panel:
                 top += gui.artist_panel_height
 
-            width = 16 * gui.scale
+            width = 15 * gui.scale
 
 
             x = 0
             if gui.lsp:  # Move left so it sits over panel divide
-                x = gui.lspw - 7 * gui.scale
-                if gui.lsp: #colours.lm or prefs.artist_list:  # Alligns with frame
+
+                x = gui.lspw - 1 * gui.scale
+                if not gui.set_mode:
                     width = 11 * gui.scale
-                    x = gui.lspw - 1 * gui.scale
 
             gui.scroll_hide_box = (
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
@@ -27531,8 +27531,7 @@ while pctl.running:
                             per = pctl.playlist_view_position / len(default_playlist)
                             sbp = int((ey - top - sbl) * per) + top + 1
 
-
-                    bg = colours.grey(24)
+                    bg = [40, 40, 40, 60]
                     fg = colours.scroll_colour
 
                     if colours.lm:
@@ -27546,7 +27545,7 @@ while pctl.running:
 
                     if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
                         0] != 0) or scroll_hold:
-                        ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 16], True)
+                        ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 19], True)
 
             # NEW TOP BAR
             # C-TBR
