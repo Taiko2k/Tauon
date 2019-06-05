@@ -20506,6 +20506,8 @@ class StandardPlaylist:
                                 colour = colours.album_playing
                         elif item[0] == "Album Artist":
                             text = n_track.album_artist
+                            if text == n_track.artist:
+                                text = ""
                             colour = colours.artist_text
                             if this_line_playing is True:
                                 colour = colours.artist_playing
@@ -20619,10 +20621,10 @@ class StandardPlaylist:
                         if n_track.found is False:
                             colour = colours.playlist_text_missing
 
-                        if item[0] in colours.column_colours:
-                            colour = colours.column_colours[item[0]]
-
                         if text:
+                            if item[0] in colours.column_colours:
+                                colour = colours.column_colours[item[0]]
+
                             ddt.draw_text((run + 6, y + y_off),
                                       text,
                                       colour,
