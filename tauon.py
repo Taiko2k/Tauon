@@ -1339,6 +1339,9 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         return alpha_blend((255, 255, 255, value), self.sys_background_3)
 
     def __init__(self):
+
+        self.column_colours = {}
+
         self.last_album = ""
         self.link_text = [100, 200, 252, 255]
 
@@ -12722,7 +12725,7 @@ def sa_artist():
     gui.pl_st.append(["Artist", 220, False])
     gui.update_layout()
 def sa_album_artist():
-    gui.pl_st.append(["Album-Artist", 220, False])
+    gui.pl_st.append(["Album Artist", 220, False])
     gui.update_layout()
 def sa_composer():
     gui.pl_st.append(["Composer", 220, False])
@@ -12831,7 +12834,7 @@ def sort_ass(h, invert=False):
 
     if name == "Artist":
         key = key_artist
-    if name == "Album-Artist":
+    if name == "Album Artist":
         key = key_album_artist
     if name == "Title":
         key = key_title
@@ -12894,7 +12897,7 @@ set_menu.br()
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
 set_menu.add("+ Album", sa_album)
-set_menu.add("+ Album-Artist", sa_album_artist)
+set_menu.add("+ Album Artist", sa_album_artist)
 set_menu.add("+ Composer", sa_composer)
 set_menu.add("+ Duration", sa_time)
 set_menu.add("+ Date", sa_date)
@@ -16325,6 +16328,21 @@ def switch_opus_ogg(mode=0):
             return False
     prefs.transcode_opus_as ^= True
 
+
+def toggle_transcode_output(mode=0):
+    if mode == 1:
+        if prefs.transcode_inplace:
+            return False
+        else:
+            return True
+    prefs.transcode_inplace ^= True
+    if prefs.transcode_inplace:
+        transcode_icon.colour = [250, 20, 20, 255]
+        show_message("DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
+                     'warning', "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.")
+    else:
+        transcode_icon.colour = [239, 74, 157, 255]
+
 def toggle_transcode_inplace(mode=0):
     if mode == 1:
         if prefs.transcode_inplace:
@@ -16335,7 +16353,7 @@ def toggle_transcode_inplace(mode=0):
     if prefs.transcode_inplace:
         transcode_icon.colour = [250, 20, 20, 255]
         show_message("DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
-                     'warning', "For safety, this setting will reset to 'off' on restart. Embedded thumbnails are not kept so you may want to extract them first.")
+                     'warning', "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.")
     else:
         transcode_icon.colour = [239, 74, 157, 255]
 
@@ -17109,6 +17127,21 @@ class Over:
 
             prefs.transcode_bitrate = self.slide_control(x, y, _("Bitrate"), "kbs", prefs.transcode_bitrate, 32, 320, 8)
 
+            def toggle_transcode_inplace(mode=0):
+                if mode == 1:
+                    if prefs.transcode_inplace:
+                        return True
+                    else:
+                        return False
+                prefs.transcode_inplace ^= True
+                if prefs.transcode_inplace:
+                    transcode_icon.colour = [250, 20, 20, 255]
+                    show_message(
+                        "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
+                        'warning',
+                        "For safety, this setting will reset to 'off' on restart. Embedded thumbnails are not kept so you may want to extract them first.")
+                else:
+                    transcode_icon.colour = [239, 74, 157, 255]
             y -= 1 * gui.scale
             x += 280 * gui.scale
             if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
@@ -17116,8 +17149,10 @@ class Over:
                 ddt.draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y - 5 * gui.scale + 230 * gui.scale
-        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Transcode files inplace"))
+        y = self.box_y - 5 * gui.scale + 220 * gui.scale
+        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
+        y += 25 * gui.scale
+        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Save and overwite files inplace"))
 
     def devance_theme(self):
         global theme
@@ -20469,7 +20504,7 @@ class StandardPlaylist:
                             colour = colours.album_text
                             if this_line_playing is True:
                                 colour = colours.album_playing
-                        elif item[0] == "Album-Artist":
+                        elif item[0] == "Album Artist":
                             text = n_track.album_artist
                             colour = colours.artist_text
                             if this_line_playing is True:
@@ -20584,8 +20619,9 @@ class StandardPlaylist:
                         if n_track.found is False:
                             colour = colours.playlist_text_missing
 
-                        #text = trunc_line(text, gui.row_font_size, wid)
-                        #text = trunc_line2(text, gui.row_font_size, wid)
+                        if item[0] in colours.column_colours:
+                            colour = colours.column_colours[item[0]]
+
                         if text:
                             ddt.draw_text((run + 6, y + y_off),
                                       text,
@@ -26097,6 +26133,7 @@ while pctl.running:
 
                 theme_files = get_themes()
                 #print(theme_files)
+                colours.column_colours.clear()
 
                 for i, item in enumerate(theme_files):
                     # print(theme_files[i])
@@ -26224,6 +26261,11 @@ while pctl.running:
                                     colours.mini_mode_background = get_colour_from_line(p)
                                 if 'mini border' in p:
                                     colours.mini_mode_border = get_colour_from_line(p)
+                                if 'column-' in p:
+                                    key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
+                                    value = get_colour_from_line(p)
+                                    colours.column_colours[key] = value
+
 
                             colours.post_config()
                             if colours.lm:
