@@ -20506,8 +20506,8 @@ class StandardPlaylist:
                                 colour = colours.album_playing
                         elif item[0] == "Album Artist":
                             text = n_track.album_artist
-                            if text == n_track.artist:
-                                text = ""
+                            if text == "":
+                                text = n_track.artist
                             colour = colours.artist_text
                             if this_line_playing is True:
                                 colour = colours.artist_playing
