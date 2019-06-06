@@ -1341,6 +1341,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
     def __init__(self):
 
         self.column_colours = {}
+        self.column_colours_playing = {}
 
         self.last_album = ""
         self.link_text = [100, 200, 252, 255]
@@ -20710,6 +20711,9 @@ class StandardPlaylist:
                             if item[0] in colours.column_colours:
                                 colour = colours.column_colours[item[0]]
 
+                            if this_line_playing and item[0] in colours.column_colours_playing:
+                                colour = colours.column_colours_playing[item[0]]
+
                             ddt.draw_text((run + 6, y + y_off),
                                       text,
                                       colour,
@@ -26221,6 +26225,7 @@ while pctl.running:
                 theme_files = get_themes()
                 #print(theme_files)
                 colours.column_colours.clear()
+                colours.column_colours_playing.clear()
 
                 for i, item in enumerate(theme_files):
                     # print(theme_files[i])
@@ -26352,7 +26357,10 @@ while pctl.running:
                                     key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)
                                     colours.column_colours[key] = value
-
+                                if 'column+' in p:
+                                    key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
+                                    value = get_colour_from_line(p)
+                                    colours.column_colours_playing[key] = value
 
                             colours.post_config()
                             if colours.lm:
@@ -27505,6 +27513,7 @@ while pctl.running:
                 gui.show_bottom_title = True
                 if window_size[0] < 820 * gui.scale:
                     gui.show_top_title = True
+
 
             if gui.lsp and not gui.combo_mode:
 
