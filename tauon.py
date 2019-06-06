@@ -27505,7 +27505,7 @@ while pctl.running:
             if album_mode:
                 gui.show_bottom_title = True
             elif gui.rsp:
-                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale:
+                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1700 * gui.scale:
                     gui.show_bottom_title = True
                     if window_size[0] < 820 * gui.scale:
                         gui.show_top_title = True
