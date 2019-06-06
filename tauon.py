@@ -1341,6 +1341,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
     def __init__(self):
 
         self.column_colours = {}
+        self.column_colours_playing = {}
 
         self.last_album = ""
         self.link_text = [100, 200, 252, 255]
@@ -14350,11 +14351,29 @@ class SearchOverlay:
         playlist = []
         for pl in pctl.multi_playlist:
             for item in pl[2]:
-                if pctl.master_library[item].artist.lower() == name.lower():
+                if pctl.master_library[item].artist.lower() == name.lower() or pctl.master_library[item].album_artist.lower() == name.lower():
                     if item not in playlist:
                         playlist.append(item)
 
         pctl.multi_playlist.append(pl_gen(title="Artist: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+        input.key_return_press = False
+
+    def click_composer(self, name):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if pctl.master_library[item].composer.lower() == name.lower():
+                    if item not in playlist:
+                        playlist.append(item)
+
+        pctl.multi_playlist.append(pl_gen(title="Composer: " + name,
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
 
@@ -14751,6 +14770,42 @@ class SearchOverlay:
                         self.active = False
                         self.search_text.text = ""
 
+                if item[0] == 6:
+                    cl = [180, 250, 190, int(255 * fade)]
+                    text = "Composer"
+                    yy += 3 * gui.scale
+                    xx = ddt.draw_text((124 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    ddt.draw_text((40 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        ddt.rect_r((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+                            self.click_composer(item[1])
+                            self.active = False
+                            self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        self.click_composer(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+
                 if i > 40:
                     break
 
@@ -14788,6 +14843,7 @@ def worker2():
                 albums = {}
                 genres = {}
                 metas = {}
+                composers = {}
 
                 tracks = set()
 
@@ -14816,6 +14872,8 @@ def worker2():
 
                         title = t.title.lower()
                         artist = t.artist.lower()
+                        album_artist = t.album_artist.lower()
+                        composer = t.composer.lower()
                         album = t.album.lower()
                         genre = t.genre.lower()
                         filename = t.filename.lower()
@@ -14839,6 +14897,15 @@ def worker2():
                                 temp_results.append([3, t.genre, track, playlist[6], 0])
                                 genres[t.genre] = 1
 
+                        if s_text in composer:
+
+                            if t.composer in composers:
+                                composers[t.composer] += 2
+                            else:
+                                temp_results.append([6, t.composer, track, playlist[6], 0])
+                                composers[t.composer] = 2
+                            print("found: " + t.composer)
+
                         if search_magic(s_text, title + artist + filename + album):
 
                             if s_text in artist:
@@ -14860,6 +14927,23 @@ def worker2():
                                 else:
                                     temp_results.append([1, t.album, track, playlist[6], 0])
                                     albums[t.album] = 1
+
+                            elif s_text in album_artist:
+
+                                # Add akbum artist
+                                if t.album_artist in artists:
+                                    artists[t.album_artist] += value
+                                else:
+                                    temp_results.append([0, t.album_artist, track, playlist[6], 0])
+                                    artists[t.album_artist] = value
+
+
+                                if t.album in albums:
+                                    albums[t.album] += 1
+                                else:
+                                    temp_results.append([1, t.album, track, playlist[6], 0])
+                                    albums[t.album] = 1
+
 
 
                             if s_text in album:
@@ -14932,6 +15016,8 @@ def worker2():
                         temp_results[i][4] = metas[item[1]]
                         if metas[item[1]] < 42:
                             temp_results[i] = None
+                    if item[0] == 6:
+                        temp_results[i][4] = composers[item[1]]
 
                 temp_results[:] = [item for item in temp_results if item is not None]
 
@@ -20625,6 +20711,9 @@ class StandardPlaylist:
                             if item[0] in colours.column_colours:
                                 colour = colours.column_colours[item[0]]
 
+                            if this_line_playing and item[0] in colours.column_colours_playing:
+                                colour = colours.column_colours_playing[item[0]]
+
                             ddt.draw_text((run + 6, y + y_off),
                                       text,
                                       colour,
@@ -26136,6 +26225,7 @@ while pctl.running:
                 theme_files = get_themes()
                 #print(theme_files)
                 colours.column_colours.clear()
+                colours.column_colours_playing.clear()
 
                 for i, item in enumerate(theme_files):
                     # print(theme_files[i])
@@ -26267,7 +26357,10 @@ while pctl.running:
                                     key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)
                                     colours.column_colours[key] = value
-
+                                if 'column+' in p:
+                                    key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
+                                    value = get_colour_from_line(p)
+                                    colours.column_colours_playing[key] = value
 
                             colours.post_config()
                             if colours.lm:
@@ -27412,7 +27505,7 @@ while pctl.running:
             if album_mode:
                 gui.show_bottom_title = True
             elif gui.rsp:
-                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale:
+                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1700 * gui.scale:
                     gui.show_bottom_title = True
                     if window_size[0] < 820 * gui.scale:
                         gui.show_top_title = True
@@ -27420,6 +27513,7 @@ while pctl.running:
                 gui.show_bottom_title = True
                 if window_size[0] < 820 * gui.scale:
                     gui.show_top_title = True
+
 
             if gui.lsp and not gui.combo_mode:
 
