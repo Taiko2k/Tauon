@@ -10,6 +10,7 @@ v4.3.2
  - Improved search to make album-artist and composer fields searchable
  - Tweaked main scroll bar backgroud for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
+ - Tweaked bottom panel title to always show if window is large
  - Fixed and enabled mini mode with maximizing
  - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
  - Fixed artist list sorting with case sensitivity
