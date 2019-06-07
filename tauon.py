@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.3.2"
+n_version = "4.4.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -244,9 +244,9 @@ if system == 'windows':
 # ------------------------------------
 # Continue startup
 
-if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
-    print("Config file is missing... copying template from program files")
-    shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
+# if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
+#     print("Config file is missing... copying template from program files")
+#     shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
 
 if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "input.txt")):
     print("Input config file is missing... copying template from program files")
@@ -464,7 +464,6 @@ scroll_timer = Timer()
 scroll_timer.set()
 scroll_opacity = 0
 break_enable = True
-dd_index = False
 
 source = None
 
@@ -683,9 +682,10 @@ class Prefs:    # Used to hold any kind of settings
         self.pl_thumb = False
 
         self.linux_font = "Noto Sans" #"Liberation Sans"#
-        self.linux_bold_font = "Noto Sans Bold"
+        self.linux_font_semibold = "Noto Sans Medium"
+        self.linux_font_bold = "Noto Sans Bold"
 
-        self.spec2_scroll = False
+        self.spec2_scroll = True
 
         self.spec2_p_base = [10, 10, 100]
         self.spec2_p_multiply = [0.5, 1, 1]
@@ -797,7 +797,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.guitar_chords = False
         self.prefer_synced_lyrics = True
-        self.sync_lyrics_time_offset = 0.0
+        self.sync_lyrics_time_offset = 0
 
         self.playback_follow_cursor = False
         self.short_buffer = False
@@ -830,8 +830,15 @@ class Prefs:    # Used to hold any kind of settings
         self.artist_list_prefer_album_artist = False
 
         self.mini_mode_mode = 0
+        self.dc_device_setting = "auto"
 
+        self.download_dir1 = ""
+        self.dd_index = False
 
+        self.broadcast_port = 8000
+        self.broadcast_bitrate = 128
+
+        self.custom_encoder_output = ""
 
 
 prefs = Prefs()
@@ -1139,6 +1146,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.volume_bar_rect = (0,0,0,0)
 
         self.mini_mode_return_maximized = False
+
+        self.opened_config_file = False
 
 
 
@@ -1883,8 +1892,8 @@ try:
         prefs.discogs_pat = save[129]
     if save[130] is not None:
         prefs.mini_mode_mode = save[130]
-    if save[131] is not None:
-        prefs.artist_list_prefer_album_artist = save[131]
+    # if save[131] is not None:
+    #     prefs.artist_list_prefer_album_artist = save[131]
 
     state_file.close()
     del save
@@ -1916,7 +1925,7 @@ if window_size is None:
 
 def track_number_process(line):
     line = str(line).split("/", 1)[0].lstrip("0")
-    if dd_index and len(line) == 1:
+    if prefs.dd_index and len(line) == 1:
         return "0" + line
     return line
 
@@ -1968,14 +1977,14 @@ if db_version > 0:
         print("Updating preferences to 1.7")
         gui.show_stars = False
         if install_mode:
-                shutil.copy(install_directory + "/config.txt", user_directory)
+                #shutil.copy(install_directory + "/config.txt", user_directory)
                 print("Rewrote user config file")
 
     if db_version <= 1.7:
         print("Updating database to version 1.8")
         if install_mode:
                 print(".... Overwriting user config file")
-                shutil.copy(install_directory + "/config.txt", user_directory)
+                #shutil.copy(install_directory + "/config.txt", user_directory)
 
         try:
             print(".... Updating playtime database")
@@ -2082,133 +2091,147 @@ if os.path.isdir(os.path.expanduser("~/Downloads")):
 if os.path.isdir(os.path.expanduser("~/Music")):
     download_directories.append(os.path.expanduser("~/Music"))
 
+from t_modules.t_config import Config
 
-path = config_directory + "/config.txt"
-if os.path.isfile(os.path.join(config_directory, "config.txt")):
-    with open(path, encoding="utf_8") as f:
-        content = f.read().splitlines()
-        for p in content:
-            if len(p) == 0:
-                continue
-            if p[0] == " " or p[0] == "#":
-                continue
-            if 'log-volume-scale' in p:
-                prefs.log_vol = True
-            if 'tag-editor-path=' in p:
-                result = p.split('=')[1]
-                prefs.tag_editor_path = result
-            if 'tag-editor-program=' in p:
-                result = p.split('=')[1]
-                prefs.tag_editor_target = result
-            if 'tag-editor-name=' in p:
-                result = p.split('=')[1]
-                prefs.tag_editor_name = result
+cf = Config()
 
-            if 'scroll-gallery-wheel=' in p:
-                result = p.split('=')[1]
-                if result.isdigit() and -1000 < int(result) < 1000:
-                    prefs.gallery_scroll_wheel_px = int(result)
+def save_prefs():
 
-            if 'scroll-gallery-row' in p:
-                prefs.gallery_row_scroll = True
+    cf.update_value("plex-username", prefs.plex_username)
+    cf.update_value("plex-password", prefs.plex_password)
+    cf.update_value("plex-servername", prefs.plex_servername)
 
-            if 'pause-fade-time=' in p:
-                result = p.split('=')[1]
-                if result.isdigit() and 49 < int(result) < 3000:
-                    prefs.pause_fade_time = int(result)
-            if 'cross-fade-time=' in p:
-                result = p.split('=')[1]
-                if result.isdigit() and 49 < int(result) < 3000:
-                    prefs.cross_fade_time = int(result)
+    cf.update_value("use-log-volume-scale", prefs.log_vol)
+    cf.update_value("pause-fade-time", prefs.pause_fade_time)
+    cf.update_value("cross-fade-time", prefs.cross_fade_time)
+    cf.update_value("force-mono", prefs.mono)
+    cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
+    cf.update_value("use-short-buffering", prefs.short_buffer)
 
-            if 'output-dir=' in p:
-                prefs.encoder_output = p.split('=')[1]
-                prefs.encoder_output = prefs.encoder_output.replace('\\', '/')
-                if prefs.encoder_output[-1] != "/":
-                    prefs.encoder_output += "/"
+    cf.update_value("tag-editor-name", prefs.tag_editor_name)
+    cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
-                print('Encode output: ' + prefs.encoder_output)
+    cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
+    cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
+    cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
+    cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
+    cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
+    cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
 
-            if 'standard-font=' in p:
-                result = p.split('=')[1]
-                prefs.linux_font = result
-            if 'bold-font=' in p:
-                result = p.split('=')[1]
-                prefs.linux_bold_font = result
+    cf.update_value("font-main-standard", prefs.linux_font)
+    cf.update_value("font-main-medium", prefs.linux_font_semibold)
+    cf.update_value("font-main-bold", prefs.linux_font_bold)
 
-            if 'vis-scroll' in p:
-                prefs.spec2_scroll = True
-            # if 'vis-base-colour=' in p:
-            #     result = p.split('=')[1]
-            #     prefs.spec2_base = list(map(int, result.split(',')))
-            # if 'vis-colour-multiply=' in p:
-            #     result = p.split('=')[1]
-            #     prefs.spec2_multiply = list(map(float, result.split(',')))
+    cf.update_value("double-digit-indicies", prefs.dd_index)
 
-            # if 'rename-tracks-default=' in p:
-            #     result = p.split('=')[1]
-            #     prefs.rename_tracks_template = result
-            # if 'rename-folder-default=' in p:
-            #     result = p.split('=')[1]
-            #     prefs.rename_folder_template = result
-            if 'disable-linux-mpris' in p:
-                prefs.enable_mpris = False
-            if 'disable-mediakey' in p:
-                prefs.mkey = False
-            if 'add_download_directory=' in p:
-                if len(p) < 1000:
-                    path = p.split('=')[1]
-                    if os.path.isdir(path):
-                        download_directories.append(path)
-                        print("Additional directory: " + path)
-                    else:
-                        print("Directory was not found: " + path)
+    cf.update_value("encode-output-dir", prefs.custom_encoder_output)
+    cf.update_value("add_download_directory", prefs.download_dir1)
 
-            if 'force-mono' in p:
-                prefs.mono = True
+    cf.update_value("enable-mpris", prefs.enable_mpris)
+    cf.update_value("enable-gnome-mediakeys", prefs.mkey)
+    cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
 
-            if 'plex-username=' in p:
-                result = p.split('=')[1].strip()
-                prefs.plex_username = result
-            if 'plex-password=' in p:
-                result = p.split('=')[1].strip()
-                prefs.plex_password = result
-            if 'plex-servname=' in p:
-                result = p.split('=')[1].strip()
-                prefs.plex_servername = result
+    cf.update_value("broadcast-port", prefs.broadcast_port)
+    cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
 
-            if 'bg-opacity=' in p:
-                result = p.split('=')[1].strip()
-                try:
-                    if 0 < int(result) < 101:
-                        prefs.custom_bg_opacity = int(result)
-                except:
-                    print("BG opacity setting error")
+    if os.path.isdir(config_directory):
+        cf.dump(os.path.join(config_directory, "tauon.conf"))
+    else:
+        print("ERROR: Missing config directory")
 
-            if 'disconnect-device-pause=' in p:
-                result = p.split('=')[1].strip()
+def load_prefs():
 
-                if result == "ON":
-                    prefs.dc_device = True
-                elif result == "OFF":
-                    prefs.dc_device = False
+    cf.reset()
+    cf.load(os.path.join(config_directory, "tauon.conf"))
 
-            if 'lyrics-time-offset=' in p:
-                result = p.split('=')[1].strip()
-                prefs.sync_lyrics_time_offset = int(result)
+    cf.add_comment("Tauon Music Box configuration file")
+    cf.br()
+    cf.add_comment("This file will be regenerated while app is running. Formatting and additional comments will be lost.")
+    cf.add_comment("Tip: Use TOML syntax highlighting")
 
-            if 'resume-on-restart' in p:
-                prefs.reload_play_state = True
+    cf.br()
+    cf.add_text("[plex_account]")
+    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
+    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
+    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
 
-            if 'short-buffering' in p:
-                prefs.short_buffer = True
+    cf.br()
+    cf.add_text("[audio]")
 
-            # if 'discogs_personal_access_token=' in p:
-            #     result = p.split('=')[1].strip()
-            #     prefs.discogs_pat = int(result)
+    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. BASS only.")
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. BASS only.")
+    prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "BASS only.")
+    prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
+    prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
+    prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-else:
-    print("Warning: Missing config file")
+    if prefs.dc_device_setting == 'on':
+        prefs.dc_device = True
+    elif prefs.dc_device_setting == 'off':
+        prefs.dc_device = False
+
+    cf.br()
+    cf.add_text("[tag-editor]")
+    if system == 'windows':
+        prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+        prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "C:\Program Files (x86)\MusicBrainz Picard\picard.exe", "The path of the exe to run.")
+    else:
+        prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+        prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "picard", "The name of the binary to call.")
+
+    cf.br()
+    cf.add_text("[ui]")
+    prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
+    prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
+    prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
+    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity, "Opactiy of custom background image 'bg.png'. 0-100")
+    if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
+        prefs.custom_bg_opacity = 40
+        print("Warning: Invalid value for mascot-opacity")
+        
+    prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset, "In milliseconds. May be negative.")
+    prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
+
+    cf.br()
+    cf.add_text("[fonts]")
+    cf.add_comment("Only has effect on Linux platform.")
+    prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "# Recomended: Noto Sans, Sugested alternate: Liberation Sans")
+    prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "# Recomended: Noto Sans Medium")
+    prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "# Recomended: Noto Sans Bold")
+
+
+    cf.br()
+    cf.add_text("[tracklist]")
+    prefs.dd_index = cf.sync_add("bool", "double-digit-indicies", prefs.dd_index)
+
+
+    cf.br()
+    cf.add_text("[directories]")
+    cf.add_comment("Use full paths")
+    prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output, "E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
+    if prefs.custom_encoder_output:
+        prefs.encoder_output = prefs.custom_encoder_output
+    prefs.download_dir1 = cf.sync_add("string", "add_download_directory", prefs.download_dir1, "Add another folder to monitor in addition to home downloads and music.")
+    if prefs.download_dir1 and prefs.download_dir1 not in download_directories:
+        if os.path.isdir(prefs.download_dir1):
+            download_directories.append(prefs.download_dir1)
+        else:
+            print("Warning: Invalid download directory in config")
+
+    cf.br()
+    cf.add_text("[app]")
+    prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
+    prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
+    prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+
+    cf.br()
+    cf.add_text("[broadcasting]")
+    prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port, "Changing this breaks player on landing page")
+    prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
+
+
+load_prefs()
+save_prefs()
 
 
 try:
@@ -2220,7 +2243,7 @@ try:
     # pl_follow = view_prefs['pl-follow']
     scroll_enable = view_prefs['scroll-enable']
     break_enable = view_prefs['break-enable']
-    dd_index = view_prefs['dd-index']
+    #dd_index = view_prefs['dd-index']
     # custom_line_mode = view_prefs['custom-line']
     #thick_lines = view_prefs['thick-lines']
     prefs.append_date = view_prefs['append-date']
@@ -5644,7 +5667,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 9, 412)
     ddt.prime_font(standard_font, 10, 413)
 
-    standard_font = "Noto Sans Medium"
+    standard_font = prefs.linux_font_semibold
     ddt.prime_font(standard_font, 8, 309)
     ddt.prime_font(standard_font, 8, 310)
     ddt.prime_font(standard_font, 8.5, 311)
@@ -5658,7 +5681,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 24, 330)
 
 
-    standard_font = prefs.linux_bold_font
+    standard_font = prefs.linux_font_bold
 
     ddt.prime_font(standard_font, 6, 209)
     ddt.prime_font(standard_font, 7, 210)
@@ -5943,7 +5966,7 @@ class TimedLyricsRen:
 
         highlight = True
 
-        test_time = max(0, pctl.playing_time - prefs.sync_lyrics_time_offset)
+        test_time = max(0, pctl.playing_time - (prefs.sync_lyrics_time_offset / 1000))
 
         if pctl.track_queue[pctl.queue_step] == index:
 
@@ -10875,16 +10898,6 @@ def get_broadcast_line():
         return 'No Title'
 
 
-def open_config():
-    target = os.path.join(config_directory, "config.txt")
-    if system == "windows":
-        os.startfile(target)
-    elif system == 'mac':
-        subprocess.call(['open', target])
-    else:
-        subprocess.call(["xdg-open", target])
-
-
 def open_license():
     target = os.path.join(install_directory, "license.txt")
     if os.path.isfile(os.path.join(install_directory, "LICENSE")):
@@ -10901,21 +10914,27 @@ def open_license():
         print(target)
 
 
-def reset_config_file():
-    #if install_mode:
-    shutil.copy(install_directory + "/config.txt", config_directory)
-    show_message("Config reset", 'done')
-    #else:
-    #    show_message("Running in portable mode", 'warning', 'Already using original config')
+def reload_config_file():
+
+    if transcode_list:
+        show_message("Cannot reload while a transcode is in progress!", 'error')
+        return
+
+    load_prefs()
+    gui.opened_config_file = False
+    show_message(_("Configuration reloaded"), 'done')
 
 def open_config_file():
-    target = os.path.join(config_directory, "config.txt")
+    save_prefs()
+    target = os.path.join(config_directory, "tauon.conf")
     if system == "windows":
         os.startfile(target)
     elif system == 'mac':
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
+    show_message(_("Config file opened."), 'arrow', _('Click "Reload config file" if you made any changes'))
+    gui.opened_config_file = True
 
 def open_keymap_file():
 
@@ -12134,6 +12153,13 @@ def editor(index):
 
     prefix = ""
     app = prefs.tag_editor_target
+
+    if system == "windows" and app:
+        if app[0] != '"':
+            app = '"' + app
+        if app[-1] != '"':
+            app = app + '"'
+
     app_switch = ""
 
     ok = False
@@ -13315,7 +13341,7 @@ def broadcast_colour():
         return None #[171, 102, 249, 255]
 
 
-if prefs.backend == 1 and os.path.isfile(os.path.join(config_directory, "config.txt")):
+if prefs.backend == 1: # and os.path.isfile(os.path.join(config_directory, "config.txt")):
 
     broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
     broadcast_icon.colour = [171, 102, 249, 255]
@@ -13555,13 +13581,13 @@ def toggle_notifications(mode=0):
         if not de_nofity_support:
             show_message("I'm not sure notifications are supported by this DE", 'warning', 'You should probably leave this disabled.')
 
-def toggle_al_pref_album_artist(mode=0):
-
-    if mode == 1:
-        return prefs.artist_list_prefer_album_artist
-
-    prefs.artist_list_prefer_album_artist ^= True
-    artist_list_box.saves.clear()
+# def toggle_al_pref_album_artist(mode=0):
+#
+#     if mode == 1:
+#         return prefs.artist_list_prefer_album_artist
+#
+#     prefs.artist_list_prefer_album_artist ^= True
+#     artist_list_box.saves.clear()
 
 
 def toggle_mini_lyrics(mode=0):
@@ -14904,7 +14930,6 @@ def worker2():
                             else:
                                 temp_results.append([6, t.composer, track, playlist[6], 0])
                                 composers[t.composer] = 2
-                            print("found: " + t.composer)
 
                         if search_magic(s_text, title + artist + filename + album):
 
@@ -14930,7 +14955,7 @@ def worker2():
 
                             elif s_text in album_artist:
 
-                                # Add akbum artist
+                                # Add album artist
                                 if t.album_artist in artists:
                                     artists[t.album_artist] += value
                                 else:
@@ -16184,14 +16209,14 @@ def toggle_break(mode=0):
         gui.pl_update = 1
 
 
-def toggle_dd(mode=0):
-    global dd_index
-
-    if mode == 1:
-        return dd_index
-    else:
-        dd_index ^= True
-        gui.pl_update = 1
+# def toggle_dd(mode=0):
+#     global dd_index
+#
+#     if mode == 1:
+#         return dd_index
+#     else:
+#         dd_index ^= True
+#         gui.pl_update = 1
 
 
 def toggle_scroll(mode=0):
@@ -16516,7 +16541,7 @@ def toggle_eq(mode=0):
 
 # config_items.append(['Turn off playlist title breaks', toggle_break])
 
-config_items.append([_('Use double digit track indices'), toggle_dd])
+# config_items.append([_('Use double digit track indices'), toggle_dd])
 
 # config_items.append(['Use custom line format [broken]', toggle_custom_line])
 
@@ -16916,11 +16941,18 @@ class Over:
             y = self.box_y + 220 * gui.scale
 
 
-            if key_shift_down:
-                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
+            # if key_shift_down:
+            #     self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
+            #                 105 * gui.scale)
+            # else:
+
+            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
+            if not gui.opened_config_file:
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
                             105 * gui.scale)
             else:
-                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
+                            105 * gui.scale, bg=[90, 50, 130, 255])
 
             y += 26 * gui.scale
 
@@ -16931,39 +16963,55 @@ class Over:
 
             self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 105 * gui.scale)
 
+
+
             #x = self.box_x + self.item_x_offset
 
-    def button(self, x, y, text, plug, width=0):
+    def button(self, x, y, text, plug, width=0, bg=None):
 
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-        ddt.rect_r(rect, colours.alpha_grey(11), True)
+
+        if bg is None:
+            bg = colours.alpha_grey(11)
+
+        bg_colour = alpha_blend(bg, colours.sys_background)
+        real_bg = bg_colour
+
+        ddt.rect_r(rect, bg_colour, True)
         fields.add(rect)
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
+            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
             if self.click:
                 plug()
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
 
     def button2(self, x, y, text, width=0):
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-        ddt.rect_r(rect, colours.alpha_grey(11), True)
+
+
+        bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
+        real_bg = bg_colour
+
+        ddt.rect_r(rect, bg_colour, True)
         fields.add(rect)
         hit = False
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
+            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
             if self.click:
                 hit = True
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
         return hit
 
     def toggle_square(self, x, y, function, text):
@@ -17372,8 +17420,8 @@ class Over:
         if system == "linux":
             self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
 
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_al_pref_album_artist, _("Artist list prefers album-artist"))
+        #y += 25 * gui.scale
+        #self.toggle_square(x, y, toggle_al_pref_album_artist, _("Artist list prefers album-artist"))
 
 
 
@@ -21947,7 +21995,8 @@ class ArtistList:
 
         light_mode = False
         line1_colour = [235, 235, 235, 255]
-        line2_colour = [150, 150, 150, 255]
+        # line2_colour = [150, 150, 150, 255]
+        line2_colour = alpha_mod(colours.side_bar_line2, 150)
         fade_max = 50
 
         if test_lumi(colours.side_panel_background) < 0.55:
@@ -21955,6 +22004,7 @@ class ArtistList:
             fade_max = 20
             line1_colour = [35, 35, 35, 255]
             line2_colour = [100, 100, 100, 255]
+
 
 
         fade = 0
@@ -22153,7 +22203,7 @@ class ArtistList:
                 if loading_in_progress or transcode_list:
                     text = _("Busy...")
 
-            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, [90, 90, 90, 255], 212)
+            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
 
         yy = y + 12 * gui.scale
 
@@ -24852,7 +24902,7 @@ def save_state():
     # view_prefs['pl-follow'] = pl_follow
     view_prefs['scroll-enable'] = scroll_enable
     view_prefs['break-enable'] = break_enable
-    view_prefs['dd-index'] = dd_index
+    # view_prefs['dd-index'] = dd_index
     view_prefs['append-date'] = prefs.append_date
 
     # if album_mode:
@@ -24990,11 +25040,11 @@ def save_state():
             prefs.bg_showcase_only,
             prefs.discogs_pat,
             prefs.mini_mode_mode,
-            prefs.artist_list_prefer_album_artist]
+            None]
 
-    #print(prefs.last_device + "-----")
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
+    save_prefs()
 
 # SDL_StartTextInput()
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
@@ -27349,6 +27399,7 @@ while pctl.running:
                                     gui.set_hold = h
                                     gui.set_point = mouse_position[0]
                                     gui.set_old = gui.pl_st[h - 1][1]
+
                             if mouse_down and gui.set_hold == h:
                                 gui.pl_st[h - 1][1] = gui.set_old + (mouse_position[0] - gui.set_point)
                                 if gui.pl_st[h - 1][1] < 25:
@@ -27939,7 +27990,8 @@ while pctl.running:
                         q = ddt.draw_text((x + (8 + 88)  * gui.scale, y1), tc.album_artist,
                                   value_colour, value_font, max_w=120 * gui.scale)
                         if coll(rect):
-                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font_a)
+                            ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font)
+
                         x -= int(170 * gui.scale)
 
                     y1 += int(15 * gui.scale)
@@ -28864,8 +28916,11 @@ while pctl.running:
             i_x, i_y = get_sdl_input.mouse()
 
             gui.set_label_point = (0, 0)
-            ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-            ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+
+            w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
+            w = max(w, 45 * gui.scale)
+            ddt.rect_r((i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+            ddt.draw_text((i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
 
         gui.update -= 1
