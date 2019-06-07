@@ -682,7 +682,8 @@ class Prefs:    # Used to hold any kind of settings
         self.pl_thumb = False
 
         self.linux_font = "Noto Sans" #"Liberation Sans"#
-        self.linux_bold_font = "Noto Sans Bold"
+        self.linux_font_semibold = "Noto Sans Medium"
+        self.linux_font_bold = "Noto Sans Bold"
 
         self.spec2_scroll = True
 
@@ -836,6 +837,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.broadcast_port = 8000
         self.broadcast_bitrate = 128
+
+        self.custom_encoder_output = ""
 
 
 prefs = Prefs()
@@ -1143,6 +1146,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.volume_bar_rect = (0,0,0,0)
 
         self.mini_mode_return_maximized = False
+
+        self.opened_config_file = False
 
 
 
@@ -2113,9 +2118,13 @@ def save_prefs():
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
 
+    cf.update_value("font-main-standard", prefs.linux_font)
+    cf.update_value("font-main-medium", prefs.linux_font_semibold)
+    cf.update_value("font-main-bold", prefs.linux_font_bold)
+
     cf.update_value("double-digit-indicies", prefs.dd_index)
 
-    cf.update_value("encode-output-dir", prefs.encoder_output)
+    cf.update_value("encode-output-dir", prefs.custom_encoder_output)
     cf.update_value("add_download_directory", prefs.download_dir1)
 
     cf.update_value("enable-mpris", prefs.enable_mpris)
@@ -2164,7 +2173,8 @@ def load_prefs():
     cf.br()
     cf.add_text("[tag-editor]")
     if system == 'windows':
-        pass
+        prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+        prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "C:\Program Files (x86)\MusicBrainz Picard\picard.exe", "The path of the exe to run.")
     else:
         prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
         prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "picard", "The name of the binary to call.")
@@ -2183,6 +2193,14 @@ def load_prefs():
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
 
     cf.br()
+    cf.add_text("[fonts]")
+    cf.add_comment("Only has effect on Linux platform.")
+    prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "# Recomended: Noto Sans")
+    prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "# Recomended: Noto Sans Medium")
+    prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "# Recomended: Noto Sans Bold")
+
+
+    cf.br()
     cf.add_text("[tracklist]")
     prefs.dd_index = cf.sync_add("bool", "double-digit-indicies", prefs.dd_index)
 
@@ -2190,7 +2208,9 @@ def load_prefs():
     cf.br()
     cf.add_text("[directories]")
     cf.add_comment("Use full paths")
-    prefs.encoder_output = cf.sync_add("string", "encode-output-dir", "", "E.g. \"/home/example/music/output\". Defaults to folder encode-output in home music dir.")
+    prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output, "E.g. \"/home/example/music/output\". Defaults to folder encode-output in home music dir.")
+    if prefs.custom_encoder_output:
+        prefs.encoder_output = prefs.custom_encoder_output
     prefs.download_dir1 = cf.sync_add("string", "add_download_directory", prefs.download_dir1, "Add another folder to monitor in addition to home downloads and music.")
     if prefs.download_dir1 and prefs.download_dir1 not in download_directories:
         if os.path.isdir(prefs.download_dir1):
@@ -5647,7 +5667,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 9, 412)
     ddt.prime_font(standard_font, 10, 413)
 
-    standard_font = "Noto Sans Medium"
+    standard_font = prefs.linux_font_semibold
     ddt.prime_font(standard_font, 8, 309)
     ddt.prime_font(standard_font, 8, 310)
     ddt.prime_font(standard_font, 8.5, 311)
@@ -5661,7 +5681,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 24, 330)
 
 
-    standard_font = prefs.linux_bold_font
+    standard_font = prefs.linux_font_bold
 
     ddt.prime_font(standard_font, 6, 209)
     ddt.prime_font(standard_font, 7, 210)
@@ -10906,6 +10926,8 @@ def open_config_file():
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
+    show_message("Config file opened.", 'arrow', "Click \"Reload config file\" if you made any changes")
+    gui.opened_config_file = True
 
 def open_keymap_file():
 
@@ -12124,6 +12146,13 @@ def editor(index):
 
     prefix = ""
     app = prefs.tag_editor_target
+
+    if system == "windows" and app:
+        if app[0] != '"':
+            app = '"' + app
+        if app[-1] != '"':
+            app = app + '"'
+
     app_switch = ""
 
     ok = False
@@ -16909,10 +16938,14 @@ class Over:
             #     self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
             #                 105 * gui.scale)
             # else:
-            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
 
-            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
-                        105 * gui.scale)
+            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
+            if not gui.opened_config_file:
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
+                            105 * gui.scale)
+            else:
+                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
+                            105 * gui.scale,)
 
             y += 26 * gui.scale
 
@@ -16933,31 +16966,41 @@ class Over:
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-        ddt.rect_r(rect, colours.alpha_grey(11), True)
+
+        bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
+        real_bg = bg_colour
+
+        ddt.rect_r(rect, bg_colour, True)
         fields.add(rect)
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
+            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
             if self.click:
                 plug()
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
 
     def button2(self, x, y, text, width=0):
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-        ddt.rect_r(rect, colours.alpha_grey(11), True)
+
+        bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
+        real_bg = bg_colour
+
+        ddt.rect_r(rect, bg_colour, True)
         fields.add(rect)
         hit = False
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211)
+            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
             if self.click:
                 hit = True
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
         return hit
 
     def toggle_square(self, x, y, function, text):
@@ -22149,7 +22192,7 @@ class ArtistList:
                 if loading_in_progress or transcode_list:
                     text = _("Busy...")
 
-            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 150), 212)
+            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
 
         yy = y + 12 * gui.scale
 
