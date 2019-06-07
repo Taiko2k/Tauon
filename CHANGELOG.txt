@@ -1,8 +1,8 @@
 
 Changelog-------------------------------------
 
-v4.3.2
-    -todo windows config
+v4.4.0
+
  - Added "Composer" field to track box
  - Added "Album-Artist", "Composer" and "Comment" to columns mode
  - Added per column colours to theme files
@@ -20,6 +20,7 @@ v4.3.2
  - Fixed artist list sort by album-artist setting not remembering on restart
  - Fixed setting fonts in config file
  - Fixed subtle text rendering issue on some settings buttons
+ - Fixed column drag tag text positioning
 
 v4.3.1
 
