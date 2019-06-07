@@ -10916,6 +10916,8 @@ def open_license():
 
 def reload_config_file():
     load_prefs()
+    gui.opened_config_file = False
+    show_message(_("Configuration reloaded"), 'done')
 
 def open_config_file():
     save_prefs()
@@ -10926,7 +10928,7 @@ def open_config_file():
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
-    show_message("Config file opened.", 'arrow', "Click \"Reload config file\" if you made any changes")
+    show_message(_("Config file opened."), 'arrow', _('Click "Reload config file" if you made any changes'))
     gui.opened_config_file = True
 
 def open_keymap_file():
@@ -16945,7 +16947,7 @@ class Over:
                             105 * gui.scale)
             else:
                 self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
-                            105 * gui.scale,)
+                            105 * gui.scale, bg=[90, 50, 130, 255])
 
             y += 26 * gui.scale
 
@@ -16960,14 +16962,17 @@ class Over:
 
             #x = self.box_x + self.item_x_offset
 
-    def button(self, x, y, text, plug, width=0):
+    def button(self, x, y, text, plug, width=0, bg=None):
 
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
 
-        bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
+        if bg is None:
+            bg = colours.alpha_grey(11)
+
+        bg_colour = alpha_blend(bg, colours.sys_background)
         real_bg = bg_colour
 
         ddt.rect_r(rect, bg_colour, True)
@@ -16986,6 +16991,7 @@ class Over:
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
+
 
         bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
         real_bg = bg_colour
