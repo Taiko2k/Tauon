@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.3.2"
+n_version = "4.4.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -2195,7 +2195,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[fonts]")
     cf.add_comment("Only has effect on Linux platform.")
-    prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "# Recomended: Noto Sans")
+    prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "# Recomended: Noto Sans, Sugested alternate: Liberation Sans")
     prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "# Recomended: Noto Sans Medium")
     prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "# Recomended: Noto Sans Bold")
 
@@ -2208,7 +2208,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[directories]")
     cf.add_comment("Use full paths")
-    prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output, "E.g. \"/home/example/music/output\". Defaults to folder encode-output in home music dir.")
+    prefs.custom_encoder_output = cf.sync_add("string", "encode-output-dir", prefs.custom_encoder_output, "E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
     if prefs.custom_encoder_output:
         prefs.encoder_output = prefs.custom_encoder_output
     prefs.download_dir1 = cf.sync_add("string", "add_download_directory", prefs.download_dir1, "Add another folder to monitor in addition to home downloads and music.")
@@ -10915,6 +10915,11 @@ def open_license():
 
 
 def reload_config_file():
+
+    if transcode_list:
+        show_message("Cannot reload while a transcode is in progress!", 'error')
+        return
+
     load_prefs()
     gui.opened_config_file = False
     show_message(_("Configuration reloaded"), 'done')
@@ -27394,6 +27399,7 @@ while pctl.running:
                                     gui.set_hold = h
                                     gui.set_point = mouse_position[0]
                                     gui.set_old = gui.pl_st[h - 1][1]
+
                             if mouse_down and gui.set_hold == h:
                                 gui.pl_st[h - 1][1] = gui.set_old + (mouse_position[0] - gui.set_point)
                                 if gui.pl_st[h - 1][1] < 25:
@@ -28910,8 +28916,11 @@ while pctl.running:
             i_x, i_y = get_sdl_input.mouse()
 
             gui.set_label_point = (0, 0)
-            ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-            ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+
+            w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
+            w = max(w, 45 * gui.scale)
+            ddt.rect_r((i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+            ddt.draw_text((i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
 
         gui.update -= 1
