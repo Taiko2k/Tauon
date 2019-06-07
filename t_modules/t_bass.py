@@ -1572,22 +1572,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             if command == "encstart":
 
                 bass_player.try_init()
-                port = "8000"
-                bitrate = "128"
 
-                path = pctl.config_directory + "/config.txt"
-                with open(path, encoding="utf_8") as f:
-                    content = f.read().splitlines()
-                    for p in content:
-                        if len(p) == 0:
-                            continue
-                        if p[0] == " " or p[0] == "#":
-                            continue
-                        if 'broadcast-port=' in p:
-                            if len(p) < 40:
-                                port = p.split('=')[1]
-                        elif 'broadcast-bitrate=' in p:
-                            bitrate = p.split('=')[1]
+                bitrate = prefs.broadcast_bitrate
+                port = prefs.broadcast_port
 
                 pctl.broadcast_active = True
                 print("starting encoder")
