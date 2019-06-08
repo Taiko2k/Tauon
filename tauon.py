@@ -843,6 +843,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.meta_persists_stop = False
         self.meta_shows_selected = False
+        self.meta_shows_selected_always = False
 
 
 prefs = Prefs()
@@ -2125,6 +2126,7 @@ def save_prefs():
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
     cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
+    cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2199,6 +2201,7 @@ def load_prefs():
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
     prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop, "Show album art and metadata of last played track when stopped.")
     prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides side-panel-info-persists)")
+    prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides side-panel-info-persists and side-panel-info-selected)")
 
     if system != 'windows':
         cf.br()
@@ -20887,12 +20890,17 @@ class ArtBox:
         target_track = None
         if 3 > pctl.playing_state > 0:
             target_track = pctl.playing_object()
+
         elif pctl.playing_state == 0 and prefs.meta_shows_selected:
             if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
                 target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
         elif pctl.playing_state == 0 and prefs.meta_persists_stop:
                 target_track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+        if prefs.meta_shows_selected_always:
+            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
         if target_track:  # Only show if song playing or paused
 
@@ -22651,7 +22659,7 @@ class MetaBox:
 
 
         if pctl.playing_state == 0:
-            if not prefs.meta_persists_stop and not prefs.meta_shows_selected:
+            if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
                 return
 
         if h < 15:
@@ -22713,7 +22721,7 @@ class MetaBox:
         elif len(pctl.track_queue) > 0:
 
             if pctl.playing_state == 0:
-                if not prefs.meta_persists_stop and not prefs.meta_shows_selected:
+                if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
                     return
 
             ddt.text_background_colour = colours.side_panel_background
@@ -22747,12 +22755,16 @@ class MetaBox:
 
                     if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
                         tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
-                    else:
-                        return
 
+                if prefs.meta_shows_selected_always:
+                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
                 if tr is None:
                     tr = pctl.playing_object()
+                if tr is None:
+                    return
+
                 title = tr.title
                 album = tr.album
                 artist = tr.artist
@@ -27637,7 +27649,7 @@ while pctl.running:
             # Title position logic
             gui.show_bottom_title = False
             gui.show_top_title = False
-            if album_mode:
+            if album_mode or prefs.meta_shows_selected_always:
                 gui.show_bottom_title = True
             elif gui.rsp:
                 if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1700 * gui.scale:
