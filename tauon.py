@@ -28752,7 +28752,7 @@ while pctl.running:
                 else:
                     line = "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
                     if len(search_text.text) == 0:
-                        line = "Quck find"
+                        line = "Quick find"
                     ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 87 * gui.scale, 2), line,
                               colours.grey(80), 312)
 
