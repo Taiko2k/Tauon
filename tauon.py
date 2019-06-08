@@ -841,6 +841,9 @@ class Prefs:    # Used to hold any kind of settings
         self.custom_encoder_output = ""
         self.column_aa_fallback_artist = False
 
+        self.meta_persists_stop = False
+        self.meta_shows_selected = False
+
 
 prefs = Prefs()
 
@@ -2120,6 +2123,8 @@ def save_prefs():
     cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
+    cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
+    cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2157,12 +2162,6 @@ def load_prefs():
     cf.add_comment("Tip: Use TOML syntax highlighting")
 
     cf.br()
-    cf.add_text("[plex_account]")
-    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
-    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
-    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
-
-    cf.br()
     cf.add_text("[audio]")
 
     prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. BASS only.")
@@ -2191,13 +2190,15 @@ def load_prefs():
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
-    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity, "Opactiy of custom background image 'bg.png'. 0-100")
+    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
     if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
         prefs.custom_bg_opacity = 40
         print("Warning: Invalid value for mascot-opacity")
         
     prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset, "In milliseconds. May be negative.")
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
+    prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop, "Show album art and metadata of last played track when stopped.")
+    prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides side-panel-info-persists)")
 
     if system != 'windows':
         cf.br()
@@ -2248,6 +2249,12 @@ def load_prefs():
         print("Warning: Invalid discogs token in config")
     else:
         prefs.lb_token = temp
+
+    cf.br()
+    cf.add_text("[plex_account]")
+    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
+    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
+    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -20876,11 +20883,22 @@ class ArtBox:
 
         # Draw the album art. If side bar is being dragged set quick draw flag
         showc = None
-        if 3 > pctl.playing_state > 0:  # Only show if song playing or paused
 
-            album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (box_x, box_y), side_drag)
+        target_track = None
+        if 3 > pctl.playing_state > 0:
+            target_track = pctl.playing_object()
+        elif pctl.playing_state == 0 and prefs.meta_shows_selected:
+            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
-            showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+        elif pctl.playing_state == 0 and prefs.meta_persists_stop:
+                target_track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+        if target_track:  # Only show if song playing or paused
+
+            album_art_gen.display(target_track.index, (rect[0], rect[1]), (box_x, box_y), side_drag)
+
+            showc = album_art_gen.get_info(target_track.index)
 
         # Draw faint border on album art
         ddt.rect_r(rect, colours.art_box)
@@ -20892,21 +20910,21 @@ class ArtBox:
             gui.update = 2
 
         # Input for album art
-        if len(pctl.track_queue) > 0:
+        if target_track:
 
             # Cycle images on click
 
             if coll(gui.main_art_box) and input.mouse_click is True and key_focused == 0:
 
-                album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
+                album_art_gen.cycle_offset(target_track.index)
 
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
 
 
         # Activate picture context menu on right click
-        if right_click and coll(rect) and pctl.playing_ready():
-            picture_menu.activate(in_reference=pctl.playing_object().index)
+        if right_click and coll(rect) and target_track:
+            picture_menu.activate(in_reference=target_track.index)
 
         # Draw picture metadata
         if showc is not None and coll(rect) \
@@ -22633,7 +22651,8 @@ class MetaBox:
 
 
         if pctl.playing_state == 0:
-            return
+            if not prefs.meta_persists_stop and not prefs.meta_shows_selected:
+                return
 
         if h < 15:
             return
@@ -22691,7 +22710,11 @@ class MetaBox:
 
 
         # Draw standard metadata
-        elif pctl.playing_state > 0 and len(pctl.track_queue) > 0:
+        elif len(pctl.track_queue) > 0:
+
+            if pctl.playing_state == 0:
+                if not prefs.meta_persists_stop and not prefs.meta_shows_selected:
+                    return
 
             ddt.text_background_colour = colours.side_panel_background
 
@@ -22717,7 +22740,19 @@ class MetaBox:
             tr = None
 
             if pctl.playing_state < 3:
-                tr = pctl.playing_object()
+
+                if pctl.playing_state == 0 and prefs.meta_persists_stop:
+                    tr = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+                if pctl.playing_state == 0 and prefs.meta_shows_selected:
+
+                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+                    else:
+                        return
+
+
+                if tr is None:
+                    tr = pctl.playing_object()
                 title = tr.title
                 album = tr.album
                 artist = tr.artist
