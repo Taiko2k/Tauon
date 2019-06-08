@@ -26,6 +26,7 @@ v4.4.0
  - Fixed subtle text rendering issue on some settings buttons
  - Fixed column drag tag text positioning
  - Fixed "album artist" track box field always showing tooltip on hover
+ - Fixed "sort by filepath" not ignoring case
 
 v4.3.1
 

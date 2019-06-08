@@ -10150,7 +10150,7 @@ def sort_path_pl(pl):
 
     def path(index):
         track = pctl.master_library[index]
-        return (track.parent_folder_path, track.filename)
+        return (track.parent_folder_path.lower(), track.filename)
 
     pctl.multi_playlist[pl][2].sort(key=path)
 
