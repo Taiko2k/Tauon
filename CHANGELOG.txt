@@ -14,6 +14,7 @@ v4.4.0
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
  - Tweaked bottom panel title to always show if window is large
+ - Tweaked artist list to show all artists if playlist is not large
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
  - Moved listenbrainz and discogs token storage to config file
