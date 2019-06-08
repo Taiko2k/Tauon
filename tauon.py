@@ -725,7 +725,7 @@ class Prefs:    # Used to hold any kind of settings
         self.extract_to_music = False
 
         self.enable_lb = False
-        self.lb_token = None
+        self.lb_token = ""
 
         self.use_jump_crossfade = True
         self.use_transition_crossfade = False
