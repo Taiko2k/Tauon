@@ -4147,12 +4147,12 @@ class LastFMapi:
                     continue
 
                 for track in loves:
-                    title = track.track.title
-                    artist = track.track.artist.name
+                    title = track.track.title.casefold()
+                    artist = track.track.artist.name.casefold()
                     time.sleep(0.001)
                     for index, tr in pctl.master_library.items():
 
-                        if tr.title == title and tr.artist == artist:
+                        if tr.title.casefold() == title and tr.artist.casefold() == artist:
                             tr.lfm_friend_likes.add(friend.name)
                             print("MATCH")
                             print("     " + artist + " - " + title)
@@ -4194,11 +4194,11 @@ class LastFMapi:
             updated = 0
 
             for track in tracks:
-                title = track.track.title
-                artist = track.track.artist.name
+                title = track.track.title.casefold()
+                artist = track.track.artist.name.casefold()
 
                 for index, tr in pctl.master_library.items():
-                    if tr.title == title and tr.artist == artist:
+                    if tr.title.casefold() == title and tr.artist.casefold() == artist:
                         matches += 1
                         print("MATCH:")
                         print("     " + artist + " - " + title)

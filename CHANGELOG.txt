@@ -11,6 +11,7 @@ v4.4.0
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
  - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
+ - Improved last.fm love scanner to ignore case
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
  - Tweaked bottom panel title to always show if window is large
