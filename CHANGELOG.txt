@@ -9,11 +9,13 @@ v4.4.0
  - Redesigned config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
+ - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
  - Tweaked bottom panel title to always show if window is large
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
+ - Moved listenbrainz and discogs token storage to config file
  - Fixed and enabled mini mode with maximizing
  - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
  - Fixed artist list sorting with case sensitivity
@@ -21,6 +23,7 @@ v4.4.0
  - Fixed setting fonts in config file
  - Fixed subtle text rendering issue on some settings buttons
  - Fixed column drag tag text positioning
+ - Fixed "album artist" track box field always showing tooltip on hover
 
 v4.3.1
 

@@ -128,14 +128,27 @@ class Config:
             return default_value
 
         if type == 'string':
-            if got_old:
-                old_value = old_value.strip('"')
-                if old_value:
-                    self.live.append(['string', key, old_value, comment])
-                    return old_value
 
-            self.live.append(['string', key, default_value, comment])
-            return default_value
+            if old_value is None:
+                self.live.append(['string', key, default_value, comment])
+                return default_value
+
+            old_value = old_value.strip('"')
+            if not got_old:
+                self.live.append(['string', key, default_value, comment])
+                return default_value
+
+            self.live.append(['string', key, old_value, comment])
+            return old_value
+
+            # if got_old:
+            #     old_value = old_value.strip('"')
+            #     if old_value:
+            #         self.live.append(['string', key, old_value, comment])
+            #         return old_value
+            #
+            # self.live.append(['string', key, default_value, comment])
+            # return default_value
 
         if type == 'int':
             if got_old and old_value.isdigit():
