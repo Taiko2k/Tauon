@@ -725,7 +725,7 @@ class Prefs:    # Used to hold any kind of settings
         self.extract_to_music = False
 
         self.enable_lb = False
-        self.lb_token = None
+        self.lb_token = ""
 
         self.use_jump_crossfade = True
         self.use_transition_crossfade = False
@@ -839,6 +839,11 @@ class Prefs:    # Used to hold any kind of settings
         self.broadcast_bitrate = 128
 
         self.custom_encoder_output = ""
+        self.column_aa_fallback_artist = False
+
+        self.meta_persists_stop = False
+        self.meta_shows_selected = False
+        self.meta_shows_selected_always = False
 
 
 prefs = Prefs()
@@ -1792,6 +1797,8 @@ try:
         prefs.enable_lb = save[79]
     if save[80] is not None:
         prefs.lb_token = save[80]
+        if prefs.lb_token is None:
+            prefs.lb_token = ""
     if save[81] is not None:
         rename_files_previous = save[81]
     if save[82] is not None:
@@ -2117,12 +2124,16 @@ def save_prefs():
     cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
+    cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
+    cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
+    cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
     cf.update_value("font-main-bold", prefs.linux_font_bold)
 
     cf.update_value("double-digit-indicies", prefs.dd_index)
+    cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
 
     cf.update_value("encode-output-dir", prefs.custom_encoder_output)
     cf.update_value("add_download_directory", prefs.download_dir1)
@@ -2130,6 +2141,9 @@ def save_prefs():
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
+
+    cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
+    cf.update_value("listenbrainz-token", prefs.lb_token)
 
     cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
@@ -2148,12 +2162,6 @@ def load_prefs():
     cf.br()
     cf.add_comment("This file will be regenerated while app is running. Formatting and additional comments will be lost.")
     cf.add_comment("Tip: Use TOML syntax highlighting")
-
-    cf.br()
-    cf.add_text("[plex_account]")
-    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
-    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
-    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
 
     cf.br()
     cf.add_text("[audio]")
@@ -2184,25 +2192,28 @@ def load_prefs():
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
-    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity, "Opactiy of custom background image 'bg.png'. 0-100")
+    prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
     if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
         prefs.custom_bg_opacity = 40
         print("Warning: Invalid value for mascot-opacity")
         
     prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset, "In milliseconds. May be negative.")
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
+    prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop, "Show album art and metadata of last played track when stopped.")
+    prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides side-panel-info-persists)")
+    prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides side-panel-info-persists and side-panel-info-selected)")
 
-    cf.br()
-    cf.add_text("[fonts]")
-    cf.add_comment("Only has effect on Linux platform.")
-    prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "# Recomended: Noto Sans, Sugested alternate: Liberation Sans")
-    prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "# Recomended: Noto Sans Medium")
-    prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "# Recomended: Noto Sans Bold")
-
+    if system != 'windows':
+        cf.br()
+        cf.add_text("[fonts]")
+        prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "Recomended: Noto Sans, Sugested alternate: Liberation Sans")
+        prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "Recomended: Noto Sans Medium")
+        prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "Recomended: Noto Sans Bold")
 
     cf.br()
     cf.add_text("[tracklist]")
     prefs.dd_index = cf.sync_add("bool", "double-digit-indicies", prefs.dd_index)
+    prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
 
 
     cf.br()
@@ -2223,6 +2234,30 @@ def load_prefs():
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+
+    cf.br()
+    cf.add_text("[tokens]")
+    temp = cf.sync_add("string", "discogs-personal-access-token", prefs.discogs_pat, "Used for sourcing of artist thumbnails.")
+    if not temp:
+        prefs.discogs_pat = ""
+    elif len(temp) != 40:
+        print("Warning: Invalid discogs token in config")
+    else:
+        prefs.discogs_pat = temp
+
+    temp = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
+    if not temp:
+        prefs.lb_token = ""
+    elif len(temp) != 36 or temp[8] != "-":
+        print("Warning: Invalid discogs token in config")
+    else:
+        prefs.lb_token = temp
+
+    cf.br()
+    cf.add_text("[plex_account]")
+    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
+    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
+    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -4238,7 +4273,6 @@ class ListenBrainz:
 
     def __init__(self):
 
-        self.key = prefs.lb_token
         self.enable = prefs.enable_lb
         self.hold = False
         self.url = "https://api.listenbrainz.org/1/submit-listens"
@@ -4287,7 +4321,7 @@ class ListenBrainz:
         data["payload"][0]["listened_at"] = time
 
 
-        r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
+        r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
             return False
@@ -4335,7 +4369,7 @@ class ListenBrainz:
         data["payload"].append({"track_metadata": metadata})
         #data["payload"][0]["listened_at"] = int(time.time())
 
-        r = requests.post(self.url, headers={"Authorization": "Token " + self.key}, data=json.dumps(data))
+        r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", 'warning', r.text)
             print("error")
@@ -4349,13 +4383,14 @@ class ListenBrainz:
             show_message("There is no text in the clipboard", "error")
             return
         if len(text) == 36 and text[8] == "-":
-            self.key = text
+            prefs.lb_token = text
         else:
             show_message("That is not a valid token", "error")
 
     def clear_key(self):
 
-        self.key = None
+        prefs.lb_token = ""
+        save_prefs()
         self.enable = False
 
 
@@ -12681,6 +12716,7 @@ if prefs.backend == 1:
 x_menu = Menu(190, show_icons=True)
 view_menu = Menu(170)
 set_menu = Menu(150)
+set_menu_hidden = Menu(100)
 vis_menu = Menu(140)
 field_menu = Menu(140)
 dl_menu = Menu(90)
@@ -12915,11 +12951,16 @@ def hide_set_bar():
     gui.update_layout()
     gui.pl_update = 1
 
+def show_set_bar():
+    gui.set_bar = True
+    gui.update_layout()
+    gui.pl_update = 1
 
 set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.br()
 set_menu.add("Hide bar", hide_set_bar)
+set_menu_hidden.add("Show bar", show_set_bar)
 set_menu.br()
 set_menu.add("+ Artist", sa_artist)
 set_menu.add("+ Title", sa_title)
@@ -13155,7 +13196,7 @@ def toggle_album_mode(force_on=False):
 
     if album_mode and gui.set_mode and len(gui.pl_st) > 7:
         gui.set_mode = False
-        gui.set_bar = False
+        #gui.set_bar = False
         gui.pl_update = True
         gui.update_layout()
 
@@ -14030,10 +14071,10 @@ def switch_showcase(index=-1):
 def toggle_library_mode():
     if gui.set_mode:
         gui.set_mode = False
-        gui.set_bar = False
+        #gui.set_bar = False
     else:
         gui.set_mode = True
-        gui.set_bar = True
+        #gui.set_bar = True
     gui.update_layout()
 
 def library_deco():
@@ -16253,6 +16294,13 @@ def toggle_playback_follow(mode=0):
     prefs.playback_follow_cursor ^= True
 
 
+def toggle_hide_bar(mode=0):
+    if mode == 1:
+        return gui.set_bar ^ True
+    gui.set_bar ^= True
+    show_message("Tip: You can also toggle this from a right-click context menu")
+
+
 def toggle_auto_import_sort(mode=0):
     if mode == 1:
         return prefs.auto_sort
@@ -16316,7 +16364,7 @@ def toggle_lfm_auto(mode=0):
 def toggle_lb(mode=0):
     if mode == 1:
         return lb.enable
-    if not lb.enable and lb.key is None:
+    if not lb.enable and not prefs.lb_token:
         show_message("Can't enable this if there's no token.", 'warning')
         return
     lb.enable ^= True
@@ -16555,6 +16603,8 @@ config_items.append(None)
 config_items.append([_('Playback follows selected'), toggle_playback_follow])
 
 config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
+
+config_items.append([_('Hide column bar'), toggle_hide_bar])
 
 # config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
@@ -17117,6 +17167,7 @@ class Over:
                 if not prefs.discogs_pat:
                     show_message("There wasn't any token saved.")
                 prefs.discogs_pat = ""
+                save_prefs()
 
             y += 30 * gui.scale
             if prefs.discogs_pat:
@@ -17189,8 +17240,8 @@ class Over:
 
             y += 35 * gui.scale
 
-            if lb.key != None:
-                line = lb.key
+            if prefs.lb_token:
+                line = prefs.lb_token
                 ddt.draw_text((x + 0 * gui.scale, y - 0 * gui.scale), line, colours.grey_blend_bg(180), 212)
 
             y += 25 * gui.scale
@@ -20640,7 +20691,7 @@ class StandardPlaylist:
                                 colour = colours.album_playing
                         elif item[0] == "Album Artist":
                             text = n_track.album_artist
-                            if text == "":
+                            if not text and prefs.column_aa_fallback_artist:
                                 text = n_track.artist
                             colour = colours.artist_text
                             if this_line_playing is True:
@@ -20835,11 +20886,27 @@ class ArtBox:
 
         # Draw the album art. If side bar is being dragged set quick draw flag
         showc = None
-        if 3 > pctl.playing_state > 0:  # Only show if song playing or paused
 
-            album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (box_x, box_y), side_drag)
+        target_track = None
+        if 3 > pctl.playing_state > 0:
+            target_track = pctl.playing_object()
 
-            showc = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+        elif pctl.playing_state == 0 and prefs.meta_shows_selected:
+            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+
+        elif pctl.playing_state == 0 and prefs.meta_persists_stop:
+                target_track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+
+        if prefs.meta_shows_selected_always:
+            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+
+        if target_track:  # Only show if song playing or paused
+
+            album_art_gen.display(target_track.index, (rect[0], rect[1]), (box_x, box_y), side_drag)
+
+            showc = album_art_gen.get_info(target_track.index)
 
         # Draw faint border on album art
         ddt.rect_r(rect, colours.art_box)
@@ -20851,21 +20918,21 @@ class ArtBox:
             gui.update = 2
 
         # Input for album art
-        if len(pctl.track_queue) > 0:
+        if target_track:
 
             # Cycle images on click
 
             if coll(gui.main_art_box) and input.mouse_click is True and key_focused == 0:
 
-                album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
+                album_art_gen.cycle_offset(target_track.index)
 
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
 
 
         # Activate picture context menu on right click
-        if right_click and coll(rect) and pctl.playing_ready():
-            picture_menu.activate(in_reference=pctl.playing_object().index)
+        if right_click and coll(rect) and target_track:
+            picture_menu.activate(in_reference=target_track.index)
 
         # Draw picture metadata
         if showc is not None and coll(rect) \
@@ -22592,7 +22659,8 @@ class MetaBox:
 
 
         if pctl.playing_state == 0:
-            return
+            if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
+                return
 
         if h < 15:
             return
@@ -22650,7 +22718,11 @@ class MetaBox:
 
 
         # Draw standard metadata
-        elif pctl.playing_state > 0 and len(pctl.track_queue) > 0:
+        elif len(pctl.track_queue) > 0:
+
+            if pctl.playing_state == 0:
+                if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
+                    return
 
             ddt.text_background_colour = colours.side_panel_background
 
@@ -22676,7 +22748,23 @@ class MetaBox:
             tr = None
 
             if pctl.playing_state < 3:
-                tr = pctl.playing_object()
+
+                if pctl.playing_state == 0 and prefs.meta_persists_stop:
+                    tr = pctl.master_library[pctl.track_queue[pctl.queue_step]]
+                if pctl.playing_state == 0 and prefs.meta_shows_selected:
+
+                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+
+                if prefs.meta_shows_selected_always:
+                    if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
+                        tr = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
+
+                if tr is None:
+                    tr = pctl.playing_object()
+                if tr is None:
+                    return
+
                 title = tr.title
                 album = tr.album
                 artist = tr.artist
@@ -24658,7 +24746,7 @@ def update_layout_do():
         #         gui.panelY = 30 * gui.scale
         #         top_panel.ty = 0
 
-        if gui.set_bar:
+        if gui.set_bar and gui.set_mode:
             gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
         else:
             gui.playlist_top = gui.playlist_top_bk
@@ -24989,7 +25077,7 @@ def save_state():
             gui.artist_info_panel,  # 77
             prefs.extract_to_music,  # 78
             lb.enable,
-            lb.key,
+            None, #lb.key,
             rename_files.text,
             rename_folder.text,
             prefs.use_jump_crossfade,
@@ -25038,7 +25126,7 @@ def save_state():
             prefs.lyrics_enables,
             prefs.fanart_notify,
             prefs.bg_showcase_only,
-            prefs.discogs_pat,
+            None, #prefs.discogs_pat,
             prefs.mini_mode_mode,
             None]
 
@@ -27347,7 +27435,15 @@ while pctl.running:
                 if gui.artist_info_panel:
                     top += gui.artist_panel_height
 
-                if gui.set_bar:
+                if gui.set_mode and not gui.set_bar:
+                    left = 0
+                    if gui.lsp:
+                        left = gui.lspw
+                    rect = [left, top, gui.plw, 6 * gui.scale]
+                    if right_click and coll(rect):
+                        set_menu_hidden.activate()
+
+                if gui.set_bar and gui.set_mode:
                     left = 0
                     if gui.lsp:
                         left = gui.lspw
@@ -27454,7 +27550,7 @@ while pctl.running:
                     else:
                         playlist_render.cache_render()
 
-                if gui.set_bar and not gui.combo_mode:
+                if gui.set_bar and gui.set_mode and not gui.combo_mode:
 
                     x = 0
                     if gui.lsp:
@@ -27553,7 +27649,7 @@ while pctl.running:
             # Title position logic
             gui.show_bottom_title = False
             gui.show_top_title = False
-            if album_mode:
+            if album_mode or prefs.meta_shows_selected_always:
                 gui.show_bottom_title = True
             elif gui.rsp:
                 if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1700 * gui.scale:
