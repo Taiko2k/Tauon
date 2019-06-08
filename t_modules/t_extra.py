@@ -92,7 +92,7 @@ def get_display_time(seconds):
     if result[0] > 99:
         result = divmod(result[0], 60)
         return str(result[0]) + 'h ' + str(result[1]).zfill(2)
-    return str(result[0]).zfill(2) + "∶" + str(result[1]).zfill(2)
+    return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2) #"∶"
 
 
 # Creates a string from number of bytes to X MB/kB etc
