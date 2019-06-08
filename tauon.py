@@ -21987,6 +21987,8 @@ class ArtistList:
                         counts[artist] += 1
                         if counts[artist] > 4:
                             all.append(artist)
+                        elif len(current_pl[2]) < 1000:
+                            all.append(artist)
 
                     if artist not in artist_parents:
                         artist_parents[artist] = []
@@ -27652,7 +27654,7 @@ while pctl.running:
             if album_mode or prefs.meta_shows_selected_always:
                 gui.show_bottom_title = True
             elif gui.rsp:
-                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1700 * gui.scale:
+                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1500 * gui.scale or gui.maximized:
                     gui.show_bottom_title = True
                     if window_size[0] < 820 * gui.scale:
                         gui.show_top_title = True
