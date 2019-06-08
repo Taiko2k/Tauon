@@ -845,6 +845,8 @@ class Prefs:    # Used to hold any kind of settings
         self.meta_shows_selected = False
         self.meta_shows_selected_always = False
 
+        self.left_align_album_artist_title = False
+
 
 prefs = Prefs()
 
@@ -2134,6 +2136,7 @@ def save_prefs():
 
     cf.update_value("double-digit-indicies", prefs.dd_index)
     cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
+    cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 
     cf.update_value("encode-output-dir", prefs.custom_encoder_output)
     cf.update_value("add_download_directory", prefs.download_dir1)
@@ -2214,6 +2217,7 @@ def load_prefs():
     cf.add_text("[tracklist]")
     prefs.dd_index = cf.sync_add("bool", "double-digit-indicies", prefs.dd_index)
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
+    prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
 
 
     cf.br()
@@ -20140,12 +20144,16 @@ class StandardPlaylist:
                 != pctl.master_library[default_playlist[p_track - 1]].parent_folder_path) and \
                             pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
 
+                # ------
                 line = n_track.parent_folder_name
-
                 if not prefs.pl_thumb:
-
+                    album_artist_mode = False
                     if n_track.album_artist != "" and n_track.album != "":
                         line = n_track.album_artist + " - " + n_track.album
+
+                        if prefs.left_align_album_artist_title:
+                            album_artist_mode = True
+                            line = n_track.album
 
                     if len(line) < 6 and "CD" in line:
                         line = n_track.album
@@ -20174,7 +20182,6 @@ class StandardPlaylist:
                             if match:
                                 line = b[1]
                                 date = b[0] + ")"
-
 
                     if "(" in line and re.match('.*([1-3][0-9]{3})', line):
                         date = ""
@@ -20228,12 +20235,27 @@ class StandardPlaylist:
                         if qq > 1:
                             date_w -= 1 * gui.scale
 
+                    aa = 0
+                    if album_artist_mode:
+                        colour = colours.artist_text
+                        if "Album Artist" in colours.column_colours:
+                            colour = colours.column_colours["Album Artist"]
+                        aa = ddt.draw_text((left + highlight_left + 14 * gui.scale, height), n_track.album_artist, alpha_mod(colour, album_fade),gui.row_font_size + gui.pl_title_font_offset,
+                                               gui.plw // 3)
+                        aa += 12 * gui.scale
+
                     ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
-                    if ft_width > highlight_width - date_w - 13 * gui.scale - light_offset:
+
+                    left_align = highlight_width - date_w - 13 * gui.scale - light_offset
+
+                    extra = aa
+                    left_align -= extra
+
+                    if ft_width > left_align:
                         date_w += 19 * gui.scale
-                        ddt.draw_text((left + highlight_left + 8 * gui.scale, height), line,
+                        ddt.draw_text((left + highlight_left + 8 * gui.scale + extra, height), line,
                                    alpha_mod(colours.folder_title, album_fade),
-                                   gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w)
+                                   gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w - extra)
 
                     else:
 
@@ -27714,6 +27736,8 @@ while pctl.running:
                 x = gui.lspw - 1 * gui.scale
                 if not gui.set_mode:
                     width = 11 * gui.scale
+            if gui.set_mode and prefs.left_align_album_artist_title:
+                width = 11 * gui.scale
 
             gui.scroll_hide_box = (
                 x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
