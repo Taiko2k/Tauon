@@ -16284,6 +16284,13 @@ def toggle_playback_follow(mode=0):
     prefs.playback_follow_cursor ^= True
 
 
+def toggle_hide_bar(mode=0):
+    if mode == 1:
+        return gui.set_bar ^ True
+    gui.set_bar ^= True
+    show_message("Tip: You can also toggle this from a right-click context menu")
+
+
 def toggle_auto_import_sort(mode=0):
     if mode == 1:
         return prefs.auto_sort
@@ -16586,6 +16593,8 @@ config_items.append(None)
 config_items.append([_('Playback follows selected'), toggle_playback_follow])
 
 config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
+
+config_items.append([_('Hide column bar'), toggle_hide_bar])
 
 # config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
