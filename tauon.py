@@ -572,7 +572,7 @@ repeat_mode = False
 
 
 def uid_gen():
-    return random.randrange(100, 10000000)
+    return random.randrange(1, 100000000)
 
 def pl_gen(title='Default',
            playing=0,
@@ -588,6 +588,12 @@ def pl_gen(title='Default',
     return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), "", False, False, parent])
 
 multi_playlist = [pl_gen()] # Create default playlist
+
+def queue_item_gen(trackid, position, pl_id, type=0, album_stage=0):
+    # type; 0 is track, 1 is album
+    auto_stop = False
+    return [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+
 
 default_playlist = multi_playlist[0][2]
 playlist_active = 0
@@ -3231,7 +3237,7 @@ class PlayerCtl:
 
                 pp = self.playing_playlist()
 
-                if pctl.auto_stop and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
+                if pctl.auto_stop: # and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
                     self.stop(run=True)
                     gui.update += 2
                     pctl.auto_stop = False
@@ -3384,6 +3390,9 @@ class PlayerCtl:
 
             q = self.force_queue[0]
             target_index = q[0]
+
+            if q[6]:
+                pctl.auto_stop = True
 
             if q[3] == 1:
                 # This is an album type
@@ -8777,8 +8786,9 @@ def finish_current():
 
     if not pctl.force_queue:
 
-        pctl.force_queue.insert(0, [playing_object.index,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, uid_gen()])
+        pctl.force_queue.insert(0, queue_item_gen(playing_object.index,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1))
+
 
 
 def add_album_to_queue(ref, position=None):
@@ -8794,8 +8804,10 @@ def add_album_to_queue(ref, position=None):
         if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
-    pctl.force_queue.append([ref,
-                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway, uid_gen()])
+    # pctl.force_queue.append([ref,
+    #                          position, pl_to_id(pctl.active_playlist_viewing), 1, partway, uid_gen()])
+    pctl.force_queue.append(queue_item_gen(ref,
+                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway))
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 
@@ -8807,17 +8819,17 @@ def add_album_to_queue_fc(ref):
         show_message("")
 
     if not pctl.force_queue:
-        pctl.force_queue.insert(0, [playing_object.index,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1, uid_gen()])
+        pctl.force_queue.insert(0, queue_item_gen(playing_object.index,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1))
         add_album_to_queue(ref)
         return
 
     if pctl.force_queue[0][4] == 1:
-        pctl.force_queue.insert(1, [ref,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, uid_gen()])
+        pctl.force_queue.insert(1, queue_item_gen(ref,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0))
     else:
-        pctl.force_queue.insert(0, [ref,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0, uid_gen()])
+        pctl.force_queue.insert(0, queue_item_gen(ref,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0,))
 
 
 def cancel_import():
@@ -11664,11 +11676,7 @@ def pl_to_id(pl):
 
 def add_to_queue(ref):
 
-    # ref, postion-in-playlist, source-playlist-id, type(0 is track, 1 is album), album-stage, UID
-
-    pctl.force_queue.append([ref,
-                             r_menu_position, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
-
+    pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
 
 
@@ -20452,8 +20460,10 @@ class StandardPlaylist:
             # Add to queue on middle click
             if middle_click and line_hit:
 
-                pctl.force_queue.append([default_playlist[p_track],
-                                         p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
+                # pctl.force_queue.append([default_playlist[p_track],
+                #                          p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
+                pctl.force_queue.append(queue_item_gen(default_playlist[p_track],
+                                                       p_track, pl_to_id(pctl.active_playlist_viewing)))
 
             # Make track the selection if right clicked
             if right_click and line_hit:
@@ -22370,11 +22380,32 @@ class QueueBox:
         self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
+        queue_menu.add("Auto-Stop", self.toggle_auto_stop, self.toggle_auto_stop_deco)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue)
         # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
 
+    def toggle_auto_stop(self):
+
+        for item in pctl.force_queue:
+            if item[5] == self.right_click_id:
+                item[6] ^= True
+                break
+
+    def toggle_auto_stop_deco(self):
+
+        enabled = False
+        for item in pctl.force_queue:
+            if item[5] == self.right_click_id:
+                if item[6]:
+                    enabled = True
+                    break
+
+        if enabled:
+            return [colours.menu_text, colours.menu_background, _("Cancel Auto-Stop")]
+        else:
+            return [colours.menu_text, colours.menu_background, _('Auto-Stop After')]
 
     def queue_remove_show(self, id):
 
@@ -22445,6 +22476,9 @@ class QueueBox:
             else:
                 ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
                            [140, 220, 20, 255], True)
+
+        if fqo[6]:
+            ddt.rect_r((rect[0] + rect[2] - 9 * gui.scale, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
 
     def draw(self, x, y, w, h):
 
@@ -22651,9 +22685,11 @@ class QueueBox:
             ti = default_playlist[pp]
 
             if len(shift_selection) == 1:
-                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
+                #pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
+                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing)))
             else:
-                pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, uid_gen()])
+                # pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, uid_gen()])
+                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing, 1)))
 
         # Right click context menu in blank space
         if qb_right_click:
@@ -25972,9 +26008,11 @@ while pctl.running:
                     add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
 
                 else:
-                    pctl.force_queue.append([default_playlist[playlist_selected],
-                                             playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
-                                             uid_gen()])
+                    # pctl.force_queue.append([default_playlist[playlist_selected],
+                    #                          playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
+                    #                          uid_gen()])
+                    pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
+                                             playlist_selected, pl_to_id(pctl.active_playlist_viewing)))
 
 
         if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
@@ -26940,10 +26978,13 @@ while pctl.running:
                                                     default_playlist[album_dex[album_on]]).parent_folder_path == pctl.playing_object().parent_folder_path:
                                                 partway = 1
 
-                                        pctl.force_queue.append([default_playlist[album_dex[album_on]],
+                                        # pctl.force_queue.append([default_playlist[album_dex[album_on]],
+                                        #                          album_dex[album_on],
+                                        #                          pl_to_id(pctl.active_playlist_viewing), 1, partway,
+                                        #                          uid_gen()])
+                                        pctl.force_queue.append(queue_item_gen(default_playlist[album_dex[album_on]],
                                                                  album_dex[album_on],
-                                                                 pl_to_id(pctl.active_playlist_viewing), 1, partway,
-                                                                 uid_gen()])
+                                                                 pl_to_id(pctl.active_playlist_viewing), 1, partway))
 
 
                                     else:
