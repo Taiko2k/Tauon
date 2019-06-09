@@ -12,6 +12,7 @@ v4.4.0
  - Improved search to make album-artist and composer fields searchable
  - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
  - Improved last.fm love scanner to ignore case
+ - Tweaked auto-stop behavior with queue, now added per item toggle, no longer always ignores when queue active
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
  - Tweaked bottom panel title to always show if window is large
@@ -28,6 +29,7 @@ v4.4.0
  - Fixed column drag tag text positioning
  - Fixed "album artist" track box field always showing tooltip on hover
  - Fixed "sort by filepath" not ignoring case
+ - Fixed progress bar not resetting with auto-stop when using GStreamer backend
 
 v4.3.1
 
