@@ -852,6 +852,7 @@ class Prefs:    # Used to hold any kind of settings
         self.meta_shows_selected_always = False
 
         self.left_align_album_artist_title = False
+        self.stop_notifications_mini_mode = False
 
 
 prefs = Prefs()
@@ -2135,6 +2136,7 @@ def save_prefs():
     cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
+    cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2209,8 +2211,9 @@ def load_prefs():
     prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset, "In milliseconds. May be negative.")
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
     prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop, "Show album art and metadata of last played track when stopped.")
-    prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides side-panel-info-persists)")
-    prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides side-panel-info-persists and side-panel-info-selected)")
+    prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides above setting)")
+    prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
+    prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
 
     if system != 'windows':
         cf.br()
@@ -3845,7 +3848,12 @@ def notify_song(notify_of_end=False, delay=0):
     if not de_nofity_support:
         return
 
+
     if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
+
+        if prefs.stop_notifications_mini_mode and gui.mode == 3:
+            return
+
         track = pctl.playing_object()
 
         if not (track.title or track.artist or track.album):
