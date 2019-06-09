@@ -7,6 +7,7 @@ v4.4.0
  - Added "Album-Artist", "Composer" and "Comment" to columns mode
  - Added per column colours to theme files
  - Added config option to show selected track in side panel when stopped
+ - Added config option to stop track change notifications while in Mini Mode
  - Redesigned config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
