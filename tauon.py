@@ -853,6 +853,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.left_align_album_artist_title = False
         self.stop_notifications_mini_mode = False
+        self.scale_want = 1
 
 
 prefs = Prefs()
@@ -1162,8 +1163,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.mini_mode_return_maximized = False
 
         self.opened_config_file = False
-
-
 
 
 
@@ -2127,6 +2126,7 @@ def save_prefs():
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
+    cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
     cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
     cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
@@ -2200,6 +2200,8 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[ui]")
+    prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "Scaling for HiDPI displays. Accepted values: 1, 1.25 and 2. Change applies on restart.")
+
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
     prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
@@ -2282,6 +2284,18 @@ def load_prefs():
 load_prefs()
 save_prefs()
 
+
+print("TEST SCALE")
+print(prefs.scale_want)
+print(prefs.ui_scale)
+if prefs.scale_want != prefs.ui_scale:
+    print("UPDATE SCALE SETTING")
+    if prefs.scale_want in (1, 1.25, 2):
+        prefs.ui_scale = prefs.scale_want
+        print("SCALE VALUE IS VALID")
+        prefs.playlist_row_height = round(22 * prefs.ui_scale)
+        prefs.playlist_font_size = 15
+        gui.__init__()
 
 try:
     # star_lines = view_prefs['star-lines']
@@ -17486,21 +17500,20 @@ class Over:
 
         y += 28 * gui.scale
         # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
-        if system == "linux" or True:
-            self.toggle_square(x, y, scale1, "1x")
+        # if system == "linux" or True:
+        #     self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
-        if system == "linux" or True:
-            self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
+        # if system == "linux" or True:
+        #     self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
         #y += 25 * gui.scale
-        if system == "linux":
-            self.toggle_square(x + 70 * gui.scale, y, scale2, "2x")
-
+        # if system == "linux":
+        #     self.toggle_square(x + 70 * gui.scale, y, scale2, "2x")
 
         y -= 5 * gui.scale
 
-        self.button(x + 268 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
-        self.button(x + 165 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        ddt.draw_text((x + 380 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
+        self.button(x + 208 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
+        self.button(x + 105 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
+        ddt.draw_text((x + 320 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
 
 
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
@@ -25351,6 +25364,7 @@ def save_state():
 
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
+
     save_prefs()
 
 # SDL_StartTextInput()
@@ -26350,6 +26364,9 @@ while pctl.running:
             else:
                 if input.mouse_click:
                     pref_box.enabled = False
+                    if gui.opened_config_file == True:
+                        input.mouse_click = False
+                        show_message('Remember to click "Reload Config File" if you made changes or they will be lost')
                     fader.fall()
                 if right_click:
                     pref_box.enabled = False
