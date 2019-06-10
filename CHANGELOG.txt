@@ -9,6 +9,7 @@ v4.4.0
  - Added config option to show selected track in side panel when stopped
  - Added config option to stop track change notifications while in Mini Mode
  - Added seek bar to mini mode micro
+ - Added shortcut to cycle between mini mode square and micro (shift click and wheel click)
  - Redesigned config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
