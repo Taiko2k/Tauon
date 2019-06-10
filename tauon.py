@@ -22470,12 +22470,26 @@ class QueueBox:
         self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
-        queue_menu.add(_("Play Now"), self.play_now)
-        queue_menu.add("Auto-Stop", self.toggle_auto_stop, self.toggle_auto_stop_deco)
+        queue_menu.add(_("Play Now"), self.play_now, show_test=self.queue_remove_show)
+        queue_menu.add("Auto-Stop After", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue)
+
+        queue_menu.add(_("↳ Except for This"), self.clear_queue_crop, show_test=self.queue_remove_show)
         # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+    def clear_queue_crop(self):
+
+        save = False
+        for item in pctl.force_queue:
+            if item[5] == self.right_click_id:
+                save = item
+                break
+
+        clear_queue()
+        if save:
+            pctl.force_queue.append(save)
 
     def play_now(self):
 
