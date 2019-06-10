@@ -19446,7 +19446,7 @@ class MiniMode:
 
 
                 # Test click to seek
-                if input.mouse_click and coll(seek_r_hit):
+                if mouse_up and coll(seek_r_hit):
 
                     click_x = mouse_position[0]
                     if click_x > seek_r[0] + seek_r[2]:
@@ -19678,7 +19678,13 @@ class MiniMode2:
 
             if coll(hit_rect) and mouse_up:
                 p = (mouse_position[0] - h) / (w - h)
-                pctl.seek_decimal(p)
+                if p > .96:
+                    pctl.advance()
+                else:
+                    pctl.seek_decimal(p)
+
+            bg_rect = (h, h - round(4 * gui.scale), w - h, round(4 * gui.scale))
+            ddt.rect_r(bg_rect, [0, 0, 0, 30], True)
 
             seek_rect = (h, h - round(4 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(4 * gui.scale))
             colour = colours.artist_text
