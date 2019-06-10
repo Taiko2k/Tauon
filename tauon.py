@@ -3409,9 +3409,6 @@ class PlayerCtl:
             q = self.force_queue[0]
             target_index = q[0]
 
-            if q[6]:
-                pctl.auto_stop = True
-
             if q[3] == 1:
                 # This is an album type
 
@@ -3480,6 +3477,7 @@ class PlayerCtl:
                     #if ok_continue:
                     # We seem to be still in the album. Step down one and play
                     self.playlist_playing_position += 1
+
                     if len(pl) <= self.playlist_playing_position:
                         print("END OF PLAYLIST!")
                         del self.force_queue[0]
@@ -3495,6 +3493,9 @@ class PlayerCtl:
                     # It seems this item has expired, remove it and call advance again
                     print("Remove expired album from queue")
                     del self.force_queue[0]
+
+                    if q[6]:
+                        pctl.auto_stop = True
 
                     if queue_box.scroll_position > 0:
                         queue_box.scroll_position -= 1
@@ -3519,6 +3520,8 @@ class PlayerCtl:
                 #self.queue_target = len(self.track_queue) - 1
                 self.play_target(jump= not end)
                 del self.force_queue[0]
+                if q[6]:
+                    pctl.auto_stop = True
                 if queue_box.scroll_position > 0:
                     queue_box.scroll_position -= 1
 
@@ -22637,7 +22640,10 @@ class QueueBox:
                            [140, 220, 20, 255], True)
 
         if fqo[6]:
-            ddt.rect_r((rect[0] + rect[2] - 9 * gui.scale, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
+            xx = rect[0] + rect[2] - 9 * gui.scale
+            if fqo[3] == 1:
+                xx -= 11 * gui.scale
+            ddt.rect_r((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
 
     def draw(self, x, y, w, h):
 
@@ -27343,7 +27349,8 @@ while pctl.running:
                                            colours.gallery_artist_line,
                                            13,
                                            album_mode_art_size - 10 * gui.scale,
-                                           )
+                                           bg=alpha_blend([40, 40, 40, 50], colours.gallery_background))
+
                             if prefs.art_bg and drawn_art:
                                 rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
                                 if rect.y < gui.panelY:
