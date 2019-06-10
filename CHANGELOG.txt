@@ -15,6 +15,7 @@ v4.4.0
  - Improved search to make album-artist and composer fields searchable
  - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
  - Improved last.fm love scanner to ignore case
+ - Improved desktop icon size to better fit GNOME guidelines
  - Tweaked auto-stop behavior with queue, now added per item toggle, no longer always ignores when queue active
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
