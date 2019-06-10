@@ -11686,7 +11686,40 @@ def add_to_queue(ref):
 
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
+def split_queue_album(id):
 
+    item = pctl.force_queue[0]
+
+    pl = id_to_pl(item[2])
+    if pl is None:
+        return
+
+    playlist = pctl.multi_playlist[pl][2]
+
+    i = pctl.playlist_playing_position + 1
+    parts = []
+    album_parent_path = pctl.g(item[0]).parent_folder_path
+
+    while i < len(playlist):
+        print(pctl.g(playlist[i]).parent_folder_path)
+        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+            break
+
+        parts.append((playlist[i], i))
+        i += 1
+
+    del pctl.force_queue[0]
+
+    for part in reversed(parts):
+        pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item[3]))
+
+
+def add_to_queue_next(ref):
+
+    if pctl.force_queue and pctl.force_queue[0][4] == 1:
+        split_queue_album(None)
+
+    pctl.force_queue.insert(0, queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
 # def toggle_queue(mode=0):
 #     if mode == 1:
@@ -11696,6 +11729,8 @@ def add_to_queue(ref):
 
 
 track_menu.add(_('Add to Queue'), add_to_queue, pass_ref=True, hint="MB3")
+
+track_menu.add(_('↳ After Current Track'), add_to_queue_next, pass_ref=True, show_test=test_shift)
 
 track_menu.add(_('Show in Gallery'), show_in_gal, pass_ref=True, show_test=test_show)
 
