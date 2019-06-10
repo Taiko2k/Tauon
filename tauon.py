@@ -19593,7 +19593,7 @@ class MiniMode2:
         ddt.rect_r((0, 0, w, h), colours.mini_mode_background, True)
         ddt.text_background_colour = colours.mini_mode_background
 
-        detect_mouse_rect = (3, 3, w - 6, h - 6)
+        detect_mouse_rect = (2, 2, w - 4, h - 4)
         fields.add(detect_mouse_rect)
         mouse_in = coll(detect_mouse_rect)
 
@@ -19668,6 +19668,24 @@ class MiniMode2:
         fields.add(tool_rect)
         if coll(tool_rect):
             draw_window_tools()
+
+        #print(mouse_position)
+        # print(get_global_mouse())
+
+        if mouse_in and pctl.playing_state > 0:
+
+            hit_rect = (h, h - 10 * gui.scale, w - h, 11 * gui.scale)
+
+            if coll(hit_rect) and mouse_up:
+                p = (mouse_position[0] - h) / (w - h)
+                pctl.seek_decimal(p)
+
+            seek_rect = (h, h - round(4 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(4 * gui.scale))
+            colour = colours.artist_text
+            if pctl.playing_state != 1:
+                colour = [210, 40, 100, 255]
+            ddt.rect_r(seek_rect, colour, True)
+
 
         #
         # ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
@@ -21126,9 +21144,10 @@ class ScrollBox():
                 if click:
                     self.held = True
 
-                    p_y = pointer(c_int(0))
-                    SDL_GetGlobalMouseState(None, p_y)
-                    self.source_click_y = p_y.contents.value
+                    # p_y = pointer(c_int(0))
+                    # SDL_GetGlobalMouseState(None, p_y)
+                    get_sdl_input.mouse_capture_want = True
+                    self.source_click_y = mouse_position[1]
                     self.source_bar_y = position
 
 
@@ -21197,9 +21216,10 @@ class ScrollBox():
             self.held = False
 
         if self.held:
-            p_y = pointer(c_int(0))
-            SDL_GetGlobalMouseState(None, p_y)
-            new_y = p_y.contents.value
+            # p_y = pointer(c_int(0))
+            # SDL_GetGlobalMouseState(None, p_y)
+            get_sdl_input.mouse_capture_want = True
+            new_y = mouse_position[1]
             gui.update += 1
 
             offset = new_y - self.source_click_y
@@ -24558,6 +24578,9 @@ def hit_callback(win, point, data):
     # Special layout modes
     if gui.mode == 3:
 
+        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] and point.contents.y > window_size[1] - 10 * gui.scale:
+            return SDL_HITTEST_NORMAL
+
         if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[
             0] - gui.window_control_hit_area_w:
             return SDL_HITTEST_NORMAL
@@ -25027,10 +25050,23 @@ class GetSDLInput:
         self.i_y = pointer(c_int(0))
         self.i_x = pointer(c_int(0))
 
+        self.mouse_capture_want = False
+        self.mouse_capture = False
+
     def mouse(self):
         SDL_PumpEvents()
         SDL_GetMouseState(self.i_x, self.i_y)
         return self.i_x.contents.value, self.i_y.contents.value
+
+
+    def test_capture_mouse(self):
+        if not self.mouse_capture and self.mouse_capture_want:
+            SDL_CaptureMouse(SDL_TRUE)
+            self.mouse_capture = True
+        elif self.mouse_capture and not self.mouse_capture_want:
+            SDL_CaptureMouse(SDL_FALSE)
+            self.mouse_capture = False
+
 
 gal_up = False
 gal_down = False
@@ -25836,6 +25872,7 @@ while pctl.running:
 
 
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
+        #print(SDL_GetMouseState(None, None))
         if SDL_GetGlobalMouseState(None, None) == 0:
 
             mouse_down = False
@@ -26616,6 +26653,8 @@ while pctl.running:
         SDL_RenderClear(renderer)
 
         # perf_timer.set()
+
+        mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
 
         fields.clear()
         gui.cursor_want = 0
@@ -27847,12 +27886,14 @@ while pctl.running:
                             elif mouse_position[1] > sbp + sbl:
                                 gui.scroll_direction = 1
                             else:
-                                p_y = pointer(c_int(0))
-                                p_x = pointer(c_int(0))
-                                SDL_GetGlobalMouseState(p_x, p_y)
+                                # p_y = pointer(c_int(0))
+                                # p_x = pointer(c_int(0))
+                                # SDL_GetGlobalMouseState(p_x, p_y)
+                                get_sdl_input.mouse_capture_want = True
 
                                 scroll_hold = True
-                                scroll_point = p_y.contents.value  # mouse_position[1]
+                                #scroll_point = p_y.contents.value  # mouse_position[1]
+                                scroll_point = mouse_position[1]
                                 scroll_bpoint = sbp
                         else:
                             #gui.update += 1
@@ -27873,11 +27914,12 @@ while pctl.running:
 
                     if scroll_hold and not input.mouse_click:
                         gui.pl_update = 1
-                        p_y = pointer(c_int(0))
-                        p_x = pointer(c_int(0))
-                        SDL_GetGlobalMouseState(p_x, p_y)
+                        # p_y = pointer(c_int(0))
+                        # p_x = pointer(c_int(0))
+                        # SDL_GetGlobalMouseState(p_x, p_y)
+                        get_sdl_input.mouse_capture_want = True
 
-                        sbp = p_y.contents.value - (scroll_point - scroll_bpoint)
+                        sbp = mouse_position[1] - (scroll_point - scroll_bpoint)
                         if sbp + sbl > ey:
                             sbp = ey - sbl
                         elif sbp < top:
@@ -29058,6 +29100,9 @@ while pctl.running:
                 SDL_SetCursor(cursor_text)
             elif gui.cursor_is == 3:
                 SDL_SetCursor(cursor_hand)
+
+        get_sdl_input.test_capture_mouse()
+        get_sdl_input.mouse_capture_want = False
 
         if draw_border and not gui.mode == 3:
             draw_window_tools()

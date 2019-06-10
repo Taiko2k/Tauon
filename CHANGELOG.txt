@@ -8,6 +8,7 @@ v4.4.0
  - Added per column colours to theme files
  - Added config option to show selected track in side panel when stopped
  - Added config option to stop track change notifications while in Mini Mode
+ - Added seek bar to mini mode micro
  - Redesigned config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
@@ -31,6 +32,7 @@ v4.4.0
  - Fixed "album artist" track box field always showing tooltip on hover
  - Fixed "sort by filepath" not ignoring case
  - Fixed progress bar not resetting with auto-stop when using GStreamer backend
+ - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
 
