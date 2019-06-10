@@ -3415,6 +3415,18 @@ class PlayerCtl:
                         self.advance(nolock=True)
                         return
 
+
+
+                    self.playlist_playing_position = q[1]
+                    self.track_queue.append(target_index)
+                    self.queue_step = len(self.track_queue) - 1
+                    #self.queue_target = len(self.track_queue) - 1
+                    self.play_target(jump=not end)
+
+                    #  Set the flag that we have entered the album
+                    self.force_queue[0][4] = 1
+
+
                     # This code is mirrored below -------
                     ok_continue = True
 
@@ -3425,19 +3437,10 @@ class PlayerCtl:
 
                     # Check next song is in album
                     if ok_continue:
-                        if self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+                        if self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(target_index).parent_folder_path:
                             ok_continue = False
 
                     # -----------
-
-                    self.playlist_playing_position = q[1]
-                    self.track_queue.append(target_index)
-                    self.queue_step = len(self.track_queue) - 1
-                    #self.queue_target = len(self.track_queue) - 1
-                    self.play_target(jump=not end)
-
-                    #  Set the flag that we have entered the album
-                    self.force_queue[0][4] = 1
 
 
                 elif q[4] == 1:
@@ -19725,7 +19728,7 @@ class MiniMode2:
 
         if mouse_in and pctl.playing_state > 0:
 
-            hit_rect = (h, h - 10 * gui.scale, w - h, 11 * gui.scale)
+            hit_rect = (h, h - 12 * gui.scale, w - h, 13 * gui.scale)
 
             if coll(hit_rect) and mouse_up:
                 p = (mouse_position[0] - h) / (w - h)
@@ -19734,10 +19737,10 @@ class MiniMode2:
                 else:
                     pctl.seek_decimal(p)
 
-            bg_rect = (h, h - round(4 * gui.scale), w - h, round(4 * gui.scale))
+            bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
             ddt.rect_r(bg_rect, [0, 0, 0, 30], True)
 
-            seek_rect = (h, h - round(4 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(4 * gui.scale))
+            seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
             colour = colours.artist_text
             if pctl.playing_state != 1:
                 colour = [210, 40, 100, 255]
@@ -22467,11 +22470,47 @@ class QueueBox:
         self.card_bg = [23, 23, 23, 255]
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
+        queue_menu.add(_("Play Now"), self.play_now)
         queue_menu.add("Auto-Stop", self.toggle_auto_stop, self.toggle_auto_stop_deco)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue)
         # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+    def play_now(self):
+
+        queue_item = None
+        queue_index = 0
+        for i, item in enumerate(pctl.force_queue):
+            if item[5] == self.right_click_id:
+                queue_item = item
+                queue_index = i
+                break
+        else:
+            return
+
+        del pctl.force_queue[queue_index]
+        # [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+
+        if pctl.force_queue and pctl.force_queue[0][4] == 1:
+            split_queue_album(None)
+
+        target_track_id = queue_item[0]
+
+        pl = id_to_pl(queue_item[2])
+        if pl is not None:
+            pctl.active_playlist_playing = pl
+
+        if target_track_id not in pctl.playing_playlist():
+            pctl.advance(nolock=True)
+            return
+
+        pctl.jump(target_track_id, queue_item[1])
+
+        if queue_item[3] == 1:  # is album type
+            queue_item[4] = 1  # set as partway playing
+            pctl.force_queue.insert(0, queue_item)
+
 
     def toggle_auto_stop(self):
 
@@ -24640,7 +24679,7 @@ def hit_callback(win, point, data):
         if key_shift_down or key_shiftr_down:
             return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] and point.contents.y > window_size[1] - 10 * gui.scale:
+        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] and point.contents.y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
         if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[
