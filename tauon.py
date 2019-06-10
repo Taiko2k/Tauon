@@ -5409,6 +5409,12 @@ def draw_window_tools():
     global mouse_down
     global drag_mode
 
+    # off_icon_colour = [120, 120, 120, 45]
+    off_icon_colour = [50, 50, 50, 200]
+
+    if colours.lm:
+        off_icon_colour = [180, 180, 180, 200]
+
     rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
     fields.add(rect)
 
@@ -5426,7 +5432,7 @@ def draw_window_tools():
                 gui.update += 2
 
         else:
-            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, [120, 120, 120, 45])
+            top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, off_icon_colour)
 
 
     rect = (window_size[0] - 65 * gui.scale, 1 * gui.scale, 35 * gui.scale, 28 * gui.scale)
@@ -5448,7 +5454,7 @@ def draw_window_tools():
             drag_mode = False
     else:
         ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale),
-                   [120, 120, 120, 45], True)
+                   off_icon_colour, True)
 
     rect = (window_size[0] - 29 * gui.scale, 1 * gui.scale, 26 * gui.scale, 28 * gui.scale)
     ddt.rect_a((rect[0], rect[1]), (rect[2] + 1, rect[3]), colours.window_buttons_bg, True)
@@ -5460,7 +5466,7 @@ def draw_window_tools():
         if input.mouse_click or ab_click:
             pctl.running = False
     else:
-        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, [110, 110, 110, 70])
+        top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, off_icon_colour)
 
 
 
