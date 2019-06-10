@@ -22239,8 +22239,14 @@ class ArtistList:
 
         thumb_x = round(x + 10 * gui.scale)
 
-        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [30, 30, 30, 255], True)
-        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), [60, 60, 60, 255])
+        back_colour = [30, 30, 30, 255]
+        border_colour = [60, 60, 60, 255]
+        if colours.lm:
+            back_colour = [200, 200, 200, 255]
+            border_colour = [160, 160, 160, 255]
+
+        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), back_colour, True)
+        ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), border_colour)
 
         if artist in self.thumb_cache:
             thumb = self.thumb_cache[artist]
@@ -27274,8 +27280,8 @@ while pctl.running:
                             if info[0] == 1 and pctl.playing_state != 0:
                                 ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           colours.gallery_highlight, True)
-                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                           colours.gallery_background, True)
+                                # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                #            colours.gallery_background, True)
 
                             # Draw transcode highlight
                             if transcode_list and os.path.isdir(prefs.encoder_output):
@@ -27296,8 +27302,8 @@ while pctl.running:
                                         c = [244, 64, 244, 255]
                                     ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                               c, True)
-                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                               colours.gallery_background, True)
+                                    # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                    #            colours.gallery_background, True)
 
                             # Draw selection
                             if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
@@ -27306,8 +27312,8 @@ while pctl.running:
                                 c = [c[1], c[2], c[0], c[3]]
                                 ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
                                           c, True) #[150, 80, 222, 255]
-                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                           colours.gallery_background, True)
+                                # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                #            colours.gallery_background, True)
 
                             # Draw selection animation
                             if gui.gallery_animate_highlight_on == album_dex[album_on] and gallery_select_animate_timer.get() < 1.5:
@@ -27325,13 +27331,16 @@ while pctl.running:
                                 c = [c[1], c[2], c[0], a]
                                 ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
                                           c, True) #[150, 80, 222, 255]
-                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                           colours.gallery_background, True)
+
                                 gui.update += 1
 
-
+                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                       colours.gallery_background, True)
                             # Draw back colour
-                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [40, 40, 40, 50], True)
+                            back_colour = [40, 40, 40, 50]
+                            if colours.lm:
+                                back_colour = [10, 10, 10, 15]
+                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
 
                             # Draw faint outline
                             ddt.rect_a((x - 1 * gui.scale, y - 1 * gui.scale), (album_mode_art_size + 2 * gui.scale, album_mode_art_size + 2 * gui.scale),
@@ -27341,15 +27350,13 @@ while pctl.running:
                             drawn_art = gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
                             if drawn_art is False and gui.gallery_show_text is False:
 
-
-
-
                                 ddt.draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
                                            pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
                                            colours.gallery_artist_line,
                                            13,
-                                           album_mode_art_size - 10 * gui.scale,
-                                           bg=alpha_blend([40, 40, 40, 50], colours.gallery_background))
+                                           album_mode_art_size - 15 * gui.scale,
+                                           bg=alpha_blend(back_colour, colours.gallery_background))
+
 
                             if prefs.art_bg and drawn_art:
                                 rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)

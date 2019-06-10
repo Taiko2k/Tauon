@@ -41,6 +41,7 @@ v4.4.0
  - Fixed "sort by filepath" not ignoring case
  - Fixed progress bar not resetting with auto-stop when using GStreamer backend
  - Fixed single track albums in queue playing next track after
+ - Fixed gallery and artist list thumbnail background colours with light theme
  - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
