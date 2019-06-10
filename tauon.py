@@ -19687,6 +19687,8 @@ class MiniMode2:
             ddt.rect_r(seek_rect, colour, True)
 
 
+
+
         #
         # ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
         # if gui.scale == 2:
@@ -24578,6 +24580,9 @@ def hit_callback(win, point, data):
     # Special layout modes
     if gui.mode == 3:
 
+        if key_shift_down or key_shiftr_down:
+            return SDL_HITTEST_NORMAL
+
         if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] and point.contents.y > window_size[1] - 10 * gui.scale:
             return SDL_HITTEST_NORMAL
 
@@ -29072,6 +29077,21 @@ while pctl.running:
 
 
         elif gui.mode == 3:
+
+            if (key_shift_down and input.mouse_click) or middle_click:
+                if prefs.mini_mode_mode == 4:
+                    prefs.mini_mode_mode = 1
+                    window_size[0] = int(330 * gui.scale)
+                    window_size[1] = int(330 * gui.scale)
+                    SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+                    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+                else:
+                    prefs.mini_mode_mode = 4
+                    window_size[0] = int(320 * gui.scale)
+                    window_size[1] = int(90 * gui.scale)
+                    SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+                    SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
             if prefs.mini_mode_mode == 4:
                 mini_mode2.render()
             else:
