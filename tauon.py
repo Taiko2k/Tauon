@@ -2218,6 +2218,7 @@ def load_prefs():
     if system != 'windows':
         cf.br()
         cf.add_text("[fonts]")
+        cf.add_comment("Changes will require app restart.")
         prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "Recomended: Noto Sans, Sugested alternate: Liberation Sans")
         prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "Recomended: Noto Sans Medium")
         prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "Recomended: Noto Sans Bold")
@@ -3414,6 +3415,21 @@ class PlayerCtl:
                         self.advance(nolock=True)
                         return
 
+                    # This code is mirrored below -------
+                    ok_continue = True
+
+                    # Check if we are at end of playlist
+                    pl = pctl.multi_playlist[pctl.active_playlist_playing][2]
+                    if self.playlist_playing_position > len(pl) - 3:
+                        ok_continue = False
+
+                    # Check next song is in album
+                    if ok_continue:
+                        if self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+                            ok_continue = False
+
+                    # -----------
+
                     self.playlist_playing_position = q[1]
                     self.track_queue.append(target_index)
                     self.queue_step = len(self.track_queue) - 1
@@ -3458,13 +3474,13 @@ class PlayerCtl:
                     #self.queue_target = len(self.track_queue) - 1
                     self.play_target(jump=not end)
 
-                    if not ok_continue:
-                        # It seems this item has expired, remove it and call advance again
-                        print("Remove expired album from queue")
-                        del self.force_queue[0]
+                if not ok_continue:
+                    # It seems this item has expired, remove it and call advance again
+                    print("Remove expired album from queue")
+                    del self.force_queue[0]
 
-                        if queue_box.scroll_position > 0:
-                            queue_box.scroll_position -= 1
+                    if queue_box.scroll_position > 0:
+                        queue_box.scroll_position -= 1
 
                         #self.advance()
                         #return

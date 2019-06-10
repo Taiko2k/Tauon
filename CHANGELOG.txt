@@ -36,6 +36,7 @@ v4.4.0
  - Fixed "album artist" track box field always showing tooltip on hover
  - Fixed "sort by filepath" not ignoring case
  - Fixed progress bar not resetting with auto-stop when using GStreamer backend
+ - Fixed single track albums in queue playing next track after
  - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
