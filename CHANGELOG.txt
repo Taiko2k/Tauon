@@ -27,6 +27,7 @@ v4.4.0
  - Tweaked mini mode seek bar to trigger on mouse up rather than down
  - Tweaked window button colours for better visibility in mini-mode
  - Tweaked auto-stop behavior to stop with next track ready
+ - Tweaked desktop notification text layout. Notification is now withdrawn after time.
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
  - Moved listenbrainz and discogs token storage to config file
