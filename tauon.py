@@ -13503,6 +13503,7 @@ def broadcast_deco():
         return [line_colour, colours.menu_background, None]
     if pctl.broadcast_active:
         return [line_colour, colours.menu_background, "Stop Broadcast"] # [24, 25, 60, 255]
+
     return [line_colour, colours.menu_background, None]
 
 def broadcast_colour():
@@ -15104,7 +15105,7 @@ def worker2():
                                 temp_results.append([6, t.composer, track, playlist[6], 0])
                                 composers[t.composer] = 2
 
-                        if search_magic(s_text, title + artist + filename + album):
+                        if search_magic(s_text, title + artist + filename + album + album_artist):
 
                             if s_text in artist:
 
@@ -26541,6 +26542,9 @@ while pctl.running:
 
             if keymaps.test("love-playing"):
                 bar_love()
+
+            if keymaps.test("global-search"):
+                toggle_search()
 
     # if mouse_position[1] < 1:
     #     mouse_down = False
