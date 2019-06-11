@@ -854,6 +854,7 @@ class Prefs:    # Used to hold any kind of settings
         self.left_align_album_artist_title = False
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
+        self.mini_mode_micro_always_show_seek = False
 
 
 prefs = Prefs()
@@ -2137,6 +2138,7 @@ def save_prefs():
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
+    cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2216,6 +2218,7 @@ def load_prefs():
     prefs.meta_shows_selected = cf.sync_add("bool", "side-panel-info-selected", prefs.meta_shows_selected, "Show album art and metadata of selected track when stopped. (overides above setting)")
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
+    prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
 
     if system != 'windows':
         cf.br()
@@ -19519,8 +19522,6 @@ class MiniMode:
                                   window_size[0] - 30 * gui.scale)
 
 
-
-
                 # Test click to seek
                 if mouse_up and coll(seek_r_hit):
 
@@ -19745,10 +19746,8 @@ class MiniMode2:
         if coll(tool_rect):
             draw_window_tools()
 
-        #print(mouse_position)
-        # print(get_global_mouse())
-
-        if mouse_in and pctl.playing_state > 0:
+        # Seek bar
+        if (mouse_in or prefs.mini_mode_micro_always_show_seek) and pctl.playing_state > 0:
 
             hit_rect = (h, h - 12 * gui.scale, w - h, 13 * gui.scale)
 
@@ -19760,7 +19759,7 @@ class MiniMode2:
                     pctl.seek_decimal(p)
 
             bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
-            ddt.rect_r(bg_rect, [0, 0, 0, 30], True)
+            ddt.rect_r(bg_rect, [0, 0, 0, 35], True)
 
             seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
             colour = colours.artist_text
@@ -19769,9 +19768,6 @@ class MiniMode2:
             ddt.rect_r(seek_rect, colour, True)
 
 
-
-
-        #
         # ddt.rect_r((0, 0, w, h), colours.mini_mode_border)
         # if gui.scale == 2:
         #     ddt.rect_r((1, 1, w - 2, h - 2), colours.mini_mode_border)
