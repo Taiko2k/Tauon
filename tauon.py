@@ -3260,6 +3260,8 @@ class PlayerCtl:
 
                 if pctl.auto_stop: # and not pctl.force_queue and not (pctl.force_queue and pctl.pause_queue):
                     self.stop(run=True)
+                    if pctl.force_queue or (not pctl.force_queue and not pctl.random_mode and not pctl.repeat_mode):
+                        self.advance(play=False)
                     gui.update += 2
                     pctl.auto_stop = False
 
@@ -3372,7 +3374,7 @@ class PlayerCtl:
                     self.decode_time = 0
 
 
-    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False):
+    def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False, play=True):
 
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
@@ -3435,7 +3437,8 @@ class PlayerCtl:
                     self.track_queue.append(target_index)
                     self.queue_step = len(self.track_queue) - 1
                     #self.queue_target = len(self.track_queue) - 1
-                    self.play_target(jump=not end)
+                    if play:
+                        self.play_target(jump=not end)
 
                     #  Set the flag that we have entered the album
                     self.force_queue[0][4] = 1
@@ -3490,7 +3493,8 @@ class PlayerCtl:
                     self.track_queue.append(pl[self.playlist_playing_position])
                     self.queue_step = len(self.track_queue) - 1
                     #self.queue_target = len(self.track_queue) - 1
-                    self.play_target(jump=not end)
+                    if play:
+                        self.play_target(jump=not end)
 
                 if not ok_continue:
                     # It seems this item has expired, remove it and call advance again
@@ -3521,7 +3525,8 @@ class PlayerCtl:
                 self.track_queue.append(target_index)
                 self.queue_step = len(self.track_queue) - 1
                 #self.queue_target = len(self.track_queue) - 1
-                self.play_target(jump= not end)
+                if play:
+                    self.play_target(jump= not end)
                 del self.force_queue[0]
                 if q[6]:
                     pctl.auto_stop = True
@@ -3543,7 +3548,8 @@ class PlayerCtl:
 
             self.track_queue.append(default_playlist[playlist_selected])
             self.queue_step = len(self.track_queue) - 1
-            self.play_target(jump=not end)
+            if play:
+                self.play_target(jump=not end)
 
         # If random, jump to random track
         elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not self.album_shuffle_mode:
@@ -3657,7 +3663,8 @@ class PlayerCtl:
             if rr:
                 self.play_target_rr()
             else:
-                self.play_target(jump=not end)
+                if play:
+                    self.play_target(jump=not end)
 
 
         # If not random mode, Step down 1 on the playlist
@@ -3698,18 +3705,18 @@ class PlayerCtl:
                             # Set found playlist as playing the first track
                             pctl.active_playlist_playing = k
                             pctl.playlist_playing_position = -1
-                            pctl.advance(end=end, force=True, nolock=True)
+                            pctl.advance(end=end, force=True, nolock=True, play=play)
                             break
 
                         else:
                             # Restart current if no other eligible playlist found
                             pctl.playlist_playing_position = -1
-                            pctl.advance(end=end, force=True, nolock=True)
+                            pctl.advance(end=end, force=True, nolock=True, play=play)
 
 
                 elif prefs.end_setting == 'repeat':
                     pctl.playlist_playing_position = -1
-                    pctl.advance(end=end, force=True, nolock=True)
+                    pctl.advance(end=end, force=True, nolock=True, play=play)
 
                 gui.update += 3
 
@@ -3736,7 +3743,8 @@ class PlayerCtl:
                 #     self.play_target_gapless(jump= not end)
                 # else:
                 self.queue_step = len(self.track_queue) - 1
-                self.play_target(jump= not end)
+                if play:
+                    self.play_target(jump= not end)
 
         else:
 
@@ -3765,7 +3773,8 @@ class PlayerCtl:
                         self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
                         self.queue_step = len(self.track_queue) - 1
                         #self.queue_target = len(self.track_queue) - 1
-                        self.play_target(jump=not end)
+                        if play:
+                            self.play_target(jump=not end)
 
                     else:
 
@@ -3789,7 +3798,8 @@ class PlayerCtl:
                                 self.track_queue.append(self.playing_playlist()[a])
                                 self.queue_step = len(self.track_queue) - 1
                                 #self.queue_target = len(self.track_queue) - 1
-                                self.play_target(jump=not end)
+                                if play:
+                                    self.play_target(jump=not end)
                                 break
                             else:
                                 print("THERS ONLY ONE ALBUM IN THE PLAYLIST")
