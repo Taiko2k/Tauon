@@ -1165,6 +1165,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.opened_config_file = False
 
+        self.notify_main_id = None
 
 
 gui = GuiVar()
@@ -3886,10 +3887,17 @@ if de_nofity_support:
     song_notification = Notify.Notification.new("Next track notification")
 
 
-def notify_song_fire(notification, delay):
+def notify_song_fire(notification, delay, id):
 
     time.sleep(delay)
     notification.show()
+
+    if id is None:
+        return
+
+    time.sleep(15)
+    if id == gui.notify_main_id:
+        notification.close()
 
 
 def notify_song(notify_of_end=False, delay=0):
@@ -3915,15 +3923,19 @@ def notify_song(notify_of_end=False, delay=0):
         except:
             print("Thumbnail error")
 
-        bottom_line = (track.artist + " - " + track.title).strip("- ")
+        bottom_line = (track.artist + " | " + track.album).strip("| ")
 
-        top_line = track.album
+        top_line = track.title
+
+        gui.notify_main_id = uid_gen()
+        id = gui.notify_main_id
 
         if notify_of_end:
             bottom_line = "Tauon Music Box"
             top_line = _("End of playlist")
 
             song_notification.update(top_line, bottom_line, i_path)
+            id = None
 
         elif track.album:
             song_notification.update(top_line, bottom_line, i_path)
@@ -3933,10 +3945,20 @@ def notify_song(notify_of_end=False, delay=0):
 
         if not delay:
             song_notification.show()
+
+            if id is None:
+                return
+
+            time.sleep(15)
+            if id == gui.notify_main_id:
+                notification.close()
+
         else:
-            shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay]))
+            shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
             shoot_dl.daemon = True
             shoot_dl.start()
+
+
 
 # Last.FM -----------------------------------------------------------------
 class LastFMapi:
