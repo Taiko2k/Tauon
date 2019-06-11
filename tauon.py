@@ -2099,6 +2099,13 @@ if db_version > 0:
         print("Updating database to version 29")
         for key, value in master_library.items():
             setattr(master_library[key], 'composer', "")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("global-search G Ctrl\n")
+
+
 # Loading Config -----------------
 
 download_directories = []
@@ -13665,7 +13672,7 @@ extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 def toggle_search():
     search_over.active = True
 
-extra_menu.add(_('Global Search'), toggle_search)
+extra_menu.add(_('Global Search'), toggle_search, hint="CTRL + G")
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
