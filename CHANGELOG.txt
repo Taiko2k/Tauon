@@ -14,6 +14,7 @@ v4.4.0
  - Added queue option to play item immediately
  - Added queue option to crop to selected track only
  - Added keybind for global search
+ - Added track sum and total duration to queue panel
  - Redesigned config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
@@ -45,6 +46,7 @@ v4.4.0
  - Fixed progress bar not resetting with auto-stop when using GStreamer backend
  - Fixed single track albums in queue playing next track after
  - Fixed gallery and artist list thumbnail background colours with light theme
+ - Fixed queue panel infini scrolling
  - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
