@@ -8427,7 +8427,7 @@ class ToolTip3:
 
         gui.frame_callback_list.append(TestTimer(0.02))
 
-        if self.timer.get() < 0.5:
+        if self.timer.get() < 0.6:
             return
 
         w = ddt.get_text_w(self.text, 312) + self.height
