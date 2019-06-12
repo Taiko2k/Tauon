@@ -248,6 +248,8 @@ class TDraw:
         self.ttc = {}
         self.ttl = []
 
+        self.was_truncated = False
+
     def rect_a(self, location_xy, size_wh, colour, fill=False):
 
         self.sdl_rect.x = round(location_xy[0])
@@ -346,6 +348,10 @@ class TDraw:
     def __render_text(self, key, x, y, range_top, range_height, align):
 
         sd = key
+
+        if sd[3]:
+            self.was_truncated = True
+
         if align == 1:
             sd[0].x = round(x) - sd[0].w
 
@@ -376,6 +382,8 @@ class TDraw:
 
 
     def __draw_text_cairo(self, location, text, colour, font, max_x, bg, align=0, max_y=None, wrap=False, range_top=0, range_height=None):
+
+        self.was_truncated = False
 
         max_x += 12  # Hack
         max_x = round(max_x)
@@ -506,6 +514,8 @@ class TDraw:
 
         PangoCairo.show_layout(context, layout)
 
+        self.was_truncated = layout.is_ellipsized()
+
         sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w*4, SDL_PIXELFORMAT_RGB888)
         #sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w*4, SDL_PIXELFORMAT_ARGB8888)
 
@@ -522,7 +532,7 @@ class TDraw:
         dst.h = round(h)
         dst.y = round(y) - y_off
 
-        pack = [dst, c, y_off]
+        pack = [dst, c, y_off, self.was_truncated]
 
         self.__render_text(pack, x, y, range_top, range_height, align)
 

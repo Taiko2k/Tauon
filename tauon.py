@@ -8375,6 +8375,64 @@ def ex_tool_tip(x, y, text1_width, text, font):
     ddt.rect_r((x, y, w, h), colours.menu_background, True)
     p = ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.message_box_text, 312, bg=colours.menu_background)
 
+
+class ToolTip3:
+
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.text = ""
+        self.font = None
+        self.show = False
+        self.width = 0
+        self.height = 24 * gui.scale
+        self.timer = Timer()
+        self.pl_position = 0
+
+    def set(self, x, y, text, font, rect):
+
+        y = y - 11 * gui.scale
+        if self.show == False or self.y != y or x != self.x or self.pl_position != pctl.playlist_view_position:
+            self.timer.set()
+        self.x = x
+        self.y = y
+        self.text = text
+        self.font = font
+        self.show = True
+        self.rect = rect
+        self.pl_position = pctl.playlist_view_position
+
+
+    def render(self):
+
+        if not self.show:
+            return
+
+        if not coll(self.rect) or input.mouse_click or gui.level_2_click or self.pl_position != pctl.playlist_view_position:
+            self.show = False
+
+        gui.frame_callback_list.append(TestTimer(0.02))
+        if self.timer.get() < 0.3:
+            return
+
+        w = ddt.get_text_w(self.text, 312) + self.height
+        x = self.x #- int(self.width / 2)
+        y = self.y
+        h = self.height
+
+        border = 1 * gui.scale
+
+        ddt.rect_r((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
+        ddt.rect_r((x, y, w, h), colours.menu_background, True)
+        p = ddt.draw_text((x + int(w / 2), y + 3 * gui.scale, 2), self.text, colours.message_box_text, 312,
+                          bg=colours.menu_background)
+
+        if not coll(self.rect):
+            self.show = False
+
+columns_tool_tip = ToolTip3()
+
+
 # Right click context menu generator
 
 class MenuIcon:
@@ -20874,6 +20932,7 @@ class StandardPlaylist:
                     start += gui.lspw
                 run = start
                 end = start + gui.plw
+
                 for h, item in enumerate(gui.pl_st):
 
                     wid = item[1] - 20 * gui.scale
@@ -21082,11 +21141,21 @@ class StandardPlaylist:
                             if this_line_playing and item[0] in colours.column_colours_playing:
                                 colour = colours.column_colours_playing[item[0]]
 
-                            ddt.draw_text((run + 6, y + y_off),
+                            tt = ddt.draw_text((run + 6, y + y_off),
                                       text,
                                       colour,
                                       font,
                                       max_w=wid)
+
+
+                            if ddt.was_truncated:
+                                # print(text)
+                                rect = (run, y, wid - 1, gui.playlist_row_height - 1)
+                                gui.heart_fields.append(rect)
+
+                                if coll(rect):
+                                    columns_tool_tip.set(run - 7 * gui.scale, y, text, font, rect)
+
                     run += item[1]
 
 
@@ -27999,6 +28068,7 @@ while pctl.running:
                     else:
                         playlist_render.cache_render()
 
+
                 if gui.set_bar and gui.set_mode and not gui.combo_mode:
 
                     x = 0
@@ -28322,6 +28392,30 @@ while pctl.running:
                 #                alpha_mod(colours.volume_bar_fill, 100), True)
 
             style_overlay.hole_punches.clear()
+
+            if gui.set_mode:
+                if renamebox is False \
+                        and radiobox is False \
+                        and gui.rename_playlist_box is False \
+                        and gui.message_box is False \
+                        and pref_box.enabled is False \
+                        and track_box is False \
+                        and not gui.rename_folder_box \
+                        and extra_menu.active is False\
+                        and not x_menu.active \
+                        and not view_menu.active \
+                        and not track_menu.active \
+                        and not tab_menu.active \
+                        and not selection_menu.active\
+                        and not view_box.active \
+                        and not folder_menu.active \
+                        and not set_menu.active \
+                        and not artist_info_scroll.held:
+
+                    columns_tool_tip.render()
+                else:
+                    columns_tool_tip.show = False
+
 
             # Overlay GUI ----------------------
 
