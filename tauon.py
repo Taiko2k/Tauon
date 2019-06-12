@@ -5647,7 +5647,7 @@ gui.pl_update = 2
 
 SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
-def bass_player_thread():
+def bass_player_thread(player):
 
     logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -5664,7 +5664,7 @@ def bass_player_thread():
 
 if prefs.backend == 1:
 
-    playerThread = threading.Thread(target=bass_player_thread)
+    playerThread = threading.Thread(target=bass_player_thread, args=[player])
     playerThread.daemon = True
     playerThread.start()
 
@@ -13364,9 +13364,10 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
+def bass_test(_):
+    return prefs.backend == 1
 
-if prefs.backend == 1:
-    x_menu.add(_("Open Stream…"), activate_radio_box, bass_features_deco)
+x_menu.add(_("Open Stream…"), activate_radio_box, show_test=bass_test)
 
 
 def show_import_music(_):
@@ -13526,12 +13527,11 @@ def broadcast_colour():
         return None #[171, 102, 249, 255]
 
 
-if prefs.backend == 1: # and os.path.isfile(os.path.join(config_directory, "config.txt")):
 
-    broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
-    broadcast_icon.colour = [171, 102, 249, 255]
-    broadcast_icon.colour_callback = broadcast_colour
-    x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon)
+broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
+broadcast_icon.colour = [171, 102, 249, 255]
+broadcast_icon.colour_callback = broadcast_colour
+x_menu.add(_("Start Broadcast"), toggle_broadcast, broadcast_deco, icon=broadcast_icon, show_test=bass_test)
 
 
 def clear_queue():
@@ -16764,19 +16764,72 @@ key_ralt = False
 key_lalt = False
 
 
+def reload_backend():
+
+    wait = 0
+    pre_state = pctl.stop(True)
+
+    while pctl.playerCommandReady:
+        time.sleep(0.01)
+        wait += 1
+        if wait > 400:
+            return
+
+    pctl.playerCommand = "unload"
+    pctl.playerCommandReady = True
+
+
+    while pctl.playerCommand != 'done':
+        time.sleep(0.01)
+        print(pctl.playerCommand)
+        wait += 1
+        if wait > 400:
+            return
+
+    if prefs.backend == 1:
+        from t_modules.t_bass import player
+        playerThread = threading.Thread(target=bass_player_thread, args=[player])
+        playerThread.daemon = True
+        playerThread.start()
+
+    elif prefs.backend == 2:
+        from t_modules.t_gstreamer import player3
+        playerThread = threading.Thread(target=player3, args=[tauon])
+        playerThread.daemon = True
+        playerThread.start()
+
+    if pre_state == 1:
+        pctl.revert()
+
+
 def set_player_bass(mode=0):
+
     if mode == 1:
         return True if prefs.backend == 1 else False
-    if prefs.backend is not 1:
-        show_message("Please restart to apply change.")
-    prefs.backend = 1
+
+    if not os.path.isfile(install_directory + '/lib/libbass.so'):
+        show_message("Error: Could not find libbass.so", 'error')
+        return
+
+    if prefs.backend != 1:
+        prefs.backend = 1
+        reload_backend()
+
+
 
 def set_player_gstreamer(mode=0):
+
     if mode == 1:
         return True if prefs.backend == 2 else False
-    if prefs.backend is not 2:
-        show_message("Please restart to apply change.", 'info', 'Note: GStreamer support incomplete. Some functions will be unavailable.')
-    prefs.backend = 2
+
+    if prefs.backend != 2:
+        show_message("Note: GStreamer support incomplete.", 'info', 'Some functions will be unavailable.')
+        prefs.backend = 2
+        reload_backend()
+        gui.spec = None
+        pctl.bass_devices.clear()
+
+
 
 
 class Over:
@@ -22722,8 +22775,8 @@ class QueueBox:
         # Draw background
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
-
-        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [100, 100, 100, 255], 211, bg=self.bg)
+        ddt.text_background_colour = [18, 18, 18, 255]
+        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [100, 100, 100, 255], 211)
 
         yy += 7 * gui.scale
 
@@ -22914,8 +22967,9 @@ class QueueBox:
         plural = 's'
         if tracks < 2:
             plural = ''
+
         line = str(tracks) + " Track" + plural + " [" + get_hms_time(duration) + "]"
-        ddt.draw_text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5)
+        ddt.draw_text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5, bg=[18, 18, 18, 255])
 
 
         if self.dragging:
