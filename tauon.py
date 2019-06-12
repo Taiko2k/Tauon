@@ -22810,7 +22810,10 @@ class QueueBox:
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
         ddt.text_background_colour = [18, 18, 18, 255]
-        ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), "Up Next:", [100, 100, 100, 255], 211)
+        line = "Up Next:"
+        if pctl.force_queue:
+            #line = "Queue"
+            ddt.draw_text((x + (10 * gui.scale), yy + 2 * gui.scale), line, [100, 100, 100, 255], 211)
 
         yy += 7 * gui.scale
 
@@ -22965,7 +22968,8 @@ class QueueBox:
             i += 1
 
         yy += 15 * gui.scale
-        ddt.rect_r((x, yy, w, 3 * gui.scale), self.bg, True)
+        if fq:
+            ddt.rect_r((x, yy, w, 3 * gui.scale), self.bg, True)
         yy += 11 * gui.scale
 
 
@@ -22987,8 +22991,11 @@ class QueueBox:
                     album_parent_path = pctl.g(item[0]).parent_folder_path
 
                     playing_track = pctl.playing_object()
+
                     if pl == pctl.active_playlist_playing and item[4] and playing_track and playing_track.parent_folder_path == album_parent_path:
                         i = pctl.playlist_playing_position + 1
+                    elif playlist[i] != item[0] and item[0] in playlist:
+                        i = playlist.index(item[0])
 
                     while i < len(playlist):
                         if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
@@ -22998,12 +23005,13 @@ class QueueBox:
                         tracks += 1
                         i += 1
 
-        plural = 's'
-        if tracks < 2:
-            plural = ''
+        if tracks and fq:
+            plural = 's'
+            if tracks < 2:
+                plural = ''
 
-        line = str(tracks) + " Track" + plural + " [" + get_hms_time(duration) + "]"
-        ddt.draw_text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5, bg=[18, 18, 18, 255])
+            line = str(tracks) + " Track" + plural + " [" + get_hms_time(duration) + "]"
+            ddt.draw_text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5, bg=[18, 18, 18, 255])
 
 
         if self.dragging:
@@ -23034,7 +23042,7 @@ class QueueBox:
                 pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing)))
             else:
                 # pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, uid_gen()])
-                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing, 1)))
+                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing), 1))
 
         # Right click context menu in blank space
         if qb_right_click:
@@ -28119,18 +28127,18 @@ while pctl.running:
 
                 else:
 
-                    if pctl.force_queue:
+                    #if pctl.force_queue:
 
-                        if h_estimate < half:
-                            pl_box_h = h_estimate
-                        else:
-                            pl_box_h = half
+                    if h_estimate < half:
+                        pl_box_h = h_estimate
+                    else:
+                        pl_box_h = half
 
                     playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
 
-                    if pctl.force_queue:
+                    #if pctl.force_queue:
 
-                        queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+                    queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
 
             if gui.artist_info_panel and not gui.combo_mode:
