@@ -7,17 +7,37 @@ v4.4.0
  - Added "Album-Artist", "Composer" and "Comment" to columns mode
  - Added per column colours to theme files
  - Added config option to show selected track in side panel when stopped
- - Redesigned config file to be programmatically generated
+ - Added config option to stop track change notifications while in Mini Mode
+ - Added seek bar to mini mode micro
+ - Added shortcut to cycle between mini mode square and micro (shift click and wheel click)
+ - Added track menu function to add track to beginning of queue (hold shift to show)
+ - Added queue option to play item immediately
+ - Added queue option to crop to selected track only
+ - Added keybind for global search
+ - Added track sum and total duration to queue panel
+ - Added on-the-fly backend switching
+ - Added tool-tips to fields in columns mode (Linux only)
+ - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
- - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
+ - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu
+ - Improved last.fm love scanner to ignore case
+ - Improved desktop icon size to better fit GNOME guidelines
+ - Improved scrobble toggle function to use ListenBrainz branding if enabled and Last.fm is disabled
+ - Tweaked auto-stop behavior with queue, now added per item toggle, no longer always ignores when queue active
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
  - Tweaked bottom panel title to always show if window is large
  - Tweaked artist list to show all artists if playlist is not large
+ - Tweaked mini mode seek bar to trigger on mouse up rather than down
+ - Tweaked window button colours for better visibility in mini-mode
+ - Tweaked auto-stop behavior to stop with next track ready
+ - Tweaked desktop notification text layout. Notification is now withdrawn after time
+ - Tweaked left panel to always show queue under playlist list
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
  - Moved listenbrainz and discogs token storage to config file
+ - Moved UI scale setting to config file
  - Fixed and enabled mini mode with maximizing
  - Fixed a bug that caused FLAC pictures to not be detected on rare occasion
  - Fixed artist list sorting with case sensitivity
@@ -26,6 +46,13 @@ v4.4.0
  - Fixed subtle text rendering issue on some settings buttons
  - Fixed column drag tag text positioning
  - Fixed "album artist" track box field always showing tooltip on hover
+ - Fixed "sort by filepath" not ignoring case
+ - Fixed progress bar not resetting with auto-stop when using GStreamer backend
+ - Fixed single track albums in queue playing next track after
+ - Fixed gallery and artist list thumbnail background colours with light theme
+ - Fixed queue panel infini scrolling
+ - Fixed scrobble toggle not showing if only ListenBrains was active
+ - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
 

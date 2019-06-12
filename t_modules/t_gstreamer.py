@@ -218,10 +218,11 @@ def player3(tauon):  # GStreamer
                     if self.play_state == 1:
                         self.pl.set_property('volume', pctl.player_volume / 100)
 
-                elif pctl.playerCommand == 'stop':
+                elif pctl.playerCommand == 'stop' or pctl.playerCommand == 'runstop':
                     if self.play_state > 0:
                         self.pl.set_state(Gst.State.READY)
                     self.play_state = 0
+                    pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
                     if self.play_state > 0:
@@ -237,6 +238,15 @@ def player3(tauon):  # GStreamer
                     self.player_timer.hit()
                     self.pl.set_state(Gst.State.PLAYING)
                     self.play_state = 1
+
+                elif pctl.playerCommand == 'unload':
+                    if self.play_state > 0:
+                        self.pl.set_state(Gst.State.NULL)
+                        time.sleep(0.5)
+
+                    self.mainloop.quit()
+                    pctl.playerCommand = 'done'
+                    return
 
             if self.play_state == 1:
 

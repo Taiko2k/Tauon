@@ -54,6 +54,7 @@ rename-playlist R Ctrl
 
 quick-find \
 quick-find F Ctrl
+global-search G Ctrl
 add-to-queue Q Ctrl
 love-playing
 

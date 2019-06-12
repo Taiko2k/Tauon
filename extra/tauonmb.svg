@@ -16,7 +16,7 @@
    version="1.1"
    id="svg5095"
    inkscape:version="0.92.4 5da689c313, 2019-01-14"
-   sodipodi:docname="icon-new2.svg"
+   sodipodi:docname="tauonmb2.svg"
    inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/v4-b.png"
    inkscape:export-xdpi="23.040001"
    inkscape:export-ydpi="23.040001">
@@ -27,7 +27,7 @@
        xlink:href="#linearGradient2030"
        id="linearGradient2066"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(4.7016547,0,0,4.7016547,-218.12471,84.317457)"
+       gradientTransform="matrix(5.0362198,0,0,5.0362198,-238.35309,73.890056)"
        x1="72.596893"
        y1="14.934724"
        x2="35.013008"
@@ -52,17 +52,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="-65.931832"
-     inkscape:cy="218.78535"
+     inkscape:zoom="0.5"
+     inkscape:cx="-258.04969"
+     inkscape:cy="149.50216"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
      inkscape:window-width="1923"
      inkscape:window-height="832"
-     inkscape:window-x="438"
-     inkscape:window-y="122"
+     inkscape:window-x="103"
+     inkscape:window-y="101"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata5092">
@@ -72,7 +72,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -82,11 +82,11 @@
      id="layer1"
      transform="translate(0,-164.70831)">
     <circle
-       r="57.305031"
-       cy="231.63956"
-       cx="66.104546"
+       r="61.382797"
+       cy="231.69545"
+       cx="66.101631"
        id="circle2052"
-       style="display:inline;opacity:0.27000002;fill:#000000;fill-opacity:1;stroke:none;stroke-width:12.50751591;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       style="display:inline;opacity:0.27000002;fill:#000000;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
        inkscape:export-xdpi="116.70237"
        inkscape:export-ydpi="116.70237" />
@@ -94,64 +94,64 @@
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
-       style="display:inline;fill:url(#linearGradient2066);fill-opacity:1;stroke:none;stroke-width:12.50751591;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       style="display:inline;fill:url(#linearGradient2066);fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
        id="circle2054"
-       cx="66.183105"
-       cy="230.06879"
-       r="57.305031" />
+       cx="66.185783"
+       cy="230.01291"
+       r="61.382797" />
     <circle
-       style="display:inline;fill:#313131;fill-opacity:1;stroke:none;stroke-width:4.04342318;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       style="display:inline;fill:#313131;fill-opacity:1;stroke:none;stroke-width:4.3311491;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
        id="circle2056"
-       cx="66.183105"
-       cy="230.06879"
-       r="19.880072"
+       cx="66.185783"
+       cy="230.01291"
+       r="21.294718"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
        inkscape:export-xdpi="116.70237"
        inkscape:export-ydpi="116.70237" />
     <path
-       style="display:inline;opacity:0.18699999;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:12.50751591;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       d="m 66.183725,172.7637 a 57.305029,57.305029 0 0 0 -57.3056448,57.30563 57.305029,57.305029 0 0 0 0.03291,0.92089 57.305029,57.305029 0 0 1 57.2740488,-56.65452 57.305029,57.305029 0 0 1 57.274111,56.38481 57.305029,57.305029 0 0 0 0.033,-0.65118 57.305029,57.305029 0 0 0 -57.305669,-57.30563 z"
+       style="display:inline;opacity:0.18699999;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       d="m 66.186449,168.63004 a 61.382797,61.382797 0 0 0 -61.3834557,61.38344 61.382797,61.382797 0 0 0 0.035253,0.98642 61.382797,61.382797 0 0 1 61.3496107,-60.686 61.382797,61.382797 0 0 1 61.349673,60.3971 61.382797,61.382797 0 0 0 0.0353,-0.69752 61.382797,61.382797 0 0 0 -61.383479,-61.38344 z"
        id="circle2038"
        inkscape:connector-curvature="0" />
     <circle
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
-       style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:12.50751591;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
        id="circle2058"
-       cx="66.183105"
-       cy="230.06879"
-       r="3.3404222" />
+       cx="66.185783"
+       cy="230.01291"
+       r="3.5781233" />
     <path
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
        sodipodi:open="true"
-       d="M 106.17015,230.69707 A 39.987049,39.987049 0 0 1 83.145588,266.90809"
+       d="M 109.01827,230.6859 A 42.832489,42.832489 0 0 1 84.3553,269.47366"
        sodipodi:end="1.1327187"
        sodipodi:start="0"
-       sodipodi:ry="39.987049"
-       sodipodi:rx="39.987049"
-       sodipodi:cy="230.69707"
-       sodipodi:cx="66.183105"
+       sodipodi:ry="42.832489"
+       sodipodi:rx="42.832489"
+       sodipodi:cy="230.6859"
+       sodipodi:cx="66.185783"
        sodipodi:type="arc"
        id="path2060"
-       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:22.82010078;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-opacity:0.37628868" />
+       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:24.44395447;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-opacity:0.37628868" />
     <path
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
        transform="scale(-1)"
-       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:22.82010078;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-opacity:0.37628868"
+       style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:24.44395447;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:12.39999962;stroke-dasharray:none;stroke-opacity:0.37628868"
        id="path2062"
        sodipodi:type="arc"
-       sodipodi:cx="-65.924911"
-       sodipodi:cy="-229.93712"
-       sodipodi:rx="39.987049"
-       sodipodi:ry="39.987049"
+       sodipodi:cx="-65.909218"
+       sodipodi:cy="-229.87187"
+       sodipodi:rx="42.832489"
+       sodipodi:ry="42.832489"
        sodipodi:start="0"
        sodipodi:end="1.1327187"
-       d="m -25.937862,-229.93712 a 39.987049,39.987049 0 0 1 -23.024567,36.21103"
+       d="m -23.076729,-229.87187 a 42.832489,42.832489 0 0 1 -24.662972,38.78776"
        sodipodi:open="true" />
   </g>
 </svg>
