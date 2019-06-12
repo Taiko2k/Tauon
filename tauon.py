@@ -22871,6 +22871,10 @@ class QueueBox:
 
         if not colours.lm:
             # Draw top accent
+            # if not pctl.force_queue:
+            #     ddt.rect_r((x, y, w, 5 * gui.scale), colours.side_panel_background, True)
+            #     ddt.rect_r((x, y, w, 3 * gui.scale), [30, 30, 30, 255], True)
+            # else:
             ddt.rect_r((x, y, w, 3 * gui.scale), self.bg, True)
         else:
             gui.queue_frame_draw = y
@@ -22891,6 +22895,9 @@ class QueueBox:
                 qb_right_click = 1
 
         # Draw background
+        #if not pctl.force_queue:
+        #    ddt.rect_r(box_rect, colours.side_panel_background, True)
+        #else:
         ddt.rect_r(box_rect, [18, 18, 18, 255], True)
 
         ddt.text_background_colour = [18, 18, 18, 255]
@@ -28200,7 +28207,7 @@ while pctl.running:
 
                 # left side panel
 
-                h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(pctl.multi_playlist)) + 10
+                h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(pctl.multi_playlist)) + 13 * gui.scale
 
                 half = int(round((window_size[1] - gui.panelY - gui.panelBY) / 2))
                 full = (window_size[1] - gui.panelY - gui.panelBY)
