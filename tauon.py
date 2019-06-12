@@ -8388,12 +8388,23 @@ class ToolTip3:
         self.height = 24 * gui.scale
         self.timer = Timer()
         self.pl_position = 0
+        self.click_exclude_point = (0, 0)
 
     def set(self, x, y, text, font, rect):
 
         y = y - 11 * gui.scale
         if self.show == False or self.y != y or x != self.x or self.pl_position != pctl.playlist_view_position:
             self.timer.set()
+
+        if point_proximity_test(self.click_exclude_point, mouse_position, 20 * gui.scale):
+            self.timer.set()
+            return
+
+        if input.mouse_click:
+            self.click_exclude_point = copy.copy(mouse_position)
+            self.timer.set()
+            return
+
         self.x = x
         self.y = y
         self.text = text
@@ -8408,11 +8419,15 @@ class ToolTip3:
         if not self.show:
             return
 
+        if not point_proximity_test(self.click_exclude_point, mouse_position, 20 * gui.scale):
+            self.click_exclude_point = (0, 0)
+
         if not coll(self.rect) or input.mouse_click or gui.level_2_click or self.pl_position != pctl.playlist_view_position:
             self.show = False
 
         gui.frame_callback_list.append(TestTimer(0.02))
-        if self.timer.get() < 0.3:
+
+        if self.timer.get() < 0.5:
             return
 
         w = ddt.get_text_w(self.text, 312) + self.height
