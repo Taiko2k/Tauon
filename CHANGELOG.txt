@@ -15,7 +15,8 @@ v4.4.0
  - Added queue option to crop to selected track only
  - Added keybind for global search
  - Added track sum and total duration to queue panel
- - Redesigned config file to be programmatically generated
+ - Added on-the-fly backend switching
+ - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
  - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
