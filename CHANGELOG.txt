@@ -32,6 +32,7 @@ v4.4.0
  - Tweaked window button colours for better visibility in mini-mode
  - Tweaked auto-stop behavior to stop with next track ready
  - Tweaked desktop notification text layout. Notification is now withdrawn after time
+ - Tweaked left panel to always show queue under playlist list
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
  - Moved listenbrainz and discogs token storage to config file
