@@ -592,6 +592,7 @@ multi_playlist = [pl_gen()] # Create default playlist
 def queue_item_gen(trackid, position, pl_id, type=0, album_stage=0):
     # type; 0 is track, 1 is album
     auto_stop = False
+
     return [trackid, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 
 
@@ -2095,8 +2096,8 @@ if db_version > 0:
             if len(multi_playlist[i]) <= 10:
                 multi_playlist[i].append("")
 
-    if db_version <= 28:
-        print("Updating database to version 29")
+    if db_version <= 29:
+        print("Updating database to version 30")
         for key, value in master_library.items():
             setattr(master_library[key], 'composer', "")
 
@@ -2105,6 +2106,8 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("global-search G Ctrl\n")
 
+        show_message(
+            "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata.")
 
 # Loading Config -----------------
 
@@ -5794,6 +5797,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 8, 9)
     ddt.prime_font(standard_font, 8, 10)
     ddt.prime_font(standard_font, 8.5, 11)
+    ddt.prime_font(standard_font, 8.7, 11.5)
     ddt.prime_font(standard_font, 9, 12)
     ddt.prime_font(standard_font, 10, 13)
     ddt.prime_font(standard_font, 10, 14)
@@ -5846,6 +5850,7 @@ else:
     bold_weight = 600
     ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
     ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
@@ -11785,7 +11790,6 @@ def split_queue_album(id):
     album_parent_path = pctl.g(item[0]).parent_folder_path
 
     while i < len(playlist):
-        print(pctl.g(playlist[i]).parent_folder_path)
         if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
             break
 
@@ -22764,10 +22768,15 @@ class QueueBox:
 
         i = self.scroll_position
 
+        # Limit scroll distance
+        if i > len(fq):
+            self.scroll_position = len(fq)
+            i = self.scroll_position
+
         while i < len(fq) + 1:
 
             # Stop drawing if past window
-            if yy > window_size[1]:
+            if yy > window_size[1] - gui.panelBY - gui.panelY - (50 * gui.scale):
                 break
 
             # Calculate drag collision box. Special case for first and last which extend out in y direction
@@ -22867,6 +22876,47 @@ class QueueBox:
                 yy += 4 * gui.scale
 
             i += 1
+
+        yy += 15 * gui.scale
+        ddt.rect_r((x, yy, w, 3 * gui.scale), self.bg, True)
+        yy += 11 * gui.scale
+
+
+        #duration = sum(s[7] for s in fq)
+        duration = 0
+        tracks = 0
+
+        for item in fq:
+            if item[3] == 0:
+                duration += pctl.g(item[0]).length
+                tracks += 1
+            else:
+                pl = id_to_pl(item[2])
+                if pl is not None:
+                    playlist = pctl.multi_playlist[pl][2]
+                    i = item[1]
+
+
+                    album_parent_path = pctl.g(item[0]).parent_folder_path
+
+                    playing_track = pctl.playing_object()
+                    if pl == pctl.active_playlist_playing and item[4] and playing_track and playing_track.parent_folder_path == album_parent_path:
+                        i = pctl.playlist_playing_position + 1
+
+                    while i < len(playlist):
+                        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+                            break
+
+                        duration += pctl.g(playlist[i]).length
+                        tracks += 1
+                        i += 1
+
+        plural = 's'
+        if tracks < 2:
+            plural = ''
+        line = str(tracks) + " Track" + plural + " [" + get_hms_time(duration) + "]"
+        ddt.draw_text((x + 12 * gui.scale, yy), line, [100, 100, 100, 255], 11.5)
+
 
         if self.dragging:
 
@@ -25300,7 +25350,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            29,  # Version, used for upgrading
+            30,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size

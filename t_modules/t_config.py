@@ -166,6 +166,7 @@ class Config:
                     self.live.append(['float', key, old_value, comment])
                     return old_value
                 except:
+                    print("Warning: Config file contains invalid float")
                     pass
             self.live.append(['float', key, default_value, comment])
             return default_value
