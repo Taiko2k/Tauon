@@ -16,6 +16,7 @@ v4.4.0
  - Added keybind for global search
  - Added track sum and total duration to queue panel
  - Added on-the-fly backend switching
+ - Added tool-tips to fields in columns mode (Linux only)
  - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
