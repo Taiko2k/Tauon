@@ -4385,7 +4385,7 @@ class ListenBrainz:
             return
         if self.hold is True:
             return
-        if self.key is None:
+        if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
 
         title = track_object.title
@@ -4434,7 +4434,7 @@ class ListenBrainz:
             return
         if self.hold is True:
             return
-        if self.key is None:
+        if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", 'error', "How did this even happen.")
 
         title = track_object.title
@@ -8386,6 +8386,7 @@ class MenuIcon:
         self.base_asset = None
         self.base_asset_mod = None
         self.colour_callback = None
+        self.mode_callback = None
         self.xoff = 0
         self.yoff = 0
 
@@ -8500,10 +8501,16 @@ class Menu:
 
             else:
                 # Pre-rendered mode
-                if selected:
-                    icon.asset.render(x, y)
+                if icon.mode_callback is not None:
+                    if icon.mode_callback():
+                        icon.asset.render(x, y)
+                    else:
+                        icon.base_asset.render(x, y)
                 else:
-                    icon.base_asset.render(x, y)
+                    if selected:
+                        icon.asset.render(x, y)
+                    else:
+                        icon.base_asset.render(x, y)
 
     def render(self):
         if self.active:
@@ -13838,10 +13845,17 @@ def last_fm_menu_deco():
     #     line = 'Start Last.fm Scrobbling'
     #     bg = colours.menu_background
     if lastfm.hold:
-        line = _("Scrobbling is Paused")
+
+        if not prefs.auto_lfm and lb.enable:
+            line = _("ListenBrainz is Paused")
+        else:
+            line = _("Scrobbling is Paused")
         bg = colours.menu_background
     else:
-        line = _("Scrobbling is Active")
+        if not prefs.auto_lfm and lb.enable:
+            line = _("ListenBrainz is Active")
+        else:
+            line = _("Scrobbling is Active")
         bg = colours.menu_background
 
     return [colours.menu_text, bg, line]
@@ -13870,12 +13884,32 @@ lastfm_icon.colour_callback = lastfm_colour
 
 def lastfm_menu_test(a):
 
-    if prefs.last_fm_token is not None:
+    if prefs.last_fm_token is not None or prefs.enable_lb:
         return True
     return False
 
-if last_fm_enable:
-    x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=lastfm_icon, show_test=lastfm_menu_test)
+
+lb_icon = MenuIcon(asset_loader('lb-g.png'))
+lb_icon.base_asset = asset_loader('lb-gs.png')
+
+def lb_mode():
+    return prefs.enable_lb
+
+
+lb_icon.mode_callback = lb_mode
+
+lb_icon.xoff = 3
+lb_icon.yoff = -1
+
+if gui.scale == 1.25:
+    lb_icon.yoff = 0
+
+listen_icon = lastfm_icon
+
+if not prefs.auto_lfm and lb.enable:
+    listen_icon = lb_icon
+
+x_menu.add("LFM", lastfm.toggle, last_fm_menu_deco, icon=listen_icon, show_test=lastfm_menu_test)
 
 
 def discord_loop():

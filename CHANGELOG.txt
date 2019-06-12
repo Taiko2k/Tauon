@@ -19,9 +19,10 @@ v4.4.0
  - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
- - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu.
+ - Improved columns 'Hide bar' mode to persist, is now restored using a right click context menu
  - Improved last.fm love scanner to ignore case
  - Improved desktop icon size to better fit GNOME guidelines
+ - Improved scrobble toggle function to use ListenBrainz branding if enabled and Last.fm is disabled
  - Tweaked auto-stop behavior with queue, now added per item toggle, no longer always ignores when queue active
  - Tweaked main scroll bar background for transparency, restored size in column mode
  - Tweaked transcode output setting text for better clarity
@@ -30,7 +31,7 @@ v4.4.0
  - Tweaked mini mode seek bar to trigger on mouse up rather than down
  - Tweaked window button colours for better visibility in mini-mode
  - Tweaked auto-stop behavior to stop with next track ready
- - Tweaked desktop notification text layout. Notification is now withdrawn after time.
+ - Tweaked desktop notification text layout. Notification is now withdrawn after time
  - Moved "prefer using album-artist in artist list panel" setting to config file
  - Moved "double digit" setting to config file
  - Moved listenbrainz and discogs token storage to config file
@@ -48,6 +49,7 @@ v4.4.0
  - Fixed single track albums in queue playing next track after
  - Fixed gallery and artist list thumbnail background colours with light theme
  - Fixed queue panel infini scrolling
+ - Fixed scrobble toggle not showing if only ListenBrains was active
  - [Wayland] Fixed scroll bars not functioning (partially)
 
 v4.3.1
