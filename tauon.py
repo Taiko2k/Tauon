@@ -2541,6 +2541,18 @@ def tag_scan(nt):
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
                 nt.genre = tag.genre
+                value = nt.genre.lstrip("(").rstrip(")")
+
+                if value.isdigit():
+                    value = int(value)
+                    if 0 > value or value > 192:
+                        print("Tag Scan: Unknown genre code: " + str(value))
+                    else:
+                        if 241 < value < 192:
+                            print("Tag Scan: Winamp genre code detected")
+                        nt.genre = id3_genre_dict[value]
+
+
                 if tag.date:
                     nt.date = tag.date
                 nt.composer = tag.composer
