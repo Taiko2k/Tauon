@@ -4010,7 +4010,7 @@ class LastFMapi:
 
         self.sg = pylast.SessionKeyGenerator(self.network)
         self.url = self.sg.get_web_auth_url()
-        show_message("Web auth paged opened", 'arrow', "Once authorised click the 'done' button.")
+        show_message(_("Web auth paged opened"), 'arrow', _("Once authorised click the 'done' button."))
         webbrowser.open(self.url, new=2, autoraise=True)
 
     def auth2(self):
@@ -4018,7 +4018,7 @@ class LastFMapi:
         # This is step 2 where the user clicks "Done"
 
         if self.sg is None:
-            show_message("You need to login first")
+            show_message(_("You need to login first"))
             return
 
         try:
@@ -8966,7 +8966,6 @@ def toggle_side_art():
     prefs.show_side_art ^= True
 
 
-showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
 
 
@@ -9233,6 +9232,8 @@ def split_lyrics(track_object):
 showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
+
+showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
 def save_embed_img(track_object):
 
