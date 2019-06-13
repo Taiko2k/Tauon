@@ -3149,6 +3149,7 @@ class PlayerCtl:
         return previous_state
 
     def pause(self):
+
         if self.playing_state == 3:
             return
         if self.playing_state == 1:
@@ -3158,7 +3159,9 @@ class PlayerCtl:
             self.playerCommand = 'pauseoff'
             self.playing_state = 1
             notify_song()
+
         self.playerCommandReady = True
+
 
         self.render_playlist()
         self.notify_update()
@@ -3965,20 +3968,11 @@ def notify_song(notify_of_end=False, delay=0):
         else:
             song_notification.update(bottom_line, "", i_path)
 
-        if not delay:
-            song_notification.show()
 
-            if id is None:
-                return
+        shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
 
-            time.sleep(15)
-            if id == gui.notify_main_id:
-                notification.close()
-
-        else:
-            shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
-            shoot_dl.daemon = True
-            shoot_dl.start()
 
 
 
@@ -5183,7 +5177,6 @@ class Gnome:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Pause(self):
                         pctl.pause_only()
-                        pass
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def PlayPause(self):
