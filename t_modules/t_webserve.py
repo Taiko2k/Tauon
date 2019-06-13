@@ -91,8 +91,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
                 lyrics = html.escape(track.lyrics).replace("\r\n", "\n").replace("\r", "\n").replace("\n", "<br>")
 
             try:
-                index = track.index
-                base64 = album_art_gen.get_base64(index, (300, 300)).decode()
+                base64 = album_art_gen.get_base64(track, (300, 300)).decode()
 
                 return jsonify(index=index, image=base64, title=track.title, artist=track.artist, lyrics=lyrics)
             except:

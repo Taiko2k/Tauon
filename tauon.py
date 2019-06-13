@@ -6580,15 +6580,15 @@ class GallClass:
         self.save_out = save_out
         self.i = 0
 
-    def get_file_source(self, index):
+    def get_file_source(self, track_object):
 
         global album_art_gen
 
-        sources = album_art_gen.get_sources(index)
+        sources = album_art_gen.get_sources(track_object)
 
         if len(sources) == 0:
             return False
-        offset = album_art_gen.get_offset(pctl.master_library[index].fullpath, sources)
+        offset = album_art_gen.get_offset(track_object.fullpath, sources)
         return sources[offset] + [offset]
 
     def worker_render(self):
@@ -6610,7 +6610,7 @@ class GallClass:
                 del self.queue[0]
                 continue
 
-            img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0]) + "-" + str(source[2])
+            img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
 
             # gall_render_last_timer.set()
 
@@ -6625,7 +6625,7 @@ class GallClass:
 
                 elif source[0] == 2:
                     try:
-                        response = urllib.request.urlopen(get_network_thumbnail_url(pctl.g(key[0])))
+                        response = urllib.request.urlopen(get_network_thumbnail_url(key[0]))
                         source_image = response
                     except:
                         print("IMAGE NETWORK LOAD ERROR")
@@ -6677,7 +6677,7 @@ class GallClass:
         else:
             return False
 
-    def render(self, index, location, size=None):
+    def render(self, track, location, size=None):
 
         x = round(location[0])
         y = round(location[1])
@@ -6689,15 +6689,15 @@ class GallClass:
         size = round(size)
 
         #offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
-        if pctl.master_library[index].parent_folder_path in folder_image_offsets:
-            offset = folder_image_offsets[pctl.master_library[index].parent_folder_path]
+        if track.parent_folder_path in folder_image_offsets:
+            offset = folder_image_offsets[track.parent_folder_path]
         else:
             offset = 0
 
-        if (index, size, offset) in self.gall:
+        if (track, size, offset) in self.gall:
             # print("old")
 
-            order = self.gall[(index, size, offset)]
+            order = self.gall[(track, size, offset)]
 
             if order[0] == 0:
                 # broken
@@ -6725,7 +6725,7 @@ class GallClass:
                 order[1] = None
                 order[2] = c
                 order[3] = dst
-                self.gall[(index, size, offset)] = order
+                self.gall[(track, size, offset)] = order
 
             if order[0] == 3:
                 # ready
@@ -6736,18 +6736,18 @@ class GallClass:
                 order[3].y = int((size - order[3].h) / 2) + order[3].y
                 SDL_RenderCopy(renderer, order[2], None, order[3])
 
-                if (index, size, offset) in self.key_list:
-                    self.key_list.remove((index, size, offset))
-                self.key_list.append((index, size, offset))
+                if (track, size, offset) in self.key_list:
+                    self.key_list.remove((track, size, offset))
+                self.key_list.append((track, size, offset))
 
                 return True
 
         else:
             # Create new
             # stage, raw, texture, rect
-            self.gall[(index, size, offset)] = [1, None, None, None]
-            self.queue.append((index, size, offset))
-            self.key_list.append((index, size, offset))
+            self.gall[(track, size, offset)] = [1, None, None, None]
+            self.queue.append((track, size, offset))
+            self.key_list.append((track, size, offset))
 
             # Remove old images to conserve RAM usage
             if len(self.key_list) > 100:
@@ -6778,7 +6778,7 @@ class ThumbTracks:
         if image_name == "":
             image_name = "noname"
 
-        source = gall_ren.get_file_source(track.index)
+        source = gall_ren.get_file_source(track)
 
         if source is False:
             # print("NO ART")
@@ -6905,18 +6905,19 @@ class AlbumArt():
         self.blur_texture = None
         self.blur_rect = None
 
-    def get_info(self, index):
+    def get_info(self, track_object):
 
-        sources = self.get_sources(index)
+        sources = self.get_sources(track_object)
         if len(sources) == 0:
             return None
-        offset = self.get_offset(pctl.master_library[index].fullpath, sources)
+
+        offset = self.get_offset(track_object.fullpath, sources)
 
         o_size = (0, 0)
         format = "ERROR"
 
         for item in self.image_cache:
-            if item.index == index and item.offset == offset:
+            if item.index == track_object.index and item.offset == offset:
                 o_size = item.original_size
                 format = item.format
                 break
@@ -6931,15 +6932,14 @@ class AlbumArt():
 
         return [sources[offset][0], len(sources), offset, o_size, format]
 
-    def get_sources(self, index):
+    def get_sources(self, tr):
 
-        tr = pctl.master_library[index]
         filepath = tr.fullpath
         ext = tr.file_ext
 
         # Check if source list already exists, if not, make it
-        if index in self.source_cache:
-            return self.source_cache[index]
+        if tr.index in self.source_cache:
+            return self.source_cache[tr.index]
         else:
             pass
 
@@ -7039,7 +7039,7 @@ class AlbumArt():
                         dir_path = os.path.join(subdirec, items_in_dir2[y]).replace('\\', "/")
                         source_list.append([0, dir_path])
 
-        self.source_cache[index] = source_list
+        self.source_cache[tr.index] = source_list
 
         return source_list
 
@@ -7094,13 +7094,15 @@ class AlbumArt():
         SDL_RenderCopy(renderer, unit.texture, None, temp_dest)
         style_overlay.hole_punches.append(temp_dest)
 
-    def open_external(self, index):
+    def open_external(self, track_object):
 
-        source = self.get_sources(index)
+        index = track_object.index
+
+        source = self.get_sources(track_object)
         if len(source) == 0:
             return 0
 
-        offset = self.get_offset(pctl.master_library[index].fullpath, source)
+        offset = self.get_offset(track_object.fullpath, source)
 
         if source[offset][0] > 0:
             return 0
@@ -7114,10 +7116,10 @@ class AlbumArt():
 
         return 0
 
-    def cycle_offset(self, index, reverse=False):
+    def cycle_offset(self, track_object, reverse=False):
 
-        filepath = pctl.master_library[index].fullpath
-        sources = self.get_sources(index)
+        filepath = track_object.fullpath
+        sources = self.get_sources(track_object)
         if len(sources) == 0:
             return 0
         parent_folder = os.path.dirname(filepath)
@@ -7132,8 +7134,8 @@ class AlbumArt():
             folder_image_offsets[parent_folder] %= len(sources)
         return 0
 
-    def cycle_offset_reverse(self, index):
-        self.cycle_offset(index, True)
+    def cycle_offset_reverse(self, track_object):
+        self.cycle_offset(track_object, True)
 
     def get_offset(self, filepath, source):
 
@@ -7150,11 +7152,11 @@ class AlbumArt():
 
         return folder_image_offsets[parent_folder]
 
-    def get_embed(self, index):
+    def get_embed(self, track):
 
-        filepath = pctl.master_library[index].fullpath
+        filepath = track.fullpath
 
-        if pctl.master_library[index].file_ext == 'MP3':
+        if track.file_ext == 'MP3':
 
             tag = stagger.read_tag(filepath)
             try:
@@ -7164,22 +7166,22 @@ class AlbumArt():
 
 
 
-        elif pctl.master_library[index].file_ext == 'FLAC':
+        elif track.file_ext == 'FLAC':
             tag = Flac(filepath)
             tag.read(True)
             return tag.picture
 
-        elif pctl.master_library[index].file_ext == 'APE':
+        elif track.file_ext == 'APE':
             tag = Ape(filepath)
             tag.read()
             return tag.picture
 
-        elif pctl.master_library[index].file_ext == 'M4A':
+        elif track.file_ext == 'M4A':
             tag = M4a(filepath)
             tag.read(True)
             return tag.picture
 
-        elif pctl.master_library[index].file_ext == 'OPUS' or pctl.master_library[index].file_ext == 'OGG':
+        elif track.file_ext == 'OPUS' or track.file_ext == 'OGG':
             tag = Opus(filepath)
             tag.read()
             a = io.BytesIO(base64.b64decode(tag.picture))
@@ -7189,15 +7191,15 @@ class AlbumArt():
             a.close()
             return image
 
-    def get_source_raw(self, offset, source, index):
+    def get_source_raw(self, offset, source, track):
 
         source_image = None
         if source[offset][0] == 1:
             # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(index))
+            source_image = io.BytesIO(self.get_embed(track))
         elif source[offset][0] == 2:
             try:
-                response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                response = urllib.request.urlopen(get_network_thumbnail_url(track))
                 source_image = response
             except:
                 print("IMAGE NETWORK LOAD ERROR")
@@ -7206,10 +7208,10 @@ class AlbumArt():
             source_image = open(source[offset][1], 'rb')
         return source_image
 
-    def get_base64(self, index, size):
+    def get_base64(self, track, size):
 
-        filepath = pctl.master_library[index].fullpath
-        sources = self.get_sources(index)
+        filepath = track.fullpath
+        sources = self.get_sources(track)
 
         if len(sources) == 0:
             return False
@@ -7217,12 +7219,10 @@ class AlbumArt():
         offset = self.get_offset(filepath, sources)
 
         # Get source IO
-        source_image = self.get_source_raw(offset, sources, index)
+        source_image = self.get_source_raw(offset, sources, track)
 
         if source_image is None:
             return ""
-
-
 
         im = Image.open(source_image)
         if im.mode != "RGB":
@@ -7234,18 +7234,18 @@ class AlbumArt():
         return sss
 
 
-    def get_blur_im(self, index):
+    def get_blur_im(self, track):
 
 
-        filepath = pctl.master_library[index].fullpath
-        sources = self.get_sources(index)
+        filepath = track.fullpath
+        sources = self.get_sources(track)
 
         if len(sources) == 0:
             return False
 
         offset = self.get_offset(filepath, sources)
 
-        source_image = self.get_source_raw(offset, sources, index)
+        source_image = self.get_source_raw(offset, sources, track)
 
         if source_image is None:
             return None
@@ -7294,89 +7294,10 @@ class AlbumArt():
         return g
 
 
-    # def display_blur(self, index, size):
-    #
-    #     if self.blur_texture is not None:
-    #
-    #         self.blur_rect.y = 0 - self.blur_rect.h // 3
-    #         SDL_RenderCopy(renderer, self.blur_texture, None, self.blur_rect)
-    #
-    #         return
-    #
-    #     filepath = pctl.master_library[index].fullpath
-    #     sources = self.get_sources(index)
-    #
-    #     if len(sources) == 0:
-    #         return False
-    #
-    #     offset = self.get_offset(filepath, sources)
-    #
-    #     source_image = self.get_source_raw(offset, sources, index)
-    #
-    #     if source_image is None:
-    #         return
-    #
-    #     im = Image.open(source_image)
-    #
-    #     format = im.format
-    #     if im.format == "JPEG":
-    #         format = "JPG"
-    #
-    #     # print(im.size)
-    #     if im.mode != "RGB":
-    #         im = im.convert("RGB")
-    #
-    #
-    #     rim = im.resize((1400, 1400))
-    #     #bim = rim.filter(ImageFilter.GaussianBlur())
-    #     # im.save(save_path + '.jpg', 'JPEG')
-    #     #im = bim
-    #     im = rim
-    #
-    #     g = io.BytesIO()
-    #     g.seek(0)
-    #
-    #     a_channel = Image.new('L', im.size, 255)  # 'L' 8-bit pixels, black and white
-    #     im.putalpha(a_channel)
-    #
-    #     im.save(g, 'PNG')
-    #
-    #     g.seek(0)
-    #
-    #     wop = rw_from_object(g)
-    #     s_image = IMG_Load_RW(wop, 0)
-    #     # print(IMG_GetError())
-    #
-    #     c = SDL_CreateTextureFromSurface(renderer, s_image)
-    #
-    #     tex_w = pointer(c_int(0))
-    #     tex_h = pointer(c_int(0))
-    #
-    #     SDL_QueryTexture(c, None, None, tex_w, tex_h)
-    #
-    #     dst = SDL_Rect(round(0, 0))
-    #     dst.w = int(tex_w.contents.value)
-    #     dst.h = int(tex_h.contents.value)
-    #
-    #     # Clean uo
-    #     SDL_FreeSurface(s_image)
-    #     g.close()
-    #     source_image.close()
-    #
-    #     print(SDL_SetTextureAlphaMod(c, 10))
-    #     #print(SDL_SetTextureAlphaMod(c, 40))
-    #
-    #     self.blur_texture = c
-    #     self.blur_rect = dst
-    #
-    #     self.display_blur(index, size)
+    def save_thumb(self, track_object, size, save_path):
 
-
-
-    def save_thumb(self, index, size, save_path):
-
-        filepath = pctl.master_library[index].fullpath
-        sources = self.get_sources(index)
+        filepath = track_object.fullpath
+        sources = self.get_sources(track_object)
 
         if len(sources) == 0:
             return False
@@ -7386,10 +7307,10 @@ class AlbumArt():
         # Get source IO
         if sources[offset][0] == 1:
             # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(index))
+            source_image = io.BytesIO(self.get_embed(track_object))
         elif sources[offset][0] == 2:
             try:
-                response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                response = urllib.request.urlopen(get_network_thumbnail_url(track_object))
                 source_image = response
             except:
                 print("IMAGE NETWORK LOAD ERROR")
@@ -7405,28 +7326,24 @@ class AlbumArt():
 
         g = io.BytesIO()
         g.seek(0)
-        #im = Image.open(source_image)
-        #_size = im.size
-
-        #format = im.format
 
         im.save(g, 'BMP')
         g.close()
 
 
-    def display(self, index, location, box, fast=False):
+    def display(self, track, location, box, fast=False):
 
-        tr = pctl.master_library[index]
-        filepath = tr.fullpath
+        index = track.index
+        filepath = track.fullpath
 
         if prefs.colour_from_image and index != gui.theme_temp_current and box[0] != 115: #mark2233
             if tr.album in gui.temp_themes:
                 global colours
-                colours = gui.temp_themes[tr.album]
+                colours = gui.temp_themes[track.album]
 
                 gui.theme_temp_current = index
 
-        source = self.get_sources(index)
+        source = self.get_sources(track)
         if len(source) == 0:
             return False
 
@@ -7439,7 +7356,7 @@ class AlbumArt():
             return 0
 
         if fast:
-            return self.fast_display(index, location, box, source, offset)
+            return self.fast_display(track, location, box, source, offset)
 
         # Check if cached
         for unit in self.image_cache:
@@ -7453,20 +7370,16 @@ class AlbumArt():
             # Get source IO
             if source[offset][0] == 1:
                 # Target is a embedded image
-                source_image = io.BytesIO(self.get_embed(index))
+                source_image = io.BytesIO(self.get_embed(track))
             elif source[offset][0] == 2:
                 try:
-                    response = urllib.request.urlopen(get_network_thumbnail_url(tr))
+                    response = urllib.request.urlopen(get_network_thumbnail_url(track))
                     source_image = response
                 except:
                     print("IMAGE NETWORK LOAD ERROR")
 
             else:
                 source_image = open(source[offset][1], 'rb')
-
-
-            # # Temporary Fix
-            # quick_d_timer.set()
 
             # Generate
             g = io.BytesIO()
@@ -7478,7 +7391,6 @@ class AlbumArt():
             if im.format == "JPEG":
                 format = "JPG"
 
-            # print(im.size)
             if im.mode != "RGB":
                 im = im.convert("RGB")
             im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
@@ -7614,7 +7526,7 @@ class AlbumArt():
                     colours.row_playing_highlight = [255, 255, 255, 8]
                     colours.gallery_background = hls_mod_add(colours.playlist_panel_background, 0, 0.03, 0)
 
-                gui.temp_themes[pctl.master_library[index].album] = copy.deepcopy(colours)
+                gui.temp_themes[track.album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
 
             wop = rw_from_object(g)
@@ -7748,13 +7660,14 @@ class StyleOverlay:
 
         if self.stage == 0:
             if pctl.playing_ready() and self.min_on_timer.get() > 0:
-                index = pctl.playing_object().index
-                self.window_size = copy.copy(window_size)
-                self.parent_path = pctl.playing_object().parent_folder_path
-                self.current_track_id = pctl.playing_object().index
-                self.current_track_album = pctl.playing_object().album
 
-                self.im = album_art_gen.get_blur_im(index)
+                track = pctl.playing_object()
+                self.window_size = copy.copy(window_size)
+                self.parent_path = track.parent_folder_path
+                self.current_track_id = track.index
+                self.current_track_album = track.album
+
+                self.im = album_art_gen.get_blur_im(track)
                 if self.im is None or self.im is False:
                     if self.a_texture:
                         self.stage = 2
@@ -9049,17 +8962,16 @@ def toggle_side_art_deco():
     return [colour, colours.menu_background, line]
 
 
-def toggle_side_art(track_object):
+def toggle_side_art():
     prefs.show_side_art ^= True
 
 
-showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco, pass_ref=True,
-                  show_test=toggle_lyrics_show)
+showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
 
 
 
-def toggle_lyrics_deco():
+def toggle_lyrics_deco(track_object):
 
     if gui.combo_mode:
 
@@ -9068,7 +8980,7 @@ def toggle_lyrics_deco():
             line = "Hide lyrics"
         else:
             line = "Show lyrics"
-        if pctl.playing_object().lyrics == "":
+        if track_object.lyrics == "":
             colour = colours.menu_text_disabled
 
     else:
@@ -9078,7 +8990,7 @@ def toggle_lyrics_deco():
             line = "Hide lyrics"
         else:
             line = "Show lyrics"
-        if pctl.playing_object().lyrics == "":
+        if track_object.lyrics == "":
             colour = colours.menu_text_disabled
 
     return [colour, colours.menu_background, line]
@@ -9095,7 +9007,7 @@ def toggle_lyrics(track_object):
         if prefs.show_lyrics_side and track_object.lyrics == "":
             show_message("No lyrics for this track")
 
-showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -9282,16 +9194,9 @@ showcase_menu.add(_('Clear Chord Lyrics'), clear_chord_lyrics, pass_ref=True, sh
 
 showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
-def copy_lyrics_deco():
+def copy_lyrics_deco(track_object):
 
-    if gui.force_showcase_index >= 0:
-        index = gui.force_showcase_index
-        track = pctl.master_library[index]
-    else:
-        index = pctl.track_queue[pctl.queue_step]
-        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
-
-    if len(track.lyrics) > 0:
+    if track_object.lyrics:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -9301,24 +9206,16 @@ def copy_lyrics_deco():
 def copy_lyrics(track_object):
     copy_to_clipboard(track_object.lyrics)
 
-showcase_menu.add(_('Copy Lyrics'), copy_lyrics, copy_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Copy Lyrics'), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
 
 def clear_lyrics(track_object):
     track_object.lyrics = ""
 
-def clear_lyrics_deco():
+def clear_lyrics_deco(track_object):
 
-    if gui.force_showcase_index >= 0:
-        index = gui.force_showcase_index
-        track = pctl.master_library[index]
-    else:
-        index = pctl.track_queue[pctl.queue_step]
-        track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
-
-
-    if track.lyrics != "":
+    if track_object.lyrics:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -9327,22 +9224,21 @@ def clear_lyrics_deco():
 
 def split_lyrics(track_object):
 
-
     if track_object.lyrics != "":
         track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
     else:
         pass
 
 
-showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True)
-showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True)
+showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
-def save_embed_img():
-    index = pctl.track_queue[pctl.queue_step]
-    filepath = pctl.master_library[index].fullpath
-    folder = pctl.master_library[index].parent_folder_path
-    ext = pctl.master_library[index].file_ext
+def save_embed_img(track_object):
+
+    filepath = track_object.fullpath
+    folder = track_object.parent_folder_path
+    ext = track_object.file_ext
 
     try:
         if ext == 'MP3':
@@ -9376,53 +9272,51 @@ def save_embed_img():
 
         source_image = io.BytesIO(pic)
         im = Image.open(source_image)
-        print(im.format)
-        # im.format
+
         source_image.close()
 
         ext = "." + im.format.lower()
         if im.format == "JPEG":
             ext = ".jpg"
 
-        target = os.path.join(folder, "embed-" + str(im.height) + "px-" + str(index) + ext)
+        target = os.path.join(folder, "embed-" + str(im.height) + "px-" + str(track_object.index) + ext)
         if len(pic) > 30:
             with open(target, 'wb') as w:
                 w.write(pic)
-        open_folder(index)
 
+        open_folder(track_object.index)
 
     except:
         show_message("Image save error.", "error", "A mysterious error occurred")
 
 picture_menu = Menu(170)
 
-def open_image_deco():
+def open_image_deco(track_object):
 
-    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+    info = album_art_gen.get_info(track_object)
 
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] == 0:
+    if info[0] == 0:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
-def open_image():
+def open_image(track_object):
 
-    if pctl.playing_state > 0 and pctl.track_queue:
-        album_art_gen.open_external(pctl.track_queue[pctl.queue_step])
+    album_art_gen.open_external(track_object)
 
-def extract_image_deco():
+def extract_image_deco(track_object):
 
-    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+    info = album_art_gen.get_info(track_object)
 
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] == 1:
+    if info[0] == 1:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -9430,12 +9324,12 @@ def extract_image_deco():
     return [line_colour, colours.menu_background, None]
 
 
-picture_menu.add(_("Open Image"), open_image, open_image_deco)
+picture_menu.add(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True)
 
 
-def cycle_image_deco():
+def cycle_image_deco(track_object):
 
-    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+    info = album_art_gen.get_info(track_object)
 
     if pctl.playing_state != 0 and (info is not None and info[1] > 1):
         line_colour = colours.menu_text
@@ -9445,36 +9339,35 @@ def cycle_image_deco():
     return [line_colour, colours.menu_background, None]
 
 
-def cycle_offset():
-    album_art_gen.cycle_offset(pctl.track_queue[pctl.queue_step])
+def cycle_offset(track_object):
+    album_art_gen.cycle_offset(track_object)
 
+def cycle_offset_b(track_object):
+    album_art_gen.cycle_offset_reverse(track_object)
 
-def cycle_offset_b():
-    album_art_gen.cycle_offset_reverse(pctl.track_queue[pctl.queue_step])
 
 # Next and previous pictures
-picture_menu.add(_("Next"), cycle_offset, cycle_image_deco)
-picture_menu.add(_("Previous"), cycle_offset_b, cycle_image_deco)
+picture_menu.add(_("Next"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_("Previous"), cycle_offset_b, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
 
 # Extract embedded artwork from file
-picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco)
+picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True)
 
 
-def dl_art_deco(index):
+def dl_art_deco(tr):
 
-    tr = pctl.master_library[index]
-    if pctl.playing_state == 0 or not tr.album or not tr.artist:
+    if not tr.album or not tr.artist:
         return [colours.menu_text_disabled, colours.menu_background, None]
     return [colours.menu_text, colours.menu_background, None]
 
 
-def remove_embed_deco():
-    info = album_art_gen.get_info(pctl.track_queue[pctl.queue_step])
+def remove_embed_deco(track_object):
+    info = album_art_gen.get_info(track_object)
 
     if info is None:
         return [colours.menu_text_disabled, colours.menu_background, None]
 
-    if pctl.playing_state > 0 and info[0] == 1 and (pctl.playing_object().file_ext == "MP3" or pctl.playing_object().file_ext == "FLAC"):
+    if pctl.playing_state > 0 and info[0] == 1 and (track_object.file_ext == "MP3" or track_object.file_ext == "FLAC"):
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
@@ -9486,9 +9379,7 @@ def remove_embed_deco():
     return [line_colour, colours.menu_background, text]
 
 
-def download_art1(index):
-
-    tr = pctl.master_library[index]
+def download_art1(tr):
 
     if tr.is_network:
         show_message("Cannot download art for network tracks.")
@@ -9585,24 +9476,25 @@ def download_art1(index):
     except:
         show_message("Matching cover art or ID could not be found.")
 
-def download_art1_fire(index):
+def download_art1_fire(track_object):
 
-    shoot_dl = threading.Thread(target=download_art1, args=[index])
+    shoot_dl = threading.Thread(target=download_art1, args=[track_object])
     shoot_dl.daemon = True
     shoot_dl.start()
 
 
-def remove_embed_picture(index):
+def remove_embed_picture(track_object):
 
+    index = track_object.index
 
     if key_shift_down or key_shiftr_down:
         tracks = [index]
-        if pctl.g(index).is_cue or pctl.g(index).is_network:
+        if track_object.is_cue or track_object.is_network:
             show_message("Error - No handling for this kind of track", 'warning')
             return
     else:
         tracks = []
-        original_parent_folder = pctl.master_library[index].parent_folder_name
+        original_parent_folder = track_object.parent_folder_name
         for k in default_playlist:
             tr = pctl.g(k)
             if original_parent_folder == tr.parent_folder_name:
@@ -9692,30 +9584,29 @@ def remove_embed_picture(index):
     clear_img_cache()
 
 # Delete all embedded album artwork from all files in the same folder as this track
-picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_deco, pass_ref=True)
+picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_deco, pass_ref=True, pass_ref_deco=True)
 
 delete_icon = MenuIcon(asset_loader('del.png', True))
 
 def test_shift(_):
     return key_shift_down or key_shiftr_down
 
-def delete_file_image_deco(tid):
+def delete_file_image_deco(track_object):
 
-    info = album_art_gen.get_info(tid)
-    if pctl.playing_state > 0 and info and info[0] == 0:
+    info = album_art_gen.get_info(track_object)
+    if info and info[0] == 0:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
-def delete_file_image(tid):
+def delete_file_image(track_object):
 
     try:
-        tid = pctl.track_queue[pctl.queue_step]
-        showc = album_art_gen.get_info(tid)
+        showc = album_art_gen.get_info(track_object)
         if showc is not None and showc[0] == 0:
-            source = album_art_gen.get_sources(tid)[showc[2]][1]
+            source = album_art_gen.get_sources(track_object)[showc[2]][1]
             os.remove(source)
             clear_img_cache()
             print("Deleted file: " + source)
@@ -9734,22 +9625,24 @@ def toggle_gimage(mode=0):
     prefs.show_gimage ^= True
 
 
-def search_image_deco():
+def search_image_deco(track_object):
 
-    if pctl.playing_state > 0:
+    if track_object.artist and track_object.album:
         line_colour = colours.menu_text
     else:
         line_colour = colours.menu_text_disabled
 
     return [line_colour, colours.menu_background, None]
 
-def ser_gimage(index):
-    track = pctl.master_library[index]
-    line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track.artist + " " + track.album)
-    webbrowser.open(line, new=2, autoraise=True)
+def ser_gimage(track_object):
+
+    if track_object.artist and track_object.album:
+        line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track_object.artist + " " + track_object.album)
+        webbrowser.open(line, new=2, autoraise=True)
 
 picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
 
+picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
 def append_here():
     global cargo
@@ -14958,7 +14851,7 @@ class SearchOverlay:
                         xx += ddt.draw_text((150 * gui.scale, yy + 25 * gui.scale), artist, [250, 250, 250, int(255 * fade)], 15, bg=[12, 12, 12, 255])
 
                         ddt.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [50,50,50,150], True)
-                        gall_ren.render(item[2], (50 * gui.scale, yy + 5), 50 * gui.scale)
+                        gall_ren.render(pctl.g(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
                         if fade != 1:
                             ddt.rect_r((50 * gui.scale, yy + 5, 50 * gui.scale, 50 * gui.scale), [0, 0, 0, 70], True)
                         full = True
@@ -16059,7 +15952,7 @@ def worker1():
                         print("Encode folder not removed")
                     reload_metadata(folder_items[0])
                 else:
-                    album_art_gen.save_thumb(folder_items[0], (1080, 1080), output_dir + "cover")
+                    album_art_gen.save_thumb(pctl.g(folder_items[0]), (1080, 1080), output_dir + "cover")
 
                 print(transcode_list[0])
 
@@ -21269,9 +21162,9 @@ class ArtBox:
 
         if target_track:  # Only show if song playing or paused
 
-            album_art_gen.display(target_track.index, (rect[0], rect[1]), (box_x, box_y), side_drag)
+            album_art_gen.display(target_track, (rect[0], rect[1]), (box_x, box_y), side_drag)
 
-            showc = album_art_gen.get_info(target_track.index)
+            showc = album_art_gen.get_info(target_track)
 
         # Draw faint border on album art
         ddt.rect_r(rect, colours.art_box)
@@ -21289,7 +21182,7 @@ class ArtBox:
 
             if coll(gui.main_art_box) and input.mouse_click is True and key_focused == 0:
 
-                album_art_gen.cycle_offset(target_track.index)
+                album_art_gen.cycle_offset(target_track)
 
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
@@ -21297,7 +21190,7 @@ class ArtBox:
 
         # Activate picture context menu on right click
         if right_click and coll(rect) and target_track:
-            picture_menu.activate(in_reference=target_track.index)
+            picture_menu.activate(in_reference=target_track)
 
         # Draw picture metadata
         if showc is not None and coll(rect) \
@@ -22834,7 +22727,7 @@ class QueueBox:
             ddt.rect_r(rect, self.card_bg, True)
             bg = self.card_bg
 
-        gall_ren.render(track.index, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
+        gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
 
         ddt.rect_r((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6], True)
 
@@ -27532,6 +27425,8 @@ while pctl.running:
                             if album_dex[album_on] > len(default_playlist):
                                 break
 
+                            track = pctl.master_library[default_playlist[album_dex[album_on]]]
+
                             info = get_album_info(album_dex[album_on])
 
                             if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
@@ -27574,7 +27469,6 @@ while pctl.running:
                             # Draw transcode highlight
                             if transcode_list and os.path.isdir(prefs.encoder_output):
 
-                                track = pctl.master_library[default_playlist[album_dex[album_on]]]
                                 tr = False
 
                                 if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
@@ -27635,7 +27529,7 @@ while pctl.running:
                                       [255, 255, 255, 11])
 
                             # Draw album art
-                            drawn_art = gall_ren.render(default_playlist[album_dex[album_on]], (x, y))
+                            drawn_art = gall_ren.render(track, (x, y))
                             if drawn_art is False and gui.gallery_show_text is False:
 
                                 ddt.draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
@@ -28519,9 +28413,9 @@ while pctl.running:
 
                     # if not tc.is_network: # Don't draw album art if from network location for better performance
                     if comment_mode == 1:
-                        album_art_gen.display(r_menu_index, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size)) # Mirror this size in auto theme #mark2233
+                        album_art_gen.display(tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size)) # Mirror this size in auto theme #mark2233
                     else:
-                        album_art_gen.display(r_menu_index, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)), (art_size, art_size))
+                        album_art_gen.display(tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)), (art_size, art_size))
 
                     y -= int(24 * gui.scale)
                     y1 = int(y + (40 * gui.scale))
