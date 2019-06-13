@@ -7,7 +7,7 @@ v4.4.0
  - Added "Album-Artist", "Composer" and "Comment" to columns mode
  - Added per column colours to theme files
  - Added config option to show selected track in side panel when stopped
- - Added config option to stop track change notifications while in Mini Mode
+ - Added config option to stop track change notifications while git in Mini Mode
  - Added seek bar to mini mode micro
  - Added shortcut to cycle between mini mode square and micro (shift click and wheel click)
  - Added track menu function to add track to beginning of queue (hold shift to show)
@@ -17,6 +17,7 @@ v4.4.0
  - Added track sum and total duration to queue panel
  - Added on-the-fly backend switching
  - Added tool-tips to fields in columns mode (Linux only)
+ - Added MP3 genre code detection to tag scanner
  - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable
