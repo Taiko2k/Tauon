@@ -9640,7 +9640,7 @@ def ser_gimage(track_object):
         line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track_object.artist + " " + track_object.album)
         webbrowser.open(line, new=2, autoraise=True)
 
-picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, show_test=toggle_gimage)
+picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
 
 picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
