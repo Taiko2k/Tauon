@@ -6798,7 +6798,7 @@ class ThumbTracks:
 
         if source[0] == 1:
         # print('tag')
-            source_image = io.BytesIO(album_art_gen.get_embed(track.index))
+            source_image = io.BytesIO(album_art_gen.get_embed(track))
 
         elif source[0] == 2:
             try:
