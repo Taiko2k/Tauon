@@ -1573,8 +1573,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 bass_player.try_init()
 
-                bitrate = prefs.broadcast_bitrate
-                port = prefs.broadcast_port
+                bitrate = str(prefs.broadcast_bitrate)
+                port = str(prefs.broadcast_port)
 
                 pctl.broadcast_active = True
                 print("starting encoder")
