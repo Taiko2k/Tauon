@@ -24027,9 +24027,9 @@ class Showcase:
                 track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
 
-            album_art_gen.display(index, (x, y), (box, box))
+            album_art_gen.display(track, (x, y), (box, box))
             if coll((x, y, box, box)) and input.mouse_click is True:
-                album_art_gen.cycle_offset(index)
+                album_art_gen.cycle_offset(track)
 
             # Check for lyrics if auto setting
             test_auto_lyrics(track)
