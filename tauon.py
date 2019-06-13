@@ -5668,11 +5668,11 @@ def bass_player_thread(player):
         player(pctl, gui, prefs, lfm_scrobbler, star_store)
     except:
         logging.exception('Exception on player thread')
-        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to be restarted.")
         time.sleep(1)
-        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to be restarted.")
         time.sleep(1)
-        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to re restarted.")
+        show_message("Playback thread has crashed. Sorry about that.", 'error', "App will need to be restarted.")
 
 if prefs.backend == 1:
 
