@@ -71,12 +71,16 @@ cycle-layouts-reverse [
 
 playlist-toggle-breaks F1
 cycle-theme F2
+
 toggle-auto-theme F3
 find-playing-artist F4
 toggle-broadcast F6
 testkey F7
 show-encode-folder F9
 toggle-fullscreen F11
+
+cycle-theme-reverse
+reload-theme F10
 
 opacity-up = Ctrl
 opacity-down - Ctrl
