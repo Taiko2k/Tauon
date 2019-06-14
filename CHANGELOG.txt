@@ -13,11 +13,13 @@ v4.4.0
  - Added track menu function to add track to beginning of queue (hold shift to show)
  - Added queue option to play item immediately
  - Added queue option to crop to selected track only
- - Added keybind for global search
+ - Added keybinds global-search, cycle-theme-reverse and reload-theme
  - Added track sum and total duration to queue panel
  - Added on-the-fly backend switching
  - Added tool-tips to fields in columns mode (Linux only)
  - Added MP3 genre code detection to tag scanner
+ - Added drag from playlist to insert in queue functionality
+ - Added "Queue to New Playlist" function
  - Improved config file to be programmatically generated
  - Improved "delete embedded image" function to only remove from single file when shift key down
  - Improved search to make album-artist and composer fields searchable

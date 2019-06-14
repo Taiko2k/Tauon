@@ -1470,6 +1470,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.mini_mode_background = [24, 24, 24, 255]
         self.mini_mode_border = [60, 60, 60, 255]
 
+        self.queue_drag_indicator_colour = [200, 50, 240, 255]
+
         #self.post_config()
 
     def post_config(self):
@@ -2105,6 +2107,8 @@ if db_version > 0:
 
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("global-search G Ctrl\n")
+                f.write("cycle-theme-reverse\n")
+                f.write("reload-theme\n")
 
         show_message(
             "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata.")
@@ -8761,7 +8765,7 @@ showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(135)
-queue_menu = Menu(140)
+queue_menu = Menu(145)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
@@ -11779,7 +11783,7 @@ def split_queue_album(id):
 
     for part in reversed(parts):
         pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item[3]))
-
+    return(len(parts))
 
 def add_to_queue_next(ref):
 
@@ -12795,6 +12799,7 @@ def drop_tracks_to_new_playlist(track_list):
         pctl.multi_playlist[pl][0] = artists[0]
 
     tauon.worker_save_state = True
+
 
 
 
@@ -20150,7 +20155,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             if li == '1':
                 li = "N"
                 # if item[0] == n_track.index and item[1] == p_track and item[2] == pctl.active_playlist_viewing
-                if n_track.index == pctl.track_queue[pctl.queue_step] and p_track == pctl.playlist_playing_position:
+                if pctl.playing_ready() and n_track.index == pctl.track_queue[pctl.queue_step] and p_track == pctl.playlist_playing_position:
                     li = "R"
 
             # rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
@@ -20269,11 +20274,12 @@ class StandardPlaylist:
 
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
-            1] > gui.panelY - 2 \
+            1] > gui.panelY - 2 and gui.playlist_left < mouse_position[0] < gui.playlist_left + gui.plw \
                 and not (coll(pl_rect)) and not search_over.active:
 
             # Set scroll speed
             mx = 4
+
             if gui.playlist_view_length < 25:
                 mx = 3
             if gui.playlist_view_length < 10:
@@ -22568,8 +22574,6 @@ artist_list_box = ArtistList()
 
 
 
-
-
 def queue_pause_deco():
 
     if pctl.pause_queue:
@@ -22610,10 +22614,62 @@ class QueueBox:
         queue_menu.add("Auto-Stop After", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
-        queue_menu.add(_("Clear Queue"), clear_queue)
+        queue_menu.add(_("Clear Queue"), clear_queue, queue_deco)
 
         queue_menu.add(_("↳ Except for This"), self.clear_queue_crop, show_test=self.queue_remove_show)
+
+        queue_menu.add(_("Queue to New Playlist"), self.make_as_playlist, queue_deco)
         # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+    def make_as_playlist(self):
+
+        if pctl.force_queue:
+            playlist = []
+            for item in pctl.force_queue:
+                playlist.append(item[0])
+
+            pctl.multi_playlist.append(pl_gen(title="Queued Tracks",
+                                              playlist=copy.deepcopy(playlist),
+                                              hide_title=0))
+
+    def drop_tracks_insert(self, insert_position):
+
+        global quick_drag
+
+        if not shift_selection:
+            return
+
+        # remove incomplete album from queue
+        if insert_position == 0 and pctl.force_queue and pctl.force_queue[0][4] == 1:
+            split_queue_album(pctl.force_queue[0][6])
+
+        playlist_index = pctl.active_playlist_viewing
+        playlist_id = pl_to_id(pctl.active_playlist_viewing)
+
+        main_track_position = shift_selection[0]
+        main_track_id = default_playlist[main_track_position]
+        quick_drag = False
+
+
+        if len(shift_selection) > 1:
+
+            # if shift selection contains only same folder
+            for position in shift_selection:
+                if pctl.g(default_playlist[position]).parent_folder_path != pctl.g(main_track_id).parent_folder_path:
+                    break
+            else:
+                # Add as album type
+                pctl.force_queue.insert(insert_position,
+                                        queue_item_gen(main_track_id, main_track_position, playlist_id, 1))
+                return
+
+        if len(shift_selection) == 1:
+            pctl.force_queue.insert(insert_position, queue_item_gen(main_track_id, main_track_position, playlist_id))
+        else:
+            # Add each track
+            for position in reversed(shift_selection):
+                pctl.force_queue.insert(insert_position,
+                                        queue_item_gen(default_playlist[position], position, playlist_id))
 
     def clear_queue_crop(self):
 
@@ -22689,6 +22745,7 @@ class QueueBox:
             return True
         return False
 
+
     def right_remove_item(self):
 
         if self.right_click_id is None:
@@ -22760,7 +22817,6 @@ class QueueBox:
             ddt.rect_r((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
 
     def draw(self, x, y, w, h):
-
 
         yy = y
 
@@ -22851,10 +22907,17 @@ class QueueBox:
             self.scroll_position = len(fq)
             i = self.scroll_position
 
+        showed_indicator = False
+        list_extends = False
+        x1 = x + 13 * gui.scale  # highlight position
+        w1 = w - 28 * gui.scale - 10 * gui.scale
+
+
         while i < len(fq) + 1:
 
             # Stop drawing if past window
             if yy > window_size[1] - gui.panelBY - gui.panelY - (50 * gui.scale):
+                list_extends = True
                 break
 
             # Calculate drag collision box. Special case for first and last which extend out in y direction
@@ -22950,10 +23013,57 @@ class QueueBox:
                     db = True
 
                 self.draw_card(x, y, w, h, yy, track, fq[i], db)
+
+                # Drag tracks from main playlist and insert ------------
+                if quick_drag:
+
+                    if x < mouse_position[0] < x + w:
+
+                        y1 = yy - 4 * gui.scale
+                        y2 = y1
+                        h1 = self.tab_h // 2
+                        if i == 0:
+                            # Extend up if first element
+                            y1 -= 5 * gui.scale
+                            h1 += 10 * gui.scale
+
+                        insert_position = None
+
+
+                        if y1 < mouse_position[1] < y1 + h1:
+                            ddt.rect_r((x1, yy - 2 * gui.scale, w1, 2 * gui.scale), colours.queue_drag_indicator_colour, True)
+                            showed_indicator = True
+
+                            if mouse_up:
+                                insert_position = i
+
+                        elif y2 < mouse_position[1] < y2 + self.tab_h + 5 * gui.scale:
+                            ddt.rect_r((x1, yy + self.tab_h + 2 * gui.scale, w1, 2 * gui.scale), colours.queue_drag_indicator_colour,
+                                       True)
+                            showed_indicator = True
+
+                            if mouse_up:
+                                insert_position = i + 1
+
+                        if insert_position is not None:
+
+                            self.drop_tracks_insert(insert_position)
+
+                # -----------------------------------------
                 yy += self.tab_h
                 yy += 4 * gui.scale
 
             i += 1
+
+        # Show drag marker if mouse holding below list
+        if quick_drag and not list_extends and not showed_indicator and fq and mouse_position[1] > yy - 4 * gui.scale and coll(box_rect):
+            yy -= self.tab_h
+            yy -= 4 * gui.scale
+            ddt.rect_r((x1, yy + self.tab_h + 2 * gui.scale, w1, 2 * gui.scale),
+                       colours.queue_drag_indicator_colour,
+                       True)
+            yy += self.tab_h
+            yy += 4 * gui.scale
 
         yy += 15 * gui.scale
         if fq:
@@ -22961,7 +23071,7 @@ class QueueBox:
         yy += 11 * gui.scale
 
 
-        #duration = sum(s[7] for s in fq)
+        # Calculate total queue duration
         duration = 0
         tracks = 0
 
@@ -22993,6 +23103,7 @@ class QueueBox:
                         tracks += 1
                         i += 1
 
+        # Show total duration text "n Tracks [0:00:00]"
         if tracks and fq:
             plural = 's'
             if tracks < 2:
@@ -23022,15 +23133,7 @@ class QueueBox:
         # Drag and drop tracks from main playlist into queue
         if quick_drag and mouse_up and coll(box_rect) and shift_selection:
 
-            pp = shift_selection[0]
-            ti = default_playlist[pp]
-
-            if len(shift_selection) == 1:
-                #pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
-                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing)))
-            else:
-                # pctl.force_queue.append([ti, pp, pl_to_id(pctl.active_playlist_viewing), 1, 0, uid_gen()])
-                pctl.force_queue.append(queue_item_gen(ti, pp, pl_to_id(pctl.active_playlist_viewing), 1))
+            self.drop_tracks_insert(0)
 
         # Right click context menu in blank space
         if qb_right_click:
@@ -26780,6 +26883,14 @@ while pctl.running:
         gui.temp_themes.clear()
         theme += 1
 
+    if keymaps.test("cycle-theme-reverse"):
+        gui.theme_temp_current = -1
+        gui.temp_themes.clear()
+        pref_box.devance_theme()
+
+    if keymaps.test("reload-theme"):
+        themeChange = True
+
     if themeChange is True:
         gui.light_mode = False
         gui.draw_frame = False
@@ -28081,7 +28192,7 @@ while pctl.running:
 
                 # Normal Drawing
                 if gui.rsp and gui.draw_frame:
-                    ddt.line(gui.playlist_width + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
+                    ddt.line(gui.plw + 30 * gui.scale, gui.panelY + 1 * gui.scale, gui.plw, window_size[1] - 30 * gui.scale,
                               colours.sep_line)
 
 
