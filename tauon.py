@@ -16855,11 +16855,11 @@ class Over:
         self.about_image3 = asset_loader('v4-c.png')
         self.about_image4 = asset_loader('v4-d.png')
 
-        self.w = 660 * gui.scale
-        self.h = 275 * gui.scale
+        self.w = round(660 * gui.scale)
+        self.h = round(275 * gui.scale)
         self.box_x = int(window_size[0] / 2) - int(self.w / 2)
         self.box_y = int(window_size[1] / 2) - int(self.h / 2)
-        self.item_x_offset = 140 * gui.scale
+        self.item_x_offset = round(140 * gui.scale)
 
         self.current_path = os.path.expanduser('~')
         self.ext_colours = {}
@@ -17294,25 +17294,25 @@ class Over:
     def last_fm_box(self):
 
         x = self.box_x + self.item_x_offset
-        y = self.box_y + 20 * gui.scale
+        y = self.box_y + round(20 * gui.scale)
 
 
         if self.button2(x, y, "Last.fm"):
             self.account_view = 1
         self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
-        y += 30
+        y += 30 * gui.scale
 
         if self.button2(x, y, "ListenBrainz"):
             self.account_view = 2
         self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lb, _("Enable"))
 
-        y += 30
+        y += 30 * gui.scale
 
         if self.button2(x, y, "Discogs"):
             self.account_view = 3
 
 
-        y += 150
+        y += 150 * gui.scale
         self.button(x, y, _("Import PLEX music"), plex_get_album_thread)
 
         x = self.box_x + self.item_x_offset + 230 * gui.scale
@@ -18828,7 +18828,7 @@ class TopPanel:
                 pctl.playerCommandReady = True
 
 
-            x += 110
+            x += 110 * gui.scale
             ddt.draw_text((x, y), str(len(pctl.broadcast_clients)), [70, 85, 230, 255], 11)
 
             self.drag_zone_start_x = x + 21 * gui.scale
@@ -28494,9 +28494,9 @@ while pctl.running:
                 tc = pctl.master_library[r_menu_index]
 
 
-                w = 540 * gui.scale
+                w = round(540 * gui.scale)
                 #w = 550 * gui.scale
-                h = 240 * gui.scale
+                h = round(240 * gui.scale)
                 comment_mode = 0
 
                 if len(tc.comment) > 0:
@@ -28507,8 +28507,8 @@ while pctl.running:
                         w += 30 * gui.scale
                         comment_mode = 1
 
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
+                x = round((window_size[0] / 2) - (w / 2))
+                y = round((window_size[1] / 2) - (h / 2))
 
                 x1 = int(x + 18 * gui.scale)
                 x2 = int(x + 98 * gui.scale)
@@ -28549,7 +28549,7 @@ while pctl.running:
                     y1 = int(y + (40 * gui.scale))
 
 
-                    ext_rect = [x + w - 38 * gui.scale, y + 44 * gui.scale, 38 * gui.scale, 12 * gui.scale]
+                    ext_rect = [x + w - round(38 * gui.scale), y + round(44 * gui.scale), round(38 * gui.scale), round(12 * gui.scale)]
 
                     line = tc.file_ext
                     ex_colour = [130, 130, 130, 255]
@@ -28558,7 +28558,7 @@ while pctl.running:
                         ex_colour = format_colours[line]
 
                     ddt.rect_r(ext_rect, ex_colour, True)
-                    ddt.draw_text((int(x + w - 35 * gui.scale), int(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
+                    ddt.draw_text((int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), line, alpha_blend([10, 10, 10, 235], ex_colour) , 211, bg=ex_colour)
 
                     if tc.is_cue:
                         ext_rect[1] += 16 * gui.scale
