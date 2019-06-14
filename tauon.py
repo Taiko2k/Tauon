@@ -22626,7 +22626,32 @@ class QueueBox:
         if pctl.force_queue:
             playlist = []
             for item in pctl.force_queue:
-                playlist.append(item[0])
+
+                if item[3] == 0:
+                    playlist.append(item[0])
+                else:
+
+                    pl = id_to_pl(item[2])
+                    if pl is None:
+                        print("Lost the target playlist")
+                        continue
+
+                    pp = pctl.multi_playlist[pl][2]
+
+                    i = item[1]#= pctl.playlist_playing_position + 1
+
+                    parts = []
+                    album_parent_path = pctl.g(item[0]).parent_folder_path
+
+                    while i < len(pp):
+                        if pctl.g(pp[i]).parent_folder_path != album_parent_path:
+                            break
+
+                        parts.append((pp[i], i))
+                        i += 1
+
+                    for part in parts:
+                        playlist.append(part[0])
 
             pctl.multi_playlist.append(pl_gen(title="Queued Tracks",
                                               playlist=copy.deepcopy(playlist),
