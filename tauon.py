@@ -23158,7 +23158,7 @@ class QueueBox:
         # Drag and drop tracks from main playlist into queue
         if quick_drag and mouse_up and coll(box_rect) and shift_selection:
 
-            self.drop_tracks_insert(0)
+            self.drop_tracks_insert(len(fq))
 
         # Right click context menu in blank space
         if qb_right_click:
