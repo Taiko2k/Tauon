@@ -2108,7 +2108,7 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("global-search G Ctrl\n")
                 f.write("cycle-theme-reverse\n")
-                f.write("reload-theme\n")
+                f.write("reload-theme F10\n")
 
         show_message(
             "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata.")
