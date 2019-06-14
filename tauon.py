@@ -19577,8 +19577,7 @@ class MiniMode:
 
 
             # Render album art
-            album_art_gen.display(pctl.track_queue[pctl.queue_step],
-                                  (0, 0), (w, w))
+            album_art_gen.display(track, (0, 0), (w, w))
 
             if h == w and mouse_in_area:
                 #ddt.pretty_rect = (0, 260 * gui.scale, w, 100 * gui.scale)
@@ -19801,8 +19800,7 @@ class MiniMode2:
 
 
             # Render album art
-            album_art_gen.display(pctl.track_queue[pctl.queue_step],
-                                  (0, 0), (h, h))
+            album_art_gen.display(track, (0, 0), (h, h))
 
             text_hit_area = (x1, 0, w, h)
 
