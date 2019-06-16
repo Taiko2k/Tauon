@@ -2113,6 +2113,15 @@ if db_version > 0:
         show_message(
             "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata.")
 
+
+    if db_version <= 30:
+        for i, item in enumerate(p_force_queue):
+            try:
+                assert item[6]
+            except:
+                p_force_queue[i].append(False)
+
+
 # Loading Config -----------------
 
 download_directories = []
@@ -9971,7 +9980,7 @@ def convert_playlist(pl):
 
     if system == 'windows':
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
+            show_message("Error: Missing ffmpeg.exe from encoder directory", 'warning', "Expected location: " + user_directory + '/encoder/ffmpeg.exe')
             return
         # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
         #     show_message("Error: Missing lame.exe from '/encoder' directory")
@@ -11125,7 +11134,7 @@ def convert_folder(index):
 
     if system == 'windows':
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
-            show_message("Error: Missing ffmpeg.exe from '/encoder' directory")
+            show_message("Error: Missing ffmpeg.exe from encoder directory", 'warning', "Expected location: " + user_directory + '/encoder/ffmpeg.exe')
             return
             # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
             #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
@@ -20141,10 +20150,14 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         if pctl.force_queue:
 
             marks = []
+            album_type = False
             for i, item in enumerate(pctl.force_queue):
                 if item[0] == n_track.index and item[1] == p_track and item[2] == pl_to_id(pctl.active_playlist_viewing):
                     if item[3] == 0:  # Only show mark if track type
                         marks.append(i)
+                    # else:
+                    #     album_type = True
+                    #     marks.append(i)
 
             if marks:
                 display_queue = True
@@ -20156,13 +20169,19 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 li = "N"
                 # if item[0] == n_track.index and item[1] == p_track and item[2] == pctl.active_playlist_viewing
                 if pctl.playing_ready() and n_track.index == pctl.track_queue[pctl.queue_step] and p_track == pctl.playlist_playing_position:
-                    li = "R"
+                        li = "R"
+                # if album_type:
+                #     li = "A"
 
             # rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
             # ddt.rect_r(rect, [100, 200, 100, 255], True)
             if len(marks) > 1:
                 li += " " + ("." * (len(marks) - 1))
                 li = li[:5]
+
+            # if album_type:
+            #     li += "🠗"
+
 
             colour = [244, 200, 66, 255]
             if colours.lm:
@@ -21573,7 +21592,7 @@ class PlaylistBox:
 
         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
-        max_tabs = h // (self.gap + self.tab_h) * gui.scale
+        max_tabs = (h - 10 * gui.scale) // (self.gap + self.tab_h)
 
         tab_title_colour = [230, 230, 230, 255]
 
@@ -21623,7 +21642,9 @@ class PlaylistBox:
 
         for i, pl in enumerate(pctl.multi_playlist):
 
-            if yy + self.tab_h > y + h:
+            # if yy + self.tab_h > y + h:
+            #     break
+            if i > max_tabs - 1:
                 break
 
             if i < self.scroll_on:
@@ -25562,7 +25583,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            30,  # Version, used for upgrading
+            31,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
