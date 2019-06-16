@@ -4,8 +4,11 @@ Changelog-------------------------------------
 
 v4.4.1
 
+ - Added Ctrl-click to global search to add items to current playlist
+ - Added setting to hide side panel queue when empty
  - Fixed crash on upgrade when items were in queue
  - Fixed playlist list scroll bar possibly not appearing when needed
+ - Fixed queue track count text jumping position when clicking last item in queue
 
 v4.4.0
 

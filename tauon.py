@@ -856,6 +856,7 @@ class Prefs:    # Used to hold any kind of settings
         self.stop_notifications_mini_mode = False
         self.scale_want = 1
         self.mini_mode_micro_always_show_seek = False
+        self.hide_queue = True
 
 
 prefs = Prefs()
@@ -2163,6 +2164,7 @@ def save_prefs():
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
+    cf.update_value("hide-queue-when-empty", prefs.hide_queue)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2243,6 +2245,7 @@ def load_prefs():
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
+    prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
 
     if system != 'windows':
         cf.br()
@@ -2312,14 +2315,9 @@ load_prefs()
 save_prefs()
 
 
-print("TEST SCALE")
-print(prefs.scale_want)
-print(prefs.ui_scale)
 if prefs.scale_want != prefs.ui_scale:
-    print("UPDATE SCALE SETTING")
     if prefs.scale_want in (1, 1.25, 2):
         prefs.ui_scale = prefs.scale_want
-        print("SCALE VALUE IS VALID")
         prefs.playlist_row_height = round(22 * prefs.ui_scale)
         prefs.playlist_font_size = 15
         gui.__init__()
@@ -14562,6 +14560,38 @@ def cue_scan(content, tn):
     # cue_list.append(filepath)
 
 
+def get_album_from_first_track(track_position, track_id=None,  pl_number=None, pl_id=None):
+
+    if pl_number is None:
+
+        if pl_id:
+            pl_number = id_to_pl(pl_id)
+        else:
+            pl_number = pctl.active_playlist_viewing
+
+    playlist = pctl.multi_playlist[pl_number][2]
+
+    if track_id is None:
+        track_id = playlist[track_position]
+
+    if playlist[track_position] != track_id:
+        return []
+
+    tracks = []
+    album_parent_path = pctl.g(track_id).parent_folder_path
+
+    i = track_position
+
+    while i < len(playlist):
+        if pctl.g(playlist[i]).parent_folder_path != album_parent_path:
+            break
+
+        tracks.append(playlist[i])
+        i += 1
+
+    return tracks
+
+
 class SearchOverlay:
 
     def __init__(self):
@@ -14577,7 +14607,7 @@ class SearchOverlay:
         self.sip = False
         self.delay_enter = False
 
-    def click_artist(self, name):
+    def click_artist(self, name, get_list=False):
 
         playlist = []
         for pl in pctl.multi_playlist:
@@ -14585,6 +14615,9 @@ class SearchOverlay:
                 if pctl.master_library[item].artist.lower() == name.lower() or pctl.master_library[item].album_artist.lower() == name.lower():
                     if item not in playlist:
                         playlist.append(item)
+
+        if get_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title="Artist: " + name,
                                           playlist=copy.deepcopy(playlist),
@@ -14595,7 +14628,7 @@ class SearchOverlay:
 
         input.key_return_press = False
 
-    def click_composer(self, name):
+    def click_composer(self, name, get_list=False):
 
         playlist = []
         for pl in pctl.multi_playlist:
@@ -14603,6 +14636,9 @@ class SearchOverlay:
                 if pctl.master_library[item].composer.lower() == name.lower():
                     if item not in playlist:
                         playlist.append(item)
+
+        if get_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title="Composer: " + name,
                                           playlist=copy.deepcopy(playlist),
@@ -14613,7 +14649,7 @@ class SearchOverlay:
 
         input.key_return_press = False
 
-    def click_meta(self, name):
+    def click_meta(self, name, get_list=False):
 
         playlist = []
         for pl in pctl.multi_playlist:
@@ -14621,6 +14657,9 @@ class SearchOverlay:
                 if name in pctl.master_library[item].parent_folder_path:
                     if item not in playlist:
                         playlist.append(item)
+
+        if get_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title=os.path.basename(name).upper(),
                                           playlist=copy.deepcopy(playlist),
@@ -14630,7 +14669,7 @@ class SearchOverlay:
 
         input.key_return_press = False
 
-    def click_genre(self, name):
+    def click_genre(self, name, get_list=False):
 
         playlist = []
         for pl in pctl.multi_playlist:
@@ -14638,6 +14677,9 @@ class SearchOverlay:
                 if pctl.master_library[item].genre.lower().replace("-", "") == name.lower().replace("-", ""):
                     if item not in playlist:
                         playlist.append(item)
+
+        if get_list:
+            return playlist
 
         pctl.multi_playlist.append(pl_gen(title="Genre: " + name,
                                           playlist=copy.deepcopy(playlist),
@@ -14647,6 +14689,7 @@ class SearchOverlay:
 
 
         input.key_return_press = False
+
 
     def click_album(self, index):
 
@@ -14707,6 +14750,15 @@ class SearchOverlay:
             ddt.rect_r((x, y, w, h), [3,3,3,235], True)
             ddt.text_background_colour = [12, 12, 12, 255]
 
+            # if window_size[0] > 1200 * gui.scale:
+            #     hint_x = window_size[0] - 320 * gui.scale
+            #     hint_y = 100 * gui.scale
+            #     hint_colour = colours.grey(60)
+            #     ddt.draw_text((hint_x, hint_y, 2), "Right-click an item to locate.", hint_colour, 314)
+            #     hint_y += 23 * gui.scale
+            #     ddt.draw_text((hint_x, hint_y, 2), "Hold Ctrl and click to add items to current viewed playlist",
+            #                   hint_colour, 314)
+
             if self.sip:
 
                 si = 7 * gui.scale
@@ -14762,6 +14814,7 @@ class SearchOverlay:
             input.key_return_press = False
 
             bar_colour = [140, 80, 240, 255]
+            track_in_bar_colour = [244, 209, 66, 255]
 
             self.on = max(self.on, 0)
             self.on = min(len(self.results) - 1, self.on)
@@ -14825,9 +14878,15 @@ class SearchOverlay:
                             gui.update = 2
 
                         if gui.level_2_click:
-                            self.click_artist(item[1])
-                            self.active = False
-                            self.search_text.text = ""
+
+                            if key_ctrl_down:
+                                default_playlist.extend(self.click_artist(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+
+                                self.click_artist(item[1])
+                                self.active = False
+                                self.search_text.text = ""
 
                         if level_2_right_click:
 
@@ -14868,6 +14927,9 @@ class SearchOverlay:
                         if fade == 1:
                             ddt.rect_r((30 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), bar_colour, True)
 
+                        if key_ctrl_down and item[2] in default_playlist:
+                            ddt.rect_r((24 * gui.scale, yy + 5, 4 * gui.scale, 50 * gui.scale), track_in_bar_colour, True)
+
                         rect = (30 * gui.scale, yy, 600 * gui.scale, 55 * gui.scale)
                         fields.add(rect)
                     else:
@@ -14885,10 +14947,21 @@ class SearchOverlay:
                             self.force_select = p
                             gui.update = 2
                         if gui.level_2_click:
-                            self.click_album(item[2])
-                            pctl.playlist_view_position = playlist_selected
-                            self.active = False
-                            self.search_text.text = ""
+
+                            if key_ctrl_down:
+
+                                for k, pl in enumerate(pctl.multi_playlist):
+                                    if item[2] in pl[2]:
+                                        default_playlist.extend(get_album_from_first_track(pl[2].index(item[2]), item[2], k))
+                                        break
+                                gui.pl_update += 1
+
+                            else:
+
+                                self.click_album(item[2])
+                                pctl.playlist_view_position = playlist_selected
+                                self.active = False
+                                self.search_text.text = ""
 
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
@@ -14926,6 +14999,9 @@ class SearchOverlay:
                     if fade == 1:
                         ddt.rect_r((30 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), bar_colour, True)
 
+                    if key_ctrl_down and item[2] in default_playlist:
+                        ddt.rect_r((24 * gui.scale, yy, 4 * gui.scale, 17 * gui.scale), track_in_bar_colour, True)
+
                     rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
                     fields.add(rect)
                     if coll(rect) and mouse_change:
@@ -14933,9 +15009,15 @@ class SearchOverlay:
                             self.force_select = p
                             gui.update = 2
                         if gui.level_2_click:
-                            self.click_album(item[2])
-                            self.active = False
-                            self.search_text.text = ""
+
+                            if key_ctrl_down:
+                                default_playlist.append(item[2])
+                                gui.pl_update += 1
+                            else:
+                                self.click_album(item[2])
+                                self.active = False
+                                self.search_text.text = ""
+
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
                             self.active = False
@@ -14961,9 +15043,15 @@ class SearchOverlay:
                             self.force_select = p
                             gui.update = 2
                         if gui.level_2_click:
-                            self.click_genre(item[1])
-                            self.active = False
-                            self.search_text.text = ""
+
+                            if key_ctrl_down:
+                                default_playlist.extend(self.click_genre(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                self.click_genre(item[1])
+                                self.active = False
+                                self.search_text.text = ""
+
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
                             self.active = False
@@ -14989,9 +15077,13 @@ class SearchOverlay:
                             self.force_select = p
                             gui.update = 2
                         if gui.level_2_click:
-                            self.click_meta(item[1])
-                            self.active = False
-                            self.search_text.text = ""
+                            if key_ctrl_down:
+                                default_playlist.extend(self.click_meta(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                self.click_meta(item[1])
+                                self.active = False
+                                self.search_text.text = ""
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
                             self.active = False
@@ -15020,9 +15112,13 @@ class SearchOverlay:
                             gui.update = 2
 
                         if gui.level_2_click:
-                            self.click_composer(item[1])
-                            self.active = False
-                            self.search_text.text = ""
+                            if key_ctrl_down:
+                                default_playlist.extend(self.click_composer(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                self.click_composer(item[1])
+                                self.active = False
+                                self.search_text.text = ""
 
                         if level_2_right_click:
 
@@ -16330,6 +16426,10 @@ def toggle_titlebar_line(mode=0):
     if update_title:
         update_title_do()
 
+def toggle_hide_queue(mode=0):
+    if mode == 1:
+        return prefs.hide_queue
+    prefs.hide_queue ^= True
 
 def scale1(mode=0):
 
@@ -17628,7 +17728,7 @@ class Over:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
         y += 28 * gui.scale
-        # self.toggle_square(x, y, toggle_scale, "2x UI scaling (wip)")
+        self.toggle_square(x, y, toggle_hide_queue, "Hide queue when empty")
         # if system == "linux" or True:
         #     self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
@@ -23012,9 +23112,7 @@ class QueueBox:
             track = pctl.g(fq[i][0])
 
 
-            if self.dragging and coll(h_rect):
-                yy += self.tab_h
-                yy += 4 * gui.scale
+
 
             rect = (x + 13 * gui.scale, yy, w - 28 * gui.scale, self.tab_h)
 
@@ -23039,6 +23137,9 @@ class QueueBox:
 
                 d_click_timer.set()
 
+            if self.dragging and coll(h_rect):
+                yy += self.tab_h
+                yy += 4 * gui.scale
 
             if qb_right_click and coll(rect):
                 self.right_click_id = fq[i][5]
@@ -28274,18 +28375,18 @@ while pctl.running:
 
                 else:
 
-                    #if pctl.force_queue:
+                    if pctl.force_queue or not prefs.hide_queue:
 
-                    if h_estimate < half:
-                        pl_box_h = h_estimate
-                    else:
-                        pl_box_h = half
+                        if h_estimate < half:
+                            pl_box_h = h_estimate
+                        else:
+                            pl_box_h = half
 
                     playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
 
-                    #if pctl.force_queue:
+                    if pctl.force_queue or not prefs.hide_queue:
 
-                    queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+                        queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
 
             if gui.artist_info_panel and not gui.combo_mode:
