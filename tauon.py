@@ -857,6 +857,7 @@ class Prefs:    # Used to hold any kind of settings
         self.scale_want = 1
         self.mini_mode_micro_always_show_seek = False
         self.hide_queue = True
+        self.show_playlist_list = False
 
 
 prefs = Prefs()
@@ -2165,6 +2166,7 @@ def save_prefs():
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
+    cf.update_value("show-playlist-list", prefs.show_playlist_list)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2246,6 +2248,7 @@ def load_prefs():
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
+    prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
     if system != 'windows':
         cf.br()
@@ -16437,6 +16440,11 @@ def toggle_titlebar_line(mode=0):
     if update_title:
         update_title_do()
 
+def toggle_show_playlist_list(mode=0):
+    if mode == 1:
+        return prefs.show_playlist_list
+    prefs.show_playlist_list ^= True
+
 def toggle_hide_queue(mode=0):
     if mode == 1:
         return prefs.hide_queue ^ True
@@ -17739,10 +17747,10 @@ class Over:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, "Show queue when empty")
-        # if system == "linux" or True:
-        #     self.toggle_square(x, y, scale1, "1x")
+        self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
+
         y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
         # if system == "linux" or True:
         #     self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
         #y += 25 * gui.scale
@@ -17751,10 +17759,13 @@ class Over:
 
         y -= 5 * gui.scale
 
+        x += 130 * gui.scale
+
         self.button(x + 208 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 105 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
         ddt.draw_text((x + 320 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
 
+        x -= 130 * gui.scale
 
         #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
         # ----------
@@ -22748,10 +22759,13 @@ class QueueBox:
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue, queue_deco)
 
-        queue_menu.add(_("↳ Except for This"), self.clear_queue_crop, show_test=self.queue_remove_show)
+        queue_menu.add(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test)
 
         queue_menu.add(_("Queue to New Playlist"), self.make_as_playlist, queue_deco)
         # queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+    def except_for_this_show_test(self, _):
+        return self.queue_remove_show(_) and test_shift(_)
 
     def make_as_playlist(self):
 
@@ -22991,7 +23005,15 @@ class QueueBox:
 
         yy += 3 * gui.scale
 
+
         box_rect = (x, yy - 3 * gui.scale, w, h)
+
+        ddt.rect_r(box_rect, [18, 18, 18, 255], True)
+
+        if y < gui.panelY * 2:
+            ddt.rect_r((x, y - 3 * gui.scale, w, 30 * gui.scale), [18, 18, 18, 255], True)
+            if not pctl.force_queue:
+                ddt.draw_text((x + (w // 2), y + 10 * gui.scale, 2), "Queue", [60, 60, 60, 255], 212)
 
         qb_right_click = 0
 
@@ -23008,7 +23030,7 @@ class QueueBox:
         #if not pctl.force_queue:
         #    ddt.rect_r(box_rect, colours.side_panel_background, True)
         #else:
-        ddt.rect_r(box_rect, [18, 18, 18, 255], True)
+
 
         ddt.text_background_colour = [18, 18, 18, 255]
         line = "Up Next:"
@@ -28395,7 +28417,11 @@ while pctl.running:
                         else:
                             pl_box_h = half
 
-                    playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+                    if prefs.show_playlist_list:
+
+                        playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+                    else:
+                        pl_box_h = 0
 
                     if pctl.force_queue or not prefs.hide_queue:
 
