@@ -16439,7 +16439,7 @@ def toggle_titlebar_line(mode=0):
 
 def toggle_hide_queue(mode=0):
     if mode == 1:
-        return prefs.hide_queue
+        return prefs.hide_queue ^ True
     prefs.hide_queue ^= True
 
 def scale1(mode=0):
@@ -17739,7 +17739,7 @@ class Over:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, "Hide queue when empty")
+        self.toggle_square(x, y, toggle_hide_queue, "Show queue when empty")
         # if system == "linux" or True:
         #     self.toggle_square(x, y, scale1, "1x")
         y += 25 * gui.scale
