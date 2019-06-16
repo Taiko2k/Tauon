@@ -8847,8 +8847,21 @@ def toggle_bio_size():
         prefs.bio_large = True
     gui.update_layout()
 
+
+def flush_artist_bio(artist):
+
+    if os.path.isfile(os.path.join(cache_directory, artist + '-lfm.txt')):
+        os.remove(os.path.join(cache_directory, artist + '-lfm.txt'))
+    artist_info_box.text = ""
+    artist_info_box.artist_on = None
+
+
+def test_shift(_):
+    return key_shift_down or key_shiftr_down
+
 artist_info_menu.add(_("Close Panel"), artist_info_panel_close)
 artist_info_menu.add(_("Make Large"), toggle_bio_size, toggle_bio_size_deco)
+artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift)
 
 
 def show_in_playlist():
@@ -9593,8 +9606,6 @@ picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_
 
 delete_icon = MenuIcon(asset_loader('del.png', True))
 
-def test_shift(_):
-    return key_shift_down or key_shiftr_down
 
 def delete_file_image_deco(track_object):
 
@@ -23553,7 +23564,6 @@ class ArtistInfoBox:
 
         self.mini_box = WhiteModImageAsset(asset_subfolder + "mini-box.png")
 
-
     def draw(self, x, y, w, h):
 
         if gui.artist_panel_height > 300 and w < 500 * gui.scale:
@@ -23565,12 +23575,6 @@ class ArtistInfoBox:
             gui.update_layout()
             return
 
-        if right_click and coll((x, y ,w, h)):
-            artist_info_menu.activate()
-
-        backgound = [27, 27, 27, 255]
-        ddt.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
-
         track = pctl.playing_object()
         if track is None:
             return
@@ -23578,6 +23582,15 @@ class ArtistInfoBox:
         # Check if the artist has changed.
         artist = track.artist
         wait = False
+
+        # Activat menu
+        if right_click and coll((x, y ,w, h)):
+            artist_info_menu.activate(in_reference=artist)
+
+        backgound = [27, 27, 27, 255]
+        ddt.rect_r((x + 10, y + 5, w - 15, h - 5), backgound, True)
+
+
 
         if artist != self.artist_on:
             if artist == "":
