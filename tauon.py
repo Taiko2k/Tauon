@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.4.0"
+n_version = "4.4.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -857,7 +857,7 @@ class Prefs:    # Used to hold any kind of settings
         self.scale_want = 1
         self.mini_mode_micro_always_show_seek = False
         self.hide_queue = True
-        self.show_playlist_list = False
+        self.show_playlist_list = True
 
 
 prefs = Prefs()
@@ -20475,6 +20475,15 @@ class StandardPlaylist:
             ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half, 2), _("End of Playlist"),
                       colour, 213)
 
+
+            # line = "Contains " + str(len(default_playlist)) + ' track'
+            # if len(default_playlist) > 1:
+            #     line += "s"
+            #
+            # ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half + 24 * gui.scale, 2), line,
+            #           colour, 12)
+
+
         # For every track in view
         for i in range(gui.playlist_view_length + 1):
 
@@ -23013,7 +23022,7 @@ class QueueBox:
         if y < gui.panelY * 2:
             ddt.rect_r((x, y - 3 * gui.scale, w, 30 * gui.scale), [18, 18, 18, 255], True)
             if not pctl.force_queue:
-                ddt.draw_text((x + (w // 2), y + 10 * gui.scale, 2), "Queue", [60, 60, 60, 255], 212)
+                ddt.draw_text((x + (w // 2), y + 15 * gui.scale, 2), "Queue", [60, 60, 60, 255], 212)
 
         qb_right_click = 0
 
