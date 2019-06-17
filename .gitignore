@@ -6,7 +6,9 @@ hsaudiotag/
 stagger/
 pylast/
 PyLyrics/
+pypresence/
 cache/
+user-data/
 .idea/
 pyperclip/
 playlists/
