@@ -508,7 +508,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 
 # These will be the extensions of files to be added when importing
 DA_Formats = {'mp3', 'wav', 'opus', 'flac', 'ape',
-              'm4a', 'ogg', 'aac', 'tta', 'wv', }
+              'm4a', 'ogg', 'aac', 'tta', 'wv', 'wma'}
 
 Archive_Formats = {'zip'}
 
@@ -518,8 +518,7 @@ if whicher('unrar'):
 if whicher('7z'):
     Archive_Formats.add("7z")
 
-if system == 'windows':
-    DA_Formats.add('wma')  # Bass on Linux does not support WMA
+
 
 cargo = []
 
@@ -1934,11 +1933,6 @@ except:
 #     if not os.path.isfile(install_directory + '/lib/libbass.so'):
 #         prefs.backend = 2
 
-if prefs.backend == 2:
-    # gi.require_version('Gst', '1.0')
-    # from gi.repository import GObject, Gst
-    print("Using GStreamer for playback")
-    DA_Formats.add('wma')
 
 # temporary
 if window_size is None:
@@ -3507,17 +3501,25 @@ class PlayerCtl:
                     ok_continue = True
 
                     if pctl.g(target_index).parent_folder_path != pctl.playing_object().parent_folder_path:
-                        # Remember to set jumper check this too
+                        # Remember to set jumper check this too (leave album if we jump to some other track, i.e. double click))
                         ok_continue = False
 
-                    # Check if we are at end of playlist
                     pl = pctl.multi_playlist[pctl.active_playlist_playing][2]
-                    if self.playlist_playing_position > len(pl) - 3:
-                        ok_continue = False
 
                     # Check next song is in album
                     if ok_continue:
-                        if self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+
+                        # Check if we are at end of playlist, or already at end of album
+                        if self.playlist_playing_position >= len(pl) - 1 or self.playlist_playing_position < len(pl) - 1 and \
+                                 self.g(pl[self.playlist_playing_position + 1]).parent_folder_path != pctl.g(target_index).parent_folder_path:
+
+                            del self.force_queue[0]
+                            self.advance(nolock=True)
+
+
+                        # Check if 2 songs down is in album, remove entry in queue if not
+                        elif self.playlist_playing_position < len(pl) - 2 and \
+                                self.g(pl[self.playlist_playing_position + 2]).parent_folder_path != pctl.g(target_index).parent_folder_path:
                             ok_continue = False
 
                     #if ok_continue:
@@ -6209,22 +6211,29 @@ def draw_internel_link(x, y, text, colour, font):
 
 
 # No hit detect
-def draw_linked_text(location, text, colour, font):
+def draw_linked_text(location, text, colour, font, force=False):
     base = ""
     link_text = ""
     rest = ""
     on_base = True
-    for i in range(len(text)):
-        if text[i:i + 7] == "http://" or text[i:i + 4] == "www." or text[i:i + 8] == "https://":
-            on_base = False
-        if on_base:
-            base += text[i]
-        else:
-            if i == len(text) or text[i] in '\\) "\'':
-                rest = text[i:]
-                break
+
+    if force:
+        on_base = False
+        base = ""
+        link_text = text
+        rest = ""
+    else:
+        for i in range(len(text)):
+            if text[i:i + 7] == "http://" or text[i:i + 4] == "www." or text[i:i + 8] == "https://":
+                on_base = False
+            if on_base:
+                base += text[i]
             else:
-                link_text += text[i]
+                if i == len(text) or text[i] in '\\) "\'':
+                    rest = text[i:]
+                    break
+                else:
+                    link_text += text[i]
 
     left = ddt.get_text_w(base, font)
     right = ddt.get_text_w(base + link_text, font)
@@ -17110,14 +17119,30 @@ class Over:
 
         # ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
         # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
+        # bass_found = False
+        # if system == 'linux':
+        #     if not os.path.isfile(pctl.install_directory + '/lib/libbass.so') and not \
+        #         os.path.isfile(pctl.user_directory + '/lib/libbass.so'):
+        #         bass_found = True
 
-        ddt.draw_text((x, y - 2 * gui.scale), "BASS Audio Library", [220, 220, 220, 255], 213)
+        colour = [220, 220, 220, 255]
+        # if not bass_found:
+        #     colour = [60, 60, 60, 255]
+
+        ddt.draw_text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
         self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                          ")
 
         if system == "linux":
             ddt.draw_text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
+        # if not bass_found:
+        #
+        #     self.button2(x + 140 * gui.scale, y - 3 * gui.scale, "Enable (788kb download)", 150 * gui.scale)
+        #
+        #     link_pa = draw_linked_text((x + 315 * gui.scale, y - 2 * gui.scale), "What's the difference?", [0,0,0,255], 12, True)
+        #     link_pa[2] = "https://github.com"
+        #     link_activate(x + 315 * gui.scale, y - 2 * gui.scale, link_pa)
 
         if prefs.backend == 1:
 
