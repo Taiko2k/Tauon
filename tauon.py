@@ -3515,6 +3515,7 @@ class PlayerCtl:
 
                             del self.force_queue[0]
                             self.advance(nolock=True)
+                            return
 
 
                         # Check if 2 songs down is in album, remove entry in queue if not
