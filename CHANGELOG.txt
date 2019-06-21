@@ -9,7 +9,8 @@ v4.4.2
  - Fixed queue album possibly playing next track in playlist after album
  - Fixed gallery thumbnailer crashing if loading an image failed.
  - Fixed gallery scroll markers not hiding when mouse leaves right edge of window
- - Added retry limit for scrobbling failures
+ - Fixed scrobble retires not using original time stamp
+ - Fixed hearts possibly being rendered behind text in tracklist
 
 v4.4.1
 

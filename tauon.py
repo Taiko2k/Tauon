@@ -4638,23 +4638,23 @@ class LastScrob:
                 lb_success = True
 
                 if lastfm.connected or lastfm.details_ready():
-                    lfm_success = lastfm.scrobble(tr[0], int(time.time()))
+                    lfm_success = lastfm.scrobble(tr[0], tr[1])
                     if not lfm_success:
                         # Try again
-                        time.sleep(10)
-                        lfm_success = lastfm.scrobble(tr[0], int(time.time()))
+                        time.sleep(2)
+                        lfm_success = lastfm.scrobble(tr[0], tr[1])
 
                 if lb.enable:
-                    lb_success = lb.listen_full(tr[0], int(time.time()))
+                    lb_success = lb.listen_full(tr[0], tr[1])
                     if not lb_success:
                         # Try again
-                        time.sleep(10)
-                        lb_success = lb.listen_full(tr[0], int(time.time()))
+                        time.sleep(2)
+                        lb_success = lb.listen_full(tr[0], tr[1])
 
-                if not lfm_success and not lb_success:
+                if not lfm_success and not lb_success and self.running:
                     print("Re-queue scrobble")
                     self.queue.append(tr)
-                    time.sleep(10)
+                    time.sleep(30)
                     break
 
                 time.sleep(0.2)
@@ -4722,14 +4722,14 @@ class LastScrob:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append([pctl.master_library[self.a_index]])
+                self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
                 print("Queue Scrobble")
-                self.queue.append([pctl.master_library[self.a_index]])
+                self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
 
 lfm_scrobbler = LastScrob()
@@ -30332,8 +30332,9 @@ print("SDL unloaded")
 exit_timer = Timer()
 exit_timer.set()
 while pctl.playerCommand != 'done' or lfm_scrobbler.running:
-    time.sleep(0.1)
-    if exit_timer.get() > 3:
+    time.sleep(0.2)
+    lfm_scrobbler.running = False
+    if exit_timer.get() > 11:
         print("Unload timeout")
         break
 
