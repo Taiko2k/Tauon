@@ -404,6 +404,8 @@ scroll_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
 
+f_store = FunctionStore()
+
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -4625,23 +4627,35 @@ class LastScrob:
         time.sleep(0.5)
 
         while self.queue:
+
             try:
                 tr = self.queue.pop()
 
                 gui.pl_update = 1
                 print("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
 
-                an = True
+                lfm_success = True
+                lb_success = True
 
                 if lastfm.connected or lastfm.details_ready():
-                    an = lastfm.scrobble(tr[0], int(time.time()))
+                    lfm_success = lastfm.scrobble(tr[0], int(time.time()))
+                    if not lfm_success:
+                        # Try again
+                        time.sleep(10)
+                        lfm_success = lastfm.scrobble(tr[0], int(time.time()))
 
                 if lb.enable:
-                    an = lb.listen_full(tr[0], int(time.time()))
+                    lb_success = lb.listen_full(tr[0], int(time.time()))
+                    if not lb_success:
+                        # Try again
+                        time.sleep(10)
+                        lb_success = lb.listen_full(tr[0], int(time.time()))
 
-                if an is False:
+                if not lfm_success and not lb_success:
                     print("Re-queue scrobble")
                     self.queue.append(tr)
+                    time.sleep(10)
+                    break
 
                 time.sleep(0.2)
 
@@ -4653,6 +4667,9 @@ class LastScrob:
 
 
     def update(self, add_time):
+
+        if lastfm.hold:
+            return
 
         if pctl.queue_step > len(pctl.track_queue) - 1:
             print("Queue step error 1")
@@ -6682,7 +6699,7 @@ class GallClass:
 
             except:
                 # raise
-                print('Image load failed on track: ' + pctl.master_library[key[0]].fullpath)
+                print('Image load failed on track: ' + key[0].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
 
@@ -20267,7 +20284,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
-                display_you_heart(x, yy)
+                #display_you_heart(x, yy)
+                f_store.store(display_you_heart, (x, yy))
 
                 star_x += 18 * gui.scale
 
@@ -20283,12 +20301,12 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
-                display_friend_heart(x, yy, name)
+                #display_friend_heart(x, yy, name)
+                f_store.store(display_friend_heart, (x, yy, name))
 
                 count += 1
 
                 star_x += heart_row_icon.w + spacing + 2
-
 
 
 
@@ -20366,6 +20384,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                    y + num_y_offset, 0), line,
                   alpha_mod(timec, album_fade), gui.row_font_size)
 
+        f_store.recall_all()
 
 pl_bg = None
 if os.path.exists(user_directory + "/bg.png"):
@@ -27514,7 +27533,7 @@ while pctl.running:
                 gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
 
                 # ----
-                rect = (gui.gallery_scroll_field_left, gui.panelY, 5 + window_size[0] - gui.gallery_scroll_field_left, h)
+                rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
 
                 excl_rect = (0,0,0,0)
 
