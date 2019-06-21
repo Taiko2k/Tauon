@@ -38,6 +38,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     broadcast_update_timer.set()
     radio_meta_timer = Timer()
 
+    linux_lib_dir = pctl.install_directory + '/lib/'
+
+    # if not os.path.isfile(linux_lib_dir + "libbass.so"):
+    #     linux_lib_dir = pctl.user_directory + '/lib/'
+
+    b_linux_lib_dir = linux_lib_dir.encode()
+
     if pctl.system == 'windows':
         bass_module = ctypes.WinDLL('bass')
         enc_module = ctypes.WinDLL('bassenc')
@@ -48,17 +55,17 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         function_type = ctypes.WINFUNCTYPE
     elif pctl.system == 'mac':
-        bass_module = ctypes.CDLL(pctl.install_directory + '/lib/libbass.dylib', mode=ctypes.RTLD_GLOBAL)
-        enc_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
-        mix_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
-        ogg_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassenc_ogg.dylib', mode=ctypes.RTLD_GLOBAL)
+        bass_module = ctypes.CDLL(linux_lib_dir + 'libbass.dylib', mode=ctypes.RTLD_GLOBAL)
+        enc_module = ctypes.CDLL(linux_lib_dir + 'libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
+        mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
+        ogg_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_ogg.dylib', mode=ctypes.RTLD_GLOBAL)
         function_type = ctypes.CFUNCTYPE
     else:
-        bass_module = ctypes.CDLL(pctl.install_directory + '/lib/libbass.so', mode=ctypes.RTLD_GLOBAL)
-        enc_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassenc.so', mode=ctypes.RTLD_GLOBAL)
-        mix_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassmix.so', mode=ctypes.RTLD_GLOBAL)
-        fx_module = ctypes.CDLL(pctl.install_directory + '/lib/libbass_fx.so', mode=ctypes.RTLD_GLOBAL)
-        ogg_module = ctypes.CDLL(pctl.install_directory + '/lib/libbassenc_ogg.so', mode=ctypes.RTLD_GLOBAL)
+        bass_module = ctypes.CDLL(linux_lib_dir + 'libbass.so', mode=ctypes.RTLD_GLOBAL)
+        enc_module = ctypes.CDLL(linux_lib_dir + 'libbassenc.so', mode=ctypes.RTLD_GLOBAL)
+        mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.so', mode=ctypes.RTLD_GLOBAL)
+        fx_module = ctypes.CDLL(linux_lib_dir + 'libbass_fx.so', mode=ctypes.RTLD_GLOBAL)
+        ogg_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_ogg.so', mode=ctypes.RTLD_GLOBAL)
 
         function_type = ctypes.CFUNCTYPE
 
@@ -343,23 +350,21 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b'bassalac.dll', 0)
 
     elif pctl.system == 'mac':
-        b = pctl.install_directory.encode('utf-8')
-        BASS_PluginLoad(b + b'/lib/libbassopus.dylib', 0)
-        BASS_PluginLoad(b + b'/lib/libbassflac.dylib', 0)
-        BASS_PluginLoad(b + b'/lib/libbass_ape.dylib', 0)
-        BASS_PluginLoad(b + b'/lib/libbass_aac.dylib', 0)
-        BASS_PluginLoad(b + b'/lib/libbasswv.dylib', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbassopus.dylib', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbassflac.dylib', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbass_ape.dylib', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbass_aac.dylib', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbasswv.dylib', 0)
 
     else:
-        b = pctl.install_directory.encode('utf-8')
-        BASS_PluginLoad(b + b'/lib/libbassopus.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbassflac.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbass_ape.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbass_aac.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbass_tta.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbasswv.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbassalac.so', 0)
-        BASS_PluginLoad(b + b'/lib/libbasshls.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbassopus.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbassflac.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbass_ape.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbass_aac.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbass_tta.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbasswv.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbassalac.so', 0)
+        BASS_PluginLoad(b_linux_lib_dir + b'libbasshls.so', 0)
 
     BASS_FX_BFX_VOLUME = 65539
     BASS_CONFIG_DEV_DEFAULT = 36

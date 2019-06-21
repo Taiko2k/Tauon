@@ -28,6 +28,7 @@ import shlex
 import zipfile
 import glob
 import locale
+# import hashlib
 
 
 # A seconds based timer
@@ -661,4 +662,31 @@ id3_genre_dict = {
     191: "Psybient",
     192: "Unknown",
 }
+
+
+class FunctionStore:
+    # Stores functions and arguments for calling later
+
+    def __init__(self):
+
+        self.items = []
+
+    def store(self, function, args=()):
+
+        self.items.append((function, args))
+
+    def recall_all(self):
+
+        while self.items:
+            item = self.items.pop()
+            item[0](*item[1])
+
+
+# def get_hash(f_path, mode='sha256'):
+#     h = hashlib.new(mode)
+#     with open(f_path, 'rb') as file:
+#         data = file.read()
+#     h.update(data)
+#     digest = h.hexdigest()
+#     return digest
 
