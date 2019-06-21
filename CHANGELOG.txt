@@ -3,8 +3,13 @@ Changelog-------------------------------------
 
 v4.4.2
 
+ - Fixed scrobble pause not affecting listenbrainz
+ - Fixed scrobble of last.fm/listenbrainz being resubmitted if type of other failed
  - Fixed queue album not finishing if last album in playlist
  - Fixed queue album possibly playing next track in playlist after album
+ - Fixed gallery thumbnailer crashing if loading an image failed.
+ - Fixed gallery scroll markers not hiding when mouse leaves right edge of window
+ - Added retry limit for scrobbling failures
 
 v4.4.1
 
