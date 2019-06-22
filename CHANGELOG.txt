@@ -12,6 +12,7 @@ v4.4.2
  - Fixed gallery scroll markers not hiding when mouse leaves right edge of window
  - Fixed scrobble retires not using original time stamp
  - Fixed hearts possibly being rendered behind text in tracklist
+ - Fixed gallery shifting position slightly when jumping to end row
 
 v4.4.1
 
