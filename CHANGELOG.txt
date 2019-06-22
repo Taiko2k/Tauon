@@ -13,6 +13,7 @@ v4.4.2
  - Fixed scrobble retires not using original time stamp
  - Fixed hearts possibly being rendered behind text in tracklist
  - Fixed gallery shifting position slightly when jumping to end row
+ - Fixed playlist list scrolling
 
 v4.4.1
 
