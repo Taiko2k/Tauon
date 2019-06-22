@@ -21884,16 +21884,20 @@ class PlaylistBox:
         yy = y + 5 * gui.scale
         delete_pl = None
 
+        tab_on = 0
+
         for i, pl in enumerate(pctl.multi_playlist):
 
             # if yy + self.tab_h > y + h:
             #     break
-            if i > max_tabs - 1:
+            if tab_on >= max_tabs:
                 break
+                #pass
 
             if i < self.scroll_on:
                 continue
 
+            tab_on += 1
 
             if draw_pin_indicator:
                 if coll((tab_start + 35 * gui.scale, yy - 1, tab_width - 35 * gui.scale, (self.tab_h + 1))):
@@ -27194,6 +27198,7 @@ while pctl.running:
 
     if keymaps.test("reload-theme"):
         themeChange = True
+
 
     if themeChange is True:
         gui.light_mode = False
