@@ -14669,6 +14669,28 @@ class SearchOverlay:
 
         input.key_return_press = False
 
+
+    def click_year(self, name, get_list=False):
+
+        playlist = []
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                if name in pctl.master_library[item].date:
+                    if item not in playlist:
+                        playlist.append(item)
+
+        if get_list:
+            return playlist
+
+        pctl.multi_playlist.append(pl_gen(title="Year: " + name,
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+        input.key_return_press = False
+
     def click_composer(self, name, get_list=False):
 
         playlist = []
@@ -15174,6 +15196,46 @@ class SearchOverlay:
 
                     yy += 6 * gui.scale
 
+                if item[0] == 7:
+                    cl = [250, 50, 140, int(255 * fade)]
+                    text = "Year"
+                    yy += 3 * gui.scale
+                    xx = ddt.draw_text((124 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    ddt.draw_text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+
+                    if fade == 1:
+                        ddt.rect_r((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 23 * gui.scale), bar_colour, True)
+
+                    rect = (30 * gui.scale, yy, 600 * gui.scale, 20 * gui.scale)
+                    fields.add(rect)
+                    if coll(rect) and mouse_change:
+                        if self.force_select != p:
+                            self.force_select = p
+                            gui.update = 2
+
+                        if gui.level_2_click:
+                            if key_ctrl_down:
+                                default_playlist.extend(self.click_year(item[1], get_list=True))
+                                gui.pl_update += 1
+                            else:
+                                self.click_year(item[1])
+                                self.active = False
+                                self.search_text.text = ""
+
+                        if level_2_right_click:
+
+                            pctl.show_current(index=item[2], playing=False)
+                            self.active = False
+                            self.search_text.text = ""
+
+                    if enter and fade == 1:
+                        self.click_year(item[1])
+                        self.active = False
+                        self.search_text.text = ""
+
+                    yy += 6 * gui.scale
+
                 if i > 40:
                     break
 
@@ -15212,6 +15274,7 @@ def worker2():
                 genres = {}
                 metas = {}
                 composers = {}
+                years = {}
 
                 tracks = set()
 
@@ -15242,6 +15305,7 @@ def worker2():
                         artist = t.artist.lower()
                         album_artist = t.album_artist.lower()
                         composer = t.composer.lower()
+                        date = t.date.lower()
                         album = t.album.lower()
                         genre = t.genre.lower()
                         filename = t.filename.lower()
@@ -15260,7 +15324,7 @@ def worker2():
                         if s_text in genre:
 
                             if t.genre in genres:
-                                genres[t.genre] += 1
+                                genres[t.genre] += 3
                             else:
                                 temp_results.append([3, t.genre, track, playlist[6], 0])
                                 genres[t.genre] = 1
@@ -15272,6 +15336,17 @@ def worker2():
                             else:
                                 temp_results.append([6, t.composer, track, playlist[6], 0])
                                 composers[t.composer] = 2
+
+                        if s_text in date:
+
+                            year = year_from_string(date)
+                            if year:
+
+                                if year in years:
+                                    years[year] += 1
+                                else:
+                                    temp_results.append([7, year, track, playlist[6], 0])
+                                    years[year] = 1000
 
                         if search_magic(s_text, title + artist + filename + album + album_artist):
 
@@ -15347,7 +15422,7 @@ def worker2():
 
                                     value = 50
                                     if s_text == title:
-                                        value = 2000
+                                        value = 1000
 
                                     temp_results.append([2, t.title, track, playlist[6], value])
 
@@ -15385,6 +15460,8 @@ def worker2():
                             temp_results[i] = None
                     if item[0] == 6:
                         temp_results[i][4] = composers[item[1]]
+                    if item[0] == 7:
+                        temp_results[i][4] = years[item[1]]
 
                 temp_results[:] = [item for item in temp_results if item is not None]
 
@@ -20575,7 +20652,7 @@ class StandardPlaylist:
                         line = n_track.album
 
                     date = ""
-                    if prefs.append_date and re.match('.*([1-3][0-9]{3})', n_track.date):
+                    if prefs.append_date and year_search.search(n_track.date):
                         date = "(" + n_track.date + ")"
 
 
@@ -20583,7 +20660,7 @@ class StandardPlaylist:
                         b = line.split("(")
                         if len(b) > 1 and len(b[1]) <= 11:
 
-                            match = re.match('.*([1-3][0-9]{3})', b[1])
+                            match = year_search.search(b[1])
 
                             if match:
                                 line = b[0]
@@ -20593,13 +20670,13 @@ class StandardPlaylist:
                         b = line.split(")")
                         if len(b) > 1 and len(b[0]) <= 11:
 
-                            match = re.match('.*([1-3][0-9]{3})', b[0])
+                            match = year_search.search(b[0])
 
                             if match:
                                 line = b[1]
                                 date = b[0] + ")"
 
-                    if "(" in line and re.match('.*([1-3][0-9]{3})', line):
+                    if "(" in line and year_search.search(line):
                         date = ""
 
                     qq = 0

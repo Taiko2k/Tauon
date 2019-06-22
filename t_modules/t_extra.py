@@ -28,6 +28,7 @@ import shlex
 import zipfile
 import glob
 import locale
+import re
 # import hashlib
 
 
@@ -681,6 +682,18 @@ class FunctionStore:
             item = self.items.pop()
             item[0](*item[1])
 
+
+year_search = re.compile(r'\d{4}')
+
+
+
+def year_from_string(date_string):
+
+    result = year_search.search(date_string)
+    if result:
+        return result.group(0)
+    else:
+        return False
 
 # def get_hash(f_path, mode='sha256'):
 #     h = hashlib.new(mode)
