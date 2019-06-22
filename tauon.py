@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.4.1"
+n_version = "4.4.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -15909,28 +15909,17 @@ def worker1():
             pctl.jump(master_count - 1)
             gui.auto_play_import = False
 
-    # Count the approx number of files to be imported, recursively
+    # Count the approx number of files to be imported
     def pre_get(direc):
-        global DA_Formats
+
         global to_get
 
-        items_in_dir = os.listdir(direc)
-        for q in range(len(items_in_dir)):
-            if os.path.isdir(os.path.join(direc, items_in_dir[q])):
-                pre_get(os.path.join(direc, items_in_dir[q]))
-            else:
-                to_get += 1
-                gui.update += 1
+        to_get = 0
+        for root, dirs, files in os.walk(direc):
+            to_get += len(files)
             if gui.im_cancel:
                 return
-
-        # for q in range(len(items_in_dir)):
-        #     if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
-        #         if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
-        #             to_get += 1
-        #             gui.update += 1
-        #     if gui.im_cancel:
-        #         return
+            gui.update = 3
 
 
     def gets(direc):
@@ -15947,6 +15936,7 @@ def worker1():
                 gets(os.path.join(direc, items_in_dir[q]))
             if gui.im_cancel:
                 return
+
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
@@ -15959,6 +15949,7 @@ def worker1():
 
                 elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", 'cue'}:
                     add_from_cue(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
+
             if gui.im_cancel:
                 return
 
@@ -27592,7 +27583,7 @@ while pctl.running:
                 render_pos = 0
                 album_on = 0
 
-                max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - 55
+                max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                 if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                     if prefs.gallery_row_scroll:
@@ -27600,8 +27591,8 @@ while pctl.running:
                     else:
                         album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
-                    if album_pos_px < -55:
-                        album_pos_px = -55
+                    if album_pos_px < round(-55):
+                        album_pos_px = round(-55)
                         gallery_pulse_top.pulse()
 
                     if album_pos_px > max_scroll:
