@@ -20548,7 +20548,8 @@ class StandardPlaylist:
                 pctl.playlist_view_position = len(default_playlist)
             if pctl.playlist_view_position < 1:
                 pctl.playlist_view_position = 0
-                edge_playlist.pulse()
+                if default_playlist:
+                    edge_playlist.pulse()
 
             scroll_hide_timer.set()
             gui.frame_callback_list.append(TestTimer(0.9))
@@ -20597,177 +20598,52 @@ class StandardPlaylist:
             #           colour, 12)
 
 
-        # For every track in view
+        # Process Input
+
+        # type (0 is track, 1 is fold title), track_position, track_object, box, input_box,
+        list_items = []
+        number = 0
+
         for i in range(gui.playlist_view_length + 1):
 
-            p_track = i + pctl.playlist_view_position
+            track_position = i + pctl.playlist_view_position
 
-            track_box = (left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
-                            gui.playlist_row_height - 1)
-
-            input_box = (track_box[0] + 30, track_box[1] + 1, track_box[2] - 36, track_box[3] - 1)
-
-            move_on_title = False
-
+            # Make sure the view position is valid
             if pctl.playlist_view_position < 0:
                 pctl.playlist_view_position = 0
-            if len(default_playlist) <= p_track:
+
+            # Break if we are at end of playlist
+            if len(default_playlist) <= track_position:
                 break
 
-            n_track = pctl.master_library[default_playlist[p_track]]
+            track_object = pctl.g(default_playlist[track_position])
+            track_id = track_object.index
+            move_on_title = False
 
-            # Fade other tracks in album mode
-            album_fade = 255
-            if album_mode and pctl.playing_state != 0 and prefs.dim_art and \
-                            n_track.parent_folder_name \
-                            != pctl.master_library[pctl.track_queue[pctl.queue_step]].parent_folder_name:
-                album_fade = 150
+            line_y = gui.playlist_top + gui.playlist_row_height * number
 
-            # Folder Break Row
-            if (p_track == 0 or n_track.parent_folder_path
-                != pctl.master_library[default_playlist[p_track - 1]].parent_folder_path) and \
-                            pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
+            track_box = (left + highlight_left, line_y, highlight_width,
+                            gui.playlist_row_height - 1)
 
-                # ------
-                line = n_track.parent_folder_name
-                if not prefs.pl_thumb:
-                    album_artist_mode = False
-                    if n_track.album_artist != "" and n_track.album != "":
-                        line = n_track.album_artist + " - " + n_track.album
+            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3] - 1)
 
-                        if prefs.left_align_album_artist_title:
-                            album_artist_mode = True
-                            line = n_track.album
+            # Are folder titles enabled?
+            if pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
+                # Is this track from a different folder than the last?
+                if track_position == 0 or track_object.parent_folder_path != pctl.g(default_playlist[track_position - 1]).parent_folder_path:
+                    # Make folder title
 
-                    if len(line) < 6 and "CD" in line:
-                        line = n_track.album
+                    highlight = False
+                    drag_highlight = False
 
-                    date = ""
-                    if prefs.append_date and year_search.search(n_track.date):
-                        date = "(" + n_track.date + ")"
+                    # Shift selection highlight
+                    if track_position in shift_selection and len(shift_selection) > 1:
+                        highlight = True
 
-
-                    if line.endswith(")"):
-                        b = line.split("(")
-                        if len(b) > 1 and len(b[1]) <= 11:
-
-                            match = year_search.search(b[1])
-
-                            if match:
-                                line = b[0]
-                                date = "(" + b[1]
-                    elif line.startswith("("):
-
-                        b = line.split(")")
-                        if len(b) > 1 and len(b[0]) <= 11:
-
-                            match = year_search.search(b[0])
-
-                            if match:
-                                line = b[1]
-                                date = b[0] + ")"
-
-                    if "(" in line and year_search.search(line):
-                        date = ""
-
-                    qq = 0
-
-                    if prefs.append_total_time:
-                        q = p_track
-
-                        total_time = 0
-                        while q < len(default_playlist):
-
-                            if pctl.g(default_playlist[q]).parent_folder_path != n_track.parent_folder_path:
-                                break
-
-                            total_time += pctl.g(default_playlist[q]).length
-
-                            q += 1
-                            qq += 1
-
-                        if qq > 1:
-                            date += " [ " + get_display_time(total_time) + " ]"  # Hair space inside brackets for better visual spacing
-
-
-                    ex = left + highlight_left + highlight_width - 7 * gui.scale
-
-                    light_offset = 0
-                    if colours.lm:
-                        light_offset = 3 * gui.scale
-                    ex -= light_offset
-
-                    if qq > 1:
-                        ex += 1 * gui.scale
-
-                    ddt.text_background_colour = colours.playlist_panel_background
-                    height = (gui.playlist_top + gui.playlist_row_height * w) + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
-                    if gui.scale == 2:
-                        height += 1
-
-                    # Draw highlight
-                    if p_track in shift_selection and len(shift_selection) > 1:
-                        ddt.text_background_colour = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-                        ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
-                                  (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
-
-
-                    date_w = 0
-                    if date:
-                        date_w = ddt.draw_text((ex, height, 1), date, alpha_mod(colours.folder_title, album_fade), gui.row_font_size + gui.pl_title_font_offset)
-                        date_w += 4 * gui.scale
-                        if qq > 1:
-                            date_w -= 1 * gui.scale
-
-                    aa = 0
-                    if album_artist_mode:
-                        colour = colours.artist_text
-                        if "Album Artist" in colours.column_colours:
-                            colour = colours.column_colours["Album Artist"]
-                        aa = ddt.draw_text((left + highlight_left + 14 * gui.scale, height), n_track.album_artist, alpha_mod(colour, album_fade),gui.row_font_size + gui.pl_title_font_offset,
-                                               gui.plw // 3)
-                        aa += 12 * gui.scale
-
-                    ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
-
-                    left_align = highlight_width - date_w - 13 * gui.scale - light_offset
-
-                    extra = aa
-                    left_align -= extra
-
-                    if ft_width > left_align:
-                        date_w += 19 * gui.scale
-                        ddt.draw_text((left + highlight_left + 8 * gui.scale + extra, height), line,
-                                   alpha_mod(colours.folder_title, album_fade),
-                                   gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w - extra)
-
-                    else:
-
-                        ddt.draw_text((ex - date_w, height, 1), line,
-                                   alpha_mod(colours.folder_title, album_fade),
-                                   gui.row_font_size + gui.pl_title_font_offset)
-
-
-
-                    # Draw folder title
-                    # ddt.draw_text((ex,
-                    #             height, 1), line,
-                    #            alpha_mod(colours.folder_title, album_fade),
-                    #            gui.row_font_size + gui.pl_title_font_offset, left + highlight_width)
-
-                    # Draw separation line below title
-                    ddt.rect_r((left + highlight_left, gui.playlist_top + gui.playlist_row_height - 1 * gui.scale + gui.playlist_row_height * w, highlight_width, 1 * gui.scale), colours.folder_line, True)
-
-                    ddt.text_background_colour = colours.playlist_panel_background
-
-                    if playlist_hold is True and coll((
-                            left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
-                            gui.playlist_row_height)):
-
-                        if mouse_up:  # and key_shift_down:
+                    # Tracks have been dropped?
+                    if playlist_hold is True and coll(input_box):
+                        if mouse_up:
                             move_on_title = True
-
-
 
                     # Detect folder title click
                     if (input.mouse_click or right_click or middle_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
@@ -20775,18 +20651,12 @@ class StandardPlaylist:
 
                         # Add folder to queue if middle click
                         if middle_click:
-
-                            # if prefs.finish_current:
-                            #     finish_current()
-                            add_album_to_queue(default_playlist[p_track], p_track)
-
-                            # pctl.force_queue.append([default_playlist[p_track],
-                            #                          p_track, pl_to_id(pctl.active_playlist_viewing), 1, 0, pl_uid_gen()])
+                            add_album_to_queue(track_id, track_position)
 
                         # Play if double click:
-                        if d_mouse_click and p_track in shift_selection and coll_point(last_click_location, (track_box)):
+                        if d_mouse_click and track_position in shift_selection and coll_point(last_click_location, (track_box)):
                             click_time -= 1.5
-                            pctl.jump(default_playlist[p_track], p_track)
+                            pctl.jump(track_id, track_position)
                             line_hit = False
                             input.mouse_click = False
 
@@ -20794,24 +20664,24 @@ class StandardPlaylist:
                                 goto_album(pctl.playlist_playing_position)
 
                         # Show selection menu if right clicked after select
-                        if right_click:  # and len(shift_selection) > 1:
-                            folder_menu.activate(default_playlist[p_track])
-                            r_menu_position = p_track
+                        if right_click:
+                            folder_menu.activate(track_id)
+                            r_menu_position = track_position
                             selection_stage = 2
                             gui.pl_update = 1
 
-                            if p_track not in shift_selection:
+                            if track_position not in shift_selection:
                                 shift_selection = []
-                                playlist_selected = p_track
-                                u = p_track
-                                while u < len(default_playlist) and n_track.parent_folder_path == pctl.master_library[
+                                playlist_selected = track_position
+                                u = track_position
+                                while u < len(default_playlist) and track_object.parent_folder_path == pctl.master_library[
                                     default_playlist[u]].parent_folder_path:
                                     shift_selection.append(u)
                                     u += 1
 
 
                         # Add folder to selection if clicked
-                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30):
+                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale):
 
                             quick_drag = True
                             gui.drag_source_position = copy.deepcopy(click_location)
@@ -20821,13 +20691,11 @@ class StandardPlaylist:
                                 playlist_hold = True
 
                             selection_stage = 1
-                            temp = get_folder_tracks_local(p_track)
-                            # if p_track not in shift_selection: # not key_shift_down:
-                            #     shift_selection = []
-                            playlist_selected = p_track
+                            temp = get_folder_tracks_local(track_position)
+                            playlist_selected = track_position
 
                             if len(shift_selection) > 0 and key_shift_down:
-                                if p_track < shift_selection[0]:
+                                if track_position < shift_selection[0]:
                                     for item in reversed(temp):
                                         if item not in shift_selection:
                                             shift_selection.insert(0, item)
@@ -20839,52 +20707,39 @@ class StandardPlaylist:
                             else:
                                 shift_selection = copy.copy(temp)
 
-
-                    # # Shade ever other line for folder row
-                    # if True and #row_alt and w % 2 == 0:
-                    #     ddt.rect_a((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
-                    #               (gui.playlist_width, gui.playlist_row_height - 1), [255, 255, 255, 10], True)
+                    # Should draw drag highlight?
 
 
-                    # Draw blue highlight insert line
-                    if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection:  # playlist_hold_position != p_track:
+                    if mouse_down and playlist_hold and coll(input_box) and track_position not in shift_selection:
 
-                        if len(shift_selection) > 1 or key_shift_down:
+                        if len(shift_selection) < 2 and not key_shift_down:
+                            pass
+                        else:
+                            drag_highlight = True
 
-                            ddt.rect_r(
-                                [left + highlight_left, -1 + gui.playlist_top + gui.playlist_row_height * w + gui.playlist_row_height - 1,
-                                 highlight_width, 3],
-                                [135, 145, 190, 255], True)
-
-                    w += 1
-                else:
-
-                    y = gui.playlist_top + gui.playlist_row_height * w
-                    spaces = 5
-                    w += spaces
-                    hei = spaces * prefs.playlist_row_height
-
-                    pl_thumbnail.size = hei - 15
-                    pl_thumbnail.render(n_track.index, (gui.playlist_left, y + 5))
+                    # Something to do with quick search, I forgot
+                    if playlist_selected > track_position + 1:
+                        gui.row_extra += 1
 
 
-                if playlist_selected > p_track + 1:
-                    gui.row_extra += 1
+                    list_items.append((1, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, False))
+                    number += 1
 
-            track_box = (left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width,
-                            gui.playlist_row_height)
+            # Standard track ---------------------------------------------------------------------
+            playing = False
 
-            input_box = (track_box[0] + 30, track_box[1] + 1, track_box[2] - 36, track_box[3] - 1)
-            # Shade ever other line if option set
-            # if (row_alt or True) and w % 2 == 0:
-            #     ddt.rect_a((gui.playlist_left, gui.playlist_top + gui.playlist_row_height * w),
-            #               (gui.playlist_width, gui.playlist_row_height - 1), [0, 0, 0, 20], True)
+            highlight = False
+            drag_highlight = False
+            line_y = gui.playlist_top + gui.playlist_row_height * number
 
-            # Get background colours for fonts
-            ddt.text_background_colour = colours.playlist_panel_background
+            track_box = (left + highlight_left, line_y, highlight_width,
+                            gui.playlist_row_height - 1)
 
-            # Test if line hit
+            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3] - 0)
+
+            # Test if line has mouse over or been clicked
             line_over = False
+            line_hit = False
             if coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
                 line_over = True
                 if (input.mouse_click or right_click or middle_click):
@@ -20900,11 +20755,12 @@ class StandardPlaylist:
                 line_hit = False
 
             # Double click to play
-            if key_shift_down is False and d_mouse_click and line_hit and p_track == playlist_selected and coll_point(
+            if key_shift_down is False and d_mouse_click and line_hit and track_position == playlist_selected and coll_point(
                     last_click_location, track_box):
 
+
                 click_time -= 1.5
-                pctl.jump(default_playlist[p_track], p_track)
+                pctl.jump(track_id, track_position)
                 quick_drag = False
                 mouse_down = False
                 mouse_up = False
@@ -20913,81 +20769,53 @@ class StandardPlaylist:
                 if album_mode:
                     goto_album(pctl.playlist_playing_position)
 
-            # Check if index playing and highlight if true
-            this_line_playing = False
-            this_line_selected = False
-
-            if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
-                    default_playlist[p_track]:
-
-                if p_track == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
-
-                    ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
-                              (highlight_width, gui.playlist_row_height - 1), colours.row_playing_highlight, True)
+            if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == track_id:
+                if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
                     this_line_playing = True
-                    ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
-
-            # Highlight blue if track is being broadcast
-            if default_playlist[
-                p_track] == pctl.broadcast_index and pctl.broadcast_active:
-                ddt.rect_r(track_box, [40, 40, 190, 80], True)
-                ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
             # Add to queue on middle click
             if middle_click and line_hit:
+                pctl.force_queue.append(queue_item_gen(track_id,
+                                                       track_position, pl_to_id(pctl.active_playlist_viewing)))
 
-                # pctl.force_queue.append([default_playlist[p_track],
-                #                          p_track, pl_to_id(pctl.active_playlist_viewing), 0, 0, uid_gen()])
-                pctl.force_queue.append(queue_item_gen(default_playlist[p_track],
-                                                       p_track, pl_to_id(pctl.active_playlist_viewing)))
+            # # Make track the selection if right clicked
+            # if right_click and line_hit:
+            #     if track_position not in shift_selection:
+            #         shift_selection = [track_position]
+            #         #playlist_selected = track_position
+            #
+            # if input.mouse_click and line_hit and track_position not in shift_selection:
+            #     shift_selection = [track_position]
+            #     #playlist_selected = track_position
 
-            # Make track the selection if right clicked
-            if right_click and line_hit:
-                if p_track not in shift_selection:
-                    shift_selection = [p_track]
-
-            if input.mouse_click and line_hit and p_track not in shift_selection:  # key_shift_down is False and line_hit:
-                # shift_selection = []
-                shift_selection = [p_track]
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
             if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
-                shift_selection = [p_track]
-                playlist_selected = p_track
+                shift_selection = [track_position]
+                playlist_selected = track_position
                 gui.pl_update = 1
                 gui.update = 2
 
-            if mouse_down and line_over and p_track in shift_selection and len(shift_selection) > 1:
+
+            # Begin drag block selection
+            if mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
                 if not pl_is_locked(pctl.active_playlist_viewing):
                     playlist_hold = True
                 elif key_shift_down:
                     playlist_hold = True
 
+            # Begin drag single track
             if input.mouse_click and line_hit:
                 quick_drag = True
-                gui.drag_source_position = copy.deepcopy(click_location)
+                gui.drag_source_position = copy.copy(click_location)
 
-            if (input.mouse_click and key_shift_down is False and line_hit or
-                        playlist_selected == p_track):
-
-                playlist_selected = p_track
-                this_line_selected = True
-
-                if this_line_playing and colours.lm:
-                    pass
-                else:
-                    ddt.rect_r(track_box, colours.row_select_highlight, True)
-                    ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
-
-                # if not key_shift_down:
-                #     shift_selection = [playlist_selected]
 
             # Shift Move Selection
             if (move_on_title) or mouse_up and playlist_hold is True and coll((
-                    left + highlight_left, gui.playlist_top + gui.playlist_row_height * w, highlight_width, gui.playlist_row_height)):
+                    left + highlight_left, line_y, highlight_width, gui.playlist_row_height)):
 
                 if len(shift_selection) > 1 or key_shift_down:
-                    if p_track not in shift_selection: #p_track != playlist_hold_position and
+                    if track_position not in shift_selection: #p_track != playlist_hold_position and
 
                         if len(shift_selection) == 0:
 
@@ -21015,9 +20843,9 @@ class StandardPlaylist:
 
                             for item in shift_selection:
                                 if move_on_title:
-                                    default_playlist.insert(p_track, "new")
+                                    default_playlist.insert(track_position, "new")
                                 else:
-                                    default_playlist.insert(p_track + 1, "new")
+                                    default_playlist.insert(track_position + 1, "new")
 
                             for b in reversed(range(len(default_playlist))):
                                 if default_playlist[b] == 'old':
@@ -21034,71 +20862,317 @@ class StandardPlaylist:
                         reload_albums(True)
                         tauon.worker_save_state = True
 
-            # Blue drop line
-            if mouse_down and playlist_hold and coll(input_box) and p_track not in shift_selection: #playlist_hold_position != p_track:
-
+            # Test show drag indicator
+            if mouse_down and playlist_hold and coll(input_box) and track_position not in shift_selection:
                 if len(shift_selection) > 1 or key_shift_down:
-                    ddt.rect_r(
-                        [left + highlight_left, -1 + gui.playlist_top + gui.playlist_row_height + gui.playlist_row_height * w, highlight_width, 3],
-                        [125, 105, 215, 255], True)
+                    drag_highlight = True
 
-            # Shift click actions
-            if input.mouse_click and line_hit: # and key_shift_down:
-                selection_stage = 2
-                if p_track != playlist_selected:
+            # # Shift click actions
+            # if input.mouse_click and line_hit:# and key_shift_down:
+            #     selection_stage = 2
+            #     if track_position != playlist_selected:
+            #
+            #         start_s = track_position
+            #         end_s = playlist_selected
+            #         if end_s < start_s:
+            #             end_s, start_s = start_s, end_s
+            #         for y in range(start_s, end_s + 1):
+            #             if y not in shift_selection:
+            #                 shift_selection.append(y)
+            #         shift_selection.sort()
+            #
+            #     # else:
+            #     if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+            #         playlist_hold = True
+            #         playlist_hold_position = track_position
 
-                    start_s = p_track
-                    end_s = playlist_selected
-                    if end_s < start_s:
-                        end_s, start_s = start_s, end_s
-                    for y in range(start_s, end_s + 1):
-                        if y not in shift_selection:
-                            shift_selection.append(y)
-                    shift_selection.sort()
 
-                # else:
-                if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
-                    playlist_hold = True
-                    playlist_hold_position = p_track
-
-            # Multi Select Highlight
-            if p_track in shift_selection and p_track != playlist_selected:
-                ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * w),
-                          (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
-                this_line_selected = True
-                ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
-
+            # Right click menu activation
             if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10:
 
-                if len(shift_selection) > 1:
-                    selection_menu.activate(default_playlist[p_track])
+                if len(shift_selection) > 1 and track_position in shift_selection:
+                    selection_menu.activate(default_playlist[track_position])
                     selection_stage = 2
                 else:
-                    r_menu_index = default_playlist[p_track]
-                    r_menu_position = p_track
-                    track_menu.activate(default_playlist[p_track])
+                    r_menu_index = default_playlist[track_position]
+                    r_menu_position = track_position
+                    track_menu.activate(default_playlist[track_position])
                     gui.pl_update += 1
                     gui.update += 1
 
-                playlist_selected = p_track
-                #shift_selection = [p_track]
+                    if track_position not in shift_selection:
+                        playlist_selected = track_position
+                        shift_selection = [playlist_selected]
 
-            if line_over:
-                if mouse_up and selection_stage > 0:
-                    selection_stage -= 1
-                if mouse_up and selection_stage == 0 and len(shift_selection) > 1:
-                    playlist_hold = False
-                    shift_selection = []
-                    gui.pl_update = 1
+
+            # if line_over and input.mouse_click:
+            #     if key_shift_down:
+            #         start_s = track_position
+            #         end_s = playlist_selected
+            #         if end_s < start_s:
+            #             end_s, start_s = start_s, end_s
+            #         for y in range(start_s, end_s + 1):
+            #             if y not in shift_selection:
+            #                 shift_selection.append(y)
+            #         shift_selection.sort()
+            #         playlist_hold = False
+            #     else:
+            #         if len(shift_selection) > 1 and track_position in shift_selection:
+            #             pass
+            #         else:
+            #             playlist_selected = track_position
+            #             shift_selection = [playlist_selected]
+
+            # Shift selection things..
+            # if line_over:
+            #     if mouse_up and selection_stage > 0:
+            #         selection_stage -= 1
+                # if mouse_up and selection_stage == 0 and len(shift_selection) > 1:
+                #     playlist_hold = False
+                #     shift_selection = []
+                #     gui.pl_update = 1
+                #     print("hit")
+
+            if line_over and input.mouse_click:
+
+                if track_position in shift_selection:
+                    pass
+                else:
+                    selection_stage = 2
+                    if key_shift_down:
+                        start_s = track_position
+                        end_s = playlist_selected
+                        if end_s < start_s:
+                            end_s, start_s = start_s, end_s
+                        for y in range(start_s, end_s + 1):
+                            if y not in shift_selection:
+                                shift_selection.append(y)
+                        shift_selection.sort()
+                    else:
+                        playlist_selected = track_position
+                        shift_selection = [playlist_selected]
+
+                if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+                    playlist_hold = True
+                    playlist_hold_position = track_position
+
+            # Multi Select Highlight
+            if track_position in shift_selection:
+                highlight = True
+
+            if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
+                    default_playlist[track_position]:
+                if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
+                    playing = True
+
+            list_items.append((0, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, playing))
+            number += 1
+
+        # ---------------------------------------------------------------------------------------
+
+        # For every track in view
+        #for i in range(gui.playlist_view_length + 1):
+
+
+        for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
+
+            line_y = gui.playlist_top + gui.playlist_row_height * number
+
+            ddt.text_background_colour = colours.playlist_panel_background
+
+            if type == 1:
+
+                # Is type ALBUM TITLE
+
+                line = tr.parent_folder_name
+
+
+                album_artist_mode = False
+                if tr.album_artist != "" and tr.album != "":
+                    line = tr.album_artist + " - " + tr.album
+
+                    if prefs.left_align_album_artist_title:
+                        album_artist_mode = True
+                        line = tr.album
+
+                if len(line) < 6 and "CD" in line:
+                    line = tr.album
+
+                date = ""
+                if prefs.append_date and year_search.search(tr.date):
+                    date = "(" + tr.date + ")"
+
+
+                if line.endswith(")"):
+                    b = line.split("(")
+                    if len(b) > 1 and len(b[1]) <= 11:
+
+                        match = year_search.search(b[1])
+
+                        if match:
+                            line = b[0]
+                            date = "(" + b[1]
+
+                elif line.startswith("("):
+
+                    b = line.split(")")
+                    if len(b) > 1 and len(b[0]) <= 11:
+
+                        match = year_search.search(b[0])
+
+                        if match:
+                            line = b[1]
+                            date = b[0] + ")"
+
+                if "(" in line and year_search.search(line):
+                    date = ""
+
+                qq = 0
+
+                # Calculate folder duration
+                if prefs.append_total_time:
+                    q = track_position
+
+                    total_time = 0
+                    while q < len(default_playlist):
+
+                        if pctl.g(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
+                            break
+
+                        total_time += pctl.g(default_playlist[q]).length
+
+                        q += 1
+                        qq += 1
+
+                    if qq > 1:
+                        date += " [ " + get_display_time(total_time) + " ]"  # Hair space inside brackets for better visual spacing
+
+
+                ex = left + highlight_left + highlight_width - 7 * gui.scale
+
+                light_offset = 0
+                if colours.lm:
+                    light_offset = 3 * gui.scale
+                ex -= light_offset
+
+                if qq > 1:
+                    ex += 1 * gui.scale
+
+                ddt.text_background_colour = colours.playlist_panel_background
+                height = line_y + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
+                if gui.scale == 2:
+                    height += 1
+
+                if highlight:
+                    ddt.text_background_colour = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
+                    ddt.rect_a((left + highlight_left, gui.playlist_top + gui.playlist_row_height * number),
+                              (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
+
+                date_w = 0
+                if date:
+                    date_w = ddt.draw_text((ex, height, 1), date, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset)
+                    date_w += 4 * gui.scale
+                    if qq > 1:
+                        date_w -= 1 * gui.scale
+
+                aa = 0
+                if album_artist_mode:
+                    colour = colours.artist_text
+                    if "Album Artist" in colours.column_colours:
+                        colour = colours.column_colours["Album Artist"]
+                    aa = ddt.draw_text((left + highlight_left + 14 * gui.scale, height), tr.album_artist, colour, gui.row_font_size + gui.pl_title_font_offset,
+                                           gui.plw // 3)
+                    aa += 12 * gui.scale
+
+                ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
+
+                left_align = highlight_width - date_w - 13 * gui.scale - light_offset
+
+                extra = aa
+                left_align -= extra
+
+                if ft_width > left_align:
+                    date_w += 19 * gui.scale
+                    ddt.draw_text((left + highlight_left + 8 * gui.scale + extra, height), line,
+                               colours.folder_title,
+                               gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w - extra)
+
+                else:
+
+                    ddt.draw_text((ex - date_w, height, 1), line,
+                               colours.folder_title,
+                               gui.row_font_size + gui.pl_title_font_offset)
+
+
+                # Draw separation line below title
+                ddt.rect_r((left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width, 1 * gui.scale), colours.folder_line, True)
+
+
+                # Draw blue highlight insert line
+                if drag_highlight:
+                    ddt.rect_r(
+                        [left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale,
+                         highlight_width, 3 * gui.scale],
+                        [135, 145, 190, 255], True)
+
+                continue
+
+
+            # Draw playing highlight
+            if playing:
+                    ddt.rect_r(track_box, colours.row_playing_highlight, True)
+                    ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
+
+
+            # Highlight blue if track is being broadcast
+            if tr.index == pctl.broadcast_index and pctl.broadcast_active:
+                ddt.rect_r(track_box, [40, 40, 190, 80], True)
+                ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
+
+
+            # if (input.mouse_click and key_shift_down is False and line_hit or
+            #             playlist_selected == p_track):
+            #
+            #     playlist_selected = p_track
+            #     this_line_selected = True
+            #
+            #     if this_line_playing and colours.lm:
+            #         pass
+            #     else:
+            #         ddt.rect_r(track_box, colours.row_select_highlight, True)
+            #         ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
+
+                # if not key_shift_down:
+                #     shift_selection = [playlist_selected]
+
+
+            # Blue drop line
+            if drag_highlight: #playlist_hold_position != p_track:
+
+                ddt.rect_r(
+                    [left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width, 3 * gui.scale],
+                    [125, 105, 215, 255], True)
+
+
+            # Highlight
+            if highlight:
+                ddt.rect_a((left + highlight_left, line_y),
+                          (highlight_width, gui.playlist_row_height), colours.row_select_highlight, True)
+
+                ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
+
+
 
             if not gui.set_mode:
 
-                line_render(n_track, p_track, gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w,
-                            this_line_playing, album_fade, left + inset_left, inset_width, 1, gui.playlist_top + gui.playlist_row_height * w)
+                line_render(tr, track_position, gui.playlist_text_offset + line_y,
+                            playing, 255, left + inset_left, inset_width, 1, line_y)
 
             else:
                 # NEE ---------------------------------------------------------
-
+                n_track = tr
+                p_track = track_position
+                this_line_playing = playing
                 # offset_font_extra = 0
                 # if gui.row_font_size > 14:
                 #     offset_font_extra = 8
@@ -21117,8 +21191,8 @@ class StandardPlaylist:
                 for h, item in enumerate(gui.pl_st):
 
                     wid = item[1] - 20 * gui.scale
-                    y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * w
-                    ry = gui.playlist_top + gui.playlist_row_height * w
+                    y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number
+                    ry = gui.playlist_top + gui.playlist_row_height * number
                     if run > end + 24 * gui.scale:
                         break
 
@@ -21148,7 +21222,7 @@ class StandardPlaylist:
                                 #     text = text + " ❤"
 
                                 colour = colours.index_text
-                                if this_line_playing is True:
+                                if playing:
                                     colour = colours.index_playing
                                 text = trunc_line(text, gui.row_font_size, wid + 7 * gui.scale, False)
                                 ddt.draw_text((run + 6 * gui.scale, y + gui.star_text_y_offset),
@@ -21165,10 +21239,10 @@ class StandardPlaylist:
                                         star_x = wid
 
                                     colour = colours.star_line
-                                    if this_line_playing and colours.star_line_playing is not None:
+                                    if playing and colours.star_line_playing is not None:
                                         colour = colours.star_line_playing
 
-                                    sy = (gui.playlist_top + gui.playlist_row_height * w) + int(gui.playlist_row_height / 2)
+                                    sy = (gui.playlist_top + gui.playlist_row_height * number) + int(gui.playlist_row_height / 2)
                                     ddt.rect_r((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
                                     # ddt.line(run + 4, sy, run + star_x + 4, sy,
                                     #           colours.star_line)
@@ -21347,9 +21421,9 @@ class StandardPlaylist:
             else:
                 cv += 1
 
-            w += 1
-            if w > gui.playlist_view_length:
-                break
+            #w += 1
+            # if w > gui.playlist_view_length:
+            #     break
 
         # This is a bit hacky since its only generated after drawing.
         # Used to keep track of how many tracks are actually in view.
@@ -21357,7 +21431,7 @@ class StandardPlaylist:
         gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
 
-        if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * w < mouse_position[1] < window_size[
+        if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * len(list_items) < mouse_position[1] < window_size[
             1] - 55 and
                             width + left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
@@ -22880,7 +22954,7 @@ class QueueBox:
 
         queue_menu.add(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show)
         queue_menu.add(_("Play Now"), self.play_now, show_test=self.queue_remove_show)
-        queue_menu.add("Auto-Stop After", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show)
+        queue_menu.add("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show)
 
         queue_menu.add("Pause Queue", self.toggle_pause, queue_pause_deco)
         queue_menu.add(_("Clear Queue"), clear_queue, queue_deco)
@@ -23034,7 +23108,7 @@ class QueueBox:
         if enabled:
             return [colours.menu_text, colours.menu_background, _("Cancel Auto-Stop")]
         else:
-            return [colours.menu_text, colours.menu_background, _('Auto-Stop After')]
+            return [colours.menu_text, colours.menu_background, _('Auto-Stop')]
 
     def queue_remove_show(self, id):
 
