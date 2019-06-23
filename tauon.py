@@ -3861,9 +3861,11 @@ class PlayerCtl:
 
         self.render_playlist()
 
+
         self.notify_update()
         lfm_scrobbler.start_queue()
-        notify_song(end_of_playlist, delay=1.3)
+        if play:
+            notify_song(end_of_playlist, delay=1.3)
 
 
 pctl = PlayerCtl()

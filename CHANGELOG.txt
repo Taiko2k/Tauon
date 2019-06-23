@@ -16,6 +16,7 @@ v4.4.2
  - Fixed playlist list scrolling
  - Fixed playlist scroll pulse animation showing if playlist was empty
  - Fixed delay in tracklist selection rendering
+ - Fixed track notification being sent when auto-stop was enabled
 
 v4.4.1
 
