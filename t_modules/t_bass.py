@@ -740,11 +740,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             else:
 
                 # Get the target filepath and convert to bytes
-                if self.state == "suspend":
-                    target = self.old_target
-                else:
-                    self.old_target = pctl.target_open.encode('utf-8')
-                    target = self.old_target
+                #if self.state == "suspend":
+                #    target = self.old_target
+                #else:
+                self.old_target = pctl.target_open.encode('utf-8')
+                target = self.old_target
 
                 # Check if the file exists, mark it as missing if not
                 if os.path.isfile(pctl.target_object.fullpath):
