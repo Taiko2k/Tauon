@@ -20639,7 +20639,7 @@ class StandardPlaylist:
                     drag_highlight = False
 
                     # Shift selection highlight
-                    if track_position in shift_selection and len(shift_selection) > 1:
+                    if (track_position in shift_selection and len(shift_selection) > 1):
                         highlight = True
 
                     # Tracks have been dropped?
@@ -20869,6 +20869,7 @@ class StandardPlaylist:
                 if len(shift_selection) > 1 or key_shift_down:
                     drag_highlight = True
 
+
             # # Shift click actions
             # if input.mouse_click and line_hit:# and key_shift_down:
             #     selection_stage = 2
@@ -20959,7 +20960,7 @@ class StandardPlaylist:
                     playlist_hold_position = track_position
 
             # Multi Select Highlight
-            if track_position in shift_selection:
+            if track_position in shift_selection or track_position == playlist_selected:
                 highlight = True
 
             if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
