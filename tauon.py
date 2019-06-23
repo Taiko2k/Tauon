@@ -5688,6 +5688,8 @@ gui.pl_update = 2
 
 SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
+
+
 def bass_player_thread(player):
 
     logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
@@ -6638,47 +6640,75 @@ class GallClass:
 
             size = key[1]
 
-            source = self.get_file_source(key[0])
-
-            if source is False:
-                order[0] = 0
-                self.gall[key] = order
-                del self.queue[0]
-                continue
-
-            img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
-
-            # gall_render_last_timer.set()
+            slow_load = False
+            cache_load = False
 
             try:
-                if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                    source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
-                    # print('load from cache')
 
-                elif source[0] == 1:
-                    # print('tag')
-                    source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+                if True:
+                    offset = 0
+                    parent_folder = key[0].parent_folder_path
+                    if parent_folder in folder_image_offsets:
+                        offset = folder_image_offsets[parent_folder]
+                    img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(offset)
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
+                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
+                        #print('load from cache')
+                        cache_load = True
+                    else:
+                        slow_load = True
 
-                elif source[0] == 2:
-                    try:
-                        response = urllib.request.urlopen(get_network_thumbnail_url(key[0]))
-                        source_image = response
-                    except:
-                        print("IMAGE NETWORK LOAD ERROR")
-                else:
-                    source_image = open(source[1], 'rb')
+                if slow_load:
+
+                    source = self.get_file_source(key[0])
+
+                    if source is False:
+                        order[0] = 0
+                        self.gall[key] = order
+                        del self.queue[0]
+                        continue
+
+                    img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
+
+                    # gall_render_last_timer.set()
+
+
+
+                    if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
+                        source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
+                        print('load from cache')
+                        cache_load = True
+
+                    elif source[0] == 1:
+                        # print('tag')
+                        source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+
+                    elif source[0] == 2:
+                        try:
+                            response = urllib.request.urlopen(get_network_thumbnail_url(key[0]))
+                            source_image = response
+                        except:
+                            print("IMAGE NETWORK LOAD ERROR")
+                    else:
+                        source_image = open(source[1], 'rb')
+
+                    del source
 
                 g = io.BytesIO()
                 g.seek(0)
-                # print('pro stage 1')
-                im = Image.open(source_image)
-                if im.mode != "RGB":
-                    im = im.convert("RGB")
-                im.thumbnail((size, size), Image.ANTIALIAS)
 
-                im.save(g, 'BMP')
-                if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
-                    im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
+                if cache_load:
+                    g.write(source_image.read())
+
+                else:
+                    im = Image.open(source_image)
+                    if im.mode != "RGB":
+                        im = im.convert("RGB")
+                    im.thumbnail((size, size), Image.ANTIALIAS)
+
+                    im.save(g, 'BMP')
+                    if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
+                        im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
 
                 g.seek(0)
 
@@ -6688,24 +6718,25 @@ class GallClass:
                 self.gall[key] = order
 
 
-                del source
-
-                if not prefs.cache_gallery:
-                    time.sleep(0.01)
-                else:
-                    time.sleep(0.002)
+                # if not prefs.cache_gallery:
+                #     time.sleep(0.01)
+                # else:
+                time.sleep(0.002)
 
                 gui.update += 1
                 if gui.combo_mode:
                     gui.pl_update = 1
 
             except:
-                # raise
+                #raise
                 print('Image load failed on track: ' + key[0].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
 
             del self.queue[0]
+
+            if size < 150:
+                random.shuffle(self.queue)
 
         if self.i > 0:
             self.i = 0
@@ -6786,7 +6817,11 @@ class GallClass:
             self.key_list.append((track, size, offset))
 
             # Remove old images to conserve RAM usage
-            if len(self.key_list) > 100:
+            limit = 110
+            if size and size < 150:
+                limit = 500
+
+            if len(self.key_list) > limit:
                 key = self.key_list[0]
                 while key in self.queue:
                     self.queue.remove(key)
@@ -13598,11 +13633,11 @@ def set_mini_mode_D():
     prefs.mini_mode_mode = 4
     set_mini_mode()
 
-mode_menu.add(_('Mini Mode'), set_mini_mode_A1)
-mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
-mode_menu.add(_('Mini Mode Square'), set_mini_mode_B1)
-mode_menu.add(_('Mini Mode Square Large'), set_mini_mode_B2)
-mode_menu.add(_('Mini Mode Micro'), set_mini_mode_D)
+mode_menu.add(_('Mini'), set_mini_mode_A1)
+#mode_menu.add(_('Mini Mode Large'), set_mini_mode_A2)
+mode_menu.add(_('Square'), set_mini_mode_B1)
+mode_menu.add(_('Square Large'), set_mini_mode_B2)
+mode_menu.add(_('Micro'), set_mini_mode_D)
 # x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(175, show_icons=True)
 
@@ -15251,13 +15286,21 @@ search_over = SearchOverlay()
 
 # LOADER----------------------------------------------------------------------
 
+def worker3():
+
+    while True:
+        time.sleep(0.07)
+
+        gall_ren.worker_render()
+
+
 def worker2():
 
     while True:
 
-        time.sleep(0.07)
+        time.sleep(0.15)
 
-        gall_ren.worker_render()
+        #gall_ren.worker_render()
 
         if prefs.art_bg:
             style_overlay.worker()
@@ -18801,7 +18844,7 @@ class TopPanel:
 
         # Scroll anywhere on panel to cycle playlist
         # (This is a bit complicated because we need to skip over hidden playlists)
-        if mouse_wheel != 0 and mouse_position[1] < self.height + 1 and len(pctl.multi_playlist) > 1:
+        if mouse_wheel != 0 and 1 < mouse_position[1] < self.height + 1 and len(pctl.multi_playlist) > 1 and 5 < mouse_position[0]:
 
             if mouse_wheel > 0:
                 p = pctl.active_playlist_viewing
@@ -25451,6 +25494,9 @@ worker2Thread = threading.Thread(target=worker2)
 worker2Thread.daemon = True
 worker2Thread.start()
 
+worker3Thread = threading.Thread(target=worker3)
+worker3Thread.daemon = True
+worker3Thread.start()
 # MAIN LOOP---------------------------------------------------------------------------
 
 if system == 'linux':
