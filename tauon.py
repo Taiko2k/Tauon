@@ -2111,13 +2111,18 @@ if db_version > 0:
         show_message(
             "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata.")
 
-
     if db_version <= 30:
         for i, item in enumerate(p_force_queue):
             try:
                 assert item[6]
             except:
                 p_force_queue[i].append(False)
+
+    if db_version <= 31:
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("love-selected\n")
 
 
 # Loading Config -----------------
@@ -4547,16 +4552,17 @@ def get_love_index(index):
     else:
         return False
 
-def love(set=True, index=None):
+
+def love(set=True, track_id=None):
 
     if len(pctl.track_queue) < 1:
         return False
 
-    if index is None:
-        index = pctl.track_queue[pctl.queue_step]
+    if track_id is None:
+        track_id = pctl.track_queue[pctl.queue_step]
 
     loved = False
-    star = star_store.full_get(index)
+    star = star_store.full_get(track_id)
 
     if star is not None:
         if 'L' in star[1]:
@@ -4576,34 +4582,38 @@ def love(set=True, index=None):
 
     loved ^= True
 
+    delay = 0.3
+    if not lastfm.details_ready():
+        delay = 0
+
     if loved:
-        time.sleep(0.3)
+        time.sleep(delay)
         gui.update += 1
         gui.pl_update += 1
         star = [star[0], star[1] + "L"]
-        star_store.insert(index, star)
+        star_store.insert(track_id, star)
         try:
-            lastfm.love(pctl.master_library[index].artist, pctl.master_library[index].title)
+            lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
         except:
             print("Failed updating last.fm love status", 'warning')
             star = [star[0], star[1].strip("L")]
-            star_store.insert(index, star)
+            star_store.insert(track_id, star)
 
     else:
-        time.sleep(0.3)
+        time.sleep(delay)
         gui.update += 1
         gui.pl_update += 1
         star = [star[0], star[1].strip("L")]
-        star_store.insert(index, star)
+        star_store.insert(track_id, star)
         try:
-            lastfm.unlove(pctl.master_library[index].artist, pctl.master_library[index].title)
+            lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
         except:
             print("Failed updating last.fm love status", 'warning')
             star = [star[0], star[1] + "L"]
-            star_store.insert(index, star)
+            star_store.insert(track_id, star)
 
     gui.pl_update = 2
-
+    gui.update += 1
 
 
 
@@ -13739,6 +13749,18 @@ def bar_love():
     shoot_love = threading.Thread(target=love)
     shoot_love.daemon = True
     shoot_love.start()
+
+def select_love():
+
+    selected = playlist_selected
+    playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    if -1 < selected < len(playlist):
+        track_id = playlist[selected]
+
+        shoot_love = threading.Thread(target=love, args=[True, track_id])
+        shoot_love.daemon = True
+        shoot_love.start()
+
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
@@ -25968,7 +25990,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            31,  # Version, used for upgrading
+            32,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -27218,6 +27240,9 @@ while pctl.running:
             if keymaps.test("love-playing"):
                 bar_love()
 
+            if keymaps.test("love-selected"):
+                select_love()
+
             if keymaps.test("global-search"):
                 toggle_search()
 
@@ -27711,6 +27736,7 @@ while pctl.running:
                 render_pos = 0
                 album_on = 0
 
+
                 max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
                 if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
@@ -27721,10 +27747,13 @@ while pctl.running:
 
                     if album_pos_px < round(-55):
                         album_pos_px = round(-55)
-                        gallery_pulse_top.pulse()
+                        if album_dex:
+                            gallery_pulse_top.pulse()
 
                     if album_pos_px > max_scroll:
                         album_pos_px = max_scroll
+                        if album_pos_px < round(-55):
+                            album_pos_px = round(-55)
 
                 gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
 
