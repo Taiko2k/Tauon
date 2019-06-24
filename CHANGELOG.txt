@@ -3,10 +3,12 @@ Changelog-------------------------------------
 
 v4.4.2
 
+ - Added keyboard shortcut for loving selected track (unbound)
  - Added year results to global search
  - Added random load effect to gallery for small gallery thumbnails
  - Improved gallery cache loading speed
  - Tweaked mini mode menu for simplification
+ - Tweaked love track to display instantly when no last.fm account
  - Fixed small delays in gallery image loading
  - Fixed scrobble pause not affecting listenbrainz
  - Fixed scrobble of last.fm/listenbrainz being resubmitted if type of other failed
@@ -18,7 +20,7 @@ v4.4.2
  - Fixed hearts possibly being rendered behind text in tracklist
  - Fixed gallery shifting position slightly when jumping to end row
  - Fixed playlist list scrolling
- - Fixed playlist scroll pulse animation showing if playlist was empty
+ - Fixed scroll pulse animation showing if playlist was empty
  - Fixed delay in tracklist selection rendering
  - Fixed track notification being sent when auto-stop was enabled
  - Fixed fix advance when paused playing old track when disconnect-pause setting was active
