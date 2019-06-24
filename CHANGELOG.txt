@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v4.5.0
 
+ - Split import scanning into two stages, allowing tracks to be played before scan.
  - Added setting "Prefer thinner borders" for gallery
  - Added keyboard shortcut for loving selected track (unbound)
  - Added year results to global search
