@@ -1,12 +1,13 @@
 
 Changelog-------------------------------------
 
-v4.4.2
+v4.5.0
 
- - Added setting "Perfer thinner borders" for gallery
+ - Added setting "Prefer thinner borders" for gallery
  - Added keyboard shortcut for loving selected track (unbound)
  - Added year results to global search
  - Added random load effect to gallery for small gallery thumbnails
+ - Added two side panel settings to "view" tab in settings
  - Improved gallery cache loading speed
  - Tweaked mini mode menu for simplification
  - Tweaked love track to display instantly when no last.fm account
@@ -28,6 +29,7 @@ v4.4.2
  - Fixed delay in tracklist selection rendering
  - Fixed track notification being sent when auto-stop was enabled
  - Fixed fix advance when paused playing old track when disconnect-pause setting was active
+ - Fixed a crash with showcase view if playing folder was removed
 
 v4.4.1
 

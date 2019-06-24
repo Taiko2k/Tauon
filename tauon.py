@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.4.2"
+n_version = "4.5.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -6101,6 +6101,9 @@ class TimedLyricsRen:
         direc = track.parent_folder_path
         name = track.filename.split(".")[0] + ".lrc"
 
+        if not os.path.isdir(direc):
+            return False
+
         for file in os.listdir(direc):
             if file == name:
                 f = open(os.path.join(direc, name), 'r')
@@ -8495,6 +8498,7 @@ class Menu:
     switch = 0
     count = switch + 1
     instances = []
+    active = False
 
     def __init__(self, width, show_icons=False):
 
@@ -8617,6 +8621,13 @@ class Menu:
 
             if Menu.switch != self.id:
                 self.active = False
+
+                for menu in Menu.instances:
+                    if menu.active:
+                        break
+                else:
+                    Menu.active = False
+
                 return
 
             ytoff = 3
@@ -8822,11 +8833,20 @@ class Menu:
                 self.active = False
                 self.clicked = False
 
+                for menu in Menu.instances:
+                    if menu.active:
+                        break
+                else:
+                    Menu.active = False
+
+
 
                 # Render the menu outline
                 # ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
     def activate(self, in_reference=0, position=None):
+
+        Menu.active = True
 
         if position != None:
             self.pos = [position[0], position[1]]
@@ -8854,6 +8874,12 @@ class Menu:
                 self.pos[1] = 30 * gui.scale
                 self.pos[0] += 5 * gui.scale
         self.active = True
+
+
+def close_all_menus():
+    for menu in Menu.instances:
+        menu.active = False
+    Menu.active = False
 
 
 def menu_standard_or_grey(bool):
@@ -14211,8 +14237,9 @@ def switch_playlist(number, cycle=False):
     global album_pos_px
 
     # Close any active menus
-    for instance in Menu.instances:
-        instance.active = False
+    # for instance in Menu.instances:
+    #     instance.active = False
+    close_all_menus()
 
     gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
@@ -16633,6 +16660,18 @@ def toggle_titlebar_line(mode=0):
     if update_title:
         update_title_do()
 
+
+def toggle_meta_persists_stop(mode=0):
+    if mode == 1:
+        return prefs.meta_persists_stop
+    prefs.meta_persists_stop ^= True
+
+def toggle_meta_shows_selected(mode=0):
+    if mode == 1:
+        return prefs.meta_shows_selected_always
+    prefs.meta_shows_selected_always ^= True
+
+
 def toggle_show_playlist_list(mode=0):
     if mode == 1:
         return prefs.show_playlist_list
@@ -17916,7 +17955,7 @@ class Over:
 
         y += 30 * gui.scale
 
-        if self.button2(x, y, "Left Panel"):
+        if self.button2(x, y, "Side Panels"):
             self.view_view = 4
 
         x = self.box_x + self.item_x_offset + 250 * gui.scale
@@ -18010,7 +18049,7 @@ class Over:
 
         if self.view_view == 4:
 
-            ddt.draw_text((x, y), _("Left panel"), colours.grey_blend_bg(100), 12)
+            ddt.draw_text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
 
             y += 28 * gui.scale
             self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
@@ -18018,6 +18057,15 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
 
+            y += 40 * gui.scale
+
+            ddt.draw_text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
+
+            y += 28 * gui.scale
+            self.toggle_square(x, y, toggle_meta_persists_stop, "Persist when stopped")
+
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_meta_shows_selected, "Always show selected")
 
 
     def about(self):
@@ -26586,8 +26634,7 @@ while pctl.running:
                 gui.update += 1
 
             elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
-                for instance in Menu.instances:
-                    instance.active = False
+                close_all_menus()
 
                 gui.update += 1
 
@@ -26852,8 +26899,7 @@ while pctl.running:
 
             if key_del:
                 # Close any active menus
-                for instance in Menu.instances:
-                    instance.active = False
+                close_all_menus()
                 del_selected()
 
 
@@ -27632,16 +27678,8 @@ while pctl.running:
                     and pref_box.enabled is False \
                     and track_box is False \
                     and not gui.rename_folder_box \
-                    and extra_menu.active is False\
+                    and not Menu.active \
                     and (gui.rsp or album_mode)\
-                    and not x_menu.active \
-                    and not view_menu.active \
-                    and not track_menu.active \
-                    and not tab_menu.active \
-                    and not selection_menu.active\
-                    and not view_box.active \
-                    and not folder_menu.active \
-                    and not set_menu.active \
                     and not artist_info_scroll.held \
                     and gui.layer_focus == 0:
 
@@ -28953,15 +28991,7 @@ while pctl.running:
                         and pref_box.enabled is False \
                         and track_box is False \
                         and not gui.rename_folder_box \
-                        and extra_menu.active is False\
-                        and not x_menu.active \
-                        and not view_menu.active \
-                        and not track_menu.active \
-                        and not tab_menu.active \
-                        and not selection_menu.active\
-                        and not view_box.active \
-                        and not folder_menu.active \
-                        and not set_menu.active \
+                        and not Menu.active \
                         and not artist_info_scroll.held:
 
                     columns_tool_tip.render()
