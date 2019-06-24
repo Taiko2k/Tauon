@@ -1000,7 +1000,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         if system == "windows":
             self.star_text_y_offset = -2
 
-        self.set_bar = False
+        self.set_bar = True
         self.set_mode = False
         self.set_height = 25 * self.scale
         self.set_hold = -1
@@ -2139,6 +2139,7 @@ if db_version > 0:
         if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("love-selected\n")
+        gui.set_bar = True
 
 
 # Loading Config -----------------
@@ -2335,6 +2336,7 @@ def load_prefs():
 
 load_prefs()
 save_prefs()
+
 
 
 if prefs.scale_want != prefs.ui_scale:
@@ -9016,6 +9018,7 @@ info_icon.colour = [61, 247, 163, 255]
 
 
 def open_folder(index):
+
     if system == 'windows':
         line = r'explorer /select,"%s"' % (
             pctl.master_library[index].fullpath.replace("/", "\\"))
@@ -16114,7 +16117,6 @@ def worker1():
         time.sleep(0.15)
 
         if after_scan:
-            print("START TAG SCAN")
             i = 0
             while after_scan:
                 i += 1
@@ -21373,7 +21375,8 @@ class StandardPlaylist:
                     wid = item[1] - 20 * gui.scale
                     y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number
                     ry = gui.playlist_top + gui.playlist_row_height * number
-                    if run > end + 24 * gui.scale:
+
+                    if run > end - 50 * gui.scale:
                         break
 
                     if len(gui.pl_st) == h + 1:
@@ -21543,6 +21546,10 @@ class StandardPlaylist:
                                 display_friend_heart(x, yy, name, j)
                                 count += 1
 
+                            # if n_track.track_number == 1 or n_track.track_number == "1":
+                            #     ss = wid - (wid % 15)
+                            #     gall_ren.render(n_track, (run, y), ss)
+
 
                         elif item[0] == "P":
                             #key = n_track.title + n_track.filename
@@ -21575,6 +21582,13 @@ class StandardPlaylist:
 
                             if this_line_playing and item[0] in colours.column_colours_playing:
                                 colour = colours.column_colours_playing[item[0]]
+
+
+
+                            if run + wid > gui.plw:
+                                wid = gui.plw - run - 20 * gui.scale
+
+                            wid = max(0, wid)
 
                             tt = ddt.draw_text((run + 6, y + y_off),
                                       text,
@@ -27829,6 +27843,7 @@ while pctl.running:
 
                 rect = [x, gui.panelY, w, h]
                 ddt.rect_r(rect, colours.gallery_background, True)
+                #ddt.rect_r(rect, [255, 0, 0, 200], True)
 
                 area_x = w + 38 * gui.scale
                 #area_x = w - 40 * gui.scale
@@ -28706,6 +28721,7 @@ while pctl.running:
 
                     rect = [x, top, gui.plw, gui.set_height]
 
+
                     c_bar_background = [30, 30, 30, 255]
 
 
@@ -28722,8 +28738,26 @@ while pctl.running:
                     start = x + 16 * gui.scale
                     run = 0
                     for i, item in enumerate(gui.pl_st):
-                        box = (start + run, rect[1], item[1], rect[3])
+
+                        # if run > rect[2] - 55 * gui.scale:
+                        #     break
+
+
+                        wid = item[1]
+
+                        if start + run + wid > gui.plw:
+                            wid = gui.plw - run - start
+
+                        wid = max(0, wid)
+
+                        #ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
+
+
+                        box = (start + run, rect[1], wid, rect[3])
+
                         grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+
+
 
                         bg = c_bar_background
 
@@ -28737,10 +28771,16 @@ while pctl.running:
                         ddt.rect_r(box, bg, True)
                         ddt.rect_r(grip, [255, 255, 255, 14], True)
 
-                        line = trunc_line(item[0], 12, box[2] - 13 * gui.scale, False)
+                        #line = trunc_line(item[0], 12, box[2] - 13 * gui.scale, False)
+                        line = item[0]
                         ddt.text_background_colour = bg
-                        ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg)
+
+                        if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+                            break
+
+                        ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
                         run += box[2]
+
 
 
                 # Switch Vis:
