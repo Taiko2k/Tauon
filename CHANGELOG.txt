@@ -3,12 +3,16 @@ Changelog-------------------------------------
 
 v4.4.2
 
+ - Added setting "Perfer thinner borders" for gallery
  - Added keyboard shortcut for loving selected track (unbound)
  - Added year results to global search
  - Added random load effect to gallery for small gallery thumbnails
  - Improved gallery cache loading speed
  - Tweaked mini mode menu for simplification
  - Tweaked love track to display instantly when no last.fm account
+ - Tweaked "View" settings layout
+ - Tweaked minimum gallery art size (can now go smaller)
+ - Fixed UI stutter when changing gallery art size
  - Fixed small delays in gallery image loading
  - Fixed scrobble pause not affecting listenbrainz
  - Fixed scrobble of last.fm/listenbrainz being resubmitted if type of other failed

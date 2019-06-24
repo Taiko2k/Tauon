@@ -403,6 +403,7 @@ lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
+gallery_load_delay = Timer(10)
 
 f_store = FunctionStore()
 
@@ -429,6 +430,7 @@ row_len = 5
 last_row = 0
 album_v_gap = 66
 album_h_gap = 30
+
 album_mode_art_size = 200
 
 album_pos_px = 1
@@ -859,6 +861,7 @@ class Prefs:    # Used to hold any kind of settings
         self.mini_mode_micro_always_show_seek = False
         self.hide_queue = True
         self.show_playlist_list = True
+        self.thin_gallery_borders = False
 
 
 prefs = Prefs()
@@ -1170,6 +1173,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.opened_config_file = False
 
         self.notify_main_id = None
+
+        self.halt_image_rendering = False
 
 
 gui = GuiVar()
@@ -2168,6 +2173,7 @@ def save_prefs():
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
+    cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2250,6 +2256,7 @@ def load_prefs():
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
+    prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
 
     if system != 'windows':
         cf.br()
@@ -6643,6 +6650,10 @@ class GallClass:
 
         while len(self.queue) > 0:
 
+            if gui.halt_image_rendering:
+                self.queue.clear()
+                break
+
             self.i += 1
 
             key = self.queue[0]
@@ -6755,6 +6766,9 @@ class GallClass:
             return False
 
     def render(self, track, location, size=None):
+
+        if gallery_load_delay.get() < 0.5:
+            return
 
         x = round(location[0])
         y = round(location[1])
@@ -6915,8 +6929,14 @@ thumb_tracks = ThumbTracks()
 def img_slide_update_gall(value):
 
     global album_mode_art_size
+    gui.halt_image_rendering = True
+
     album_mode_art_size = value
-    clear_img_cache()
+
+    clear_img_cache(False)
+    gallery_load_delay.set()
+    gui.frame_callback_list.append(TestTimer(0.6))
+    gui.halt_image_rendering = False
 
     # Update sizes
     gall_ren.size = album_mode_art_size
@@ -6927,6 +6947,7 @@ def clear_img_cache(delete_disk=True):
     album_art_gen.clear_cache()
     prefs.failed_artists.clear()
     gall_ren.key_list = []
+
     while len(gall_ren.queue) > 0:
         time.sleep(0.01)
 
@@ -13228,6 +13249,16 @@ def toggle_gallery_click(mode=0):
     prefs.gallery_single_click ^= True
 
 
+def toggle_gallery_thin(mode=0):
+    if mode == 1:
+        return prefs.thin_gallery_borders
+
+    prefs.thin_gallery_borders ^= True
+    gui.update += 1
+    update_layout_do()
+
+
+
 def toggle_galler_text(mode=0):
     if mode == 1:
         return gui.gallery_show_text
@@ -17201,6 +17232,7 @@ class Over:
 
         self.lyrics_panel = False
         self.account_view = 0
+        self.view_view = 0
 
 
 
@@ -17866,131 +17898,125 @@ class Over:
         global album_mode_art_size
         global update_layout
 
-        x = self.box_x + self.item_x_offset - 10 * gui.scale
-        y = self.box_y - 5 * gui.scale
-
-        x += 10 * gui.scale
-        y += 25 * gui.scale
-
-        ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
-
-        x += 95 * gui.scale
-
-
-        album_mode_art_size = self.slide_control(x, y, None, "px", album_mode_art_size, 100, 400, 10, img_slide_update_gall)
-
-        # ---------------
-
-
-        x = self.box_x + self.item_x_offset - 10 * gui.scale
-        x += 10 * gui.scale
-        y += 25 * gui.scale
-
-        x += 110 * gui.scale
-
-        y += 35 * gui.scale
-
         x = self.box_x + self.item_x_offset
-        y1 = y
+        y = self.box_y + 20 * gui.scale
 
 
-        ddt.draw_text((x, y - 25 * gui.scale), _("Window"), colours.grey_blend_bg(100), 12)
+        if self.button2(x, y, "Theme"):
+            self.view_view = 1
+        y += 30 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_theme, _("Use album art for theme colours"))
+        if self.button2(x, y, "Gallery"):
+            self.view_view = 2
 
-        y += 25 * gui.scale
+        y += 30 * gui.scale
 
-        self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
+        if self.button2(x, y, "Window"):
+            self.view_view = 3
 
-        y += 25 * gui.scale
+        y += 30 * gui.scale
 
-        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
-        #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
-        #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
-        #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
+        if self.button2(x, y, "Left Panel"):
+            self.view_view = 4
 
-        #self.toggle_square(x + 159 * gui.scale, y, toggle_auto_bg_blur, _("Always blur"))
-        self.toggle_square(x + 90 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+        x = self.box_x + self.item_x_offset + 250 * gui.scale
+        y = self.box_y + 27 * gui.scale
 
-        self.toggle_square(x + 145 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
-
-
-        y += 28 * gui.scale
-
-        self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
+        if self.view_view == 2:
 
 
-        y += 28 * gui.scale
-        if not draw_border:
-            self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
+            ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
-        y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
-
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
-        # if system == "linux" or True:
-        #     self.toggle_square(x, y, scale125, locale.str(1.25) + "x")
-        #y += 25 * gui.scale
-        # if system == "linux":
-        #     self.toggle_square(x + 70 * gui.scale, y, scale2, "2x")
-
-        y -= 5 * gui.scale
-
-        x += 130 * gui.scale
-
-        self.button(x + 208 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
-        self.button(x + 105 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        ddt.draw_text((x + 320 * gui.scale, y + 6 * gui.scale), gui.theme_name, colours.grey_blend_bg(90), 213)
-
-        x -= 130 * gui.scale
-
-        #self.toggle_square(x, y, toggle_sbt, "Prefer track title in bottom panel")
-        # ----------
-
-        y = self.box_y - 5 * gui.scale
-        x += 270 * gui.scale
-
-        y += 25 * gui.scale
-
-
-        ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
-
-        y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, _("Show titles in gallery"))
-        # y += 25 * gui.scale
-        #
-        # self.toggle_square(x + 10 * gui.scale, y, toggle_card_style, _("Use card style (Light theme only)"))
-        y += 26 * gui.scale
-        #y += 28 * gui.scale
-
-
-        ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
-
-        y += 25 * gui.scale
-
-
-        if prefs.backend == 1:
-            self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
             y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+            # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+            self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
             y += 25 * gui.scale
-        if system == "windows":
-            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+            self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
+            y += 55 * gui.scale
 
-        # self.toggle_square(x, y, toggle_mini_lyrics, "Show lyrics in side panel")
-        # y += 28 * gui.scale
-        #if desktop == 'GNOME' or desktop == 'KDE':
-        if system == "linux":
-            self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+            ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
-        #y += 25 * gui.scale
-        #self.toggle_square(x, y, toggle_al_pref_album_artist, _("Artist list prefers album-artist"))
+            album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+
+        if self.view_view == 1:
+
+            ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
+
+            y += 25 * gui.scale
+
+            self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
+
+            y += 25 * gui.scale
+
+            self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
+
+            y += 23 * gui.scale
+
+            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+            #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
+            #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
+            #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
+
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+
+            y += 23 * gui.scale
+            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
 
 
+            y += 70 * gui.scale
+
+            self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
+            self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
+            ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+
+        if self.view_view == 3:
+
+
+            ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+
+            y += 28 * gui.scale
+
+            if system == "linux":
+                self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+
+            y += 25 * gui.scale
+
+            self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
+
+            y += 25 * gui.scale
+            if not draw_border:
+                self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
+
+            y += 25 * gui.scale
+
+            if system == "windows":
+                self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+
+            y += 30 * gui.scale
+
+            ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
+
+            y += 25 * gui.scale
+
+            if prefs.backend == 1:
+                self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+                y += 25 * gui.scale
+                self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+                y += 25 * gui.scale
+
+
+        if self.view_view == 4:
+
+            ddt.draw_text((x, y), _("Left panel"), colours.grey_blend_bg(100), 12)
+
+            y += 28 * gui.scale
+            self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
+
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
 
 
 
@@ -25722,10 +25748,32 @@ def update_layout_do():
             gui.offset_extra = 61 * gui.scale
 
         global album_v_gap
+        global album_h_gap
+
+
         if gui.gallery_show_text:
+            album_h_gap = 30 * gui.scale
             album_v_gap = 66 * gui.scale
         else:
+            album_h_gap = 30 * gui.scale
             album_v_gap = 25 * gui.scale
+
+
+        if prefs.thin_gallery_borders:
+            if gui.gallery_show_text:
+                album_h_gap = 20 * gui.scale
+                album_v_gap = 55 * gui.scale
+            else:
+                album_h_gap = 17 * gui.scale
+                album_v_gap = 15 * gui.scale
+
+        # if prefs.thin_gallery_borders:
+        #     if gui.gallery_show_text:
+        #         album_h_gap = 20 * gui.scale
+        #         album_v_gap = 55 * gui.scale
+        #     else:
+        #         album_h_gap = 5 * gui.scale
+        #         album_v_gap = 5 * gui.scale
 
         gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
@@ -27702,6 +27750,7 @@ while pctl.running:
                 ddt.rect_r(rect, colours.gallery_background, True)
 
                 area_x = w + 38 * gui.scale
+                #area_x = w - 40 * gui.scale
 
                 row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
 
@@ -27731,6 +27780,7 @@ while pctl.running:
 
                 if row_len == 0:
                     row_len = 1
+
                 dev = int((r_area - compact) / (row_len + 0))
 
                 render_pos = 0
@@ -27992,6 +28042,7 @@ while pctl.running:
                             track = pctl.master_library[default_playlist[album_dex[album_on]]]
 
                             info = get_album_info(album_dex[album_on])
+                            #info = (0, 0, 0)
 
                             if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
                                 gui.first_in_grid = album_dex[album_on]
@@ -28016,8 +28067,6 @@ while pctl.running:
                             if colours.lm and not card_mode:
                                 ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4),
                                           colours.grey(200), True)
-
-
 
                             if a == row_len - 1:
 
@@ -28080,20 +28129,37 @@ while pctl.running:
 
                                 gui.update += 1
 
-                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                       colours.gallery_background, True)
-                            # Draw back colour
+
+                            # Draw faint outline
+                            ddt.rect_r((x - 1, y - 1, album_mode_art_size + 2, album_mode_art_size + 2), [255, 255, 255, 11])
+
+
+                            if gui.album_tab_mode or gallery_menu.active:
+                                if info[2] is False and info[0] != 1 and not colours.lm:
+                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    albumtitle = colours.grey(160)
+
+                            else:
+                                if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
+                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                    albumtitle = colours.grey(160)
+
+
+
+                            # Draw blank back colour
                             back_colour = [40, 40, 40, 50]
                             if colours.lm:
                                 back_colour = [10, 10, 10, 15]
-                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
 
-                            # Draw faint outline
-                            ddt.rect_a((x - 1 * gui.scale, y - 1 * gui.scale), (album_mode_art_size + 2 * gui.scale, album_mode_art_size + 2 * gui.scale),
-                                      [255, 255, 255, 11])
+                            back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
+
+                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
 
                             # Draw album art
                             drawn_art = gall_ren.render(track, (x, y))
+
+
+
                             if drawn_art is False and gui.gallery_show_text is False:
 
                                 ddt.draw_text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
@@ -28114,49 +28180,39 @@ while pctl.running:
                                     diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
                                     rect.h -= diff
 
-
                                 if rect.h > 0:
                                     style_overlay.hole_punches.append(rect)
 
 
-                            if gui.album_tab_mode or gallery_menu.active:
-                                if info[2] is False and info[0] != 1 and not colours.lm:
-                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(160)
-
-                            else:
-                                if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(160)
-
-
-                            c_index = default_playlist[album_dex[album_on]]
-
-                            if c_index in album_artist_dict:
-                                pass
-                            else:
-                                i = album_dex[album_on]
-                                if pctl.master_library[default_playlist[i]].album_artist != "":
-                                    album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
-                                else:
-                                    while i < len(default_playlist) - 1:
-                                        if pctl.master_library[default_playlist[i]].parent_folder_name != \
-                                                pctl.master_library[
-                                                    default_playlist[album_dex[album_on]]].parent_folder_name:
-                                            album_artist_dict[c_index] = pctl.master_library[
-                                                default_playlist[album_dex[album_on]]].artist
-                                            break
-                                        if pctl.master_library[default_playlist[i]].artist != pctl.master_library[
-                                            default_playlist[album_dex[album_on]]].artist:
-                                            album_artist_dict[c_index] = "Various Artists"
-
-                                            break
-                                        i += 1
-                                    else:
-                                        album_artist_dict[c_index] = pctl.master_library[
-                                            default_playlist[album_dex[album_on]]].artist
 
                             if gui.gallery_show_text:
+                                c_index = default_playlist[album_dex[album_on]]
+
+                                if c_index in album_artist_dict:
+                                    pass
+                                else:
+                                    i = album_dex[album_on]
+                                    if pctl.master_library[default_playlist[i]].album_artist != "":
+                                        album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
+                                    else:
+                                        while i < len(default_playlist) - 1:
+                                            if pctl.master_library[default_playlist[i]].parent_folder_name != \
+                                                    pctl.master_library[
+                                                        default_playlist[album_dex[album_on]]].parent_folder_name:
+                                                album_artist_dict[c_index] = pctl.master_library[
+                                                    default_playlist[album_dex[album_on]]].artist
+                                                break
+                                            if pctl.master_library[default_playlist[i]].artist != pctl.master_library[
+                                                default_playlist[album_dex[album_on]]].artist:
+                                                album_artist_dict[c_index] = "Various Artists"
+
+                                                break
+                                            i += 1
+                                        else:
+                                            album_artist_dict[c_index] = pctl.master_library[
+                                                default_playlist[album_dex[album_on]]].artist
+
+
                                 line = album_artist_dict[c_index]
                                 line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
@@ -28216,7 +28272,7 @@ while pctl.running:
                             break
                         render_pos += album_mode_art_size + album_v_gap
 
-                ddt.rect_a((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
+                #ddt.rect_a((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
 
 
 
