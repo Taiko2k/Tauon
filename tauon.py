@@ -407,6 +407,8 @@ gallery_load_delay = Timer(10)
 
 f_store = FunctionStore()
 
+after_scan = []
+
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
 
@@ -1187,8 +1189,10 @@ class StarStore:
 
         self.db = {}
 
-    def key(self, index):
-        return pctl.master_library[index].artist, pctl.master_library[index].title, pctl.master_library[index].filename
+    def key(self, track_id):
+
+        track_object = pctl.master_library[track_id]
+        return track_object.artist, track_object.title, track_object.filename
 
     def object_key(self, track):
 
@@ -1197,7 +1201,14 @@ class StarStore:
     # Increments the play time
     def add(self, index, value):
 
-        key = self.key(index)
+        track_object = pctl.master_library[index]
+
+        if after_scan:
+            if track_object in after_scan:
+                return
+
+        key = track_object.artist, track_object.title, track_object.filename
+
         if key in self.db:
             self.db[key][0] += value
             if value < 0 and self.db[key][0] < 0:
@@ -1920,8 +1931,8 @@ try:
         prefs.discogs_pat = save[129]
     if save[130] is not None:
         prefs.mini_mode_mode = save[130]
-    # if save[131] is not None:
-    #     prefs.artist_list_prefer_album_artist = save[131]
+    if save[131] is not None:
+        after_scan = save[131]
 
     state_file.close()
     del save
@@ -10264,6 +10275,7 @@ def delete_playlist(index):
 
 to_scan = []
 
+
 def rescan_tags(pl):
 
     for track in pctl.multi_playlist[pl][2]:
@@ -15628,6 +15640,8 @@ def worker1():
     loaded_pathes_cache = {}
     added = []
 
+
+
     def get_end_folder(direc):
 
         for w in range(len(direc)):
@@ -16017,7 +16031,8 @@ def worker1():
         nt.parent_folder_name = get_end_folder(os.path.dirname(path))
         nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
-        nt = tag_scan(nt)
+        #nt = tag_scan(nt)
+
 
         if nt.cue_sheet != "":
             cue_scan(nt.cue_sheet, nt)
@@ -16027,6 +16042,7 @@ def worker1():
 
             pctl.master_library[master_count] = nt
             added.append(master_count)
+            after_scan.append(nt)
             master_count += 1
 
         # bm.get("fill entry")
@@ -16096,6 +16112,23 @@ def worker1():
 
     while True:
         time.sleep(0.15)
+
+        if after_scan:
+            print("START TAG SCAN")
+            i = 0
+            while after_scan:
+                i += 1
+                if i > 100:
+                        break
+
+                tag_scan(after_scan[0])
+                gui.update = 2
+                gui.pl_update = 1
+                #time.sleep(0.001)
+                if pctl.running:
+                    del after_scan[0]
+                else:
+                    break
 
         artist_list_box.worker()
 
@@ -16334,7 +16367,7 @@ def worker1():
                         to_get = 0
                         to_got = 0
                         loaded_pathes_cache = cache_paths()
-                        pre_get(order.target)
+                        #pre_get(order.target)
                         gets(order.target)
                     elif loaderCommand == LC_File:
                         loaded_pathes_cache = cache_paths()
@@ -19081,9 +19114,14 @@ class TopPanel:
             elif to_got == 'ex':
                 text = "Extracting Archive..."
             else:
-                text = "Importing...  " + str(to_got) + "/" + str(to_get)
+                text = "Importing...  " + str(to_got)  # + "/" + str(to_get)
                 if right_click and coll([x, y, 180 * gui.scale, 18 * gui.scale]):
                     cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
+        elif after_scan:
+            #bg = colours.status_info_text
+            bg = [100, 200, 100, 255]
+            text = "Scanning Tags...  " + str(len(after_scan)) + " remaining"
+
         elif move_in_progress:
             text = "File copy in progress..."
             bg = colours.status_info_text
@@ -19092,7 +19130,7 @@ class TopPanel:
             text = "Cleaning db...  " + per + "%"
             bg = [100, 200, 100, 255]
         elif to_scan:
-            text = "Rescanning Tags...  " + str(len(to_scan)) + " Tracks Remaining"
+            text = "Rescanning Tags...  " + str(len(to_scan)) + " Remaining"
             bg = [100, 200, 100, 255]
         elif plex.scanning:
             text = "Accessing PLEX library..."
@@ -22586,6 +22624,10 @@ class ArtistList:
     def worker(self):
 
         if self.load:
+
+            if after_scan:
+                return
+
             self.prep()
             self.load = False
             return
@@ -22595,6 +22637,7 @@ class ArtistList:
             #self.thumb_cache[self.to_fetch] = None
             #self.to_fetch = ""
             #return
+
 
             if get_lfm_wait_timer.get() < 2:
                 return
@@ -23018,7 +23061,7 @@ class ArtistList:
                 text = _("Artist threshold not met")
             if self.load:
                 text = _("Loading...")
-                if loading_in_progress or transcode_list:
+                if loading_in_progress or transcode_list or after_scan:
                     text = _("Busy...")
 
             ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
@@ -26200,7 +26243,7 @@ def save_state():
             prefs.bg_showcase_only,
             None, #prefs.discogs_pat,
             prefs.mini_mode_mode,
-            None]
+            after_scan]
 
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
