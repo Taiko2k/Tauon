@@ -20785,7 +20785,7 @@ class StandardPlaylist:
         list_items = []
         number = 0
 
-        for i in range(gui.playlist_view_length + 1):
+        for i in range(gui.playlist_view_length):
 
             track_position = i + pctl.playlist_view_position
 
@@ -20794,7 +20794,7 @@ class StandardPlaylist:
                 pctl.playlist_view_position = 0
 
             # Break if we are at end of playlist
-            if len(default_playlist) <= track_position:
+            if len(default_playlist) <= track_position or number > gui.playlist_view_length:
                 break
 
             track_object = pctl.g(default_playlist[track_position])
@@ -20906,6 +20906,9 @@ class StandardPlaylist:
                     list_items.append((1, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, False))
                     number += 1
 
+            if number > gui.playlist_view_length:
+                break
+
             # Standard track ---------------------------------------------------------------------
             playing = False
 
@@ -20959,16 +20962,6 @@ class StandardPlaylist:
                 pctl.force_queue.append(queue_item_gen(track_id,
                                                        track_position, pl_to_id(pctl.active_playlist_viewing)))
 
-            # # Make track the selection if right clicked
-            # if right_click and line_hit:
-            #     if track_position not in shift_selection:
-            #         shift_selection = [track_position]
-            #         #playlist_selected = track_position
-            #
-            # if input.mouse_click and line_hit and track_position not in shift_selection:
-            #     shift_selection = [track_position]
-            #     #playlist_selected = track_position
-
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
             if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and point_proximity_test(gui.drag_source_position, mouse_position, 15): # and not playlist_hold:
@@ -21003,9 +20996,9 @@ class StandardPlaylist:
                             ref = default_playlist[playlist_hold_position]
                             default_playlist[playlist_hold_position] = "old"
                             if move_on_title:
-                                default_playlist.insert(p_track, "new")
+                                default_playlist.insert(track_position, "new")
                             else:
-                                default_playlist.insert(p_track + 1, "new")
+                                default_playlist.insert(track_position + 1, "new")
                             default_playlist.remove("old")
                             playlist_selected = default_playlist.index("new")
                             default_playlist[default_playlist.index("new")] = ref
@@ -21049,26 +21042,6 @@ class StandardPlaylist:
                     drag_highlight = True
 
 
-            # # Shift click actions
-            # if input.mouse_click and line_hit:# and key_shift_down:
-            #     selection_stage = 2
-            #     if track_position != playlist_selected:
-            #
-            #         start_s = track_position
-            #         end_s = playlist_selected
-            #         if end_s < start_s:
-            #             end_s, start_s = start_s, end_s
-            #         for y in range(start_s, end_s + 1):
-            #             if y not in shift_selection:
-            #                 shift_selection.append(y)
-            #         shift_selection.sort()
-            #
-            #     # else:
-            #     if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
-            #         playlist_hold = True
-            #         playlist_hold_position = track_position
-
-
             # Right click menu activation
             if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10:
 
@@ -21086,34 +21059,6 @@ class StandardPlaylist:
                         playlist_selected = track_position
                         shift_selection = [playlist_selected]
 
-
-            # if line_over and input.mouse_click:
-            #     if key_shift_down:
-            #         start_s = track_position
-            #         end_s = playlist_selected
-            #         if end_s < start_s:
-            #             end_s, start_s = start_s, end_s
-            #         for y in range(start_s, end_s + 1):
-            #             if y not in shift_selection:
-            #                 shift_selection.append(y)
-            #         shift_selection.sort()
-            #         playlist_hold = False
-            #     else:
-            #         if len(shift_selection) > 1 and track_position in shift_selection:
-            #             pass
-            #         else:
-            #             playlist_selected = track_position
-            #             shift_selection = [playlist_selected]
-
-            # Shift selection things..
-            # if line_over:
-            #     if mouse_up and selection_stage > 0:
-            #         selection_stage -= 1
-                # if mouse_up and selection_stage == 0 and len(shift_selection) > 1:
-                #     playlist_hold = False
-                #     shift_selection = []
-                #     gui.pl_update = 1
-                #     print("hit")
 
             if line_over and input.mouse_click:
 
@@ -25915,9 +25860,7 @@ def update_layout_do():
         #     #gui.playlist_row_height *= gui.scale
         #     pass
 
-        gui.playlist_view_length = int(((window_size[1] - gui.panelBY - gui.playlist_top) / gui.playlist_row_height) - 1)
-
-
+        gui.playlist_view_length = (window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height
 
         box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
 

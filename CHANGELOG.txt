@@ -14,15 +14,16 @@ v4.5.0
  - Tweaked love track to display instantly when no last.fm account
  - Tweaked "View" settings layout
  - Tweaked minimum gallery art size (can now go smaller)
+ - Fixed length of rendered tracklist (now more accurate and consistent)
  - Fixed UI stutter when changing gallery art size
- - Fixed small delays in gallery image loading
+ - Fixed performance issue when loading gallery image from cache
  - Fixed scrobble pause not affecting listenbrainz
  - Fixed scrobble of last.fm/listenbrainz being resubmitted if type of other failed
  - Fixed queue album not finishing if last album in playlist
  - Fixed queue album possibly playing next track in playlist after album
  - Fixed gallery thumbnailer crashing if loading an image failed
  - Fixed gallery scroll markers not hiding when mouse leaves right edge of window
- - Fixed scrobble retires not using original time stamp
+ - Fixed scrobble retries not using original time stamp
  - Fixed hearts possibly being rendered behind text in tracklist
  - Fixed gallery shifting position slightly when jumping to end row
  - Fixed playlist list scrolling
@@ -31,7 +32,7 @@ v4.5.0
  - Fixed track notification being sent when auto-stop was enabled
  - Fixed fix advance when paused playing old track when disconnect-pause setting was active
  - Fixed a crash with showcase view if playing folder was removed
- - Fixed column to bar possibly rendering over into gallery area
+ - Fixed column top bar possibly rendering over into gallery area
  - Fixed hide column bar default setting
 
 v4.4.1
