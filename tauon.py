@@ -7455,7 +7455,7 @@ class AlbumArt():
         filepath = track.fullpath
 
         if prefs.colour_from_image and index != gui.theme_temp_current and box[0] != 115: #mark2233
-            if tr.album in gui.temp_themes:
+            if track.album in gui.temp_themes:
                 global colours
                 colours = gui.temp_themes[track.album]
 
@@ -7516,7 +7516,7 @@ class AlbumArt():
             g.seek(0)
 
             if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
-                colours.last_album = tr.parent_folder_path
+                colours.last_album = track.parent_folder_path
 
                 im.thumbnail((50, 50), Image.ANTIALIAS)
                 pixels = im.getcolors(maxcolors=2500)
@@ -13487,10 +13487,12 @@ def toggle_album_mode(force_on=False):
         #old_side_pos = gui.rspw
         gui.rspw = gui.pref_gallery_w
 
+    space = window_size[0] - gui.rspw
+    if gui.lsp:
+        space -= gui.lspw
 
-    if album_mode and gui.set_mode and len(gui.pl_st) > 7:
+    if album_mode and gui.set_mode and len(gui.pl_st) > 6 and space < 600 * gui.scale:
         gui.set_mode = False
-        #gui.set_bar = False
         gui.pl_update = True
         gui.update_layout()
 
@@ -16847,6 +16849,7 @@ def toggle_playback_follow(mode=0):
 def toggle_hide_bar(mode=0):
     if mode == 1:
         return gui.set_bar ^ True
+    gui.update_layout()
     gui.set_bar ^= True
     show_message("Tip: You can also toggle this from a right-click context menu")
 
