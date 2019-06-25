@@ -20974,12 +20974,12 @@ class StandardPlaylist:
                 gui.update = 2
 
 
-            # Begin drag block selection
-            if mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
-                if not pl_is_locked(pctl.active_playlist_viewing):
-                    playlist_hold = True
-                elif key_shift_down:
-                    playlist_hold = True
+            # # Begin drag block selection
+            # if mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
+            #     if not pl_is_locked(pctl.active_playlist_viewing):
+            #         playlist_hold = True
+            #     elif key_shift_down:
+            #         playlist_hold = True
 
             # Begin drag single track
             if input.mouse_click and line_hit:
@@ -20988,7 +20988,7 @@ class StandardPlaylist:
 
 
             # Shift Move Selection
-            if (move_on_title) or mouse_up and playlist_hold is True and coll((
+            if move_on_title or mouse_up and playlist_hold is True and coll((
                     left + highlight_left, line_y, highlight_width, gui.playlist_row_height)):
 
                 if len(shift_selection) > 1 or key_shift_down:
@@ -21085,6 +21085,14 @@ class StandardPlaylist:
                 if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
                     playlist_hold = True
                     playlist_hold_position = track_position
+
+            # Activate drag if shift key down
+            if quick_drag and pl_is_locked(pctl.active_playlist_viewing) and mouse_down:
+                if key_shift_down:
+                    playlist_hold = True
+                else:
+                    playlist_hold = False
+
 
             # Multi Select Highlight
             if track_position in shift_selection or track_position == playlist_selected:
