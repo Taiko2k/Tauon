@@ -14,6 +14,7 @@ v4.5.0
  - Tweaked love track to display instantly when no last.fm account
  - Tweaked "View" settings layout
  - Tweaked minimum gallery art size (can now go smaller)
+ - Tweaked column view auto deactivation on open gallery space checking
  - Fixed length of rendered tracklist (now more accurate and consistent)
  - Fixed UI stutter when changing gallery art size
  - Fixed performance issue when loading gallery image from cache
@@ -34,6 +35,8 @@ v4.5.0
  - Fixed a crash with showcase view if playing folder was removed
  - Fixed column top bar possibly rendering over into gallery area
  - Fixed hide column bar default setting
+ - Fixed hide column bar setting in settings not properly updating UI
+ - Fixed crash when enabling auto theme
 
 v4.4.1
 
