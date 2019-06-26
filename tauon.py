@@ -21542,8 +21542,8 @@ class StandardPlaylist:
                             #
                             # if run + item[1] > gui.plw - 16:
                             #     wid = gui.plw - run - 16 * gui.scale
-                            if run - start + 6 * gui.scale + wid > gui.plw:
-                                wid = gui.plw - run - start
+                            if run + 6 * gui.scale + wid > end:
+                                wid = end - run - 40 * gui.scale
 
                             wid = max(0, wid)
 
