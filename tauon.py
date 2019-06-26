@@ -1353,7 +1353,7 @@ shoot.start()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
-    wid = gui.plw - 16
+    wid = gui.plw - 16 * gui.scale
     total = 0
     for item in gui.pl_st:
         if item[2] is False:
@@ -1367,6 +1367,61 @@ def update_set():   # This is used to scale columns when windows is resized or i
     for i in range(len(gui.pl_st)):
         if gui.pl_st[i][2] is False and total:
             gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid)) #+ 1
+
+def auto_size_columns():
+
+    fixed_n = 0
+
+    total = gui.plw - 16 * gui.scale
+    for item in gui.pl_st:
+
+        if item[2]:
+            fixed_n += 1
+
+        if item[0] == "Lyrics":
+            item[1] = round(50 * gui.scale)
+            total -= round(50 * gui.scale)
+
+        if item[0] == "Starline":
+            item[1] = round(78 * gui.scale)
+            total -= round(78 * gui.scale)
+
+        if item[0] == "Time":
+            item[1] = round(58 * gui.scale)
+            total -= round(58 * gui.scale)
+
+        if item[0] == "Codec":
+            item[1] = round(58 * gui.scale)
+            total -= round(58 * gui.scale)
+
+        if item[0] == "T" or item[0] == "P":
+            item[1] = round(32 * gui.scale)
+            total -= round(32 * gui.scale)
+
+        if item[0] == "Date":
+            item[1] = round(55 * gui.scale)
+            total -= round(55 * gui.scale)
+
+        if item[0] == "Bitrate":
+            item[1] = round(57 * gui.scale)
+            total -= round(57 * gui.scale)
+
+        if item[0] == "❤":
+            item[1] = round(27 * gui.scale)
+            total -= round(27 * gui.scale)
+
+    vr = len(gui.pl_st) - fixed_n
+
+    if vr > 0 and total > 50:
+
+        space = round(total / vr)
+
+        for item in gui.pl_st:
+            if not item[2]:
+                item[1] = space
+
+    gui.pl_update += 1
+    update_set()
 
 
 class ColoursClass:     # Used to store colour values for UI elements. These are changed for themes.
@@ -13243,6 +13298,7 @@ def show_set_bar():
 set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.br()
+set_menu.add("Auto Resize", auto_size_columns)
 set_menu.add("Hide bar", hide_set_bar)
 set_menu_hidden.add("Show bar", show_set_bar)
 set_menu.br()
@@ -27078,8 +27134,6 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'): #  F7: test
-
-
             pass
 
         if gui.mode < 3:
