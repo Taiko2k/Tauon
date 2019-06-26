@@ -1365,7 +1365,7 @@ def update_set():   # This is used to scale columns when windows is resized or i
         wid = 75
 
     for i in range(len(gui.pl_st)):
-        if gui.pl_st[i][2] is False:
+        if gui.pl_st[i][2] is False and total:
             gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid)) #+ 1
 
 
@@ -28730,6 +28730,11 @@ while pctl.running:
                         ddt.text_background_colour = bg
 
                         if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+                            i += 1
+                            while i < len(gui.pl_st):
+                                del gui.pl_st[i]
+                                i += 1
+
                             break
 
                         ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
