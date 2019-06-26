@@ -2631,7 +2631,11 @@ def tag_scan(nt):
                 nt.disc_total = str(tag.disc_total)
                 nt.track_total = str(tag.track_total)
                 nt.genre = tag.genre
-                value = nt.genre.lstrip("(").rstrip(")")
+
+                if nt.genre.startswith("(") and not nt.genre.endswith(")") and ")" in nt.genre:
+                    value = nt.genre[nt.genre.find("(") + 1 : nt.genre.find(")")]
+                else:
+                    value = nt.genre.lstrip("(").rstrip(")")
 
                 if value.isdigit():
                     value = int(value)
@@ -2641,6 +2645,9 @@ def tag_scan(nt):
                         if 241 < value < 192:
                             print("Tag Scan: Winamp genre code detected")
                         nt.genre = id3_genre_dict[value]
+
+
+
 
 
                 if tag.date:
@@ -18283,9 +18290,25 @@ class Over:
             self.stats_pl_timer.set()
 
             album_names = set()
-            for tr in default_playlist:
-                album_names.add(pctl.g(tr).parent_folder_path)
-            self.stats_pl_albums = len(album_names)
+            folder_names = set()
+            count = 0
+
+            for track_id in default_playlist:
+                tr = pctl.g(track_id)
+
+                if not tr.album:
+                    if tr.parent_folder_path not in folder_names:
+                        count += 1
+                    folder_names.add(tr.parent_folder_path)
+                else:
+                    if tr.parent_folder_path not in folder_names and tr.album not in album_names:
+                        count += 1
+                    folder_names.add(tr.parent_folder_path)
+                    album_names.add(tr.album)
+
+
+
+            self.stats_pl_albums = count #len(album_names)
 
             self.stats_pl_length = 0
             for item in default_playlist:
@@ -18306,12 +18329,26 @@ class Over:
         ddt.draw_text((x2, y1), line, colours.grey_blend_bg(220), 12)
 
         if self.stats_timer.get() > 5:
-
             album_names = set()
+            folder_names = set()
+            count = 0
+
             for pl in pctl.multi_playlist:
-                for tr in pl[2]:
-                    album_names.add(pctl.g(tr).parent_folder_path)
-            self.total_albums = len(album_names)
+                for track_id in pl[2]:
+                    tr = pctl.g(track_id)
+
+                    if not tr.album:
+                        if tr.parent_folder_path not in folder_names:
+                            count += 1
+                        folder_names.add(tr.parent_folder_path)
+                    else:
+                        if tr.parent_folder_path not in folder_names and tr.album not in album_names:
+                            count += 1
+                        folder_names.add(tr.parent_folder_path)
+                        album_names.add(tr.album)
+
+            self.total_albums = count #len(folder_names)
+
             self.stats_timer.set()
 
 
