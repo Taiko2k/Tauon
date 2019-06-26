@@ -21539,14 +21539,15 @@ class StandardPlaylist:
                             if this_line_playing and item[0] in colours.column_colours_playing:
                                 colour = colours.column_colours_playing[item[0]]
 
-
-
-                            if run + wid > gui.plw:
-                                wid = gui.plw - run - 20 * gui.scale
+                            #
+                            # if run + item[1] > gui.plw - 16:
+                            #     wid = gui.plw - run - 16 * gui.scale
+                            if run - start + 6 * gui.scale + wid > gui.plw:
+                                wid = gui.plw - run - start
 
                             wid = max(0, wid)
 
-                            tt = ddt.draw_text((run + 6, y + y_off),
+                            tt = ddt.draw_text((run + 6 * gui.scale, y + y_off),
                                       text,
                                       colour,
                                       font,
@@ -28690,7 +28691,10 @@ while pctl.running:
                     ddt.rect_r(rect, c_bar_background, True)
 
                     start = x + 16 * gui.scale
+                    c_width = gui.plw - 16 * gui.scale
                     run = 0
+
+
                     for i, item in enumerate(gui.pl_st):
 
                         # if run > rect[2] - 55 * gui.scale:
@@ -28699,8 +28703,8 @@ while pctl.running:
 
                         wid = item[1]
 
-                        if start + run + wid > gui.plw:
-                            wid = gui.plw - run - start
+                        if run + wid > c_width:
+                            wid = c_width - run
 
                         wid = max(0, wid)
 
@@ -28725,10 +28729,10 @@ while pctl.running:
                         ddt.rect_r(box, bg, True)
                         ddt.rect_r(grip, [255, 255, 255, 14], True)
 
-                        #line = trunc_line(item[0], 12, box[2] - 13 * gui.scale, False)
                         line = item[0]
                         ddt.text_background_colour = bg
 
+                        # Remove columns if positioned out of view
                         if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
 
                             if box[0] + 10 * gui.scale > start + gui.plw:
