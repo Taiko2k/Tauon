@@ -28706,6 +28706,12 @@ while pctl.running:
                         if run + wid > c_width:
                             wid = c_width - run
 
+                        if run > c_width - 22 * gui.scale:
+                            break
+
+                        # if run > c_width - 20 * gui.scale:
+                        #     run = run - 20 * gui.scale
+
                         wid = max(0, wid)
 
                         #ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
@@ -28732,18 +28738,18 @@ while pctl.running:
                         line = item[0]
                         ddt.text_background_colour = bg
 
-                        # Remove columns if positioned out of view
-                        if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
-
-                            if box[0] + 10 * gui.scale > start + gui.plw:
-                                del gui.pl_st[i]
-
-                            i += 1
-                            while i < len(gui.pl_st):
-                                del gui.pl_st[i]
-                                i += 1
-
-                            break
+                        # # Remove columns if positioned out of view
+                        # if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+                        #
+                        #     if box[0] + 10 * gui.scale > start + gui.plw:
+                        #         del gui.pl_st[i]
+                        #
+                        #     i += 1
+                        #     while i < len(gui.pl_st):
+                        #         del gui.pl_st[i]
+                        #         i += 1
+                        #
+                        #     break
 
                         ddt.draw_text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
                         run += box[2]
