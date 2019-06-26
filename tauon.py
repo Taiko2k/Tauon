@@ -28730,6 +28730,10 @@ while pctl.running:
                         ddt.text_background_colour = bg
 
                         if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+
+                            if box[0] + 10 * gui.scale > start + gui.plw:
+                                del gui.pl_st[i]
+
                             i += 1
                             while i < len(gui.pl_st):
                                 del gui.pl_st[i]
