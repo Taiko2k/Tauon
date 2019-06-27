@@ -16493,10 +16493,9 @@ def get_album_info(position):
         if current == playlist_selected:
             select = True
 
-        next_track = pctl.master_library[default_playlist[current + 1]]
-        if current < len(default_playlist) - 1 and first_track.parent_folder_name != next_track.parent_folder_name:
+        if current < len(default_playlist) - 1 and first_track.parent_folder_name != pctl.master_library[default_playlist[current + 1]].parent_folder_name:
 
-            if first_track.album and first_track.album == next_track.album:
+            if first_track.album and first_track.album == pctl.master_library[default_playlist[current + 1]].album:
                 current += 1
             else:
                 break
