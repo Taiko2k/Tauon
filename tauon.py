@@ -432,6 +432,7 @@ row_len = 5
 last_row = 0
 album_v_gap = 66
 album_h_gap = 30
+album_v_slide_value = 50
 
 album_mode_art_size = 200
 
@@ -13496,11 +13497,11 @@ def goto_album(playlist_no, down=False, force=False):
 
     else:
         # Set the view to the calculated position
-        album_pos_px = px - 60
-        album_pos_px += 10
+        album_pos_px = px
+        album_pos_px -= album_v_slide_value
 
-        if album_pos_px < 0 - 55:
-            album_pos_px = 0 - 55
+        if album_pos_px < 0 - album_v_slide_value:
+            album_pos_px = 0 - album_v_slide_value
 
 
 
@@ -25934,8 +25935,9 @@ def update_layout_do():
 
         global album_v_gap
         global album_h_gap
+        global album_v_slide_value
 
-
+        album_v_slide_value = 50
         if gui.gallery_show_text:
             album_h_gap = 30 * gui.scale
             album_v_gap = 66 * gui.scale
@@ -25943,8 +25945,8 @@ def update_layout_do():
             album_h_gap = 30 * gui.scale
             album_v_gap = 25 * gui.scale
 
-
         if prefs.thin_gallery_borders:
+
             if gui.gallery_show_text:
                 album_h_gap = 20 * gui.scale
                 album_v_gap = 55 * gui.scale
@@ -25952,13 +25954,8 @@ def update_layout_do():
                 album_h_gap = 17 * gui.scale
                 album_v_gap = 15 * gui.scale
 
-        # if prefs.thin_gallery_borders:
-        #     if gui.gallery_show_text:
-        #         album_h_gap = 20 * gui.scale
-        #         album_v_gap = 55 * gui.scale
-        #     else:
-        #         album_h_gap = 5 * gui.scale
-        #         album_v_gap = 5 * gui.scale
+            album_v_slide_value = 45
+
 
         gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
@@ -25995,7 +25992,7 @@ def update_layout_do():
         #     #gui.playlist_row_height *= gui.scale
         #     pass
 
-        gui.playlist_view_length = (window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height
+        gui.playlist_view_length = int((window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
 
         box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
 
@@ -27967,15 +27964,15 @@ while pctl.running:
                     else:
                         album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
-                    if album_pos_px < round(-55):
-                        album_pos_px = round(-55)
+                    if album_pos_px < round(album_v_slide_value * -1):
+                        album_pos_px = round(album_v_slide_value * -1)
                         if album_dex:
                             gallery_pulse_top.pulse()
 
                     if album_pos_px > max_scroll:
                         album_pos_px = max_scroll
-                        if album_pos_px < round(-55):
-                            album_pos_px = round(-55)
+                        if album_pos_px < round(album_v_slide_value * -1):
+                            album_pos_px = round(album_v_slide_value * -1)
 
                 gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
 
