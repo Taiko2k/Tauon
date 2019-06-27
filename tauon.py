@@ -16484,15 +16484,22 @@ def get_album_info(position):
     album = []
     playing = 0
     select = False
+
+    first_track = pctl.master_library[default_playlist[current]]
     while current < len(default_playlist):
         album.append(current)
         if len(pctl.track_queue) > 0 and default_playlist[current] == pctl.track_queue[pctl.queue_step]:
             playing = 1
         if current == playlist_selected:
             select = True
-        if current < len(default_playlist) - 1 and pctl.master_library[default_playlist[current]].parent_folder_name != pctl.master_library[
-                default_playlist[current + 1]].parent_folder_name:
-            break
+
+        next_track = pctl.master_library[default_playlist[current + 1]]
+        if current < len(default_playlist) - 1 and first_track.parent_folder_name != next_track.parent_folder_name:
+
+            if first_track.album and first_track.album == next_track.album:
+                current += 1
+            else:
+                break
         else:
             current += 1
     if not album:
@@ -16677,17 +16684,41 @@ def reload_albums(quiet=False):
     if not quiet:
         album_pos_px = old_album_pos
 
-    current_folder = ""
     album_dex = []
+    current_folder = ""
+    current_album = ""
 
-    for i in range(len(default_playlist)):
-        if i == 0:
-            album_dex.append(i)
-            current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-        else:
-            if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
-                current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
+    if True:
+
+        for i in range(len(default_playlist)):
+            tr = pctl.master_library[default_playlist[i]]
+
+            if i == 0:
                 album_dex.append(i)
+                current_folder = tr.parent_folder_name
+                current_album = tr.album
+            else:
+                if tr.parent_folder_name != current_folder:
+                    if tr.album and tr.album == current_album:
+                        pass
+                    else:
+                        album_dex.append(i)
+                    current_folder = tr.parent_folder_name
+                    current_album = tr.album
+
+
+    else:
+
+
+
+        for i in range(len(default_playlist)):
+            if i == 0:
+                album_dex.append(i)
+                current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
+            else:
+                if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
+                    current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
+                    album_dex.append(i)
 
     gui.update += 2
     gui.pl_update = 1

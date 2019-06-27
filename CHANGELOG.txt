@@ -10,11 +10,14 @@ v4.5.0
  - Added random load effect to gallery for small gallery thumbnails
  - Added two side panel settings to "view" tab in settings
  - Improved gallery cache loading speed
+ - Improved MP3 genre code detection
  - Tweaked mini mode menu for simplification
  - Tweaked love track to display instantly when no last.fm account
  - Tweaked "View" settings layout
  - Tweaked minimum gallery art size (can now go smaller)
  - Tweaked column view auto deactivation on open gallery space checking
+ - Tweaked album count algorithm on stats view
+ - Tweaked gallery to group multi-cd albums
  - Fixed length of rendered tracklist (now more accurate and consistent)
  - Fixed UI stutter when changing gallery art size
  - Fixed performance issue when loading gallery image from cache
