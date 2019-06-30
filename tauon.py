@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.5.0"
+n_version = "4.5.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1220,19 +1220,11 @@ class StarStore:
     # Returns the track play time
     def get(self, index):
 
-        key = self.key(index)
-        if key in self.db:
-            return self.db[key][0]
-        else:
-            return 0
+        return self.db.get(self.key(index), (0,))[0]
 
     def get_by_object(self, track):
 
-        key = self.object_key(track)
-        if key in self.db:
-            return self.db[key][0]
-        else:
-            return 0
+        return self.db.get(self.object_key(track), (0,))[0]
 
     def get_total(self):
 
@@ -1240,11 +1232,8 @@ class StarStore:
 
     def full_get(self, index):
 
-        key = self.key(index)
-        if key in self.db:
-            return self.db[key]
-        else:
-            return None
+        return self.db.get(self.key(index))
+
 
     def remove(self, index):
 
@@ -13735,14 +13724,14 @@ def broadcast_deco():
 
     return [line_colour, colours.menu_background, None]
 
+
 def broadcast_colour():
     if pctl.broadcast_active:
         return [56, 189, 237, 255]
     else:
         if colours.lm:
             return [171, 102, 249, 255]
-        return None #[171, 102, 249, 255]
-
+        return None
 
 
 broadcast_icon = MenuIcon(asset_loader('broadcast.png', True))
@@ -13756,8 +13745,6 @@ def clear_queue():
     gui.pl_update = 1
     pctl.pause_queue = False
 
-
-#x_menu.add('Clear Queue', clear_queue, queue_deco)
 
 mode_menu = Menu(175)
 
@@ -13786,26 +13773,20 @@ mode_menu.add(_('Mini'), set_mini_mode_A1)
 mode_menu.add(_('Square'), set_mini_mode_B1)
 mode_menu.add(_('Square Large'), set_mini_mode_B2)
 mode_menu.add(_('Micro'), set_mini_mode_D)
-# x_menu.add_sub("Playback...", 120)
 extra_menu = Menu(175, show_icons=True)
-
 
 
 def stop():
     pctl.stop()
 
 
-# x_menu.add_to_sub('Stop/Eject', 1, stop)
-# extra_menu.add('Stop/Eject', stop)
-
-# x_menu.add_to_sub('Advance', 1, pctl.advance)
-# x_menu.add_to_sub('Back', 1, pctl.back)
-
 def random_track():
-    old = pctl.random_mode
-    pctl.random_mode = True
-    pctl.advance()
-    pctl.random_mode = old
+    playlist = pctl.multi_playlist[pctl.active_playlist_playing][2]
+    if playlist:
+        random_position = random.randrange(0, len(playlist))
+        track_id = playlist[random_position]
+        pctl.jump(track_id, random_position)
+        pctl.show_current()
 
 
 extra_menu.add(_('Random Track'), random_track, hint='COLON')
@@ -29489,6 +29470,7 @@ while pctl.running:
                     y1 += int(23 * gui.scale)
 
                     total = star_store.get(r_menu_index)
+
                     ratio = 0
 
                     if total > 0 and pctl.master_library[
