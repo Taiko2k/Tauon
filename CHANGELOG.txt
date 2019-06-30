@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v4.5.1
 
+ - Add "artist " search prefex to search overly to only search artists
  - Fixed random track shortcut behavior when random albums mode was set
+ - Tweaked search overlay result rankings
 
 v4.5.0
 

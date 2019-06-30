@@ -46,6 +46,8 @@ print(t_title)
 print(t_version)
 print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
+print(f"{t_title} {t_version}")
+
 # Detect platform
 windows_native = False
 if sys.platform == 'win32':
@@ -3859,7 +3861,7 @@ class PlayerCtl:
                 self.playlist_playing_position += 1
                 self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 
-                print("standand advance")
+                #print("standand advance")
                 #self.queue_target = len(self.track_queue) - 1
                 # if end:
                 #     self.play_target_gapless(jump= not end)
@@ -4257,7 +4259,7 @@ class LastFMapi:
                     self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
                 else:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                print('Scrobbled')
+                # print('Scrobbled')
             else:
                 print("Not sent, incomplete metadata")
 
@@ -4269,7 +4271,7 @@ class LastFMapi:
 
                 try:
                     self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-                    print('Scrobbled')
+                    # print('Scrobbled')
                     return True
                 except:
                     pass
@@ -4805,14 +4807,14 @@ class LastScrob:
                 * 0.50 and self.a_sc is False:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
-                print("Queue Scrobble")
+                #print("Queue Scrobble")
                 self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
             if lastfm.connected or lastfm.details_ready() or lb.enable:
-                print("Queue Scrobble")
+                #print("Queue Scrobble")
                 self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
 
@@ -5657,8 +5659,6 @@ def draw_window_tools():
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 
-print("Starting SDL...")
-
 SDL_Init(SDL_INIT_VIDEO)
 
 #TTF_Init()
@@ -5676,8 +5676,6 @@ flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
 
 if draw_border:
     flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
-
-print("Creating window...")
 
 t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -5708,15 +5706,11 @@ except:
 # get window surface and set up renderer
 #renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
-print("Setting up renderer...")
-
 renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 
 # window_surface = SDL_GetWindowSurface(t_window)
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-
-print("Configure window...")
 
 display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
@@ -5735,8 +5729,6 @@ if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
         gui.max_window_tex += 1000
     while window_size[1] > gui.max_window_tex:
         gui.max_window_tex += 1000
-
-print("Create base textures...")
 
 gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
 
@@ -5913,8 +5905,6 @@ class Drawing:
         return click
 
 
-print("Scanning fonts...")
-
 draw = Drawing()
 
 if system == "linux":
@@ -5931,6 +5921,8 @@ if system == "linux":
     ddt.prime_font(standard_font, 12, 16)
     ddt.prime_font(standard_font, 12, 17)
     ddt.prime_font(standard_font, 12, 18)
+    ddt.prime_font(standard_font, 13, 19)
+    ddt.prime_font(standard_font, 14, 20)
     ddt.prime_font(standard_font, 24, 30)
 
     ddt.prime_font(standard_font, 9, 412)
@@ -11967,6 +11959,12 @@ def add_to_queue(ref):
 
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
+
+# def add_track_to_queue(track_id):
+#
+#     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
+
+
 def split_queue_album(id):
 
     item = pctl.force_queue[0]
@@ -15478,7 +15476,7 @@ def worker2():
                 for playlist in pctl.multi_playlist:
 
                     if "<" in playlist[0]:
-                        print("Skipping search on derivative playlist: " + playlist[0])
+                        # print("Skipping search on derivative playlist: " + playlist[0])
                         continue
 
                     for track in playlist[2]:
@@ -15499,49 +15497,18 @@ def worker2():
 
                         stem = os.path.dirname(t.parent_folder_path)
 
+                        if s_text.startswith("artist "):
 
-                        if len(s_text) > 2 and s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
+                            text = s_text[7:]
+                            if text and search_magic_any(text, artist):
 
-                            if stem in metas:
-                                metas[stem] += 2
-                            else:
-                                temp_results.append([5, stem, track, playlist[6], 0])
-                                metas[stem] = 2
-
-                        if s_text in genre:
-
-                            if t.genre in genres:
-                                genres[t.genre] += 3
-                            else:
-                                temp_results.append([3, t.genre, track, playlist[6], 0])
-                                genres[t.genre] = 1
-
-                        if s_text in composer:
-
-                            if t.composer in composers:
-                                composers[t.composer] += 2
-                            else:
-                                temp_results.append([6, t.composer, track, playlist[6], 0])
-                                composers[t.composer] = 2
-
-                        if s_text in date:
-
-                            year = year_from_string(date)
-                            if year:
-
-                                if year in years:
-                                    years[year] += 1
-                                else:
-                                    temp_results.append([7, year, track, playlist[6], 0])
-                                    years[year] = 1000
-
-                        if search_magic(s_text, title + artist + filename + album + album_artist):
-
-                            if s_text in artist:
-
-                                value = 1
-                                if s_text == artist:
-                                    value = 3
+                                value = 10
+                                if text in artist:
+                                    value += 100
+                                if text.startswith(artist):
+                                    value += 100
+                                if search_magic(text, artist):
+                                    value += 100
 
                                 # Add artist
                                 if t.artist in artists:
@@ -15550,14 +15517,15 @@ def worker2():
                                     temp_results.append([0, t.artist, track, playlist[6], 0])
                                     artists[t.artist] = value
 
+                            elif text and search_magic_any(text, album_artist):
 
-                                if t.album in albums:
-                                    albums[t.album] += 1
-                                else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
-                                    albums[t.album] = 1
-
-                            elif s_text in album_artist:
+                                value = 10
+                                if text in album_artist:
+                                    value += 100
+                                if text.startswith(album_artist):
+                                    value += 100
+                                if search_magic(text, album_artist):
+                                    value += 100
 
                                 # Add album artist
                                 if t.album_artist in artists:
@@ -15566,61 +15534,130 @@ def worker2():
                                     temp_results.append([0, t.album_artist, track, playlist[6], 0])
                                     artists[t.album_artist] = value
 
+                        else:
 
-                                if t.album in albums:
-                                    albums[t.album] += 1
+
+                            if len(s_text) > 2 and s_text.replace('-', "") in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
+
+                                if stem in metas:
+                                    metas[stem] += 2
                                 else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
-                                    albums[t.album] = 1
+                                    temp_results.append([5, stem, track, playlist[6], 0])
+                                    metas[stem] = 2
 
+                            if s_text in genre:
 
-
-                            if s_text in album:
-
-                                value = 1
-                                if s_text == album:
-                                    value = 3
-
-                                if t.album in albums:
-                                    albums[t.album] += value
+                                if t.genre in genres:
+                                    genres[t.genre] += 3
                                 else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
-                                    albums[t.album] = value
+                                    temp_results.append([3, t.genre, track, playlist[6], 0])
+                                    genres[t.genre] = 1
 
-                            if search_magic(s_text, artist) or search_magic(s_text, album):
+                            if s_text in composer:
 
-                                if t.album in albums:
-                                    albums[t.album] += 3
+                                if t.composer in composers:
+                                    composers[t.composer] += 2
                                 else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
-                                    albums[t.album] = 3
+                                    temp_results.append([6, t.composer, track, playlist[6], 0])
+                                    composers[t.composer] = 2
 
-                            elif search_magic_any(s_text, artist) and search_magic_any(s_text, album):
+                            if s_text in date:
 
-                                if t.album in albums:
-                                    albums[t.album] += 3
+                                year = year_from_string(date)
+                                if year:
+
+                                    if year in years:
+                                        years[year] += 1
+                                    else:
+                                        temp_results.append([7, year, track, playlist[6], 0])
+                                        years[year] = 1000
+
+                            if search_magic(s_text, title + artist + filename + album + album_artist):
+
+                                if search_magic(s_text, artist):
+
+                                    value = 1
+                                    if artist.startswith(s_text):
+                                        value = 5
+
+                                    # Add artist
+                                    if t.artist in artists:
+                                        artists[t.artist] += value
+                                    else:
+                                        temp_results.append([0, t.artist, track, playlist[6], 0])
+                                        artists[t.artist] = value
+
+
+                                    if t.album in albums:
+                                        albums[t.album] += 1
+                                    else:
+                                        temp_results.append([1, t.album, track, playlist[6], 0])
+                                        albums[t.album] = 1
+
+                                elif search_magic(s_text, album_artist):
+
+                                    # Add album artist
+                                    if t.album_artist in artists:
+                                        artists[t.album_artist] += value
+                                    else:
+                                        temp_results.append([0, t.album_artist, track, playlist[6], 0])
+                                        artists[t.album_artist] = value
+
+
+                                    if t.album in albums:
+                                        albums[t.album] += 1
+                                    else:
+                                        temp_results.append([1, t.album, track, playlist[6], 0])
+                                        albums[t.album] = 1
+
+
+
+                                if s_text in album:
+
+                                    value = 1
+                                    if s_text == album:
+                                        value = 3
+
+                                    if t.album in albums:
+                                        albums[t.album] += value
+                                    else:
+                                        temp_results.append([1, t.album, track, playlist[6], 0])
+                                        albums[t.album] = value
+
+                                if search_magic(s_text, artist) or search_magic(s_text, album):
+
+                                    if t.album in albums:
+                                        albums[t.album] += 3
+                                    else:
+                                        temp_results.append([1, t.album, track, playlist[6], 0])
+                                        albums[t.album] = 3
+
+                                elif search_magic_any(s_text, artist) and search_magic_any(s_text, album):
+
+                                    if t.album in albums:
+                                        albums[t.album] += 3
+                                    else:
+                                        temp_results.append([1, t.album, track, playlist[6], 0])
+                                        albums[t.album] = 3
+
+                                if s_text in title:
+
+                                    if t not in tracks:
+
+                                        value = 50
+                                        if s_text == title:
+                                            value = 200
+
+                                        temp_results.append([2, t.title, track, playlist[6], value])
+
+                                        tracks.add(t)
+
+
                                 else:
-                                    temp_results.append([1, t.album, track, playlist[6], 0])
-                                    albums[t.album] = 3
+                                    if t not in tracks:
+                                        temp_results.append([2, t.title, track, playlist[6], 1])
 
-                            if s_text in title:
-
-                                if t not in tracks:
-
-                                    value = 50
-                                    if s_text == title:
-                                        value = 1000
-
-                                    temp_results.append([2, t.title, track, playlist[6], value])
-
-                                    tracks.add(t)
-
-
-                            else:
-                                if t not in tracks:
-                                    temp_results.append([2, t.title, track, playlist[6], 1])
-
-                                    tracks.add(t)
+                                        tracks.add(t)
 
 
                         br += 1
@@ -24844,9 +24881,9 @@ class Showcase:
 
                 else:
 
-                    ddt.draw_text((x, y, 2), track.artist, t1, 17, w)
+                    ddt.draw_text((x, y, 2), track.artist, t1, 20, w)
 
-                    y += round(45 * gui.scale)
+                    y += round(48 * gui.scale)
 
                     if len(track.title) < 35:
                         ddt.draw_text((x, y, 2), track.title, t1, 228, w)
@@ -25699,8 +25736,6 @@ c_hit_callback = SDL_HitTest(hit_callback)
 SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 
-print("Starting worker threads...")
-
 worker1Thread = threading.Thread(target=worker1)
 worker1Thread.daemon = True
 worker1Thread.start()
@@ -25755,7 +25790,7 @@ for item in r_arg_queue:
 sv = SDL_version()
 SDL_GetVersion(sv)
 sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
-print("Using SDL verrsion: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
+# print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
 if prefs.backend == 2:
@@ -26096,13 +26131,10 @@ def update_layout_do():
 
         update_set()
 
-print("Flushing render target...")
 
 SDL_SetRenderTarget(renderer, None)
 SDL_RenderClear(renderer)
 SDL_RenderPresent(renderer)
-
-print("Presenting Window...")
 
 SDL_ShowWindow(t_window)
 
@@ -26360,8 +26392,6 @@ if reload_state:
 
     # if reload_state[0] == 2:
     #     pctl.playing_state = 2
-
-print("Setup done. Entering main loop\n")
 
 pctl.notify_update()
 
