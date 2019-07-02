@@ -508,7 +508,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             self.open_file_flags = BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT
             if not prefs.short_buffer:
-                print("BASS - Enable async loading")
                 self.open_file_flags |= BASS_ASYNCFILE
             if pctl.system == "windows":
                 self.open_file_flags |= BASS_UNICODE
@@ -683,7 +682,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             self.try_init()
 
-            print("Open file...")
+            #print("Open file...")
 
             self.dl_ready = False
 
@@ -743,6 +742,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 #if self.state == "suspend":
                 #    target = self.old_target
                 #else:
+                print(f"Open file: {pctl.target_open}")
                 self.old_target = pctl.target_open.encode('utf-8')
                 target = self.old_target
 
@@ -856,8 +856,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 err = BASS_ErrorGetCode()
                 #print(err)
 
-                print("Track transition...")
-                print("We are " + str(tlen - tpos)[:5] + " seconds from end")
+                print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
                 if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 3:
@@ -867,7 +866,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     #print(BASS_ChannelIsActive(self.channel))
                     #sync = BASS_ChannelSetSync(self.channel, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync, new_handle)
                     #print(sync)
-                    print("Activate sync...")
+                    # print("Activate sync...")
                     #print(BASS_ErrorGetCode())
                     # print(BASS_ErrorGetCode())
 
@@ -998,7 +997,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     def sync_gapless_transition2(handle, channel, data, user):
 
-        print("End callback")
         bass_player.end_hit_timer.set()
         if bass_player.syncing and bass_player.new_handle_for_sync:
 
