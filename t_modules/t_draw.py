@@ -38,7 +38,7 @@ else:
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref, pointer
     import win32con, win32api, win32gui, win32ui
     import struct
-    
+
 if system == "windows":
 
     class RECT(ctypes.Structure):
@@ -394,7 +394,9 @@ class TDraw:
         y = round(location[1])
 
         if self.pretty_rect:
+
             w, h = self.get_text_wh(text, font, max_x, wrap)
+
 
             quick_box = [x, y, w, h]
 
@@ -420,10 +422,13 @@ class TDraw:
         key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
 
         if not real_bg:
-            if key in self.ttc:
+            sd = self.ttc.get(key)
+            if sd:
+
                 sd = self.ttc[key]
                 sd[0].x = round(x)
                 sd[0].y = round(y) - sd[2]
+
                 self.__render_text(sd, x, y, range_top, range_height, align)
 
                 if wrap:
@@ -431,7 +436,9 @@ class TDraw:
                 return sd[0].w
 
         if not self.pretty_rect:  # Would have already done this if True
+
             w, h = self.get_text_wh(text, font, max_x, wrap)
+
 
         if w < 1:
             return 0
@@ -453,6 +460,8 @@ class TDraw:
                 box.x = box.x - int(box.w / 2)
 
             SDL_RenderReadPixels(self.renderer, box, SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
+
+        perf.set()
 
         surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
 
@@ -504,13 +513,13 @@ class TDraw:
         # options = context.get_font_options()
         # print(options.get_antialias())
 
-
         layout.set_text(text, -1)
 
         y_off = layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
         if self.scale == 2:
             y_off -= 2
+
 
         PangoCairo.show_layout(context, layout)
 
@@ -535,6 +544,8 @@ class TDraw:
         pack = [dst, c, y_off, self.was_truncated]
 
         self.__render_text(pack, x, y, range_top, range_height, align)
+
+
 
         # Don't cache if using real background data
         if not real_bg:

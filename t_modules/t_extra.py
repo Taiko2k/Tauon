@@ -178,7 +178,7 @@ def checkEqual(lst):
 # Gives a score from 0-7 based on number of seconds
 def star_count(sec, dur):
     stars = 0
-    if sec / dur > 0.95:
+    if dur and sec / dur > 0.95:
         stars += 1
     if sec > 60 * 15:
         stars += 1
@@ -193,6 +193,14 @@ def star_count(sec, dur):
     if sec > 60 * 60 * 10:
         stars += 1
     return stars
+
+# Gives a score from 0.0 - 1.0 based on number of seconds
+def star_count2(sec):
+    star = 0
+    star += min(sec / (60 * 4), 0.2)
+    star += min(sec / (60 * 60), 0.4)
+    star += sec / (60 * 60 * 10)
+    return float(round(min(star, 1), 1))
 
 
 def search_magic(terms, evaluate):

@@ -42,11 +42,8 @@ t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
-print(t_title)
-print(t_version)
-print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
-
 print(f"{t_title} {t_version}")
+print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
 # Detect platform
 windows_native = False
@@ -4627,7 +4624,7 @@ def get_love_index(index):
         return False
 
 
-def love(set=True, track_id=None):
+def love(set=True, track_id=None, no_delay=False):
 
     if len(pctl.track_queue) < 1:
         return False
@@ -4657,7 +4654,7 @@ def love(set=True, track_id=None):
     loved ^= True
 
     delay = 0.3
-    if not lastfm.details_ready():
+    if not lastfm.details_ready() or no_delay:
         delay = 0
 
     if loved:
@@ -4688,6 +4685,8 @@ def love(set=True, track_id=None):
 
     gui.pl_update = 2
     gui.update += 1
+    if pctl.mpris is not None:
+        pctl.mpris.update(force=True)
 
 
 
@@ -5168,15 +5167,21 @@ class Gnome:
                         if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
                             track = pctl.playing_object()
                             self.playing_index = track.index
+                            id = f"/org/mpris/MediaPlayer2/TrackList/{track.index}-{pctl.playlist_playing_position}"
 
                             d = {
-                                'mpris:trackid': "/org/mpris/MediaPlayer2/TrackList/" + str(pctl.playlist_playing_position),
+                                'mpris:trackid': id,
                                 'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
                                 'xesam:album': track.album,
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
-                                'xesam:url': "file://" + track.fullpath
+                                'xesam:url': "file://" + track.fullpath,
+                                'xesam:asText': track.lyrics,
+                                'xesam:autoRating': star_count2(star_store.get(track.index)),
+                                'xesam:composer': track.composer,
+                                'tauon:loved': love(False, track.index)
+
                             }
 
                             try:
@@ -5326,9 +5331,24 @@ class Gnome:
                     def OpenUri(self, uri):
                         pass
 
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def LovePlaying(self):
+                        if not love(set=False):
+                            love(set=True, no_delay=True)
+                            self.update(True)
+                            gui.pl_update += 1
+
+                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
+                    def UnLovePlaying(self):
+                        if love(set=False):
+                            love(set=True, no_delay=True)
+                            self.update(True)
+                            gui.pl_update += 1
+
                     @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Seeked(self, position):
                         pass
+
 
                     def seek_do(self, seconds):
                         self.Seeked(dbus.Int64(int(seconds * 1000000)))
@@ -16129,7 +16149,12 @@ def worker1():
 
             pctl.master_library[master_count] = nt
             added.append(master_count)
-            after_scan.append(nt)
+
+            if prefs.auto_sort:
+                tag_scan(nt)
+            else:
+                after_scan.append(nt)
+
             master_count += 1
 
         # bm.get("fill entry")
@@ -20978,6 +21003,9 @@ class StandardPlaylist:
                         # Add folder to queue if middle click
                         if middle_click:
                             add_album_to_queue(track_id, track_position)
+                            playlist_selected = track_position
+                            shift_selection = [playlist_selected]
+                            gui.pl_update += 1
 
                         # Play if double click:
                         if d_mouse_click and track_position in shift_selection and coll_point(last_click_location, (track_box)):
@@ -21106,6 +21134,9 @@ class StandardPlaylist:
             if middle_click and line_hit:
                 pctl.force_queue.append(queue_item_gen(track_id,
                                                        track_position, pl_to_id(pctl.active_playlist_viewing)))
+                playlist_selected = track_position
+                shift_selection = [playlist_selected]
+                gui.pl_update += 1
 
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)

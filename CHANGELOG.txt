@@ -3,9 +3,12 @@ Changelog-------------------------------------
 
 v4.5.1
 
- - Add "artist " search prefex to search overly to only search artists
+ - Added "artist " search prefex to search overly to only search artists
+ - Extended mpris2 with LovePlaying and UnLovePlaying methods
  - Fixed random track shortcut behavior when random albums mode was set
+ - Improved middle click add to queue to select track
  - Tweaked search overlay result rankings
+ - Tweaked showcase view artist line font size
 
 v4.5.0
 
