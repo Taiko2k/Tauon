@@ -7057,6 +7057,37 @@ def clear_img_cache(delete_disk=True):
     gui.update += 1
 
 
+def clear_track_image_cache(track):
+
+    gui.halt_image_rendering = True
+    if gall_ren.queue:
+        time.sleep(0.05)
+    if gall_ren.queue:
+        time.sleep(0.2)
+    if gall_ren.queue:
+        time.sleep(0.5)
+
+    direc = os.path.join(cache_directory)
+    if os.path.isdir(direc):
+        for item in os.listdir(direc):
+            n = item.split("-")
+            if len(n) > 2 and n[2] == str(track.index):
+                os.remove(os.path.join(direc, item))
+                print("Cleared cache thumbnail: " + os.path.join(direc, item))
+
+    keys = set()
+    for key, value in gall_ren.gall.items():
+        if key[0] == track:
+            SDL_DestroyTexture(value[2])
+            if key not in keys:
+                keys.add(key)
+    for key in keys:
+        del gall_ren.gall[key]
+        if key in gall_ren.key_list:
+            gall_ren.key_list.remove(key)
+
+    gui.halt_image_rendering = False
+    album_art_gen.clear_cache()
 
 class ImageObject():
     def __init__(self):
@@ -7799,6 +7830,8 @@ class AlbumArt():
         self.image_cache = []
         self.source_cache = {}
         self.current_wu = None
+
+
 
 
 album_art_gen = AlbumArt()
@@ -9672,7 +9705,10 @@ def download_art1(tr):
                 f.close()
 
                 show_message("Cover art downloaded from fanart.tv", 'done')
-                clear_img_cache()
+                #clear_img_cache()
+                for track_id in default_playlist:
+                    if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
+                        clear_track_image_cache(pctl.g(track_id))
                 return
         except:
             print("Failed to get from fanart.tv")
@@ -9690,7 +9726,13 @@ def download_art1(tr):
             f.close()
 
             show_message("Cover art downloaded from MusicBrainz", 'done')
-            clear_img_cache()
+            #clear_img_cache()
+            clear_track_image_cache(tr)
+
+            for track_id in default_playlist:
+                if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
+                    clear_track_image_cache(pctl.g(track_id))
+
             return
 
     except:
@@ -9782,6 +9824,8 @@ def remove_embed_picture(track_object):
                 removed += 1
                 processed = True
 
+            clear_track_image_cache(tr)
+
     except Exception as e:
         show_message("Image remove error", 'error')
         return
@@ -9801,7 +9845,9 @@ def remove_embed_picture(track_object):
             show_message("Deleted embedded picture from " + str(removed) + " files", 'done')
     if pr == 1:
         pctl.revert()
-    clear_img_cache()
+    #clear_img_cache()
+
+
 
 # Delete all embedded album artwork from all files in the same folder as this track
 picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_deco, pass_ref=True, pass_ref_deco=True)
@@ -9826,7 +9872,8 @@ def delete_file_image(track_object):
         if showc is not None and showc[0] == 0:
             source = album_art_gen.get_sources(track_object)[showc[2]][1]
             os.remove(source)
-            clear_img_cache()
+            #clear_img_cache()
+            clear_track_image_cache(track_object)
             print("Deleted file: " + source)
     except:
         show_message("Something went wrong", 'error')
@@ -12383,9 +12430,15 @@ def clean_folder(index, do=False):
                 if os.path.isfile(os.path.join(folder, item)):
                     print('Deleting File: ' + os.path.join(folder, item))
                     os.remove(os.path.join(folder, item))
-            clear_img_cache()
+            #clear_img_cache()
+
+            for track_id in default_playlist:
+                if pctl.g(track_id).parent_folder_path == folder:
+                    clear_track_image_cache(pctl.g(track_id))
+
     except Exception as e:
         #show_message(str(e))
+        raise
         show_message("Error deleting files.", 'warning', "May not have permission or file may be set to read-only")
         return 0
 
@@ -13465,7 +13518,7 @@ def standard_size():
     gui.rspw = 80 + int(window_size[0] * 0.18)
     update_layout = True
     album_mode_art_size = 130
-    clear_img_cache()
+    #clear_img_cache()
 
 
 def goto_album(playlist_no, down=False, force=False):
@@ -25623,14 +25676,14 @@ def download_img(link, target_folder):
                 f = open(save_target, 'wb')
                 f.write(response.read())
                 f.close()
-                clear_img_cache()
+                #clear_img_cache()
 
             elif info.get_content_subtype() == 'png':
                 save_target = os.path.join(target_dir, 'image.png')
                 f = open(save_target, 'wb')
                 f.write(response.read())
                 f.close()
-                clear_img_cache()
+                #clear_img_cache()
             else:
                 show_message("Image types other than PNG or JPEG are currently not supported", 'warning')
         else:
