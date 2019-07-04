@@ -3301,7 +3301,7 @@ class PlayerCtl:
         self.playerCommand = 'seek'
         self.playerCommandReady = True
 
-        print("seek: " + str(new))
+        #print("seek: " + str(new))
 
         if self.mpris is not None:
             self.mpris.seek_do(self.playing_time)
@@ -20448,11 +20448,14 @@ class MiniMode2:
         # Seek bar
         if (mouse_in or prefs.mini_mode_micro_always_show_seek) and pctl.playing_state > 0:
 
-            hit_rect = (h, h - 12 * gui.scale, w - h, 13 * gui.scale)
+            hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
 
             if coll(hit_rect) and mouse_up:
                 p = (mouse_position[0] - h) / (w - h)
-                if p > .96:
+
+                if p < 0 or mouse_position[0] - h < 6 * gui.scale:
+                    pctl.seek_time(0)
+                elif p > .96:
                     pctl.advance()
                 else:
                     pctl.seek_decimal(p)
@@ -25708,7 +25711,7 @@ def hit_callback(win, point, data):
         if key_shift_down or key_shiftr_down:
             return SDL_HITTEST_NORMAL
 
-        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] and point.contents.y > window_size[1] - 12 * gui.scale:
+        if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] - 5 * gui.scale and point.contents.y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
         if point.contents.y < gui.window_control_hit_area_h and point.contents.x > window_size[
@@ -25782,7 +25785,7 @@ worker3Thread.start()
 
 if system == 'linux':
     if de_nofity_support:
-        Notify.init("Tauon Music Box Transcode Notification")
+        Notify.init("Tauon Music Box")
         g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                               "Transcoding has finished.")
 

@@ -6,7 +6,9 @@ v4.5.1
  - Added "artist " search prefex to search overly to only search artists
  - Extended mpris2 with LovePlaying and UnLovePlaying methods
  - Fixed random track shortcut behavior when random albums mode was set
+ - Fixed notification text for KDE Plasma update
  - Improved middle click add to queue to select track
+ - Improved micro mode seek bar click area for restarting track
  - Tweaked search overlay result rankings
  - Tweaked showcase view artist line font size
 
