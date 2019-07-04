@@ -25664,7 +25664,7 @@ lyric_side_bottom_pulse = EdgePulse()
 
 
 
-def download_img(link, target_folder):
+def download_img(link, target_folder, track):
 
     try:
         response = urllib.request.urlopen(link)
@@ -25676,6 +25676,7 @@ def download_img(link, target_folder):
                 f.write(response.read())
                 f.close()
                 #clear_img_cache()
+                clear_track_image_cache(track)
 
             elif info.get_content_subtype() == 'png':
                 save_target = os.path.join(target_dir, 'image.png')
@@ -25683,6 +25684,7 @@ def download_img(link, target_folder):
                 f.write(response.read())
                 f.close()
                 #clear_img_cache()
+                clear_track_image_cache(track)
             else:
                 show_message("Image types other than PNG or JPEG are currently not supported", 'warning')
         else:
@@ -26578,7 +26580,7 @@ while pctl.running:
                     track = pctl.playing_object()
                     target_dir = track.parent_folder_path
 
-                    shoot_dl = threading.Thread(target=download_img, args=(link, target_dir))
+                    shoot_dl = threading.Thread(target=download_img, args=(link, target_dir, track))
                     shoot_dl.daemon = True
                     shoot_dl.start()
 
