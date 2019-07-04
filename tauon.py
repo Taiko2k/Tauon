@@ -12438,7 +12438,6 @@ def clean_folder(index, do=False):
 
     except Exception as e:
         #show_message(str(e))
-        raise
         show_message("Error deleting files.", 'warning', "May not have permission or file may be set to read-only")
         return 0
 
