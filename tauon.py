@@ -864,6 +864,7 @@ class Prefs:    # Used to hold any kind of settings
         self.hide_queue = True
         self.show_playlist_list = True
         self.thin_gallery_borders = False
+        self.show_current_on_transition = False
 
 
 prefs = Prefs()
@@ -2251,6 +2252,7 @@ def save_prefs():
 
     cf.update_value("broadcast-port", prefs.broadcast_port)
     cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
+    cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
     if os.path.isdir(config_directory):
         cf.dump(os.path.join(config_directory, "tauon.conf"))
@@ -2313,7 +2315,9 @@ def load_prefs():
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
     prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
+    prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition")
 
+#show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
         cf.br()
         cf.add_text("[fonts]")
@@ -3490,6 +3494,9 @@ class PlayerCtl:
 
         # Temporary Workaround for UI block causing unwanted dragging
         quick_d_timer.set()
+
+        if prefs.show_current_on_transition:
+            quiet = False
 
 
         # Trim the history if it gets too long

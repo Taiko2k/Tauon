@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.5.1
 
  - Added "artist " search prefex to search overly to only search artists
+ - Added config option "show-current-on-transition"
  - Extended mpris2 with LovePlaying and UnLovePlaying methods
  - Fixed random track shortcut behavior when random albums mode was set
  - Fixed notification text for KDE Plasma update
