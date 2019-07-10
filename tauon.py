@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.5.1"
+n_version = "4.5.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -8396,6 +8396,7 @@ class LoadImageAsset:
             SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
 
         self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        SDL_FreeSurface(raw_image)
         self.w = p_w.contents.value
         self.h = p_h.contents.value
 
@@ -13552,14 +13553,15 @@ def goto_album(playlist_no, down=False, force=False):
 
     # If the album is within the view port already, dont jump to it
     # (unless we really want to with force)
-    if not force and album_pos_px - 20 < px < album_pos_px + window_size[1]:
+    if not force and album_pos_px - 0 < px < album_pos_px + window_size[1]:
 
         # Dont chance the view since its alread in the view port
         # But if the album is just out of view on the bottom, bring it into view on to bottom row
-        if down or True and window_size[1] > (album_mode_art_size + album_v_gap) * 2:
+        if window_size[1] > (album_mode_art_size + album_v_gap) * 2:
             while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[
                 1] - 40:
                 album_pos_px += 1
+
 
     else:
         # Set the view to the calculated position
@@ -28074,6 +28076,7 @@ while pctl.running:
                         album_pos_px = round(album_v_slide_value * -1)
                         if album_dex:
                             gallery_pulse_top.pulse()
+
 
                     if album_pos_px > max_scroll:
                         album_pos_px = max_scroll

@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.5.2
+
+ - Fixed gallery not correctly shifting when clicking on top row when out of alignment
+
 v4.5.1
 
  - Added "artist " search prefex to search overly to only search artists
