@@ -867,6 +867,7 @@ class Prefs:    # Used to hold any kind of settings
         self.show_current_on_transition = False
 
 
+
 prefs = Prefs()
 
 def check_transfer_p():
@@ -1978,6 +1979,8 @@ try:
         prefs.mini_mode_mode = save[130]
     if save[131] is not None:
         after_scan = save[131]
+    if save[132] is not None:
+        gui.gallery_positions = save[132]
 
     state_file.close()
     del save
@@ -1995,7 +1998,7 @@ except:
 # if prefs.backend == 1:
 #     if not os.path.isfile(install_directory + '/lib/libbass.so'):
 #         prefs.backend = 2
-
+core_timer.set()
 
 # temporary
 if window_size is None:
@@ -7028,6 +7031,9 @@ def img_slide_update_gall(value):
     # Update sizes
     gall_ren.size = album_mode_art_size
 
+    if album_mode_art_size > 150:
+        prefs.thin_gallery_borders = False
+
 
 def clear_img_cache(delete_disk=True):
     global album_art_gen
@@ -10394,6 +10400,15 @@ def delete_playlist(index):
     reload()
     test_show_add_home_music()
 
+    # Remove any old gallery positions
+    ids = []
+    for p in pctl.multi_playlist:
+        ids.append(p[6])
+    for key in list(gui.gallery_positions.keys()):
+        if key not in ids:
+            del gui.gallery_positions[key]
+
+
 
 to_scan = []
 
@@ -13530,6 +13545,10 @@ def standard_size():
 
 def goto_album(playlist_no, down=False, force=False):
 
+    if core_timer.get() < 1:
+        return
+
+
     # (down flag not curretly used)
     global album_pos_px
     global album_dex
@@ -13553,7 +13572,7 @@ def goto_album(playlist_no, down=False, force=False):
 
     # If the album is within the view port already, dont jump to it
     # (unless we really want to with force)
-    if not force and album_pos_px - 0 < px < album_pos_px + window_size[1]:
+    if not force and album_pos_px + album_v_slide_value < px < album_pos_px + window_size[1]:
 
         # Dont chance the view since its alread in the view port
         # But if the album is just out of view on the bottom, bring it into view on to bottom row
@@ -13577,6 +13596,8 @@ def goto_album(playlist_no, down=False, force=False):
         return album_dex[re]
     else:
         return 0
+
+    gui.update += 1
 
 def toggle_album_mode(force_on=False):
     global album_mode
@@ -18208,12 +18229,14 @@ class Over:
             y += 25 * gui.scale
             self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
             y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
+            if album_mode_art_size < 160:
+                self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
             y += 55 * gui.scale
 
             ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
             album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+
 
         if self.view_view == 1:
 
@@ -26442,7 +26465,8 @@ def save_state():
             prefs.bg_showcase_only,
             None, #prefs.discogs_pat,
             prefs.mini_mode_mode,
-            after_scan]
+            after_scan,
+            gui.gallery_positions]
 
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
@@ -26494,7 +26518,10 @@ pctl.notify_update()
 
 key_focused = 0
 
+album_pos_px = album_v_slide_value
 
+if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
+    album_pos_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
 
 
 while pctl.running:
@@ -30895,6 +30922,7 @@ pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
+gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = album_pos_px
 
 save_state()
 
