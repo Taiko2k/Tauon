@@ -403,6 +403,7 @@ scroll_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
+queue_add_timer = Timer(100)
 
 f_store = FunctionStore()
 
@@ -9182,6 +9183,7 @@ def add_album_to_queue(ref, position=None):
     #                          position, pl_to_id(pctl.active_playlist_viewing), 1, partway, uid_gen()])
     pctl.force_queue.append(queue_item_gen(ref,
                              position, pl_to_id(pctl.active_playlist_viewing), 1, partway))
+    queue_timer_set()
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 
@@ -12058,7 +12060,12 @@ def pl_to_id(pl):
 def add_to_queue(ref):
 
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
+    queue_timer_set()
 
+def queue_timer_set():
+    if not gui.lsp:
+        queue_add_timer.set()
+        gui.frame_callback_list.append(TestTimer(2.51))
 
 # def add_track_to_queue(track_id):
 #
@@ -21247,6 +21254,7 @@ class StandardPlaylist:
                 playlist_selected = track_position
                 shift_selection = [playlist_selected]
                 gui.pl_update += 1
+                queue_timer_set()
 
 
             # Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
@@ -23573,7 +23581,7 @@ class QueueBox:
 
         pctl.pause_queue ^= True
 
-    def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False):
+    def draw_card(self, x, y, w, h, yy, track, fqo, draw_back=False, draw_album_indicator=True):
 
         text_colour = [230, 230, 230, 255]
         bg = self.bg
@@ -23612,19 +23620,20 @@ class QueueBox:
         ddt.draw_text((rect[0] + (40 * gui.scale), line2y), line, text_colour, 211,
                       max_w=rect[2] - 60 * gui.scale, bg=bg)
 
-        if fqo[3] == 1:
-            if fqo[4] == 0:
-                ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255],
-                           True)
-            else:
-                ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
-                           [140, 220, 20, 255], True)
-
-        if fqo[6]:
-            xx = rect[0] + rect[2] - 9 * gui.scale
+        if draw_album_indicator:
             if fqo[3] == 1:
-                xx -= 11 * gui.scale
-            ddt.rect_r((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
+                if fqo[4] == 0:
+                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]), [220, 130, 20, 255],
+                               True)
+                else:
+                    ddt.rect_r((rect[0] + rect[2] - 5 * gui.scale, rect[1], 5 * gui.scale, rect[3]),
+                               [140, 220, 20, 255], True)
+
+            if fqo[6]:
+                xx = rect[0] + rect[2] - 9 * gui.scale
+                if fqo[3] == 1:
+                    xx -= 11 * gui.scale
+                ddt.rect_r((xx, rect[1] + 5 * gui.scale, 7 * gui.scale, 7 * gui.scale), [230, 190, 0, 255], True)
 
     def draw(self, x, y, w, h):
 
@@ -27308,14 +27317,14 @@ while pctl.running:
 
                 if gui.album_tab_mode:
                     add_album_to_queue(default_playlist[get_album_info(playlist_selected)[1][0]], playlist_selected)
-
+                    queue_timer_set()
                 else:
                     # pctl.force_queue.append([default_playlist[playlist_selected],
                     #                          playlist_selected, pl_to_id(pctl.active_playlist_viewing), 0, 0,
                     #                          uid_gen()])
                     pctl.force_queue.append(queue_item_gen(default_playlist[playlist_selected],
                                              playlist_selected, pl_to_id(pctl.active_playlist_viewing)))
-
+                    queue_timer_set()
 
         if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
             input.key_return_press = False
@@ -28305,7 +28314,7 @@ while pctl.running:
                                         pctl.force_queue.append(queue_item_gen(default_playlist[album_dex[album_on]],
                                                                  album_dex[album_on],
                                                                  pl_to_id(pctl.active_playlist_viewing), 1, partway))
-
+                                        queue_timer_set()
 
                                     else:
                                         playlist_selected = album_dex[album_on]
@@ -30438,6 +30447,30 @@ while pctl.running:
             else:
                 mini_mode.render()
 
+        # Add to queue toast
+        if pctl.force_queue and not gui.lsp:
+            t = queue_add_timer.get()
+            if t < 2.5:
+                track = pctl.g(pctl.force_queue[-1][0])
+
+                rect = (5 * gui.scale, gui.panelY + 5 * gui.scale, 210 * gui.scale, 39 * gui.scale)
+                fields.add(rect)
+
+                if coll(rect):
+                    queue_add_timer.force_set(10)
+                else:
+                    ddt.rect_r(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
+                    ddt.rect_r(rect, queue_box.card_bg, True)
+
+                    ddt.text_background_colour = queue_box.card_bg
+                    top_text = "Track"
+                    if pctl.force_queue[-1][3] == 1:
+                        top_text = "Album"
+
+                    ddt.draw_text((rect[0] + 165 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.grey(80), 11)
+                    ddt.draw_text((rect[0] + 165 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.grey(80), 11)
+
+                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 150 * gui.scale, 200 * gui.scale, rect[1] + 1 * gui.scale, track, pctl.force_queue[-1], False, False)
 
         # Render Menus-------------------------------
         for instance in Menu.instances:

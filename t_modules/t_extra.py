@@ -703,6 +703,10 @@ def year_from_string(date_string):
     else:
         return False
 
+
+def grow_rect(rect, px):
+    return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
+
 # def get_hash(f_path, mode='sha256'):
 #     h = hashlib.new(mode)
 #     with open(f_path, 'rb') as file:
