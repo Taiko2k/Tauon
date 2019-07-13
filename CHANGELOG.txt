@@ -3,8 +3,10 @@ Changelog-------------------------------------
 
 v4.5.2
 
+ - Added setting "Force subpixel text rendering"
  - Fixed gallery not correctly shifting when clicking on top row when out of alignment
  - Tweaked gallery to remember scroll position on restart
+ - Tweaked gallery tag bar to not activate when window not focused
  - Disabled thin gallery border setting for large art sizes (temporary bug mitigation)
 
 v4.5.1
