@@ -866,6 +866,9 @@ class Prefs:    # Used to hold any kind of settings
         self.thin_gallery_borders = False
         self.show_current_on_transition = False
 
+        self.force_subpixel_text = False
+
+
 
 
 prefs = Prefs()
@@ -2238,6 +2241,7 @@ def save_prefs():
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
     cf.update_value("font-main-bold", prefs.linux_font_bold)
+    cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
 
     cf.update_value("double-digit-indicies", prefs.dd_index)
     cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
@@ -2328,6 +2332,7 @@ def load_prefs():
         prefs.linux_font = cf.sync_add("string", "font-main-standard", prefs.linux_font, "Recomended: Noto Sans, Sugested alternate: Liberation Sans")
         prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold, "Recomended: Noto Sans Medium")
         prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold, "Recomended: Noto Sans Bold")
+        prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
 
     cf.br()
     cf.add_text("[tracklist]")
@@ -5893,6 +5898,7 @@ from t_modules.t_draw import TDraw
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
+ddt.force_subpixel_text = prefs.force_subpixel_text
 
 class Drawing:
 
@@ -11344,6 +11350,10 @@ def reload_config_file():
 
     load_prefs()
     gui.opened_config_file = False
+
+    ddt.force_subpixel_text = prefs.force_subpixel_text
+    ddt.clear_text_cache()
+
     show_message(_("Configuration reloaded"), 'done')
 
 def open_config_file():
@@ -14113,6 +14123,15 @@ def toggle_level_meter(mode=0):
         gui.vis_want = 0
 
     gui.update_layout()
+
+def toggle_force_subpixel(mode=0):
+
+    if mode == 1:
+        return prefs.force_subpixel_text != 0
+
+    prefs.force_subpixel_text ^= True
+    ddt.force_subpixel_text = prefs.force_subpixel_text
+    ddt.clear_text_cache()
 
 
 def level_meter_special_2():
@@ -18296,6 +18315,10 @@ class Over:
             y += 30 * gui.scale
 
             ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
+
+            if system != 'windows':
+                y += 25 * gui.scale
+                self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
             y += 25 * gui.scale
 
@@ -28591,9 +28614,8 @@ while pctl.running:
                     hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
                     fields.add(hot_r)
 
-
                     if gui.pt == 0:  # mouse moves in
-                        if coll(hot_r):
+                        if coll(hot_r) and window_is_focused():
                             gui.pt_on.set()
                             gui.pt = 1
                     elif gui.pt == 1:  # wait then trigger if stays, reset if goes out

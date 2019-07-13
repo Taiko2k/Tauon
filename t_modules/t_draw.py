@@ -222,6 +222,7 @@ class TDraw:
         # All
         self.renderer = renderer
         self.scale = 1
+        self.force_subpixel_text = False
 
         # Drawing
         self.sdl_rect = SDL_Rect(10, 10, 10, 10)
@@ -229,12 +230,12 @@ class TDraw:
         # Text and Fonts
         self.source_rect = SDL_Rect(0, 0, 0, 0)
         self.dest_rect = SDL_Rect(0, 0, 0, 0)
-        
+
+
         if system == "linux":
             self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
             self.context = cairo.Context(self.surf)
             self.layout = PangoCairo.create_layout(self.context)
-       
             
         else:
             self.cache = {}
@@ -464,8 +465,15 @@ class TDraw:
         perf.set()
 
         surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
+        #surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
 
         context = cairo.Context(surf)
+
+        if self.force_subpixel_text:
+            options = context.get_font_options()
+            options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+            context.set_font_options(options)
+
         layout = PangoCairo.create_layout(context)
 
         if max_y is not None:
@@ -491,7 +499,7 @@ class TDraw:
 
         if not real_bg:
             context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
-            #context.set_source_rgba(0, 0, 0, 0)
+            # context.set_source_rgba(0, 0, 0, 0)
             context.fill()
         context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
 
@@ -503,23 +511,12 @@ class TDraw:
         # desc.set_family("Arial")
 
         layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
-
-
-        # This seems broken, it always uses the system fonconfig and override here does not work?
-        # options = context.get_font_options()
-        # options.set_antialias(cairo.ANTIALIAS_GRAY)
-        # context.set_font_options(options)
-
-        # options = context.get_font_options()
-        # print(options.get_antialias())
-
         layout.set_text(text, -1)
 
         y_off = layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
         if self.scale == 2:
             y_off -= 2
-
 
         PangoCairo.show_layout(context, layout)
 
@@ -544,8 +541,6 @@ class TDraw:
         pack = [dst, c, y_off, self.was_truncated]
 
         self.__render_text(pack, x, y, range_top, range_height, align)
-
-
 
         # Don't cache if using real background data
         if not real_bg:
