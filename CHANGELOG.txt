@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.5.2
 
  - Added setting "Force subpixel text rendering"
+ - Added "Add to queue" toast box
  - Fixed gallery not correctly shifting when clicking on top row when out of alignment
  - Tweaked gallery to remember scroll position on restart
  - Tweaked gallery tag bar to not activate when window not focused
