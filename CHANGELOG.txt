@@ -6,6 +6,8 @@ v4.5.2
  - Added setting "Force subpixel text rendering"
  - Added "Add to queue" toast box
  - Fixed gallery not correctly shifting when clicking on top row when out of alignment
+ - Fixed tracklist truncating end track position if only tracks were listed
+ - Fixed bug causing global search crashing in some cases
  - Tweaked gallery to remember scroll position on restart
  - Tweaked gallery tag bar to not activate when window not focused
  - Disabled thin gallery border setting for large art sizes (temporary bug mitigation)
