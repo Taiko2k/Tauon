@@ -15725,6 +15725,10 @@ def worker2():
                                 elif search_magic(s_text, album_artist):
 
                                     # Add album artist
+                                    value = 1
+                                    if t.album_artist.startswith(s_text):
+                                        value = 5
+
                                     if t.album_artist in artists:
                                         artists[t.album_artist] += value
                                     else:
@@ -21072,7 +21076,7 @@ class StandardPlaylist:
         list_items = []
         number = 0
 
-        for i in range(gui.playlist_view_length):
+        for i in range(gui.playlist_view_length + 1):
 
             track_position = i + pctl.playlist_view_position
 
@@ -21397,6 +21401,8 @@ class StandardPlaylist:
             list_items.append((0, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, playing))
             number += 1
 
+            if number > gui.playlist_view_length:
+                break
         # ---------------------------------------------------------------------------------------
 
         # For every track in view
