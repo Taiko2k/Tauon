@@ -59,8 +59,8 @@
 
 #-Top panel---------
 
-247,247,247		tab active line
-220,220,220		tab line
+255,255,255		tab active line
+230,230,230		tab line
 30,30,30		tab background
 40,40,40		tab over
 65,65,65		tab active background

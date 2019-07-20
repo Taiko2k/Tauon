@@ -7668,7 +7668,7 @@ class AlbumArt():
                 g.seek(0)
 
             # Processing for "Carbon" theme
-            if track == pctl.playing_object() and gui.theme_name == "Carbon":
+            if track == pctl.playing_object() and gui.theme_name == "Carbon" and track.parent_folder_path != colours.last_album:
 
                 # Find main image colours
                 im.thumbnail((50, 50), Image.ANTIALIAS)
@@ -7696,6 +7696,7 @@ class AlbumArt():
                     hh = 0.72
 
                 colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
+                colours.last_album = track.parent_folder_path
 
 
             # Processing for "Auto-theme" setting
@@ -16912,8 +16913,8 @@ def reload_albums(quiet=False):
         # Doing reload while things are being removed may cause crash
         return
 
-    if not quiet:
-        album_pos_px = old_album_pos
+    # if not quiet:
+    #     album_pos_px = old_album_pos
 
     album_dex = []
     current_folder = ""
@@ -16939,8 +16940,6 @@ def reload_albums(quiet=False):
 
 
     else:
-
-
 
         for i in range(len(default_playlist)):
             if i == 0:
