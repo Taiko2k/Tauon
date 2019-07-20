@@ -141,25 +141,6 @@ if install_mode and system == 'linux':
             not os.path.isfile(os.path.join(user_directory, 'star.p')):
                 shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
-if system == 'linux':
-    system_config_directory = GLib.get_user_config_dir()
-    xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
-
-    if os.path.isfile(xdg_dir_file):
-        with open(xdg_dir_file) as f:
-            for line in f.readlines():
-                if line.startswith("XDG_MUSIC_DIR="):
-                    music_directory = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-                    print(f"Found XDG-Music: {music_directory}")
-                if line.startswith("XDG_DOWNLOAD_DIR="):
-                    target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
-                    if os.path.isdir(target):
-                        download_directory = target
-                    print(f"Found XDG-Downloads: {download_directory}")
-
-if not os.path.isdir(music_directory):
-    music_directory = None
-
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -185,6 +166,25 @@ else:
 
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
+
+if system == 'linux':
+    system_config_directory = GLib.get_user_config_dir()
+    xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
+
+    if os.path.isfile(xdg_dir_file):
+        with open(xdg_dir_file) as f:
+            for line in f.readlines():
+                if line.startswith("XDG_MUSIC_DIR="):
+                    music_directory = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+                    print(f"Found XDG-Music: {music_directory}")
+                if line.startswith("XDG_DOWNLOAD_DIR="):
+                    target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+                    if os.path.isdir(target):
+                        download_directory = target
+                    print(f"Found XDG-Downloads: {download_directory}")
+
+if not os.path.isdir(music_directory):
+    music_directory = None
 
 transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
