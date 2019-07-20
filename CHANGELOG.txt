@@ -1,10 +1,12 @@
 
 Changelog-------------------------------------
 
-v4.5.3
+v4.6.0
 
  - Added new theme: Carbon
  - Improved startup speed by ~25% (Tested on an SSD)
+ - Fixed auto-theme not applying when in "tracks only" or "gallery" views
+ - Fixed music and download folders not following xdg-dirs
 
 v4.5.2
 

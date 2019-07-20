@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.5.3"
+n_version = "4.6.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -75,6 +75,8 @@ config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
 home_directory = os.path.join(os.path.expanduser('~'))
 asset_subfolder = "/assets/"
+music_directory = os.path.join(os.path.expanduser('~'), "Music")
+download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 
 # Detect if we are installed or running portably
 install_mode = False
@@ -139,6 +141,25 @@ if install_mode and system == 'linux':
             not os.path.isfile(os.path.join(user_directory, 'star.p')):
                 shutil.copy(os.path.join(old_user_directory, 'star.p'), os.path.join(user_directory, 'star.p'))
 
+if system == 'linux':
+    system_config_directory = GLib.get_user_config_dir()
+    xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
+
+    if os.path.isfile(xdg_dir_file):
+        with open(xdg_dir_file) as f:
+            for line in f.readlines():
+                if line.startswith("XDG_MUSIC_DIR="):
+                    music_directory = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+                    print(f"Found XDG-Music: {music_directory}")
+                if line.startswith("XDG_DOWNLOAD_DIR="):
+                    target = os.path.expanduser(os.path.expandvars(line.split("=")[1].strip().replace('"', "")))
+                    if os.path.isdir(target):
+                        download_directory = target
+                    print(f"Found XDG-Downloads: {download_directory}")
+
+if not os.path.isdir(music_directory):
+    music_directory = None
+
 
 elif system == 'windows' and ('Program Files' in install_directory or
                                   os.path.isfile(install_directory + '\\unins000.exe')):
@@ -170,10 +191,10 @@ transfer_target = user_directory + "/transfer.p"
 print('Install directory: ' + install_directory)
 b_active_directory = install_directory.encode('utf-8')
 
-# Find home music folder
-music_folder = os.path.join(os.path.expanduser('~'), "Music")
-if not os.path.isdir(music_folder):
-    music_folder = None
+# # Find home music folder
+# music_folder = os.path.join(os.path.expanduser('~'), "Music")
+# if not os.path.isdir(music_folder):
+#     music_folder = None
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target):
@@ -653,8 +674,8 @@ class Prefs:    # Used to hold any kind of settings
         self.cross_fade_time = 700 #700
         self.volume_wheel_increment = 2
         self.encoder_output = user_directory + '/encoder/'
-        if music_folder is not None:
-            self.encoder_output = music_folder + '/encode-output/'
+        if music_directory is not None:
+            self.encoder_output = music_directory + '/encode-output/'
         self.rename_folder_template = "<albumartist> - <album>"
         self.rename_tracks_template = "<tn>. <artist> - <title>.<ext>"
 
@@ -2202,10 +2223,11 @@ if db_version > 0:
 
 download_directories = []
 
-if os.path.isdir(os.path.expanduser("~/Downloads")):
-    download_directories.append(os.path.expanduser("~/Downloads"))
-if os.path.isdir(os.path.expanduser("~/Music")):
-    download_directories.append(os.path.expanduser("~/Music"))
+if os.path.isdir(download_directory):
+    download_directories.append(download_directory)
+
+if os.path.isdir(music_directory):
+    download_directories.append(music_directory)
 
 from t_modules.t_config import Config
 
@@ -3122,13 +3144,14 @@ class PlayerCtl:
         # print(self.track_queue)
         self.playing_time = 0
         self.decode_time = 0
-        self.target_open = pctl.master_library[self.track_queue[self.queue_step]].fullpath
-        self.target_object = pctl.master_library[self.track_queue[self.queue_step]]
-        self.start_time = pctl.master_library[self.track_queue[self.queue_step]].start_time
+        target = pctl.master_library[self.track_queue[self.queue_step]]
+        self.target_open = target.fullpath
+        self.target_object = target
+        self.start_time = target.start_time
         self.start_time_target = self.start_time
         # if not gapless:
         self.playerCommand = 'open'
-        self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
+        self.playing_length = target.length
         self.last_playing_time = 0
 
         if jump and not prefs.use_jump_crossfade:
@@ -3142,6 +3165,13 @@ class PlayerCtl:
         if update_title:
             update_title_do()
         self.notify_update()
+
+        if (album_mode or not gui.rsp) and (gui.theme_name == "Carbon" or prefs.colour_from_image):
+
+            if prefs.colour_from_image and target.parent_folder_path == colours.last_album:
+                return
+
+            album_art_gen.display(target, (0,0), (50, 50), theme_only=True)
 
 
     def jump(self, index, pl_position=None):
@@ -7568,7 +7598,7 @@ class AlbumArt():
         g.close()
 
 
-    def display(self, track, location, box, fast=False):
+    def display(self, track, location, box, fast=False, theme_only=False):
 
         index = track.index
         filepath = track.fullpath
@@ -7586,20 +7616,21 @@ class AlbumArt():
 
         offset = self.get_offset(filepath, source)
 
-        # Check if request matches previous
-        if self.current_wu is not None and self.current_wu.source == source[offset][1] and \
-                        self.current_wu.request_size == box:
-            self.render(self.current_wu, location)
-            return 0
-
-        if fast:
-            return self.fast_display(track, location, box, source, offset)
-
-        # Check if cached
-        for unit in self.image_cache:
-            if unit.index == index and unit.request_size == box and unit.offset == offset:
-                self.render(unit, location)
+        if not theme_only:
+            # Check if request matches previous
+            if self.current_wu is not None and self.current_wu.source == source[offset][1] and \
+                            self.current_wu.request_size == box:
+                self.render(self.current_wu, location)
                 return 0
+
+            if fast:
+                return self.fast_display(track, location, box, source, offset)
+
+            # Check if cached
+            for unit in self.image_cache:
+                if unit.index == index and unit.request_size == box and unit.offset == offset:
+                    self.render(unit, location)
+                    return 0
 
         # Render new...
         try:
@@ -7630,9 +7661,11 @@ class AlbumArt():
 
             if im.mode != "RGB":
                 im = im.convert("RGB")
-            im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
-            im.save(g, 'BMP')
-            g.seek(0)
+
+            if not theme_only:
+                im.thumbnail((box[0], box[1]), Image.ANTIALIAS)
+                im.save(g, 'BMP')
+                g.seek(0)
 
             # Processing for "Carbon" theme
             if track == pctl.playing_object() and gui.theme_name == "Carbon":
@@ -7669,6 +7702,8 @@ class AlbumArt():
             if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
                 colours.last_album = track.parent_folder_path
 
+
+
                 im.thumbnail((50, 50), Image.ANTIALIAS)
                 pixels = im.getcolors(maxcolors=2500)
                 # print(pixels)
@@ -7689,6 +7724,7 @@ class AlbumArt():
                         x_colours.append(colour)
 
                 # print(x_colours)
+                colours.playlist_panel_bg = colours.side_panel_background
 
                 colours.playlist_panel_background = x_colours[0] + (255,)
                 if len(x_colours) > 1:
@@ -7798,6 +7834,9 @@ class AlbumArt():
                 gui.temp_themes[track.album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
                 colours.playlist_box_background = colours.side_panel_background
+
+            if theme_only:
+                return
 
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
@@ -13736,17 +13775,17 @@ def show_import_music(_):
 def import_music():
 
     pl = pl_gen("Music")
-    pl[7] = music_folder
+    pl[7] = music_directory
     pctl.multi_playlist.append(pl)
     load_order = LoadClass()
-    load_order.target = music_folder
+    load_order.target = music_directory
     load_order.playlist = pl[6]
     load_orders.append(load_order)
     switch_playlist(len(pctl.multi_playlist) - 1)
     gui.add_music_folder_ready = False
 
 
-x_menu.add(_("Import  ~/Music"), import_music, show_test=show_import_music)
+x_menu.add(_("Import Music Folder"), import_music, show_test=show_import_music)
 
 x_menu.br()
 
@@ -16163,8 +16202,8 @@ def worker1():
                     type = os.path.splitext(path)[1][1:].lower()
                     split = os.path.splitext(path)
                     target_dir = split[0]
-                    if prefs.extract_to_music and music_folder is not None:
-                        target_dir = os.path.join(music_folder, os.path.basename(target_dir))
+                    if prefs.extract_to_music and music_directory is not None:
+                        target_dir = os.path.join(music_directory, os.path.basename(target_dir))
                     # print(os.path.getsize(path))
                     if os.path.getsize(path) > 2e+9:
                         print("Archive file is large!")
@@ -17839,7 +17878,7 @@ class Over:
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_dl_mon, _("Monitor download folders"))
             y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to ~/Music"))
+            self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
 
             y += 35 * gui.scale
@@ -25619,8 +25658,8 @@ class DLMon:
                             # Check if folder to extract to exists
                             split = os.path.splitext(path)
                             target_dir = split[0]
-                            if prefs.extract_to_music and music_folder is not None:
-                                target_dir = os.path.join(music_folder, os.path.basename(target_dir))
+                            if prefs.extract_to_music and music_directory is not None:
+                                target_dir = os.path.join(music_directory, os.path.basename(target_dir))
 
                             if os.path.exists(target_dir):
                                 print("Target folder for archive already exsists")
@@ -26566,12 +26605,12 @@ def test_show_add_home_music():
 
     gui.add_music_folder_ready = True
 
-    if music_folder is None:
+    if music_directory is None:
         gui.add_music_folder_ready = False
         return
 
     for item in pctl.multi_playlist:
-        if item[7] == music_folder:
+        if item[7] == music_directory:
             gui.add_music_folder_ready = False
             break
 
