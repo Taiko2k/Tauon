@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.5.2"
+n_version = "4.5.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1541,6 +1541,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
+        self.playlist_box_background = self.side_panel_background
+
         #self.post_config()
 
     def post_config(self):
@@ -1563,6 +1565,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.bar_title_text = self.side_bar_line1
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
+
+
 
 
         self.status_text_normal = self.grey(100)
@@ -1724,6 +1728,9 @@ def show_message(text, message_mode='info', subtext=""):
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
+import gc as gbc
+gbc.disable()
+ggc = 2
 
 try:
     star_store.db = pickle.load(open(user_directory + "/star.p", "rb"))
@@ -1732,6 +1739,7 @@ except:
     print('No existing star.p file')
 
 try:
+    perf_timer.set()
     state_file = open(user_directory + "/state.p", "rb")
     save = pickle.load(state_file)
 
@@ -1989,20 +1997,13 @@ try:
     state_file.close()
     del save
 
+
 except:
 
     print('Error loading save file')
-    # if os.path.exists(cache_directory):
-    #     print("clearing old cache")
-    #     # shutil.rmtree(cache_directory)
-    #     time.sleep(0.01)
-    #     #os.makedirs(cache_directory)
 
-# # Check is bass is present
-# if prefs.backend == 1:
-#     if not os.path.isfile(install_directory + '/lib/libbass.so'):
-#         prefs.backend = 2
 core_timer.set()
+print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
 # temporary
 if window_size is None:
@@ -2193,6 +2194,9 @@ if db_version > 0:
                 f.write("love-selected\n")
         gui.set_bar = True
 
+    if db_version <= 32:
+        if theme > 1:
+           theme += 1
 
 # Loading Config -----------------
 
@@ -7630,6 +7634,38 @@ class AlbumArt():
             im.save(g, 'BMP')
             g.seek(0)
 
+            # Processing for "Carbon" theme
+            if track == pctl.playing_object() and gui.theme_name == "Carbon":
+
+                # Find main image colours
+                im.thumbnail((50, 50), Image.ANTIALIAS)
+                pixels = im.getcolors(maxcolors=2500)
+                pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
+                colour = pixels[0][1]
+
+                # Try and find a colour that is not grayscale
+                for c in pixels:
+                    cc = c[1]
+                    av = sum(cc) / 3
+                    if abs(cc[0] - av) > 10 or abs(cc[1] - av) > 10 or abs(cc[2] - av) > 10:
+                        colour = cc
+                        break
+
+                h_colour = rgb_to_hls(colour[0], colour[1], colour[2])
+
+                l = .51
+                s = .44
+
+                hh = h_colour[0]
+                if 0.14 < hh < 0.3:  # Yellow and green are hard to read text on, so lower the luminance for those
+                    l = .45
+                if hh == 0:  # Default to theme purple if hue was pure red (likely means derived from black)
+                    hh = 0.72
+
+                colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
+
+
+            # Processing for "Auto-theme" setting
             if prefs.colour_from_image and box[0] != 115 and index != gui.theme_temp_current: # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
                 colours.last_album = track.parent_folder_path
 
@@ -7761,6 +7797,7 @@ class AlbumArt():
 
                 gui.temp_themes[track.album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
+                colours.playlist_box_background = colours.side_panel_background
 
             wop = rw_from_object(g)
             s_image = IMG_Load_RW(wop, 0)
@@ -20217,15 +20254,16 @@ class BottomBarType1:
                 if repeat_menu.active and not pctl.repeat_mode is True:
                     rpbc = colours.mode_button_over
 
-                y += 3 * gui.scale
-                w = 3 * gui.scale
+                y += round(3 * gui.scale)
+                w = round(3 * gui.scale)
 
                 if pctl.album_repeat_mode:
                     ddt.rect_a((x + 4 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
 
                 ddt.rect_a((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
-                ddt.rect_a((x + 4 * gui.scale, y + 5 * gui.scale), (46 * gui.scale, w), rpbc, True)
-                ddt.rect_a((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
+                ddt.rect_a((x + 4 * gui.scale, y + 5 * gui.scale), (math.floor(46 * gui.scale), w), rpbc, True)
+                #ddt.rect_a((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
+                ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, 2 * gui.scale), rpbc, True)
 
 
 bottom_bar1 = BottomBarType1()
@@ -22356,7 +22394,9 @@ class PlaylistBox:
 
         global quick_drag
 
-        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
+        #ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
+        ddt.rect_r((x, y, w, h), colours.playlist_box_background, True)
+        ddt.text_background_colour = colours.playlist_box_background
 
         max_tabs = (h - 10 * gui.scale) // (self.gap + self.tab_h)
 
@@ -22492,7 +22532,7 @@ class PlaylistBox:
             hidden = pl[8]
 
             semi_light = False
-            if not light_mode and test_lumi(colours.side_panel_background) < 0.85 and False:
+            if not light_mode and test_lumi(colours.playlist_box_background) < 0.85 and False:
                 semi_light = True
 
             bg = [255, 255, 255, 6]
@@ -22536,7 +22576,7 @@ class PlaylistBox:
                     bg = [52, 52, 52, 255]
 
             # Get actual bg from blend for text bg
-            real_bg = alpha_blend(bg, colours.side_panel_background)
+            real_bg = alpha_blend(bg, colours.playlist_box_background)
 
             # Draw highlight
             ddt.rect_r((tab_start, yy - 1 * gui.scale, tab_width, 25 * gui.scale), bg, True)
@@ -26389,7 +26429,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            32,  # Version, used for upgrading
+            33,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -26505,6 +26545,7 @@ def save_state():
             prefs.mini_mode_mode,
             after_scan,
             gui.gallery_positions]
+
 
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
@@ -27082,7 +27123,6 @@ while pctl.running:
 
     else:
         power = 0
-
 
     if mouse_down and not k_input:
 
@@ -27795,6 +27835,7 @@ while pctl.running:
                                     colours.top_panel_background = get_colour_from_line(p)
                                 if 'side panel' in p:
                                     colours.side_panel_background = get_colour_from_line(p)
+                                    colours.playlist_box_background = colours.side_panel_background
                                 if 'gallery background' in p:
                                     colours.gallery_background = get_colour_from_line(p)
                                 if 'playlist panel' in p:
@@ -27894,6 +27935,10 @@ while pctl.running:
                                     key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)
                                     colours.column_colours_playing[key] = value
+                                if 'menu bg' in p:
+                                    colours.menu_background = get_colour_from_line(p)
+                                if 'playlist box bg' in p:
+                                    colours.playlist_box_background = get_colour_from_line(p)
 
                             colours.post_config()
                             if colours.lm:
@@ -27959,6 +28004,15 @@ while pctl.running:
 
         if input.mouse_click or mouse_wheel or right_click:
             mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+
+        # Enable the garbage collecter (since we disabled it during startup)
+        if ggc > 0:
+            if ggc == 2:
+                ggc = 1
+            elif ggc == 1:
+                ggc = 0
+                gbc.enable()
+                print("Enabling garbage collecting")
 
         if gui.mode == 1 or gui.mode == 2:
 
