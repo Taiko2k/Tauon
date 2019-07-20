@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.5.3
+
+ - Added new theme: Carbon
+ - Improved startup speed by ~25% (Tested on an SSD)
+
 v4.5.2
 
  - Added setting "Force subpixel text rendering"
