@@ -8,6 +8,7 @@ v4.6.0
  - Fixed auto-theme not applying when in "tracks only" or "gallery" views
  - Fixed music and download folders not following xdg-dirs
  - Fixed gallery sliding slightly when re-entering
+ - [Linux] Fixed application not appearing in desktop default application list
 
 v4.5.2
 

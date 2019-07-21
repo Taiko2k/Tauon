@@ -20811,6 +20811,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         # if not gui.rsp and not gui.combo_mode:
         #     width -= 10 * gui.scale
 
+        dash = False
+        if n_track.artist and colours.artist_text == colours.title_text:
+            dash = True
+
         if n_track.artist != "" or \
                         n_track.title != "":
             line = track_number_process(n_track.track_number)
@@ -20821,9 +20825,10 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             if len(indexLine) > 2:
                 indexoffset += (len(indexLine) * 5 - 15) * gui.scale
 
-            if n_track.artist != "":
+            if n_track.artist != "" and not dash:
                 line0 = n_track.artist
-                artistoffset = ddt.draw_text((start_x + 27  * gui.scale,
+
+                artistoffset = ddt.draw_text((start_x + 27 * gui.scale,
                                          y),
                                          line0,
                                          alpha_mod(artistc, album_fade),
@@ -20839,14 +20844,12 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 os.path.splitext((n_track.filename))[
                     0]
 
-        #line += "   💓"
-
         index = default_playlist[p_track]
         star_x = 0
         total = star_store.get(index)
 
         if gui.star_mode == 'line' and total > 0 and pctl.master_library[index].length > 0:
-            #total = pctl.star_library[key]
+
             ratio = total / pctl.master_library[index].length
             if ratio > 0.55:
                 star_x = int(ratio * 4 * gui.scale)
@@ -20880,7 +20883,6 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                        y + gui.star_text_y_offset, 1), starl,
                       alpha_mod(indexc, album_fade), gui.row_font_size)
 
-
         if gui.show_hearts:
 
             xxx = star_x
@@ -20900,7 +20902,6 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
 
-                #display_you_heart(x, yy)
                 f_store.store(display_you_heart, (x, yy))
 
                 star_x += 18 * gui.scale
@@ -20917,14 +20918,11 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
                 x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
 
-                #display_friend_heart(x, yy, name)
                 f_store.store(display_friend_heart, (x, yy, name))
 
                 count += 1
 
                 star_x += heart_row_icon.w + spacing + 2
-
-
 
         # Draw track number/index
         display_queue = False
@@ -20964,7 +20962,6 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             # if album_type:
             #     li += "🠗"
 
-
             colour = [244, 200, 66, 255]
             if colours.lm:
                 colour = [220, 40, 40, 255]
@@ -20985,6 +20982,9 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                            y), indexLine,
                           alpha_mod(indexc, album_fade), gui.row_font_size)
 
+
+        if dash and n_track.artist and n_track.title:
+            line = n_track.artist + " - " + n_track.title
 
         ddt.draw_text((start_x + 33 * gui.scale + artistoffset,
                     y),
