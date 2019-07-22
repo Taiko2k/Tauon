@@ -4,7 +4,7 @@
   <id type="desktop">com.github.taiko2k.tauonmb.desktop</id>
   <name>Tauon Music Box</name>
   <developer_name>Taiko2k</developer_name>
-  <summary>Play your music collection</summary>
+  <summary>Play your music collection with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>LicenseRef-proprietary</project_license>
@@ -13,8 +13,8 @@
   <icon type="remote" height="256" width="256">https://user-images.githubusercontent.com/17271572/52980219-fa63ba80-343d-11e9-853b-06de62ba03c7.png</icon>
 
   <description>
-    <p>Tauon Music Box is a music player for playback of audio files.</p>
-    <p>Uses a drag and drop to playlist paradigm for easy file importing. Packed with features while maintaining a modern streamlined interface. Allows you to manage your music collection with built-in functions such as file renaming, cover art downloading and file deleting.</p>
+    <p>Tauon Music Box is a modern, comfortable and streamlined music player for the playback of your local music collection.</p>
+    <p>Packed with features while maintaining simplicity. Use drag and drop files for direct and easy file importing. Allows you to manage your music collection with built-in functions such as file renaming, cover art downloading and file deleting.</p>
     <p>Features:</p>
     <ul>
       <li>Compatible with most common audio files including MP3, FLAC, APE, TTA, M4A and OGG</li>
@@ -22,16 +22,24 @@
       <li>Built in CUE sheet detection</li>
       <li>Groups tracks by folder</li>
       <li>Easily create and manage playlists</li>
+      <li>Lookup artists on Rate Your Music</li>
       <li>Quick and powerful searching</li>
+      <li>Create a topchart grid image of your favorite albums</li>
       <li>Scrobble and love tracks to last.fm</li>
-      <li>Large album art and gallery layouts available</li>
+      <li>Support for Listenbrainz and launching Musicbrainz Picard</li>
+      <li>Monitor your downloads and import archives in one click</li>
+      <li>Includes large album art and album gallery layouts</li>
+      <li>Transcode folders to dedicated output folder for easy copying to devices</li>
+      <li>Support for lyrics, synced lrc files and displaying lyrics with guitar chords</li>
+      <li>Multiple preset UI themes to choose from</li>
+      <li>Additional mini and micro UI modes</li>
     </ul>
   </description>
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://user-images.githubusercontent.com/17271572/46997642-b35a7580-d17c-11e8-90af-e6119b9d4097.png</image>
-      <caption>Main window showing playlist and album art</caption>
+      <image type="source">https://user-images.githubusercontent.com/17271572/61632863-f0dac900-ace1-11e9-9144-852fe2a40251.png</image>
+      <caption>Main window showing tracklist and album art</caption>
     </screenshot>
   </screenshots>
 
@@ -41,8 +49,7 @@
   </categories>
 
   <releases>
-    <release version="4.5.2" date="2019-07-14"/>
-    <release version="4.5.1" date="2019-07-06"/>
+    <release version="4.6.0" date="2019-07-23"/>
     <release version="4.5.0" date="2019-06-27"/>
     <release version="4.4.1" date="2019-06-17"/>
     <release version="4.4.0" date="2019-06-15"/>
@@ -68,6 +75,7 @@
 
   <kudos>
     <kudo>Notifications</kudo>
+    <kudo>HiDpiIcon</kudo>
   </kudos>
 
   <update_contact>captain.gxj_AT_gmail.com</update_contact>
