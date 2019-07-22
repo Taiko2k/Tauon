@@ -7692,7 +7692,7 @@ class AlbumArt():
                 hh = h_colour[0]
                 if 0.14 < hh < 0.3:  # Yellow and green are hard to read text on, so lower the luminance for those
                     l = .45
-                if hh == 0:  # Default to theme purple if hue was pure red (likely means derived from black)
+                if checkEqual(colour):  # Default to theme purple if source colour was grayscale
                     hh = 0.72
 
                 colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
@@ -21173,7 +21173,7 @@ class StandardPlaylist:
             track_box = (left + highlight_left, line_y, highlight_width,
                             gui.playlist_row_height - 1)
 
-            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3] - 1)
+            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
 
             # Are folder titles enabled?
             if pctl.multi_playlist[pctl.active_playlist_viewing][4] == 0 and break_enable:
@@ -21205,7 +21205,7 @@ class StandardPlaylist:
                             gui.pl_update += 1
 
                         # Play if double click:
-                        if d_mouse_click and track_position in shift_selection and coll_point(last_click_location, (track_box)):
+                        if d_mouse_click and track_position in shift_selection and coll_point(last_click_location, (input_box)):
                             click_time -= 1.5
                             pctl.jump(track_id, track_position)
                             line_hit = False
@@ -21289,7 +21289,7 @@ class StandardPlaylist:
             track_box = (left + highlight_left, line_y, highlight_width,
                             gui.playlist_row_height - 1)
 
-            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3] - 0)
+            input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
 
             # Test if line has mouse over or been clicked
             line_over = False
@@ -21310,7 +21310,7 @@ class StandardPlaylist:
 
             # Double click to play
             if key_shift_down is False and d_mouse_click and line_hit and track_position == playlist_selected and coll_point(
-                    last_click_location, track_box):
+                    last_click_location, input_box):
 
 
                 click_time -= 1.5
@@ -26121,7 +26121,7 @@ def update_layout_do():
     #     print("too low")
     # else:
     #     print("too high")
-    # print(w)
+    # print((w, h))
 
     #input.mouse_click = False
 
