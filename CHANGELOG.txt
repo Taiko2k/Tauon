@@ -9,6 +9,8 @@ v4.6.0
  - Fixed gallery scroll position sliding slightly when re-entering gallery at top
  - Fixed gap between hitboxes in tracklist (again)
  - Fixed seeking beyond current track causing position to jump backwards instead of advance
+ - Fixed gallery jumping to beginning when re-entering on non-playing playlist
+ - [Linux] Tweaked transcode finished desktop notification to emit even when window focused
  - [Linux] Fixed music and download folders not following xdg-dirs
  - [Linux] Fixed application not appearing in desktop default application list
 

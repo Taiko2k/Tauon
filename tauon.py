@@ -13741,9 +13741,10 @@ def toggle_album_mode(force_on=False):
         gui.pl_update = True
         gui.update_layout()
 
-    reload_albums()
+    reload_albums(quiet=True)
 
-    goto_album(pctl.playlist_playing_position)
+    if pctl.active_playlist_playing == pctl.active_playlist_viewing:
+        goto_album(pctl.playlist_playing_position)
 
 
 def activate_info_box():
@@ -16647,7 +16648,7 @@ def worker1():
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
                     if not gui.message_box:
                         show_message("Encoding complete.", 'done', line)
-                    if system == 'linux' and not window_is_focused() and de_nofity_support:
+                    if system == 'linux' and de_nofity_support:
                         g_tc_notify.show()
 
         while len(to_scan) > 0:
