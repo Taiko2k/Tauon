@@ -3335,11 +3335,11 @@ class PlayerCtl:
 
     def seek_time(self, new):
 
-        if new > self.playing_length + 5:
-            print("INVALID SEEK VALUE")
-            pass
+        if new > self.playing_length - 0.5:
+            self.advance()
+            return
 
-        if new < 0:
+        if new < 0.4:
             new = 0
 
         self.new_time = new
@@ -3347,8 +3347,6 @@ class PlayerCtl:
 
         self.playerCommand = 'seek'
         self.playerCommandReady = True
-
-        #print("seek: " + str(new))
 
         if self.mpris is not None:
             self.mpris.seek_do(self.playing_time)
@@ -27688,20 +27686,10 @@ while pctl.running:
                 SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
             if keymaps.test("seek-forward"):
-                pctl.new_time = pctl.playing_time + 15
-                pctl.playing_time += 15
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
+                pctl.seek_time(pctl.playing_time + 15)
 
             if keymaps.test("seek-back"):
-                pctl.new_time = pctl.playing_time - 15
-                pctl.playing_time -= 15
-                if pctl.new_time < 0:
-                    pctl.new_time = 0
-                    pctl.playing_time = 0
-                    pctl.decode_time = 0
-                pctl.playerCommand = 'seek'
-                pctl.playerCommandReady = True
+                pctl.seek_time(pctl.playing_time - 15)
 
             if keymaps.test("play"):
                 pctl.play()
