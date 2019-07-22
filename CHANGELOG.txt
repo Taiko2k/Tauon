@@ -4,10 +4,11 @@ Changelog-------------------------------------
 v4.6.0
 
  - Added new theme: Carbon
- - Improved startup speed by ~25% (Tested on an SSD)
+ - Improved startup speed slightly
  - Fixed auto-theme not applying when in "tracks only" or "gallery" views
- - Fixed music and download folders not following xdg-dirs
- - Fixed gallery sliding slightly when re-entering
+ - Fixed gallery scroll position sliding slightly when re-entering gallery at top
+ - Fixed gap between hitboxes in tracklist (again)
+ - [Linux] Fixed music and download folders not following xdg-dirs
  - [Linux] Fixed application not appearing in desktop default application list
 
 v4.5.2
