@@ -16,7 +16,7 @@ class TopChart:
 
         self.album_art_gen = album_art_gen
 
-    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True):
+    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10"):
 
         bg = (bg[0] / 255, bg[1] / 255, bg[2] / 255)
 
@@ -84,7 +84,7 @@ class TopChart:
             layout.set_width((500 - text_offset - spacing) * 1000)
             layout.set_height(h * 1000)
             layout.set_spacing(3 * 1000)
-            layout.set_font_description(Pango.FontDescription("Monospace 10"))
+            layout.set_font_description(Pango.FontDescription(font))
 
             layout.set_text(text, -1)
             c.translate(w + text_offset, border + 3)

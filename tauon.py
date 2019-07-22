@@ -897,6 +897,7 @@ class Prefs:    # Used to hold any kind of settings
         self.chart_columns = 3
         self.chart_bg = [7, 7, 7]
         self.chart_text = True
+        self.chart_font = "Monospace 10"
 
 
 
@@ -2302,6 +2303,7 @@ def save_prefs():
     cf.update_value("chart-columns", prefs.chart_columns)
     cf.update_value("chart-rows", prefs.chart_rows)
     cf.update_value("chart-uses-text", prefs.chart_text)
+    cf.update_value("chart-font", prefs.chart_font)
 
 
     if os.path.isdir(config_directory):
@@ -2437,6 +2439,7 @@ def load_prefs():
     prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
     prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
     prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+    prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font, "Format is fontname + size. Default is Monospace 10")
 
 
 
@@ -17622,7 +17625,7 @@ def gen_chart():
     for item in dex:
         tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
 
-    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text)
+    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font)
     if path:
         open_file(path)
 
@@ -18662,31 +18665,25 @@ class Over:
 
         if self.button2(x, y, "Randomise BG"):
 
-            r = round(random.random() * 10)
-            g = round(random.random() * 10)
-            b = round(random.random() * 10)
+            r = round(random.random() * 30)
+            g = round(random.random() * 30)
+            b = round(random.random() * 30)
 
-            prefs.chart_bg = [r, g ,b]
+            prefs.chart_bg = [r, g, b]
 
-            d = random.randrange(0, 3)
-            if d == 0:
-                p = random.randrange(0, 3)
-                prefs.chart_bg[p] += round(random.random() * 20)
+            d = random.randrange(0, 4)
             if d == 1:
-                c = 5 + round(random.random() * 15)
+                c = 5 + round(random.random() * 20)
                 prefs.chart_bg = [c, c, c]
 
 
         x += 100 * gui.scale
         y -= 20 * gui.scale
 
+        display_colour = (prefs.chart_bg[0], prefs.chart_bg[1], prefs.chart_bg[2], 255)
+
         rect = (x, y, 70 * gui.scale, 70 * gui.scale)
-        ddt.rect_r(rect, (
-            prefs.chart_bg[0],
-            prefs.chart_bg[1],
-            prefs.chart_bg[2],
-            255
-                          ), True)
+        ddt.rect_r(rect, display_colour, True)
 
         ddt.rect_r(rect, (50, 50, 50 ,255))
 
