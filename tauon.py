@@ -391,6 +391,9 @@ from t_modules.t_tagscan import M4a
 from t_modules.t_tagscan import parse_picture_block
 from t_modules.t_extra import *
 
+if system == 'linux':
+    from t_modules import t_topchart
+
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
 warnings.simplefilter('ignore', stagger.errors.FrameWarning)
@@ -890,6 +893,11 @@ class Prefs:    # Used to hold any kind of settings
 
         self.force_subpixel_text = False
 
+        self.chart_rows = 3
+        self.chart_columns = 3
+        self.chart_bg = [7, 7, 7]
+        self.chart_text = True
+
 
 
 
@@ -1204,6 +1212,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.notify_main_id = None
 
         self.halt_image_rendering = False
+        self.generating_chart = False
 
 
 gui = GuiVar()
@@ -2014,6 +2023,8 @@ try:
         after_scan = save[131]
     if save[132] is not None:
         gui.gallery_positions = save[132]
+    if save[133] is not None:
+        prefs.chart_bg = save[133]
 
     state_file.close()
     del save
@@ -2288,6 +2299,11 @@ def save_prefs():
     cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
+    cf.update_value("chart-columns", prefs.chart_columns)
+    cf.update_value("chart-rows", prefs.chart_rows)
+    cf.update_value("chart-uses-text", prefs.chart_text)
+
+
     if os.path.isdir(config_directory):
         cf.dump(os.path.join(config_directory, "tauon.conf"))
     else:
@@ -2415,6 +2431,13 @@ def load_prefs():
     cf.add_text("[broadcasting]")
     prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port, "Changing this breaks player on landing page")
     prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
+
+    cf.br()
+    cf.add_text("[chart]")
+    prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
+    prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
+    prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+
 
 
 load_prefs()
@@ -4876,6 +4899,8 @@ class Tauon:
         self.star_store = star_store
         self.gui = gui
         self.prefs = prefs
+        self.cache_directory = cache_directory
+        self.user_directory = user_directory
 
         self.worker_save_state = False
 
@@ -7559,12 +7584,13 @@ class AlbumArt():
         return g
 
 
-    def save_thumb(self, track_object, size, save_path):
+    def save_thumb(self, track_object, size, save_path, png=False):
 
         filepath = track_object.fullpath
         sources = self.get_sources(track_object)
 
         if len(sources) == 0:
+            print("Error thumbnailing; no source images found")
             return False
 
         offset = self.get_offset(filepath, sources)
@@ -7587,13 +7613,17 @@ class AlbumArt():
         if im.mode != "RGB":
             im = im.convert("RGB")
         im.thumbnail(size, Image.ANTIALIAS)
-        im.save(save_path + '.jpg', 'JPEG')
+        if png:
+            im.save(save_path + '.png', 'PNG')
+        else:
+            im.save(save_path + '.jpg', 'JPEG')
 
         g = io.BytesIO()
         g.seek(0)
 
         im.save(g, 'BMP')
         g.close()
+
 
 
     def display(self, track, location, box, fast=False, theme_only=False):
@@ -11448,6 +11478,19 @@ def open_config_file():
 def open_keymap_file():
 
     target = os.path.join(config_directory, "input.txt")
+
+    if not os.path.isfile(target):
+        show_message("Input file missing")
+        return
+
+    if system == "windows":
+        os.startfile(target)
+    elif system == 'mac':
+        subprocess.call(['open', target])
+    else:
+        subprocess.call(["xdg-open", target])
+
+def open_file(target):
 
     if not os.path.isfile(target):
         show_message("Input file missing")
@@ -16902,7 +16945,7 @@ def gen_power2():
     return h
 
 
-def reload_albums(quiet=False):
+def reload_albums(quiet=False, return_playlist=-1):
     global album_dex
     global update_layout
     global album_pos_px
@@ -16915,40 +16958,49 @@ def reload_albums(quiet=False):
     # if not quiet:
     #     album_pos_px = old_album_pos
 
-    album_dex = []
+    dex = []
     current_folder = ""
     current_album = ""
 
-    if True:
+    # if True:
+    target_pl_no = pctl.active_playlist_viewing
+    if return_playlist > -1:
+        target_pl_no = return_playlist
 
-        for i in range(len(default_playlist)):
-            tr = pctl.master_library[default_playlist[i]]
+    playlist = pctl.multi_playlist[target_pl_no][2]
 
-            if i == 0:
-                album_dex.append(i)
+    for i in range(len(playlist)):
+        tr = pctl.master_library[playlist[i]]
+
+        if i == 0:
+            dex.append(i)
+            current_folder = tr.parent_folder_name
+            current_album = tr.album
+        else:
+            if tr.parent_folder_name != current_folder:
+                if tr.album and tr.album == current_album:
+                    pass
+                else:
+                    dex.append(i)
                 current_folder = tr.parent_folder_name
                 current_album = tr.album
-            else:
-                if tr.parent_folder_name != current_folder:
-                    if tr.album and tr.album == current_album:
-                        pass
-                    else:
-                        album_dex.append(i)
-                    current_folder = tr.parent_folder_name
-                    current_album = tr.album
 
+    #
+    # else:
+    #
+    #     for i in range(len(default_playlist)):
+    #         if i == 0:
+    #             album_dex.append(i)
+    #             current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
+    #         else:
+    #             if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
+    #                 current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
+    #                 album_dex.append(i)
 
-    else:
+    if return_playlist > -1:
+        return dex
 
-        for i in range(len(default_playlist)):
-            if i == 0:
-                album_dex.append(i)
-                current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-            else:
-                if pctl.master_library[default_playlist[i]].parent_folder_name != current_folder:
-                    current_folder = pctl.master_library[default_playlist[i]].parent_folder_name
-                    album_dex.append(i)
-
+    album_dex = dex
     gui.update += 2
     gui.pl_update = 1
     update_layout = True
@@ -17561,8 +17613,21 @@ def set_player_gstreamer(mode=0):
         gui.spec = None
         pctl.bass_devices.clear()
 
+def gen_chart():
 
+    dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+    topchart = t_topchart.TopChart(tauon, album_art_gen)
 
+    tracks = []
+    for item in dex:
+        tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
+
+    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text)
+    if path:
+        open_file(path)
+
+    show_message("Chart generated", 'done')
+    gui.generating_chart = False
 
 class Over:
     def __init__(self):
@@ -17633,6 +17698,7 @@ class Over:
         self.lyrics_panel = False
         self.account_view = 0
         self.view_view = 0
+        self.chart_view = 0
 
 
 
@@ -17823,6 +17889,10 @@ class Over:
         x = self.box_x + self.item_x_offset
         y = self.box_y - 10 * gui.scale
 
+        if self.chart_view == 1:
+            self.topchart()
+            return
+
         if self.lyrics_panel:
 
             y += 30 * gui.scale
@@ -17883,10 +17953,10 @@ class Over:
 
             self.button(x, y, "Lyrics settings...", self.toggle_lyrics_view)
 
-            # self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
-            # y += 23 * gui.scale
-            # self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+            y += 26 * gui.scale
 
+            if system == 'linux' and self.button2(x, y, "Chart generator..."):
+                self.chart_view = 1
 
             x = self.box_x + self.item_x_offset
             y = self.box_y - 10 * gui.scale
@@ -17981,11 +18051,11 @@ class Over:
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
             real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(240), 211, bg=real_bg)
             if self.click:
                 plug()
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(220), 211, bg=real_bg)
 
     def button2(self, x, y, text, width=0):
         w = width
@@ -18003,11 +18073,11 @@ class Over:
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
             real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(235), 211, bg=real_bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(240), 211, bg=real_bg)
             if self.click:
                 hit = True
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(210), 211, bg=real_bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(220), 211, bg=real_bg)
         return hit
 
     def toggle_square(self, x, y, function, text):
@@ -18019,7 +18089,7 @@ class Over:
         inner = space * 2
         outer = inner * 2
 
-        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(220), 12)
+        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(230), 12)
 
         ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
         ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
@@ -18028,6 +18098,28 @@ class Over:
             function()
         if function(1):
             ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
+
+    def toggle_square2(self, x, y, bool, text):
+
+        x = round(x)
+        y = round(y)
+
+        space = round(3 * gui.scale)
+        inner = space * 2
+        outer = inner * 2
+
+        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(230), 12)
+
+        if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
+            bool ^= True
+
+        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
+        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
+
+        if bool:
+            ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
+        return bool
+
 
     def last_fm_box(self):
 
@@ -18539,6 +18631,94 @@ class Over:
 
         self.button(x, y, _("Show License"), open_license)
 
+    def topchart(self):
+
+        x = self.box_x + self.item_x_offset - 10 * gui.scale
+        y = self.box_y + 20 * gui.scale
+
+        ddt.draw_text((x, y), "Chart Grid Generator", colours.grey(250), 214)
+
+        y += 35 * gui.scale
+        ww = ddt.draw_text((x, y), "Target playlist:   ", colours.grey(220), 312)
+        ddt.draw_text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey(100), 12, 400 * gui.scale)
+        #x -= 210 * gui.scale
+
+
+        y += 40 * gui.scale
+
+        prefs.chart_rows = self.slide_control(x, y, "Rows", '', prefs.chart_rows, 1, 100, 1, width=35)
+
+        y += 22 * gui.scale
+
+        prefs.chart_columns = self.slide_control(x, y, "Columns", '', prefs.chart_columns, 1, 100, 1, width=35)
+
+        y += 45 * gui.scale
+        x += 5 * gui.scale
+
+        prefs.chart_text = self.toggle_square2(x, y, prefs.chart_text, "Include labels")
+
+        x = self.box_x + self.item_x_offset + 300 * gui.scale
+        y = self.box_y + 100 * gui.scale
+
+        if self.button2(x, y, "Randomise BG"):
+
+            r = round(random.random() * 10)
+            g = round(random.random() * 10)
+            b = round(random.random() * 10)
+
+            prefs.chart_bg = [r, g ,b]
+
+            d = random.randrange(0, 3)
+            if d == 0:
+                p = random.randrange(0, 3)
+                prefs.chart_bg[p] += round(random.random() * 20)
+            if d == 1:
+                c = 5 + round(random.random() * 15)
+                prefs.chart_bg = [c, c, c]
+
+
+        x += 100 * gui.scale
+        y -= 20 * gui.scale
+
+        rect = (x, y, 70 * gui.scale, 70 * gui.scale)
+        ddt.rect_r(rect, (
+            prefs.chart_bg[0],
+            prefs.chart_bg[1],
+            prefs.chart_bg[2],
+            255
+                          ), True)
+
+        ddt.rect_r(rect, (50, 50, 50 ,255))
+
+        x = self.box_x + self.item_x_offset + 200 * gui.scale
+        y = self.box_y + 180 * gui.scale
+
+        dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
+        if self.button2(x, y, "Generate"):
+            if gui.generating_chart:
+                show_message("Be patient!")
+            else:
+                shoot = threading.Thread(target=gen_chart)
+                shoot.daemon = True
+                shoot.start()
+                gui.generating_chart = True
+
+        if gui.generating_chart:
+            ddt.draw_text((x + 70 * gui.scale, y + 2 * gui.scale), "Generating...",
+                          [100, 100, 100, 255], 11)
+
+        y += 35 * gui.scale
+        x += 30 * gui.scale
+        if len(dex) < prefs.chart_rows * prefs.chart_columns:
+            ddt.draw_text((x, y, 2), "There are not enough albums in the playlist to fill the grid!", [240, 130, 130, 255], 12)
+
+        x = self.box_x + self.item_x_offset - 5 * gui.scale
+        y = self.box_y + 235 * gui.scale
+        if self.button2(x, y, "Return"):
+            self.chart_view = 0
+
+
     def stats(self):
 
         x = self.box_x + self.item_x_offset - 10 * gui.scale
@@ -18572,9 +18752,7 @@ class Over:
                     folder_names.add(tr.parent_folder_path)
                     album_names.add(tr.album)
 
-
-
-            self.stats_pl_albums = count #len(album_names)
+            self.stats_pl_albums = count
 
             self.stats_pl_length = 0
             for item in default_playlist:
@@ -18613,7 +18791,7 @@ class Over:
                         folder_names.add(tr.parent_folder_path)
                         album_names.add(tr.album)
 
-            self.total_albums = count #len(folder_names)
+            self.total_albums = count
 
             self.stats_timer.set()
 
@@ -18629,7 +18807,6 @@ class Over:
         ddt.draw_text((x1, y1), _("Total playtime"), lt_colour, lt_font)
         ddt.draw_text((x2, y1), str(datetime.timedelta(seconds=int(pctl.total_playtime))),
                   colours.grey_blend_bg(220), 15)
-
 
         # Ratio bar
         if len(pctl.master_library) > 115 * gui.scale:
@@ -18786,10 +18963,12 @@ class Over:
         prefs.playlist_font_size = 15
         gui.update_layout()
 
-    def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None):
+    def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None, width=58):
+
+        width = width * gui.scale
 
         if label is not None:
-            ddt.draw_text((x + 55 * gui.scale, y, 1), label, colours.grey_blend_bg(220), 11)
+            ddt.draw_text((x + 55 * gui.scale, y, 1), label, colours.grey_blend_bg(230), 11)
             x += 65 * gui.scale
         y += 1 * gui.scale
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
@@ -18814,10 +18993,10 @@ class Over:
 
         x += 33 * gui.scale
 
-        ddt.rect_r((x, y, 58 * gui.scale, 15 * gui.scale), [255, 255, 255, 9], True)
-        ddt.draw_text((x + 29 * gui.scale, y, 2), str(value) + units, colours.grey(220), 11)
+        ddt.rect_r((x, y, width, 15 * gui.scale), [255, 255, 255, 9], True)
+        ddt.draw_text((x + width / 2, y, 2), str(value) + units, colours.grey(220), 11)
 
-        x += 58 * gui.scale
+        x += width
 
         rect = (x, y, 33 * gui.scale, 15 * gui.scale)
         fields.add(rect)
@@ -26581,7 +26760,8 @@ def save_state():
             None, #prefs.discogs_pat,
             prefs.mini_mode_mode,
             after_scan,
-            gui.gallery_positions]
+            gui.gallery_positions,
+            prefs.chart_bg]
 
 
 

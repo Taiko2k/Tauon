@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.6.0
 
  - Added new theme: Carbon
+ - Added album chart generator
  - Improved startup speed slightly
  - Fixed auto-theme not applying when in "tracks only" or "gallery" views
  - Fixed gallery scroll position sliding slightly when re-entering gallery at top
