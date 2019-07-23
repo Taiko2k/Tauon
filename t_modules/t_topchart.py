@@ -19,13 +19,13 @@ class TopChart:
 
         # Main control variables
         border = 29
-        text_offset = -12
+        text_offset = -7
         size = 170
-        spacing = 8
+        spacing = 9
 
         # Determine the final width and height of album grid
         h = round((border * 2) + (size * rows) + (spacing * rows - 1))
-        w = round((border * 2) + (size * columns) + (spacing * columns - 1))
+        w = round((border * 2) + (size * columns) + (spacing * (columns - 1)))
         ww = w
 
         if show_lables:
@@ -59,7 +59,7 @@ class TopChart:
                 artist = track.artist
                 if track.album_artist:
                     artist = track.album_artist
-                text += f"{track.album} - {artist}\n"
+                text += f"{artist} - {track.album}\n"
 
                 # Export the album art to file object
                 try:

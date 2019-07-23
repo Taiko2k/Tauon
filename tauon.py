@@ -18659,20 +18659,21 @@ class Over:
         y += 45 * gui.scale
         x += 5 * gui.scale
 
-        prefs.chart_text = self.toggle_square2(x, y, prefs.chart_text, "Include labels")
+        prefs.chart_text = self.toggle_square2(x, y, prefs.chart_text, "Include text")
 
         x = self.box_x + self.item_x_offset + 300 * gui.scale
         y = self.box_y + 100 * gui.scale
 
         if self.button2(x, y, "Randomise BG"):
 
-            r = round(random.random() * 30)
-            g = round(random.random() * 30)
-            b = round(random.random() * 30)
+            r = round(random.random() * 40)
+            g = round(random.random() * 40)
+            b = round(random.random() * 40)
 
             prefs.chart_bg = [r, g, b]
 
             d = random.randrange(0, 4)
+
             if d == 1:
                 c = 5 + round(random.random() * 20)
                 prefs.chart_bg = [c, c, c]
