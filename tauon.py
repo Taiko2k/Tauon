@@ -7616,17 +7616,21 @@ class AlbumArt():
         if im.mode != "RGB":
             im = im.convert("RGB")
         im.thumbnail(size, Image.ANTIALIAS)
+
+        if not save_path:
+            g = io.BytesIO()
+            g.seek(0)
+            if png:
+                im.save(g, 'PNG')
+            else:
+                im.save(g, 'JPEG')
+            g.seek(0)
+            return g
+
         if png:
             im.save(save_path + '.png', 'PNG')
         else:
             im.save(save_path + '.jpg', 'JPEG')
-
-        g = io.BytesIO()
-        g.seek(0)
-
-        im.save(g, 'BMP')
-        g.close()
-
 
 
     def display(self, track, location, box, fast=False, theme_only=False):
@@ -18693,10 +18697,13 @@ class Over:
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
-                shoot = threading.Thread(target=gen_chart)
-                shoot.daemon = True
-                shoot.start()
-                gui.generating_chart = True
+                if not prefs.chart_font:
+                    show_message("No font set in config", 'error')
+                else:
+                    shoot = threading.Thread(target=gen_chart)
+                    shoot.daemon = True
+                    shoot.start()
+                    gui.generating_chart = True
 
         if gui.generating_chart:
             ddt.draw_text((x + 70 * gui.scale, y + 2 * gui.scale), "Generating...",
