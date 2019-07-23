@@ -7906,10 +7906,7 @@ class AlbumArt():
 
             self.render(unit, location)
 
-            if len(self.image_cache) > 5:
-                SDL_DestroyTexture(self.image_cache[0].texture)
-                del self.image_cache[0]
-            if prefs.colour_from_image and len(self.image_cache) > 1:
+            if len(self.image_cache) > 5 or (prefs.colour_from_image and len(self.image_cache) > 1):
                 SDL_DestroyTexture(self.image_cache[0].texture)
                 del self.image_cache[0]
 
@@ -20158,6 +20155,9 @@ class BottomBarType1:
             ddt.draw_text((x - 5 * gui.scale, y), '-', colours.time_playing,
                       fonts.bottom_panel_time)
         elif gui.display_time_mode == 2:
+
+            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+
             x -= 4
             text_time = get_display_time(pctl.playing_time)
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
@@ -20183,6 +20183,8 @@ class BottomBarType1:
 
         elif gui.display_time_mode == 3:
 
+            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+
             track = pctl.playing_object()
             if track and track.index != gui.dtm3_index:
 
@@ -20203,6 +20205,7 @@ class BottomBarType1:
 
             x -= 4
             text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
+
             ddt.draw_text((x - 25 * gui.scale, y), text_time, colours.time_playing,
                       fonts.bottom_panel_time)
 
@@ -20834,6 +20837,8 @@ class MiniMode2:
 
             seek_rect = (h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)), round(5 * gui.scale))
             colour = colours.artist_text
+            if gui.theme_name == "Carbon":
+                colour = colours.bottom_panel_colour
             if pctl.playing_state != 1:
                 colour = [210, 40, 100, 255]
             ddt.rect_r(seek_rect, colour, True)
