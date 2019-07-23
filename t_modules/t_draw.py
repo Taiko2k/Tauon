@@ -587,7 +587,6 @@ class TDraw:
             if range_top + range_height > sd[0].h:
                 # range_top = 0
                 range_height = sd[0].h - range_top
-                
 
             self.source_rect.y = sd[0].h - round(range_height) - round(range_top)
             self.source_rect.w = sd[0].w
@@ -598,41 +597,26 @@ class TDraw:
             self.dest_rect.w = sd[0].w
             self.dest_rect.h = round(range_height)
             
-            
-            
             SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, SDL_FLIP_VERTICAL)
             return
 
         SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
 
-
     def __draw_text_windows(self, x, y, text, bg, fg, font=None, align=0, wrap=False, max_x=100, max_y=None, range_top=0, range_height=None):
 
         y += self.y_offset_dict[font]
 
-        key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[1], bg[2], bg[3], max_x)
+        key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], max_x)
 
         if key in self.cache:
             sd = self.cache[key]
-
 
             self.__win_render_text(sd, x, y, range_top, range_height, align)
             if wrap:
                 return sd[0].h
             return sd[0].w
 
-
-            #sd[0].x = x
-            #sd[0].y = y
-            #if align == 1:
-            #    sd[0].x = x - sd[0].w
-            #elif align == 2:
-            #    sd[0].x = sd[0].x - int(sd[0].w / 2)
-            #SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, SDL_FLIP_VERTICAL)
-            #return sd[0].w
-
-
-        if font == None or font not in self.f_dict:
+        if font is None or font not in self.f_dict:
 
             print("Missing Font")
             print(font)
@@ -647,16 +631,6 @@ class TDraw:
             max_y = h
 
         im, c_bits = f.renderText(text, bg, fg, wrap, max_x, max_y)
-
-        #buff = io.BytesIO()
-
-        #im.save(buff, format="BMP")
-
-        #buff.seek(0)
-
-        #wop = rw_from_object(buff)
-
-        #s_image = IMG_Load_RW(wop, 0)
 
         s_image = im
         ke = SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
@@ -693,9 +667,7 @@ class TDraw:
             del self.ca_li[0]
 
         return dst.w    
-    
-   
-    
+
     def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
         #print((text, font))
@@ -732,3 +704,4 @@ class TDraw:
             return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align)
         else:
             return self.__draw_text_windows(location[0], location[1], text, bg, colour, font, align=align, max_x=max_w)
+
