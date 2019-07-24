@@ -24,7 +24,7 @@ class TopChart:
         spacing = 9
 
         # Determine the final width and height of album grid
-        h = round((border * 2) + (size * rows) + (spacing * rows - 1))
+        h = round((border * 2) + (size * rows) + (spacing * (rows - 1)))
         w = round((border * 2) + (size * columns) + (spacing * (columns - 1)))
         ww = w
 
