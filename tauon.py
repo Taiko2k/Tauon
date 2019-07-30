@@ -76,6 +76,7 @@ cache_directory = os.path.join(user_directory, "cache")
 home_directory = os.path.join(os.path.expanduser('~'))
 asset_subfolder = "/assets/"
 music_directory = os.path.join(os.path.expanduser('~'), "Music")
+
 download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 
 # Detect if we are installed or running portably
@@ -2700,12 +2701,17 @@ def tag_scan(nt):
                             print("Tag Scan: Winamp genre code detected")
                         nt.genre = id3_genre_dict[value]
 
-
-
-
-
                 if tag.date:
                     nt.date = tag.date
+
+                # Workaround for bug in Stagger date parsing for ID3v2.3
+                if TDAT in tag and TYER in tag:
+                    year = tag[TYER].text[0]
+                    date = tag[TDAT].text[0]
+                    day = date[0:2]
+                    month = date[2:4]
+                    nt.date = f"{year}-{month}-{day}"
+
                 nt.composer = tag.composer
 
                 if UFID in tag:
@@ -5777,6 +5783,8 @@ t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_size[0], window_size[1],
                             flags)
+
+#print(SDL_GetError())
 
 if gui.maximized:
     SDL_MaximizeWindow(t_window)
@@ -9097,22 +9105,31 @@ class Menu:
         Menu.switch = self.id
         self.sub_active = -1
 
-        # Reposition the menu if it would otherwise intersect with window border
+        # Reposition the menu if it would otherwise intersect with far edge of window
         if self.pos[0] + self.w > window_size[0]:
             self.pos[0] = self.pos[0] - self.w - 3 * gui.scale
-        if self.pos[1] + len(self.items) * self.h > window_size[1]:
-            #self.pos[1] -= len(self.items) * self.h
-            self.pos[0] += 3 * gui.scale
-            for i in range(len(self.items)):
-                if self.items[i] is None:
-                    self.pos[1] -= self.break_height
-                elif self.test_item_active(self.items[i]) is False:
-                    pass
-                else:
-                    self.pos[1] -= self.h
+
+        # Get height size of menu
+        full_h = 0
+        shown_h = 0
+        for item in self.items:
+            if item is None:
+                full_h += self.break_height
+                shown_h += self.break_height
+            else:
+                full_h += self.h
+                if self.test_item_active(item) is True:
+                    shown_h += self.h
+
+        # Flip menu up if would intersect with bottom of window
+        if self.pos[1] + full_h > window_size[1]:
+            self.pos[1] = self.pos[1] - shown_h
+
+            # Prevent moving outside top of window
             if self.pos[1] < 30 * gui.scale:
                 self.pos[1] = 30 * gui.scale
                 self.pos[0] += 5 * gui.scale
+
         self.active = True
 
 
@@ -16418,7 +16435,12 @@ def worker1():
         if os.path.basename(direc) == "__MACOSX":
             return
 
-        items_in_dir = os.listdir(direc)
+        try:
+            items_in_dir = os.listdir(direc)
+        except PermissionError:
+            show_message("Permission error accessing one or more files", 'warning')
+            return
+
         for q in range(len(items_in_dir)):
             if os.path.isdir(os.path.join(direc, items_in_dir[q])):
                 gets(os.path.join(direc, items_in_dir[q]))
@@ -26214,7 +26236,7 @@ for item in r_arg_queue:
 sv = SDL_version()
 SDL_GetVersion(sv)
 sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
-# print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
+#print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
 if prefs.backend == 2:
