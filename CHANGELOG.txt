@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.6.1
+
+ - Fixed MP3 files using ID3v2.3 tags scanning incorrect date format
+ - Fixed import stalling when encountering folders with invalid permission
+
 v4.6.0
 
  - Added new theme: Carbon
