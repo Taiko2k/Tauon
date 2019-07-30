@@ -2239,7 +2239,7 @@ download_directories = []
 if os.path.isdir(download_directory):
     download_directories.append(download_directory)
 
-if os.path.isdir(music_directory):
+if music_directory is not None and os.path.isdir(music_directory):
     download_directories.append(music_directory)
 
 from t_modules.t_config import Config
