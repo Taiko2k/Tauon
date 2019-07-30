@@ -76,6 +76,8 @@ cache_directory = os.path.join(user_directory, "cache")
 home_directory = os.path.join(os.path.expanduser('~'))
 asset_subfolder = "/assets/"
 music_directory = os.path.join(os.path.expanduser('~'), "Music")
+if not os.path.isdir(music_directory):
+    music_directory = os.path.join(os.path.expanduser('~'), "music")
 
 download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 
