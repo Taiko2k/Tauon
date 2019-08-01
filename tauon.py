@@ -27176,7 +27176,6 @@ while pctl.running:
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = True
 
-
         elif event.type == SDL_KEYUP:
             k_input = True
             power += 5
@@ -27224,6 +27223,7 @@ while pctl.running:
                 mouse_enter_window = True
 
                 focused = True
+                gui.lowered = False
                 key_focused = 2
                 mouse_down = False
                 gui.album_tab_mode = False
@@ -27250,7 +27250,7 @@ while pctl.running:
                     update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
-
+                # print("ENTER")
                 mouse_enter_window = True
 
             # elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
