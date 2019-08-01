@@ -3,7 +3,7 @@ Changelog-------------------------------------
 
 v4.6.1
 
- - Fixed startup crash is music directory was not found
+ - Fixed startup crash if music directory was not found
  - Fixed MP3 files using ID3v2.3 tags scanning incorrect date format
  - Fixed import stalling when encountering folders with invalid permission
  - Fixed freeze on restore with newer versions of SDL2
