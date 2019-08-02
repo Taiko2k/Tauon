@@ -11,4 +11,3 @@ plexapi
 musicbrainzngs
 discogs_client
 pypresence
-pycairo>=1.10.1
