@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.6.1"
+n_version = "4.6.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -27127,10 +27127,10 @@ while pctl.running:
             gui.update += 2
             keymaps.hits.append(event.key.keysym.sym)
 
-            if event.key.keysym.sym == SDLK_RETURN and len(editline) == 0:
+            if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
                 input.key_return_press = True
-            # elif event.key.keysym.sym == SDLK_SPACE:
-            #     key_space_press = True
+            elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
+                input.key_return_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:

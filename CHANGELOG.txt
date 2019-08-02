@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.6.2
+
+ - Fixed numpad return key not being registered
+
 v4.6.1
 
  - Fixed startup crash if music directory was not found
