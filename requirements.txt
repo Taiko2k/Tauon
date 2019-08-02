@@ -1,5 +1,4 @@
 pillow
-PyGObject
 pylast>=3.1.0
 dbus-python
 flask
