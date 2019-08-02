@@ -1,6 +1,5 @@
 pillow
 pylast>=3.1.0
-dbus-python
 flask
 hsaudiotag3k
 pysdl2
