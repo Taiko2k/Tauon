@@ -95,7 +95,7 @@ class TopChart:
                 context.set_source_surface(art, x, y)
                 context.paint()
 
-            text += "\n"  # Insert extra line to form groups for each row
+            text += " \n"  # Insert extra line to form groups for each row
 
         if show_lables:
 
@@ -106,7 +106,8 @@ class TopChart:
             layout = PangoCairo.create_layout(context)
             layout.set_ellipsize(Pango.EllipsizeMode.END)
             layout.set_width((500 - text_offset - spacing) * 1000)
-            layout.set_spacing(3 * 1000)
+            # layout.set_height((h - spacing * 2) * 1000)
+            #layout.set_spacing(3 * 1000)
             layout.set_font_description(Pango.FontDescription(font))
             layout.set_text(text, -1)
 
