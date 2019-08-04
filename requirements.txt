@@ -1,7 +1,5 @@
 pillow
-PyGObject
 pylast>=3.1.0
-dbus-python
 flask
 hsaudiotag3k
 pysdl2
@@ -12,4 +10,3 @@ plexapi
 musicbrainzngs
 discogs_client
 pypresence
-pycairo>=1.10.1
