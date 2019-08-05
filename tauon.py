@@ -22258,7 +22258,6 @@ class ArtBox:
                 if pctl.mpris:
                     pctl.mpris.update(force=True)
 
-
         # Activate picture context menu on right click
         if right_click and coll(rect) and target_track:
             picture_menu.activate(in_reference=target_track)
@@ -23338,7 +23337,6 @@ class ArtistList:
                         artist_parents[artist] = []
                     if track.parent_folder_path not in artist_parents[artist]:
                         artist_parents[artist].append(track.parent_folder_path)
-
 
             current_album_counts = artist_parents
 
@@ -30390,10 +30388,11 @@ while pctl.running:
             if gui.message_box:
                 if input.mouse_click or input.key_return_press or right_click or key_esc_press or key_backspace_press \
                         or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
-                    gui.message_box = False
-                    input.key_return_press = False
 
-
+                    if not key_focused:
+                        gui.message_box = False
+                        gui.update += 1
+                        input.key_return_press = False
 
                 w1 = ddt.get_text_w(gui.message_text, 15) + 74 * gui.scale
                 w2 = ddt.get_text_w(gui.message_subtext, 12) + 74 * gui.scale

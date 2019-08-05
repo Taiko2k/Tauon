@@ -432,7 +432,8 @@ def get_folder_size(path):
 
 
 def get_artist_strip_feat(track_object):
-    artist_name = track_object.artist.lower()
+
+    artist_name = track_object.artist #.lower()
     if track_object.album_artist:
         if "feat." in artist_name or "pres." in artist_name or ", " in artist_name or "; " in artist_name or not artist_name:
             if track_object.album_artist.lower() != "va" and \
