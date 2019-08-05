@@ -922,6 +922,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # Set volume
                     BASS_ChannelSetAttribute(new_mixer, 2, 0)
 
+                    # Set replay gain
+                    replay_gain(new_mixer)
+
                     # Start playing
                     BASS_ChannelPlay(new_mixer, False)
                     # print("Play from rest")
@@ -929,8 +932,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # Add end callback
                     BASS_ChannelSetSync(new_mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync2, 0)
 
-                    # Set replay gain
-                    replay_gain(new_mixer)
+
 
                     # Set the starting position
                     if pctl.start_time_target > 0 or pctl.jump_time > 0:
