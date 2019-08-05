@@ -5,6 +5,7 @@ v4.6.2
 
  - Fixed numpad return key not being registered
  - Fixed chart text grouping
+ - Fixed a change that caused artist list names being lowercase and not registering on click
 
 v4.6.1
 
