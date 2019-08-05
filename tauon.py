@@ -84,7 +84,11 @@ download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 # Detect if we are installed or running portably
 install_mode = False
 flatpak_mode = False
-if install_directory[:5] == "/opt/" or install_directory[:5] == "/usr/" or install_directory[:5] == "/app/":
+if install_directory.startswith("/opt/")\
+        or install_directory.startswith("/usr/")\
+        or install_directory.startswith("/app/")\
+        or install_directory.startswith("/snap/"):
+
     install_mode = True
     if install_directory[:5] == "/app/":
         # Flatpak mode
