@@ -20893,11 +20893,13 @@ def set_mini_mode():
     if fullscreen == 1:
         return
 
+    global mouse_down
+    mouse_down = False
+    input.mouse_click = False
+
     if gui.maximized:
         SDL_RestoreWindow(t_window)
         update_layout_do()
-
-
 
     gui.mode = 3
     gui.vis = 0
