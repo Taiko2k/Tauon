@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.6.2"
+n_version = "4.6.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1597,6 +1597,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_tab_bg = self.tab_background
         self.sys_tab_hl = self.tab_background_active
         self.toggle_box_on = self.folder_title
+        self.toggle_box_on = [255, 150, 100, 255]
+        self.toggle_box_on = self.artist_playing
         if colour_value(self.toggle_box_on) < 150:
             self.toggle_box_on = [160, 160, 160, 255]
         self.time_sub = alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
@@ -9416,6 +9418,8 @@ showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_re
 
 
 def get_lyric_fire(track_object, silent=False):
+
+    lyrics_ren.lyrics_position = 0
 
     if not prefs.lyrics_enables:
         if not silent:
@@ -17983,11 +17987,11 @@ class Over:
 
             y += 35 * gui.scale
 
-            self.button(x, y, "Lyrics settings...", self.toggle_lyrics_view)
+            self.button(x, y, "Lyrics settings...", self.toggle_lyrics_view, width=115 * gui.scale)
 
             y += 26 * gui.scale
 
-            if system == 'linux' and self.button2(x, y, "Chart generator..."):
+            if system == 'linux' and self.button2(x, y, "Chart generator...", width=115 * gui.scale):
                 self.chart_view = 1
 
             x = self.box_x + self.item_x_offset
@@ -18001,7 +18005,7 @@ class Over:
                 # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
                 # fields.add(link_rect)
 
-                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 12)
+                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 13)
                 link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
@@ -18036,34 +18040,26 @@ class Over:
                 y += 23 * gui.scale
                 self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
 
-            y = self.box_y + 220 * gui.scale
+            y = self.box_y + 216 * gui.scale
+            x -= 15 * gui.scale
+
+            self.button(x, y, _("Open config file"), open_config_file, 115 * gui.scale)
+
+            bg = None
+            if gui.opened_config_file:
+                bg = [90, 50, 130, 255]
+
+            self.button(x + 122 * gui.scale, y, _("Reload config file"), reload_config_file,
+                        115 * gui.scale, bg=bg)
+
+            y += 27 * gui.scale
+
+            self.button(x + 122 * gui.scale, y, _("Open keymap file"), open_keymap_file,
+                        115 * gui.scale)
+
+            self.button(x, y, _("Open data folder"), open_data_directory, 115 * gui.scale)
 
 
-            # if key_shift_down:
-            #     self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reset config"), reset_config_file,
-            #                 105 * gui.scale)
-            # else:
-
-            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open config file"), open_config_file, 105 * gui.scale)
-            if not gui.opened_config_file:
-                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
-                            105 * gui.scale)
-            else:
-                self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Reload config file"), reload_config_file,
-                            105 * gui.scale, bg=[90, 50, 130, 255])
-
-            y += 26 * gui.scale
-
-            self.button(x + 120 * gui.scale, y - 4 * gui.scale, _("Open keymap file"), open_keymap_file,
-                        105 * gui.scale)
-
-            #y += 26 * gui.scale
-
-            self.button(x + 10 * gui.scale, y - 4 * gui.scale, _("Open data folder"), open_data_directory, 105 * gui.scale)
-
-
-
-            #x = self.box_x + self.item_x_offset
 
     def button(self, x, y, text, plug, width=0, bg=None):
 
@@ -18117,41 +18113,43 @@ class Over:
         x = round(x)
         y = round(y)
 
-        space = round(3 * gui.scale)
-        inner = space * 2
-        outer = inner * 2
+        border = round(2 * gui.scale)
+        gap = round(2 * gui.scale)
+        inner_square = round(6 * gui.scale)
 
-        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(230), 12)
+        full_w = border * 2 + gap * 2 + inner_square
 
-        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
-        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
+        le = ddt.draw_text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.grey_blend_bg(230), 13)
 
+        # Border outline
+        ddt.rect_a((x, y), (full_w, full_w), [255, 255, 255, 16], True)
+        # Inner background
+        ddt.rect_a((x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square), [255, 255, 255, 13], True)
+
+        # Check if box clicked
+        clicked = False
         if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
-            function()
-        if function(1):
-            ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
+            clicked = True
 
-    def toggle_square2(self, x, y, bool, text):
+        # There are two mode, function type, and passthrough bool type
+        active = False
+        if type(function) is bool:
+            active = function
+        else:
+            active = function(1)
 
-        x = round(x)
-        y = round(y)
+        if clicked:
+            if type(function) is bool:
+                active ^= True
+            else:
+                function()
+                active = function(1)
 
-        space = round(3 * gui.scale)
-        inner = space * 2
-        outer = inner * 2
+        # Draw inner check mark if enabled
+        if active:
+            ddt.rect_a((x + border + gap, y + border + gap), (inner_square, inner_square), colours.toggle_box_on, True)
 
-        le = ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), text, colours.grey_blend_bg(230), 12)
-
-        if self.click and coll((x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)):
-            bool ^= True
-
-        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
-        ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
-
-        if bool:
-            ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
-        return bool
-
+        return active
 
     def last_fm_box(self):
 
@@ -18687,7 +18685,7 @@ class Over:
         y += 45 * gui.scale
         x += 5 * gui.scale
 
-        prefs.chart_text = self.toggle_square2(x, y, prefs.chart_text, "Include text")
+        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, "Include text")
 
         x = self.box_x + self.item_x_offset + 300 * gui.scale
         y = self.box_y + 100 * gui.scale
@@ -18722,7 +18720,7 @@ class Over:
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
-        if self.button2(x, y, "Generate"):
+        if self.button2(x, y, "Generate", width=75*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
@@ -18738,14 +18736,14 @@ class Over:
             ddt.draw_text((x + 70 * gui.scale, y + 2 * gui.scale), "Generating...",
                           [100, 100, 100, 255], 11)
 
-        y += 35 * gui.scale
+        y += 30 * gui.scale
         x += 30 * gui.scale
         if len(dex) < prefs.chart_rows * prefs.chart_columns:
-            ddt.draw_text((x, y, 2), "There are not enough albums in the playlist to fill the grid!", [240, 130, 130, 255], 12)
+            ddt.draw_text((x, y, 2), "There are not enough albums in the playlist to fill the grid!", [255, 120, 125, 255], 12)
 
         x = self.box_x + self.item_x_offset - 5 * gui.scale
-        y = self.box_y + 235 * gui.scale
-        if self.button2(x, y, "Return"):
+        y = self.box_y + 240 * gui.scale
+        if self.button2(x, y, "Return", width=75 * gui.scale):
             self.chart_view = 0
 
 
@@ -18901,28 +18899,13 @@ class Over:
         y2 = y
         x2 = x
 
-
-        space = round(3 * gui.scale)
-        inner = space * 2
-        outer = inner * 2
-
         for k in config_items:
             if k is None:
                 y += 15 * gui.scale
                 continue
-            ddt.draw_text((x + 20 * gui.scale, y - 3 * gui.scale), k[0], colours.grey_blend_bg(220), 12)
-            ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 13], True)
-            ddt.rect_a((x, y), (outer, outer), [255, 255, 255, 16])
-            if self.click and coll((x - 20, y - 5, 220, 24)):
-                k[1]()
-            if k[1](1) is True:
-                ddt.rect_a((x + space, y + space), (inner, inner), colours.toggle_box_on, True)
 
+            self.toggle_square(x, y, k[1], k[0])
             y += 25 * gui.scale
-
-            # if y - y2 > 190 * gui.scale:
-            #     y = y2
-            #     x += 205 * gui.scale
 
 
         y = self.box_y + 25 * gui.scale
@@ -18989,7 +18972,7 @@ class Over:
 
     def large_preset(self):
 
-        prefs.playlist_row_height = round(30 * prefs.ui_scale)
+        prefs.playlist_row_height = round(27 * prefs.ui_scale)
         prefs.playlist_font_size = 15
         gui.update_layout()
 
@@ -24301,7 +24284,6 @@ class MetaBox:
         if h < 15:
             return
 
-
         # Check for lyrics if auto setting
         test_auto_lyrics(track)
 
@@ -24318,8 +24300,7 @@ class MetaBox:
 
                 gui.update += 1
 
-
-            tw, th = ddt.get_text_wh(pctl.master_library[pctl.track_queue[pctl.queue_step]].lyrics + "\n", 15, w - 50 * gui.scale, True)
+            tw, th = ddt.get_text_wh(track.lyrics + "\n", 15, w - 50 * gui.scale, True)
 
             oth = th
 
@@ -25295,17 +25276,6 @@ class Showcase:
 
                 timed_ready = prefs.prefer_synced_lyrics
 
-            # elif not timed_ready:
-            #
-            #     if prefs.guitar_chords and track.title:
-            #         if gc.test_ready_status(track) == 0:
-            #             if draw.button("Query GuitarParty", 25 * gui.scale,
-            #                            window_size[1] - gui.panelBY - 100 * gui.scale,
-            #                            bg=bbg, fg=bfg,
-            #                            fore_text=bft, back_text=bbt):
-            #                 gc.fetch(track)
-
-
             if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
 
                 if not gc.auto_scroll:
@@ -25326,8 +25296,6 @@ class Showcase:
 
                 if prefs.showcase_vis and prefs.backend == 1:
                     y -= round(30 * gui.scale)
-
-                # ddt.pretty_rect = (300, 100, window_size[0], window_size[1] - gui.panelBY)
 
                 if track.artist == "" and track.title == "":
 
@@ -25350,8 +25318,6 @@ class Showcase:
                 gui.spec4_rec.y = y + round(50 * gui.scale)
 
 
-                # ddt.pretty_rect = None
-
                 if prefs.showcase_vis and window_size[0] > 710 and window_size[1] > 369 and not search_over.active:
 
                     if showcase_menu.active or gui.message_box or pref_box.enabled:
@@ -25359,13 +25325,10 @@ class Showcase:
                     else:
                         gui.draw_vis4_top = True
 
-
             else:
-
                 x += box + int(window_size[0] * 0.15) + 20 * gui.scale
                 x -= 100 * gui.scale
                 w = window_size[0] - x - 30 * gui.scale
-
 
                 if key_up_press:
                     lyrics_ren.lyrics_position += 35 * gui.scale
@@ -25381,14 +25344,12 @@ class Showcase:
                 if lyrics_ren.lyrics_position > 50 * gui.scale:
                     lyrics_ren.lyrics_position = 50 * gui.scale
 
-
                 lyrics_ren.render(index,
                                   x,
                                   y + lyrics_ren.lyrics_position,
                                   w,
                                   int(window_size[1] - 100 * gui.scale),
                                   0)
-
 
 
     def render_vis(self, top=False):
