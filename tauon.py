@@ -18122,9 +18122,9 @@ class Over:
         le = ddt.draw_text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.grey_blend_bg(230), 13)
 
         # Border outline
-        ddt.rect_a((x, y), (full_w, full_w), [255, 255, 255, 16], True)
+        ddt.rect_a((x, y), (full_w, full_w), [255, 255, 255, 17], True)
         # Inner background
-        ddt.rect_a((x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square), [255, 255, 255, 13], True)
+        ddt.rect_a((x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square), alpha_blend([255, 255, 255, 14], colours.sys_background), True)
 
         # Check if box clicked
         clicked = False
