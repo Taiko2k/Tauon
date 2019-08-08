@@ -20894,7 +20894,9 @@ def set_mini_mode():
         return
 
     global mouse_down
+    global mouse_up
     mouse_down = False
+    mouse_up = False
     input.mouse_click = False
 
     if gui.maximized:
@@ -20972,7 +20974,9 @@ def restore_full_mode():
     gui.mode = 1
 
     global mouse_down
+    global mouse_up
     mouse_down = False
+    mouse_up = False
     input.mouse_click = False
 
     if gui.maximized:
