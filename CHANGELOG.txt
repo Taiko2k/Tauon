@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v4.6.3
 
+ - Added no border mode to chart generator
  - Fixed click transferring into mini-modes
+ - Fixed chart generator failing in some cases
  - Tweaked size of thick track row height preset
  - Tweaked settings check box parameters
 
