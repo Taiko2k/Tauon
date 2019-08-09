@@ -27085,11 +27085,11 @@ while pctl.running:
             gui.update += 1
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_down = False
-                #print("RIGHT UP")
             elif event.button.button == SDL_BUTTON_LEFT:
-                #print("LEFT UP")
+                if mouse_down:
+                    mouse_up = True
+
                 mouse_down = False
-                mouse_up = True
         elif event.type == SDL_KEYDOWN:
             k_input = True
             power += 5
