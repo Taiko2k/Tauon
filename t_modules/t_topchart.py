@@ -37,13 +37,19 @@ class TopChart:
         self.user_dir = tauon.user_directory
         self.album_art_gen = album_art_gen
 
-    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10"):
+    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10", tile=False):
 
         # Main control variables
         border = 29
         text_offset = -7
         size = 170
         spacing = 9
+
+        if tile:
+            border = 0
+            spacing = 0
+            size = 160
+            text_offset = 15
 
         # Determine the final width and height of album grid
         h = round((border * 2) + (size * rows) + (spacing * (rows - 1)))
@@ -87,7 +93,10 @@ class TopChart:
                 try:
                     art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True)
                 except:
-                    # Skip drawing this album if loading of artwork failed
+                    continue
+
+                # Skip drawing this album if loading of artwork failed
+                if not art_file:
                     continue
 
                 # Load image into Cairo and draw
@@ -128,7 +137,10 @@ class TopChart:
                 print("error adjusting font size")
 
             # All good to render now
-            context.translate(w + text_offset, border + 3)
+            y_text_padding = 3
+            if tile:
+                y_text_padding += 6
+            context.translate(w + text_offset, border + y_text_padding)
             context.set_source_rgb(0.9, 0.9, 0.9)
             PangoCairo.show_layout(context, layout)
 

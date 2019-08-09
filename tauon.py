@@ -905,6 +905,7 @@ class Prefs:    # Used to hold any kind of settings
         self.chart_bg = [7, 7, 7]
         self.chart_text = True
         self.chart_font = "Monospace 10"
+        self.chart_tile = False
 
 
 
@@ -17658,7 +17659,7 @@ def gen_chart():
     for item in dex:
         tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
 
-    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font)
+    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile)
     if path:
         open_file(path)
 
@@ -18685,6 +18686,8 @@ class Over:
         y += 45 * gui.scale
         x += 5 * gui.scale
 
+        prefs.chart_tile = self.toggle_square(x, y, prefs.chart_tile, "Tile mode")
+        y += 25 * gui.scale
         prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, "Include text")
 
         x = self.box_x + self.item_x_offset + 300 * gui.scale
@@ -18733,7 +18736,7 @@ class Over:
                     gui.generating_chart = True
 
         if gui.generating_chart:
-            ddt.draw_text((x + 70 * gui.scale, y + 2 * gui.scale), "Generating...",
+            ddt.draw_text((x + 85 * gui.scale, y + 2 * gui.scale), "Generating...",
                           [100, 100, 100, 255], 11)
 
         y += 30 * gui.scale
