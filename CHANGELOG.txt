@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v4.6.3
 
- - Added no border mode to chart generator
+ - Added cascade option to chart generator
+ - Added no padding mode to chart generator
  - Fixed click transferring into mini-modes
  - Fixed chart generator failing in some cases
  - Tweaked size of thick track row height preset
