@@ -253,7 +253,7 @@ class TopChart:
 
             # Export the album art to file object
             try:
-                art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True)
+                art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True, zoom=True)
             except:
                 continue
 

@@ -7609,7 +7609,7 @@ class AlbumArt():
         return g
 
 
-    def save_thumb(self, track_object, size, save_path, png=False):
+    def save_thumb(self, track_object, size, save_path, png=False, zoom=False):
 
         filepath = track_object.fullpath
         sources = self.get_sources(track_object)
@@ -7637,7 +7637,23 @@ class AlbumArt():
         im = Image.open(source_image)
         if im.mode != "RGB":
             im = im.convert("RGB")
-        im.thumbnail(size, Image.ANTIALIAS)
+
+        if not zoom:
+            im.thumbnail(size, Image.ANTIALIAS)
+        else:
+            w, h = im.size
+            if w != h:
+                m = min(w, h)
+                im = im.crop((
+                    (w - m) / 2,
+                    (h - m) / 2,
+                    (w + m) / 2,
+                    (h + m) / 2,
+                ))
+
+            im = im.resize(size, Image.ANTIALIAS)
+
+
 
         if not save_path:
             g = io.BytesIO()
