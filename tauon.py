@@ -17672,19 +17672,25 @@ def set_player_gstreamer(mode=0):
 
 def gen_chart():
 
-    dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
-    topchart = t_topchart.TopChart(tauon, album_art_gen)
+    try:
+        dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+        topchart = t_topchart.TopChart(tauon, album_art_gen)
 
-    tracks = []
-    for item in dex:
-        tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
+        tracks = []
+        for item in dex:
+            tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
 
-    cascade = False
-    if prefs.chart_cascade:
-        cascade = ((prefs.chart_c1, prefs.chart_c2, prefs.chart_c3),
-                   (prefs.chart_d1, prefs.chart_d2, prefs.chart_d3))
+        cascade = False
+        if prefs.chart_cascade:
+            cascade = ((prefs.chart_c1, prefs.chart_c2, prefs.chart_c3),
+                       (prefs.chart_d1, prefs.chart_d2, prefs.chart_d3))
 
-    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile, cascade)
+        path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile, cascade)
+
+    except:
+        gui.generating_chart = False
+        show_message("There was an error generating the chart", 'error', "Sorry!")
+        return
 
     gui.generating_chart = False
 
@@ -18709,11 +18715,14 @@ class Over:
         y += 30 * gui.scale
 
         if prefs.chart_cascade:
-            prefs.chart_c1 = self.slide_control(x, y, "Level 1", '', prefs.chart_c1, 2, 20, 1, width=35)
+            if prefs.chart_d1:
+                prefs.chart_c1 = self.slide_control(x, y, "Level 1", '', prefs.chart_c1, 2, 20, 1, width=35)
             y += 22 * gui.scale
-            prefs.chart_c2 = self.slide_control(x, y, "Level 2", '', prefs.chart_c2, 2, 20, 1, width=35)
+            if prefs.chart_d2:
+                prefs.chart_c2 = self.slide_control(x, y, "Level 2", '', prefs.chart_c2, 2, 20, 1, width=35)
             y += 22 * gui.scale
-            prefs.chart_c3 = self.slide_control(x, y, "Level 3", '', prefs.chart_c3, 2, 20, 1, width=35)
+            if prefs.chart_d3:
+                prefs.chart_c3 = self.slide_control(x, y, "Level 3", '', prefs.chart_c3, 2, 20, 1, width=35)
 
             y -= 44 * gui.scale
             x += 133 * gui.scale
