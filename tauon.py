@@ -907,6 +907,11 @@ class Prefs:    # Used to hold any kind of settings
         self.chart_font = "Monospace 10"
         self.chart_tile = False
 
+        self.chart_cascade = False
+        self.chart_c1 = 5
+        self.chart_c2 = 6
+        self.chart_c3 = 10
+
 
 
 
@@ -17659,12 +17664,22 @@ def gen_chart():
     for item in dex:
         tracks.append(pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][item]))
 
-    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile)
+    cascade = False
+    if prefs.chart_cascade:
+        cascade = (prefs.chart_c1, prefs.chart_c2, prefs.chart_c3)
+
+    path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile, cascade)
+
+    gui.generating_chart = False
+
     if path:
         open_file(path)
+    else:
+        show_message("There was an error generating the chart", 'error', "Sorry!")
+        return
 
     show_message("Chart generated", 'done')
-    gui.generating_chart = False
+
 
 class Over:
     def __init__(self):
@@ -17871,7 +17886,7 @@ class Over:
             y = self.box_y + 37 * gui.scale
             x = self.box_x + 385 * gui.scale
 
-            ddt.draw_text((x, y - 22 * gui.scale), _("Set audio output device"), [185, 185, 185, 255], 212)
+            ddt.draw_text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
 
             if len(pctl.bass_devices) > 13:
@@ -18667,28 +18682,38 @@ class Over:
         x = self.box_x + self.item_x_offset - 10 * gui.scale
         y = self.box_y + 20 * gui.scale
 
-        ddt.draw_text((x, y), "Chart Grid Generator", colours.grey(250), 214)
+        ddt.draw_text((x, y), _("Chart Grid Generator"), colours.grey(250), 214)
 
-        y += 35 * gui.scale
+        y += 25 * gui.scale
         ww = ddt.draw_text((x, y), "Target playlist:   ", colours.grey(220), 312)
         ddt.draw_text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey(100), 12, 400 * gui.scale)
         #x -= 210 * gui.scale
 
 
-        y += 40 * gui.scale
+        y += 30 * gui.scale
 
-        prefs.chart_rows = self.slide_control(x, y, "Rows", '', prefs.chart_rows, 1, 100, 1, width=35)
+        if prefs.chart_cascade:
+            prefs.chart_c1 = self.slide_control(x, y, "Level 1", '', prefs.chart_c1, 3, 20, 1, width=35)
+            y += 22 * gui.scale
+            prefs.chart_c2 = self.slide_control(x, y, "Level 2", '', prefs.chart_c2, 3, 20, 1, width=35)
+            y += 22 * gui.scale
+            prefs.chart_c3 = self.slide_control(x, y, "Level 3", '', prefs.chart_c3, 3, 20, 1, width=35)
+        else:
 
-        y += 22 * gui.scale
+            prefs.chart_rows = self.slide_control(x, y, "Rows", '', prefs.chart_rows, 1, 100, 1, width=35)
+            y += 22 * gui.scale
+            prefs.chart_columns = self.slide_control(x, y, "Columns", '', prefs.chart_columns, 1, 100, 1, width=35)
+            y += 22 * gui.scale
 
-        prefs.chart_columns = self.slide_control(x, y, "Columns", '', prefs.chart_columns, 1, 100, 1, width=35)
 
-        y += 45 * gui.scale
+        y += 35 * gui.scale
         x += 5 * gui.scale
 
-        prefs.chart_tile = self.toggle_square(x, y, prefs.chart_tile, "Tile mode")
+        prefs.chart_cascade = self.toggle_square(x, y, prefs.chart_cascade, _("Cascade style"))
         y += 25 * gui.scale
-        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, "Include text")
+        prefs.chart_tile = self.toggle_square(x, y, prefs.chart_tile ^ True, _("Use padding")) ^ True
+        y += 25 * gui.scale
+        prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
 
         x = self.box_x + self.item_x_offset + 300 * gui.scale
         y = self.box_y + 100 * gui.scale
@@ -18723,7 +18748,7 @@ class Over:
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
-        if self.button2(x, y, "Generate", width=75*gui.scale):
+        if self.button2(x, y, _("Generate"), width=75*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
@@ -18736,17 +18761,26 @@ class Over:
                     gui.generating_chart = True
 
         if gui.generating_chart:
-            ddt.draw_text((x + 85 * gui.scale, y + 2 * gui.scale), "Generating...",
+            ddt.draw_text((x + 85 * gui.scale, y + 2 * gui.scale), _("Generating..."),
                           [100, 100, 100, 255], 11)
 
-        y += 30 * gui.scale
-        x += 30 * gui.scale
-        if len(dex) < prefs.chart_rows * prefs.chart_columns:
-            ddt.draw_text((x, y, 2), "There are not enough albums in the playlist to fill the grid!", [255, 120, 125, 255], 12)
+        y += 27 * gui.scale
+
+        count = prefs.chart_rows * prefs.chart_columns
+        if prefs.chart_cascade:
+            count = prefs.chart_c1 * 2 + prefs.chart_c2 * 2 + prefs.chart_c3 * 2
+
+
+        line = str(count) + " Album chart"
+
+        ddt.draw_text((x + 37*gui.scale, y, 2), line, [120, 120, 120, 255],
+                      12)
+        if len(dex) < count:
+            ddt.draw_text((x + 37*gui.scale, y + 19 * gui.scale, 2), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
 
         x = self.box_x + self.item_x_offset - 5 * gui.scale
         y = self.box_y + 240 * gui.scale
-        if self.button2(x, y, "Return", width=75 * gui.scale):
+        if self.button2(x, y, _("Return"), width=75 * gui.scale):
             self.chart_view = 0
 
 

@@ -37,13 +37,17 @@ class TopChart:
         self.user_dir = tauon.user_directory
         self.album_art_gen = album_art_gen
 
-    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10", tile=False):
+    def generate(self, tracks, bg=(10,10,10), rows=3, columns=3, show_lables=True, font="Monospace 10", tile=False, cascade=False):
 
         # Main control variables
         border = 29
         text_offset = -7
         size = 170
         spacing = 9
+
+        mode = 1
+        if cascade:
+            mode = 2
 
         if tile:
             border = 0
@@ -54,6 +58,35 @@ class TopChart:
         # Determine the final width and height of album grid
         h = round((border * 2) + (size * rows) + (spacing * (rows - 1)))
         w = round((border * 2) + (size * columns) + (spacing * (columns - 1)))
+
+        if mode == 2:
+
+            r1, r2, r3 = cascade
+            print(r1 * 2 + r2 * 2 + r3 * 2)
+            sets = []
+            for q in range(100, 10000):
+
+                a = q / r1
+                b = q / r2
+                c = q / r3
+
+                if a - int(a) == b - int(b) == c - int(c) == 0:
+                    sets.append((int(a), int(b), int(c)))
+
+            if not sets:
+                return False
+
+            abc = None
+            for s in sets:
+                if s[(r1, r2, r3).index(min((r1, r2, r3)))] > 165:
+                    abc = s
+                    break
+            else:
+                return False
+
+            w = round(border * 2) + (abc[0] * r1)
+            h = round(border * 2) + (abc[0] * 2) + (abc[1] * 2) + (abc[2] * 2)
+
         ww = w
 
         if show_lables:
@@ -69,42 +102,128 @@ class TopChart:
 
         text = ""
         i = -1
-        for r in range(rows):
-            for c in range(columns):
 
+        positions = []
+
+        # Grid mode
+        if mode == 1:
+            for r in range(rows):
+                for c in range(columns):
+
+                    i += 1
+
+                    # Break if we run out of albums
+                    if i > len(tracks) - 1:
+                        break
+
+                    # Determine coordinates for current album
+                    x = round(border + ((spacing + size) * c))
+                    y = round(border + ((spacing + size) * r))
+
+                    positions.append((tracks[i], x, y, size))
+
+                positions.append(False)
+
+        # Cascade mode
+        elif mode == 2:
+
+            a, b, c = abc
+
+            size = a
+            spacing = 0
+            inv_space = 0
+            if not tile:
+                inv_space = 8
+
+            x = border
+            y = border
+            for cl in range(r1):
                 i += 1
-
-                # Determine coordinates for current album
-                x = round(border + ((spacing + size) * c))
-                y = round(border + ((spacing + size) * r))
-
-                # Break if we run out of albums
+                x = border + (spacing + size) * cl
                 if i > len(tracks) - 1:
                     break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
 
-                # Determine the text label line
-                track = tracks[i]
-                artist = track.artist
-                if track.album_artist:
-                    artist = track.album_artist
-                text += f"{artist} - {track.album}\n"
+            for cl in range(r1):
+                i += 1
+                x = border + (spacing + size) * cl
+                if i > len(tracks) - 1:
+                    break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
 
-                # Export the album art to file object
-                try:
-                    art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True)
-                except:
-                    continue
+            size = b
+            if not tile:
+                inv_space = 6
+            positions.append(False)
 
-                # Skip drawing this album if loading of artwork failed
-                if not art_file:
-                    continue
+            for cl in range(r2):
+                i += 1
+                x = border + (spacing + size) * cl
+                if i > len(tracks) - 1:
+                    break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
 
-                # Load image into Cairo and draw
-                art = cairo.ImageSurface.create_from_png(art_file)
-                context.set_source_surface(art, x, y)
-                context.paint()
+            for cl in range(r2):
+                i += 1
+                x = border + (spacing + size) * cl
+                if i > len(tracks) - 1:
+                    break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
 
-            text += " \n"  # Insert extra line to form groups for each row
+            size = c
+            if not tile:
+                inv_space = 4
+            positions.append(False)
+
+            for cl in range(r3):
+                i += 1
+                x = border + (spacing + size) * cl
+                if i > len(tracks) - 1:
+                    break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
+
+            for cl in range(r3):
+                i += 1
+                x = border + (spacing + size) * cl
+                if i > len(tracks) - 1:
+                    break
+                positions.append((tracks[i], x, y, size - inv_space))
+            y += spacing + size
+
+        for item in positions:
+
+            if item is False:
+                text += " \n"  # Insert extra line to form groups for each row
+                continue
+
+            track, x, y, size = item
+
+            # Determine the text label line
+            artist = track.artist
+            if track.album_artist:
+                artist = track.album_artist
+            text += f"{artist} - {track.album}\n"
+
+            # Export the album art to file object
+            try:
+                art_file = self.album_art_gen.save_thumb(track, (size, size), None, png=True)
+            except:
+                continue
+
+            # Skip drawing this album if loading of artwork failed
+            if not art_file:
+                continue
+
+            # Load image into Cairo and draw
+            art = cairo.ImageSurface.create_from_png(art_file)
+            context.set_source_surface(art, x, y)
+            context.paint()
+
 
         if show_lables:
 
