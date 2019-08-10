@@ -18770,7 +18770,6 @@ class Over:
         if prefs.chart_cascade:
             count = prefs.chart_c1 * 2 + prefs.chart_c2 * 2 + prefs.chart_c3 * 2
 
-
         line = str(count) + " Album chart"
 
         ddt.draw_text((x + 37*gui.scale, y, 2), line, [120, 120, 120, 255],

@@ -88,19 +88,6 @@ class TopChart:
             h = round(border * 2) + (abc[0] * 2) + (abc[1] * 2) + (abc[2] * 2)
 
         ww = w
-
-        if show_lables:
-            ww += 500  # Add extra area to final size for text
-
-        # Prepare a blank Cairo surface
-        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, ww, h)
-        context = cairo.Context(surface)
-
-        bg = (bg[0] / 255, bg[1] / 255, bg[2] / 255)  # Convert 8-bit rgb values to decimal
-        context.set_source_rgb(bg[0], bg[1], bg[2])
-        context.paint()  # Fill in the background colour
-
-        text = ""
         i = -1
 
         positions = []
@@ -195,10 +182,44 @@ class TopChart:
                 positions.append((tracks[i], x, y, size - inv_space))
             y += spacing + size
 
+
+        # Parse font
+        font_comp = font.split(" ")
+        font_size = int(font_comp.pop())
+
+        col_w = 500
+
+        two_col = False
+        font_comp = font.split(" ")
+        font_size = int(font_comp.pop())
+        if len(positions) * (font_size + 4) > h - border * 2:
+            two_col = True
+            font_size += 1
+            col_w = 380
+
+        if show_lables:
+            ww += col_w  # Add extra area to final size for text
+            if two_col:
+                ww += col_w + 20
+
+
+
+
+        # Get lables
+        text = ""
+        b_text = ""
+        f = False
         for item in positions:
 
             if item is False:
-                text += " \n"  # Insert extra line to form groups for each row
+
+                if not f:
+                    text += " \n"  # Insert extra line to form groups for each row
+                else:
+                    b_text += " \n"
+
+                if two_col:
+                    f ^= True
                 continue
 
             track, x, y, size = item
@@ -207,7 +228,28 @@ class TopChart:
             artist = track.artist
             if track.album_artist:
                 artist = track.album_artist
-            text += f"{artist} - {track.album}\n"
+            line = f"{artist} - {track.album}\n"
+
+            if not f:
+                text += line
+            else:
+                b_text += line
+
+
+        # Prepare a blank Cairo surface
+        surface = cairo.ImageSurface(cairo.FORMAT_RGB24, ww, h)
+        context = cairo.Context(surface)
+
+        bg = (bg[0] / 255, bg[1] / 255, bg[2] / 255)  # Convert 8-bit rgb values to decimal
+        context.set_source_rgb(bg[0], bg[1], bg[2])
+        context.paint()  # Fill in the background colour
+
+        for item in positions:
+
+            if item is False:
+                continue
+
+            track, x, y, size = item
 
             # Export the album art to file object
             try:
@@ -233,15 +275,17 @@ class TopChart:
             context.set_font_options(options)
             layout = PangoCairo.create_layout(context)
             layout.set_ellipsize(Pango.EllipsizeMode.END)
-            layout.set_width((500 - text_offset - spacing) * 1000)
+            layout.set_width((col_w - text_offset - spacing) * 1000)
             # layout.set_height((h - spacing * 2) * 1000)
             #layout.set_spacing(3 * 1000)
+            #layout.set_font_description(Pango.FontDescription(font))
+
+
+            # Here we make sure the font size is small enough to fit
+            font = " ".join(font_comp) + " " + str(font_size)
             layout.set_font_description(Pango.FontDescription(font))
             layout.set_text(text, -1)
 
-            # Here we make sure the font size is small enough to fit
-            font_comp = font.split(" ")
-            font_size = font_comp.pop()
             try:
                 font_size = int(font_size)
                 while font_size > 2:
@@ -262,6 +306,28 @@ class TopChart:
             context.translate(w + text_offset, border + y_text_padding)
             context.set_source_rgb(0.9, 0.9, 0.9)
             PangoCairo.show_layout(context, layout)
+
+        if b_text:
+
+            # Setup font and prepare Pango layout
+            options = context.get_font_options()
+            options.set_antialias(cairo.ANTIALIAS_GRAY)
+            context.set_font_options(options)
+            layout = PangoCairo.create_layout(context)
+            layout.set_ellipsize(Pango.EllipsizeMode.END)
+            layout.set_width((col_w - text_offset - spacing) * 1000)
+
+            layout.set_font_description(Pango.FontDescription(font))
+            layout.set_text(b_text, -1)
+
+            # All good to render now
+            y_text_padding = 3
+            if tile:
+                y_text_padding += 6
+            context.translate(col_w + 10, 0)
+            context.set_source_rgb(0.9, 0.9, 0.9)
+            PangoCairo.show_layout(context, layout)
+
 
         # Finally export as PNG
         output_path = os.path.join(self.user_dir, "chart.png")
