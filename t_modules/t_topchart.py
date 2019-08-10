@@ -61,7 +61,7 @@ class TopChart:
 
         if mode == 2:
 
-            r1, r2, r3 = cascade
+            r1, r2, r3 = cascade[0]
             print(r1 * 2 + r2 * 2 + r3 * 2)
             sets = []
             for q in range(100, 10000):
@@ -84,8 +84,10 @@ class TopChart:
             else:
                 return False
 
+            d1, d2, d3 = cascade[1]
+
             w = round(border * 2) + (abc[0] * r1)
-            h = round(border * 2) + (abc[0] * 2) + (abc[1] * 2) + (abc[2] * 2)
+            h = round(border * 2) + (abc[0] * d1) + (abc[1] * d2) + (abc[2] * d3)
 
         ww = w
         i = -1
@@ -124,63 +126,46 @@ class TopChart:
 
             x = border
             y = border
-            for cl in range(r1):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
 
-            for cl in range(r1):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
+            for d in range(d1):
+                for cl in range(r1):
+                    i += 1
+                    x = border + (spacing + size) * cl
+                    if i > len(tracks) - 1:
+                        break
+                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                y += spacing + size
 
             size = b
             if not tile:
                 inv_space = 6
             positions.append(False)
 
-            for cl in range(r2):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
+            for d in range(d2):
 
-            for cl in range(r2):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
+                for cl in range(r2):
+                    i += 1
+                    x = border + (spacing + size) * cl
+                    print(x)
+                    if i > len(tracks) - 1:
+                        break
+                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                y += spacing + size
+
 
             size = c
             if not tile:
                 inv_space = 4
             positions.append(False)
 
-            for cl in range(r3):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
-
-            for cl in range(r3):
-                i += 1
-                x = border + (spacing + size) * cl
-                if i > len(tracks) - 1:
-                    break
-                positions.append((tracks[i], x, y, size - inv_space))
-            y += spacing + size
+            for d in range(d3):
+                for cl in range(r3):
+                    i += 1
+                    x = border + (spacing + size) * cl
+                    if i > len(tracks) - 1:
+                        break
+                    positions.append((tracks[i], x + inv_space // 2, y + inv_space // 2, size - inv_space))
+                y += spacing + size
 
 
         # Parse font

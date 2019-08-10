@@ -911,8 +911,9 @@ class Prefs:    # Used to hold any kind of settings
         self.chart_c1 = 5
         self.chart_c2 = 6
         self.chart_c3 = 10
-
-
+        self.chart_d1 = 2
+        self.chart_d2 = 2
+        self.chart_d3 = 2
 
 
 prefs = Prefs()
@@ -7652,8 +7653,6 @@ class AlbumArt():
                 ))
 
             im = im.resize(size, Image.ANTIALIAS)
-
-
 
         if not save_path:
             g = io.BytesIO()
@@ -17682,7 +17681,8 @@ def gen_chart():
 
     cascade = False
     if prefs.chart_cascade:
-        cascade = (prefs.chart_c1, prefs.chart_c2, prefs.chart_c3)
+        cascade = ((prefs.chart_c1, prefs.chart_c2, prefs.chart_c3),
+                   (prefs.chart_d1, prefs.chart_d2, prefs.chart_d3))
 
     path = topchart.generate(tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text, prefs.chart_font, prefs.chart_tile, cascade)
 
@@ -18709,11 +18709,21 @@ class Over:
         y += 30 * gui.scale
 
         if prefs.chart_cascade:
-            prefs.chart_c1 = self.slide_control(x, y, "Level 1", '', prefs.chart_c1, 3, 20, 1, width=35)
+            prefs.chart_c1 = self.slide_control(x, y, "Level 1", '', prefs.chart_c1, 2, 20, 1, width=35)
             y += 22 * gui.scale
-            prefs.chart_c2 = self.slide_control(x, y, "Level 2", '', prefs.chart_c2, 3, 20, 1, width=35)
+            prefs.chart_c2 = self.slide_control(x, y, "Level 2", '', prefs.chart_c2, 2, 20, 1, width=35)
             y += 22 * gui.scale
-            prefs.chart_c3 = self.slide_control(x, y, "Level 3", '', prefs.chart_c3, 3, 20, 1, width=35)
+            prefs.chart_c3 = self.slide_control(x, y, "Level 3", '', prefs.chart_c3, 2, 20, 1, width=35)
+
+            y -= 44 * gui.scale
+            x += 133 * gui.scale
+            prefs.chart_d1 = self.slide_control(x, y, "by", '', prefs.chart_d1, 0, 10, 1, width=35)
+            y += 22 * gui.scale
+            prefs.chart_d2 = self.slide_control(x, y, "by", '', prefs.chart_d2, 0, 10, 1, width=35)
+            y += 22 * gui.scale
+            prefs.chart_d3 = self.slide_control(x, y, "by", '', prefs.chart_d3, 0, 10, 1, width=35)
+            x -= 133 * gui.scale
+
         else:
 
             prefs.chart_rows = self.slide_control(x, y, "Rows", '', prefs.chart_rows, 1, 100, 1, width=35)
@@ -18784,7 +18794,7 @@ class Over:
 
         count = prefs.chart_rows * prefs.chart_columns
         if prefs.chart_cascade:
-            count = prefs.chart_c1 * 2 + prefs.chart_c2 * 2 + prefs.chart_c3 * 2
+            count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
 
         line = str(count) + " Album chart"
 
