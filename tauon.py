@@ -16542,7 +16542,7 @@ def worker1():
                 not cm_clean_db and \
                 not lastfm.scanning_friends and \
                 not move_in_progress and \
-                gui.update == 0:
+                (gui.lowered or not window_is_focused()):
             save_state()
             cue_list.clear()
             tauon.worker_save_state = False
@@ -28565,7 +28565,7 @@ while pctl.running:
                     goto_album(pctl.playlist_playing_position)
 
                 # Process inputs first
-                if (input.mouse_click or right_click or middle_click) and default_playlist:
+                if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
                     while render_pos < album_pos_px + window_size[1]:
 
                         if b_info_bar and render_pos > album_pos_px + b_info_y:
@@ -28593,8 +28593,68 @@ while pctl.running:
                                 if card_mode: #gui.gallery_show_text:
                                     extend = 40 * gui.scale
 
-                                if coll((
-                                        x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)) and gui.panelY < mouse_position[
+                                rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                                m_in = coll(rect)
+
+                                if coll_point(click_location, rect):
+                                    info = get_album_info(album_dex[album_on])
+
+                                    if m_in and mouse_up and prefs.gallery_single_click:
+                                        if info[0] == 1 and pctl.playing_state == 2:
+                                            pctl.play()
+                                        elif info[0] == 1 and pctl.playing_state > 0:
+                                            pctl.playlist_view_position = album_dex[album_on]
+                                        else:
+                                            pctl.playlist_view_position = album_dex[album_on]
+                                            pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                        pctl.show_current()
+
+                                    elif mouse_down and not m_in:
+                                        info = get_album_info(album_dex[album_on])
+                                        quick_drag = True
+                                        if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+                                            playlist_hold = True
+                                        shift_selection = info[1]
+                                        gui.pl_update += 1
+                                        click_location = [0, 0]
+
+                                # Quick drag and drop
+                                if playlist_hold and m_in:
+                                    info = get_album_info(album_dex[album_on])
+                                    if mouse_up and info[1] and shift_selection:
+                                        track_position = info[1][0]
+
+                                        if track_position > shift_selection[0]:
+                                            track_position = info[1][-1] + 1
+
+                                        ref = []
+                                        for item in shift_selection:
+                                            ref.append(default_playlist[item])
+
+                                        for item in shift_selection:
+                                            default_playlist[item] = 'old'
+
+                                        for item in shift_selection:
+                                            default_playlist.insert(track_position, "new")
+
+                                        for b in reversed(range(len(default_playlist))):
+                                            if default_playlist[b] == 'old':
+                                                del default_playlist[b]
+                                        shift_selection = []
+                                        for b in range(len(default_playlist)):
+                                            if default_playlist[b] == 'new':
+                                                shift_selection.append(b)
+                                                default_playlist[b] = ref.pop(0)
+
+                                        playlist_selected = shift_selection[0]
+                                        gui.pl_update += 1
+
+                                        reload_albums(True)
+                                        tauon.worker_save_state = True
+
+
+                                if m_in and gui.panelY < mouse_position[
                                     1] < window_size[1] - gui.panelBY:
 
                                     info = get_album_info(album_dex[album_on])
@@ -28603,15 +28663,17 @@ while pctl.running:
 
                                         if prefs.gallery_single_click:
 
-                                            if info[0] == 1 and pctl.playing_state == 2:
-                                                pctl.play()
-                                            elif info[0] == 1 and pctl.playing_state > 0:
-                                                pctl.playlist_view_position = album_dex[album_on]
-                                            else:
-                                                pctl.playlist_view_position = album_dex[album_on]
-                                                pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+                                            pass
 
-                                            pctl.show_current()
+                                            # if info[0] == 1 and pctl.playing_state == 2:
+                                            #     pctl.play()
+                                            # elif info[0] == 1 and pctl.playing_state > 0:
+                                            #     pctl.playlist_view_position = album_dex[album_on]
+                                            # else:
+                                            #     pctl.playlist_view_position = album_dex[album_on]
+                                            #     pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+                                            #
+                                            # pctl.show_current()
 
                                         else:
 
@@ -28657,7 +28719,7 @@ while pctl.running:
                                                                  pl_to_id(pctl.active_playlist_viewing), 1, partway))
                                         queue_timer_set()
 
-                                    else:
+                                    elif right_click:
                                         playlist_selected = album_dex[album_on]
                                         #playlist_position = playlist_selected
                                         shift_selection = [playlist_selected]

@@ -3,14 +3,18 @@ Changelog-------------------------------------
 
 v4.6.3
 
- - Added cascade option to chart generator
- - Added no padding mode to chart generator
- - Added two column text to chart generator
- - Tweaked chart generator to zoom thumbnails
+ - Improved gallery to allow drag and drop to rearrange
+   - Tweaked single click to play to trigger on mouse up
+ - Improved chart generator
+   - Added cascade style option
+   - Added no padding mode
+   - Added two column text fallback
+   - Improved thumbnails to crop and zoom to full square
+   - Improved error handling
  - Fixed click transferring into mini-modes
- - Fixed chart generator failing in some cases
  - Tweaked size of thick track row height preset
- - Tweaked settings check box parameters
+ - Tweaked settings check box appearance
+ - Tweaked save to disk to wait until window is unfocused
 
 v4.6.2
 
