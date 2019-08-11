@@ -28594,9 +28594,9 @@ while pctl.running:
                                     extend = 40 * gui.scale
 
                                 rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                                m_in = coll(rect)
+                                m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
 
-                                if coll_point(click_location, rect):
+                                if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                                     info = get_album_info(album_dex[album_on])
 
                                     if m_in and mouse_up and prefs.gallery_single_click:
@@ -28654,8 +28654,7 @@ while pctl.running:
                                         tauon.worker_save_state = True
 
 
-                                if m_in and gui.panelY < mouse_position[
-                                    1] < window_size[1] - gui.panelBY:
+                                if m_in:
 
                                     info = get_album_info(album_dex[album_on])
 
