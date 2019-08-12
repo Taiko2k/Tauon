@@ -26893,6 +26893,19 @@ album_pos_px = album_v_slide_value
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
     album_pos_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
 
+def is_level_zero():
+
+    for menu in Menu.instances:
+        if menu.active:
+            return False
+
+    return not gui.rename_folder_box \
+            and not renamebox \
+            and not radiobox \
+            and not pref_box.enabled \
+            and not quick_search_mode \
+            and not gui.rename_playlist_box \
+            and not search_over.active
 
 while pctl.running:
     # bm.get('main')
@@ -28600,15 +28613,18 @@ while pctl.running:
                                     info = get_album_info(album_dex[album_on])
 
                                     if m_in and mouse_up and prefs.gallery_single_click:
-                                        if info[0] == 1 and pctl.playing_state == 2:
-                                            pctl.play()
-                                        elif info[0] == 1 and pctl.playing_state > 0:
-                                            pctl.playlist_view_position = album_dex[album_on]
-                                        else:
-                                            pctl.playlist_view_position = album_dex[album_on]
-                                            pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
-                                        pctl.show_current()
+                                        if is_level_zero():
+
+                                            if info[0] == 1 and pctl.playing_state == 2:
+                                                pctl.play()
+                                            elif info[0] == 1 and pctl.playing_state > 0:
+                                                pctl.playlist_view_position = album_dex[album_on]
+                                            else:
+                                                pctl.playlist_view_position = album_dex[album_on]
+                                                pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                            pctl.show_current()
 
                                     elif mouse_down and not m_in:
                                         info = get_album_info(album_dex[album_on])
@@ -28922,7 +28938,12 @@ while pctl.running:
                                 if rect.h > 0:
                                     style_overlay.hole_punches.append(rect)
 
-
+                            # # Drag over highlight
+                            # if quick_drag and playlist_hold and mouse_down:
+                            #     rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                            #     m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                            #     if m_in:
+                            #         ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [120, 10, 255, 100], True)
 
                             if gui.gallery_show_text:
                                 c_index = default_playlist[album_dex[album_on]]
