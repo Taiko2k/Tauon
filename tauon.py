@@ -17741,11 +17741,10 @@ class Over:
 
         self.tab_active = 0
         self.tabs = [
-            #["Folder Import", self.files],
             [_("Function"), self.funcs],
             [_("Audio"), self.audio],
-            [_("EQ"), self.eq],
-            [_("Playlist"), self.config_v],
+            [_("Tracklist"), self.config_v],
+            [_("Theme"), self.theme],
             [_("View"), self.config_b],
             [_("Transcode"), self.codec_config],
             [_("Accounts"), self.last_fm_box],
@@ -17773,8 +17772,105 @@ class Over:
         self.account_view = 0
         self.view_view = 0
         self.chart_view = 0
+        self.eq_view = False
 
 
+    def theme(self):
+
+        global album_mode_art_size
+        global update_layout
+
+        y = self.box_y + 20 * gui.scale
+        x = self.box_x + self.item_x_offset
+
+        ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
+
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
+
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
+
+        y += 23 * gui.scale
+
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+        # self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
+        # self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
+        # self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
+
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+
+        y += 23 * gui.scale
+        self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
+
+        y += 70 * gui.scale
+
+        self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
+        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
+        ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+
+
+
+        x = self.box_x + self.item_x_offset + 250 * gui.scale
+        y = self.box_y + 20 * gui.scale
+
+
+        ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+
+        y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+        self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
+        y += 25 * gui.scale
+        if album_mode_art_size < 160:
+            self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
+        y += 55 * gui.scale
+
+        ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
+
+        album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+
+
+        #
+        # ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+        #
+        # y += 28 * gui.scale
+        #
+        # if system == "linux":
+        #     self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+        #
+        # y += 25 * gui.scale
+        #
+        # self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
+        #
+        # y += 25 * gui.scale
+        # if not draw_border:
+        #     self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
+        #
+        # y += 25 * gui.scale
+        #
+        # if system == "windows":
+        #     self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+        #
+        # y += 30 * gui.scale
+        #
+        # ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
+        #
+        # if system != 'windows':
+        #     y += 25 * gui.scale
+        #     self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
+        #
+        # y += 25 * gui.scale
+        #
+        # if prefs.backend == 1:
+        #     self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+        #     y += 25 * gui.scale
+        #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+        #     y += 25 * gui.scale
 
     def eq(self):
 
@@ -17783,6 +17879,10 @@ class Over:
 
         y = self.box_y + 55 * gui.scale
         x = self.box_x + 250 * gui.scale
+
+        if self.button2(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
+            self.eq_view = False
+
 
         base_dis = 160 * gui.scale
         center = base_dis // 2
@@ -17842,6 +17942,10 @@ class Over:
         y = self.box_y + 40 * gui.scale
         x = self.box_x + 150 * gui.scale
 
+        if self.eq_view:
+            self.eq()
+            return
+
         # ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
         # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
         # bass_found = False
@@ -17871,8 +17975,14 @@ class Over:
 
         if prefs.backend == 1:
 
+
+            if self.button2(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
+                self.eq_view = True
+
             y = self.box_y + 92 * gui.scale
             x = self.box_x + 130 * gui.scale
+
+
 
             x += 8 * gui.scale
             ddt.draw_text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(90), 12)
@@ -18462,137 +18572,172 @@ class Over:
         y = self.box_y + 20 * gui.scale
 
 
-        if self.button2(x, y, "Theme"):
-            self.view_view = 1
+        # if self.button2(x, y, "Theme"):
+        #     self.view_view = 1
+        # y += 30 * gui.scale
+        #
+        # if self.button2(x, y, "Gallery"):
+        #     self.view_view = 2
+        #
+        # y += 30 * gui.scale
+        #
+        # if self.button2(x, y, "Window"):
+        #     self.view_view = 3
+        #
+        # y += 30 * gui.scale
+        #
+        # if self.button2(x, y, "Side Panels"):
+        #     self.view_view = 4
+
+        # x = self.box_x + self.item_x_offset + 250 * gui.scale
+        # y = self.box_y + 27 * gui.scale
+
+
+        ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+
+        y += 28 * gui.scale
+
+        if system == "linux":
+            self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
+
+        y += 25 * gui.scale
+        if not draw_border:
+            self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
+
+        y += 25 * gui.scale
+
+        if system == "windows":
+            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+
         y += 30 * gui.scale
 
-        if self.button2(x, y, "Gallery"):
-            self.view_view = 2
+        ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
 
-        y += 30 * gui.scale
+        if system != 'windows':
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
 
-        if self.button2(x, y, "Window"):
-            self.view_view = 3
+        y += 25 * gui.scale
 
-        y += 30 * gui.scale
+        if prefs.backend == 1:
+            self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+            y += 25 * gui.scale
+            self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+            y += 25 * gui.scale
 
-        if self.button2(x, y, "Side Panels"):
-            self.view_view = 4
+        # ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+        #
+        # y += 25 * gui.scale
+        # # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+        # self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
+        # y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
+        # y += 25 * gui.scale
+        # if album_mode_art_size < 160:
+        #     self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
+        # y += 55 * gui.scale
+        #
+        # ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
+        #
+        # album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+
+
+        # if self.view_view == 1:
+        #
+        #     ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
+        #
+        #     y += 25 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
+        #
+        #     y += 25 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
+        #
+        #     y += 23 * gui.scale
+        #
+        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
+        #     #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
+        #     #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
+        #     #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
+        #
+        #     y += 23 * gui.scale
+        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
+        #
+        #     y += 23 * gui.scale
+        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
+        #
+        #
+        #     y += 70 * gui.scale
+        #
+        #     self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
+        #     self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
+        #     ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+
+        # if self.view_view == 3:
+        #
+        #
+        #     ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
+        #
+        #     y += 28 * gui.scale
+        #
+        #     if system == "linux":
+        #         self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
+        #
+        #     y += 25 * gui.scale
+        #
+        #     self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
+        #
+        #     y += 25 * gui.scale
+        #     if not draw_border:
+        #         self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
+        #
+        #     y += 25 * gui.scale
+        #
+        #     if system == "windows":
+        #         self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+        #
+        #     y += 30 * gui.scale
+        #
+        #     ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
+        #
+        #     if system != 'windows':
+        #         y += 25 * gui.scale
+        #         self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
+        #
+        #     y += 25 * gui.scale
+        #
+        #     if prefs.backend == 1:
+        #         self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
+        #         y += 25 * gui.scale
+        #         self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
+        #         y += 25 * gui.scale
+        #
 
         x = self.box_x + self.item_x_offset + 250 * gui.scale
-        y = self.box_y + 27 * gui.scale
+        y = self.box_y + 20 * gui.scale
 
-        if self.view_view == 2:
+        ddt.draw_text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
 
+        y += 28 * gui.scale
+        self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
 
-            ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
 
-            y += 25 * gui.scale
-            # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-            self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
-            y += 25 * gui.scale
-            if album_mode_art_size < 160:
-                self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-            y += 55 * gui.scale
+        y += 40 * gui.scale
 
-            ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
+        ddt.draw_text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
 
-            album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        y += 28 * gui.scale
+        self.toggle_square(x, y, toggle_meta_persists_stop, "Persist when stopped")
 
-
-        if self.view_view == 1:
-
-            ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
-
-            y += 25 * gui.scale
-
-            self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
-
-            y += 25 * gui.scale
-
-            self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
-
-            y += 23 * gui.scale
-
-            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
-            #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
-            #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
-            #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
-
-            y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
-
-            y += 23 * gui.scale
-            self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
-
-
-            y += 70 * gui.scale
-
-            self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
-            self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-            ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
-
-        if self.view_view == 3:
-
-
-            ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
-
-            y += 28 * gui.scale
-
-            if system == "linux":
-                self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
-
-            y += 25 * gui.scale
-
-            self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
-
-            y += 25 * gui.scale
-            if not draw_border:
-                self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
-
-            y += 25 * gui.scale
-
-            if system == "windows":
-                self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-
-            y += 30 * gui.scale
-
-            ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
-
-            if system != 'windows':
-                y += 25 * gui.scale
-                self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
-
-            y += 25 * gui.scale
-
-            if prefs.backend == 1:
-                self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-                y += 25 * gui.scale
-                self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
-                y += 25 * gui.scale
-
-
-        if self.view_view == 4:
-
-            ddt.draw_text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
-
-            y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
-
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
-
-            y += 40 * gui.scale
-
-            ddt.draw_text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
-
-            y += 28 * gui.scale
-            self.toggle_square(x, y, toggle_meta_persists_stop, "Persist when stopped")
-
-            y += 25 * gui.scale
-            self.toggle_square(x, y, toggle_meta_shows_selected, "Always show selected")
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_meta_shows_selected, "Always show selected")
 
 
     def about(self):
