@@ -15,6 +15,7 @@ v4.6.3
  - Tweaked size of thick track row height preset
  - Tweaked settings check box appearance
  - Tweaked save to disk to wait until window is unfocused
+ - Moved EQ settings to audio tab and theme settings to new theme tab
 
 v4.6.2
 
