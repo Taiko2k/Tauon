@@ -8392,29 +8392,34 @@ def load_xspf(path):
         e = ET.parse(path, parser).getroot()
 
         a = []
-
         b = {}
-        if 'track' in e[0][0].tag:
-            for track in e[0]:
-                for item in track:
-                    if 'title' in item.tag and item.text:
-                        b['title'] = item.text
-                    if 'location' in item.tag and item.text:
-                        l = item.text
-                        if l[:5] == "file:":
-                            l = l.replace('file:', "")
-                            l = l.lstrip("/")
-                            l = "/" + l
-                        b['location'] = l
-                    if 'creator' in item.tag and item.text:
-                        b['artist'] = item.text
-                    if 'album' in item.tag and item.text:
-                        b['album'] = item.text
-                    if 'duration' in item.tag and item.text:
-                        b['duration'] = item.text
 
-                a.append(copy.deepcopy(b))
-                b = {}
+        for top in e:
+
+            if top.tag.endswith("title"):
+                name = top.text
+            if top.tag.endswith("trackList"):
+                for track in top:
+                    if track.tag.endswith("track"):
+                        for field in track:
+                            if 'title' in field.tag and field.text:
+                                b['title'] = field.text
+                            if 'location' in field.tag and field.text:
+                                l = field.text
+                                if l[:5] == "file:":
+                                    l = l.replace('file:', "")
+                                    l = l.lstrip("/")
+                                    l = "/" + l
+                                    l = str(urllib.parse.unquote(l))
+                                b['location'] = l
+                            if 'creator' in field.tag and field.text:
+                                b['artist'] = field.text
+                            if 'album' in field.tag and field.text:
+                                b['album'] = field.text
+                            if 'duration' in field.tag and field.text:
+                                b['duration'] = field.text
+                        a.append(copy.deepcopy(b))
+                        b = {}
 
     except:
         show_message("Error importing XSPF playlist.", 'warning', "Sorry about that.")
@@ -8516,6 +8521,8 @@ def load_xspf(path):
 
     if missing > 0:
         show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
+
+    #print(playlist)
 
     pctl.multi_playlist.append(pl_gen(title=name,
                                       playlist=playlist))
@@ -10360,7 +10367,7 @@ def export_xspf(pl):
             xport.write('      <creator>' + escape(track.artist) + '</creator>\n')
         if track.album != "":
             xport.write('      <album>' + escape(track.album) + '</album>\n')
-        xport.write('      <duration>' + str(track.length * 1000) + '</duration>\n')
+        xport.write('      <duration>' + str(int(track.length * 1000)) + '</duration>\n')
         xport.write('    </track>\n')
     xport.write('  </trackList>\n')
     xport.write('</playlist>\n\n')
@@ -28655,6 +28662,10 @@ while pctl.running:
                 rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
                 rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
 
+                card_mode = False
+                if prefs.use_card_style and colours.lm and gui.gallery_show_text:
+                    card_mode = True
+
                 if mouse_down:
                     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
                     if coll(rect) and not coll(excl_rect):
@@ -28950,15 +28961,8 @@ while pctl.running:
                             #artisttitle = colours.side_bar_line2
                             #albumtitle = colours.side_bar_line1  # grey(220)
 
-
-                            card_mode = False
-                            if prefs.use_card_style and colours.lm and gui.gallery_show_text:
-
-                                card_mode = True
-                                ddt.text_background_colour = colours.grey(250)
-
-
                             if card_mode:
+                                ddt.text_background_colour = colours.grey(250)
                                 drop_shadow.render(x + 3 * gui.scale, y + 3 * gui.scale, album_mode_art_size + 11 * gui.scale, album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
                                 ddt.rect_r((x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250), True)
 
