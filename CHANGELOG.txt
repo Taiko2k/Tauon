@@ -11,6 +11,7 @@ v4.6.3
    - Added two column text fallback
    - Improved thumbnails to crop and zoom to full square
    - Improved error handling
+ - Improved XSPF importing compatibility
  - Fixed click transferring into mini-modes
  - Tweaked size of thick track row height preset
  - Tweaked settings check box appearance
