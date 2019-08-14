@@ -6911,6 +6911,7 @@ class GallClass:
                     print("B3.2")
                     if im.mode != "RGB":
                         im = im.convert("RGB")
+                    print("B3.35")
                     im.thumbnail((size, size), Image.ANTIALIAS)
                     print("B3.3")
 
