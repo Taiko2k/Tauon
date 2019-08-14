@@ -3208,7 +3208,6 @@ class PlayerCtl:
         #     self.playerCommand = 'gapless'
         self.playing_state = 1
 
-
         if update_title:
             update_title_do()
         self.notify_update()
@@ -6830,6 +6829,8 @@ class GallClass:
 
         while len(self.queue) > 0:
 
+            print("B1 - start")
+
             if gui.halt_image_rendering:
                 self.queue.clear()
                 break
@@ -6858,6 +6859,8 @@ class GallClass:
                         cache_load = True
                     else:
                         slow_load = True
+
+                print("B2")
 
                 if slow_load:
 
@@ -6895,6 +6898,7 @@ class GallClass:
 
                     del source
 
+                print("B3")
                 g = io.BytesIO()
                 g.seek(0)
 
@@ -6902,16 +6906,20 @@ class GallClass:
                     g.write(source_image.read())
 
                 else:
+                    print("B3.1")
                     im = Image.open(source_image)
+                    print("B3.2")
                     if im.mode != "RGB":
                         im = im.convert("RGB")
                     im.thumbnail((size, size), Image.ANTIALIAS)
+                    print("B3.3")
 
                     im.save(g, 'BMP')
                     if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                         im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
 
                 g.seek(0)
+                print("B4")
 
                 source_image.close()
 
@@ -6928,6 +6936,9 @@ class GallClass:
                 if gui.combo_mode:
                     gui.pl_update = 1
 
+                g = io.BytesIO()
+                g.seek(0)
+                print("B5")
             except:
                 #raise
                 print('Image load failed on track: ' + key[0].fullpath)
@@ -6938,14 +6949,18 @@ class GallClass:
 
             if size < 150:
                 random.shuffle(self.queue)
-
+            print("B6 - exit")
         if self.i > 0:
             self.i = 0
             return True
         else:
             return False
 
+
+
     def render(self, track, location, size=None):
+
+        print("A1 - start")
 
         if gallery_load_delay.get() < 0.5:
             return
@@ -6980,6 +6995,7 @@ class GallClass:
 
             if order[0] == 2:
                 # finish processing
+                print("A4")
 
                 wop = rw_from_object(order[1])
                 s_image = IMG_Load_RW(wop, 0)
@@ -6992,6 +7008,8 @@ class GallClass:
                 dst.w = int(tex_w.contents.value)
                 dst.h = int(tex_h.contents.value)
 
+                print("A5")
+
                 order[0] = 3
                 order[1] = None
                 order[2] = c
@@ -7000,6 +7018,8 @@ class GallClass:
 
             if order[0] == 3:
                 # ready
+
+                print("A6")
 
                 order[3].x = x
                 order[3].y = y
@@ -7011,9 +7031,12 @@ class GallClass:
                     self.key_list.remove((track, size, offset))
                 self.key_list.append((track, size, offset))
 
+                print("A7")
+
                 return True
 
         else:
+            print("A2")
             # Create new
             # stage, raw, texture, rect
             self.gall[(track, size, offset)] = [1, None, None, None]
@@ -7033,6 +7056,8 @@ class GallClass:
                     SDL_DestroyTexture(self.gall[key][2])
                 del self.gall[key]
                 del self.key_list[0]
+
+        print("A3 - exit")
 
         return False
 
