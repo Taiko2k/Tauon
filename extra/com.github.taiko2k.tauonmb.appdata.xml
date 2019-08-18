@@ -49,6 +49,7 @@
   </categories>
 
   <releases>
+    <release version="4.6.3" date="2019-08-18"/>
     <release version="4.6.2" date="2019-08-05"/>
     <release version="4.6.1" date="2019-08-01"/>
     <release version="4.6.0" date="2019-07-24"/>
