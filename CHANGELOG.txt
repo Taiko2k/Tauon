@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.7.0
+
+ - Added improved compact UI (when window is narrow)
+ - Fixed last.fm not respecting disable option
+
 v4.6.3
 
  - Improved gallery to allow drag and drop to rearrange

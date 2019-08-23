@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.6.3"
+n_version = "4.7.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1062,6 +1062,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.panelBY = 51 * self.scale
         self.panelY = round(30 * self.scale)
+        self.panelY2 = round(30 * self.scale)
 
         self.playlist_top = self.panelY + (8 * self.scale)
         self.playlist_top_bk = self.playlist_top
@@ -1228,6 +1229,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.halt_image_rendering = False
         self.generating_chart = False
+
+        self.top_bar_mode2 = False
 
 
 gui = GuiVar()
@@ -4816,7 +4819,7 @@ class LastScrob:
                 lfm_success = True
                 lb_success = True
 
-                if lastfm.connected or lastfm.details_ready():
+                if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
                     lfm_success = lastfm.scrobble(tr[0], tr[1])
                     if not lfm_success:
                         # Try again
@@ -4872,7 +4875,7 @@ class LastScrob:
         if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
             self.a_pt = True
 
-            if lastfm.connected or lastfm.details_ready():
+            if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
                 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                 mini_t.daemon = True
                 mini_t.start()
@@ -4886,7 +4889,7 @@ class LastScrob:
             pctl.b_time += add_time
             if pctl.b_time > 20:
                 pctl.b_time = 0
-                if lastfm.connected or lastfm.details_ready():
+                if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
                     mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
                     mini_t.daemon = True
                     mini_t.start()
@@ -4899,14 +4902,14 @@ class LastScrob:
         if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
                 * 0.50 and self.a_sc is False:
             self.a_sc = True
-            if lastfm.connected or lastfm.details_ready() or lb.enable:
+            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) or lb.enable:
                 #print("Queue Scrobble")
                 self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
-            if lastfm.connected or lastfm.details_ready() or lb.enable:
+            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) or lb.enable:
                 #print("Queue Scrobble")
                 self.queue.append((pctl.master_library[self.a_index], int(time.time())))
 
@@ -5758,17 +5761,14 @@ def draw_window_tools():
         top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, off_icon_colour)
 
 
+def draw_window_border():
 
-
-
-    if not fullscreen and not gui.maximized and not gui.mode == 3:
-        corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
-
-        colour = [30, 30, 30, 255]
-        ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
-        ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
-        ddt.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
-        ddt.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
+    corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
+    colour = [30, 30, 30, 255]
+    ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
+    ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
+    ddt.rect_r((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour, True)
+    ddt.rect_r((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour, True)
 
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
@@ -6058,6 +6058,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 12, 316)
     ddt.prime_font(standard_font, 12, 317)
     ddt.prime_font(standard_font, 12, 318)
+    ddt.prime_font(standard_font, 13, 319)
     ddt.prime_font(standard_font, 24, 330)
 
 
@@ -8218,7 +8219,7 @@ class StyleOverlay:
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
-            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opactiy)
+            SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, prefs.art_bg_opacity)
             SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
 
             SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -9167,8 +9168,8 @@ class Menu:
             self.pos[1] = self.pos[1] - shown_h
 
             # Prevent moving outside top of window
-            if self.pos[1] < 30 * gui.scale:
-                self.pos[1] = 30 * gui.scale
+            if self.pos[1] < gui.panelY:
+                self.pos[1] = gui.panelY
                 self.pos[0] += 5 * gui.scale
 
         self.active = True
@@ -14396,7 +14397,7 @@ lastfm_icon.colour_callback = lastfm_colour
 
 def lastfm_menu_test(a):
 
-    if prefs.last_fm_token is not None or prefs.enable_lb:
+    if (prefs.auto_lfm and prefs.last_fm_token is not None) or prefs.enable_lb:
         return True
     return False
 
@@ -19446,6 +19447,9 @@ class TopPanel:
         global quick_drag
         global update_layout
 
+        hh = gui.panelY2
+        yy = gui.panelY - hh
+        self.height = hh
 
         if quick_drag is True:
             gui.pl_update = 1
@@ -19453,7 +19457,13 @@ class TopPanel:
         # Draw the background
         ddt.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
 
-        rect = (9 * gui.scale, 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
+        if gui.top_bar_mode2:
+            tr = pctl.playing_object()
+            album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
+            ddt.draw_text((14, 15), tr.title, colours.grey(249), 215)
+            ddt.draw_text((14, 40), tr.artist, colours.grey(120), 315)
+
+        rect = (9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
 
         if coll(rect):
@@ -19476,9 +19486,9 @@ class TopPanel:
             colour = colours.corner_button_active
 
         if prefs.artist_list:
-            self.artist_list_icon.render(13 * gui.scale, 8 * gui.scale, colour)
+            self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
         else:
-            self.playlist_icon.render(13 * gui.scale, 8 * gui.scale, colour)
+            self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
         if playlist_box.drag:
             drag_mode = False
@@ -19491,7 +19501,7 @@ class TopPanel:
             self.tab_text_spaces.append(le)
 
         x = self.start_space_left
-        y = self.ty
+        y = yy #self.ty
 
 
         # Calculate position for playing text and text
@@ -19503,7 +19513,6 @@ class TopPanel:
             if gui.vis == 3:
                 offset += 57 * gui.scale
 
-
         if pctl.broadcast_active:
 
             p_text_len = ddt.get_text_w(pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
@@ -19513,10 +19522,10 @@ class TopPanel:
             p_text_len += 20 * gui.scale
             p_text_len += 180 * gui.scale
 
-        elif gui.show_top_title:
-
-            p_text = trunc_line(pctl.title_text(), 12, window_size[0] - offset - 120 * gui.scale)
-            p_text_len = ddt.get_text_w(p_text, 12) + 70 * gui.scale
+        # elif gui.show_top_title:
+        #
+        #     p_text = trunc_line(pctl.title_text(), 12, window_size[0] - offset - 120 * gui.scale)
+        #     p_text_len = ddt.get_text_w(p_text, 12) + 70 * gui.scale
 
         else:
             p_text_len = 180 * gui.scale
@@ -19801,7 +19810,7 @@ class TopPanel:
 
         word = "MENU"
         word_length = ddt.get_text_w(word, 212)
-        rect = [x - self.click_buffer, self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
+        rect = [x - self.click_buffer, yy + self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
         hit = coll(rect)
         fields.add(rect)
 
@@ -19816,7 +19825,7 @@ class TopPanel:
                 x_menu.active = False
             else:
 
-                x_menu.activate(position=(x + 12, self.height))
+                x_menu.activate(position=(x + 12, gui.panelY))
                 view_box.activate(x)
 
         view_box.render()
@@ -20098,10 +20107,14 @@ class BottomBarType1:
             self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
             self.seek_bar_position[1] = window_size[1] - gui.panelBY
             self.seek_bar_size[0] = window_size[0] - (300 * gui.scale)
+
             self.seek_bar_position[0] = 300 * gui.scale
             if gui.bb_show_art:
                 self.seek_bar_position[0] = 300 + gui.panelBY
                 self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
+
+            # self.seek_bar_position[0] = 0
+            # self.seek_bar_size[0] = window_size[0]
 
     def render(self):
 
@@ -20113,24 +20126,10 @@ class BottomBarType1:
 
         ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background, True)
 
-
         right_offset = 0
         if gui.display_time_mode >= 2:
             right_offset = 22 * gui.scale
 
-        # if gui.light_mode:
-        #     ddt.line(0, window_size[1] - gui.panelBY, window_size[0], window_size[1] - gui.panelBY, colours.art_box)
-
-        #FRAME
-        # if gui.draw_frame:
-        #     ddt.line(0, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY, colours.bb_line)
-        #     ddt.line(299, window_size[1] - gui.panelBY, 299, window_size[1] - gui.panelBY + self.seek_bar_size[1],
-        #               colours.bb_line)
-        #     ddt.line(300, window_size[1] - gui.panelBY + self.seek_bar_size[1], window_size[0],
-        #               window_size[1] - gui.panelBY + self.seek_bar_size[1], colours.bb_line)
-
-        # rect = [0, window_size[1] - gui.panelBY, self.seek_bar_position[0], gui.panelBY]
-        # ddt.rect_r(rect, [255, 255, 255, 5], True)
 
         # Scrobble marker
 
@@ -21150,6 +21149,11 @@ def set_mini_mode():
         window_size[0] = int(320 * gui.scale)
         window_size[1] = int(90 * gui.scale)
 
+    if prefs.mini_mode_mode == 5:
+
+        window_size[0] = int(400 * gui.scale)
+        window_size[1] = int(600 * gui.scale)
+
     SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
     SDL_SetWindowResizable(t_window, False)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
@@ -21484,6 +21488,8 @@ class StandardPlaylist:
 
         if center_mode:
             highlight_left = gui.scale * int(pow((window_size[0] * 0.01), 2))
+            if window_size[0] < 600 * gui.scale:
+                highlight_left = 3 * gui.scale
             highlight_width = highlight_width - (highlight_left * 2)
 
             inset_left = highlight_left + 18 * gui.scale
@@ -26322,6 +26328,9 @@ def hit_callback(win, point, data):
         if key_shift_down or key_shiftr_down:
             return SDL_HITTEST_NORMAL
 
+        if prefs.mini_mode_mode == 5:
+            return SDL_HITTEST_NORMAL
+
         if prefs.mini_mode_mode == 4 and point.contents.x > window_size[1] - 5 * gui.scale and point.contents.y > window_size[1] - 12 * gui.scale:
             return SDL_HITTEST_NORMAL
 
@@ -26507,18 +26516,30 @@ else:
 
 def update_layout_do():
 
-    # w = window_size[0]
-    # h = window_size[1]
+    w = window_size[0]
+    h = window_size[1]
 
     if prefs.art_bg_stronger == 3:
-        prefs.art_bg_opactiy = 29
+        prefs.art_bg_opacity = 29
     elif prefs.art_bg_stronger == 2:
-        prefs.art_bg_opactiy = 19
+        prefs.art_bg_opacity = 19
     else:
-        prefs.art_bg_opactiy = 10
+        prefs.art_bg_opacity = 10
 
     if prefs.bg_showcase_only:
-        prefs.art_bg_opactiy += 8
+        prefs.art_bg_opacity += 8
+
+    if w < 600 * gui.scale:
+        gui.top_bar_mode2 = True
+        gui.panelY = round(100 * gui.scale)
+        gui.playlist_top = gui.panelY + (8 * gui.scale)
+        gui.playlist_top_bk = gui.playlist_top
+    else:
+        gui.top_bar_mode2 = False
+        gui.panelY = round(30 * gui.scale)
+        gui.playlist_top = gui.panelY + (8 * gui.scale)
+        gui.playlist_top_bk = gui.playlist_top
+
 
     # prefs.art_bg_blur = 9
     # if prefs.bg_showcase_only:
@@ -29677,12 +29698,12 @@ while pctl.running:
             elif gui.rsp:
                 if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1500 * gui.scale or gui.maximized:
                     gui.show_bottom_title = True
-                    if window_size[0] < 820 * gui.scale:
-                        gui.show_top_title = True
+                    # if window_size[0] < 820 * gui.scale:
+                    #     gui.show_top_title = True
             else:
                 gui.show_bottom_title = True
-                if window_size[0] < 820 * gui.scale:
-                    gui.show_top_title = True
+                # if window_size[0] < 820 * gui.scale:
+                #     gui.show_top_title = True
 
 
             if gui.lsp and not gui.combo_mode:
@@ -31022,6 +31043,8 @@ while pctl.running:
 
             if prefs.mini_mode_mode == 4:
                 mini_mode2.render()
+            elif prefs.mini_mode_mode == 5:
+                mini_mode3.render()
             else:
                 mini_mode.render()
 
@@ -31077,7 +31100,14 @@ while pctl.running:
         get_sdl_input.mouse_capture_want = False
 
         if draw_border and not gui.mode == 3:
-            draw_window_tools()
+
+            tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+            fields.add(tool_rect)
+            if not gui.top_bar_mode2 or coll(tool_rect):
+                draw_window_tools()
+
+            if not fullscreen and not gui.maximized:
+                draw_window_border()
 
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
