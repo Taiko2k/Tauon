@@ -19455,13 +19455,21 @@ class TopPanel:
             gui.pl_update = 1
 
         # Draw the background
-        ddt.rect_r((0, 0, window_size[0], self.height + self.ty), colours.top_panel_background, True)
+        ddt.rect_r((0, 0, window_size[0], gui.panelY), colours.top_panel_background, True)
 
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
+
             album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
-            ddt.draw_text((14, 15), tr.title, colours.grey(249), 215)
-            ddt.draw_text((14, 40), tr.artist, colours.grey(120), 315)
+            if loading_in_progress or to_scan or cm_clean_db or lastfm.scanning_friends or pctl.broadcast_active:
+                ddt.rect_r((window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2), colours.top_panel_background, True)
+
+            maxx = window_size[0] - (gui.panelY + 30 * gui.scale)
+            title_colour = colours.grey(249)
+            if colours.lm:
+                title_colour = colours.grey(30)
+            ddt.draw_text((14, 15), tr.title, title_colour, 215, max_w=maxx)
+            ddt.draw_text((14, 40), tr.artist, colours.grey(120), 315, max_w=maxx)
 
         rect = (9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
@@ -19512,6 +19520,8 @@ class TopPanel:
             offset += 90 * gui.scale
             if gui.vis == 3:
                 offset += 57 * gui.scale
+        if gui.top_bar_mode2:
+            offset = 0
 
         if pctl.broadcast_active:
 
@@ -20106,12 +20116,17 @@ class BottomBarType1:
             self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
             self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
             self.seek_bar_position[1] = window_size[1] - gui.panelBY
-            self.seek_bar_size[0] = window_size[0] - (300 * gui.scale)
 
-            self.seek_bar_position[0] = 300 * gui.scale
-            if gui.bb_show_art:
-                self.seek_bar_position[0] = 300 + gui.panelBY
-                self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
+            seek_bar_x = 300 * gui.scale
+            if window_size[0] < 600:
+                seek_bar_x = 250 * gui.scale
+
+            self.seek_bar_size[0] = window_size[0] - seek_bar_x
+            self.seek_bar_position[0] = seek_bar_x
+
+            # if gui.bb_show_art:
+            #     self.seek_bar_position[0] = 300 + gui.panelBY
+            #     self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
 
             # self.seek_bar_position[0] = 0
             # self.seek_bar_size[0] = window_size[0]
@@ -20361,7 +20376,8 @@ class BottomBarType1:
                     input.mouse_click = False
                     right_click = False
             else:
-                pctl.show_current()
+                if input.mouse_click:
+                    pctl.show_current()
 
                 if pctl.playing_ready() and not fullscreen == 1:
 
@@ -20479,6 +20495,9 @@ class BottomBarType1:
 
             # PLAY---
             buttons_x_offset = 0
+            compact = False
+            if window_size[0] < 600 * gui.scale:
+                compact = True
 
             play_colour = colours.media_buttons_off
             pause_colour = colours.media_buttons_off
@@ -20500,40 +20519,54 @@ class BottomBarType1:
                 if pctl.record_stream:
                     play_colour = [220, 50 ,50 , 255]
 
+            if not compact or (compact and pctl.playing_state != 2):
+                rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
+                fields.add(rect)
+                if coll(rect):
+                    play_colour = colours.media_buttons_over
+                    if input.mouse_click:
+                        if compact and pctl.playing_state == 1:
+                            pctl.pause()
+                        elif pctl.playing_state == 1:
+                            pctl.show_current(highlight=True)
+                        else:
+                            print("PLAY")
+                            pctl.play()
+                        input.mouse_click = False
+                    tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
-            rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
-            fields.add(rect)
-            if coll(rect):
-                play_colour = colours.media_buttons_over
-                if input.mouse_click:
-                    if pctl.playing_state == 1:
+                    if right_click:
                         pctl.show_current(highlight=True)
-                    else:
-                        pctl.play()
-                tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
-                if right_click:
-                    pctl.show_current(highlight=True)
+                self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
+                # ddt.rect_r(rect,[255,0,0,255], True)
 
-            self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
-            # ddt.rect_r(rect,[255,0,0,255], True)
 
             # PAUSE---
+            if compact:
+                buttons_x_offset = -46 * gui.scale
+
             x = (75 * gui.scale) + buttons_x_offset
             y = window_size[1] - self.control_line_bottom
 
-            rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
-            fields.add(rect)
-            if coll(rect):
-                pause_colour = colours.media_buttons_over
-                if input.mouse_click:
-                    pctl.pause()
-                tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+
+            if not compact or (compact and pctl.playing_state == 2):
 
 
-            # ddt.rect_r(rect,[255,0,0,255], True)
-            ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
-            ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+                rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
+                fields.add(rect)
+                if coll(rect):
+                    pause_colour = colours.media_buttons_over
+                    if input.mouse_click:
+                        pctl.pause()
+                    if right_click:
+                        pctl.show_current(highlight=True)
+                    tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+
+
+                # ddt.rect_r(rect,[255,0,0,255], True)
+                ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+                ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
 
             # STOP---
             x = 125 * gui.scale + buttons_x_offset
@@ -20550,6 +20583,9 @@ class BottomBarType1:
 
             ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour, True)
             # ddt.rect_r(rect,[255,0,0,255], True)
+
+            if compact:
+                buttons_x_offset -= 5 * gui.scale
 
             # FORWARD---
             rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
@@ -20571,7 +20607,7 @@ class BottomBarType1:
             else:
                 gui.tool_tip_lock_off_f = False
 
-            self.forward_button.render(240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
+            self.forward_button.render(buttons_x_offset + 240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
 
             # ddt.rect_r(rect,[255,0,0,255], True)
 
@@ -20594,7 +20630,7 @@ class BottomBarType1:
             else:
                 gui.tool_tip_lock_off_b = False
 
-            self.back_button.render(180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
+            self.back_button.render(buttons_x_offset + 180 * gui.scale, 1 + window_size[1] - self.control_line_bottom, back_colour)
             # ddt.rect_r(rect,[255,0,0,255], True)
 
 
@@ -20611,6 +20647,8 @@ class BottomBarType1:
                 rpbc = colours.mode_button_over
                 if input.mouse_click:
                     extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
+                elif right_click:
+                    mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
             if extra_menu.active:
                 rpbc = colours.mode_button_active
 
@@ -25409,6 +25447,13 @@ class Showcase:
         # ddt.rect_r((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), [0,0,0,100], True)
 
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
+
+        hide_art = False
+        if window_size[0] < 900:
+            hide_art = True
+        if hide_art:
+            box = 45 * gui.scale
+
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10 * gui.scale
 
@@ -25470,10 +25515,10 @@ class Showcase:
                 index = pctl.track_queue[pctl.queue_step]
                 track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
-
-            album_art_gen.display(track, (x, y), (box, box))
-            if coll((x, y, box, box)) and input.mouse_click is True:
-                album_art_gen.cycle_offset(track)
+            if not hide_art:
+                album_art_gen.display(track, (x, y), (box, box))
+                if coll((x, y, box, box)) and input.mouse_click is True:
+                    album_art_gen.cycle_offset(track)
 
             # Check for lyrics if auto setting
             test_auto_lyrics(track)
@@ -25525,6 +25570,10 @@ class Showcase:
 
                 w = window_size[0] - (x + box) - round(30 * gui.scale)
                 x = int(x + box + (window_size[0] - x - box) / 2)
+
+                if hide_art:
+                    x = window_size[0] // 2
+
                 #x = int((window_size[0]) / 2)
                 y = int(window_size[1] / 2) - round(60 * gui.scale)
 
@@ -26358,15 +26407,31 @@ def hit_callback(win, point, data):
         if draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
-    if point.contents.y < gui.panelY and top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80:
+    if point.contents.y < gui.panelY:
 
-        if tab_menu.active: # or pctl.broadcast_active:
-            return SDL_HITTEST_NORMAL
+        if gui.top_bar_mode2:
 
-        if gui.vis != 0 and point.contents.x > window_size[0] - 160 and system == "windows":
-            return SDL_HITTEST_NORMAL
+            if point.contents.y < gui.panelY - gui.panelY2:
 
-        return SDL_HITTEST_DRAGGABLE
+                if point.contents.x > window_size[0] - 80 * gui.scale and point.contents.y < 30 * gui.scale:
+                    return SDL_HITTEST_NORMAL
+                else:
+                    return SDL_HITTEST_DRAGGABLE
+            else:
+                if top_panel.drag_zone_start_x > point.contents.x or tab_menu.active:
+                    return SDL_HITTEST_NORMAL
+                else:
+                    return SDL_HITTEST_DRAGGABLE
+
+        elif top_panel.drag_zone_start_x < point.contents.x < window_size[0] - 80 * gui.scale:
+
+            if tab_menu.active: # or pctl.broadcast_active:
+                return SDL_HITTEST_NORMAL
+
+            if gui.vis != 0 and point.contents.x > window_size[0] - 160 and system == "windows":
+                return SDL_HITTEST_NORMAL
+
+            return SDL_HITTEST_DRAGGABLE
 
     if not gui.maximized:
         if point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
@@ -26529,7 +26594,7 @@ def update_layout_do():
     if prefs.bg_showcase_only:
         prefs.art_bg_opacity += 8
 
-    if w < 600 * gui.scale:
+    if w < 600 * gui.scale and not gui.rsp and not album_mode:
         gui.top_bar_mode2 = True
         gui.panelY = round(100 * gui.scale)
         gui.playlist_top = gui.panelY + (8 * gui.scale)
@@ -26582,7 +26647,7 @@ def update_layout_do():
         if gui.vis > 0:
             gui.turbo = True
 
-    if gui.mode == 3:
+    if gui.mode == 3 or gui.top_bar_mode2:
         gui.vis = 0
         gui.turbo = False
 
@@ -27474,7 +27539,7 @@ while pctl.running:
                     window_size[1] = event.window.data2
 
                     if gui.mode != 3:
-                        window_size[0] = max(560, window_size[0])
+                        window_size[0] = max(550, window_size[0])
                         window_size[1] = max(330, window_size[1])
 
 
@@ -29640,7 +29705,7 @@ while pctl.running:
 
 
                 # Switch Vis:
-                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)):
+                if right_click and coll((window_size[0] - 150 * gui.scale - gui.offset_extra, 0, 140 * gui.scale , gui.panelY)) and not gui.top_bar_mode2:
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
 
