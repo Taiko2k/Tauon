@@ -19467,7 +19467,8 @@ class TopPanel:
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
 
-            album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
+            if pctl.playing_state < 3:
+                album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
             if loading_in_progress or to_scan or cm_clean_db or lastfm.scanning_friends or pctl.broadcast_active:
                 ddt.rect_r((window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2), colours.top_panel_background, True)
 
@@ -19475,8 +19476,17 @@ class TopPanel:
             title_colour = colours.grey(249)
             if colours.lm:
                 title_colour = colours.grey(30)
-            ddt.draw_text((14, 15), tr.title, title_colour, 215, max_w=maxx)
-            ddt.draw_text((14, 40), tr.artist, colours.grey(120), 315, max_w=maxx)
+            title = tr.title
+            if not title:
+                title = tr.filename
+            artist = tr.artist
+
+            if pctl.playing_state == 3:
+                title = pctl.tag_meta
+                artist = pctl.url.decode()
+
+            ddt.draw_text((14, 15), title, title_colour, 215, max_w=maxx)
+            ddt.draw_text((14, 40), artist, colours.grey(120), 315, max_w=maxx)
 
         rect = (9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
@@ -31127,8 +31137,6 @@ while pctl.running:
 
             if prefs.mini_mode_mode == 4:
                 mini_mode2.render()
-            elif prefs.mini_mode_mode == 5:
-                mini_mode3.render()
             else:
                 mini_mode.render()
 
