@@ -435,6 +435,7 @@ get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
 queue_add_timer = Timer(100)
+toast_mode_timer = Timer(100)
 
 f_store = FunctionStore()
 
@@ -1231,6 +1232,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.generating_chart = False
 
         self.top_bar_mode2 = False
+        self.mode_toast_text = ""
 
 
 gui = GuiVar()
@@ -9040,6 +9042,10 @@ class Menu:
                     # sub_pos = [self.pos[0] + self.w, self.pos[1] + i * self.h]
                     sub_pos = [self.pos[0] + self.w, self.sub_y_postion]
                     sub_w = self.items[i][4]
+
+                    if sub_pos[0] + sub_w > window_size[0]:
+                        sub_pos[0] = self.pos[0] - sub_w
+
                     fx = self.deco()
 
                     minY = window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
@@ -9148,8 +9154,9 @@ class Menu:
         self.sub_active = -1
 
         # Reposition the menu if it would otherwise intersect with far edge of window
-        if self.pos[0] + self.w > window_size[0]:
-            self.pos[0] = self.pos[0] - self.w - 3 * gui.scale
+        if not position:
+            if self.pos[0] + self.w > window_size[0]:
+                self.pos[0] = self.pos[0] - (self.w + 3 * gui.scale)
 
         # Get height size of menu
         full_h = 0
@@ -20598,6 +20605,12 @@ class BottomBarType1:
                 if right_click:
                     pctl.random_mode ^= True
                     gui.tool_tip_lock_off_f = True
+                    if window_size[0] < 600 * gui.scale:
+                        gui.mode_toast_text = _("Shuffle On")
+                        if not pctl.random_mode:
+                            gui.mode_toast_text = _("Shuffle Off")
+                        toast_mode_timer.set()
+                        gui.frame_callback_list.append(TestTimer(1))
                 if middle_click:
                     pctl.advance(rr=True)
                     gui.tool_tip_lock_off_f = True
@@ -20622,6 +20635,12 @@ class BottomBarType1:
                 if right_click:
                     pctl.repeat_mode ^= True
                     gui.tool_tip_lock_off_b = True
+                    if window_size[0] < 600 * gui.scale:
+                        gui.mode_toast_text = "Repeat On"
+                        if not pctl.repeat_mode:
+                            gui.mode_toast_text = "Repeat Off"
+                        toast_mode_timer.set()
+                        gui.frame_callback_list.append(TestTimer(1))
                 if middle_click:
                     pctl.revert()
                     gui.tool_tip_lock_off_b = True
@@ -31137,6 +31156,24 @@ while pctl.running:
                     ddt.draw_text((rect[0] + 165 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.grey(80), 11)
 
                     queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 150 * gui.scale, 200 * gui.scale, rect[1] + 1 * gui.scale, track, pctl.force_queue[-1], False, False)
+
+
+        t = toast_mode_timer.get()
+        if t < 0.98:
+
+            rect = (8 * gui.scale, gui.panelY + 15 * gui.scale, 110 * gui.scale, 25 * gui.scale)
+            fields.add(rect)
+
+            if coll(rect):
+                toast_mode_timer.force_set(10)
+            else:
+                ddt.rect_r(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
+                ddt.rect_r(rect, queue_box.card_bg, True)
+
+                ddt.text_background_colour = queue_box.card_bg
+                ddt.draw_text((rect[0] + (rect[2] // 2), rect[1] + 4 * gui.scale, 2), gui.mode_toast_text, colours.grey(230), 313)
+
+
 
         # Render Menus-------------------------------
         for instance in Menu.instances:
