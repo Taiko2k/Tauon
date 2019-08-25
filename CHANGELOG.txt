@@ -5,11 +5,11 @@ v4.7.0
 
  - Added improved compact UI (when window is narrow)
    - Added new header bar style
-   - Added toast when changing shuffle/repeat via right click
-   - Tweaked play button to play/pause
-   - Tweaked tracklist width to full window
+   - Added compact volume control
+   - Adjust play button to play/pause
+   - Adjust tracklist width to full window
    - Fixed showcase/lyrics view
-   - Fixed menu positioning
+   - Fixed menu positioning with window edge
  - Fixed last.fm not respecting disable option
  - Fixed right click mode menu triggering show current
 

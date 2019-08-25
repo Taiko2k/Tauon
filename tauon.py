@@ -9241,10 +9241,10 @@ shuffle_menu.add("Shuffle Tracks", menu_set_random)
 shuffle_menu.add("Random Albums", menu_album_random)
 
 def bio_set_large():
-    if window_size[0] >= round(1000 * gui.scale):
-        gui.artist_panel_height = 320 * gui.scale
-        if gui.artist_info_panel:
-            artist_info_box.get_data(artist_info_box.artist_on)
+    #if window_size[0] >= round(1000 * gui.scale):
+    gui.artist_panel_height = 320 * gui.scale
+    if gui.artist_info_panel:
+        artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def bio_set_small():
@@ -19750,9 +19750,9 @@ class TopPanel:
                         ddt.rect_r((x, y + self.height - 2, tab_width, 2), [80, 160, 200, 255], True)
                     else:
                         if playlist_box.drag_on < i:
-                            ddt.rect_r((x + tab_width - 2, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                            ddt.rect_r((x + tab_width - 2, y, 2, gui.panelY2), [80, 160, 200, 255], True)
                         else:
-                            ddt.rect_r((x, y, 2, gui.panelY), [80, 160, 200, 255], True)
+                            ddt.rect_r((x, y, 2, gui.panelY2), [80, 160, 200, 255], True)
 
                 elif quick_drag is True:
                     ddt.rect_r((x, y + self.height - 2, tab_width, 2), [80, 200, 180, 255], True)
@@ -19775,7 +19775,7 @@ class TopPanel:
         # Quick drag single track onto bar to create new playlist function and indicator
         if prefs.tabs_on_top:
             if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [80, 200, 180, 255], True)
+                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255], True)
 
                 if mouse_up:
                     drop_tracks_to_new_playlist(shift_selection)
@@ -19783,7 +19783,7 @@ class TopPanel:
 
             # Draw end drag tab indicator
             if playlist_box.drag and mouse_position[0] > x and mouse_position[1] < gui.panelY:
-                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY), [80, 160, 200, 255], True)
+                ddt.rect_r((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255], True)
 
         # -------------
         # Other input
@@ -19793,7 +19793,7 @@ class TopPanel:
 
         # Scroll anywhere on panel to cycle playlist
         # (This is a bit complicated because we need to skip over hidden playlists)
-        if mouse_wheel != 0 and 1 < mouse_position[1] < self.height + 1 and len(pctl.multi_playlist) > 1 and 5 < mouse_position[0]:
+        if mouse_wheel != 0 and 1 < mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and 5 < mouse_position[0]:
 
             if mouse_wheel > 0:
                 p = pctl.active_playlist_viewing
@@ -20162,7 +20162,8 @@ class BottomBarType1:
         if gui.display_time_mode >= 2:
             right_offset = 22 * gui.scale
 
-
+        if window_size[0] < 670:
+            right_offset -= 90 * gui.scale
         # Scrobble marker
 
         if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
@@ -20283,46 +20284,7 @@ class BottomBarType1:
             else:
                 gui.seek_cur_show = False
 
-        # Volume Bar --------------------------------------------------------
-
-
-        if input.mouse_click and coll((
-            self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
-            self.volume_bar_size[1] + 4)) or \
-                        self.volume_bar_being_dragged is True:
-            clicked = True
-
-            if input.mouse_click is True or self.volume_bar_being_dragged is True:
-                gui.update = 2
-
-
-                self.volume_bar_being_dragged = True
-                volgetX = mouse_position[0]
-                if volgetX > self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset:
-                    volgetX = self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset
-                if volgetX < self.volume_bar_position[0] - right_offset:
-                    volgetX = self.volume_bar_position[0] - right_offset
-                volgetX -= self.volume_bar_position[0] - right_offset
-                pctl.player_volume = volgetX / self.volume_bar_size[0] * 100
-
-                # gui.rspw += 1
-                # gui.update_layout()
-
-                # time.sleep(0.018)
-                #time.sleep(0.014)
-                time.sleep(0.02)
-                #SDL_Delay(50)
-
-                if mouse_down is False:
-                    self.volume_bar_being_dragged = False
-                    pctl.player_volume = int(pctl.player_volume)
-                    pctl.set_volume(True)
-
-            if mouse_down:
-                pctl.player_volume = int(pctl.player_volume)
-                pctl.set_volume(False)
-
-
+        # Volume mouse wheel control -----------------------------------------
         if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
                                                                                                      self.seek_bar_position + self.seek_bar_size):
 
@@ -20335,40 +20297,140 @@ class BottomBarType1:
             pctl.player_volume = int(pctl.player_volume)
             pctl.set_volume()
 
-        if right_click and coll((
-                    self.volume_bar_position[0] - 15 * gui.scale, self.volume_bar_position[1] - 10 * gui.scale, self.volume_bar_size[0] + 30 * gui.scale,
-                    self.volume_bar_size[1] + 20 * gui.scale)):
+        # Volume Bar 2 ------------------------------------------------
 
-            if pctl.player_volume > 0:
-                volume_store = pctl.player_volume
-                pctl.player_volume = 0
-            else:
-                pctl.player_volume = volume_store
+        x = window_size[0] - right_offset - 207 * gui.scale
+        y = window_size[1] - 14 * gui.scale
 
-            pctl.set_volume()
+        h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
+        if coll(h_rect) and mouse_down:
+            pctl.player_volume = 0
+        #ddt.rect_r(h_rect, [255, 0, 0, 200], True)
 
-        ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size,
-                  colours.volume_bar_background, True)  # 22
+        step = round(1 * gui.scale)
 
-        gui.volume_bar_rect = (self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
-                  int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1])
+        for bar in range(8):
 
-        ddt.rect_r(gui.volume_bar_rect,
-                  colours.volume_bar_fill, True)
+            h = 4 * gui.scale + (bar * step)
+
+            rect = (x, y - h, 3 * gui.scale, h)
+            h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
 
-        fields.add(self.volume_bar_position + self.volume_bar_size)
-        if pctl.active_replaygain != 0 and (coll((
-                    self.volume_bar_position[0], self.volume_bar_position[1], self.volume_bar_size[0],
-                    self.volume_bar_size[1])) or self.volume_bar_being_dragged):
+            if coll(h_rect) and mouse_down:
+
+                if bar == 0:
+                    pctl.player_volume = 5
+                if bar == 1:
+                    pctl.player_volume = 10
+                if bar == 2:
+                    pctl.player_volume = 20
+                if bar == 3:
+                    pctl.player_volume = 30
+                if bar == 4:
+                    pctl.player_volume = 45
+                if bar == 5:
+                    pctl.player_volume = 55
+                if bar == 6:
+                    pctl.player_volume = 70
+                if bar == 7:
+                    pctl.player_volume = 100
 
 
-            if pctl.player_volume > 50:
-                ddt.draw_text((self.volume_bar_position[0] - right_offset + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
-                       11, bg=colours.volume_bar_fill)
-            else:
-                ddt.draw_text((self.volume_bar_position[0] - right_offset + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
-                       11, bg=colours.volume_bar_background)
+                pctl.set_volume()
+
+
+            colour = colours.mode_button_off
+
+            if bar == 0 and pctl.player_volume > 0:
+                colour = colours.mode_button_active
+            elif bar == 1 and pctl.player_volume >= 10:
+                colour = colours.mode_button_active
+            elif bar == 2 and pctl.player_volume >= 20:
+                colour = colours.mode_button_active
+            elif bar == 3 and pctl.player_volume >= 30:
+                colour = colours.mode_button_active
+            elif bar == 4 and pctl.player_volume >= 45:
+                colour = colours.mode_button_active
+            elif bar == 5 and pctl.player_volume >= 55:
+                colour = colours.mode_button_active
+            elif bar == 6 and pctl.player_volume >= 70:
+                colour = colours.mode_button_active
+            elif bar == 7 and pctl.player_volume >= 95:
+                colour = colours.mode_button_active
+
+            ddt.rect_r(rect, colour, True)
+
+            x += 5 * gui.scale
+
+
+
+        # Volume Bar --------------------------------------------------------
+        if not window_size[0] < 670:
+            if input.mouse_click and coll((
+                self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
+                self.volume_bar_size[1] + 4)) or \
+                            self.volume_bar_being_dragged is True:
+                clicked = True
+
+                if input.mouse_click is True or self.volume_bar_being_dragged is True:
+                    gui.update = 2
+
+                    self.volume_bar_being_dragged = True
+                    volgetX = mouse_position[0]
+                    if volgetX > self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset:
+                        volgetX = self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset
+                    if volgetX < self.volume_bar_position[0] - right_offset:
+                        volgetX = self.volume_bar_position[0] - right_offset
+                    volgetX -= self.volume_bar_position[0] - right_offset
+                    pctl.player_volume = volgetX / self.volume_bar_size[0] * 100
+
+                    time.sleep(0.02)
+
+                    if mouse_down is False:
+                        self.volume_bar_being_dragged = False
+                        pctl.player_volume = int(pctl.player_volume)
+                        pctl.set_volume(True)
+
+                if mouse_down:
+                    pctl.player_volume = int(pctl.player_volume)
+                    pctl.set_volume(False)
+
+
+            if right_click and coll((
+                        self.volume_bar_position[0] - 15 * gui.scale, self.volume_bar_position[1] - 10 * gui.scale, self.volume_bar_size[0] + 30 * gui.scale,
+                        self.volume_bar_size[1] + 20 * gui.scale)):
+
+                if pctl.player_volume > 0:
+                    volume_store = pctl.player_volume
+                    pctl.player_volume = 0
+                else:
+                    pctl.player_volume = volume_store
+
+                pctl.set_volume()
+
+            ddt.rect_a((self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]), self.volume_bar_size,
+                      colours.volume_bar_background, True)  # 22
+
+            gui.volume_bar_rect = (self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
+                      int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1])
+
+            ddt.rect_r(gui.volume_bar_rect,
+                      colours.volume_bar_fill, True)
+
+
+            fields.add(self.volume_bar_position + self.volume_bar_size)
+            if pctl.active_replaygain != 0 and (coll((
+                        self.volume_bar_position[0], self.volume_bar_position[1], self.volume_bar_size[0],
+                        self.volume_bar_size[1])) or self.volume_bar_being_dragged):
+
+
+                if pctl.player_volume > 50:
+                    ddt.draw_text((self.volume_bar_position[0] - right_offset + 8 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_background,
+                           11, bg=colours.volume_bar_fill)
+                else:
+                    ddt.draw_text((self.volume_bar_position[0] - right_offset + 85 * gui.scale, self.volume_bar_position[1] - 1 * gui.scale), str(pctl.active_replaygain) + " dB", colours.volume_bar_fill,
+                           11, bg=colours.volume_bar_background)
 
         if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
 
@@ -20413,7 +20475,10 @@ class BottomBarType1:
         x = window_size[0] - 57 * gui.scale
         y = window_size[1] - 29 * gui.scale
 
-        rect = (x - 8 * gui.scale - right_offset, y - 3 * gui.scale, 60 * gui.scale + right_offset, 27 * gui.scale)
+        r_start = x - 10 * gui.scale
+        if gui.display_time_mode in (2, 3):
+            r_start -= 20 * gui.scale
+        rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
         # ddt.rect_r(rect, [255, 0, 0, 40], True)
         if input.mouse_click and coll(rect):
             gui.display_time_mode += 1
@@ -20687,7 +20752,7 @@ class BottomBarType1:
             y += 5 * gui.scale
             ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
 
-            if window_size[0] > 690 * gui.scale and self.mode == 0:
+            if self.mode == 0: # and window_size[0] > 690 * gui.scale:
 
                 # shuffle button
                 x = window_size[0] - 318 * gui.scale - right_offset
@@ -23607,10 +23672,15 @@ class ArtistList:
         artist_parents = {}
         counts = {}
 
+        b = 0
+
         try:
 
             for item in current_pl[2]:
-                time.sleep(0.00001)
+                b += 1
+                if b % 100 == 0:
+                    time.sleep(0.001)
+
                 track = pctl.g(item)
                 artist = get_artist_strip_feat(track)
                 if prefs.artist_list_prefer_album_artist and track.album_artist:
@@ -23931,10 +24001,9 @@ class ArtistList:
             if not prefetch_mode:
                 self.draw_card(artist, x, yy, w)
 
-
                 yy += self.tab_h
 
-                if yy > h:
+                if yy - y > h - 24 * gui.scale:
                     prefetch_mode = True
                     continue
 
@@ -29806,8 +29875,8 @@ while pctl.running:
 
                 h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(pctl.multi_playlist)) + 13 * gui.scale
 
-                half = int(round((window_size[1] - gui.panelY - gui.panelBY) / 2))
-                full = (window_size[1] - gui.panelY - gui.panelBY)
+                full = (window_size[1] - (gui.panelY + gui.panelBY))
+                half = int(round((full / 2)))
 
                 pl_box_h = full
 
