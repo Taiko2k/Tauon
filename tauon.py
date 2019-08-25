@@ -715,7 +715,7 @@ class Prefs:    # Used to hold any kind of settings
         self.gallery_scroll_wheel_px = 90
 
         self.playlist_font_size = 15
-        self.playlist_row_height = 22
+        self.playlist_row_height = 27
 
         self.tag_editor_name = ""
         self.tag_editor_target = ""
@@ -5841,6 +5841,7 @@ SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
 SDL_SetWindowMinimumSize(t_window, 560, 330)
+#SDL_SetWindowMinimumSize(t_window, 413, 330)
 
 gui.max_window_tex = 1000
 if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
@@ -20162,7 +20163,7 @@ class BottomBarType1:
         if gui.display_time_mode >= 2:
             right_offset = 22 * gui.scale
 
-        if window_size[0] < 670:
+        if window_size[0] < 670 * gui.scale:
             right_offset -= 90 * gui.scale
         # Scrobble marker
 
@@ -20298,75 +20299,69 @@ class BottomBarType1:
             pctl.set_volume()
 
         # Volume Bar 2 ------------------------------------------------
+        if window_size[0] < 670 * gui.scale:
+            x = window_size[0] - right_offset - 207 * gui.scale
+            y = window_size[1] - round(14 * gui.scale)
 
-        x = window_size[0] - right_offset - 207 * gui.scale
-        y = window_size[1] - 14 * gui.scale
-
-        h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
-        if coll(h_rect) and mouse_down:
-            pctl.player_volume = 0
-        #ddt.rect_r(h_rect, [255, 0, 0, 200], True)
-
-        step = round(1 * gui.scale)
-
-        for bar in range(8):
-
-            h = 4 * gui.scale + (bar * step)
-
-            rect = (x, y - h, 3 * gui.scale, h)
-            h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
-
-
+            h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
             if coll(h_rect) and mouse_down:
+                pctl.player_volume = 0
 
-                if bar == 0:
-                    pctl.player_volume = 5
-                if bar == 1:
-                    pctl.player_volume = 10
-                if bar == 2:
-                    pctl.player_volume = 20
-                if bar == 3:
-                    pctl.player_volume = 30
-                if bar == 4:
-                    pctl.player_volume = 45
-                if bar == 5:
-                    pctl.player_volume = 55
-                if bar == 6:
-                    pctl.player_volume = 70
-                if bar == 7:
-                    pctl.player_volume = 100
+            step = round(1 * gui.scale)
+            min_h = round(4 * gui.scale)
+            spacing = round(5 * gui.scale)
 
+            for bar in range(8):
 
-                pctl.set_volume()
+                h = min_h + bar * step
+                rect = (x, y - h, 3 * gui.scale, h)
+                h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
+                if coll(h_rect) and mouse_down:
 
-            colour = colours.mode_button_off
+                    if bar == 0:
+                        pctl.player_volume = 5
+                    if bar == 1:
+                        pctl.player_volume = 10
+                    if bar == 2:
+                        pctl.player_volume = 20
+                    if bar == 3:
+                        pctl.player_volume = 30
+                    if bar == 4:
+                        pctl.player_volume = 45
+                    if bar == 5:
+                        pctl.player_volume = 55
+                    if bar == 6:
+                        pctl.player_volume = 70
+                    if bar == 7:
+                        pctl.player_volume = 100
 
-            if bar == 0 and pctl.player_volume > 0:
-                colour = colours.mode_button_active
-            elif bar == 1 and pctl.player_volume >= 10:
-                colour = colours.mode_button_active
-            elif bar == 2 and pctl.player_volume >= 20:
-                colour = colours.mode_button_active
-            elif bar == 3 and pctl.player_volume >= 30:
-                colour = colours.mode_button_active
-            elif bar == 4 and pctl.player_volume >= 45:
-                colour = colours.mode_button_active
-            elif bar == 5 and pctl.player_volume >= 55:
-                colour = colours.mode_button_active
-            elif bar == 6 and pctl.player_volume >= 70:
-                colour = colours.mode_button_active
-            elif bar == 7 and pctl.player_volume >= 95:
-                colour = colours.mode_button_active
+                    pctl.set_volume()
 
-            ddt.rect_r(rect, colour, True)
+                colour = colours.mode_button_off
 
-            x += 5 * gui.scale
+                if bar == 0 and pctl.player_volume > 0:
+                    colour = colours.mode_button_active
+                elif bar == 1 and pctl.player_volume >= 10:
+                    colour = colours.mode_button_active
+                elif bar == 2 and pctl.player_volume >= 20:
+                    colour = colours.mode_button_active
+                elif bar == 3 and pctl.player_volume >= 30:
+                    colour = colours.mode_button_active
+                elif bar == 4 and pctl.player_volume >= 45:
+                    colour = colours.mode_button_active
+                elif bar == 5 and pctl.player_volume >= 55:
+                    colour = colours.mode_button_active
+                elif bar == 6 and pctl.player_volume >= 70:
+                    colour = colours.mode_button_active
+                elif bar == 7 and pctl.player_volume >= 95:
+                    colour = colours.mode_button_active
 
-
+                ddt.rect_r(rect, colour, True)
+                x += spacing
 
         # Volume Bar --------------------------------------------------------
-        if not window_size[0] < 670:
+        else:
             if input.mouse_click and coll((
                 self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
                 self.volume_bar_size[1] + 4)) or \
@@ -20731,7 +20726,7 @@ class BottomBarType1:
             # menu button
 
             x = window_size[0] - 252 * gui.scale - right_offset
-            y = window_size[1] - 26 * gui.scale
+            y = window_size[1] - round(26 * gui.scale)
             rpbc = colours.mode_button_off
             rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
             fields.add(rect)
@@ -20746,13 +20741,14 @@ class BottomBarType1:
             if extra_menu.active:
                 rpbc = colours.mode_button_active
 
+            spacing = round(5 * gui.scale)
             ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
-            y += 5 * gui.scale
+            y += spacing
             ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
-            y += 5 * gui.scale
+            y += spacing
             ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc, True)
 
-            if self.mode == 0: # and window_size[0] > 690 * gui.scale:
+            if self.mode == 0 and window_size[0] > 530 * gui.scale:
 
                 # shuffle button
                 x = window_size[0] - 318 * gui.scale - right_offset
@@ -20800,8 +20796,8 @@ class BottomBarType1:
                 ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc, True)
 
                 # REPEAT
-                x = window_size[0] - 380 * gui.scale - right_offset
-                y = window_size[1] - 27 * gui.scale
+                x = window_size[0] - round(380 * gui.scale) - right_offset
+                y = window_size[1] - round(27 * gui.scale)
 
                 rpbc = colours.mode_button_off
 
@@ -20852,12 +20848,12 @@ class BottomBarType1:
                 w = round(3 * gui.scale)
 
                 if pctl.album_repeat_mode:
-                    ddt.rect_a((x + 4 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
+                    ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
 
-                ddt.rect_a((x + 25 * gui.scale, y), (25 * gui.scale, w), rpbc, True)
-                ddt.rect_a((x + 4 * gui.scale, y + 5 * gui.scale), (math.floor(46 * gui.scale), w), rpbc, True)
+                ddt.rect_a((x + round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc, True)
+                ddt.rect_a((x + round(4 * gui.scale), y + round(5 * gui.scale)), (math.floor(46 * gui.scale), w), rpbc, True)
                 #ddt.rect_a((x + 50 * gui.scale - w, y), (w, 8 * gui.scale), rpbc, True)
-                ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, 2 * gui.scale), rpbc, True)
+                ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, 4 * gui.scale), rpbc, True)
 
 
 bottom_bar1 = BottomBarType1()
@@ -27637,8 +27633,8 @@ while pctl.running:
                     window_size[1] = event.window.data2
 
                     if gui.mode != 3:
-                        window_size[0] = max(550, window_size[0])
-                        window_size[1] = max(330, window_size[1])
+                        window_size[0] = max(300, window_size[0])
+                        window_size[1] = max(300, window_size[1])
 
 
                     update_layout = True
