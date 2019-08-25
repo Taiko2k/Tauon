@@ -17736,11 +17736,13 @@ class Over:
         self.about_image3 = asset_loader('v4-c.png')
         self.about_image4 = asset_loader('v4-d.png')
 
-        self.w = round(660 * gui.scale)
-        self.h = round(275 * gui.scale)
-        self.box_x = int(window_size[0] / 2) - int(self.w / 2)
-        self.box_y = int(window_size[1] / 2) - int(self.h / 2)
-        self.item_x_offset = round(140 * gui.scale)
+        # self.tab_width = round(115 * gui.scale)
+        self.w = 100
+        self.h = 100
+
+        self.box_x = 100
+        self.box_y = 100
+        self.item_x_offset = round(25 * gui.scale)
 
         self.current_path = os.path.expanduser('~')
         self.ext_colours = {}
@@ -17796,13 +17798,13 @@ class Over:
         self.eq_view = False
 
 
-    def theme(self):
+    def theme(self, x0, y0, w0, h0):
 
         global album_mode_art_size
         global update_layout
 
-        y = self.box_y + 20 * gui.scale
-        x = self.box_x + self.item_x_offset
+        y = y0 + 20 * gui.scale
+        x = x0 + 25 * gui.scale
 
         ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
 
@@ -17833,11 +17835,8 @@ class Over:
         self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
         ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
-
-
-        x = self.box_x + self.item_x_offset + 250 * gui.scale
-        y = self.box_y + 20 * gui.scale
-
+        y = y0 + 20 * gui.scale
+        x = x0 + 295 * gui.scale
 
         ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
@@ -17855,55 +17854,17 @@ class Over:
 
         album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
-
-        #
-        # ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
-        #
-        # y += 28 * gui.scale
-        #
-        # if system == "linux":
-        #     self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
-        #
-        # y += 25 * gui.scale
-        #
-        # self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
-        #
-        # y += 25 * gui.scale
-        # if not draw_border:
-        #     self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
-        #
-        # y += 25 * gui.scale
-        #
-        # if system == "windows":
-        #     self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-        #
-        # y += 30 * gui.scale
-        #
-        # ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
-        #
-        # if system != 'windows':
-        #     y += 25 * gui.scale
-        #     self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
-        #
-        # y += 25 * gui.scale
-        #
-        # if prefs.backend == 1:
-        #     self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-        #     y += 25 * gui.scale
-        #     self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
-        #     y += 25 * gui.scale
-
-    def eq(self):
+    def eq(self, x0, y0, w0, h0):
 
         if prefs.backend != 1:
             return
 
-        y = self.box_y + 55 * gui.scale
-        x = self.box_x + 250 * gui.scale
+        y = y0 + 55 * gui.scale
+        x = x0 + 130 * gui.scale
+
 
         if self.button2(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
             self.eq_view = False
-
 
         base_dis = 160 * gui.scale
         center = base_dis // 2
@@ -17958,26 +17919,16 @@ class Over:
 
             x += round(29 * gui.scale)
 
-    def audio(self):
+    def audio(self, x0, y0, w0, h0):
 
-        y = self.box_y + 40 * gui.scale
-        x = self.box_x + 150 * gui.scale
+        y = y0 + 40 * gui.scale
+        x = x0 + 40 * gui.scale
 
         if self.eq_view:
-            self.eq()
+            self.eq(x0, y0, w0, h0)
             return
 
-        # ddt.draw_text((x, y - 22), "Backend", [130, 130, 130, 255], 12)
-        # ddt.draw_text((x + 65, y - 22), "Bass Audio Library", [160, 160, 156, 255], 12)
-        # bass_found = False
-        # if system == 'linux':
-        #     if not os.path.isfile(pctl.install_directory + '/lib/libbass.so') and not \
-        #         os.path.isfile(pctl.user_directory + '/lib/libbass.so'):
-        #         bass_found = True
-
         colour = [220, 220, 220, 255]
-        # if not bass_found:
-        #     colour = [60, 60, 60, 255]
 
         ddt.draw_text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
         self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                          ")
@@ -17986,24 +17937,15 @@ class Over:
             ddt.draw_text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
 
-        # if not bass_found:
-        #
-        #     self.button2(x + 140 * gui.scale, y - 3 * gui.scale, "Enable (788kb download)", 150 * gui.scale)
-        #
-        #     link_pa = draw_linked_text((x + 315 * gui.scale, y - 2 * gui.scale), "What's the difference?", [0,0,0,255], 12, True)
-        #     link_pa[2] = "https://github.com"
-        #     link_activate(x + 315 * gui.scale, y - 2 * gui.scale, link_pa)
 
         if prefs.backend == 1:
-
 
             if self.button2(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
                 self.eq_view = True
 
-            y = self.box_y + 92 * gui.scale
-            x = self.box_x + 130 * gui.scale
 
-
+            y = y0 + 92 * gui.scale
+            x = x0 + 25 * gui.scale
 
             x += 8 * gui.scale
             ddt.draw_text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(90), 12)
@@ -18036,8 +17978,8 @@ class Over:
             y += 23 * gui.scale
             self.toggle_square(x, y, toggle_pause_fade, _("Use fade on pause/stop"))
 
-            y = self.box_y + 37 * gui.scale
-            x = self.box_x + 385 * gui.scale
+            y = y0 + 37 * gui.scale
+            x = x0 + 270 * gui.scale
 
             ddt.draw_text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
             # ddt.draw_text((x + 60, y - 20), "Takes effect on text change", [140, 140, 140, 255], 11)
@@ -18075,7 +18017,7 @@ class Over:
                         ddt.draw_text((x, y), line, [100, 100, 100, 255], 10)
                 y += 14 * gui.scale
 
-            y = self.box_y + 240 * gui.scale
+            y = y0 + 240 * gui.scale
             x += 40 * gui.scale
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
             prefs.device_buffer = self.slide_control(x, y, "Device buffer length", 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
@@ -18089,13 +18031,13 @@ class Over:
         self.lyrics_panel ^= True
 
 
-    def funcs(self):
+    def funcs(self, x0, y0, w0, h0):
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y - 10 * gui.scale
+        x = x0 + 25 * gui.scale
+        y = y0 - 10 * gui.scale
 
         if self.chart_view == 1:
-            self.topchart()
+            self.topchart(x0, y0, w0, h0)
             return
 
         if self.lyrics_panel:
@@ -18163,8 +18105,8 @@ class Over:
             if system == 'linux' and self.button2(x, y, "Chart generator...", width=115 * gui.scale):
                 self.chart_view = 1
 
-            x = self.box_x + self.item_x_offset
-            y = self.box_y - 10 * gui.scale
+            x = x0 + 25 * gui.scale
+            y = y0 - 10 * gui.scale
 
             y += 30 * gui.scale
 
@@ -18209,8 +18151,10 @@ class Over:
                 y += 23 * gui.scale
                 self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
 
-            y = self.box_y + 216 * gui.scale
+            #y = self.box_y + 216 * gui.scale
             x -= 15 * gui.scale
+
+            y = y0 + 216 * gui.scale
 
             self.button(x, y, _("Open config file"), open_config_file, 115 * gui.scale)
 
@@ -18320,10 +18264,10 @@ class Over:
 
         return active
 
-    def last_fm_box(self):
+    def last_fm_box(self, x0, y0, w0, h0):
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y + round(20 * gui.scale)
+        x = x0 + round(20 * gui.scale)
+        y = y0 + round(20 * gui.scale)
 
 
         if self.button2(x, y, "Last.fm"):
@@ -18344,8 +18288,10 @@ class Over:
         y += 150 * gui.scale
         self.button(x, y, _("Import PLEX music"), plex_get_album_thread)
 
-        x = self.box_x + self.item_x_offset + 230 * gui.scale
-        y = self.box_y + 20 * gui.scale
+
+        x = x0 + 255 * gui.scale
+        y = y0 + round(20 * gui.scale)
+
 
         if self.account_view == 3:
 
@@ -18438,12 +18384,10 @@ class Over:
                 self.button(x, y, _("Forget account"), lastfm.auth3)
 
 
-            x = self.box_x + self.item_x_offset + 230 * gui.scale
-            y = self.box_y + 160 * gui.scale
 
+            x = x0 + 260 * gui.scale
+            y = y0 + round(160 * gui.scale)
 
-            # y += 26 * gui.scale
-            #
             # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
             self.button(x, y, _("Get user loves"), lastfm.dl_love, width=110 * gui.scale)
@@ -18451,8 +18395,8 @@ class Over:
             y += 26 * gui.scale
             self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=110 * gui.scale)
 
-            y = self.box_y + 160 * gui.scale
-            x = self.box_x + self.item_x_offset + 365 * gui.scale
+            y = y0 + 160 * gui.scale
+            x = x0 + 380 * gui.scale
 
             self.button(x, y, _("Get friend loves"), self.get_friend_love, width=110 * gui.scale)
             # if lastfm.scanning_friends:
@@ -18463,8 +18407,9 @@ class Over:
             self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
 
 
-            y = self.box_y + 230 * gui.scale
-            x = self.box_x + self.item_x_offset + 230 * gui.scale
+            x = x0 + 260 * gui.scale
+            y = y0 + round(230 * gui.scale)
+
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
         if self.account_view == 2:
@@ -18493,8 +18438,10 @@ class Over:
                 if self.click:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
-            y = self.box_y + 230 * gui.scale
-            x = self.box_x + self.item_x_offset + 230 * gui.scale
+
+            x = x0 + 260 * gui.scale
+            y = y0 + round(230 * gui.scale)
+
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
 
@@ -18518,15 +18465,16 @@ class Over:
             show_message("This process is already running. Wait for it to finish.")
 
 
-    def codec_config(self):
+    def codec_config(self, x0, y0, w0, h0):
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y - 5 * gui.scale
 
-        y += 30 * gui.scale
+        x = x0 + round(25 * gui.scale)
+        y = y0
+
+        y += 20 * gui.scale
         #self.toggle_square(x, y, toggle_transcode, "Show in context menu")
         ddt.draw_text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.grey(100), 11)
-        self.button(x + 370 * gui.scale, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
+        self.button(x + 380 * gui.scale, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
 
 
         y += 40 * gui.scale
@@ -18570,8 +18518,9 @@ class Over:
                     system != 'windows' and shutil.which('ffmpeg') is None):
                 ddt.draw_text((x, y), "FFMPEG not detected!", [220, 110, 110, 255], 12)
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y - 5 * gui.scale + 220 * gui.scale
+        x = x0 + round(20 * gui.scale)
+        y = y0 + 215 * gui.scale
+
         self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
         y += 25 * gui.scale
         self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Save and overwite files inplace"))
@@ -18584,35 +18533,13 @@ class Over:
         if theme < 0:
             theme = len(get_themes())
 
-    def config_b(self):
+    def config_b(self, x0, y0, w0, h0):
 
         global album_mode_art_size
         global update_layout
 
-        x = self.box_x + self.item_x_offset
-        y = self.box_y + 20 * gui.scale
-
-
-        # if self.button2(x, y, "Theme"):
-        #     self.view_view = 1
-        # y += 30 * gui.scale
-        #
-        # if self.button2(x, y, "Gallery"):
-        #     self.view_view = 2
-        #
-        # y += 30 * gui.scale
-        #
-        # if self.button2(x, y, "Window"):
-        #     self.view_view = 3
-        #
-        # y += 30 * gui.scale
-        #
-        # if self.button2(x, y, "Side Panels"):
-        #     self.view_view = 4
-
-        # x = self.box_x + self.item_x_offset + 250 * gui.scale
-        # y = self.box_y + 27 * gui.scale
-
+        x = x0 + round(25 * gui.scale)
+        y = y0 + round(20 * gui.scale)
 
         ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
 
@@ -18650,97 +18577,9 @@ class Over:
             self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
             y += 25 * gui.scale
 
-        # ddt.draw_text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
-        #
-        # y += 25 * gui.scale
-        # # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        # self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
-        # y += 25 * gui.scale
-        # if album_mode_art_size < 160:
-        #     self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-        # y += 55 * gui.scale
-        #
-        # ddt.draw_text((x, y), _("Gallery art size"), colours.grey(220), 11)
-        #
-        # album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
-
-        # if self.view_view == 1:
-        #
-        #     ddt.draw_text((x, y), _("Theme"), colours.grey_blend_bg(100), 12)
-        #
-        #     y += 25 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_auto_theme, _("Generate theme from album art"))
-        #
-        #     y += 25 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
-        #
-        #     y += 23 * gui.scale
-        #
-        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
-        #     #self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong1, _("Lo"))
-        #     #self.toggle_square(x + 54 * gui.scale, y, toggle_auto_bg_strong2, _("Md"))
-        #     #self.toggle_square(x + 105 * gui.scale, y, toggle_auto_bg_strong3, _("Hi"))
-        #
-        #     y += 23 * gui.scale
-        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_blur, _("Blur"))
-        #
-        #     y += 23 * gui.scale
-        #     self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
-        #
-        #
-        #     y += 70 * gui.scale
-        #
-        #     self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
-        #     self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        #     ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
-
-        # if self.view_view == 3:
-        #
-        #
-        #     ddt.draw_text((x, y), _("Window"), colours.grey_blend_bg(100), 12)
-        #
-        #     y += 28 * gui.scale
-        #
-        #     if system == "linux":
-        #         self.toggle_square(x, y, toggle_notifications, _("Emit track change notifications"))
-        #
-        #     y += 25 * gui.scale
-        #
-        #     self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
-        #
-        #     y += 25 * gui.scale
-        #     if not draw_border:
-        #         self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
-        #
-        #     y += 25 * gui.scale
-        #
-        #     if system == "windows":
-        #         self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-        #
-        #     y += 30 * gui.scale
-        #
-        #     ddt.draw_text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
-        #
-        #     if system != 'windows':
-        #         y += 25 * gui.scale
-        #         self.toggle_square(x, y, toggle_force_subpixel, _("Force subpixel text rendering"))
-        #
-        #     y += 25 * gui.scale
-        #
-        #     if prefs.backend == 1:
-        #         self.toggle_square(x, y, toggle_level_meter, _("Top-panel visualisation"))
-        #         y += 25 * gui.scale
-        #         self.toggle_square(x, y, toggle_showcase_vis, _("Showcase visualisation"))
-        #         y += 25 * gui.scale
-        #
-
-        x = self.box_x + self.item_x_offset + 250 * gui.scale
-        y = self.box_y + 20 * gui.scale
+        x = x0 + self.item_x_offset + 260 * gui.scale
+        y = y0 + 20 * gui.scale
 
         ddt.draw_text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
 
@@ -18761,10 +18600,10 @@ class Over:
         self.toggle_square(x, y, toggle_meta_shows_selected, "Always show selected")
 
 
-    def about(self):
+    def about(self, x0, y0, w0, h0):
 
-        x = self.box_x + int(self.w * 0.3) + 65 * gui.scale
-        y = self.box_y + 95 * gui.scale
+        x = x0 + int(w0 * 0.3) - 10 * gui.scale
+        y = y0 + 95 * gui.scale
 
         ddt.text_background_colour = colours.sys_background
 
@@ -18785,7 +18624,6 @@ class Over:
 
         if not genre:
             self.about_image.render(icon_rect[0], icon_rect[1])
-
 
         x += 20 * gui.scale
         y -= 10 * gui.scale
@@ -18853,22 +18691,20 @@ class Over:
 
             y += 12 * gui.scale
 
-            #ddt.draw_text((x, y + 1 * gui.scale), "Additional testing", colours.grey(90), 13)
-
-
-
         ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
+        # x = self.box_x + self.w - 100 * gui.scale
+        # y = self.box_y + self.h - 35 * gui.scale
 
-        x = self.box_x + self.w - 100 * gui.scale
-        y = self.box_y + self.h - 35 * gui.scale
+        x = x0 + w0 - 100 * gui.scale
+        y = y0 + h0 - 30 * gui.scale
 
         self.button(x, y, _("Show License"), open_license)
 
-    def topchart(self):
+    def topchart(self, x0, y0, w0, h0):
 
-        x = self.box_x + self.item_x_offset - 10 * gui.scale
-        y = self.box_y + 20 * gui.scale
+        x = x0 + round(25 * gui.scale)
+        y = y0 + 20 * gui.scale
 
         ddt.draw_text((x, y), _("Chart Grid Generator"), colours.grey(250), 214)
 
@@ -18916,8 +18752,8 @@ class Over:
         y += 25 * gui.scale
         prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
 
-        x = self.box_x + self.item_x_offset + 300 * gui.scale
-        y = self.box_y + 100 * gui.scale
+        x = x0 + 20 * gui.scale + 300 * gui.scale
+        y = y0 + 100 * gui.scale
 
         if self.button2(x, y, "Randomise BG"):
 
@@ -18933,7 +18769,6 @@ class Over:
                 c = 5 + round(random.random() * 20)
                 prefs.chart_bg = [c, c, c]
 
-
         x += 100 * gui.scale
         y -= 20 * gui.scale
 
@@ -18944,8 +18779,11 @@ class Over:
 
         ddt.rect_r(rect, (50, 50, 50 ,255))
 
-        x = self.box_x + self.item_x_offset + 200 * gui.scale
-        y = self.box_y + 180 * gui.scale
+        # x = self.box_x + self.item_x_offset + 200 * gui.scale
+        # y = self.box_y + 180 * gui.scale
+
+        x = x0 + 200 * gui.scale
+        y = y0 + 180 * gui.scale
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
@@ -18978,16 +18816,16 @@ class Over:
         if len(dex) < count:
             ddt.draw_text((x + 37*gui.scale, y + 19 * gui.scale, 2), _("Not enough albums in the playlist!"), [255, 120, 125, 255], 12)
 
-        x = self.box_x + self.item_x_offset - 5 * gui.scale
-        y = self.box_y + 240 * gui.scale
+        x = x0 + round(20 * gui.scale)
+        y = y0 + 240 * gui.scale
         if self.button2(x, y, _("Return"), width=75 * gui.scale):
             self.chart_view = 0
 
 
-    def stats(self):
+    def stats(self, x0, y0, w0, h0):
 
-        x = self.box_x + self.item_x_offset - 10 * gui.scale
-        y = self.box_y - 10 * gui.scale
+        x = x0 + 10 * gui.scale
+        y = y0
 
         lt_font = 312
         lt_colour = colours.grey_blend_bg(85)
@@ -19033,8 +18871,6 @@ class Over:
         y1 += 20 * gui.scale
         ddt.draw_text((x1, y1), _("Playlist duration"), lt_colour, lt_font)
 
-
-
         ddt.draw_text((x2, y1), line, colours.grey_blend_bg(220), 12)
 
         if self.stats_timer.get() > 5:
@@ -19075,10 +18911,10 @@ class Over:
 
         # Ratio bar
         if len(pctl.master_library) > 115 * gui.scale:
-            x = self.box_x + 115 * gui.scale
-            y = self.box_y + self.h - 7 * gui.scale
+            x = x0
+            y = y0 + h0 - 7 * gui.scale
 
-            full_rect = [x, y, self.w - 115 * gui.scale + 0, 7 * gui.scale]
+            full_rect = [x, y, w0, 7 * gui.scale]
             d = 0
 
             # Stats
@@ -19105,7 +18941,6 @@ class Over:
                     h = int(round(value / len(pctl.master_library) * full_rect[2]))
                     block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
 
-
                     ddt.rect_r(block_rect, colour, True)
                     d += h
 
@@ -19115,26 +18950,19 @@ class Over:
                         xx = block_rect[0] + int(block_rect[2] / 2)
                         if xx < x + 30 * gui.scale:
                             xx = x + 30 * gui.scale
-                        if xx > self.box_x + self.w - 30 * gui.scale:
-                            xx = self.box_x + self.w - 30 * gui.scale
-                        ddt.draw_text((xx, self.box_y + self.h - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
+                        if xx > x0 + w0 - 30 * gui.scale:
+                            xx = x0 + w0 - 30 * gui.scale
+                        ddt.draw_text((xx, y0 + h0 - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
 
                         if self.click:
                             gen_codec_pl(key)
             except:
                 print("Error draw ext bar")
 
-    def config_v(self):
+    def config_v(self, x0, y0, w0, h0):
 
-        w = 370 * gui.scale
-        h = 220 * gui.scale
-        x = self.box_x + self.item_x_offset
-        y = self.box_y
-
-        # x += 8
-        y += 25 * gui.scale
-        y2 = y
-        x2 = x
+        x = x0 + self.item_x_offset
+        y = y0 + 25 * gui.scale
 
         for k in config_items:
             if k is None:
@@ -19144,11 +18972,9 @@ class Over:
             self.toggle_square(x, y, k[1], k[0])
             y += 25 * gui.scale
 
+        x = x0 + 300 * gui.scale
+        y = y0 + 25 * gui.scale
 
-        y = self.box_y + 25 * gui.scale
-        x = self.box_x + self.item_x_offset + 270 * gui.scale
-
-        #y += 20
 
         prefs.playlist_font_size = self.slide_control(x, y, "Font Size", "", prefs.playlist_font_size, 12, 17)
         y += 25 * gui.scale
@@ -19295,60 +19121,125 @@ class Over:
 
         tab_width = 115 * gui.scale
 
-        self.box_x = int(window_size[0] / 2) - int(self.w / 2)
-        self.box_y = int(window_size[1] / 2) - int(self.h / 2)
+        side_width = 115 * gui.scale
+        header_width = 0
 
-        ddt.rect_a((self.box_x - 5 * gui.scale, self.box_y - 5 * gui.scale), (self.w + 10 * gui.scale, self.h + 10 * gui.scale), colours.grey(50), True)
-        ddt.rect_a((self.box_x, self.box_y), (self.w, self.h), colours.sys_background, True)
-        ddt.rect_a((self.box_x, self.box_y), (tab_width, self.h), colours.sys_background_2, True)
+        top_mode = False
+        if window_size[0] < 700:
+            top_mode = True
+            side_width = 0 * gui.scale
+            header_width = 60
+
+        content_width = round(545 * gui.scale)
+        content_height = round(275 * gui.scale)
+        full_width = content_width
+        full_height = content_height
+
+        full_width += side_width
+        full_height += header_width
 
 
+        x = int(window_size[0] / 2) - int(full_width / 2)
+        y = int(window_size[1] / 2) - int(full_height / 2)
 
-        # ddt.rect_a((self.box_x - 1, self.box_y - 1), (self.w + 2, self.h + 2), colours.grey(50))
+        self.box_x = x
+        self.box_y = y
+        self.w = full_width
+        self.h = full_height
 
-        # # temp
-        # if len(self.drives) < 1 and system == 'windows':
-        #     raw_drives = win32api.GetLogicalDriveStrings()
-        #     self.drives = raw_drives.split('\000')[:-1]
+        ddt.rect_a((x - 5 * gui.scale, y - 5 * gui.scale), (full_width + 10 * gui.scale, full_height + 10 * gui.scale), colours.grey(50), True)
+        ddt.rect_a((x, y), (full_width, full_height), colours.sys_background, True)
+
 
         current_tab = 0
-        for item in self.tabs:
+        tab_height = 30
 
-            if self.click and gui.message_box:
-                gui.message_box = False
+        if top_mode:
 
-            box = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), tab_width, 30 * gui.scale]
-            box2 = [self.box_x, self.box_y + (current_tab * 30 * gui.scale), tab_width, 29 * gui.scale]
-            fields.add(box2)
-            # ddt.rect_r(box, colours.tab_background, True)
+            xx = x
+            yy = y
+            tab_width = 90 * gui.scale
 
-            if self.click and coll(box2):
-                self.tab_active = current_tab
-                self.lyrics_panel = False
+            ddt.rect_a((x, y), (full_width, header_width), colours.sys_background_2, True)
 
-            if current_tab == self.tab_active:
-                colour = copy.deepcopy(colours.sys_tab_hl)
-                #colour[3] = 190
-                ddt.text_background_colour = colour
-                ddt.rect_r(box, colour, True)
-            else:
-                ddt.text_background_colour = colours.sys_tab_bg
-                ddt.rect_r(box, colours.sys_tab_bg, True)
+            for item in self.tabs:
 
-            if coll(box2):
-                ddt.rect_r(box, [255, 255, 255, 10], True)
+                if self.click and gui.message_box:
+                    gui.message_box = False
 
-            # ddt.draw_text((box[0] + 55, box[1] + 7, 2), item[0], [200, 200, 200, 200], 12)
-            if current_tab == self.tab_active:
-                ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
-            else:
-                ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
+                box = [xx, yy, tab_width, tab_height]
+                box2 = [xx, yy, tab_width, tab_height - 1]
+                fields.add(box2)
 
-            current_tab += 1
+                if self.click and coll(box2):
+                    self.tab_active = current_tab
+                    self.lyrics_panel = False
 
-        # ddt.line(self.box_x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
+                if current_tab == self.tab_active:
+                    colour = copy.deepcopy(colours.sys_tab_hl)
+                    ddt.text_background_colour = colour
+                    ddt.rect_r(box, colour, True)
+                else:
+                    ddt.text_background_colour = colours.sys_tab_bg
+                    ddt.rect_r(box, colours.sys_tab_bg, True)
 
-        self.tabs[self.tab_active][1]()
+                if coll(box2):
+                    ddt.rect_r(box, [255, 255, 255, 10], True)
+
+                alpha = 100
+                if current_tab == self.tab_active:
+                    alpha = 240
+
+                ddt.draw_text((xx + (tab_width // 2), yy + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, alpha], ddt.text_background_colour), 213)
+
+                current_tab += 1
+                xx += tab_width
+                if current_tab == 6:
+                    yy += 30
+                    xx = x
+
+
+
+        else:
+
+            ddt.rect_a((x, y), (tab_width, full_height), colours.sys_background_2, True)
+
+            for item in self.tabs:
+
+                if self.click and gui.message_box:
+                    gui.message_box = False
+
+                box = [x, y + (current_tab * 30 * gui.scale), tab_width, 30 * gui.scale]
+                box2 = [x, y + (current_tab * 30 * gui.scale), tab_width, 29 * gui.scale]
+                fields.add(box2)
+
+                if self.click and coll(box2):
+                    self.tab_active = current_tab
+                    self.lyrics_panel = False
+
+                if current_tab == self.tab_active:
+                    colour = copy.deepcopy(colours.sys_tab_hl)
+                    ddt.text_background_colour = colour
+                    ddt.rect_r(box, colour, True)
+                else:
+                    ddt.text_background_colour = colours.sys_tab_bg
+                    ddt.rect_r(box, colours.sys_tab_bg, True)
+
+                if coll(box2):
+                    ddt.rect_r(box, [255, 255, 255, 10], True)
+
+                if current_tab == self.tab_active:
+                    ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0],
+                                  alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
+                else:
+                    ddt.draw_text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0],
+                                  alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
+
+                current_tab += 1
+
+        #ddt.line(x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
+
+        self.tabs[self.tab_active][1](x + side_width, y + header_width, content_width, content_height)
 
         self.click = False
         self.right_click = False
@@ -19467,27 +19358,36 @@ class TopPanel:
 
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
+            if tr:
+                if pctl.playing_state < 3:
+                    album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
+                if loading_in_progress or\
+                        to_scan or \
+                        cm_clean_db or \
+                        lastfm.scanning_friends or \
+                        pctl.broadcast_active or \
+                        after_scan or \
+                        move_in_progress or \
+                        plex.scanning or \
+                        transcode_list:
 
-            if pctl.playing_state < 3:
-                album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY),)
-            if loading_in_progress or to_scan or cm_clean_db or lastfm.scanning_friends or pctl.broadcast_active:
-                ddt.rect_r((window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2), colours.top_panel_background, True)
+                    ddt.rect_r((window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2), colours.top_panel_background, True)
 
-            maxx = window_size[0] - (gui.panelY + 30 * gui.scale)
-            title_colour = colours.grey(249)
-            if colours.lm:
-                title_colour = colours.grey(30)
-            title = tr.title
-            if not title:
-                title = tr.filename
-            artist = tr.artist
+                maxx = window_size[0] - (gui.panelY + 30 * gui.scale)
+                title_colour = colours.grey(249)
+                if colours.lm:
+                    title_colour = colours.grey(30)
+                title = tr.title
+                if not title:
+                    title = tr.filename
+                artist = tr.artist
 
-            if pctl.playing_state == 3:
-                title = pctl.tag_meta
-                artist = pctl.url.decode()
+                if pctl.playing_state == 3:
+                    title = pctl.tag_meta
+                    artist = pctl.url.decode()
 
-            ddt.draw_text((14, 15), title, title_colour, 215, max_w=maxx)
-            ddt.draw_text((14, 40), artist, colours.grey(120), 315, max_w=maxx)
+                ddt.draw_text((14, 15), title, title_colour, 215, max_w=maxx)
+                ddt.draw_text((14, 40), artist, colours.grey(120), 315, max_w=maxx)
 
         rect = (9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
         fields.add(rect)
