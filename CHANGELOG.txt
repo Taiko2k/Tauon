@@ -8,8 +8,10 @@ v4.7.0
    - Added compact volume control
    - Adjust play button to play/pause
    - Adjust tracklist width to full window
+   - Adjust settings to show tabs on top
    - Fixed showcase/lyrics view
    - Fixed menu positioning with window edge
+ - Tweaked tracklist row height default setting to large preset
  - Fixed last.fm not respecting disable option
  - Fixed right click mode menu triggering show current
 
