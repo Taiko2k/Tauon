@@ -1191,7 +1191,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.add_music_folder_ready = False
 
         self.playlist_current_visible_tracks = 0
-        self.playlist_current_visible_last_id = 0
+        self.playlist_current_visible_tracks_id = 0
 
         self.theme_name = ""
         self.rename_playlist_box = False
@@ -22421,8 +22421,7 @@ class StandardPlaylist:
 
 
         if (right_click and gui.playlist_top + 40 + gui.playlist_row_height * len(list_items) < mouse_position[1] < window_size[
-            1] - 55 and
-                            width + left > mouse_position[0] > gui.playlist_left + 15):
+            1] - 55 and width + left > mouse_position[0] > gui.playlist_left + 15):
             playlist_menu.activate()
 
         SDL_SetRenderTarget(renderer, gui.main_texture)
@@ -28592,7 +28591,7 @@ while pctl.running:
                     and not Menu.active \
                     and (gui.rsp or album_mode)\
                     and not artist_info_scroll.held \
-                    and gui.layer_focus == 0:
+                    and gui.layer_focus == 0 and gui.show_playlist:
 
                 #update_layout = True
 
@@ -28702,6 +28701,8 @@ while pctl.running:
                 if not gui.show_playlist and input.mouse_click:
                     if mouse_position[0] < 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
                         toggle_album_mode()
+                        input.mouse_click = False
+                        mouse_down = False
 
                 rect = [x, gui.panelY, w, h]
                 ddt.rect_r(rect, colours.gallery_background, True)
