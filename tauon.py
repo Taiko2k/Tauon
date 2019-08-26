@@ -19385,6 +19385,8 @@ class TopPanel:
                     title = pctl.tag_meta
                     artist = pctl.url.decode()
 
+                ddt.text_background_colour = colours.top_panel_background
+
                 ddt.draw_text((14, 15), title, title_colour, 215, max_w=maxx)
                 ddt.draw_text((14, 40), artist, colours.grey(120), 315, max_w=maxx)
 
@@ -19481,14 +19483,14 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
+            # Skip if hide flag is set
+            if tab[8] is True:
+                continue
+
             # Truncate early if we run out of room
             # (maybe not the best solution, but im not sure if a scroll bar would be either)
             if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
                 break
-
-            # Skip if hide flag is set
-            if tab[8] is True:
-                continue
 
             # Determine the tab width
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
@@ -19591,14 +19593,11 @@ class TopPanel:
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
                 break
 
-            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
-                break
-
-            # if draw_alt and i != pctl.playlist_active:
-            #     continue
-
             if tab[8] is True:
                 continue
+
+            if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
+                break
 
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
             rect = [x, y, tab_width, self.height]
@@ -25871,6 +25870,12 @@ class ViewBox:
             return album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is False
+
+        elif not (album_mode is False and \
+                   gui.combo_mode is False and \
+                   gui.rsp is False):
+            x_menu.active = False
+
         view_tracks()
 
     def side(self, hit=False):
@@ -25879,13 +25884,22 @@ class ViewBox:
             return album_mode is False and \
                    gui.combo_mode is False and \
                    gui.rsp is True
+        elif not (album_mode is False and \
+                   gui.combo_mode is False and \
+                   gui.rsp is True):
+            x_menu.active = False
+
         view_standard_meta()
 
     def gallery1(self, hit=False):
 
         if hit is False:
             return album_mode is True and gui.show_playlist is True
+
+        x_menu.active = False
+
         force_album_view()
+
 
 
     def lyrics(self, hit=False):
@@ -25902,6 +25916,9 @@ class ViewBox:
             switch_showcase()
             if gui.lyrics_was_album:
                 force_album_view()
+
+
+        x_menu.active = False
 
     # def gallery2(self, hit=False):
     #
@@ -26592,11 +26609,16 @@ def update_layout_do():
         gui.panelY = round(100 * gui.scale)
         gui.playlist_top = gui.panelY + (8 * gui.scale)
         gui.playlist_top_bk = gui.playlist_top
+
     else:
         gui.top_bar_mode2 = False
         gui.panelY = round(30 * gui.scale)
         gui.playlist_top = gui.panelY + (8 * gui.scale)
         gui.playlist_top_bk = gui.playlist_top
+
+    gui.show_playlist = True
+    if w < 750 * gui.scale and album_mode:
+        gui.show_playlist = False
 
 
     # prefs.art_bg_blur = 9
@@ -26640,6 +26662,7 @@ def update_layout_do():
         if gui.vis > 0:
             gui.turbo = True
 
+    # Disable vis when in compact view
     if gui.mode == 3 or gui.top_bar_mode2:
         gui.vis = 0
         gui.turbo = False
@@ -26701,6 +26724,7 @@ def update_layout_do():
 
         #gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
         gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
+
         #gui.spec_x = window_size[0] - gui.offset_extra - 90
 
         gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
@@ -26786,7 +26810,7 @@ def update_layout_do():
                         l = gui.lspw
 
                     gui.rspw = max(window_size[0] - l - 300, 110)
-                    if album_mode:
+                    if album_mode and window_size[0] > 750 * gui.scale:
                         gui.pref_gallery_w = gui.rspw
 
 
@@ -28668,8 +28692,16 @@ while pctl.running:
                 # else:
 
                 w = gui.rspw
+
+                if window_size[0] < 750 * gui.scale:
+                    w = window_size[0] - 20 * gui.scale
+
                 x = window_size[0] - w
                 h = window_size[1] - gui.panelY - gui.panelBY
+
+                if not gui.show_playlist and input.mouse_click:
+                    if mouse_position[0] < 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
+                        toggle_album_mode()
 
                 rect = [x, gui.panelY, w, h]
                 ddt.rect_r(rect, colours.gallery_background, True)
@@ -29381,6 +29413,8 @@ while pctl.running:
                 # END POWER BAR ------------------------
 
 
+
+
             # End of gallery view
             # --------------------------------------------------------------------------
             # Main Playlist:
@@ -29832,7 +29866,7 @@ while pctl.running:
                     not pref_box.enabled and \
                     not extra_tab_menu.active and \
                     not gui.rename_playlist_box \
-                    and gui.layer_focus == 0:
+                    and gui.layer_focus == 0 and gui.show_playlist:
 
                 scroll_opacity = 255
 
