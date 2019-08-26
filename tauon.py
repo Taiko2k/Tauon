@@ -4145,8 +4145,10 @@ def notify_song(notify_of_end=False, delay=0):
             print("Thumbnail error")
 
         bottom_line = (track.artist + " | " + track.album).strip("| ")
-
         top_line = track.title
+
+        if not top_line:
+            top_line = track.filename
 
         gui.notify_main_id = uid_gen()
         id = gui.notify_main_id
@@ -4164,12 +4166,9 @@ def notify_song(notify_of_end=False, delay=0):
         else:
             song_notification.update(bottom_line, "", i_path)
 
-
         shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
         shoot_dl.daemon = True
         shoot_dl.start()
-
-
 
 
 # Last.FM -----------------------------------------------------------------
