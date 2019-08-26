@@ -6,15 +6,18 @@ v4.7.0
  - Added improved compact UI (when window is narrow)
    - Added new header bar style
    - Added compact volume control
+   - Added hide tracklist in gallery
    - Adjust play button to play/pause
    - Adjust tracklist width to full window
    - Adjust settings to show tabs on top
    - Fixed showcase/lyrics view
    - Fixed menu positioning with window edge
  - Tweaked tracklist row height default setting to large preset
+ - Tweaked view layout box to close on click on some buttons
  - Fixed last.fm not respecting disable option
  - Fixed right click mode menu triggering show current
  - Fixed notification text not updating if no track name metadata
+ - Fixed an issue where playlist tabs may not be drawn after wide hidden tabs
 
 v4.6.3
 
