@@ -14,6 +14,7 @@ v4.7.0
  - Tweaked tracklist row height default setting to large preset
  - Fixed last.fm not respecting disable option
  - Fixed right click mode menu triggering show current
+ - Fixed notification text not updating if no track name metadata
 
 v4.6.3
 
