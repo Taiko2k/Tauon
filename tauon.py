@@ -1091,7 +1091,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.gallery_show_text = True
         self.bb_show_art = False
-        # self.show_stars = True
 
         self.spec2_y = int(round(22 * self.scale))
         self.spec2_w = int(round(140 * self.scale))
@@ -1275,6 +1274,7 @@ class StarStore:
         else:
             self.db[key] = [value, ""]
 
+
     # Returns the track play time
     def get(self, index):
 
@@ -1291,7 +1291,6 @@ class StarStore:
     def full_get(self, index):
 
         return self.db.get(self.key(index))
-
 
     def remove(self, index):
 
@@ -2119,7 +2118,7 @@ if db_version > 0:
 
     if db_version <= 1.6:
         print("Updating preferences to 1.7")
-        gui.show_stars = False
+        # gui.show_stars = False
         if install_mode:
                 #shutil.copy(install_directory + "/config.txt", user_directory)
                 print("Rewrote user config file")
@@ -11485,7 +11484,7 @@ def gen_sort_album(index):
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
-#tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 
@@ -14159,6 +14158,7 @@ def heart_menu_colour():
 
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
+star_row_icon = asset_loader('star.png', True)
 
 heart_colours = ColourGenCache(0.7, 0.7)
 
@@ -20217,32 +20217,43 @@ class BottomBarType1:
             min_h = round(4 * gui.scale)
             spacing = round(5 * gui.scale)
 
+            if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
+                if right_click:
+                    if pctl.player_volume > 0:
+                        volume_store = pctl.player_volume
+                        pctl.player_volume = 0
+                    else:
+                        pctl.player_volume = volume_store
+
+                    pctl.set_volume()
+
             for bar in range(8):
 
                 h = min_h + bar * step
                 rect = (x, y - h, 3 * gui.scale, h)
                 h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
-                if coll(h_rect) and mouse_down:
+                if coll(h_rect):
+                    if mouse_down:
 
-                    if bar == 0:
-                        pctl.player_volume = 5
-                    if bar == 1:
-                        pctl.player_volume = 10
-                    if bar == 2:
-                        pctl.player_volume = 20
-                    if bar == 3:
-                        pctl.player_volume = 30
-                    if bar == 4:
-                        pctl.player_volume = 45
-                    if bar == 5:
-                        pctl.player_volume = 55
-                    if bar == 6:
-                        pctl.player_volume = 70
-                    if bar == 7:
-                        pctl.player_volume = 100
+                        if bar == 0:
+                            pctl.player_volume = 5
+                        if bar == 1:
+                            pctl.player_volume = 10
+                        if bar == 2:
+                            pctl.player_volume = 20
+                        if bar == 3:
+                            pctl.player_volume = 30
+                        if bar == 4:
+                            pctl.player_volume = 45
+                        if bar == 5:
+                            pctl.player_volume = 55
+                        if bar == 6:
+                            pctl.player_volume = 70
+                        if bar == 7:
+                            pctl.player_volume = 100
 
-                    pctl.set_volume()
+                        pctl.set_volume()
 
                 colour = colours.mode_button_off
 
@@ -21343,16 +21354,59 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                              star_x + 3 * gui.scale,
                              lh
                              ], alpha_mod(colour, album_fade), True)
-                star_x += 5
+                star_x += 6
 
         if gui.star_mode == 'star' and total > 0 and pctl.master_library[
             index].length != 0:
 
-            stars = star_count(total, pctl.master_library[index].length)
-            starl = "★" * stars
-            star_x = ddt.draw_text((width + start_x - 42 * gui.scale - offset_font_extra,
-                       y + gui.star_text_y_offset, 1), starl,
-                      alpha_mod(indexc, album_fade), gui.row_font_size)
+            sx = width + start_x - 40 * gui.scale - offset_font_extra
+            sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
+            # if gui.scale == 1.25:
+            #     sy += 1
+            playtime_stars = star_count(total, pctl.master_library[index].length) - 1
+
+            sx2 = sx
+            selected_star = -2
+            rated_star = -1
+
+            # if key_ctrl_down:
+            #
+            #     rect = (sx2, sy, 12, 12)
+            #     gui.heart_fields.append(rect)
+            #     if coll(rect):
+            #         selected_star = -1
+            #
+            #
+            #     for count in range(5):
+            #         sx2 -= round(13 * gui.scale)
+            #         rect = (sx2, sy, 12, 12)
+            #         #ddt.rect_r(rect, [0, 0, 255, 50], True)
+            #         gui.heart_fields.append(rect)
+            #         if coll(rect):
+            #             selected_star = count
+            #             gui.pl_update += 1
+
+            colour = (70, 70, 70, 255)
+            if colours.lm:
+                colour = (90, 90, 90, 255)
+            #colour = alpha_mod(indexc, album_fade)
+
+            for count in range(8):
+
+                if selected_star < count and playtime_stars < count and rated_star < count:
+                    break
+
+                sx -= round(13 * gui.scale)
+                star_x += round(13 * gui.scale)
+
+                # if selected_star > -2:
+                #     if selected_star >= count:
+                #         colour = (220, 200, 60, 255)
+                # else:
+                #     if rated_star >= count:
+                #         colour = (220, 200, 60, 255)
+
+                star_row_icon.render(sx, sy, colour)
 
         if gui.show_hearts:
 
@@ -21365,7 +21419,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             if gui.scale == 1.25:
                 yy += 1
             if xxx > 0:
-                xxx += 5 * gui.scale
+                xxx += 3 * gui.scale
 
             if love(False, index):
 
@@ -21528,6 +21582,9 @@ class StandardPlaylist:
 
             inset_left = highlight_left + 18 * gui.scale
             inset_width = highlight_width - 25 * gui.scale
+
+        if window_size[0] < 600 and gui.lsp:
+            inset_width = highlight_width - 18 * gui.scale
 
         w = 0
         gui.row_extra = 0
@@ -22192,31 +22249,24 @@ class StandardPlaylist:
                         if total > 0 and n_track.length != 0 and wid > 0:
                             if gui.star_mode == 'star':
 
-                                # re = 0
-                                # if get_love(n_track):
-                                #     re = ddt.draw_text((run + 6, y + gui.star_text_y_offset),
-                                #           "❤",
-                                #           [220, 90, 90, 255],
-                                #           gui.row_font_size,
-                                #           )
-                                #     re += 4
+                                star = star_count(total, n_track.length) - 1
+                                rr = 0
+                                if star > -1:
+                                    colour = (70, 70, 70, 255)
+                                    if colours.lm:
+                                        colour = (90, 90, 90, 255)
 
-                                text = star_count(total, n_track.length) * "★"
+                                    sx = run + 6 * gui.scale
+                                    sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
+                                    for count in range(8):
+                                        if star < count or rr > wid + round(6 * gui.scale):
+                                            break
+                                        star_row_icon.render(sx, sy, colour)
+                                        sx += round(13) * gui.scale
+                                        rr += round(13) * gui.scale
 
-                                # if get_love(n_track):
-                                #     text = text + " ❤"
-
-                                colour = colours.index_text
-                                if playing:
-                                    colour = colours.index_playing
-                                text = trunc_line(text, gui.row_font_size, wid + 7 * gui.scale, False)
-                                ddt.draw_text((run + 6 * gui.scale, y + gui.star_text_y_offset),
-                                          text,
-                                          colour,
-                                          gui.row_font_size,
-                                          )
                             else:
-                                #total = pctl.star_library[key]
+
                                 ratio = total / n_track.length
                                 if ratio > 0.55:
                                     star_x = int(ratio * (4 * gui.scale))
@@ -22229,8 +22279,6 @@ class StandardPlaylist:
 
                                     sy = (gui.playlist_top + gui.playlist_row_height * number) + int(gui.playlist_row_height / 2)
                                     ddt.rect_r((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
-                                    # ddt.line(run + 4, sy, run + star_x + 4, sy,
-                                    #           colours.star_line)
 
                     else:
                         text = ""
@@ -25885,6 +25933,7 @@ class ViewBox:
                    gui.combo_mode is False and \
                    gui.rsp is False):
             x_menu.active = False
+            Menu.active = False
 
         view_tracks()
 
@@ -25898,6 +25947,7 @@ class ViewBox:
                    gui.combo_mode is False and \
                    gui.rsp is True):
             x_menu.active = False
+            Menu.active = False
 
         view_standard_meta()
 
@@ -25907,6 +25957,7 @@ class ViewBox:
             return album_mode is True and gui.show_playlist is True
 
         x_menu.active = False
+        Menu.active = False
 
         force_album_view()
 
@@ -25929,6 +25980,7 @@ class ViewBox:
 
 
         x_menu.active = False
+        Menu.active = False
 
     # def gallery2(self, hit=False):
     #
@@ -27774,6 +27826,9 @@ while pctl.running:
 
     if k_input:
 
+        if key_ctrl_down:
+            gui.pl_update += 1
+
         if mouse_enter_window:
             input.key_return_press = False
 
@@ -28603,8 +28658,6 @@ while pctl.running:
                     and (gui.rsp or album_mode)\
                     and not artist_info_scroll.held \
                     and gui.layer_focus == 0 and gui.show_playlist:
-
-                #update_layout = True
 
                 if side_drag != True:
                     draw_sep_hl = True
@@ -30072,10 +30125,12 @@ while pctl.running:
 
                 if len(tc.comment) > 0:
                     h += 22 * gui.scale
-                    w += 25 * gui.scale
+                    if window_size[0] > 599:
+                        w += 25 * gui.scale
                     if ddt.get_text_w(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
                         h += 80 * gui.scale
-                        w += 30 * gui.scale
+                        if window_size[0] > 599:
+                            w += 30 * gui.scale
                         comment_mode = 1
 
                 x = round((window_size[0] / 2) - (w / 2))

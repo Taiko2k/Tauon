@@ -12,6 +12,7 @@ v4.7.0
    - Adjust settings to show tabs on top
    - Fixed showcase/lyrics view
    - Fixed menu positioning with window edge
+ - Improved appearance of playtime stars
  - Tweaked tracklist row height default setting to large preset
  - Tweaked view layout box to close on click on some buttons
  - Fixed last.fm not respecting disable option

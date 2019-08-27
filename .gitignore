@@ -1,6 +1,6 @@
 star.p
 state.p
-star.p*
+star.p.backup*
 __pycache__/
 hsaudiotag/
 stagger/
