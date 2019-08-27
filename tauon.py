@@ -916,6 +916,9 @@ class Prefs:    # Used to hold any kind of settings
         self.chart_d2 = 2
         self.chart_d3 = 2
 
+        self.art_in_top_panel = True
+        self.always_art_header = False
+
 
 prefs = Prefs()
 
@@ -2297,6 +2300,8 @@ def save_prefs():
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
+    cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
+    cf.update_value("always-art-header-bar", prefs.always_art_header)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2389,6 +2394,8 @@ def load_prefs():
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
     prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition")
+    prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
+    prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -11534,6 +11541,7 @@ def reload_config_file():
     ddt.clear_text_cache()
 
     show_message(_("Configuration reloaded"), 'done')
+    gui.update_layout()
 
 def open_config_file():
     save_prefs()
@@ -25442,11 +25450,14 @@ class Showcase:
         hide_art = False
         if window_size[0] < 900:
             hide_art = True
-        if hide_art:
-            box = 45 * gui.scale
+
 
         x = int(window_size[0] * 0.15)
         y = int((window_size[1] / 2) - (box / 2)) - 10 * gui.scale
+
+
+        if hide_art:
+            box = 45 * gui.scale
 
         bbg = colours.grey(30)
         bfg = colours.grey(40)
@@ -26603,7 +26614,7 @@ def update_layout_do():
     if prefs.bg_showcase_only:
         prefs.art_bg_opacity += 8
 
-    if w < 600 * gui.scale and not gui.rsp and not album_mode:
+    if (prefs.always_art_header or w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel) and not album_mode:
         gui.top_bar_mode2 = True
         gui.panelY = round(100 * gui.scale)
         gui.playlist_top = gui.panelY + (8 * gui.scale)
@@ -28694,6 +28705,8 @@ while pctl.running:
 
                 if window_size[0] < 750 * gui.scale:
                     w = window_size[0] - 20 * gui.scale
+                    if gui.lsp:
+                        w -= gui.lspw
 
                 x = window_size[0] - w
                 h = window_size[1] - gui.panelY - gui.panelBY
