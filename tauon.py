@@ -1064,7 +1064,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.set_old = 0
         self.pl_st = [['Artist', 156, False], ['Title', 188, False], ['T', 40, True], ['Album', 153, False], ['P', 28, True], ['Starline', 86, True], ['Date', 48, True], ['Codec', 55, True], ['Time', 53, True]]
 
-        self.panelBY = 51 * self.scale
+        self.panelBY = round(51 * self.scale)
         self.panelY = round(30 * self.scale)
         self.panelY2 = round(30 * self.scale)
 
@@ -9302,11 +9302,14 @@ artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test
 
 def show_in_playlist():
 
+    if album_mode and window_size[0] < 600 * gui.scale:
+        toggle_album_mode()
 
     pctl.playlist_view_position = playlist_selected
     shift_selection.clear()
     shift_selection.append(playlist_selected)
     pctl.render_playlist()
+
 
 
 folder_icon = MenuIcon(asset_loader('folder.png', True))
@@ -19758,12 +19761,13 @@ class TopPanel:
             if x_menu.active:
                 x_menu.active = False
             else:
-
-                x_menu.activate(position=(x + 12, gui.panelY))
-                view_box.activate(x)
+                xx = x
+                if x > window_size[0] - (210 * gui.scale):
+                    xx = window_size[0] - round(210 * gui.scale)
+                x_menu.activate(position=(xx + 12, gui.panelY))
+                view_box.activate(xx)
 
         view_box.render()
-
 
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
@@ -21386,18 +21390,36 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             #             selected_star = count
             #             gui.pl_update += 1
 
-            colour = (70, 70, 70, 255)
+            c = 60
+            d = 6
+
+            colour = [70, 70, 70, 255]
             if colours.lm:
-                colour = (90, 90, 90, 255)
+                colour = [90, 90, 90, 255]
             #colour = alpha_mod(indexc, album_fade)
+
 
             for count in range(8):
 
                 if selected_star < count and playtime_stars < count and rated_star < count:
                     break
 
-                sx -= round(13 * gui.scale)
-                star_x += round(13 * gui.scale)
+                if count == 0:
+                    sx -= round(13 * gui.scale)
+                    star_x += round(13 * gui.scale)
+                else:
+                    if playtime_stars > 3:
+                        dd = round((13 - (playtime_stars - 3) * gui.scale))
+                        sx -= dd
+                        star_x += dd
+                    else:
+                        sx -= round(13 * gui.scale)
+                        star_x += round(13 * gui.scale)
+
+                if playtime_stars > 4:
+                    colour = [c + d * count, c + d * count, c + d * count, 255]
+                if playtime_stars > 6: # and count < 1:
+                    colour = [230, 220, 60, 255]
 
                 # if selected_star > -2:
                 #     if selected_star >= count:
@@ -25544,7 +25566,6 @@ class Showcase:
             y = int(window_size[1] / 2) - 60 - gui.scale
             ddt.draw_text((x, y, 2), pctl.tag_meta, colours.side_bar_line1, 216, w)
 
-
         else:
 
             if len(pctl.track_queue) < 1:
@@ -25554,7 +25575,7 @@ class Showcase:
             #     pass
 
             if gui.force_showcase_index >= 0:
-                if draw.button("Show playing", 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+                if draw.button("Playing", 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
                     gui.force_showcase_index = -1
 
 
@@ -25583,8 +25604,7 @@ class Showcase:
                     if track != None:
                         showcase_menu.activate(track)
 
-
-            gcx = x + box + int(window_size[0] * 0.15) + 20 * gui.scale
+            gcx = x + box + int(window_size[0] * 0.15) + 10 * gui.scale
             gcx -= 100 * gui.scale
 
             timed_ready = False
@@ -25659,7 +25679,7 @@ class Showcase:
                         gui.draw_vis4_top = True
 
             else:
-                x += box + int(window_size[0] * 0.15) + 20 * gui.scale
+                x += box + int(window_size[0] * 0.15) + 10 * gui.scale
                 x -= 100 * gui.scale
                 w = window_size[0] - x - 30 * gui.scale
 
@@ -30048,6 +30068,7 @@ while pctl.running:
             # C-TBR
 
             if gui.mode == 1:
+
                 top_panel.render()
 
             # RENDER EXTRA FRAME DOUBLE
@@ -30069,6 +30090,7 @@ while pctl.running:
             # C-BB
 
             ddt.text_background_colour = colours.bottom_panel_colour
+
             bottom_bar1.render()
 
             if prefs.art_bg:
