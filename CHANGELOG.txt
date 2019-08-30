@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.7.1
+
+ - Added support for multiple artist comments in Vorbis tags
+
 v4.7.0
 
  - Added improved compact UI (when window is narrow)

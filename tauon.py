@@ -15159,7 +15159,11 @@ class SearchOverlay:
         playlist = []
         for pl in pctl.multi_playlist:
             for item in pl[2]:
-                if pctl.master_library[item].artist.lower() == name.lower() or pctl.master_library[item].album_artist.lower() == name.lower():
+                tr = pctl.master_library[item]
+                n = name.lower()
+                if tr.artist.lower() == n \
+                        or tr.album_artist.lower() == n \
+                        or ('artists' in tr.misc and name in tr.misc['artists']):
                     if item not in playlist:
                         playlist.append(item)
 
@@ -15903,7 +15907,28 @@ def worker2():
 
                             if search_magic(s_text, title + artist + filename + album + album_artist):
 
-                                if search_magic(s_text, artist):
+                                if 'artists' in t.misc and t.misc['artists']:
+                                    for a in t.misc['artists']:
+                                        if search_magic(s_text, a.lower()):
+
+                                            value = 1
+                                            if a.lower().startswith(s_text):
+                                                value = 5
+
+                                            # Add artist
+                                            if a in artists:
+                                                artists[a] += value
+                                            else:
+                                                temp_results.append([0, a, track, playlist[6], 0])
+                                                artists[a] = value
+
+                                            if t.album in albums:
+                                                albums[t.album] += 1
+                                            else:
+                                                temp_results.append([1, t.album, track, playlist[6], 0])
+                                                albums[t.album] = 1
+
+                                elif search_magic(s_text, artist):
 
                                     value = 1
                                     if artist.startswith(s_text):
@@ -23627,7 +23652,6 @@ class ArtistList:
             #
             # self.to_fetch = ""
 
-
     def prep(self):
 
         #self.current_artists.clear()
@@ -23652,25 +23676,31 @@ class ArtistList:
                     time.sleep(0.001)
 
                 track = pctl.g(item)
-                artist = get_artist_strip_feat(track)
-                if prefs.artist_list_prefer_album_artist and track.album_artist:
-                    artist = track.album_artist
 
-                if artist:
-                    # Confirm to final list if appeared at least 5 times
-                    if artist not in all:
-                        if artist not in counts:
-                            counts[artist] = 0
-                        counts[artist] += 1
-                        if counts[artist] > 4:
-                            all.append(artist)
-                        elif len(current_pl[2]) < 1000:
-                            all.append(artist)
+                if 'artists' in track.misc:
+                    artists = track.misc['artists']
+                elif prefs.artist_list_prefer_album_artist and track.album_artist:
+                    artists = [track.album_artist]
+                else:
+                    artists = [get_artist_strip_feat(track)]
 
-                    if artist not in artist_parents:
-                        artist_parents[artist] = []
-                    if track.parent_folder_path not in artist_parents[artist]:
-                        artist_parents[artist].append(track.parent_folder_path)
+                for artist in artists:
+
+                    if artist:
+                        # Confirm to final list if appeared at least 5 timesv
+                        if artist not in all:
+                            if artist not in counts:
+                                counts[artist] = 0
+                            counts[artist] += 1
+                            if counts[artist] > 4:
+                                all.append(artist)
+                            elif len(current_pl[2]) < 1000:
+                                all.append(artist)
+
+                        if artist not in artist_parents:
+                            artist_parents[artist] = []
+                        if track.parent_folder_path not in artist_parents[artist]:
+                            artist_parents[artist].append(track.parent_folder_path)
 
             current_album_counts = artist_parents
 
@@ -23678,6 +23708,7 @@ class ArtistList:
 
         except:
             print("Album scan failure")
+            raise
             time.sleep(4)
             return
 
@@ -23723,7 +23754,7 @@ class ArtistList:
     def locate_artist(self, track):
 
         for i, item in enumerate(self.current_artists):
-            if item == track.artist or item == track.album_artist:
+            if item == track.artist or item == track.album_artist or ('artists' in track.misc and item in track.misc['artists']):
                 self.scroll_position = i
                 break
 
@@ -23749,8 +23780,6 @@ class ArtistList:
             fade_max = 20
             line1_colour = [35, 35, 35, 255]
             line2_colour = [100, 100, 100, 255]
-
-
 
         fade = 0
         t = self.click_highlight_timer.get()
@@ -23823,11 +23852,11 @@ class ArtistList:
                 for i in range(len(default_playlist)):
                     track = pctl.g(default_playlist[i])
                     if current is False:
-                        if track.artist == artist or track.album_artist == artist:
+                        if track.artist == artist or track.album_artist == artist or ('artists' in track.misc and artist in track.misc['artists']):
                             block_starts.append(i)
                             current = True
                     else:
-                        if track.artist != artist and track.album_artist != artist:
+                        if track.artist != artist and track.album_artist != artist or ('artists' in track.misc and artist in track.misc['artists']):
                             current = False
 
                 if not block_starts:
