@@ -143,6 +143,9 @@ class Flac:
         block_position += 4
         fields = int.from_bytes(buffer, byteorder='little')
         # print(fields)
+        artists = []
+        genres = []
+
         for i in range(fields):
             buffer = f.read(4)
             block_position += 4
@@ -154,9 +157,11 @@ class Flac:
             # print(buffer.decode('utf-8'))
 
             position = 0
+
             while position < 40:
                 # print(sss[position:position+1])
                 position += 1
+
 
                 if buffer[position:position + 1] == b'=':
 
@@ -169,7 +174,8 @@ class Flac:
                         # print(a)
                         # print(b)
                     elif a == "genre":
-                        self.genre = b.decode("utf-8")
+                        #self.genre = b.decode("utf-8")
+                        genres.append(b.decode())
                     elif a == 'cuesheet':
                         self.cue_sheet = b.decode()
                     elif a == "date":
@@ -189,7 +195,8 @@ class Flac:
                     elif a == "albumartist" or a == "album artist":
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
-                        self.artist = b.decode("utf-8")
+                        #self.artist = b.decode("utf-8")
+                        artists.append(b.decode())
                     elif a == 'disctotal' or a == 'totaldiscs':
                         self.disc_total = b.decode("utf-8")
                     elif a == "discnumber":
@@ -211,6 +218,16 @@ class Flac:
                     #     print("\n-------------------------------------------\n")
 
         f.seek(block_position * -1, 1)
+
+        if artists:
+            self.artist = "; ".join(artists)
+            if len(artists) > 1:
+                self.misc['artists'] = artists
+        if genres:
+            self.genre = "; ".join(genres)
+            if len(genres) > 1:
+                self.misc['genres'] = genres
+
 
     def read_seek_table(self, f):
 
@@ -403,6 +420,9 @@ class Opus:
 
         number = int.from_bytes(s, byteorder='little')
 
+        artists = []
+        genres = []
+
         for i in range(number):
             s = v.read(4)
             l -= 4
@@ -435,7 +455,8 @@ class Opus:
                         # print(b)
 
                     elif a == "genre":
-                        self.genre = b.decode("utf-8")
+                        #self.genre = b.decode("utf-8")
+                        genres.append(b.decode())
                     elif a == "date":
                         self.date = b.decode("utf-8")
                     elif a == "comment":
@@ -453,7 +474,8 @@ class Opus:
                     elif a == "albumartist" or a == "album artist":
                         self.album_artist = b.decode("utf-8")
                     elif a == "artist":
-                        self.artist = b.decode("utf-8")
+                        #self.artist = b.decode("utf-8")
+                        artists.append(b.decode())
                     elif a == "metadata_block_picture":
 
                         print("Tag Scanner: Found picture in OGG/OPUS file.")
@@ -484,6 +506,15 @@ class Opus:
                     break
 
         v.close()
+
+        if artists:
+            self.artist = "; ".join(artists)
+            if len(artists) > 1:
+                self.misc['artists'] = artists
+        if genres:
+            self.genre = "; ".join(genres)
+            if len(genres) > 1:
+                self.misc['genres'] = genres
 
         # Find the last Ogg page from end of file to get track length
         f.seek(-1, 2)
