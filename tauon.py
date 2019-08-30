@@ -9302,7 +9302,7 @@ artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test
 
 def show_in_playlist():
 
-    if album_mode and window_size[0] < 600 * gui.scale:
+    if album_mode and window_size[0] < 750 * gui.scale:
         toggle_album_mode()
 
     pctl.playlist_view_position = playlist_selected
@@ -12217,7 +12217,6 @@ def heart_xmenu_colour():
         if colours.lm:
             return [255, 200, 200, 255]
         return None
-
 
 
 heartx_icon.colour = [55, 55, 55, 255]
@@ -30076,9 +30075,10 @@ while pctl.running:
                 if gui.lsp and not gui.combo_mode:
                     ddt.rect_r((0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200), True)
                     ddt.rect_r((0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245), True)
-                if gui.rsp:
-                    ddt.rect_r((window_size[0] - gui.rspw - 3 * gui.scale, gui.panelY, 6 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200), True)
-                    ddt.rect_r((window_size[0] - gui.rspw - 2 * gui.scale, gui.panelY - 1, 4 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245), True)
+                if gui.rsp and gui.show_playlist:
+                    w = window_size[0] - gui.rspw
+                    ddt.rect_r((w - round(3 * gui.scale), gui.panelY, 6 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200), True)
+                    ddt.rect_r((w - round(2 * gui.scale), gui.panelY - 1, 4 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245), True)
                 if gui.queue_frame_draw is not None:
                     if gui.lsp:
                         ddt.rect_r((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200), True)
