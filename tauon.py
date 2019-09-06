@@ -37,7 +37,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.7.0"
+n_version = "4.7.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -400,6 +400,8 @@ from t_modules.t_extra import *
 
 if system == 'linux':
     from t_modules import t_topchart
+
+from t_modules import t_autodownload
 
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
@@ -1237,6 +1239,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.mode_toast_text = ""
 
 
+
 gui = GuiVar()
 
 
@@ -1761,6 +1764,7 @@ class LoadClass:    # Object for import track jobs (passed to worker thread)
         self.replace_stem = False
         self.notify = False
         self.play = False
+        self.force_scan = False
 
 
 url_saves = []
@@ -2806,6 +2810,7 @@ class PlayerCtl:
         self.total_playtime = 0
         self.master_library = master_library
         #self.star_library = star_library
+        self.LoadClass = LoadClass
 
         self.shuffle_pools = {}
 
@@ -4934,8 +4939,12 @@ class Tauon:
         self.prefs = prefs
         self.cache_directory = cache_directory
         self.user_directory = user_directory
-
+        self.music_directory = music_directory
         self.worker_save_state = False
+        self.launch_prefix = launch_prefix
+        self.whicher = whicher
+        self.load_orders = load_orders
+        self.switch_playlist = None
 
 tauon = Tauon()
 
@@ -10938,10 +10947,16 @@ extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 #tab_menu.add(_("SORT"), open_filter_box, pass_ref=True)
 
-tab_menu.add_sub(_("Sorted…"), 133)
+tab_menu.add_sub(_("Generate…"), 133)
+tab_menu.add_sub(_("Sort…"), 133)
 extra_tab_menu.add_sub(_("From Current…"), 133)
-tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
-tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
+# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+# tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
+# tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
+
+tab_menu.add_to_sub(_("Sort by Filepath"), 1, standard_sort, pass_ref=True)
+tab_menu.add_to_sub(_('Sort Track Numbers'), 1, sort_track_2, pass_ref=True)
+tab_menu.add_to_sub(_('Sort Year per Artist'), 1, year_sort, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 # tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
@@ -10955,7 +10970,7 @@ tab_menu.add(_('Rescan Folder'), re_import2, rescan_deco, pass_ref=True, pass_re
 tab_menu.add(_('Paste'), s_append, paste_deco, pass_ref=True)
 tab_menu.add(_("Append Playing"), append_current_playing, append_deco, pass_ref=True)
 tab_menu.br()
-# tab_menu.add("Sort Track Numbers", sort_track_2, pass_ref=True)
+
 # tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
 
 tab_menu.add_sub(_("Misc…"), 145)
@@ -10968,13 +10983,13 @@ def forget_pl_import_folder(pl):
 
 
 
-tab_menu.add_to_sub(_("Export Playlist Stats"), 1, export_stats, pass_ref=True)
-tab_menu.add_to_sub(_('Transcode All'), 1, convert_playlist, pass_ref=True)
-tab_menu.add_to_sub(_('Rescan Tags'), 1, rescan_tags, pass_ref=True)
-tab_menu.add_to_sub(_('Forget Import Folder'), 1, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
+tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
+tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
+tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
+tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
-tab_menu.add_to_sub(_('Export XSPF'), 1, export_xspf, pass_ref=True)
-tab_menu.add_to_sub(_("Toggle Breaks"), 1, pl_toggle_playlist_break, pass_ref=True)
+tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
+tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
 
 
 
@@ -13871,6 +13886,72 @@ def toggle_album_mode(force_on=False):
         goto_album(pctl.playlist_playing_position)
 
 
+def switch_playlist(number, cycle=False):
+    global default_playlist
+
+    global playlist_selected
+    global search_index
+    global shift_selection
+    global album_pos_px
+
+    # Close any active menus
+    # for instance in Menu.instances:
+    #     instance.active = False
+    close_all_menus()
+
+    gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+    gui.pl_update = 1
+    search_index = 0
+    gui.search_error = False
+    if quick_search_mode:
+        gui.force_search = True
+
+    # if pl_follow:
+    #     pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
+
+    if gui.showcase_mode and gui.combo_mode:
+        view_standard()
+
+    pctl.multi_playlist[pctl.active_playlist_viewing][2] = default_playlist
+    pctl.multi_playlist[pctl.active_playlist_viewing][3] = pctl.playlist_view_position
+    pctl.multi_playlist[pctl.active_playlist_viewing][5] = playlist_selected
+
+    if gall_pl_switch_timer.get() > 240:
+        gui.gallery_positions.clear()
+    gall_pl_switch_timer.set()
+
+
+    gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
+
+
+    if cycle:
+        pctl.active_playlist_viewing += number
+    else:
+        pctl.active_playlist_viewing = number
+
+    while pctl.active_playlist_viewing > len(pctl.multi_playlist) - 1:
+        pctl.active_playlist_viewing -= len(pctl.multi_playlist)
+    while pctl.active_playlist_viewing < 0:
+        pctl.active_playlist_viewing += len(pctl.multi_playlist)
+
+    default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
+    playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
+
+    shift_selection = [playlist_selected]
+
+    if album_mode:
+        reload_albums(True)
+
+        id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if id in gui.gallery_positions:
+            album_pos_px = gui.gallery_positions[id]
+        else:
+            goto_album(pctl.playlist_view_position)
+
+
+
 def activate_info_box():
     fader.rise()
     pref_box.enabled = True
@@ -13891,6 +13972,29 @@ def bass_test(_):
     return prefs.backend == 1
 
 x_menu.add(_("Open Stream…"), activate_radio_box, show_test=bass_test)
+
+tauon.switch_playlist = switch_playlist
+auto_dl = t_autodownload.AutoDownload(tauon)
+downloaders = auto_dl.get_downloaders_list()
+
+def auto_download():
+    text = copy_from_clipboard()
+    if not text:
+        gui.show_message("No link in clipboard")
+        return
+    elif auto_dl.downloading:
+        gui.show_message("The downloader is already running")
+    else:
+        shoot_dl = threading.Thread(target=auto_dl.run, args=([text]))
+        shoot_dl.daemon = True
+        shoot_dl.start()
+
+def adl_test(_):
+    if downloaders:
+        return True
+    return False
+
+x_menu.add(_("Download URL"), auto_download, show_test=adl_test)
 
 
 def show_import_music(_):
@@ -14615,71 +14719,6 @@ def exit_func():
 
 
 x_menu.add(_("Exit"), exit_func, hint="Alt+F4")
-
-
-def switch_playlist(number, cycle=False):
-    global default_playlist
-
-    global playlist_selected
-    global search_index
-    global shift_selection
-    global album_pos_px
-
-    # Close any active menus
-    # for instance in Menu.instances:
-    #     instance.active = False
-    close_all_menus()
-
-    gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
-
-    gui.pl_update = 1
-    search_index = 0
-    gui.search_error = False
-    if quick_search_mode:
-        gui.force_search = True
-
-    # if pl_follow:
-    #     pctl.multi_playlist[pctl.playlist_active][1] = copy.deepcopy(pctl.playlist_playing)
-
-    if gui.showcase_mode and gui.combo_mode:
-        view_standard()
-
-    pctl.multi_playlist[pctl.active_playlist_viewing][2] = default_playlist
-    pctl.multi_playlist[pctl.active_playlist_viewing][3] = pctl.playlist_view_position
-    pctl.multi_playlist[pctl.active_playlist_viewing][5] = playlist_selected
-
-    if gall_pl_switch_timer.get() > 240:
-        gui.gallery_positions.clear()
-    gall_pl_switch_timer.set()
-
-
-    gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
-
-
-    if cycle:
-        pctl.active_playlist_viewing += number
-    else:
-        pctl.active_playlist_viewing = number
-
-    while pctl.active_playlist_viewing > len(pctl.multi_playlist) - 1:
-        pctl.active_playlist_viewing -= len(pctl.multi_playlist)
-    while pctl.active_playlist_viewing < 0:
-        pctl.active_playlist_viewing += len(pctl.multi_playlist)
-
-    default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
-    pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
-    playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
-
-    shift_selection = [playlist_selected]
-
-    if album_mode:
-        reload_albums(True)
-
-        id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
-        if id in gui.gallery_positions:
-            album_pos_px = gui.gallery_positions[id]
-        else:
-            goto_album(pctl.playlist_view_position)
 
 
 def view_tracks():
@@ -16325,7 +16364,7 @@ def worker1():
             print("Error in processing CUE file")
             # raise
 
-    def add_file(path):
+    def add_file(path, force_scan=False):
         # bm.get("add file start")
         global master_count
         global DA_Formats
@@ -16488,7 +16527,7 @@ def worker1():
             pctl.master_library[master_count] = nt
             added.append(master_count)
 
-            if prefs.auto_sort:
+            if prefs.auto_sort or force_scan:
                 tag_scan(nt)
             else:
                 after_scan.append(nt)
@@ -16513,7 +16552,7 @@ def worker1():
             gui.update = 3
 
 
-    def gets(direc):
+    def gets(direc, force_scan=False):
 
         global DA_Formats
         global master_count
@@ -16541,7 +16580,7 @@ def worker1():
                     if len(items_in_dir[q]) > 2 and items_in_dir[q][0:2] == "._":
                         continue
 
-                    add_file(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
+                    add_file(os.path.join(direc, items_in_dir[q]).replace('\\', '/'), force_scan)
 
                 elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", 'cue'}:
                     add_from_cue(os.path.join(direc, items_in_dir[q]).replace('\\', '/'))
@@ -16822,7 +16861,10 @@ def worker1():
                         to_got = 0
                         loaded_pathes_cache = cache_paths()
                         #pre_get(order.target)
-                        gets(order.target)
+                        if order.force_scan:
+                            gets(order.target, force_scan=True)
+                        else:
+                            gets(order.target)
                     elif loaderCommand == LC_File:
                         loaded_pathes_cache = cache_paths()
                         add_file(order.target)
@@ -19796,7 +19838,22 @@ class TopPanel:
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
 
-        if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
+        if auto_dl.downloading:
+            gui.frame_callback_list.append(TestTimer(0.2))
+            x += 52 * gui.scale
+            rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
+            colour = [60, 60, 60, 255]
+            if colours.lm:
+                colour = [180, 180, 180, 255]
+            self.dl_button.render(x, y + 1 * gui.scale, colour)
+            if coll(rect) and input.mouse_click:
+                input.mouse_click = False
+                show_message("Downloader is running...", 'info', "You may need to restart app if download stalls")
+            if os.path.isdir(auto_dl.dl_dir):
+                count = sum([len(files) for r, d, files in os.walk(auto_dl.dl_dir)])
+                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(count), [230, 100, 50, 255], 209)
+
+        elif (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52 * gui.scale
             rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
             fields.add(rect)
@@ -20101,7 +20158,7 @@ class BottomBarType1:
             right_offset -= 90 * gui.scale
         # Scrobble marker
 
-        if prefs.scrobble_mark and ((lastfm.hold is False and prefs.auto_lfm) or lb.enable) and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
+        if prefs.scrobble_mark and (prefs.auto_lfm or lb.enable) and not lastfm.hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
             if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
                 l_target = 240
             else:
@@ -25606,7 +25663,6 @@ class Showcase:
                 if draw.button("Playing", 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
                     gui.force_showcase_index = -1
 
-
             if gui.force_showcase_index >= 0:
                 index = gui.force_showcase_index
                 track = pctl.master_library[index]
@@ -25615,7 +25671,18 @@ class Showcase:
                 track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
 
             if not hide_art:
+
+                # Draw frame around art box
+                # drop_shadow.render(x + 5 * gui.scale, y + 5 * gui.scale, box + 10 * gui.scale, box + 10 * gui.scale)
+                ddt.rect_r((x - round(2*gui.scale), y - round(2*gui.scale), box + round(4*gui.scale), box + round(4*gui.scale)), [60, 60, 60, 135], True)
+                ddt.rect_r((x, y, box, box), colours.playlist_panel_background, True)
+                rect = SDL_Rect(round(x), round(y), round(box), round(box))
+                style_overlay.hole_punches.append(rect)
+
+                # Draw album art in box
                 album_art_gen.display(track, (x, y), (box, box))
+
+                # Click art to cycle
                 if coll((x, y, box, box)) and input.mouse_click is True:
                     album_art_gen.cycle_offset(track)
 
@@ -26190,7 +26257,6 @@ class DLMon:
         self.ready = set()
         self.done = set()
 
-
     def scan(self):
 
         if len(self.watching) == 0:
@@ -26307,7 +26373,7 @@ class DLMon:
             gui.update += 1
 
 dl_mon = DLMon()
-
+tauon.dl_mon = dl_mon
 
 def dismiss_dl():
 
@@ -28964,6 +29030,10 @@ while pctl.running:
 
                     goto_album(pctl.playlist_playing_position)
 
+                extend = 0
+                if card_mode:  # gui.gallery_show_text:
+                    extend = 40 * gui.scale
+
                 # Process inputs first
                 if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
                     while render_pos < album_pos_px + window_size[1]:
@@ -28989,12 +29059,8 @@ while pctl.running:
                                 if album_dex[album_on] > len(default_playlist):
                                     break
 
-                                extend = 0
-                                if card_mode: #gui.gallery_show_text:
-                                    extend = 40 * gui.scale
-
-                                rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                                m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                                # if m_in:
+                                #     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
 
                                 if not side_drag:
 
@@ -29188,6 +29254,10 @@ while pctl.running:
                             info = get_album_info(album_dex[album_on])
                             #info = (0, 0, 0)
 
+                            rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                            fields.add(rect)
+                            m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
                             if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
                                 gui.first_in_grid = album_dex[album_on]
 
@@ -29208,7 +29278,6 @@ while pctl.running:
                             if a == row_len - 1:
 
                                 gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
-
 
                             if info[0] == 1 and pctl.playing_state != 0:
                                 ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
@@ -29238,6 +29307,7 @@ while pctl.running:
                                     #            colours.gallery_background, True)
 
                             # Draw selection
+
                             if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
 
                                 c = colours.gallery_highlight
@@ -29295,7 +29365,11 @@ while pctl.running:
                             # Draw album art
                             drawn_art = gall_ren.render(track, (x, y))
 
-
+                            # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                            # m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                            #
+                            # if m_in:
+                            #     ddt.rect_r(rect, [255, 255, 255, 10], True)
 
                             if drawn_art is False and gui.gallery_show_text is False:
 
@@ -30843,7 +30917,7 @@ while pctl.running:
                                 gui.scale, y + 38 * gui.scale, 40 * gui.scale, 22 * gui.scale)))):
                     if 'youtube.' in radio_field.text or 'youtu.be' in radio_field.text:
                         radiobox = False
-                        show_message("Sorry, youtube links are not supported.")
+                        show_message("Use the Download URL function for Youtube links.")
                     elif "http://" in radio_field.text or "https://" in radio_field.text \
                             or "ftp://" in radio_field.text:
                         print("Start radio")

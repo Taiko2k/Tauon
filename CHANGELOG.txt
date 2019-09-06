@@ -3,7 +3,11 @@ Changelog-------------------------------------
 
 v4.7.1
 
+ - Added URL download function
  - Added support for multiple artist comments in Vorbis tags
+ - Added frame to album art in showcase/lyrics view
+ - Moved sort functions to submenu
+ - Fixed bug with scrobble marker not hiding while listenbrainz enabled
 
 v4.7.0
 
