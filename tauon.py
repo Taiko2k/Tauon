@@ -29059,10 +29059,14 @@ while pctl.running:
                                 if album_dex[album_on] > len(default_playlist):
                                     break
 
+                                rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                                # fields.add(rect)
+                                m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
                                 # if m_in:
                                 #     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
 
-                                if not side_drag:
+                                if not side_drag and is_level_zero():
 
                                     if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
                                         info = get_album_info(album_dex[album_on])
@@ -29254,9 +29258,9 @@ while pctl.running:
                             info = get_album_info(album_dex[album_on])
                             #info = (0, 0, 0)
 
-                            rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                            fields.add(rect)
-                            m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                            # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                            # fields.add(rect)
+                            # m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
 
                             if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
                                 gui.first_in_grid = album_dex[album_on]
