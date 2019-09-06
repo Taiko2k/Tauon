@@ -29369,11 +29369,12 @@ while pctl.running:
                             # Draw album art
                             drawn_art = gall_ren.render(track, (x, y))
 
-                            # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                            # m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-                            #
-                            # if m_in:
-                            #     ddt.rect_r(rect, [255, 255, 255, 10], True)
+                            rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                            m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                            fields.add(rect)
+
+                            if m_in:
+                                ddt.rect_r(rect, [255, 255, 255, 10], True)
 
                             if drawn_art is False and gui.gallery_show_text is False:
 
