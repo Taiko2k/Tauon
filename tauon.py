@@ -5282,7 +5282,7 @@ class Gnome:
                         if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
                             track = pctl.playing_object()
                             self.playing_index = track.index
-                            id = f"/org/mpris/MediaPlayer2/TrackList/{track.index}-{pctl.playlist_playing_position}"
+                            id = f"/com/tauon/{track.index}/{pctl.playlist_playing_position}"
 
                             d = {
                                 'mpris:trackid': id,
@@ -5291,10 +5291,10 @@ class Gnome:
                                 'xesam:albumArtist': dbus.Array([track.album_artist]),
                                 'xesam:artist': dbus.Array([track.artist]),
                                 'xesam:title': track.title,
-                                'xesam:url': "file://" + track.fullpath,
+                                'xesam:url': "file://" + urllib.parse.quote(track.fullpath),
                                 'xesam:asText': track.lyrics,
                                 'xesam:autoRating': star_count2(star_store.get(track.index)),
-                                'xesam:composer': track.composer,
+                                'xesam:composer': dbus.Array([track.composer]),
                                 'tauon:loved': love(False, track.index)
 
                             }
@@ -5302,7 +5302,7 @@ class Gnome:
                             try:
                                 i_path = thumb_tracks.path(track)
                                 if i_path is not None:
-                                    d['mpris:artUrl'] = 'file://' + i_path
+                                    d['mpris:artUrl'] = 'file://' + urllib.parse.quote(i_path)
                             except:
                                 print("Thumbnail error")
 
@@ -5332,23 +5332,23 @@ class Gnome:
                             'DesktopEntry': t_id,
                             #'SupportedUriSchemes': ['file']
                             'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
-                            'SupportedMileTypes': dbus.Array([
+                            'SupportedMimeTypes': dbus.Array([
                                  dbus.String("audio/mpeg"),
                                  dbus.String("audio/flac"),
-                                 dbus.String("audio/ogg")
+                                 dbus.String("audio/ogg"),
+                                 dbus.String("audio/m4a"),
                                  ])
                         }
 
                         self.player_properties = {
-
                             'PlaybackStatus': 'Stopped',
                             #'LoopStatus'
-                            'Rate': 1,
-                            #'Shuffle':
+                            'Rate': 1.0,
+                            #'Shuffle': pctl.random_mode,
                             'Volume': pctl.player_volume / 100,
                             'Position': 0,
-                            'MinimumRate': 1,
-                            'MaximumRate': 1,
+                            'MinimumRate': 1.0,
+                            'MaximumRate': 1.0,
                             'CanGoNext': True,
                             'CanGoPrevious': True,
                             'CanPlay': True,
@@ -5403,7 +5403,6 @@ class Gnome:
                     def PropertiesChanged(self, interface_name, change, inval):
                         pass
 
-
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Next(self):
                         pctl.advance()
@@ -5441,7 +5440,6 @@ class Gnome:
                         self.player_properties['Position'] = dbus.Int64(int(position))
                         self.Seeked(pctl.playing_time)
 
-
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def OpenUri(self, uri):
                         pass
@@ -5463,7 +5461,6 @@ class Gnome:
                     @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def Seeked(self, position):
                         pass
-
 
                     def seek_do(self, seconds):
                         self.Seeked(dbus.Int64(int(seconds * 1000000)))
