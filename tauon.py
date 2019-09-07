@@ -19847,8 +19847,8 @@ class TopPanel:
                 input.mouse_click = False
                 show_message("Downloader is running...", 'info', "You may need to restart app if download stalls")
             if os.path.isdir(auto_dl.dl_dir):
-                count = sum([len(files) for r, d, files in os.walk(auto_dl.dl_dir)])
-                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), str(count), [230, 100, 50, 255], 209)
+                s = get_folder_size(auto_dl.dl_dir)
+                ddt.draw_text((x + 18 * gui.scale, y - 4 * gui.scale), get_filesize_string(s), [230, 100, 50, 255], 209)
 
         elif (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52 * gui.scale
