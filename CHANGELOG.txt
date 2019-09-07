@@ -8,6 +8,7 @@ v4.7.1
  - Added frame to album art in showcase/lyrics view
  - Moved sort functions to submenu
  - Fixed bug with scrobble marker not hiding while listenbrainz enabled
+ - Fixed mpris2 non-compliance causing failure on KDE Plasma
 
 v4.7.0
 
