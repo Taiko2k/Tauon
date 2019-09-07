@@ -105,10 +105,13 @@ def get_hms_time(seconds):
     else:
         return f'{m:02d}:{s:02d}'
 
+
 # Creates a string from number of bytes to X MB/kB etc
 def get_filesize_string(file_bytes):
+    if not file_bytes:
+        return "0"
     if file_bytes < 1000:
-        line = locale.str(file_bytes) + " Bytes"
+        line = locale.str(file_bytes) + " B"
     elif file_bytes < 1000000:
         file_kb = round(file_bytes / 1000, 2)
         line = locale.str(file_kb) + " KB"

@@ -25,7 +25,10 @@ import copy
 import stagger
 import io
 from PIL import Image
+import multiprocessing as mp
+from multiprocessing import Process
 
+#mp.set_start_method('spawn')
 
 class AutoDownload:
 
@@ -63,6 +66,16 @@ class AutoDownload:
             self.tauon.switch_playlist(pln)
             self.tauon.gui.show_message("Import of downloaded tracks complete", 'done', "Remember to support the artists!")
 
+    def embed_image(self, path, string):
+
+        print("Embed")
+        tag = stagger.read_tag(path)
+        tt = tag[stagger.id3.APIC][0]
+        tt.data = string
+        tag.write()
+        print("Done")
+
+
     def run(self, text):
 
         text = text.strip()
@@ -84,7 +97,7 @@ class AutoDownload:
         os.makedirs(dl_dir)
 
         # Youtube downloader
-        if ".youtube.com" in text or "youtu.be" in text:
+        if "youtube.com" in text or "youtu.be" in text:
             if "youtube-dl" not in downloaders:
                 self.tauon.gui.show_message("Downloading Youtube tracks requires youtube-dl")
                 return
@@ -95,41 +108,30 @@ class AutoDownload:
             youtube_dir = dl_dir
             # os.makedirs(youtube_dir)
 
-            line = self.tauon.launch_prefix + "youtube-dl -f bestaudio -o \"" + youtube_dir + "/%(title)s.%(ext)s\" --extract-audio --embed-thumbnail --add-metadata --audio-format opus " + text
+            line = self.tauon.launch_prefix + "youtube-dl -f bestaudio -o \"" + youtube_dir + "/%(title)s.%(ext)s\" --extract-audio --embed-thumbnail --add-metadata --audio-quality 160K --audio-format mp3 " + text
             self.downloading = True
             subprocess.run(shlex.split(line))
 
-            # Determine name of track from downloaded file
-            name = text.split("/")[-1]
             for item in os.listdir(youtube_dir):
-                if item.endswith(".opus"):
-                    name = item.split(".")[0]
+                if item.endswith(".mp3"):
+                    path = os.path.join(youtube_dir, item)
+                else:
+                    continue
 
-            name = "ytdl - " + name
+                # Get image from mp3 file
+                tag = stagger.read_tag(path)
+                tt = tag[stagger.id3.APIC][0]
+                s = io.BytesIO(tt.data)
+                im = Image.open(s)
 
-            fin = os.path.join(youtube_dir, name)
-
-            # Get path of downloaded thumbnail
-            image = None
-            for item in os.listdir(youtube_dir):
-                if item.endswith(".jpg"):
-                    image = os.path.join(youtube_dir, item)
-                    break
-
-            # Detect if image needs cropping
-            if image:
-
-                # Load into Pillow
-                im = Image.open(image)
+                # Check for side bars (hacky, but should work most the time)
                 w, h = im.size
-
-                # Check for side bars (hacky)
                 p1 = im.getpixel((1, 1))
                 p2 = im.getpixel((30, 30))
                 p3 = im.getpixel((w - 30, h - 30))
                 p4 = im.getpixel((w - 1, h - 1))
-
                 if p1 == p2 == p3 == p4:
+
                     # Crop to square
                     m = min(w, h)
                     im = im.crop((
@@ -138,12 +140,19 @@ class AutoDownload:
                         (w + m) / 2,
                         (h + m) / 2,
                     ))
-                    im.save(image, 'JPEG')
 
-            # Put track and image into its own subfolder
-            os.makedirs(fin)
-            for item in os.listdir(youtube_dir):
-                shutil.move(os.path.join(youtube_dir, item), fin)
+                    # Convert to bytes string
+                    g = io.BytesIO()
+                    g.seek(0)
+                    im.save(g, 'JPEG')
+                    g.seek(0)
+                    string = g.getvalue()
+
+                    # Embed back into mp3
+                    # Workaround for unix signals issue
+                    p = Process(target=self.embed_image, args=(path, string))
+                    p.start()
+                    p.join()
 
 
         # Spotify -> Youtube downloader
