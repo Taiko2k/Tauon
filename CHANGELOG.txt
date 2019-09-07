@@ -6,9 +6,11 @@ v4.7.1
  - Added URL download function
  - Added support for multiple artist comments in Vorbis tags
  - Added frame to album art in showcase/lyrics view
+ - Added missing functionality for MPRIS2: Shuffle, LoopStatus(repeat) and OpenURI
  - Moved sort functions to submenu
  - Fixed bug with scrobble marker not hiding while listenbrainz enabled
- - Fixed mpris2 non-compliance causing failure on KDE Plasma
+ - Fixed MPRIS2 non-compliance causing failure on KDE Plasma
+
 
 v4.7.0
 

@@ -924,6 +924,29 @@ class Prefs:    # Used to hold any kind of settings
 
 prefs = Prefs()
 
+
+def open_uri(uri):
+
+    load_order = LoadClass()
+
+    for w in range(len(pctl.multi_playlist)):
+        if pctl.multi_playlist[w][0] == "Default":
+            load_order.playlist = pctl.multi_playlist[w][6]  # copy.deepcopy(w)
+            break
+    else:
+        # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
+        pctl.multi_playlist.append(pl_gen())
+        load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+    load_order.target = str(urllib.parse.unquote(uri)).replace("file:///", "/").replace("\r", "")
+    if gui.auto_play_import is False:
+        load_order.play = True
+        gui.auto_play_import = True
+
+    load_orders.append(copy.deepcopy(load_order))
+
+
 def check_transfer_p():
 
     if check_file_timer.get() > 1.1:
@@ -943,34 +966,14 @@ def check_transfer_p():
                 SDL_RaiseWindow(t_window)
                 SDL_RestoreWindow(t_window)
 
-
         if arg_queue:
 
             i = 0
             while i < len(arg_queue):
-                load_order = LoadClass()
-
-                for w in range(len(pctl.multi_playlist)):
-                    if pctl.multi_playlist[w][0] == "Default":
-                        load_order.playlist = pctl.multi_playlist[w][6]  # copy.deepcopy(w)
-                        break
-                else:
-                    # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-                    pctl.multi_playlist.append(pl_gen())
-                    load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-                    switch_playlist(len(pctl.multi_playlist) - 1)
-
-                load_order.target = str(urllib.parse.unquote(arg_queue[i])).replace("file:///", "/").replace("\r", "")
-                if gui.auto_play_import is False:
-                    load_order.play = True
-                    gui.auto_play_import = True
-
-                load_orders.append(copy.deepcopy(load_order))
-
+                open_uri(arg_queue[i])
                 i += 1
-            arg_queue = []
 
-            #gui.auto_play_import = True
+            arg_queue.clear()
 
 
 class GuiVar:   # Use to hold any variables for use in relation to UI
@@ -5317,6 +5320,14 @@ class Gnome:
                     def update_progress(self):
                         self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
 
+                    def update_shuffle(self):
+                        self.player_properties['Shuffle'] = pctl.random_mode
+                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"Shuffle": pctl.random_mode}, [])
+
+                    def update_loop(self):
+                        self.player_properties['LoopStatus'] = self.get_loop_status()
+                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"LoopStatus": self.get_loop_status()}, [])
+
                     def __init__(self, object_path):
                         dbus.service.Object.__init__(self, bus, object_path)
 
@@ -5342,9 +5353,9 @@ class Gnome:
 
                         self.player_properties = {
                             'PlaybackStatus': 'Stopped',
-                            #'LoopStatus'
+                            'LoopStatus': self.get_loop_status(),
                             'Rate': 1.0,
-                            #'Shuffle': pctl.random_mode,
+                            'Shuffle': pctl.random_mode,
                             'Volume': pctl.player_volume / 100,
                             'Position': 0,
                             'MinimumRate': 1.0,
@@ -5359,6 +5370,13 @@ class Gnome:
                         }
 
                         # self.update()
+
+                    def get_loop_status(self):
+                        if pctl.repeat_mode:
+                            if pctl.album_repeat_mode:
+                                return "Playlist"
+                            return "Track"
+                        return "None"
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
                     def Raise(self):
@@ -5395,6 +5413,20 @@ class Gnome:
                             if property_name == "Volume":
                                 pctl.player_volume = min(max(int(value * 100), 0), 100)
                                 pctl.set_volume()
+                                gui.update += 1
+                            if property_name == "Shuffle":
+                                pctl.random_mode = bool(value)
+                                self.update_shuffle()
+                                gui.update += 1
+                            if property_name == "LoopStatus":
+                                if value == "None":
+                                    menu_repeat_off()
+                                elif value == "Track":
+                                    menu_set_repeat()
+                                elif value == "Playlist":
+                                    menu_album_repeat()
+                                gui.update += 1
+
                         if interface_name == 'org.mpris.MediaPlayer2':
                             pass
 
@@ -5442,7 +5474,7 @@ class Gnome:
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def OpenUri(self, uri):
-                        pass
+                        open_uri(uri)
 
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def LovePlaying(self):
@@ -9219,34 +9251,64 @@ repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
 
+def toggle_repeat():
+    pctl.repeat_mode ^= True
+    if pctl.mpris is not None:
+        pctl.mpris.update_loop()
+
 def menu_repeat_off():
     pctl.repeat_mode = False
     pctl.album_repeat_mode = False
+    if pctl.mpris is not None:
+        pctl.mpris.update_loop()
 
 def menu_set_repeat():
     pctl.repeat_mode = True
     pctl.album_repeat_mode = False
+    if pctl.mpris is not None:
+        pctl.mpris.update_loop()
 
 def menu_album_repeat():
     pctl.repeat_mode = True
     pctl.album_repeat_mode = True
+    if pctl.mpris is not None:
+        pctl.mpris.update_loop()
 
 repeat_menu.add("Repeat OFF", menu_repeat_off)
 repeat_menu.add("Repeat Track", menu_set_repeat)
 repeat_menu.add("Repeat Album", menu_album_repeat)
 
+def toggle_random():
+    pctl.random_mode ^= True
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
+def toggle_random_on():
+    pctl.random_mode = True
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
+def toggle_random_off():
+    pctl.random_mode = False
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
+
 
 def menu_shuffle_off():
     pctl.random_mode = False
     pctl.album_shuffle_mode = False
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
 
 def menu_set_random():
     pctl.random_mode = True
     pctl.album_shuffle_mode = False
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
 
 def menu_album_random():
     pctl.random_mode = True
     pctl.album_shuffle_mode = True
+    if pctl.mpris is not None:
+        pctl.mpris.update_shuffle()
 
 shuffle_menu.add("Shuffle OFF", menu_shuffle_off)
 shuffle_menu.add("Shuffle Tracks", menu_set_random)
@@ -14229,15 +14291,8 @@ revert_icon.colour = [229, 102, 59, 255]
 extra_menu.add(_('Revert'), pctl.revert, hint='SHIFT + /', icon=revert_icon)
 
 
-def toggle_repeat():
-    pctl.repeat_mode ^= True
-
-
 # extra_menu.add('Toggle Repeat', toggle_repeat, hint='COMMA')
 
-
-def toggle_random():
-    pctl.random_mode ^= True
 
 
 # extra_menu.add('Toggle Random', toggle_random, hint='PERIOD')
@@ -20672,7 +20727,8 @@ class BottomBarType1:
                     pctl.advance()
                     gui.tool_tip_lock_off_f = True
                 if right_click:
-                    pctl.random_mode ^= True
+                    #pctl.random_mode ^= True
+                    toggle_random()
                     gui.tool_tip_lock_off_f = True
                     if window_size[0] < 600 * gui.scale:
                         gui.mode_toast_text = _("Shuffle On")
@@ -20702,7 +20758,7 @@ class BottomBarType1:
                     pctl.back()
                     gui.tool_tip_lock_off_b = True
                 if right_click:
-                    pctl.repeat_mode ^= True
+                    toggle_repeat()
                     gui.tool_tip_lock_off_b = True
                     if window_size[0] < 600 * gui.scale:
                         gui.mode_toast_text = "Repeat On"
@@ -20760,7 +20816,8 @@ class BottomBarType1:
                 if (input.mouse_click or right_click) and coll(rect):
 
                     if input.mouse_click:
-                        pctl.random_mode ^= True
+                        #pctl.random_mode ^= True
+                        toggle_random()
                         if pctl.random_mode is False:
                             self.random_click_off = True
                     else:
@@ -20805,7 +20862,7 @@ class BottomBarType1:
                 if (input.mouse_click or right_click) and coll(rect):
 
                     if input.mouse_click:
-                        pctl.repeat_mode ^= True
+                        toggle_repeat()
                         if pctl.repeat_mode is False:
                             self.repeat_click_off = True
                     else: # right click
@@ -21042,7 +21099,8 @@ class MiniMode:
         if coll(control_hit_area):
             colour = [255, 255, 255, 20]
             if input.mouse_click and coll(shuffle_area):
-                pctl.random_mode ^= True
+                #pctl.random_mode ^= True
+                toggle_random()
             if pctl.random_mode:
                 colour = [255, 255, 255, 190]
 
@@ -21057,7 +21115,7 @@ class MiniMode:
         if coll(control_hit_area):
             colour = [255, 255, 255, 20]
             if input.mouse_click and coll(shuffle_area):
-                pctl.repeat_mode ^= True
+                toggle_repeat()
             if pctl.repeat_mode:
                 colour = [255, 255, 255, 190]
 
@@ -28362,7 +28420,8 @@ while pctl.running:
                 pctl.advance(rr=True)
 
             if keymaps.test("toggle-shuffle"):
-                pctl.random_mode ^= True
+                #pctl.random_mode ^= True
+                toggle_random()
 
             if keymaps.test("goto-playing"):
                 pctl.show_current()
@@ -28371,7 +28430,7 @@ while pctl.running:
                     pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
 
             if keymaps.test("toggle-repeat"):
-                pctl.repeat_mode ^= True
+                toggle_repeat()
 
             if keymaps.test("random-track"):
                 random_track()
@@ -28442,9 +28501,9 @@ while pctl.running:
         elif mediaKey == 'FastForward':
             pctl.seek_time(pctl.playing_time + 10)
         elif mediaKey == 'Repeat':
-            pctl.repeat_mode ^= True
+            toggle_repeat()
         elif mediaKey == 'Shuffle':
-            pctl.shuffle_mode ^= True
+            toggle_random()
 
 
         mediaKey_pressed = False
