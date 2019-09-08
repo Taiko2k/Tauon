@@ -1241,6 +1241,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.top_bar_mode2 = False
         self.mode_toast_text = ""
 
+        #self.smooth_scrolling = False
+
 
 
 gui = GuiVar()
@@ -6970,7 +6972,7 @@ class GallClass:
                 # if not prefs.cache_gallery:
                 #     time.sleep(0.01)
                 # else:
-                time.sleep(0.002)
+                time.sleep(0.001)
 
                 gui.update += 1
                 if gui.combo_mode:
@@ -6995,7 +6997,6 @@ class GallClass:
             return True
         else:
             return False
-
 
 
     def render(self, track, location, size=None):
@@ -9385,6 +9386,8 @@ info_icon = MenuIcon(asset_loader('info.png', True))
 
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
+
+power_bar_icon = asset_loader('folder.png', True)
 
 
 def open_folder(index):
@@ -22816,8 +22819,9 @@ class ScrollBox():
         self.source_click_y = 0
         self.source_bar_y = 0
         self.direction_lock = -1
+        self.d_position = 0
 
-    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=None):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=4):
 
         if max_value < 2:
             return 0
@@ -22893,13 +22897,13 @@ class ScrollBox():
 
             elif mouse_down and not self.held:
 
-                #if mouse_position[1] - y < (position + half - 2) or mouse_position[1] - y > position + half + 2:
-
                 if click and not in_bar:
                     self.slide_hold = True
                     self.direction_lock = 1
                     if mouse_position[1] - y < position:
                         self.direction_lock = 0
+
+                    self.d_position = value / max_value
 
                 if self.slide_hold:
                     if (self.direction_lock == 1 and mouse_position[1] - y < position + half) or \
@@ -22907,43 +22911,18 @@ class ScrollBox():
                         pass
                     else:
 
-                #if self.slide_hold:
-                        if jump_distance is None:
-                            jump_distance = 1 if h < 400 else 1
+                        tt = scroll_timer.hit()
+                        if tt > 0.1:
+                            tt = 0
 
+                        flip = -1
+                        if self.direction_lock:
+                            flip = 1
 
-                        if self.direction_lock == 0:
-                            position -= jump_distance
-                        else:
-                            position += jump_distance
-
-                        # if self.lock_direction == 0:
-                        #     self.lock_directio
-
-                        if position < 0:
-                            position = 0
-                        if position > distance:
-                            position = distance
-
-                        old_value = value
-
-                        ratio = position / distance
-                        value = int(round(max_value * ratio))
-
-                        # This forced the scroll bar to move in a direction so
-                        # we dont get stuck due to rounding to same value
-                        if self.direction_lock == 1 and old_value >= value:
-                            value += 1
-                        elif self.direction_lock == 0 and old_value <= value:
-                            value -= 1
-                        value = max(0, value)
-                        value = min(max_value, value)
+                        self.d_position = self.d_position + (((tt * jump_distance) / max_value) * flip)
 
             else:
                 self.slide_hold = False
-
-            # else:
-            #     self.lock_direction = 0
 
         if self.held and mouse_up or not mouse_down:
             self.held = False
@@ -22952,8 +22931,6 @@ class ScrollBox():
             self.held = False
 
         if self.held:
-            # p_y = pointer(c_int(0))
-            # SDL_GetGlobalMouseState(None, p_y)
             get_sdl_input.mouse_capture_want = True
             new_y = mouse_position[1]
             gui.update += 1
@@ -22980,6 +22957,9 @@ class ScrollBox():
 
         ddt.rect_r(rect, colour, True)
 
+        if self.slide_hold:
+            return round(max_value * self.d_position)
+
         return value
 
 mini_lyrics_scroll = ScrollBox()
@@ -22987,6 +22967,7 @@ playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
 device_scroll = ScrollBox()
 artist_list_scroll = ScrollBox()
+gallery_scroll = ScrollBox()
 
 
 class RenameBox:
@@ -24083,7 +24064,7 @@ class ArtistList:
         if colours.lm:
             scroll_x = x + w - 22 * gui.scale
         if (coll(area2) or artist_list_scroll.held) and not pref_box.enabled:
-            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=1)
+            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=35)
 
         if not self.current_artists:
             text = _("No artists in playlist")
@@ -24797,7 +24778,7 @@ class MetaBox:
             if gui.maximized:
                 scroll_w = 17 * gui.scale
 
-            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h, lyrics_ren_mini.lyrics_position * -1, th) * -1
+            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h, lyrics_ren_mini.lyrics_position * -1, th, jump_distance=160 * gui.scale) * -1
 
             margin = 10 * gui.scale
             if colours.lm:
@@ -25123,7 +25104,7 @@ class ArtistInfoBox:
 
             if self.th > h - 26:
                 self.scroll_y = artist_info_scroll.draw(x + w - 20, y + 5, 15, h - 5,
-                                                        self.scroll_y, scroll_max, True)
+                                                        self.scroll_y, scroll_max, True, jump_distance=250 * gui.scale)
                 right -= 15
                 #text_max_w -= 15
 
@@ -29001,84 +28982,104 @@ while pctl.running:
                         if album_pos_px < round(album_v_slide_value * -1):
                             album_pos_px = round(album_v_slide_value * -1)
 
-                gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
+                #gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
+                gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
 
                 # ----
                 rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
 
-                excl_rect = (0,0,0,0)
-
-                if gui.power_bar is not None and len(gui.power_bar) > 2:
-
-                    excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
-
-                rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
-                rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
+                # excl_rect = (0,0,0,0)
+                #
+                # if gui.power_bar is not None and len(gui.power_bar) > 2:
+                #
+                #     excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
+                #
+                # rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
+                # rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
 
                 card_mode = False
                 if prefs.use_card_style and colours.lm and gui.gallery_show_text:
                     card_mode = True
 
-                if mouse_down:
-                    # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
-                    if coll(rect) and not coll(excl_rect):
-                        # if mouse_position[1] > window_size[1] / 2:
-                        #     album_pos_px += 30
-                        # else:
-                        #     album_pos_px -= 30
-                        album_scroll_hold = True
-                        tt = scroll_timer.hit()
-                        if tt > 1:
-                            mv = 0
-                        else:
-                            mv = int(tt * 1500 * gui.scale)
-                            if mv < 30:
-                                if coll(rect_down):#mouse_position[1] > (rect[1] + rect[3]) * 0.5:
-                                    album_pos_px += mv
-                                else:
-                                    album_pos_px -= mv
-                else:
-                    album_scroll_hold = False
+                # if mouse_down:
+                #     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
+                #     if coll(rect) and not coll(excl_rect):
+                #         # if mouse_position[1] > window_size[1] / 2:
+                #         #     album_pos_px += 30
+                #         # else:
+                #         #     album_pos_px -= 30
+                #         album_scroll_hold = True
+                #         tt = scroll_timer.hit()
+                #         if tt > 1:
+                #             mv = 0
+                #         else:
+                #             mv = int(tt * 1500 * gui.scale)
+                #             if mv < 30:
+                #                 if coll(rect_down):#mouse_position[1] > (rect[1] + rect[3]) * 0.5:
+                #                     album_pos_px += mv
+                #                 else:
+                #                     album_pos_px -= mv
+                # else:
+                #     album_scroll_hold = False
 
-                if gui.power_bar is not None and len(gui.power_bar) > 2:
+                # if gui.power_bar is not None and len(gui.power_bar) > 2:
+                #
+                #     pass
+                #
+                # else:
+                #
+                #     fields.add(rect)
+                #
+                #     fields.add(rect_up)
+                #     fields.add(rect_down)
+                #
+                #     if coll(rect):
+                #         right = window_size[0] - 25 * gui.scale
+                #
+                #         colour = alpha_mod(colours.side_bar_line2, 100)
+                #         if coll(rect_up):
+                #             colour = alpha_mod(colours.side_bar_line2, 210)
+                #
+                #
+                #         ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
+                #                   colour, 13)
+                #
+                #         colour = alpha_mod(colours.side_bar_line2, 100)
+                #         if coll(rect_down):
+                #             colour = alpha_mod(colours.side_bar_line2, 210)
+                #
+                #         ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
+                #                   colour, 13)
 
-                    pass
+                # Right click jump
 
-                else:
+                # if right_click:
+                #
+                #     if coll(rect):
+                #         per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
+                #         if per > 100:
+                #             per = 100
+                #         if per < 0:
+                #             per = 0
+                #         album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50 * gui.scale
+                #
+                #full_range = (len(album_dex) / row_len) * (album_mode_art_size + album_v_gap)
+                #if not gui.power_bar:
 
+                # Draw power bar button
+                if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
+                    rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 18 * gui.scale)
                     fields.add(rect)
-
-                    fields.add(rect_up)
-                    fields.add(rect_down)
-
+                    colour = [200, 200, 200, 25]
                     if coll(rect):
-                        right = window_size[0] - 25 * gui.scale
+                        colour = [200, 200, 200, 55]
+                        if input.mouse_click:
+                            gui.pt = 1
+                    power_bar_icon.render(rect[0], rect[1] + round(1 * gui.scale), colour)
 
-                        colour = alpha_mod(colours.side_bar_line2, 100)
-                        if coll(rect_up):
-                            colour = alpha_mod(colours.side_bar_line2, 210)
-
-
-                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
-                                  colour, 13)
-
-                        colour = alpha_mod(colours.side_bar_line2, 100)
-                        if coll(rect_down):
-                            colour = alpha_mod(colours.side_bar_line2, 210)
-
-                        ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
-                                  colour, 13)
-
-                if right_click:
-
-                    if coll(rect):
-                        per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
-                        if per > 100:
-                            per = 100
-                        if per < 0:
-                            per = 0
-                        album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50 * gui.scale
-
+                # Draw scroll bar
+                if gui.pt == 0:
+                    album_pos_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), album_pos_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click) - album_v_slide_value
 
 
                 if last_row != row_len:
@@ -29555,7 +29556,7 @@ while pctl.running:
 
                 # POWER TAG BAR --------------
 
-                if gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
+                if gui.pt > 0: #gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
 
                     top = gui.panelY
                     run_y = top + 1
@@ -29590,6 +29591,7 @@ while pctl.running:
                                 item.ani_timer.force_set(off)
                                 off -= 0.01
 
+
                     done = True
                     # Animate tages on
                     if gui.pt == 2:
@@ -29616,6 +29618,7 @@ while pctl.running:
                                 done = False
                         if done:
                             gui.pt = 0
+                            gui.update += 1
 
                     # Keep draw loop running while on
                     if gui.pt > 0:
@@ -29638,7 +29641,7 @@ while pctl.running:
 
 
                             rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
-                            i_rect = [window_size[0] - 21 * gui.scale, run_y, 19 * gui.scale, block_h]
+                            i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
                             fields.add(i_rect)
 
                             if coll(i_rect) and item.peak_x == 9 * gui.scale:
