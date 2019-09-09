@@ -12,6 +12,7 @@ v4.7.1
  - Moved sort functions to submenu
  - Tweaked scroll speed of various elements
  - Fixed bug with scrobble marker not hiding while listenbrainz enabled
+ - Fixed a crash when deleting a track while gallery open
  - Fixed MPRIS2 non-compliance causing failure on KDE Plasma
 
 v4.7.0

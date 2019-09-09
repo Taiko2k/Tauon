@@ -12419,15 +12419,12 @@ def delete_track(track_ref):
     try:
         send2trash(fullpath)
         show_message("File moved to trash")
-        return
     except:
-        pass
-
-    try:
-        os.remove(fullpath)
-        show_message("File deleted", 'info', fullpath)
-    except:
-        show_message("Error deleting file", 'error', fullpath)
+        try:
+            os.remove(fullpath)
+            show_message("File deleted", 'info', fullpath)
+        except:
+            show_message("Error deleting file", 'error', fullpath)
 
     reload()
     refind_playing()
