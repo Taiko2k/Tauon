@@ -10785,7 +10785,7 @@ def sort_track_2(pl, custom_list=None):
     if len(albums) > 0:
         playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
 
-
+    gui.pl_update += 1
 
 def sort_path_pl(pl):
 
@@ -18593,7 +18593,7 @@ class Over:
         y = y0
 
         y += 20 * gui.scale
-        #self.toggle_square(x, y, toggle_transcode, "Show in context menu")
+
         ddt.draw_text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.grey(100), 11)
         self.button(x + 380 * gui.scale, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
 
@@ -18618,21 +18618,6 @@ class Over:
 
             prefs.transcode_bitrate = self.slide_control(x, y, _("Bitrate"), "kbs", prefs.transcode_bitrate, 32, 320, 8)
 
-            def toggle_transcode_inplace(mode=0):
-                if mode == 1:
-                    if prefs.transcode_inplace:
-                        return True
-                    else:
-                        return False
-                prefs.transcode_inplace ^= True
-                if prefs.transcode_inplace:
-                    transcode_icon.colour = [250, 20, 20, 255]
-                    show_message(
-                        "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
-                        'warning',
-                        "For safety, this setting will reset to 'off' on restart. Embedded thumbnails are not kept so you may want to extract them first.")
-                else:
-                    transcode_icon.colour = [239, 74, 157, 255]
             y -= 1 * gui.scale
             x += 280 * gui.scale
             if (system == 'windows' and not os.path.isfile(user_directory + '/encoder/ffmpeg.exe')) or (
