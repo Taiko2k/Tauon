@@ -28,7 +28,6 @@ from PIL import Image
 import multiprocessing as mp
 from multiprocessing import Process
 
-#mp.set_start_method('spawn')
 
 class AutoDownload:
 
@@ -68,13 +67,12 @@ class AutoDownload:
 
     def embed_image(self, path, string):
 
-        print("Embed")
+        print("Embedding image...")
         tag = stagger.read_tag(path)
         tt = tag[stagger.id3.APIC][0]
         tt.data = string
         tag.write()
         print("Done")
-
 
     def run(self, text):
 
@@ -154,7 +152,6 @@ class AutoDownload:
                     p.start()
                     p.join()
 
-
         # Spotify -> Youtube downloader
         elif "open.spotify.com/album/" in text:
             if "spotdl" not in downloaders:
@@ -204,7 +201,7 @@ class AutoDownload:
                 return
 
             self.tauon.gui.show_message("Type detected: Soundcloud", 'info', 'Link: ' + text)
-            line = self.tauon.launch_prefix + "scdl -l --path=\"" + dl_dir + "\" " + text
+            line = self.tauon.launch_prefix + "scdl -l " + text + " --path=\"" + dl_dir + "\""
             self.downloading = True
             subprocess.run(shlex.split(line))
 
@@ -226,7 +223,6 @@ class AutoDownload:
                 self.downloading = False
                 self.tauon.gui.show_message("File already exists", 'error')
                 raise
-                return
 
         # Give warning about spotdl
         if 'open.spotify.com' in text:

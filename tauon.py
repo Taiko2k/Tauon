@@ -29,9 +29,6 @@
 
 # --------------------------------------------------------------------
 
-# artist info box def
-# guitar chords def
-
 import sys
 import os
 import pickle
@@ -60,7 +57,7 @@ if not windows_native:
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
-de_nofity_support = desktop == 'GNOME' or desktop == 'KDE'
+de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
 
 # Find the directory we are running from
 install_directory = sys.path[0]
@@ -779,7 +776,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_pause_fade = True
 
         self.show_notifications = False
-        if de_nofity_support:
+        if de_notify_support:
             self.show_notifications = True
 
         self.true_shuffle = True
@@ -4120,7 +4117,7 @@ def update_title_do():
         line = line.encode('utf-8')
         SDL_SetWindowTitle(t_window, line)
 
-if de_nofity_support:
+if de_notify_support:
     song_notification = Notify.Notification.new("Next track notification")
 
 
@@ -4139,7 +4136,7 @@ def notify_song_fire(notification, delay, id):
 
 def notify_song(notify_of_end=False, delay=0):
 
-    if not de_nofity_support:
+    if not de_notify_support:
         return
 
 
@@ -5470,7 +5467,7 @@ class Gnome:
                     @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
                     def SetPosition(self, id, position):
                         pctl.seek_time(position / 1000000)
-                        #self.update_progress()
+
                         self.player_properties['Position'] = dbus.Int64(int(position))
                         self.Seeked(pctl.playing_time)
 
@@ -7195,13 +7192,9 @@ def clear_img_cache(delete_disk=True):
         direc = os.path.join(cache_directory)
         if os.path.isdir(direc):
             for item in os.listdir(direc):
-                if "-lfm" not in item and "-ftv" not in item and "-dcg" not in item:
-                    os.remove(os.path.join(direc, item))
-
-                # Get rid of those annoying star images
-                elif item.endswith("lfm.png") and os.path.getsize(os.path.join(direc, item)) < 5000:
-                    os.remove(os.path.join(direc, item))
-
+                path = os.path.join(direc, item)
+                if "-lfm" not in item and "-ftv" not in item and "-dcg" not in item and os.path.isfile(path):
+                    os.remove(path)
         else:
             os.makedirs(direc)
 
@@ -14450,7 +14443,7 @@ def toggle_notifications(mode=0):
     prefs.show_notifications ^= True
 
     if prefs.show_notifications:
-        if not de_nofity_support:
+        if not de_notify_support:
             show_message("I'm not sure notifications are supported by this DE", 'warning', 'You should probably leave this disabled.')
 
 # def toggle_al_pref_album_artist(mode=0):
@@ -16897,7 +16890,7 @@ def worker1():
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
                     if not gui.message_box:
                         show_message("Encoding complete.", 'done', line)
-                    if system == 'linux' and de_nofity_support:
+                    if system == 'linux' and de_notify_support:
                         g_tc_notify.show()
 
         while len(to_scan) > 0:
@@ -26695,7 +26688,7 @@ worker3Thread.start()
 # MAIN LOOP---------------------------------------------------------------------------
 
 if system == 'linux':
-    if de_nofity_support:
+    if de_notify_support:
         Notify.init("Tauon Music Box")
         g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                               "Transcoding has finished.")
@@ -28986,93 +28979,17 @@ while pctl.running:
                         if album_pos_px < round(album_v_slide_value * -1):
                             album_pos_px = round(album_v_slide_value * -1)
 
-                #gallery_pulse_top.render(gui.plw + 5 * gui.scale, gui.panelY + 1, window_size[0] - gui.plw, 2)
                 gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
 
-                # ----
                 rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
-
-                # excl_rect = (0,0,0,0)
-                #
-                # if gui.power_bar is not None and len(gui.power_bar) > 2:
-                #
-                #     excl_rect = (window_size[0] - 22 * gui.scale, gui.panelY, 20 * gui.scale, (len(gui.power_bar) * 28 * gui.scale) + 2)
-                #
-                # rect_up = (rect[0], rect[1], rect[2], round(rect[3] * 0.5))
-                # rect_down = (rect[0], rect[1] + round(rect[3] * 0.5) + 1, rect[2], round(rect[3] * 0.5))
 
                 card_mode = False
                 if prefs.use_card_style and colours.lm and gui.gallery_show_text:
                     card_mode = True
 
-                # if mouse_down:
-                #     # rect = (window_size[0] - 30, gui.panelY, 30, window_size[1] - gui.panelBY - gui.panelY)
-                #     if coll(rect) and not coll(excl_rect):
-                #         # if mouse_position[1] > window_size[1] / 2:
-                #         #     album_pos_px += 30
-                #         # else:
-                #         #     album_pos_px -= 30
-                #         album_scroll_hold = True
-                #         tt = scroll_timer.hit()
-                #         if tt > 1:
-                #             mv = 0
-                #         else:
-                #             mv = int(tt * 1500 * gui.scale)
-                #             if mv < 30:
-                #                 if coll(rect_down):#mouse_position[1] > (rect[1] + rect[3]) * 0.5:
-                #                     album_pos_px += mv
-                #                 else:
-                #                     album_pos_px -= mv
-                # else:
-                #     album_scroll_hold = False
-
-                # if gui.power_bar is not None and len(gui.power_bar) > 2:
-                #
-                #     pass
-                #
-                # else:
-                #
-                #     fields.add(rect)
-                #
-                #     fields.add(rect_up)
-                #     fields.add(rect_down)
-                #
-                #     if coll(rect):
-                #         right = window_size[0] - 25 * gui.scale
-                #
-                #         colour = alpha_mod(colours.side_bar_line2, 100)
-                #         if coll(rect_up):
-                #             colour = alpha_mod(colours.side_bar_line2, 210)
-                #
-                #
-                #         ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.25))), "▲",
-                #                   colour, 13)
-                #
-                #         colour = alpha_mod(colours.side_bar_line2, 100)
-                #         if coll(rect_down):
-                #             colour = alpha_mod(colours.side_bar_line2, 210)
-                #
-                #         ddt.draw_text((right, (int((rect[1] + rect[3]) * 0.75))), "▼",
-                #                   colour, 13)
-
-                # Right click jump
-
-                # if right_click:
-                #
-                #     if coll(rect):
-                #         per = (mouse_position[1] - gui.panelY - 25 * gui.scale) / (window_size[1] - gui.panelBY - gui.panelY)
-                #         if per > 100:
-                #             per = 100
-                #         if per < 0:
-                #             per = 0
-                #         album_pos_px = int((len(album_dex) / row_len) * (album_mode_art_size + album_v_gap) * per) - 50 * gui.scale
-                #
-                #full_range = (len(album_dex) / row_len) * (album_mode_art_size + album_v_gap)
-                #if not gui.power_bar:
-
                 rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
                 fields.add(rect)
-                if coll(rect):
+                if coll(rect) or gallery_scroll.held:
 
                     # Draw power bar button
                     if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
@@ -29081,12 +28998,13 @@ while pctl.running:
                         colour = [255, 255, 255, 35]
                         if colours.lm:
                             colour = [0, 0, 0, 30]
-                        if coll(rect):
+                        if coll(rect) and not gallery_scroll.held:
                             colour = [255, 220, 100, 245]
                             if colours.lm:
                                 colour = [250, 100, 0, 255]
                             if input.mouse_click:
                                 gui.pt = 1
+
                         power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
 
                     # Draw scroll bar
@@ -31979,7 +31897,7 @@ try:
 except:
     print("No lock object to close")
 
-if de_nofity_support:
+if de_notify_support:
     song_notification.close()
     Notify.uninit()
 
