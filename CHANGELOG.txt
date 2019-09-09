@@ -6,7 +6,7 @@ v4.7.1
  - Added URL download function
  - Added support for multiple artist comments in Vorbis tags
  - Added frame to album art in showcase/lyrics view
- - Added missing functionality for MPRIS2: Shuffle, LoopStatus(repeat) and OpenURI
+ - Added missing functionality for MPRIS2: Shuffle, LoopStatus and OpenURI
  - Added scroll bar to gallery
  - Added lightning button to enable power bar
  - Moved sort functions to submenu
