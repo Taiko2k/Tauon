@@ -9387,7 +9387,7 @@ info_icon = MenuIcon(asset_loader('info.png', True))
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
 
-power_bar_icon = asset_loader('folder.png', True)
+power_bar_icon = asset_loader('power.png', True)
 
 
 def open_folder(index):
@@ -22821,7 +22821,7 @@ class ScrollBox():
         self.direction_lock = -1
         self.d_position = 0
 
-    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=4):
+    def draw(self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=4, extend_field=0):
 
         if max_value < 2:
             return 0
@@ -22857,7 +22857,11 @@ class ScrollBox():
         distance = mo - mi
         position = int(round(distance * ratio))
 
-        if coll((x, y, w, h)):
+        fw = w + extend_field
+        fx = x - extend_field
+
+
+        if coll((fx, y, fw, h)):
 
             if r_click:
 
@@ -29066,20 +29070,28 @@ while pctl.running:
                 #full_range = (len(album_dex) / row_len) * (album_mode_art_size + album_v_gap)
                 #if not gui.power_bar:
 
-                # Draw power bar button
-                if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
-                    rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 18 * gui.scale)
-                    fields.add(rect)
-                    colour = [200, 200, 200, 25]
-                    if coll(rect):
-                        colour = [200, 200, 200, 55]
-                        if input.mouse_click:
-                            gui.pt = 1
-                    power_bar_icon.render(rect[0], rect[1] + round(1 * gui.scale), colour)
+                rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
+                fields.add(rect)
+                if coll(rect):
 
-                # Draw scroll bar
-                if gui.pt == 0:
-                    album_pos_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), album_pos_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click) - album_v_slide_value
+                    # Draw power bar button
+                    if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
+                        rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 24 * gui.scale)
+                        fields.add(rect)
+                        colour = [255, 255, 255, 35]
+                        if colours.lm:
+                            colour = [0, 0, 0, 30]
+                        if coll(rect):
+                            colour = [255, 220, 100, 245]
+                            if colours.lm:
+                                colour = [250, 100, 0, 255]
+                            if input.mouse_click:
+                                gui.pt = 1
+                        power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
+
+                    # Draw scroll bar
+                    if gui.pt == 0:
+                        album_pos_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), album_pos_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click, extend_field=15*gui.scale) - album_v_slide_value
 
 
                 if last_row != row_len:
@@ -29430,7 +29442,9 @@ while pctl.running:
                             m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
                             fields.add(rect)
 
-                            if m_in:
+
+                            if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
+
                                 ddt.rect_r(rect, [255, 255, 255, 10], True)
 
                             if drawn_art is False and gui.gallery_show_text is False:
