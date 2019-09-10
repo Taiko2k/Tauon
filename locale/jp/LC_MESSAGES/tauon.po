@@ -24,7 +24,6 @@ msgid "Once authorised click the 'done' button."
 msgstr "承認されたら、「完了」ボタンをクリックします。"
 
 #: tauon.py:4221
-#, fuzzy
 msgid "Web auth page opened"
 msgstr "ページ化されたWeb認証"
 
@@ -157,9 +156,8 @@ msgid "Deleted embedded picture from file"
 msgstr "ファイルから埋め込み画像を削除しました"
 
 #: tauon.py:10159
-#, fuzzy
 msgid "Delete Image File"
-msgstr "ファイルを削除する"
+msgstr "画像ファイルを削除"
 
 #: tauon.py:10161
 msgid "Quick-Fetch Cover Art"
@@ -342,7 +340,6 @@ msgid "Add to Queue"
 msgstr "キューに追加する"
 
 #: tauon.py:12392
-#, fuzzy
 msgid "↳ After Current Track"
 msgstr "現行のアルバムの後"
 
@@ -575,7 +572,6 @@ msgid "Scrobbling is Active"
 msgstr ""
 
 #: tauon.py:14754
-#, fuzzy
 msgid "Disconnecting..."
 msgstr "生成中。。。"
 
@@ -812,12 +808,10 @@ msgid "Always extract to Music folder"
 msgstr "常に音楽フォルダーに抽出する"
 
 #: tauon.py:18220
-#, fuzzy
 msgid "Lyrics settings..."
 msgstr "歌詞..."
 
 #: tauon.py:18224
-#, fuzzy
 msgid "Chart generator..."
 msgstr "チャート"
 
@@ -946,12 +940,10 @@ msgid "Bitrate"
 msgstr ""
 
 #: tauon.py:18628
-#, fuzzy
 msgid "Save to output folder"
-msgstr "出力を開く"
+msgstr "出力フォルダーに保存"
 
 #: tauon.py:18630
-#, fuzzy
 msgid "Save and overwirte files inplace"
 msgstr "ファイルを所定の場所に保存して上書きする"
 
@@ -1177,7 +1169,7 @@ msgstr "↳　これを除いて"
 
 #: tauon.py:24137
 msgid "Queue to New Playlist"
-msgstr ""
+msgstr "プレイリストへ"
 
 #: tauon.py:24282
 msgid "Cancel Auto-Stop"
@@ -1218,7 +1210,7 @@ msgstr ""
 
 #: tauon.py:30697
 msgid "Track Renaming"
-msgstr ""
+msgstr "トラックの名前変更"
 
 #: tauon.py:30700
 msgid "Default"
