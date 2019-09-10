@@ -6887,8 +6887,17 @@ class GallClass:
 
             self.i += 1
 
-            key = self.queue[0]
-            order = self.gall[key]
+            try:
+                key = self.queue.pop(0)
+            except:
+                print("thumb queue empty")
+                break
+
+            if key not in self.gall:
+                order = [1, None, None, None]
+                self.gall[key] = order
+            else:
+                order = self.gall[key]
 
             size = key[1]
 
@@ -6990,8 +6999,6 @@ class GallClass:
                 order = [0, None, None, None]
                 self.gall[key] = order
 
-            del self.queue[0]
-
             if size < 150:
                 random.shuffle(self.queue)
 
@@ -7022,10 +7029,12 @@ class GallClass:
         else:
             offset = 0
 
-        if (track, size, offset) in self.gall:
+        key = (track, size, offset)
+
+        if key in self.gall:
             # print("old")
 
-            order = self.gall[(track, size, offset)]
+            order = self.gall[key]
 
             if order[0] == 0:
                 # broken
@@ -7067,28 +7076,43 @@ class GallClass:
                     self.key_list.remove((track, size, offset))
                 self.key_list.append((track, size, offset))
 
+                # Remove old images to conserve RAM usage
+                limit = 110
+                if size and size < 150:
+                    limit = 500
+
+                if len(self.key_list) > limit:
+                    key = self.key_list[0]
+                    # while key in self.queue:
+                    #     self.queue.remove(key)
+                    if self.gall[key][2] is not None:
+                        SDL_DestroyTexture(self.gall[key][2])
+                    del self.gall[key]
+                    del self.key_list[0]
+
                 return True
 
         else:
             # Create new
             # stage, raw, texture, rect
-            self.gall[(track, size, offset)] = [1, None, None, None]
-            self.queue.append((track, size, offset))
-            self.key_list.append((track, size, offset))
+            #self.gall[(track, size, offset)] = [1, None, None, None]
+            if key not in self.queue:
+                self.queue.append(key)
+            # self.key_list.append((track, size, offset))
 
-            # Remove old images to conserve RAM usage
-            limit = 110
-            if size and size < 150:
-                limit = 500
-
-            if len(self.key_list) > limit:
-                key = self.key_list[0]
-                while key in self.queue:
-                    self.queue.remove(key)
-                if self.gall[key][2] is not None:
-                    SDL_DestroyTexture(self.gall[key][2])
-                del self.gall[key]
-                del self.key_list[0]
+            # # Remove old images to conserve RAM usage
+            # limit = 110
+            # if size and size < 150:
+            #     limit = 500
+            #
+            # if len(self.key_list) > limit:
+            #     key = self.key_list[0]
+            #     while key in self.queue:
+            #         self.queue.remove(key)
+            #     if self.gall[key][2] is not None:
+            #         SDL_DestroyTexture(self.gall[key][2])
+            #     del self.gall[key]
+            #     del self.key_list[0]
 
         return False
 
@@ -29184,6 +29208,8 @@ while pctl.running:
 
                 if not pref_box.enabled or mouse_wheel != 0:
                     gui.first_in_grid = None
+
+                gall_ren.queue.clear()
 
                 # Render album grid
                 while render_pos < album_pos_px + window_size[1] and default_playlist:
