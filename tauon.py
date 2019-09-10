@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.7.1"
+n_version = "4.7.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -430,6 +430,7 @@ d_click_timer.force_set(10)
 #gall_render_last_timer = Timer(10)
 lyrics_check_timer = Timer()
 scroll_hide_timer = Timer(100)
+scroll_gallery_hide_timer = Timer(100)
 get_lfm_wait_timer = Timer(10)
 lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
@@ -917,6 +918,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.art_in_top_panel = True
         self.always_art_header = False
+
+        self.center_bg = True
 
 
 prefs = Prefs()
@@ -2307,6 +2310,7 @@ def save_prefs():
     cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
+    cf.update_value("prefer-center-bg", prefs.center_bg)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2401,6 +2405,8 @@ def load_prefs():
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition")
     prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
+
+    prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -7628,7 +7634,7 @@ class AlbumArt():
         ratio = window_size[0] / ox_size
         ratio += 0.2
 
-        if (oy_size * ratio) - ((oy_size * ratio) // 4)  < window_size[1]:
+        if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
             print("Adjust bg vertical")
             ratio = window_size[1] / (oy_size - (oy_size // 4))
             ratio += 0.2
@@ -8167,11 +8173,10 @@ class StyleOverlay:
 
             self.a_texture = c
             self.a_rect = dst
+
             self.stage = 2
 
             gui.update += 1
-
-
 
 
         if self.stage == 2:
@@ -8237,13 +8242,17 @@ class StyleOverlay:
                     self.flush()
                     return
 
-
             if prefs.bg_showcase_only:
                 tb = SDL_Rect(0, 0, window_size[0], gui.panelY)
                 bb = SDL_Rect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
                 self.hole_punches.append(tb)
                 self.hole_punches.append(bb)
 
+            # Center image
+            if prefs.center_bg:
+                self.a_rect.x = (window_size[0] // 2) - self.a_rect.w // 2
+            else:
+                self.a_rect.x = -40
 
             SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
             SDL_SetTextureAlphaMod(self.a_texture, fade)
@@ -8268,11 +8277,7 @@ class StyleOverlay:
             SDL_SetRenderTarget(renderer, gui.main_texture)
 
 
-
-
-
 style_overlay = StyleOverlay()
-
 
 
 def trunc_line(line, font, px, dots=True):  # This old function is slow and should be avoided
@@ -10777,7 +10782,6 @@ def sort_track_2(pl, custom_list=None):
                 current_folder = pctl.master_library[playlist[i]].parent_folder_name
                 albums.append(i)
 
-
     i = 0
     while i < len(albums) - 1:
         playlist[albums[i]:albums[i + 1]] = sorted(playlist[albums[i]:albums[i + 1]], key=index_key)
@@ -10786,6 +10790,7 @@ def sort_track_2(pl, custom_list=None):
         playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
 
     gui.pl_update += 1
+
 
 def sort_path_pl(pl):
 
@@ -16992,9 +16997,8 @@ def get_folder_list(index):
     return list(set(playlist))
 
 
-
-
 def gal_jump_select(up=False, num=1):
+
     global playlist_selected
     old_selected = playlist_selected
     old_num = num
@@ -17008,7 +17012,6 @@ def gal_jump_select(up=False, num=1):
         playlist_selected = 0
 
     if up is False:
-
 
         while num > 0:
             while pctl.master_library[
@@ -17024,11 +17027,8 @@ def gal_jump_select(up=False, num=1):
             num -= 1
     else:
 
-
-
         if num > 1:
-
-            if playlist_selected > len(default_playlist) - 1    :
+            if playlist_selected > len(default_playlist) - 1:
                 playlist_selected = old_selected
                 return
 
@@ -17038,18 +17038,13 @@ def gal_jump_select(up=False, num=1):
                 return
 
         while num > 0:
-
             alb = get_album_info(playlist_selected)
 
-            # if len(alb[1]) == 0:
-            #     playlist_selected = len(default_playlist) - 1
-            #     return
             if alb[1][0] > -1:
                 on = alb[1][0] - 1
 
             playlist_selected = max(get_album_info(on)[1][0], 0)
             num -= 1
-
 
 
 power_tag_colours = ColourGenCache(0.5, 0.8)
@@ -17950,11 +17945,14 @@ class Over:
         y += 23 * gui.scale
         self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_showcase, _("Showcase only"))
 
-        y += 70 * gui.scale
+        y += 23 * gui.scale
+        prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
+
+        y += 65 * gui.scale
 
         self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
         self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        ddt.draw_text((x + 101 * gui.scale, y - 29 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+        ddt.draw_text((x + 101 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
         y = y0 + 20 * gui.scale
         x = x0 + 295 * gui.scale
@@ -28849,40 +28847,31 @@ while pctl.running:
 
             if album_mode:
 
+                # Arrow key input
                 if gal_right:
                     gal_right = False
                     gal_jump_select(False, 1)
                     goto_album(playlist_selected)
                     pctl.playlist_view_position = playlist_selected
                     gui.pl_update = 1
-
                 if gal_down:
                     gal_down = False
                     gal_jump_select(False, row_len)
                     goto_album(playlist_selected, down=True)
                     pctl.playlist_view_position = playlist_selected
                     gui.pl_update = 1
-
                 if gal_left:
                     gal_left = False
                     gal_jump_select(True, 1)
                     goto_album(playlist_selected)
                     pctl.playlist_view_position = playlist_selected
                     gui.pl_update = 1
-
                 if gal_up:
                     gal_up = False
                     gal_jump_select(True, row_len)
                     goto_album(playlist_selected)
                     pctl.playlist_view_position = playlist_selected
                     gui.pl_update = 1
-
-
-                # if not gui.show_playlist:
-                #     rect = [0, gui.panelY, window_size[0],
-                #             window_size[1] - gui.panelY - gui.panelBY - 0]
-                #     ddt.rect_r(rect, colours.side_panel_background, True)
-                # else:
 
                 w = gui.rspw
 
@@ -28927,7 +28916,6 @@ while pctl.running:
                     # Why? idk, might not make much difference
                     line2_colour = [220, 220, 220, 255]
                     line1_colour = alpha_mod([220, 220, 220, 255], 120)
-                    #line1_colour = [200, 200, 200, 255]
 
                 if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
                     line1_colour = colours.grey(80)
@@ -28941,10 +28929,15 @@ while pctl.running:
                 render_pos = 0
                 album_on = 0
 
-
                 max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
+                # Mouse wheel scrolling
                 if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+
+                    if mouse_wheel != 0:
+                        scroll_gallery_hide_timer.set()
+                        gui.frame_callback_list.append(TestTimer(0.9))
+
                     if prefs.gallery_row_scroll:
                         album_pos_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
                     else:
@@ -28954,7 +28947,6 @@ while pctl.running:
                         album_pos_px = round(album_v_slide_value * -1)
                         if album_dex:
                             gallery_pulse_top.pulse()
-
 
                     if album_pos_px > max_scroll:
                         album_pos_px = max_scroll
@@ -28971,7 +28963,9 @@ while pctl.running:
 
                 rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
                 fields.add(rect)
-                if coll(rect) or gallery_scroll.held:
+
+                # Show scroll area
+                if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
 
                     # Draw power bar button
                     if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
