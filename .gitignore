@@ -19,10 +19,13 @@ lib/*.so
 *.pyx
 encoder/
 *.flac
+*.ogg
+*.mp3
 build/
 *.csv
-a.ogg
 *.bat
 stats.txt
 *.idl
 *.tlb
+*.mo
+

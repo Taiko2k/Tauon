@@ -326,7 +326,6 @@ import re
 import zipfile
 import warnings
 import colorsys
-import html
 import requests
 import stat
 import xml.etree.ElementTree as ET
@@ -342,29 +341,30 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 # -----------------------------------------------------------
 # Detect locale for translations (currently none availiable)
 
-locale.setlocale(locale.LC_ALL, "")
-#locale.setlocale(locale.LC_ALL, ("ja_JP", "UTF-8"))
+def _(message):
+    return message
 
+
+locale.setlocale(locale.LC_ALL, '')
 lc = locale.getlocale()
-if lc[0] is not None and 'en' not in lc[0]:  # Remember to handle LANG potentionally being None
-    try:
+print(f"Locale detected: {lc[0]}")
 
-        print("Locale detected: ", end="")
-        print(lc)
+if lc[0] is not None and 'en' not in lc[0] and "_" in lc[0]:
 
-        import gettext
-        lang = gettext.translation('tauon', os.path.join(install_directory, "locale"), lc)
-        lang.install()
+    import gettext
+
+    lang = lc[0].split("_")[0]
+    # lang = ""
+    f = gettext.find('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
+    if f:
+        l = gettext.translation('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
+        l.install()
+        _ = l.gettext
 
         print("Translation file loaded")
 
-    except:
-        print("No translation file available for this locale")
-        def _(message):
-            return message
-else:
-    def _(message):
-        return message
+    else:
+        print("No translation file available")
 
 
 # ------------------------------------------------
@@ -4218,7 +4218,7 @@ class LastFMapi:
 
         self.sg = pylast.SessionKeyGenerator(self.network)
         self.url = self.sg.get_web_auth_url()
-        show_message(_("Web auth paged opened"), 'arrow', _("Once authorised click the 'done' button."))
+        show_message(_("Web auth page opened"), 'arrow', _("Once authorised click the 'done' button."))
         webbrowser.open(self.url, new=2, autoraise=True)
 
     def auth2(self):
@@ -10207,15 +10207,15 @@ def lightning_move_test(discard):
 
 
 
-def copy_deco():
-    line = "Copy"
-    if key_shift_down:
-        line = "Copy" #Folder From Library"
-    else:
-        line = "Copy"
-
-
-    return [colours.menu_text, colours.menu_background, line]
+# def copy_deco():
+#     line = "Copy"
+#     if key_shift_down:
+#         line = "Copy" #Folder From Library"
+#     else:
+#         line = "Copy"
+#
+#
+#     return [colours.menu_text, colours.menu_background, line]
 
 
 #playlist_menu.add('Paste', append_here, paste_deco)
@@ -11007,8 +11007,8 @@ extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
 #tab_menu.add(_("SORT"), open_filter_box, pass_ref=True)
 
-tab_menu.add_sub(_("Generate…"), 133)
-tab_menu.add_sub(_("Sort…"), 133)
+tab_menu.add_sub(_("Generate…"), 150)
+tab_menu.add_sub(_("Sort…"), 170)
 extra_tab_menu.add_sub(_("From Current…"), 133)
 # tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
 # tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
@@ -12399,7 +12399,7 @@ track_menu.add_sub(_("Meta…"), 160)
 track_menu.br()
 #track_menu.add('Cut', s_cut, pass_ref=False)
 #track_menu.add('Remove', del_selected)
-track_menu.add(_('Copy'), s_copy, copy_deco, pass_ref=False)
+track_menu.add(_('Copy'), s_copy, pass_ref=False)
 
 track_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
 
@@ -14751,11 +14751,11 @@ def discord_deco():
 
     if prefs.disconnect_discord:
         tc = colours.menu_text_disabled
-        return [tc, colours.menu_background, "Disconnecting..."]
+        return [tc, colours.menu_background, _("Disconnecting...")]
     if prefs.discord_active:
-        return [tc, colours.menu_background, "Disconnect Discord"]
+        return [tc, colours.menu_background, _("Disconnect Discord")]
     else:
-        return [tc, colours.menu_background, 'Show playing in Discord']
+        return [tc, colours.menu_background, _('Show playing in Discord')]
 
 
 
@@ -18139,7 +18139,7 @@ class Over:
             y = y0 + 240 * gui.scale
             x += 40 * gui.scale
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
-            prefs.device_buffer = self.slide_control(x, y, "Device buffer length", 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
+            prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
     def reload_device(self, _):
 
@@ -18217,11 +18217,11 @@ class Over:
 
             y += 35 * gui.scale
 
-            self.button(x, y, "Lyrics settings...", self.toggle_lyrics_view, width=115 * gui.scale)
+            self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
 
             y += 26 * gui.scale
 
-            if system == 'linux' and self.button2(x, y, "Chart generator...", width=115 * gui.scale):
+            if system == 'linux' and self.button2(x, y, _("Chart generator..."), width=115 * gui.scale):
                 self.chart_view = 1
 
             x = x0 + 25 * gui.scale
@@ -18627,7 +18627,7 @@ class Over:
 
         self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
         y += 25 * gui.scale
-        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Save and overwite files inplace"))
+        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Save and overwirte files inplace"))
 
     def devance_theme(self):
         global theme
@@ -19080,31 +19080,31 @@ class Over:
         y = y0 + 25 * gui.scale
 
 
-        prefs.playlist_font_size = self.slide_control(x, y, "Font Size", "", prefs.playlist_font_size, 12, 17)
+        prefs.playlist_font_size = self.slide_control(x, y, _("Font Size"), "", prefs.playlist_font_size, 12, 17)
         y += 25 * gui.scale
-        prefs.playlist_row_height = self.slide_control(x, y, "Row Size", "px", prefs.playlist_row_height, 15, 45)
+        prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
 
         x += 65 * gui.scale
-        self.button(x, y, "Thin default", self.small_preset, 124 * gui.scale)
+        self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
         y += 27 * gui.scale
-        self.button(x, y, "Thick default", self.large_preset, 124 * gui.scale)
+        self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
 
         y += 90 * gui.scale
         x -= 90 * gui.scale
 
-        ddt.draw_text((x, y), "End of playlist action", colours.grey_blend_bg(90), 12)
+        ddt.draw_text((x, y), _("End of playlist action"), colours.grey_blend_bg(90), 12)
 
         y += 25 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_stop, "Stop playback")
+        self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_repeat, "Repeat playlist")
+        self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
         #y += 25
         y -= 25 * gui.scale
         x += 120 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_advance, "Play next playlist")
+        self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, self.set_playlist_cycle, "Cycle all playlists")
+        self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
 
     def set_playlist_cycle(self, mode=0):
         if mode == 1:
