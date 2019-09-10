@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v4.7.2
+
+ - Added "Always center" option for art backround function
+ - Tweaked gallery scroll bar to reveal when scrolling by wheel
+
 v4.7.1
 
  - Added URL download function
