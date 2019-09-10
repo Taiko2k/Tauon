@@ -7098,6 +7098,7 @@ class GallClass:
             #self.gall[(track, size, offset)] = [1, None, None, None]
             if key not in self.queue:
                 self.queue.append(key)
+
             # self.key_list.append((track, size, offset))
 
             # # Remove old images to conserve RAM usage
@@ -28991,6 +28992,10 @@ while pctl.running:
                 # Show scroll area
                 if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
 
+                    if gallery_scroll.held:
+                        while len(gall_ren.queue) > 2:
+                            gall_ren.queue.pop()
+
                     # Draw power bar button
                     if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
                         rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 24 * gui.scale)
@@ -29208,8 +29213,6 @@ while pctl.running:
 
                 if not pref_box.enabled or mouse_wheel != 0:
                     gui.first_in_grid = None
-
-                gall_ren.queue.clear()
 
                 # Render album grid
                 while render_pos < album_pos_px + window_size[1] and default_playlist:
