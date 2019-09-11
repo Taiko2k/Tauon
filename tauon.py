@@ -346,26 +346,6 @@ def _(message):
 
 
 locale.setlocale(locale.LC_ALL, '')
-lc = locale.getlocale()
-print(f"Locale detected: {lc[0]}")
-
-if lc[0] is not None and 'en' not in lc[0] and "_" in lc[0]:
-
-    import gettext
-
-    lang = lc[0].split("_")[0]
-    # lang = ""
-    f = gettext.find('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
-    if f:
-        l = gettext.translation('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
-        l.install()
-        _ = l.gettext
-
-        print("Translation file loaded")
-
-    else:
-        print("No translation file available")
-
 
 # ------------------------------------------------
 
@@ -920,6 +900,7 @@ class Prefs:    # Used to hold any kind of settings
         self.always_art_header = False
 
         self.center_bg = True
+        self.ui_lang = 'auto'
 
 
 prefs = Prefs()
@@ -2283,6 +2264,8 @@ def save_prefs():
     cf.update_value("plex-password", prefs.plex_password)
     cf.update_value("plex-servername", prefs.plex_servername)
 
+    cf.update_value("display-language", prefs.ui_lang)
+
     cf.update_value("use-log-volume-scale", prefs.log_vol)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
@@ -2370,6 +2353,12 @@ def load_prefs():
         prefs.dc_device = True
     elif prefs.dc_device_setting == 'off':
         prefs.dc_device = False
+
+    cf.br()
+    cf.add_text("[locale]")
+    prefs.ui_lang = cf.sync_add("string", "display-language", prefs.ui_lang, "Override display language to use if "
+                                                                             "available. E.g. 'en', 'jp', "
+                                                                             "Default: 'auto'")
 
     cf.br()
     cf.add_text("[tag-editor]")
@@ -2481,11 +2470,35 @@ def load_prefs():
     prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font, "Format is fontname + size. Default is Monospace 10")
 
 
-
 load_prefs()
 save_prefs()
 
+# Set UI language -----
 
+lc = locale.getlocale()
+print(f"Locale detected: {lc[0]}")
+
+lang = "en"
+if lc[0] is not None and "_" in lc[0]:
+    lang = lc[0].split("_")[0]
+
+if prefs.ui_lang != "en":
+    lang = prefs.ui_lang
+
+if lang != 'en':
+    import gettext
+
+    f = gettext.find('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
+    if f:
+        l = gettext.translation('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
+        l.install()
+        _ = l.gettext
+
+        print("Translation file loaded")
+    else:
+        print("No translation file available")
+
+# ----
 
 if prefs.scale_want != prefs.ui_scale:
     if prefs.scale_want in (1, 1.25, 2):
@@ -18650,9 +18663,9 @@ class Over:
         x = x0 + round(20 * gui.scale)
         y = y0 + 215 * gui.scale
 
-        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
+        self.toggle_square(x + 250 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
         y += 25 * gui.scale
-        self.toggle_square(x + 252 * gui.scale, y, toggle_transcode_inplace, _("Save and overwirte files inplace"))
+        self.toggle_square(x + 250 * gui.scale, y, toggle_transcode_inplace, _("Save and overwrite files inplace"))
 
     def devance_theme(self):
         global theme
@@ -18713,20 +18726,20 @@ class Over:
         ddt.draw_text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
 
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_show_playlist_list, "Show playlist list in panel")
+        self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
 
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, "Show empty queue in panel")
+        self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
 
         y += 40 * gui.scale
 
         ddt.draw_text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
 
         y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_meta_persists_stop, "Persist when stopped")
+        self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
 
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_meta_shows_selected, "Always show selected")
+        self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
 
 
     def about(self, x0, y0, w0, h0):
@@ -18838,7 +18851,7 @@ class Over:
         ddt.draw_text((x, y), _("Chart Grid Generator"), colours.grey(250), 214)
 
         y += 25 * gui.scale
-        ww = ddt.draw_text((x, y), "Target playlist:   ", colours.grey(220), 312)
+        ww = ddt.draw_text((x, y), _("Target playlist:   "), colours.grey(220), 312)
         ddt.draw_text((x + ww, y), pctl.multi_playlist[pctl.active_playlist_viewing][0], colours.grey(100), 12, 400 * gui.scale)
         #x -= 210 * gui.scale
 
@@ -18866,9 +18879,9 @@ class Over:
 
         else:
 
-            prefs.chart_rows = self.slide_control(x, y, "Rows", '', prefs.chart_rows, 1, 100, 1, width=35)
+            prefs.chart_rows = self.slide_control(x, y, _("Rows"), '', prefs.chart_rows, 1, 100, 1, width=35)
             y += 22 * gui.scale
-            prefs.chart_columns = self.slide_control(x, y, "Columns", '', prefs.chart_columns, 1, 100, 1, width=35)
+            prefs.chart_columns = self.slide_control(x, y, _("Columns"), '', prefs.chart_columns, 1, 100, 1, width=35)
             y += 22 * gui.scale
 
 
@@ -18884,7 +18897,7 @@ class Over:
         x = x0 + 20 * gui.scale + 300 * gui.scale
         y = y0 + 100 * gui.scale
 
-        if self.button2(x, y, "Randomise BG"):
+        if self.button2(x, y, _("Randomise BG")):
 
             r = round(random.random() * 40)
             g = round(random.random() * 40)
