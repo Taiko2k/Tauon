@@ -27387,6 +27387,7 @@ def is_level_zero():
             return False
 
     return not gui.rename_folder_box \
+            and not track_box \
             and not renamebox \
             and not radiobox \
             and not pref_box.enabled \
@@ -29374,14 +29375,15 @@ while pctl.running:
                             # Draw album art
                             drawn_art = gall_ren.render(track, (x, y))
 
+                            # Determine mouse collision
                             rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
                             m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
                             fields.add(rect)
 
-
+                            # Draw mouse-over highlight
                             if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
-
-                                ddt.rect_r(rect, [255, 255, 255, 10], True)
+                                if is_level_zero():
+                                    ddt.rect_r(rect, [255, 255, 255, 10], True)
 
                             if drawn_art is False and gui.gallery_show_text is False:
 
@@ -30339,13 +30341,13 @@ while pctl.running:
                     rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Title", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Title"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Title copied to clipboard")
                             copy_to_clipboard(tc.title)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Title", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Title"), key_colour_off, 212)
                         #
                     q = ddt.draw_text((x2, y1 - int(2 * gui.scale)), tc.title
                               , value_colour, 314, max_w=w - 170 * gui.scale)
@@ -30359,13 +30361,13 @@ while pctl.running:
                     rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Artist", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Artist"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Artist field copied to clipboard")
                             copy_to_clipboard(tc.artist)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Artist", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Artist"), key_colour_off, 212)
 
                     q = ddt.draw_text((x2, y1 - (1 * gui.scale)), tc.artist,
                                       value_colour, value_font_a, max_w=390 * gui.scale)
@@ -30378,13 +30380,13 @@ while pctl.running:
                     rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Album", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Album"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Album field copied to clipboard")
                             copy_to_clipboard(tc.album)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Album", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Album"), key_colour_off, 212)
 
                     q = ddt.draw_text((x2, y1 - 1 * gui.scale), tc.album,
                               value_colour,
@@ -30398,13 +30400,13 @@ while pctl.running:
                     rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Path", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Path"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("File path copied to clipboard")
                             copy_to_clipboard(tc.fullpath)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Path", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Path"), key_colour_off, 212)
 
                     q = ddt.draw_text((x2, y1 - int(3 * gui.scale)), tc.fullpath,
                               path_colour, 210, max_w=425*gui.scale )
@@ -30419,7 +30421,7 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
 
                     if tc.samplerate != 0:
-                        ddt.draw_text((x1, y1), "Samplerate", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Samplerate"), key_colour_off, 212)
 
                         line = str(tc.samplerate) + " Hz"
 
@@ -30433,7 +30435,7 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
 
                     if tc.bitrate not in (0, "", "0"):
-                        ddt.draw_text((x1, y1), "Bitrate", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Bitrate"), key_colour_off, 212)
                         line = str(tc.bitrate)
                         if tc.file_ext in ('FLAC', 'OPUS', 'APE', 'WV'):
                             line = "~" + line
@@ -30446,13 +30448,13 @@ while pctl.running:
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if coll(rect):
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_on, 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_on, 212)
                             if input.mouse_click:
                                 show_message("Album artist copied to clipboard")
                                 copy_to_clipboard(tc.album_artist)
                                 input.mouse_click = False
                         else:
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Album Artist", key_colour_off, 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_off, 212)
 
                         q = ddt.draw_text((x + (8 + 88)  * gui.scale, y1), tc.album_artist,
                                   value_colour, value_font, max_w=120 * gui.scale)
@@ -30466,22 +30468,22 @@ while pctl.running:
                     rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Duration", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Duration"), key_colour_on, 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(tc.length)).lstrip("0"))
                             show_message("Duration copied to clipboard")
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Duration", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Duration"), key_colour_off, 212)
                     line = time.strftime('%M:%S', time.gmtime(tc.length))
                     ddt.draw_text((x2, y1), line, value_colour, value_font)
 
                     # -----------
                     if tc.track_total not in ("", "0"):
                         x += int(170 * gui.scale)
-                        line = str(tc.track_number) + " of " + str(
+                        line = str(tc.track_number) + _(" of ") + str(
                             tc.track_total)
-                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Track", key_colour_off, 212)
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Track"), key_colour_off, 212)
                         ddt.draw_text((x + (8 + 88)  * gui.scale, y1), line,
                                   value_colour, value_font)
                         x -= int(170 * gui.scale)
@@ -30489,16 +30491,16 @@ while pctl.running:
                     y1 += int(15 * gui.scale)
                     #print(tc.size)
                     if tc.size != 0:
-                        ddt.draw_text((x1, y1), "File size", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("File size"), key_colour_off, 212)
                         ddt.draw_text((x2, y1), get_filesize_string(tc.size),
                                   value_colour, value_font)
 
                     # -----------
                     if tc.disc_total not in ("", "0", 0):
                         x += int(170 * gui.scale)
-                        line = str(tc.disc_number) + " of " + str(
+                        line = str(tc.disc_number) + _(" of ") + str(
                             tc.disc_total)
-                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Disc", key_colour_off, 212)
+                        ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Disc"), key_colour_off, 212)
                         ddt.draw_text((x + (8 + 88) * gui.scale, y1), line,
                                   value_colour, value_font)
                         x -= int(170 * gui.scale)
@@ -30508,13 +30510,13 @@ while pctl.running:
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Genre", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Genre"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Genre field copied to clipboard")
                             copy_to_clipboard(tc.genre)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Genre", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Genre"), key_colour_off, 212)
                     ddt.draw_text((x2, y1), tc.genre, value_colour,
                               value_font, max_w=290 * gui.scale)
 
@@ -30523,13 +30525,13 @@ while pctl.running:
                     rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
                     fields.add(rect)
                     if coll(rect):
-                        ddt.draw_text((x1, y1), "Date", key_colour_on, 212)
+                        ddt.draw_text((x1, y1), _("Date"), key_colour_on, 212)
                         if input.mouse_click:
                             show_message("Date field copied to clipboard")
                             copy_to_clipboard(tc.date)
                             input.mouse_click = False
                     else:
-                        ddt.draw_text((x1, y1), "Date", key_colour_off, 212)
+                        ddt.draw_text((x1, y1), _("Date"), key_colour_off, 212)
                     ddt.draw_text((x2, y1), str(tc.date),
                               value_colour, value_font)
 
@@ -30539,13 +30541,13 @@ while pctl.running:
                         rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
                         fields.add(rect)
                         if coll(rect):
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Composer", key_colour_on, 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_on, 212)
                             if input.mouse_click:
                                 show_message("Composer copied to clipboard")
                                 copy_to_clipboard(tc.album_artist)
                                 input.mouse_click = False
                         else:
-                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), "Composer", key_colour_off, 212)
+                            ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_off, 212)
                         q = ddt.draw_text((x + (8 + 88)  * gui.scale, y1), tc.composer,
                                   value_colour, value_font, max_w=120 * gui.scale)
                         if coll(rect):
@@ -30563,7 +30565,7 @@ while pctl.running:
                         r_menu_index].length != 0:
                         ratio = total / tc.length
 
-                    ddt.draw_text((x1, y1), "Play count", key_colour_off, 212)
+                    ddt.draw_text((x1, y1), _("Play count"), key_colour_off, 212)
                     ddt.draw_text((x2, y1), str(int(ratio)), value_colour, value_font)
 
                     y1 += int(15 * gui.scale)
@@ -30576,13 +30578,13 @@ while pctl.running:
                     line = time.strftime('%H:%M:%S',
                                          time.gmtime(total))
 
-                    ddt.draw_text((x1, y1), "Play time", key_colour_off, 212)
+                    ddt.draw_text((x1, y1), _("Play time"), key_colour_off, 212)
                     ddt.draw_text((x2, y1), str(line), value_colour, value_font)
 
                     # -------
                     if tc.lyrics != "":
 
-                        if draw.button("Lyrics", x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+                        if draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
                             prefs.show_lyrics_showcase = True
                             track_box = False
                             switch_showcase(r_menu_index)
@@ -30594,13 +30596,13 @@ while pctl.running:
                         #ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
                         fields.add(rect)
                         if coll(rect):
-                            ddt.draw_text((x1, y1), "Comment", key_colour_on, 212)
+                            ddt.draw_text((x1, y1), _("Comment"), key_colour_on, 212)
                             if input.mouse_click:
                                 show_message("Comment copied to clipboard")
                                 copy_to_clipboard(tc.comment)
                                 input.mouse_click = False
                         else:
-                            ddt.draw_text((x1, y1), "Comment", key_colour_off, 212)
+                            ddt.draw_text((x1, y1), _("Comment"), key_colour_off, 212)
                         # ddt.draw_text((x1, y1), "Comment", key_colour_off, 12)
 
                         if "\n" not in tc.comment and ('http://' in tc.comment or 'www.' in tc.comment or 'https://' in tc.comment) and ddt.get_text_w(
@@ -30647,9 +30649,9 @@ while pctl.running:
                 if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
-                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), "Folder Modification", colours.grey(230), 213)
+                p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.grey(230), 213)
 
-                if rename_folder.text != prefs.rename_folder_template and draw.button("Default", x + (300 - 63) * gui.scale, y + 11 * gui.scale,
+                if rename_folder.text != prefs.rename_folder_template and draw.button(_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale,
                                70 * gui.scale):
                     rename_folder.text = prefs.rename_folder_template
 
@@ -30658,15 +30660,15 @@ while pctl.running:
 
                 ddt.rect_a((x + 8 * gui.scale, y + 38 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
 
-                if draw.button("Rename", x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
+                if draw.button(_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Renames the physical folder based on the template") or input.level_2_enter:
                     rename_parent(rename_index, rename_folder.text)
                     gui.rename_folder_box = False
                     input.mouse_click = False
 
-                text = "Trash"
+                text = _("Trash")
                 tt = "Moves folder to system trash"
                 if key_shift_down:
-                    text = "Delete"
+                    text = _("Delete")
                     tt = "Physically deletes folder from disk"
                 if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
                     if key_shift_down:
@@ -30677,7 +30679,7 @@ while pctl.running:
                     input.mouse_click = False
 
                 if move_folder_up(rename_index):
-                    if draw.button("Raise", x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
+                    if draw.button(_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale, tooltip="Moves folder up 2 levels and deletes old the containing folder"):
                         move_folder_up(rename_index, True)
                         input.mouse_click = False
 
