@@ -3054,21 +3054,18 @@ class PlayerCtl:
         if gui.playlist_view_length < 1:
             return 0
 
-
-
         for i in range(len(self.multi_playlist[self.active_playlist_viewing][2])):
             if self.multi_playlist[self.active_playlist_viewing][2][i] == track_index:
 
-                if self.playlist_playing_position < len(self.multi_playlist[self.active_playlist_viewing][2]) and self.active_playlist_viewing == self.active_playlist_playing and track_index == \
+                if self.playlist_playing_position < len(self.multi_playlist[self.active_playlist_viewing][2]) and \
+                        self.active_playlist_viewing == self.active_playlist_playing and track_index == \
                         self.multi_playlist[self.active_playlist_viewing][2][self.playlist_playing_position] and \
                         i != self.playlist_playing_position:
                     #continue
                     i = self.playlist_playing_position
 
-
                 if select:
                     playlist_selected = i
-
 
                 if playing:
                     # Make the found track the playing track
@@ -3081,28 +3078,36 @@ class PlayerCtl:
                     if pctl.multi_playlist[pctl.active_playlist_viewing][6] == gui.playlist_current_visible_tracks_id:
                         vl = gui.playlist_current_visible_tracks
 
-                    if i == pctl.playlist_view_position - 1 and pctl.playlist_view_position > 1:
-                        pctl.playlist_view_position -= 1
+                    # Align to album if in view range (and folder titles are active)
+                    ap = get_album_info(i)[1][0]
+                    if (not i - ap > gui.playlist_view_length - 2) and not pctl.multi_playlist[pctl.active_playlist_viewing][4]:
+                        pctl.playlist_view_position = ap
+                    else:
+                        # Move to a random offset ---
 
-                    # Move a bit if its just out of range
-                    elif pctl.playlist_view_position + gui.playlist_view_length - 2 == i and i < len(
-                            self.multi_playlist[self.active_playlist_viewing][2]) - 5:
-                        pctl.playlist_view_position += 3
+                        if i == pctl.playlist_view_position - 1 and pctl.playlist_view_position > 1:
+                            pctl.playlist_view_position -= 1
+                        # Move a bit if its just out of range
+                        elif pctl.playlist_view_position + gui.playlist_view_length - 2 == i and i < len(
+                                self.multi_playlist[self.active_playlist_viewing][2]) - 5:
+                            pctl.playlist_view_position += 3
 
-                    # We know its out of range if above view postion
-                    elif i < pctl.playlist_view_position:
-                        pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
-                            gui.playlist_view_length / 6))
+                        # We know its out of range if above view postion
+                        elif i < pctl.playlist_view_position:
+                            pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
+                                gui.playlist_view_length / 6))
 
-                    # If its below we need to test if its in view. If playing track in view, don't jump.
-                    elif abs(pctl.playlist_view_position - i) >= vl:
-                        pctl.playlist_view_position = i
-                        if i > 6:
-                            pctl.playlist_view_position -= 5
-                        if i > gui.playlist_view_length and i + (gui.playlist_view_length * 2) < len(
-                                self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
-                            pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
+                        # If its below we need to test if its in view. If playing track in view, don't jump.
+                        elif abs(pctl.playlist_view_position - i) >= vl:
+                            pctl.playlist_view_position = i
+                            if i > 6:
+                                pctl.playlist_view_position -= 5
+                            if i > gui.playlist_view_length and i + (gui.playlist_view_length * 2) < len(
+                                    self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
+                                pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
+
                 break
+
         else:  # Search other all other playlists
             if not this_only:
                 for i, playlist in enumerate(self.multi_playlist):
