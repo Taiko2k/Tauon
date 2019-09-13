@@ -1609,15 +1609,11 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
-
-
-
         self.status_text_normal = self.grey(100)
         self.status_text_over = self.grey(220)
 
         if self.menu_highlight_background is None:
             self.menu_highlight_background = [40, 40, 40, 255]
-
 
     def light_mode(self):
 
@@ -1627,7 +1623,7 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.sys_background_2 = self.grey(25)
         self.sys_tab_bg = self.grey(25)
         self.sys_tab_hl = self.grey(45)
-        self.sys_background_3 = self.grey(35)
+        self.sys_background_3 = self.grey(30)
         self.sys_background_4 = self.grey(19)
         self.toggle_box_on = self.tab_background_active
         # self.time_sub = [0, 0, 0, 200]
@@ -1643,8 +1639,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_text = self.grey(40)
         self.menu_text_disabled = self.grey(180)
         self.menu_highlight_background = [200, 200, 200, 245]
-        self.corner_button = self.grey(50)
-        self.corner_button_active = self.grey(50)
+        self.corner_button = self.grey(160)
+        self.corner_button_active = self.grey(35)
         self.window_buttons_bg = [0, 0, 0, 5]
         self.message_box_bg = [245, 245, 245, 255]
         self.message_box_text = self.grey(20)
@@ -2243,6 +2239,12 @@ if db_version > 0:
     if db_version <= 32:
         if theme > 1:
            theme += 1
+
+    if db_version <= 33:
+
+        for key, value in master_library.items():
+            if not hasattr(master_library[key], 'misc'):
+                setattr(master_library[key], 'misc', {})
 
 # Loading Config -----------------
 
@@ -9311,9 +9313,9 @@ def menu_album_repeat():
     if pctl.mpris is not None:
         pctl.mpris.update_loop()
 
-repeat_menu.add("Repeat OFF", menu_repeat_off)
-repeat_menu.add("Repeat Track", menu_set_repeat)
-repeat_menu.add("Repeat Album", menu_album_repeat)
+repeat_menu.add(_("Repeat OFF"), menu_repeat_off)
+repeat_menu.add(_("Repeat Track"), menu_set_repeat)
+repeat_menu.add(_("Repeat Album"), menu_album_repeat)
 
 def toggle_random():
     pctl.random_mode ^= True
@@ -9347,9 +9349,9 @@ def menu_album_random():
     if pctl.mpris is not None:
         pctl.mpris.update_shuffle()
 
-shuffle_menu.add("Shuffle OFF", menu_shuffle_off)
-shuffle_menu.add("Shuffle Tracks", menu_set_random)
-shuffle_menu.add("Random Albums", menu_album_random)
+shuffle_menu.add(_("Shuffle OFF"), menu_shuffle_off)
+shuffle_menu.add(_("Shuffle Tracks"), menu_set_random)
+shuffle_menu.add(_("Random Albums"), menu_album_random)
 
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
@@ -9508,7 +9510,7 @@ def cancel_import():
         gui.im_cancel = True
 
 
-cancel_menu.add("Cancel", cancel_import)
+cancel_menu.add(_("Cancel"), cancel_import)
 
 
 def toggle_lyrics_show(a):
@@ -9518,9 +9520,9 @@ def toggle_lyrics_show(a):
 def toggle_side_art_deco():
     colour = colours.menu_text
     if prefs.show_side_art:
-        line = "Hide Art box"
+        line = _("Hide Art box")
     else:
-        line = "Show Art Box"
+        line = _("Show Art Box")
     # if pctl.playing_object().lyrics == "":
     #     colour = colours.menu_text_disabled
 
@@ -9541,9 +9543,9 @@ def toggle_lyrics_deco(track_object):
 
         colour = colours.menu_text
         if prefs.show_lyrics_showcase:
-            line = "Hide lyrics"
+            line = _("Hide lyrics")
         else:
-            line = "Show lyrics"
+            line = _("Show lyrics")
         if track_object.lyrics == "":
             colour = colours.menu_text_disabled
 
@@ -9551,9 +9553,9 @@ def toggle_lyrics_deco(track_object):
 
         colour = colours.menu_text
         if prefs.show_lyrics_side:
-            line = "Hide lyrics"
+            line = _("Hide lyrics")
         else:
-            line = "Show lyrics"
+            line = _("Show lyrics")
         if track_object.lyrics == "":
             colour = colours.menu_text_disabled
 
@@ -10432,9 +10434,9 @@ tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 def pl_lock_deco(pl):
 
     if pctl.multi_playlist[pl][9] == True:
-        return [colours.menu_text, colours.menu_background, "Unlock"]
+        return [colours.menu_text, colours.menu_background, _("Unlock")]
     else:
-        return [colours.menu_text, colours.menu_background, 'Lock']
+        return [colours.menu_text, colours.menu_background, _('Lock')]
 
 
 def view_pl_is_locked(_):
@@ -12328,7 +12330,7 @@ def heart_xmenu_colour():
         return [245, 60, 60, 255]
     else:
         if colours.lm:
-            return [255, 200, 200, 255]
+            return [255, 150, 180, 255]
         return None
 
 
@@ -14340,13 +14342,13 @@ extra_menu.add(_('Clear Queue'), clear_queue, queue_deco)
 def heart_menu_colour():
     if not (pctl.playing_state == 1 or pctl.playing_state == 2):
         if colours.lm:
-            return [255, 200, 200, 255]
+            return [255, 150, 180, 255]
         return [50, 50, 50, 255]
     if love(False):
         return [245, 60, 60, 255]
     else:
         if colours.lm:
-            return [255, 200, 200, 255]
+            return [255, 150, 180, 255]
         return None
 
 
@@ -15280,6 +15282,8 @@ class SearchOverlay:
         self.old_mouse = [0,0]
         self.sip = False
         self.delay_enter = False
+        self.last_animate_time = 0
+        self.animate_timer = Timer(100)
 
     def click_artist(self, name, get_list=False):
 
@@ -15459,16 +15463,32 @@ class SearchOverlay:
             #     ddt.draw_text((hint_x, hint_y, 2), "Hold Ctrl and click to add items to current viewed playlist",
             #                   hint_colour, 314)
 
+            # Search active animation
             if self.sip:
 
-                si = 7 * gui.scale
-                gap = 5 * gui.scale
-                left = 15 * gui.scale
+                x = round(15 * gui.scale)
+                y = x
+                s = round(7 * gui.scale)
+                g = round(4 * gui.scale)
 
-                ddt.rect_r((left, left, si, si), [100,80,240,255], True)
-                ddt.rect_r((left + gap + si, left, si, si), [100,80,240,255], True)
-                ddt.rect_r((left + (gap + si) * 2, left, si, si), [100,80,240,255], True)
+                t = self.animate_timer.get()
+                if abs(t - self.last_animate_time) > 0.3:
+                    self.animate_timer.set()
+                    t = 0
 
+                self.last_animate_time = t
+
+                for item in range(4):
+                    a = 100
+                    if round((t * 14)) % 4 == item:
+                        a = 255
+                    colour = (140,100,255,a)
+                    ddt.rect_r((x, y, s, s), colour, True)
+                    x += g + s
+
+                gui.update += 1
+
+            # No results found message
             elif not self.results and len(self.search_text.text) > 2:
                 ddt.draw_text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
@@ -18476,7 +18496,7 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
             y += 40 * gui.scale
-            if self.button2(x, y, "Paste Token"):
+            if self.button2(x, y, _("Paste Token")):
 
                 text = copy_from_clipboard()
                 if text == "":
@@ -18503,7 +18523,7 @@ class Over:
                 else:
                     show_message("That is not a valid token", "error")
             y += 30 * gui.scale
-            if self.button2(x, y, "Clear"):
+            if self.button2(x, y, _("Clear")):
                 if not prefs.discogs_pat:
                     show_message("There wasn't any token saved.")
                 prefs.discogs_pat = ""
@@ -19572,7 +19592,6 @@ class TopPanel:
 
         x = self.start_space_left
         y = yy #self.ty
-
 
         # Calculate position for playing text and text
         offset = 15 * gui.scale
@@ -26209,7 +26228,6 @@ class ViewBox:
         func = None
 
         low = (0, .15, 0)
-
         if colours.lm:
             low = (0, .85, 0)
 
@@ -26217,7 +26235,8 @@ class ViewBox:
 
         high = (.55, .6, .75)
         if colours.lm:
-            high = (.55, .75, .75)
+            #high = (.55, .75, .75)
+            high = (.0, .25, .0)
 
         test = self.button(x, y, self.side_img, self.side, self.side_colour, "Tracks + Art", low=low, high=high)
         if test is not None:
@@ -26229,7 +26248,8 @@ class ViewBox:
 
         high = (.6, .6, .75)
         if colours.lm:
-            high = (.6, .80, .85)
+            #high = (.6, .80, .85)
+            high = (.0, .25, .0)
 
         test = self.button(x, y, self.gallery1_img, self.gallery1, self.gallery1_colour, "Gallery", low=low, high=high)
         if test is not None:
@@ -26241,7 +26261,8 @@ class ViewBox:
 
         high = (.5, .6, .75)
         if colours.lm:
-            high = (.5, .7, .65)
+            #high = (.5, .7, .65)
+            high = (.0, .25, .0)
 
         test = self.button(x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, "Tracks only", low=low, high=high)
         if test is not None:
@@ -26253,7 +26274,8 @@ class ViewBox:
 
         high = (.7, .6, .75)
         if colours.lm:
-            high = (.7, .75, .75)
+            #high = (.7, .75, .75)
+            high = (.0, .25, .0)
 
         test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", False, low=low, high=high)
         if test is not None:
@@ -26265,7 +26287,8 @@ class ViewBox:
 
         high = (.14, .6, .75)
         if colours.lm:
-            high = (.9, .75, .65)
+            #high = (.9, .75, .65)
+            high = (.0, .25, .0)
 
         test = self.button(x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, "Toggle columns", False, low=low, high=high)
         if test is not None:
@@ -26277,7 +26300,8 @@ class ViewBox:
 
         high = (.2, .6, .75)
         if colours.lm:
-            high = (.2, .6, .75)
+            #high = (.2, .6, .75)
+            high = (.0, .25, .0)
 
         if gui.scale == 1.25:
             x-= 1
@@ -27206,7 +27230,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            33,  # Version, used for upgrading
+            34,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -28729,6 +28753,27 @@ while pctl.running:
                             colours.post_config()
                             if colours.lm:
                                 colours.light_mode()
+
+                            if colours.lm:
+                                info_icon.colour = [60, 60, 60, 255]
+                            else:
+                                info_icon.colour = [61, 247, 163, 255]
+
+                            if colours.lm:
+                                folder_icon.colour = [255, 190, 80, 255]
+                            else:
+                                folder_icon.colour = [244, 220, 66, 255]
+
+                            if colours.lm:
+                                settings_icon.colour = [85, 187, 250, 255]
+                            else:
+                                settings_icon.colour = [232, 200, 96, 255]
+
+                            if colours.lm:
+                                radiorandom_icon.colour = [120, 200, 120, 255]
+                            else:
+                                radiorandom_icon.colour = [153, 229, 133, 255]
+
                             # temp
                             #colours.menu_highlight_background = [40, 40, 40, 255]
 
@@ -29943,7 +29988,7 @@ while pctl.running:
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
 
-                edge_playlist.render(gui.playlist_left, gui.panelY + 1, gui.plw, 2 * gui.scale)
+                edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
                 bottom_playlist.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 2 * gui.scale)
                 # --------------------------------------------
                 # ALBUM ART

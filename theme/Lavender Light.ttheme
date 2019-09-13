@@ -35,25 +35,27 @@ light-mode
 200,200,200		folder line
 80,80,80		folder title 
 
-180,140,255,255		playing highlight
+180,140,255,255	playing highlight
 0,0,0,14		select highlight
-180,140,255,255		gallery highlight
+180,140,255,255	gallery highlight
 
 #-Bottom panel------
 
-70,70,70		buttons off
+75,75,75		buttons off
 255,255,255		buttons over
 250,250,250		buttons active
 
-250,210,100,255		playing time
+250,210,100,255	playing time
 
-180,140,255,255		seek bar
-160,160,160		volume bar
-30,30,30		seek bg
-30,30,30		volume bg
+180,140,255,255	seek bar
+200,200,200		volume bar
+
+45,45,45		seek bg
+45,45,45		volume bg
+
 40,40,40		scroll bar
 
-70,70,70		mode off
+75,75,75		mode off
 250,250,250		mode over
 230,230,230		mode on
 
@@ -63,8 +65,8 @@ light-mode
 30,30,30		tab line
 240,240,240		tab background
 230,230,230		tab over
-180,140,255,255		tab active background
-180,140,255,255		music vis
+180,140,255,255	tab active background
+180,140,255,255	music vis
 
 #-Side panel--------
 
