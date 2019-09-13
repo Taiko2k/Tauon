@@ -6,7 +6,9 @@ v4.7.2
  - Added Japanese translation (partial machine translation)
  - Added "Always center" option for art background function
  - Improved thumbnail generating while scrolling gallery
+ - Improved search progress indicator to animate
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
+ - Fixed thread crash with old data files
 
 v4.7.1
 
