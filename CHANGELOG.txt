@@ -5,9 +5,13 @@ v4.7.2
 
  - Added Japanese translation (partial machine translation)
  - Added "Always center" option for art background function
+ - Added menu icon for Discord
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
+ - Tweaked go-to-playing behavior to align album with top
+ - Tweaked Lavender Light theme colours
+ - Fixed right-click not closing file/folder rename box's
  - Fixed thread crash with old data files
 
 v4.7.1
