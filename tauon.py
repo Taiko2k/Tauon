@@ -1635,10 +1635,10 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.bar_title_text = self.grey(255)
         self.vis_bg = [235, 235, 235, 255]
-        self.menu_background = [240, 240, 240, 245]
+        self.menu_background = [240, 240, 240, 250]
         self.menu_text = self.grey(40)
         self.menu_text_disabled = self.grey(180)
-        self.menu_highlight_background = [200, 200, 200, 245]
+        self.menu_highlight_background = [200, 200, 200, 250]
         self.corner_button = self.grey(160)
         self.corner_button_active = self.grey(35)
         self.window_buttons_bg = [0, 0, 0, 5]
@@ -14807,7 +14807,13 @@ def discord_deco():
 def discord_show_test(_):
     return prefs.discord_show
 
-x_menu.add("Show playing in Discord", activate_discord, discord_deco, show_test=discord_show_test)
+
+discord_icon = MenuIcon(asset_loader('discord.png', True))
+discord_icon.colour = [115, 138, 219, 255]
+discord_icon.xoff = 3
+#discord_icon.colour_callback = broadcast_colour
+
+x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
 def exit_func():
     pctl.running = False
@@ -30684,6 +30690,7 @@ while pctl.running:
 
                 if gui.level_2_click:
                     input.mouse_click = True
+
                 gui.level_2_click = False
 
                 w = 500 * gui.scale
@@ -30696,7 +30703,7 @@ while pctl.running:
 
                 ddt.text_background_colour = colours.sys_background_3
 
-                if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
+                if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
                     gui.rename_folder_box = False
 
                 p = ddt.draw_text((x + 10 * gui.scale, y + 9 * gui.scale,), _("Folder Modification"), colours.grey(230), 213)
@@ -30704,7 +30711,6 @@ while pctl.running:
                 if rename_folder.text != prefs.rename_folder_template and draw.button(_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale,
                                70 * gui.scale):
                     rename_folder.text = prefs.rename_folder_template
-
 
                 rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.alpha_grey(190), width=300)
 
@@ -30768,7 +30774,7 @@ while pctl.running:
                 ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
                 ddt.text_background_colour = colours.sys_background_3
 
-                if key_esc_press or ((input.mouse_click or right_click) and not coll((x, y, w, h))):
+                if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
                     renamebox = False
 
                 r_todo = []
