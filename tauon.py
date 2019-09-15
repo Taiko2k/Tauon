@@ -9316,6 +9316,7 @@ def menu_standard_or_grey(bool):
 # Create empty area menu
 playlist_menu = Menu(130)
 showcase_menu = Menu(125)
+center_info_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(135)
@@ -9842,6 +9843,7 @@ showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=Tr
 
 
 showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
 def save_embed_img(track_object):
 
@@ -22785,14 +22787,17 @@ class ArtBox:
         # We need to find the size of the inner square for the artwork
         #box = min(w, h)
 
-        box_x = w
-        box_y = h
+        box_w = w
+        box_h = h
 
-        box_x -= 17 * gui.scale  # Inset the square a bit
-        box_y -= 17 * gui.scale  # Inset the square a bit
+        box_w -= 17 * gui.scale  # Inset the square a bit
+        box_h -= 17 * gui.scale  # Inset the square a bit
+
+        box_x = x + ((w - box_w) // 2)
+        box_y = y + ((h - box_h) // 2)
 
         # And position the square
-        rect = (x + ((w - box_x) // 2), y + ((h - box_y) // 2), box_x, box_y)
+        rect = (box_x, box_y, box_w, box_h)
         fields.add(rect)
         gui.main_art_box = rect
 
@@ -22801,7 +22806,7 @@ class ArtBox:
 
         if target_track:  # Only show if song playing or paused
 
-            album_art_gen.display(target_track, (rect[0], rect[1]), (box_x, box_y), side_drag)
+            album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), side_drag)
 
             showc = album_art_gen.get_info(target_track)
 
@@ -22810,7 +22815,7 @@ class ArtBox:
 
         # Draw image downloading indicator
         if gui.image_downloading:
-            ddt.draw_text((x + int(box_x / 2), 38 * gui.scale + int(box_y / 2), 2), "Fetching image...", colours.side_bar_line1,
+            ddt.draw_text((x + int(box_w / 2), 38 * gui.scale + int(box_h / 2), 2), "Fetching image...", colours.side_bar_line1,
                       14, bg=colours.side_panel_background)
             gui.update = 2
 
@@ -22840,6 +22845,8 @@ class ArtBox:
                 and track_box is False \
                 and gui.layer_focus == 0:
 
+            padding = 6 * gui.scale
+
             if not key_shift_down:
 
                 line = ""
@@ -22851,15 +22858,13 @@ class ArtBox:
                     line += 'F '
 
                 line += str(showc[2] + 1) + "/" + str(showc[1])
-                y = box_y + 11 * gui.scale
 
-                xoff = 0
-                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
+                y = box_y + box_h - 40 * gui.scale
 
-                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
+                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-
-                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
             else:   # Extended metadata
 
@@ -22871,40 +22876,33 @@ class ArtBox:
                 else:
                     line += 'File'
 
-                y = 36 * gui.scale + box_y - 61 * gui.scale
+                y = box_y + box_h - 76 * gui.scale
 
-                xoff = 0
-                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
-
-                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
+                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-
-                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
                 line = ""
                 line += showc[4]
                 line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
-                xoff = 0
-                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
+                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text((x + box_x - 6 * gui.scale, y, 1), line, [200, 200, 200, 255], 12,
-                          bg=[30, 30, 30, 255])
+                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
                 line = ""
                 line += str(showc[2] + 1) + "/" + str(showc[1])
-                xoff = 0
-                xoff = ddt.get_text_w(line, 12) + 12 * gui.scale
 
-                ddt.rect_a((x + box_x - xoff, y), (xoff, 18 * gui.scale),
+                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text((x + box_x - 6, y, 1), line, [200, 200, 200, 255], 12,
-                          bg=[30, 30, 30, 255])
+                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
 
 art_box = ArtBox()
@@ -30121,12 +30119,18 @@ while pctl.running:
 
                         bx = (x + w // 2) - (box // 2)
                         by = round(h * 0.1)
-                        art_box.draw(bx, by, box, box, target_track=target_track)
 
                         bby = by + box
 
                         text_y = y + round((h - bby) * 0.15) + by + box
                         text_x = x + w // 2
+
+                        if prefs.show_side_art:
+                            art_box.draw(bx, by, box, box, target_track=target_track)
+                        else:
+                            text_y = y + round(h * 0.40)
+                            if right_click and coll((x, y, w, h)):
+                                center_info_menu.activate()
 
                         ww = w - 25 * gui.scale
                         if target_track:
