@@ -3,7 +3,8 @@ Changelog-------------------------------------
 
 v4.7.2
 
- - Added Japanese translation (partial machine translation)
+ - Added Japanese translation (Partial machine translation)
+ - Added Chinese Simplified translation (Contributed by tyzmodo)
  - Added "Always center" option for art background function
  - Added menu icon for Discord
  - Improved thumbnail generating while scrolling gallery

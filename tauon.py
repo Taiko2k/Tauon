@@ -9298,7 +9298,7 @@ showcase_menu = Menu(125)
 cancel_menu = Menu(100)
 gallery_menu = Menu(170, show_icons=True)
 artist_info_menu = Menu(135)
-queue_menu = Menu(145)
+queue_menu = Menu(150)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
@@ -11620,13 +11620,9 @@ def gen_sort_album(index):
 # tab_menu.add_to_sub("Album → gui.abc", 0, gen_sort_album, pass_ref=True)
 tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
-tab_menu.add_to_sub("Has Comment", 0, gen_comment, pass_ref=True)
+tab_menu.add_to_sub(_("Has Comment"), 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
-
-
-
-
 
 
 def get_playing_line():
@@ -13731,32 +13727,38 @@ def show_set_bar():
     gui.update_layout()
     gui.pl_update = 1
 
-set_menu.add("Sort Ascending", sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
-set_menu.add("Sort Decending", sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+
+# Mark for translation
+_("Time")
+_("Filepath")
+
+
+set_menu.add(_("Sort Ascending"), sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+set_menu.add(_("Sort Decending"), sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
 set_menu.br()
-set_menu.add("Auto Resize", auto_size_columns)
-set_menu.add("Hide bar", hide_set_bar)
-set_menu_hidden.add("Show bar", show_set_bar)
+set_menu.add(_("Auto Resize"), auto_size_columns)
+set_menu.add(_("Hide bar"), hide_set_bar)
+set_menu_hidden.add(_("Show bar"), show_set_bar)
 set_menu.br()
-set_menu.add("+ Artist", sa_artist)
-set_menu.add("+ Title", sa_title)
-set_menu.add("+ Album", sa_album)
-set_menu.add("+ Album Artist", sa_album_artist)
-set_menu.add("+ Composer", sa_composer)
-set_menu.add("+ Duration", sa_time)
-set_menu.add("+ Date", sa_date)
-set_menu.add("+ Genre", sa_genre)
-set_menu.add("+ Track Number", sa_track)
-set_menu.add("+ Play Count", sa_count)
-set_menu.add("+ Codec", sa_codec)
-set_menu.add("+ Bitrate", sa_bitrate)
-set_menu.add("+ Has Lyrics", sa_lyrics)
-set_menu.add("+ Comment", sa_comment)
-set_menu.add("+ Filepath", sa_file)
-set_menu.add("+ Starline", sa_star)
-set_menu.add("+ Loved", sa_love)
+set_menu.add("+ " + _("Artist"), sa_artist)
+set_menu.add("+ " + _("Title"), sa_title)
+set_menu.add("+ " + _("Album"), sa_album)
+set_menu.add("+ " + _("Album Artist"), sa_album_artist)
+set_menu.add("+ " + _("Composer"), sa_composer)
+set_menu.add("+ " + _("Duration"), sa_time)
+set_menu.add("+ " + _("Date"), sa_date)
+set_menu.add("+ " + _("Genre"), sa_genre)
+set_menu.add("+ " + _("Track Number"), sa_track)
+set_menu.add("+ " + _("Play Count"), sa_count)
+set_menu.add("+ " + _("Codec"), sa_codec)
+set_menu.add("+ " + _("Bitrate"), sa_bitrate)
+set_menu.add("+ " + _("Has Lyrics"), sa_lyrics)
+set_menu.add("+ " + _("Comment"), sa_comment)
+set_menu.add("+ " + _("Filepath"), sa_file)
+set_menu.add("+ " + _("Starline"), sa_star)
+set_menu.add("+ " + _("Loved"), sa_love)
 set_menu.br()
-set_menu.add("- Remove This", sa_remove, pass_ref=True)
+set_menu.add("- " + _("Remove This"), sa_remove, pass_ref=True)
 
 
 def bass_features_deco():
@@ -18064,7 +18066,7 @@ class Over:
         x = x0 + 130 * gui.scale
 
 
-        if self.button2(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
+        if self.button(x - 110 * gui.scale, y + 180 * gui.scale, _("Return"), width=55 * gui.scale):
             self.eq_view = False
 
         base_dis = 160 * gui.scale
@@ -18141,7 +18143,7 @@ class Over:
 
         if prefs.backend == 1:
 
-            if self.button2(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
+            if self.button(x + 445 * gui.scale, y - 30 * gui.scale, "EQ", width=50*gui.scale):
                 self.eq_view = True
 
 
@@ -18266,7 +18268,7 @@ class Over:
 
             y += 34 * gui.scale
 
-            self.button(x, y, "Back", self.toggle_lyrics_view, width=65*gui.scale)
+            self.button(x, y, _("Return"), self.toggle_lyrics_view, width=65*gui.scale)
 
         else:
 
@@ -18303,7 +18305,7 @@ class Over:
 
             y += 26 * gui.scale
 
-            if system == 'linux' and self.button2(x, y, _("Chart generator..."), width=115 * gui.scale):
+            if system == 'linux' and self.button(x, y, _("Chart generator..."), width=115 * gui.scale):
                 self.chart_view = 1
 
             x = x0 + 25 * gui.scale
@@ -18375,36 +18377,53 @@ class Over:
 
 
 
-    def button(self, x, y, text, plug, width=0, bg=None):
+    def button(self, x, y, text, plug=None, width=0, bg=None):
 
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
-        rect = (x, y, w, 20 * gui.scale)
+
+        h = 20 * gui.scale
+        border_size = round(1 * gui.scale)
+
+        rect = (x, y, w, h)
+        rect2 = (x - border_size, y - border_size, w + border_size * 2, h + border_size * 2)
 
         if bg is None:
-            bg = colours.alpha_grey(11)
+            bg = colours.sys_background
 
-        bg_colour = alpha_blend(bg, colours.sys_background)
-        real_bg = bg_colour
+        real_bg = bg
+        hit = False
 
-        ddt.rect_r(rect, bg_colour, True)
+        ddt.rect_r(rect2, [255, 255, 255, 16])
+        ddt.rect_r(rect, bg, True)
+
         fields.add(rect)
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
-            real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(240), 211, bg=real_bg)
+            real_bg = alpha_blend([255, 255, 255, 15], bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(250), 211, bg=real_bg)
             if self.click:
-                plug()
+                hit = True
+                if plug is not None:
+                    plug()
+            # if mouse_down:
+            #     ddt.rect_r(rect, [255, 255, 255, 15], True)
+
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(220), 211, bg=real_bg)
+            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(225), 211, bg=real_bg)
+
+        ddt.rect_r(rect, [255, 255, 255, 16])
+        rect2 = (x-1, y-1, w+2, 22 * gui.scale)
+        ddt.rect_r(rect2, [255, 255, 255, 16])
+
+        return hit
 
     def button2(self, x, y, text, width=0):
         w = width
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
         rect = (x, y, w, 20 * gui.scale)
-
 
         bg_colour = alpha_blend(colours.alpha_grey(11), colours.sys_background)
         real_bg = bg_colour
@@ -18415,11 +18434,11 @@ class Over:
         if coll(rect):
             ddt.rect_r(rect, [255, 255, 255, 15], True)
             real_bg = alpha_blend([255, 255, 255, 15], bg_colour)
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(240), 211, bg=real_bg)
+            ddt.draw_text((x + int(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.grey_blend_bg(240), 211, bg=real_bg)
             if self.click:
                 hit = True
         else:
-            ddt.draw_text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(220), 211, bg=real_bg)
+            ddt.draw_text((x + round(7 * gui.scale), rect[1] + 1 * gui.scale), text, colours.grey_blend_bg(220), 211, bg=real_bg)
         return hit
 
     def toggle_square(self, x, y, function, text):
@@ -18471,18 +18490,18 @@ class Over:
         y = y0 + round(20 * gui.scale)
 
 
-        if self.button2(x, y, "Last.fm"):
+        if self.button2(x, y, "Last.fm", width=84*gui.scale):
             self.account_view = 1
         self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lfm_auto, _("Enable"))
         y += 30 * gui.scale
 
-        if self.button2(x, y, "ListenBrainz"):
+        if self.button2(x, y, "ListenBrainz", width=84*gui.scale):
             self.account_view = 2
         self.toggle_square(x + 110 * gui.scale, y + 1 * gui.scale, toggle_lb, _("Enable"))
 
         y += 30 * gui.scale
 
-        if self.button2(x, y, "Discogs"):
+        if self.button2(x, y, "Discogs", width=84*gui.scale):
             self.account_view = 3
 
 
@@ -18520,7 +18539,7 @@ class Over:
                     webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
             y += 40 * gui.scale
-            if self.button2(x, y, _("Paste Token")):
+            if self.button(x, y, _("Paste Token")):
 
                 text = copy_from_clipboard()
                 if text == "":
@@ -18547,7 +18566,7 @@ class Over:
                 else:
                     show_message("That is not a valid token", "error")
             y += 30 * gui.scale
-            if self.button2(x, y, _("Clear")):
+            if self.button(x, y, _("Clear")):
                 if not prefs.discogs_pat:
                     show_message("There wasn't any token saved.")
                 prefs.discogs_pat = ""
@@ -18870,20 +18889,29 @@ class Over:
 
         else:
 
-            y += 20 * gui.scale
+            y += 15 * gui.scale
 
             ddt.draw_text((x, y + 1 * gui.scale), "Created by", colours.grey(90), 13)
             ddt.draw_text((x + 120 * gui.scale, y + 1 * gui.scale), "Taiko2k", colours.grey(220), 13)
 
-            y += 12 * gui.scale
+            y += 25 * gui.scale
+
+            ddt.draw_text((x, y + 1 * gui.scale), "Translations", colours.grey(90), 13)
+            ddt.draw_text((x + 120 * gui.scale, y + 1 * gui.scale), "tyzmodo", colours.grey(220), 13)
 
         ddt.rect_r((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
         # x = self.box_x + self.w - 100 * gui.scale
         # y = self.box_y + self.h - 35 * gui.scale
 
+        y = y0 + h0 - round(33 * gui.scale)
+        x = x0 + w0 - round(165 * gui.scale)
+
+        if self.button(x, y, _("Credits")):
+            self.ani_cred = 1
+            self.ani_fade_on_timer.set()
+
         x = x0 + w0 - 100 * gui.scale
-        y = y0 + h0 - 30 * gui.scale
 
         self.button(x, y, _("Show License"), open_license)
 
@@ -18941,7 +18969,7 @@ class Over:
         x = x0 + 20 * gui.scale + 300 * gui.scale
         y = y0 + 100 * gui.scale
 
-        if self.button2(x, y, _("Randomise BG")):
+        if self.button(x, y, _("Randomise BG")):
 
             r = round(random.random() * 40)
             g = round(random.random() * 40)
@@ -18973,7 +19001,7 @@ class Over:
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
-        if self.button2(x, y, _("Generate"), width=75*gui.scale):
+        if self.button(x, y, _("Generate"), width=75*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
             else:
@@ -19004,7 +19032,7 @@ class Over:
 
         x = x0 + round(20 * gui.scale)
         y = y0 + 240 * gui.scale
-        if self.button2(x, y, _("Return"), width=75 * gui.scale):
+        if self.button(x, y, _("Return"), width=75 * gui.scale):
             self.chart_view = 0
 
 
@@ -25731,7 +25759,7 @@ class Showcase:
             gui.vis_4_colour = [40, 40, 40, 255]
 
 
-        if draw.button("Return", 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+        if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
             switch_showcase()
             if gui.lyrics_was_album:
                 force_album_view()
@@ -25754,7 +25782,7 @@ class Showcase:
             #     pass
 
             if gui.force_showcase_index >= 0:
-                if draw.button("Playing", 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+                if draw.button(_("Playing"), 25 * gui.scale, gui.panelY + 20 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
                     gui.force_showcase_index = -1
 
             if gui.force_showcase_index >= 0:
@@ -25804,9 +25832,9 @@ class Showcase:
 
                 if not prefs.guitar_chords or gc.test_ready_status(track) != 1:
 
-                    line = "Prefer synced"
+                    line = _("Prefer synced")
                     if prefs.prefer_synced_lyrics:
-                        line = "Prefer static"
+                        line = _("Prefer static")
                     if draw.button(line, 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
                                    bg=bbg, fg=bfg,
                                    fore_text=bft, back_text=bbt):
@@ -25817,7 +25845,7 @@ class Showcase:
             if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and gc.render(track, gcx, y):
 
                 if not gc.auto_scroll:
-                    if draw.button("Auto-Scroll", 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
+                    if draw.button(_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale, bg=bbg, fg=bfg,
                                    fore_text=bft, back_text=bbt):
                         gc.auto_scroll = True
 
@@ -29985,13 +30013,9 @@ while pctl.running:
                         wid = max(0, wid)
 
                         #ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
-
-
                         box = (start + run, rect[1], wid, rect[3])
 
                         grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-
-
 
                         bg = c_bar_background
 
@@ -30005,7 +30029,7 @@ while pctl.running:
                         ddt.rect_r(box, bg, True)
                         ddt.rect_r(grip, [255, 255, 255, 14], True)
 
-                        line = item[0]
+                        line = _(item[0])
                         ddt.text_background_colour = bg
 
                         # # Remove columns if positioned out of view
