@@ -2297,6 +2297,7 @@ def save_prefs():
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     cf.update_value("prefer-center-bg", prefs.center_bg)
+    cf.update_value("side-panel-style", prefs.side_panel_layout)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2399,6 +2400,7 @@ def load_prefs():
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
 
     prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
+    prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -2998,6 +3000,25 @@ class PlayerCtl:
     def g(self, index):
 
         return self.master_library[index]
+
+    def show_object(self):  # The track to show in the metadata side panel
+        
+        target_track = None
+        if 3 > self.playing_state > 0:
+            target_track = self.playing_object()
+
+        elif self.playing_state == 0 and prefs.meta_shows_selected:
+            if -1 < playlist_selected < len(self.multi_playlist[self.active_playlist_viewing][2]):
+                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][playlist_selected])
+
+        elif self.playing_state == 0 and prefs.meta_persists_stop:
+                target_track = self.master_library[self.track_queue[self.queue_step]]
+
+        if prefs.meta_shows_selected_always:
+            if -1 < playlist_selected < len(self.multi_playlist[self.active_playlist_viewing][2]):
+                target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][playlist_selected])
+        
+        return target_track
 
     def playing_object(self):
 
@@ -17356,6 +17377,15 @@ def toggle_meta_persists_stop(mode=0):
         return prefs.meta_persists_stop
     prefs.meta_persists_stop ^= True
 
+def toggle_side_panel_layout(mode=0):
+    if mode == 1:
+        return prefs.side_panel_layout == 1
+
+    if prefs.side_panel_layout == 1:
+        prefs.side_panel_layout = 0
+    else:
+        prefs.side_panel_layout = 1
+
 def toggle_meta_shows_selected(mode=0):
     if mode == 1:
         return prefs.meta_shows_selected_always
@@ -18804,6 +18834,8 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
 
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
 
     def about(self, x0, y0, w0, h0):
 
@@ -22744,7 +22776,7 @@ class ArtBox:
     def __init__(self):
         pass
 
-    def draw(self, x, y, w, h):
+    def draw(self, x, y, w, h, target_track=None):
 
         # Draw a background for whole area
         ddt.rect_r((x, y, w ,h), colours.side_panel_background, True)
@@ -22766,21 +22798,6 @@ class ArtBox:
 
         # Draw the album art. If side bar is being dragged set quick draw flag
         showc = None
-
-        target_track = None
-        if 3 > pctl.playing_state > 0:
-            target_track = pctl.playing_object()
-
-        elif pctl.playing_state == 0 and prefs.meta_shows_selected:
-            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
-
-        elif pctl.playing_state == 0 and prefs.meta_persists_stop:
-                target_track = pctl.master_library[pctl.track_queue[pctl.queue_step]]
-
-        if prefs.meta_shows_selected_always:
-            if -1 < playlist_selected < len(pctl.multi_playlist[pctl.active_playlist_viewing][2]):
-                target_track = pctl.g(pctl.multi_playlist[pctl.active_playlist_viewing][2][playlist_selected])
 
         if target_track:  # Only show if song playing or paused
 
@@ -24810,11 +24827,10 @@ queue_box = QueueBox()
 
 class MetaBox:
 
-    def draw(self, x, y, w ,h):
+    def draw(self, x, y, w ,h, track=None):
 
-        if not pctl.playing_ready():
+        if not track:
             return
-        track = pctl.playing_object()
 
         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
@@ -24823,7 +24839,6 @@ class MetaBox:
             if right_click: # and 3 > pctl.playing_state > 0:
                 gui.force_showcase_index = -1
                 showcase_menu.activate(track)
-
 
         if pctl.playing_state == 0:
             if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
@@ -27099,7 +27114,7 @@ def update_layout_do():
             gui.art_max_ratio_lock = 5
 
         # Limit the right side panel width to height of area
-        if gui.rsp:
+        if gui.rsp and prefs.side_panel_layout == 0:
             if album_mode:
                 pass
             else:
@@ -28954,18 +28969,28 @@ while pctl.running:
                     gui.cursor_want = 1
 
             # side drag update
-            if side_drag is True:
+            if side_drag:
 
                 offset = gui.side_bar_drag_source - mouse_position[0]
 
                 target = gui.side_bar_drag_original + offset
 
-                # Reset max ratio if drag drops below ratio width
-                if target < round((window_size[1] - gui.panelY - gui.panelBY) * gui.art_aspect_ratio):
-                    gui.art_max_ratio_lock = gui.art_aspect_ratio
+                # Snap to album mode position if close
+                if not album_mode and prefs.side_panel_layout == 1:
+                    if abs(target - gui.pref_gallery_w) < 35 * gui.scale:
+                        target = gui.pref_gallery_w
 
-                max_w = round(((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
-                # 17 here is the art box inset value
+                # Reset max ratio if drag drops below ratio width
+                if prefs.side_panel_layout == 0:
+                    if target < round((window_size[1] - gui.panelY - gui.panelBY) * gui.art_aspect_ratio):
+                        gui.art_max_ratio_lock = gui.art_aspect_ratio
+
+                    max_w = round(((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
+                    # 17 here is the art box inset value
+
+                else:
+                    max_w = window_size[0]
+
 
                 if not album_mode and target > max_w:
                     target = max_w
@@ -30063,6 +30088,8 @@ while pctl.running:
                 # Right side panel drawing
                 if gui.rsp and not album_mode:
 
+                    target_track = pctl.show_object()
+
                     if prefs.side_panel_layout == 0:
 
                         boxw = gui.rspw
@@ -30071,15 +30098,15 @@ while pctl.running:
                         if prefs.show_side_art:
 
                             meta_box.draw(window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
-                                          window_size[1] - gui.panelY - gui.panelBY - boxh)
+                                          window_size[1] - gui.panelY - gui.panelBY - boxh, track=target_track)
 
                             boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
 
-                            art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh)
+                            art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh, target_track=target_track)
 
                         else:
                             meta_box.draw(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-                                          window_size[1] - gui.panelY - gui.panelBY)
+                                          window_size[1] - gui.panelY - gui.panelBY, track=target_track)
 
                     elif prefs.side_panel_layout == 1:
 
@@ -30090,23 +30117,34 @@ while pctl.running:
 
                         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
-                        box = round(h * 0.7) # - (h ** 2 / 4))
+                        box = round(min(h * 0.7, w * 0.9))
 
                         bx = (x + w // 2) - (box // 2)
                         by = round(h * 0.1)
-                        art_box.draw(bx, by, box, box)
+                        art_box.draw(bx, by, box, box, target_track=target_track)
 
                         bby = by + box
 
                         text_y = y + round((h - bby) * 0.15) + by + box
                         text_x = x + w // 2
 
-                        tr = pctl.playing_object()
-                        if tr:
+                        ww = w - 25 * gui.scale
+                        if target_track:
                             ddt.text_background_colour = colours.side_panel_background
-                            ddt.draw_text((text_x, text_y - 15 * gui.scale, 2), tr.artist, colours.side_bar_line1, 317)
 
-                            ddt.draw_text((text_x, text_y + 20 * gui.scale, 2), tr.title, colours.side_bar_line1, 218)
+                            if pctl.playing_state == 3:
+                                title = pctl.tag_meta
+                            else:
+                                title = target_track.title
+                                if not title:
+                                    title = target_track.filename
+
+                            ddt.draw_text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+
+                            ddt.draw_text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+
+                            line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+                            ddt.draw_text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
 
 
