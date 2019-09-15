@@ -1,4 +1,4 @@
-# Language jp translations for PACKAGE package.
+# Language ja translations for PACKAGE package.
 # Copyright (C) 2019 ORGANIZATION
 #  <captain.gxj@gmail.com>, 2019.
 #
@@ -8,8 +8,8 @@ msgstr ""
 "POT-Creation-Date: 2019-09-13 16:55+1200\n"
 "PO-Revision-Date: 2019-05-01 22:39+1200\n"
 "Last-Translator:  <captain.gxj@gmail.com>\n"
-"Language-Team: Language jp\n"
-"Language: jp\n"
+"Language-Team: Language ja\n"
+"Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -261,7 +261,7 @@ msgstr "アーティストごとのソート年"
 
 #: tauon.py:11068
 msgid "Rescan Folder"
-msgstr "フォルダーの再スキャン"
+msgstr "フォルダースキャン"
 
 #: tauon.py:11070 tauon.py:12446 tauon.py:13495
 msgid "Paste"
