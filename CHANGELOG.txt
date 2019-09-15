@@ -7,6 +7,7 @@ v4.7.2
  - Added Chinese Simplified translation (Contributed by tyzmodo)
  - Added "Always center" option for art background function
  - Added menu icon for Discord
+ - Added alternate right side panel layout
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
@@ -16,6 +17,7 @@ v4.7.2
  - Fixed right-click not closing file/folder rename box's
  - Fixed thread crash with old data files
  - Fixed artist info panel staying open when in compact gallery view
+ - Fixed side panel metadata not respecting "always show selected" setting
 
 v4.7.1
 
