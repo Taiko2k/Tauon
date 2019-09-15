@@ -14,6 +14,7 @@ v4.7.2
  - Tweaked artist bio image size in compact view
  - Fixed right-click not closing file/folder rename box's
  - Fixed thread crash with old data files
+ - Fixed artist info panel staying open when in compact gallery view
 
 v4.7.1
 
