@@ -11,6 +11,7 @@ v4.7.2
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
  - Tweaked go-to-playing behavior to align album with top
  - Tweaked Lavender Light theme colours
+ - Tweaked artist bio image size in compact view
  - Fixed right-click not closing file/folder rename box's
  - Fixed thread crash with old data files
 

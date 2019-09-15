@@ -1223,6 +1223,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.mode_toast_text = ""
 
         #self.smooth_scrolling = False
+        self.last_artist_panel_height = self.artist_panel_height
 
 
 
@@ -9360,13 +9361,13 @@ shuffle_menu.add(_("Random Albums"), menu_album_random)
 
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
-    gui.artist_panel_height = 320 * gui.scale
+    #gui.artist_panel_height = 320 * gui.scale
     if gui.artist_info_panel:
         artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def bio_set_small():
-    gui.artist_panel_height = 200 * gui.scale
+    #gui.artist_panel_height = 200 * gui.scale
     if gui.artist_info_panel:
         artist_info_box.get_data(artist_info_box.artist_on)
 
@@ -9379,7 +9380,7 @@ def artist_info_panel_close():
 
 def toggle_bio_size_deco():
     line = _("Make Large Size")
-    if gui.artist_panel_height > 300:
+    if prefs.bio_large:
         line = _("Make Compact Size")
 
     return [colours.menu_text, colours.menu_background, line]
@@ -9387,13 +9388,18 @@ def toggle_bio_size_deco():
 
 def toggle_bio_size():
 
-    if gui.artist_panel_height > 300:
-        bio_set_small()
+    if prefs.bio_large:
         prefs.bio_large = False
+        update_layout_do()
+        #bio_set_small()
+
     else:
-        bio_set_large()
         prefs.bio_large = True
-    gui.update_layout()
+        update_layout_do()
+        #bio_set_large()
+    #gui.update_layout()
+
+
 
 
 def flush_artist_bio(artist):
@@ -19298,7 +19304,7 @@ class Over:
         header_width = 0
 
         top_mode = False
-        if window_size[0] < 700:
+        if window_size[0] < 700 * gui.scale:
             top_mode = True
             side_width = 0 * gui.scale
             header_width = 60
@@ -20223,7 +20229,7 @@ class BottomBarType1:
             self.seek_bar_position[1] = window_size[1] - gui.panelBY
 
             seek_bar_x = 300 * gui.scale
-            if window_size[0] < 600:
+            if window_size[0] < 600 * gui.scale:
                 seek_bar_x = 250 * gui.scale
 
             self.seek_bar_size[0] = window_size[0] - seek_bar_x
@@ -25684,7 +25690,7 @@ class Showcase:
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
 
         hide_art = False
-        if window_size[0] < 900:
+        if window_size[0] < 900 * gui.scale:
             hide_art = True
 
 
@@ -26845,10 +26851,10 @@ class Undo():
 undo = Undo()
 
 
-if prefs.bio_large:
-    bio_set_large()
-else:
-    bio_set_small()
+# if prefs.bio_large:
+#     bio_set_large()
+# else:
+#     bio_set_small()
 
 
 def update_layout_do():
@@ -26881,6 +26887,25 @@ def update_layout_do():
     gui.show_playlist = True
     if w < 750 * gui.scale and album_mode:
         gui.show_playlist = False
+
+
+    # Set bio size
+    if prefs.bio_large:
+        gui.artist_panel_height = 320 * gui.scale
+        if window_size[0] < 600 * gui.scale:
+            gui.artist_panel_height = 200 * gui.scale
+
+    else:
+        gui.artist_panel_height = 200 * gui.scale
+        if window_size[0] < 600 * gui.scale:
+            gui.artist_panel_height = 150 * gui.scale
+
+    if gui.artist_info_panel:
+
+        if gui.last_artist_panel_height != gui.artist_panel_height:
+            artist_info_box.get_data(artist_info_box.artist_on)
+
+        gui.last_artist_panel_height = gui.artist_panel_height
 
 
     # prefs.art_bg_blur = 9
@@ -27085,7 +27110,6 @@ def update_layout_do():
             gui.playlist_left = gui.lspw
         if gui.rsp:
             gui.plw -= gui.rspw
-
 
 
         if window_size[0] < 630 * gui.scale:
