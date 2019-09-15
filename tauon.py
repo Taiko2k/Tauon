@@ -30119,7 +30119,7 @@ while pctl.running:
                         queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
 
-            if gui.artist_info_panel and not gui.combo_mode:
+            if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
                 artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
 
             # ------------------------------------------------
