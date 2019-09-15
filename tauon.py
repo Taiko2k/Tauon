@@ -9844,6 +9844,7 @@ showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=Tr
 
 showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+center_info_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 def save_embed_img(track_object):
 
@@ -24825,6 +24826,56 @@ queue_box = QueueBox()
 
 class MetaBox:
 
+
+    def lyrics(self, x, y, w, h, track):
+
+        if not track:
+            return
+
+        # Test for scroll wheel input
+        if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
+            lyrics_ren_mini.lyrics_position += mouse_wheel * 30 * gui.scale
+            if lyrics_ren_mini.lyrics_position > 0:
+                lyrics_ren_mini.lyrics_position = 0
+                lyric_side_top_pulse.pulse()
+
+            gui.update += 1
+
+        tw, th = ddt.get_text_wh(track.lyrics + "\n", 15, w - 50 * gui.scale, True)
+
+        oth = th
+
+        th -= h
+        th += 25 * gui.scale  # Empty space buffer at end
+
+        if lyrics_ren_mini.lyrics_position * -1 > th:
+            lyrics_ren_mini.lyrics_position = th * -1
+            if oth > h:
+                lyric_side_bottom_pulse.pulse()
+
+        scroll_w = 15 * gui.scale
+        if gui.maximized:
+            scroll_w = 17 * gui.scale
+
+        lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h,
+                                                                  lyrics_ren_mini.lyrics_position * -1, th,
+                                                                  jump_distance=160 * gui.scale) * -1
+
+        margin = 10 * gui.scale
+        if colours.lm:
+            margin += 1 * gui.scale
+
+        lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + margin,
+                                    y + lyrics_ren_mini.lyrics_position + 11 * gui.scale,
+                                    w - 50 * gui.scale,
+                                    None, 0)
+
+        ddt.rect_r((x, y + h - 1, w,
+                    1), colours.side_panel_background, True)
+
+        lyric_side_top_pulse.render(x, y, (w - 9 - margin) * gui.scale, 2 * gui.scale)
+        lyric_side_bottom_pulse.render(x, y + h - 2 * gui.scale, w - 17 * gui.scale, 2 * gui.scale)
+
     def draw(self, x, y, w ,h, track=None):
 
         if not track:
@@ -24852,48 +24903,7 @@ class MetaBox:
         if prefs.show_lyrics_side and pctl.track_queue \
                     and track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
 
-            # Test for scroll wheel input
-            if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
-                lyrics_ren_mini.lyrics_position += mouse_wheel * 30 * gui.scale
-                if lyrics_ren_mini.lyrics_position > 0:
-                    lyrics_ren_mini.lyrics_position = 0
-                    lyric_side_top_pulse.pulse()
-
-                gui.update += 1
-
-            tw, th = ddt.get_text_wh(track.lyrics + "\n", 15, w - 50 * gui.scale, True)
-
-            oth = th
-
-            th -= h
-            th += 25 * gui.scale  # Empty space buffer at end
-
-            if lyrics_ren_mini.lyrics_position * -1 > th:
-                lyrics_ren_mini.lyrics_position = th * -1
-                if oth > h:
-                    lyric_side_bottom_pulse.pulse()
-
-            scroll_w = 15 * gui.scale
-            if gui.maximized:
-                scroll_w = 17 * gui.scale
-
-            lyrics_ren_mini.lyrics_position = mini_lyrics_scroll.draw(x + w - 17 * gui.scale, y, scroll_w, h, lyrics_ren_mini.lyrics_position * -1, th, jump_distance=160 * gui.scale) * -1
-
-            margin = 10 * gui.scale
-            if colours.lm:
-                margin += 1 * gui.scale
-
-            lh = lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + margin,
-                                   y + lyrics_ren_mini.lyrics_position + 11 * gui.scale,
-                                   w - 50 * gui.scale,
-                                   None, 0)
-
-            ddt.rect_r((x, y + h - 1, w,
-                         1), colours.side_panel_background, True)
-
-            lyric_side_top_pulse.render(x, y, (w - 9 - margin) * gui.scale, 2 * gui.scale)
-            lyric_side_bottom_pulse.render(x, y + h - 2 * gui.scale, w - 17 * gui.scale, 2 * gui.scale)
-
+            self.lyrics(x, y, w, h, track)
 
         # Draw standard metadata
         elif len(pctl.track_queue) > 0:
@@ -30115,42 +30125,47 @@ while pctl.running:
 
                         ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
 
-                        box = round(min(h * 0.7, w * 0.9))
-
-                        bx = (x + w // 2) - (box // 2)
-                        by = round(h * 0.1)
-
-                        bby = by + box
-
-                        text_y = y + round((h - bby) * 0.15) + by + box
-                        text_x = x + w // 2
-
-                        if prefs.show_side_art:
-                            art_box.draw(bx, by, box, box, target_track=target_track)
-                        else:
-                            text_y = y + round(h * 0.40)
+                        # Draw lyrics if avaliable
+                        if prefs.show_lyrics_side and target_track and target_track.lyrics != "" and not prefs.show_side_art:
+                            meta_box.lyrics(x, y, w, h, target_track)
                             if right_click and coll((x, y, w, h)):
-                                center_info_menu.activate()
+                                center_info_menu.activate(target_track)
+                        else:
 
-                        ww = w - 25 * gui.scale
-                        if target_track:
-                            ddt.text_background_colour = colours.side_panel_background
+                            box = round(min(h * 0.7, w * 0.9))
 
-                            if pctl.playing_state == 3:
-                                title = pctl.tag_meta
+                            bx = (x + w // 2) - (box // 2)
+                            by = round(h * 0.1)
+
+                            bby = by + box
+
+                            text_y = y + round((h - bby) * 0.15) + by + box
+                            text_x = x + w // 2
+
+                            if prefs.show_side_art:
+                                art_box.draw(bx, by, box, box, target_track=target_track)
                             else:
-                                title = target_track.title
-                                if not title:
-                                    title = target_track.filename
+                                text_y = y + round(h * 0.40)
+                                if right_click and coll((x, y, w, h)):
+                                    center_info_menu.activate(target_track)
 
-                            ddt.draw_text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+                            ww = w - 25 * gui.scale
+                            if target_track:
+                                ddt.text_background_colour = colours.side_panel_background
 
-                            ddt.draw_text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+                                if pctl.playing_state == 3:
+                                    title = pctl.tag_meta
+                                else:
+                                    title = target_track.title
+                                    if not title:
+                                        title = target_track.filename
 
-                            line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-                            ddt.draw_text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+                                ddt.draw_text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
 
+                                ddt.draw_text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
 
+                                line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+                                ddt.draw_text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
 
                 # Seperation Line Drawing
