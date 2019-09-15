@@ -901,7 +901,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.center_bg = True
         self.ui_lang = 'auto'
-
+        self.side_panel_layout = 0
 
 prefs = Prefs()
 
@@ -2482,20 +2482,27 @@ lc = locale.getlocale()
 print(f"Locale detected: {lc[0]}")
 
 lang = "en"
+
 if lc[0] is not None and "_" in lc[0]:
-    lang = lc[0].split("_")[0]
+    lang = lc[0]
 
 if prefs.ui_lang != "en":
     lang = prefs.ui_lang
 
+locale_dir = os.path.join(install_directory, "locale")
+
+if flatpak_mode:
+    locale_dir = "/share/locale"
+
 if lang != 'en':
     import gettext
 
-    f = gettext.find('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
+    f = gettext.find('tauon', localedir=locale_dir, languages=[lang])
+
     if f:
-        l = gettext.translation('tauon', localedir=os.path.join(install_directory, "locale"), languages=[lang])
-        l.install()
-        _ = l.gettext
+        translation = gettext.translation('tauon', localedir=locale_dir, languages=[lang])
+        translation.install()
+        _ = translation.gettext
 
         print("Translation file loaded")
     else:
@@ -24770,8 +24777,8 @@ class QueueBox:
             queue_menu.activate(position=mouse_position)
 
 
-
 queue_box = QueueBox()
+
 
 class MetaBox:
 
@@ -27381,7 +27388,8 @@ def save_state():
             prefs.mini_mode_mode,
             after_scan,
             gui.gallery_positions,
-            prefs.chart_bg]
+            prefs.chart_bg,
+            ]
 
 
 
@@ -30029,8 +30037,9 @@ while pctl.running:
                 # ALBUM ART
 
                 # Right side panel drawing
-                if gui.rsp:
-                    if True and not album_mode:
+                if gui.rsp and not album_mode:
+
+                    if prefs.side_panel_layout == 0:
 
                         boxw = gui.rspw
                         boxh = gui.rspw
@@ -30048,10 +30057,35 @@ while pctl.running:
                             meta_box.draw(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
                                           window_size[1] - gui.panelY - gui.panelBY)
 
+                    elif prefs.side_panel_layout == 1:
+
+                        h = window_size[1] - (gui.panelY + gui.panelBY)
+                        x = window_size[0] - gui.rspw
+                        y = gui.panelY
+                        w = gui.rspw
+
+                        ddt.rect_r((x, y, w, h), colours.side_panel_background, True)
+
+                        box = round(h * 0.7) # - (h ** 2 / 4))
+
+                        bx = (x + w // 2) - (box // 2)
+                        by = round(h * 0.1)
+                        art_box.draw(bx, by, box, box)
+
+                        bby = by + box
+
+                        text_y = y + round((h - bby) * 0.15) + by + box
+                        text_x = x + w // 2
+
+                        tr = pctl.playing_object()
+                        if tr:
+                            ddt.text_background_colour = colours.side_panel_background
+                            ddt.draw_text((text_x, text_y - 15 * gui.scale, 2), tr.artist, colours.side_bar_line1, 317)
+
+                            ddt.draw_text((text_x, text_y + 20 * gui.scale, 2), tr.title, colours.side_bar_line1, 218)
 
 
-                    elif album_mode:
-                        pass
+
 
                 # Seperation Line Drawing
                 if gui.rsp:
