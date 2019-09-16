@@ -8,8 +8,10 @@ v4.7.2
  - Added "Always center" option for art background function
  - Added menu icon for Discord
  - Added alternate right side panel layout
+ - Added toast for scrolling to hidden playlist on top bar
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
+ - Enabled showcase visualiser in compact mode
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
  - Tweaked go-to-playing behavior to align album with top
  - Tweaked Lavender Light theme colours
