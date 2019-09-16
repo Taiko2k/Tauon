@@ -9,6 +9,7 @@ v4.7.2
  - Added menu icon for Discord
  - Added alternate right side panel layout
  - Added toast for scrolling to hidden playlist on top bar
+ - Added compact artist list mode
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
  - Enabled showcase visualiser in compact mode
@@ -17,7 +18,6 @@ v4.7.2
  - Tweaked Lavender Light theme colours
  - Tweaked artist bio image size in compact view
  - Tweaked font sizes in showcase view
- - Tweaked left side panel width in compact mode
  - Fixed right-click not closing file/folder rename box's
  - Fixed thread crash with old data files
  - Fixed artist info panel staying open when in compact gallery view
