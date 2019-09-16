@@ -19656,6 +19656,7 @@ class TopPanel:
 
             if right_click:
                 prefs.artist_list ^= True
+                update_layout_do()
 
         colour = colours.corner_button #[230, 230, 230, 255]
 
@@ -23976,6 +23977,11 @@ class ArtistList:
 
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
 
+        thin_mode = False
+
+        if window_size[0] < 700 * gui.scale:
+            thin_mode = True
+
         light_mode = False
         line1_colour = [235, 235, 235, 255]
         # line2_colour = [150, 150, 150, 255]
@@ -23988,19 +23994,22 @@ class ArtistList:
             line1_colour = [35, 35, 35, 255]
             line2_colour = [100, 100, 100, 255]
 
-        fade = 0
-        t = self.click_highlight_timer.get()
-        if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
+        # Fade on click
+        bg = colours.side_panel_background
+        if not thin_mode:
+            fade = 0
+            t = self.click_highlight_timer.get()
+            if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
 
-            if t < 1.9 or artist_list_menu.active:
-                fade = fade_max
-            else:
-                fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
+                if t < 1.9 or artist_list_menu.active:
+                    fade = fade_max
+                else:
+                    fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
 
-            gui.update += 1
-            ddt.rect_r(area, [50, 50, 50, fade], True)
+                gui.update += 1
+                ddt.rect_r(area, [50, 50, 50, fade], True)
 
-        bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
+            bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
 
         if artist not in self.thumb_cache:
             self.load_img(artist)
@@ -24010,19 +24019,27 @@ class ArtistList:
         artist_font = 212
         count_font = 312
         extra_text_space = 0
-
-        if window_size[0] < 700 * gui.scale:
-            thumb_x = round(x + 6 * gui.scale)
-            x_text = x + self.thumb_size + 11 * gui.scale
+        if thin_mode:
+            thumb_x = round(x + 10 * gui.scale)
+            x_text = x + self.thumb_size + 17 * gui.scale
             artist_font = 211
             count_font = 311
-            extra_text_space = 11 * gui.scale
+            extra_text_space = 135 * gui.scale
+            thin_mode = True
+            area = (4 * gui.scale, y, w - 7 * gui.scale, self.tab_h - 2)
+            fields.add(area)
 
         back_colour = [30, 30, 30, 255]
+        back_colour_2 = [27, 27, 27, 255]
         border_colour = [60, 60, 60, 255]
         if colours.lm:
             back_colour = [200, 200, 200, 255]
+            back_colour_2 = [240, 240, 240, 255]
             border_colour = [160, 160, 160, 255]
+
+        if thin_mode and coll(area) and is_level_zero():
+            ddt.rect_r((x, y - round(2 * gui.scale), 190 * gui.scale, self.tab_h - round(1 * gui.scale)), back_colour_2, True)
+            bg = back_colour_2
 
         ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), back_colour, True)
         ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), border_colour)
@@ -24040,16 +24057,24 @@ class ArtistList:
                         rect.h -= round(diff)
                     style_overlay.hole_punches.append(rect)
 
+        if thin_mode:
+            text = artist[:2].title()
+            ww = ddt.get_text_w(text, 211)
+            ddt.rect_r((thumb_x + round(1 * gui.scale), y + self.tab_h - 20 * gui.scale, ww + 5 * gui.scale, 13 * gui.scale), [20, 20, 20, 255], True)
+            ddt.draw_text((thumb_x + 3 * gui.scale, y + self.tab_h - 23 * gui.scale), text, [240, 240, 240, 255], 210, bg=[20, 20, 20, 255])
 
 
-        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 35 * gui.scale, bg=bg)
 
-        album_count = len(self.current_album_counts[artist])
-        text = str(album_count) + " album"
-        if album_count > 1:
-            text += "s"
+        # Draw labels
+        if not thin_mode or (coll(area) and is_level_zero()):
 
-        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
+            album_count = len(self.current_album_counts[artist])
+            text = str(album_count) + " album"
+            if album_count > 1:
+                text += "s"
+
+            ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 35 * gui.scale, bg=bg)
+            ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if input.mouse_click:
@@ -24140,8 +24165,6 @@ class ArtistList:
                 else:
                     viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][10]
 
-
-
         if viewing_pl_id in self.saves:
             self.current_artists = self.saves[viewing_pl_id][0]
             self.current_album_counts = self.saves[viewing_pl_id][1]
@@ -24192,9 +24215,11 @@ class ArtistList:
             scroll_width = 15 * gui.scale
             inset = 0
             if window_size[0] < 700 * gui.scale:
-                scroll_width = round(6 * gui.scale)
-                scroll_x += round(9 * gui.scale)
-            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, scroll_width, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=35, extend_field=6*gui.scale)
+                pass
+                # scroll_width = round(6 * gui.scale)
+                # scroll_x += round(9 * gui.scale)
+            else:
+                self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, scroll_width, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=35, extend_field=6*gui.scale)
 
         if not self.current_artists:
             text = _("No artists in playlist")
@@ -26960,8 +26985,11 @@ def update_layout_do():
 
     if window_size[0] < 700 * gui.scale:
         gui.lspw = 150 * gui.scale
+        if prefs.artist_list:
+            gui.lspw = 75 * gui.scale
     else:
         gui.lspw = 220 * gui.scale
+
 
 
     if prefs.art_bg_stronger == 3:
@@ -30244,6 +30272,10 @@ while pctl.running:
                 #     gui.show_top_title = True
 
 
+            if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
+                artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
+
+
             if gui.lsp and not gui.combo_mode:
 
                 # left side panel
@@ -30277,9 +30309,6 @@ while pctl.running:
 
                         queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
-
-            if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
-                artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
 
             # ------------------------------------------------
             # Scroll Bar
@@ -30432,7 +30461,7 @@ while pctl.running:
 
             # RENDER EXTRA FRAME DOUBLE
             if colours.lm:
-                if gui.lsp and not gui.combo_mode:
+                if gui.lsp and not gui.combo_mode and not window_size[0] < 700 * gui.scale:
                     ddt.rect_r((0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY)))), colours.grey(200), True)
                     ddt.rect_r((0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale, int(round((window_size[1] - gui.panelY - gui.panelBY))) + 1), colours.grey(245), True)
                 if gui.rsp and gui.show_playlist:
