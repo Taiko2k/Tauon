@@ -23676,6 +23676,8 @@ class ArtistList:
 
         self.load = False
 
+        self.shown_letters = []
+
     def load_img(self, artist):
 
         filepath = os.path.join(cache_directory, artist + "-lfm.png")
@@ -24038,7 +24040,10 @@ class ArtistList:
             border_colour = [160, 160, 160, 255]
 
         if thin_mode and coll(area) and is_level_zero():
-            ddt.rect_r((x, y - round(2 * gui.scale), 190 * gui.scale, self.tab_h - round(1 * gui.scale)), back_colour_2, True)
+            tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
+            # r = SDL_Rect(tab_rect[0], tab_rect[1], tab_rect[2], tab_rect[3])
+            # style_overlay.hole_punches.append(r)
+            ddt.rect_r(tab_rect, back_colour_2, True)
             bg = back_colour_2
 
         ddt.rect_r((thumb_x, round(y), self.thumb_size, self.thumb_size), back_colour, True)
@@ -24059,9 +24064,11 @@ class ArtistList:
 
         if thin_mode:
             text = artist[:2].title()
-            ww = ddt.get_text_w(text, 211)
-            ddt.rect_r((thumb_x + round(1 * gui.scale), y + self.tab_h - 20 * gui.scale, ww + 5 * gui.scale, 13 * gui.scale), [20, 20, 20, 255], True)
-            ddt.draw_text((thumb_x + 3 * gui.scale, y + self.tab_h - 23 * gui.scale), text, [240, 240, 240, 255], 210, bg=[20, 20, 20, 255])
+            if text not in self.shown_letters:
+                ww = ddt.get_text_w(text, 211)
+                ddt.rect_r((thumb_x + round(1 * gui.scale), y + self.tab_h - 20 * gui.scale, ww + 5 * gui.scale, 13 * gui.scale), [20, 20, 20, 255], True)
+                ddt.draw_text((thumb_x + 3 * gui.scale, y + self.tab_h - 23 * gui.scale), text, [240, 240, 240, 255], 210, bg=[20, 20, 20, 255])
+                self.shown_letters.append(text)
 
 
 
@@ -24243,10 +24250,12 @@ class ArtistList:
         prefetch_mode = False
         prefetch_distance = 22
 
+        self.shown_letters.clear()
+
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
             if not prefetch_mode:
-                self.draw_card(artist, x, yy, w)
+                self.draw_card(artist, x, round(yy), w)
 
                 yy += self.tab_h
 
