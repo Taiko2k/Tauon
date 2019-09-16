@@ -19834,6 +19834,7 @@ class TopPanel:
 
 
         # TAB DRAWING
+        shown = []
         for i, tab in enumerate(pctl.multi_playlist):
 
             if not prefs.tabs_on_top:
@@ -19847,6 +19848,8 @@ class TopPanel:
 
             if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
                 break
+
+            shown.append(i)
 
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
             rect = [x, y, tab_width, self.height]
@@ -19973,7 +19976,13 @@ class TopPanel:
                     on += 1
 
             gui.pl_update = 1
-
+            if pctl.active_playlist_viewing not in shown and not gui.lsp:
+                gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
+                toast_mode_timer.set()
+                gui.frame_callback_list.append(TestTimer(1))
+            else:
+                toast_mode_timer.force_set(10)
+                gui.mode_toast_text = ""
         # ---------
         # Menu Bar
 
@@ -25911,7 +25920,7 @@ class Showcase:
                 gui.spec4_rec.y = y + round(50 * gui.scale)
 
 
-                if prefs.showcase_vis and window_size[0] > 710 and window_size[1] > 369 and not search_over.active:
+                if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
                     if showcase_menu.active or gui.message_box or pref_box.enabled:
                         self.render_vis()
@@ -27009,9 +27018,9 @@ def update_layout_do():
 
     # Disable vis when in compact view
     if gui.mode == 3 or gui.top_bar_mode2:
-        gui.vis = 0
-        gui.turbo = False
-
+        if not gui.combo_mode:
+            gui.vis = 0
+            gui.turbo = False
 
     if gui.mode == 1:
 
@@ -31574,7 +31583,10 @@ while pctl.running:
         t = toast_mode_timer.get()
         if t < 0.98:
 
-            rect = (8 * gui.scale, gui.panelY + 15 * gui.scale, 110 * gui.scale, 25 * gui.scale)
+            wid = ddt.get_text_w(gui.mode_toast_text, 312)
+            wid = min(110 * gui.scale, wid)
+
+            rect = (8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
             fields.add(rect)
 
             if coll(rect):
