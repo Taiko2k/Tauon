@@ -9577,10 +9577,6 @@ def toggle_side_art():
     prefs.show_side_art ^= True
 
 
-
-
-
-
 def toggle_lyrics_deco(track_object):
 
     if gui.combo_mode:
@@ -9590,7 +9586,7 @@ def toggle_lyrics_deco(track_object):
             line = _("Hide lyrics")
         else:
             line = _("Show lyrics")
-        if track_object.lyrics == "":
+        if not track_object or track_object.lyrics == "":
             colour = colours.menu_text_disabled
 
     else:
@@ -12419,9 +12415,9 @@ def add_to_queue(ref):
     queue_timer_set()
 
 def queue_timer_set():
-    if not gui.lsp:
-        queue_add_timer.set()
-        gui.frame_callback_list.append(TestTimer(2.51))
+    #if not gui.lsp or (gui.lsp and not gui.artist_info_panel):
+    queue_add_timer.set()
+    gui.frame_callback_list.append(TestTimer(2.51))
 
 # def add_track_to_queue(track_id):
 #
@@ -18071,9 +18067,9 @@ class Over:
 
         y += 65 * gui.scale
 
-        self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme)
-        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme)
-        ddt.draw_text((x + 101 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+        self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=100 * gui.scale)
+        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=100 * gui.scale)
+        ddt.draw_text((x + 105 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
         y = y0 + 20 * gui.scale
         x = x0 + 295 * gui.scale
@@ -19980,7 +19976,7 @@ class TopPanel:
                     on += 1
 
             gui.pl_update = 1
-            if pctl.active_playlist_viewing not in shown and not gui.lsp:
+            if pctl.active_playlist_viewing not in shown: # and not gui.lsp:
                 gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing][0])
                 toast_mode_timer.set()
                 gui.frame_callback_list.append(TestTimer(1))
@@ -23226,6 +23222,9 @@ class PlaylistBox:
         show_scroll = False
         tab_start = x + 10 * gui.scale
 
+        if window_size[0] < 700 * gui.scale:
+            tab_start = x + 4 * gui.scale
+
         if mouse_wheel != 0 and coll((x, y, w, h)):
             self.scroll_on -= mouse_wheel
 
@@ -24007,6 +24006,17 @@ class ArtistList:
             self.load_img(artist)
 
         thumb_x = round(x + 10 * gui.scale)
+        x_text = x + self.thumb_size + 22 * gui.scale
+        artist_font = 212
+        count_font = 312
+        extra_text_space = 0
+
+        if window_size[0] < 700 * gui.scale:
+            thumb_x = round(x + 6 * gui.scale)
+            x_text = x + self.thumb_size + 11 * gui.scale
+            artist_font = 211
+            count_font = 311
+            extra_text_space = 18 * gui.scale
 
         back_colour = [30, 30, 30, 255]
         border_colour = [60, 60, 60, 255]
@@ -24031,15 +24041,15 @@ class ArtistList:
                     style_overlay.hole_punches.append(rect)
 
 
-        x_text = x + self.thumb_size + 22 * gui.scale
-        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, 212, w - x_text - 35 * gui.scale, bg=bg)
+
+        ddt.draw_text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 35 * gui.scale, bg=bg)
 
         album_count = len(self.current_album_counts[artist])
         text = str(album_count) + " album"
         if album_count > 1:
             text += "s"
 
-        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, 312, w - x_text - 15 * gui.scale, bg=bg)
+        ddt.draw_text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
         if coll(area) and mouse_position[1] < window_size[1] - gui.panelBY:
             if input.mouse_click:
@@ -26942,6 +26952,12 @@ def update_layout_do():
 
     w = window_size[0]
     h = window_size[1]
+
+    if window_size[0] < 700 * gui.scale:
+        gui.lspw = 150 * gui.scale
+    else:
+        gui.lspw = 220 * gui.scale
+
 
     if prefs.art_bg_stronger == 3:
         prefs.art_bg_opacity = 29
@@ -31569,12 +31585,16 @@ while pctl.running:
                 mini_mode.render()
 
         # Add to queue toast
-        if pctl.force_queue and not gui.lsp:
+        if pctl.force_queue: # and not (gui.lsp and not gui.artist_info_panel):
             t = queue_add_timer.get()
             if t < 2.5:
                 track = pctl.g(pctl.force_queue[-1][0])
 
-                rect = (5 * gui.scale, gui.panelY + 5 * gui.scale, 210 * gui.scale, 39 * gui.scale)
+                ww = 0
+                if gui.lsp:
+                    ww = gui.lspw
+
+                rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 210 * gui.scale, 39 * gui.scale)
                 fields.add(rect)
 
                 if coll(rect):
@@ -31600,7 +31620,11 @@ while pctl.running:
             wid = ddt.get_text_w(gui.mode_toast_text, 312)
             wid = min(110 * gui.scale, wid)
 
-            rect = (8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
+            ww = 0
+            if gui.lsp:
+                ww = gui.lspw
+
+            rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
             fields.add(rect)
 
             if coll(rect):
@@ -31611,8 +31635,6 @@ while pctl.running:
 
                 ddt.text_background_colour = queue_box.card_bg
                 ddt.draw_text((rect[0] + (rect[2] // 2), rect[1] + 4 * gui.scale, 2), gui.mode_toast_text, colours.grey(230), 313)
-
-
 
         # Render Menus-------------------------------
         for instance in Menu.instances:
