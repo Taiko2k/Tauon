@@ -6175,6 +6175,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 14, 217)
     ddt.prime_font(standard_font, 17, 218)
     ddt.prime_font(standard_font, 19, 219)
+    ddt.prime_font(standard_font, 20, 220)
     ddt.prime_font(standard_font, 25, 228)
 
 
@@ -6205,6 +6206,9 @@ else:
     ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
+    ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
     if gui.scale == 1:
@@ -25909,12 +25913,22 @@ class Showcase:
 
                     y += round(48 * gui.scale)
 
-                    if len(track.title) < 35:
-                        ddt.draw_text((x, y, 2), track.title, t1, 228, w)
-                    elif len(track.title) < 50:
-                        ddt.draw_text((x, y, 2), track.title, t1, 219, w)
+                    if window_size[0] < 700 * gui.scale:
+                        if len(track.title) < 30:
+                            ddt.draw_text((x, y, 2), track.title, t1, 220, w)
+                        elif len(track.title) < 40:
+                            ddt.draw_text((x, y, 2), track.title, t1, 217, w)
+                        else:
+                            ddt.draw_text((x, y, 2), track.title, t1, 213, w)
+
                     else:
-                        ddt.draw_text((x, y, 2), track.title, t1, 218, w)
+                        if len(track.title) < 35:
+                            ddt.draw_text((x, y, 2), track.title, t1, 220, w)
+                        elif len(track.title) < 50:
+                            ddt.draw_text((x, y, 2), track.title, t1, 219, w)
+                        else:
+                            ddt.draw_text((x, y, 2), track.title, t1, 216, w)
+
 
                 gui.spec4_rec.x = x - (gui.spec4_rec.w // 2)
                 gui.spec4_rec.y = y + round(50 * gui.scale)
