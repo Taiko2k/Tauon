@@ -24016,7 +24016,7 @@ class ArtistList:
             x_text = x + self.thumb_size + 11 * gui.scale
             artist_font = 211
             count_font = 311
-            extra_text_space = 18 * gui.scale
+            extra_text_space = 11 * gui.scale
 
         back_colour = [30, 30, 30, 255]
         border_colour = [60, 60, 60, 255]
@@ -24189,7 +24189,12 @@ class ArtistList:
         if colours.lm:
             scroll_x = x + w - 22 * gui.scale
         if (coll(area2) or artist_list_scroll.held) and not pref_box.enabled:
-            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, 15 * gui.scale, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=35)
+            scroll_width = 15 * gui.scale
+            inset = 0
+            if window_size[0] < 700 * gui.scale:
+                scroll_width = round(6 * gui.scale)
+                scroll_x += round(9 * gui.scale)
+            self.scroll_position = artist_list_scroll.draw(scroll_x, y + 1, scroll_width, h, self.scroll_position, len(self.current_artists) - range, r_click=right_click, jump_distance=35, extend_field=6*gui.scale)
 
         if not self.current_artists:
             text = _("No artists in playlist")
