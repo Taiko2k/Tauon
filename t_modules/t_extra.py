@@ -727,3 +727,11 @@ def grow_rect(rect, px):
 #     digest = h.hexdigest()
 #     return digest
 
+def subtract_rect(base, hole):  # Return 4 rects from 1 minus 1 inner (with overlaps)
+
+    west = base[0], base[1], hole[0], base[3]
+    north = base[0], base[1], base[2], hole[1] - base[1]
+    east = base[0] + hole[0] + hole[2], base[1], base[2] - (hole[0] + hole[2]), base[3]
+    south = base[0], hole[1] + hole[3], base[2], base[3] - hole[3] - 2
+
+    return west, north, east, south
