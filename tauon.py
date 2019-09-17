@@ -8160,6 +8160,7 @@ class StyleOverlay:
         self.parent_path = None
 
         self.hole_punches = []
+        self.hole_refills = []
 
         self.go_to_sleep = False
 
@@ -8337,11 +8338,11 @@ class StyleOverlay:
             SDL_RenderCopy(renderer, self.a_texture, None, self.a_rect)
 
 
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             for rect in self.hole_punches:
                 SDL_RenderFillRect(renderer, rect)
-
 
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
 
@@ -24041,8 +24042,12 @@ class ArtistList:
 
         if thin_mode and coll(area) and is_level_zero():
             tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
-            # r = SDL_Rect(tab_rect[0], tab_rect[1], tab_rect[2], tab_rect[3])
-            # style_overlay.hole_punches.append(r)
+
+            rect = (thumb_x, round(y), self.thumb_size, self.thumb_size)
+            for r in subtract_rect(tab_rect, rect):
+                r = SDL_Rect(r[0], r[1], r[2], r[3])
+                style_overlay.hole_punches.append(r)
+
             ddt.rect_r(tab_rect, back_colour_2, True)
             bg = back_colour_2
 
