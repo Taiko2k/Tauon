@@ -2363,8 +2363,8 @@ def load_prefs():
     cf.br()
     cf.add_text("[locale]")
     prefs.ui_lang = cf.sync_add("string", "display-language", prefs.ui_lang, "Override display language to use if "
-                                                                             "available. E.g. 'en', 'jp', "
-                                                                             "Default: 'auto'")
+                                                                             "available. E.g. \"en\", \"ja\", \"zh_CH\"."
+                                                                             "Default: \"auto\"")
 
     cf.br()
     cf.add_text("[tag-editor]")
