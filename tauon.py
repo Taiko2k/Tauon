@@ -1225,6 +1225,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         #self.smooth_scrolling = False
         self.last_artist_panel_height = self.artist_panel_height
 
+        self.compact_artist_list = False
+
 
 
 gui = GuiVar()
@@ -2494,7 +2496,7 @@ if prefs.ui_lang != "en":
 locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
-    locale_dir = "/share/locale"
+    locale_dir = "/app/share/locale"
 
 if lang != 'en':
     import gettext
@@ -5937,7 +5939,7 @@ icon = IMG_Load(b_active_directory + asset_subfolder.encode() + b"icon-64.png")
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
-SDL_SetWindowMinimumSize(t_window, 560, 330)
+SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
 #SDL_SetWindowMinimumSize(t_window, 413, 330)
 
 gui.max_window_tex = 1000
@@ -20758,7 +20760,7 @@ class BottomBarType1:
             # PLAY---
             buttons_x_offset = 0
             compact = False
-            if window_size[0] < 600 * gui.scale:
+            if window_size[0] < 650 * gui.scale:
                 compact = True
 
             play_colour = colours.media_buttons_off
@@ -21495,7 +21497,7 @@ def restore_full_mode():
     window_size[1] = gui.save_size[1]
 
     SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
-    SDL_SetWindowMinimumSize(t_window, 560, 330)
+    SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
     SDL_SetWindowResizable(t_window, True)
     SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
@@ -23982,7 +23984,7 @@ class ArtistList:
 
         thin_mode = False
 
-        if window_size[0] < 700 * gui.scale:
+        if gui.compact_artist_list:
             thin_mode = True
 
         light_mode = False
@@ -24226,7 +24228,7 @@ class ArtistList:
         if (coll(area2) or artist_list_scroll.held) and not pref_box.enabled:
             scroll_width = 15 * gui.scale
             inset = 0
-            if window_size[0] < 700 * gui.scale:
+            if gui.compact_artist_list:
                 pass
                 # scroll_width = round(6 * gui.scale)
                 # scroll_x += round(9 * gui.scale)
@@ -24243,7 +24245,7 @@ class ArtistList:
                 if loading_in_progress or transcode_list or after_scan:
                     text = _("Busy...")
 
-            ddt.draw_text((4 * gui.scale + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
+            ddt.draw_text((x + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
 
         yy = y + 12 * gui.scale
 
@@ -26986,26 +26988,31 @@ class Undo():
 undo = Undo()
 
 
-# if prefs.bio_large:
-#     bio_set_large()
-# else:
-#     bio_set_small()
-
-
 def update_layout_do():
 
     w = window_size[0]
     h = window_size[1]
 
-    if window_size[0] < 700 * gui.scale:
-        gui.lspw = 150 * gui.scale
+    # Auto shrink left side panel ----
+    pl_width = window_size[0]
+    if gui.rsp:
+        pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
+
+    if pl_width < 900 * gui.scale:
+        gui.lspw = 180 * gui.scale
+
+        if pl_width < 700 * gui.scale:
+            gui.lspw = 150 * gui.scale
+
         if prefs.artist_list:
+            gui.compact_artist_list = True
             gui.lspw = 75 * gui.scale
     else:
         gui.lspw = 220 * gui.scale
+        gui.compact_artist_list = False
+    # -----
 
-
-
+    # Set bg art strength according to setting ----
     if prefs.art_bg_stronger == 3:
         prefs.art_bg_opacity = 29
     elif prefs.art_bg_stronger == 2:
@@ -27015,7 +27022,9 @@ def update_layout_do():
 
     if prefs.bg_showcase_only:
         prefs.art_bg_opacity += 8
+    # -----
 
+    # Adjust for for compact window sizes ----
     if (prefs.always_art_header or w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel) and not album_mode:
         gui.top_bar_mode2 = True
         gui.panelY = round(100 * gui.scale)
@@ -27032,8 +27041,7 @@ def update_layout_do():
     if w < 750 * gui.scale and album_mode:
         gui.show_playlist = False
 
-
-    # Set bio size
+    # Set bio panel size according to setting
     if prefs.bio_large:
         gui.artist_panel_height = 320 * gui.scale
         if window_size[0] < 600 * gui.scale:
@@ -27044,11 +27052,10 @@ def update_layout_do():
         if window_size[0] < 600 * gui.scale:
             gui.artist_panel_height = 150 * gui.scale
 
+    # Trigger artist bio reload if panel size has changed
     if gui.artist_info_panel:
-
         if gui.last_artist_panel_height != gui.artist_panel_height:
             artist_info_box.get_data(artist_info_box.artist_on)
-
         gui.last_artist_panel_height = gui.artist_panel_height
 
 
