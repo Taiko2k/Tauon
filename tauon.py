@@ -9582,35 +9582,48 @@ def toggle_side_art():
 
 def toggle_lyrics_deco(track_object):
 
-    if gui.combo_mode:
+    colour = colours.menu_text
 
-        colour = colours.menu_text
+    if gui.combo_mode:
         if prefs.show_lyrics_showcase:
             line = _("Hide lyrics")
         else:
             line = _("Show lyrics")
         if not track_object or track_object.lyrics == "":
             colour = colours.menu_text_disabled
+        return [colour, colours.menu_background, line]
 
-    else:
-
-        colour = colours.menu_text
-        if prefs.show_lyrics_side:
-            line = _("Hide lyrics")
-        else:
-            line = _("Show lyrics")
+    if prefs.side_panel_layout == 1 and prefs.show_side_art:
+        line = _("Show lyrics")
         if track_object.lyrics == "":
             colour = colours.menu_text_disabled
+        return [colour, colours.menu_background, line]
 
+    if prefs.show_lyrics_side:
+        line = _("Hide lyrics")
+    else:
+        line = _("Show lyrics")
+    if track_object.lyrics == "":
+        colour = colours.menu_text_disabled
     return [colour, colours.menu_background, line]
 
+
 def toggle_lyrics(track_object):
+
+    if not track_object:
+        return
 
     if gui.combo_mode:
         prefs.show_lyrics_showcase ^= True
         if prefs.show_lyrics_showcase and track_object.lyrics == "":
             show_message("No lyrics for this track")
     else:
+
+        # Handling for alt panel layout
+        if prefs.side_panel_layout == 1 and prefs.show_side_art:
+            prefs.show_side_art = False
+            prefs.show_lyrics_side = True
+            return
 
         prefs.show_lyrics_side ^= True
         if prefs.show_lyrics_side and track_object.lyrics == "":
@@ -30221,7 +30234,7 @@ while pctl.running:
                         # Draw lyrics if avaliable
                         if prefs.show_lyrics_side and target_track and target_track.lyrics != "" and not prefs.show_side_art:
                             meta_box.lyrics(x, y, w, h, target_track)
-                            if right_click and coll((x, y, w, h)):
+                            if right_click and coll((x, y, w, h)) and target_track:
                                 center_info_menu.activate(target_track)
                         else:
 
@@ -30237,9 +30250,13 @@ while pctl.running:
 
                             if prefs.show_side_art:
                                 art_box.draw(bx, by, box, box, target_track=target_track)
+                                if right_click and coll((x, y, w, h)) and not coll((bx, by, box, box)):
+                                    if is_level_zero() and target_track:
+                                        center_info_menu.activate(target_track)
+
                             else:
                                 text_y = y + round(h * 0.40)
-                                if right_click and coll((x, y, w, h)):
+                                if right_click and coll((x, y, w, h)) and target_track:
                                     center_info_menu.activate(target_track)
 
                             ww = w - 25 * gui.scale
