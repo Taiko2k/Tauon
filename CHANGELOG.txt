@@ -1,7 +1,7 @@
 
 Changelog-------------------------------------
 
-v4.7.2
+v4.8.0
 
  - Added Japanese translation (Partial machine translation)
  - Added Chinese Simplified translation (Contributed by tyzmodo)
@@ -12,6 +12,7 @@ v4.7.2
  - Added compact artist list for compact mode
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
+ - Improved gallery power bar to create new playlist on wheel click
  - Enabled showcase visualiser in compact mode
  - Tweaked gallery scroll bar to reveal when scrolling by wheel
  - Tweaked go-to-playing behavior to align album with top

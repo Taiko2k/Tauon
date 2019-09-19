@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.7.2"
+n_version = "4.8.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -13931,6 +13931,20 @@ def standard_size():
     #clear_img_cache()
 
 
+def path_stem_to_playlist(path, title):  # Used with gallery power bar
+    playlist = []
+
+    for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
+        if path in pctl.master_library[item].parent_folder_path:
+                playlist.append(item)
+
+    pctl.multi_playlist.append(pl_gen(title=os.path.basename(title).upper(),
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
+
+    switch_playlist(len(pctl.multi_playlist) - 1)
+
+
 def goto_album(playlist_no, down=False, force=False):
 
     if core_timer.get() < 1:
@@ -17178,6 +17192,7 @@ class PowerTag:
     def __init__(self):
 
         self.name = "BLANK"
+        self.path = ""
         self.position = 0
         self.colour = None
 
@@ -17220,7 +17235,7 @@ def gen_power2():
                 if tag in tags:
                     tags[tag][1] += 1
                 else:
-                    tags[tag] = [position, 1]
+                    tags[tag] = [position, 1, "/".join(crumbs[:i])]
                     tag_list.append(tag)
                 break
 
@@ -17243,8 +17258,8 @@ def gen_power2():
     for tag in tag_list:
 
         if tags[tag][1] > 2:
-
             t = PowerTag()
+            t.path = tags[tag][2]
             t.name = tag.upper()
             t.position = tags[tag][0]
             h.append(t)
@@ -23995,18 +24010,19 @@ class ArtistList:
 
         area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
 
-        thin_mode = False
-
-        if gui.compact_artist_list:
-            thin_mode = True
-
         light_mode = False
         line1_colour = [235, 235, 235, 255]
         # line2_colour = [150, 150, 150, 255]
         line2_colour = alpha_mod(colours.side_bar_line2, 150)
         fade_max = 50
 
-        if test_lumi(colours.side_panel_background) < 0.55:
+
+        thin_mode = False
+        if gui.compact_artist_list:
+            thin_mode = True
+            line2_colour = [115, 115, 115, 255]
+
+        if test_lumi(colours.side_panel_background) < 0.55 and not thin_mode:
             light_mode = True
             fade_max = 20
             line1_colour = [35, 35, 35, 255]
@@ -24055,7 +24071,7 @@ class ArtistList:
             back_colour_2 = [240, 240, 240, 255]
             border_colour = [160, 160, 160, 255]
 
-        if thin_mode and coll(area) and is_level_zero():
+        if thin_mode and coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY:
             tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
 
             rect = (thumb_x, round(y), self.thumb_size, self.thumb_size)
@@ -24090,10 +24106,8 @@ class ArtistList:
                 ddt.draw_text((thumb_x + 3 * gui.scale, y + self.tab_h - 23 * gui.scale), text, [240, 240, 240, 255], 210, bg=[20, 20, 20, 255])
                 self.shown_letters.append(text)
 
-
-
         # Draw labels
-        if not thin_mode or (coll(area) and is_level_zero()):
+        if not thin_mode or (coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY):
 
             album_count = len(self.current_album_counts[artist])
             text = str(album_count) + " album"
@@ -24258,7 +24272,7 @@ class ArtistList:
                 if loading_in_progress or transcode_list or after_scan:
                     text = _("Busy...")
 
-            ddt.draw_text((x + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212)
+            ddt.draw_text((x + w // 2, y + (h // 7), 2), text, alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
 
         yy = y + 12 * gui.scale
 
@@ -24295,6 +24309,48 @@ class ArtistList:
 artist_list_box = ArtistList()
 
 
+# class QuickView:
+#
+#     def __init__(self):
+#
+#         self.ani_timer = Timer(100)
+#         self.ap = (0, 0)
+#         self.prime = False
+#         self.active = False
+#         self.t = 0.1
+#
+#     def trigger1(self):
+#         if not self.active and not self.prime:
+#             self.ap = tuple(mouse_position)
+#             self.prime = True
+#
+#     def render(self):
+#
+#         if self.prime and not self.active:
+#             if point_distance(mouse_position, self.ap) > 30 * gui.scale:
+#                 self.active = True
+#                 self.ani_timer.set()
+#
+#         if self.active:
+#             gui.update += 1
+#             start = self.ap[0] + 30 * gui.scale, self.ap[1]
+#             end = self.ap[0] + 90 * gui.scale, self.ap[1]
+#
+#             tt = self.ani_timer.get()
+#
+#             if tt < self.t:
+#
+#                 pos = round(start[0] + (end[0] - start[0]) * (tt / self.t)), round(start[1] + (end[1] - start[1]) * (tt / self.t))
+#
+#                 colour = [100, 150, 200, round((tt / self.t) * 255)]
+#                 ddt.rect_r((pos[0] - 10, pos[1] - 10, 55, 35), [20, 20, 20, round((tt / self.t) * 170)], True)
+#                 view_box.gallery1_img.render(pos[0], pos[1], colour)
+#             else:
+#                 colour = [100, 150, 200, 255]
+#                 ddt.rect_r((end[0] - 10, end[1] - 10, 55, 35), [20, 20, 20, 170], True)
+#                 view_box.gallery1_img.render(end[0], end[1], colour)
+#
+# quick_view_box = QuickView()
 
 
 def queue_pause_deco():
@@ -28218,6 +28274,10 @@ while pctl.running:
 
         if key_ctrl_down:
             gui.pl_update += 1
+            # quick_view_box.trigger1()
+        # if not key_ctrl_down:
+        #     quick_view_box.active = False
+        #     quick_view_box.prime = False
 
         if mouse_enter_window:
             input.key_return_press = False
@@ -29867,6 +29927,10 @@ while pctl.running:
 
                                 if input.mouse_click:
                                     goto_album(item.position)
+                                if middle_click:
+                                    path_stem_to_playlist(item.path, item.name)
+
+
 
 
                             ddt.rect_r(rect, item.colour, True)
@@ -31743,6 +31807,9 @@ while pctl.running:
 
             if not fullscreen and not gui.maximized:
                 draw_window_border()
+
+        # # Quick view
+        # quick_view_box.render()
 
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
