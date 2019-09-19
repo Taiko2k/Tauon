@@ -1170,6 +1170,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.first_in_grid = None
 
         self.art_aspect_ratio = 1
+        self.art_drawn_rect = None
         self.art_unlock_ratio = False
         self.art_max_ratio_lock = 1
         self.side_bar_drag_source = 0
@@ -7542,6 +7543,10 @@ class AlbumArt():
         SDL_RenderCopy(renderer, unit.texture, None, temp_dest)
         style_overlay.hole_punches.append(temp_dest)
 
+        gui.art_drawn_rect = (temp_dest.x, temp_dest.y, temp_dest.w, temp_dest.h)
+
+        return 0
+
     def open_external(self, track_object):
 
         index = track_object.index
@@ -8119,6 +8124,8 @@ class AlbumArt():
         style_overlay.hole_punches.append(rect)
 
         SDL_RenderCopy(renderer, unit.texture, None, rect)
+
+        gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
     def clear_cache(self):
 
@@ -22820,7 +22827,7 @@ class ArtBox:
     def __init__(self):
         pass
 
-    def draw(self, x, y, w, h, target_track=None):
+    def draw(self, x, y, w, h, target_track=None, tight_border=False, default_border=None):
 
         # Draw a background for whole area
         ddt.rect_r((x, y, w ,h), colours.side_panel_background, True)
@@ -22840,20 +22847,33 @@ class ArtBox:
 
         # And position the square
         rect = (box_x, box_y, box_w, box_h)
-        fields.add(rect)
         gui.main_art_box = rect
 
         # Draw the album art. If side bar is being dragged set quick draw flag
         showc = None
+        result = 1
 
         if target_track:  # Only show if song playing or paused
 
-            album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), side_drag)
+            result = album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), side_drag)
 
             showc = album_art_gen.get_info(target_track)
 
         # Draw faint border on album art
-        ddt.rect_r(rect, colours.art_box)
+        if tight_border:
+            if result == 0 and gui.art_drawn_rect:
+                border = gui.art_drawn_rect
+                ddt.rect_r(gui.art_drawn_rect, colours.art_box)
+            elif default_border:
+                border = default_border
+                ddt.rect_r(default_border, colours.art_box)
+            else:
+                border = rect
+        else:
+            ddt.rect_r(rect, colours.art_box)
+            border = rect
+
+        fields.add(border)
 
         # Draw image downloading indicator
         if gui.image_downloading:
@@ -22874,11 +22894,15 @@ class ArtBox:
                     pctl.mpris.update(force=True)
 
         # Activate picture context menu on right click
-        if right_click and coll(rect) and target_track:
-            picture_menu.activate(in_reference=target_track)
+        if tight_border and gui.art_drawn_rect:
+            if right_click and coll(gui.art_drawn_rect) and target_track:
+                picture_menu.activate(in_reference=target_track)
+        else:
+            if right_click and coll(rect) and target_track:
+                picture_menu.activate(in_reference=target_track)
 
         # Draw picture metadata
-        if showc is not None and coll(rect) \
+        if showc is not None and coll(border) \
                 and renamebox is False \
                 and radiobox is False \
                 and pref_box.enabled is False \
@@ -22888,6 +22912,12 @@ class ArtBox:
                 and gui.layer_focus == 0:
 
             padding = 6 * gui.scale
+
+            xw = box_x + box_w
+            yh = box_y + box_h
+            if tight_border and gui.art_drawn_rect and gui.art_drawn_rect[2] > 50 * gui.scale:
+                xw = gui.art_drawn_rect[0] + gui.art_drawn_rect[2]
+                yh = gui.art_drawn_rect[1] + gui.art_drawn_rect[3]
 
             if not key_shift_down:
 
@@ -22901,12 +22931,12 @@ class ArtBox:
 
                 line += str(showc[2] + 1) + "/" + str(showc[1])
 
-                y = box_y + box_h - 40 * gui.scale
+                y = yh - 40 * gui.scale
 
                 tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
             else:   # Extended metadata
 
@@ -22918,12 +22948,12 @@ class ArtBox:
                 else:
                     line += 'File'
 
-                y = box_y + box_h - 76 * gui.scale
+                y = yh - 76 * gui.scale
 
                 tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
@@ -22932,9 +22962,9 @@ class ArtBox:
                 line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
 
                 tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
                 y += 18 * gui.scale
 
@@ -22942,9 +22972,9 @@ class ArtBox:
                 line += str(showc[2] + 1) + "/" + str(showc[1])
 
                 tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((box_x + box_w - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
                           [8, 8, 8, 255], True)
-                ddt.draw_text(((box_x + box_w) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+                ddt.draw_text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
 
 art_box = ArtBox()
@@ -27660,11 +27690,12 @@ album_pos_px = album_v_slide_value
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
     album_pos_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
 
-def is_level_zero():
+def is_level_zero(include_menus=True):
 
-    for menu in Menu.instances:
-        if menu.active:
-            return False
+    if include_menus:
+        for menu in Menu.instances:
+            if menu.active:
+                return False
 
     return not gui.rename_folder_box \
             and not track_box \
@@ -30302,20 +30333,31 @@ while pctl.running:
                                 center_info_menu.activate(target_track)
                         else:
 
-                            box = round(min(h * 0.7, w * 0.9))
+                            box_wide_w = round(w * 0.98)
+                            boxx = round(min(h * 0.7, w * 0.9))
+                            boxy = round(min(h * 0.7, w * 0.9))
 
-                            bx = (x + w // 2) - (box // 2)
+                            bx = (x + w // 2) - (boxx // 2)
+                            bx_wide = (x + w // 2) - (box_wide_w // 2)
                             by = round(h * 0.1)
 
-                            bby = by + box
+                            bby = by + boxy
 
-                            text_y = y + round((h - bby) * 0.15) + by + box
+                            text_y = y + round((h - bby) * 0.15) + by + boxy
                             text_x = x + w // 2
 
                             if prefs.show_side_art:
-                                art_box.draw(bx, by, box, box, target_track=target_track)
-                                if right_click and coll((x, y, w, h)) and not coll((bx, by, box, box)):
-                                    if is_level_zero() and target_track:
+                                gui.art_drawn_rect = None
+                                default_border = (bx, by, boxx, boxy)
+                                coll_border = default_border
+
+                                art_box.draw(bx_wide, by, box_wide_w, boxy, target_track=target_track, tight_border=True, default_border=default_border)
+
+                                if gui.art_drawn_rect:
+                                    coll_border = gui.art_drawn_rect
+
+                                if right_click and coll((x, y, w, h)) and not coll(coll_border):
+                                    if is_level_zero(include_menus=False) and target_track:
                                         center_info_menu.activate(target_track)
 
                             else:
