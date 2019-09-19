@@ -29,6 +29,7 @@ import zipfile
 import glob
 import locale
 import re
+import math
 # import hashlib
 
 
@@ -75,6 +76,9 @@ class TestTimer:
 def point_proximity_test(a, b, p):
     return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
+# Get distance between two points
+def point_distance(a, b):
+    return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] + b[1]) ** 2)
 
 # Removes whatever this is from a line, I forgot
 def rm_16(line):
