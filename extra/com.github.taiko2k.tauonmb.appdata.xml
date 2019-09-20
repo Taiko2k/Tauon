@@ -51,18 +51,15 @@
 
   <releases>
 
-    <release version="4.7.1" date="2019-09-09">
+    <release version="4.8.0" date="2019-09-20">
       <description>
         <ul>
-          <li>Added functioning scroll bar to album gallery</li>
-          <li>Improved handling of vorbis tags with multiple artists</li>
-          <li>Fixed MPRIS2 complience resulting in an issue with KDE Plasma</li>
+          <li>Added alternate metadata side panel layout option</li>
+          <li>Artist list now uses a new compact style</li>
           <li>Other tweaks and bug fixes</li>
           </ul>
       </description>
     </release>
-
-    <release version="4.7.0" date="2019-08-30"/>
 
   </releases>
 
