@@ -902,6 +902,7 @@ class Prefs:    # Used to hold any kind of settings
         self.center_bg = True
         self.ui_lang = 'auto'
         self.side_panel_layout = 0
+        self.use_absolute_track_index = False
 
 prefs = Prefs()
 
@@ -2301,13 +2302,15 @@ def save_prefs():
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     cf.update_value("prefer-center-bg", prefs.center_bg)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
+    cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
+
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
     cf.update_value("font-main-bold", prefs.linux_font_bold)
     cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
 
-    cf.update_value("double-digit-indicies", prefs.dd_index)
+    cf.update_value("double-digit-indices", prefs.dd_index)
     cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
     cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 
@@ -2404,6 +2407,7 @@ def load_prefs():
 
     prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
+    prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -2417,7 +2421,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[tracklist]")
-    prefs.dd_index = cf.sync_add("bool", "double-digit-indicies", prefs.dd_index)
+    prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
     prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
 
@@ -21581,7 +21585,6 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         artistc = colours.playlist_text_missing
         albumc = colours.playlist_text_missing
 
-    indexoffset = 0
     artistoffset = 0
     indexLine = ""
 
@@ -21610,10 +21613,13 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             line = track_number_process(n_track.track_number)
 
             indexLine = line
-            line = ""
 
-            if len(indexLine) > 2:
-                indexoffset += (len(indexLine) * 5 - 15) * gui.scale
+            if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing][4] == 1:
+                indexLine = str(p_track)
+                if len(indexLine) > 3:
+                    indexLine += "  "
+
+            line = ""
 
             if n_track.artist != "" and not dash:
                 line0 = n_track.artist
@@ -22649,7 +22655,12 @@ class StandardPlaylist:
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "T":
-                            text = track_number_process(n_track.track_number)
+
+                            if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing][4] == 1:
+                                text = str(p_track)
+                            else:
+                                text = track_number_process(n_track.track_number)
+
                             colour = colours.index_text
                             if this_line_playing is True:
                                 colour = colours.index_playing
@@ -23273,12 +23284,12 @@ class PlaylistBox:
 
         light_mode = False
         # print(test_lumi(colours.side_panel_background))
-        if test_lumi(colours.side_panel_background) < 0.55:
+        if test_lumi(colours.playlist_box_background) < 0.55:
             light_mode = True
             tab_title_colour = [20, 20, 20, 255]
 
         dark_mode = False
-        if test_lumi(colours.side_panel_background) > 0.8:
+        if test_lumi(colours.playlist_box_background) > 0.8:
             dark_mode = True
 
         show_scroll = False
