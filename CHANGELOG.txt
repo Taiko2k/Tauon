@@ -10,6 +10,7 @@ v4.8.0
  - Added alternate right side panel layout
  - Added toast for scrolling to hidden playlist on top bar
  - Added compact artist list for compact mode
+ - Added config option for absolute track indices in titles disabled playlists
  - Improved thumbnail generating while scrolling gallery
  - Improved search progress indicator to animate
  - Improved gallery power bar to create new playlist on wheel click
@@ -24,6 +25,7 @@ v4.8.0
  - Fixed artist info panel staying open when in compact gallery view
  - Fixed side panel metadata not respecting "always show selected" setting
  - Fixed minimum window size with UI scaling
+ - Fixed playlist panel text colours in auto theme mode
 
 v4.7.1
 
