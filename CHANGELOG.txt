@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.8.1
+
+ - Added cursor change on mouse-over to window resize hotspots
+
 v4.8.0
 
  - Added Japanese translation (Partial machine translation)
