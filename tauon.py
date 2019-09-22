@@ -366,6 +366,8 @@ from hsaudiotag import auto
 import stagger
 from stagger.id3 import *
 
+if not os.environ.get('SDL_VIDEODRIVER') == "wayland":
+    os.environ['GDK_BACKEND'] = "x11"
 
 from t_modules.t_tagscan import Flac
 from t_modules.t_tagscan import Opus
@@ -5933,14 +5935,12 @@ cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
 
-
 if system == "linux":
-
-    cursor_br_corner = cairo_cursor_to_sdl(*c_br)
-    cursor_right_side = cairo_cursor_to_sdl(*c_rs)
-    cursor_top_side = cairo_cursor_to_sdl(*c_ts)
-    cursor_left_side = cairo_cursor_to_sdl(*c_ls)
-    cursor_bottom_side = cairo_cursor_to_sdl(*c_bs)
+    cursor_br_corner = cairo_cursor_to_sdl(*c_br, fallback=cursor_standard)
+    cursor_right_side = cairo_cursor_to_sdl(*c_rs, fallback=cursor_standard)
+    cursor_top_side = cairo_cursor_to_sdl(*c_ts, fallback=cursor_standard)
+    cursor_left_side = cairo_cursor_to_sdl(*c_ls, fallback=cursor_standard)
+    cursor_bottom_side = cairo_cursor_to_sdl(*c_bs, fallback=cursor_standard)
 else:
     cursor_br_corner = cursor_standard
     cursor_right_side = cursor_standard
@@ -27100,7 +27100,7 @@ for item in r_arg_queue:
 sv = SDL_version()
 SDL_GetVersion(sv)
 sdl_version = sv.major * 100 + sv.minor * 10 + sv.patch
-#print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
+print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv.patch))
 
 # C-ML
 if prefs.backend == 2:
