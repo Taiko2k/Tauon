@@ -1242,6 +1242,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.compact_artist_list = False
 
+        self.rsp_full_lock = False
+
 
 
 gui = GuiVar()
@@ -27109,7 +27111,7 @@ elif prefs.backend == 0:
     show_message("ERROR: No backend found", 'error')
 
 
-class Undo():
+class Undo:
 
     def __init__(self):
 
@@ -27397,6 +27399,9 @@ def update_layout_do():
             else:
 
                 if not gui.art_unlock_ratio:
+
+                    if gui.rsp_full_lock and not side_drag:
+                        gui.rspw = window_size[0]
 
                     if gui.rspw > window_size[1] - gui.panelY - gui.panelBY:
                         gui.rspw = window_size[1] - gui.panelY - gui.panelBY
@@ -29274,10 +29279,11 @@ while pctl.running:
                     max_w = window_size[0]
 
 
+                gui.rsp_full_lock = False
                 if not album_mode and target > max_w:
                     target = max_w
-
                     gui.rspw = target
+                    gui.rsp_full_lock = True
                 else:
                     gui.rspw = target
 

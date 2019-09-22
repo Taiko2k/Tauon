@@ -43,7 +43,10 @@ def cursor_get_gdk(type):
     return Gdk.Cursor.get_surface(cursor)
 
 
-def cairo_cursor_to_sdl(cairo_surface, x_hot, y_hot):
+def cairo_cursor_to_sdl(cairo_surface, x_hot, y_hot, fallback=None):
+
+    if not cairo_surface:
+        return fallback
 
     w = cairo_surface.get_width()
     h = cairo_surface.get_height()
@@ -53,3 +56,4 @@ def cairo_cursor_to_sdl(cairo_surface, x_hot, y_hot):
 
     sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(buff), w, h, 32, w * 4, SDL_PIXELFORMAT_ARGB8888)
     return SDL_CreateColorCursor(sdl_surface, round(x_hot), round(y_hot))
+
