@@ -384,11 +384,11 @@ from t_modules.t_gdk_extra import *
 
 
 if system == "linux":
-    c_br = cursor_gen(4)
-    c_rs = cursor_gen(8)
-    c_ts = cursor_gen(9)
-    c_ls = cursor_gen(10)
-    c_bs = cursor_gen(11)
+    c_br = cursor_get_gdk(4)
+    c_rs = cursor_get_gdk(8)
+    c_ts = cursor_get_gdk(9)
+    c_ls = cursor_get_gdk(10)
+    c_bs = cursor_get_gdk(11)
 
 
 # Mute some stagger warnings
