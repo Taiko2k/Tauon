@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "4.8.0"
+n_version = "4.8.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -379,6 +379,17 @@ if system == 'linux':
     from t_modules import t_topchart
 
 from t_modules import t_autodownload
+
+from t_modules.t_gdk_extra import *
+
+
+if system == "linux":
+    c_br = cursor_gen(4)
+    c_rs = cursor_gen(8)
+    c_ts = cursor_gen(9)
+    c_ls = cursor_gen(10)
+    c_bs = cursor_gen(11)
+
 
 # Mute some stagger warnings
 warnings.simplefilter('ignore', stagger.errors.EmptyFrameWarning)
@@ -5870,6 +5881,33 @@ def draw_window_tools():
 def draw_window_border():
 
     corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, [40, 40, 40, 255])
+
+    corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
+    fields.add(corner_rect)
+
+    right_rect = (window_size[0] - 1 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
+    fields.add(right_rect)
+
+    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 3 * gui.scale)
+    fields.add(top_rect)
+
+    left_rect = (0, 0, 4 * gui.scale, window_size[1] - 40 * gui.scale)
+    fields.add(left_rect)
+
+    bottom_rect = (20 * gui.scale, window_size[1] - 6, window_size[0] - 40 * gui.scale, 7 * gui.scale)
+    fields.add(bottom_rect)
+
+    if coll(corner_rect):
+        gui.cursor_want = 4
+    elif coll(right_rect):
+        gui.cursor_want = 8
+    elif coll(top_rect):
+        gui.cursor_want = 9
+    elif coll(left_rect):
+        gui.cursor_want = 10
+    elif coll(bottom_rect):
+        gui.cursor_want = 11
+
     colour = [30, 30, 30, 255]
     ddt.rect_r((0, 0, window_size[0], 1 * gui.scale), colour, True)
     ddt.rect_r((0, 0, 1 * gui.scale, window_size[1]), colour, True)
@@ -5893,6 +5931,24 @@ cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
 cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
 cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
+
+
+
+if system == "linux":
+
+    cursor_br_corner = cairo_cursor_to_sdl(*c_br)
+    cursor_right_side = cairo_cursor_to_sdl(*c_rs)
+    cursor_top_side = cairo_cursor_to_sdl(*c_ts)
+    cursor_left_side = cairo_cursor_to_sdl(*c_ls)
+    cursor_bottom_side = cairo_cursor_to_sdl(*c_bs)
+else:
+    cursor_br_corner = cursor_standard
+    cursor_right_side = cursor_standard
+    cursor_top_side = cursor_standard
+    cursor_left_side = cursor_standard
+    cursor_bottom_side = cursor_standard
+
+
 
 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
 
@@ -12528,7 +12584,16 @@ def delete_track(track_ref):
 
     try:
         send2trash(fullpath)
-        show_message("File moved to trash")
+
+        if os.path.exists(fullpath):
+            try:
+                os.remove(fullpath)
+                show_message("File deleted", 'info', fullpath)
+            except:
+                show_message("Error deleting file", 'error', fullpath)
+        else:
+            show_message("File moved to trash")
+
     except:
         try:
             os.remove(fullpath)
@@ -12539,6 +12604,7 @@ def delete_track(track_ref):
     reload()
     refind_playing()
     tauon.worker_save_state = True
+
 
 track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_icon, show_test=test_shift)
 
@@ -26929,7 +26995,7 @@ def hit_callback(win, point, data):
         if point.contents.y < 0 and point.contents.x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        if draw_border and point.contents.y < 4 and point.contents.x < window_size[0] - 40 and not gui.maximized:
+        if draw_border and point.contents.y < 4 * gui.scale and point.contents.x < window_size[0] - 40 * gui.scale and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
     if point.contents.y < gui.panelY:
@@ -26959,14 +27025,14 @@ def hit_callback(win, point, data):
             return SDL_HITTEST_DRAGGABLE
 
     if not gui.maximized:
-        if point.contents.x > window_size[0] - 20 and point.contents.y > window_size[1] - 20:
+        if point.contents.x > window_size[0] - 20 * gui.scale and point.contents.y > window_size[1] - 20 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOMRIGHT
         elif point.contents.x < 5 and point.contents.y > window_size[1] - 5:
             return SDL_HITTEST_RESIZE_BOTTOMLEFT
-        elif point.contents.y > window_size[1] - 7:
+        elif point.contents.y > window_size[1] - 7 * gui.scale:
             return SDL_HITTEST_RESIZE_BOTTOM
 
-        elif point.contents.x > window_size[0] - 2 and point.contents.y > 20:
+        elif point.contents.x > window_size[0] - 2 * gui.scale and point.contents.y > 20 * gui.scale:
             return SDL_HITTEST_RESIZE_RIGHT
         elif point.contents.x < 5:
             return SDL_HITTEST_RESIZE_LEFT
@@ -31835,6 +31901,16 @@ while pctl.running:
         tool_tip.render()
         tool_tip2.render()
 
+        if draw_border and not gui.mode == 3:
+
+            tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
+            fields.add(tool_rect)
+            if not gui.top_bar_mode2 or coll(tool_rect):
+                draw_window_tools()
+
+            if not fullscreen and not gui.maximized:
+                draw_window_border()
+
         if gui.cursor_is != gui.cursor_want:
 
             gui.cursor_is = gui.cursor_want
@@ -31847,19 +31923,21 @@ while pctl.running:
                 SDL_SetCursor(cursor_text)
             elif gui.cursor_is == 3:
                 SDL_SetCursor(cursor_hand)
+            elif gui.cursor_is == 4:
+                SDL_SetCursor(cursor_br_corner)
+            elif gui.cursor_is == 8:
+                SDL_SetCursor(cursor_right_side)
+            elif gui.cursor_is == 9:
+                SDL_SetCursor(cursor_top_side)
+            elif gui.cursor_is == 10:
+                SDL_SetCursor(cursor_left_side)
+            elif gui.cursor_is == 11:
+                SDL_SetCursor(cursor_bottom_side)
 
         get_sdl_input.test_capture_mouse()
         get_sdl_input.mouse_capture_want = False
 
-        if draw_border and not gui.mode == 3:
 
-            tool_rect = (window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale)
-            fields.add(tool_rect)
-            if not gui.top_bar_mode2 or coll(tool_rect):
-                draw_window_tools()
-
-            if not fullscreen and not gui.maximized:
-                draw_window_border()
 
         # # Quick view
         # quick_view_box.render()
