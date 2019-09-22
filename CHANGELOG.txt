@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.8.1
 
  - Added cursor change on mouse-over to window resize hotspots
+ - Tweaked right side panel behavior to lock with full size art
 
 v4.8.0
 
