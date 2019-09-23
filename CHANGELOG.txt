@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v4.8.1
 
  - Added cursor change on mouse-over to window resize hotspots
+ - Added option to always show title in bottom panel
  - Tweaked right side panel behavior to lock with full size art
  - Fixed text in bottom panel showing with center style side panel
 
