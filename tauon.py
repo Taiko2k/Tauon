@@ -917,6 +917,8 @@ class Prefs:    # Used to hold any kind of settings
         self.side_panel_layout = 0
         self.use_absolute_track_index = False
 
+        self.hide_bottom_title = True
+
 prefs = Prefs()
 
 
@@ -1001,7 +1003,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.save_size = [450, 310]
         self.show_playlist = True
         self.show_bottom_title = False
-        self.show_top_title = True
+        # self.show_top_title = True
         self.search_error = False
 
         self.level_update = False
@@ -2318,6 +2320,7 @@ def save_prefs():
     cf.update_value("prefer-center-bg", prefs.center_bg)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
     cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
+    cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
 
 
     cf.update_value("font-main-standard", prefs.linux_font)
@@ -2423,6 +2426,7 @@ def load_prefs():
     prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
+    prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -18943,7 +18947,7 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
 
-        y += 40 * gui.scale
+        y += 30 * gui.scale
 
         ddt.draw_text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
 
@@ -18955,6 +18959,13 @@ class Over:
 
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
+
+        y += 30 * gui.scale
+
+        ddt.draw_text((x, y), _("Bottom panel"), colours.grey_blend_bg(100), 12)
+
+        y += 25 * gui.scale
+        prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
 
     def about(self, x0, y0, w0, h0):
 
@@ -20378,10 +20389,8 @@ class TopPanel:
                 else:
                     show_message("There are " + str(len(pctl.broadcast_clients)) + " inbound connections.", 'info', line)
 
-
-
-        if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
-            ddt.draw_text((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 12)
+        # if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
+        #     ddt.draw_text((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 12)
 
         if colours.lm:
             colours.tb_line = colours.grey(200)
@@ -20745,7 +20754,7 @@ class BottomBarType1:
                     self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale, window_size[0] - 710 * gui.scale, 30 * gui.scale)):
             if pctl.playing_state == 3:
                 copy_to_clipboard(pctl.tag_meta)
-                show_message("Text copied to clipboard")
+                show_message(_("Copied text to clipboard"))
                 if input.mouse_click or right_click:
                     input.mouse_click = False
                     right_click = False
@@ -30491,7 +30500,6 @@ while pctl.running:
 
             # Bottom title position logic
             gui.show_bottom_title = False
-            gui.show_top_title = False
             if album_mode or prefs.meta_shows_selected_always:
                 gui.show_bottom_title = True
             elif gui.rsp:
@@ -30500,6 +30508,8 @@ while pctl.running:
             else:
                 gui.show_bottom_title = True
 
+            if not prefs.hide_bottom_title:
+                gui.show_bottom_title = True
 
             if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
                 artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
@@ -30840,7 +30850,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Title"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("Title copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.title)
                             input.mouse_click = False
                     else:
@@ -30860,7 +30870,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Artist"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("Artist field copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.artist)
                             input.mouse_click = False
                     else:
@@ -30879,7 +30889,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Album"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("Album field copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.album)
                             input.mouse_click = False
                     else:
@@ -30899,7 +30909,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Path"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("File path copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.fullpath)
                             input.mouse_click = False
                     else:
@@ -30947,7 +30957,7 @@ while pctl.running:
                         if coll(rect):
                             ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_on, 212)
                             if input.mouse_click:
-                                show_message("Album artist copied to clipboard")
+                                show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.album_artist)
                                 input.mouse_click = False
                         else:
@@ -30968,7 +30978,7 @@ while pctl.running:
                         ddt.draw_text((x1, y1), _("Duration"), key_colour_on, 212)
                         if input.mouse_click:
                             copy_to_clipboard(time.strftime('%M:%S', time.gmtime(tc.length)).lstrip("0"))
-                            show_message("Duration copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             input.mouse_click = False
                     else:
                         ddt.draw_text((x1, y1), _("Duration"), key_colour_off, 212)
@@ -31009,7 +31019,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Genre"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("Genre field copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.genre)
                             input.mouse_click = False
                     else:
@@ -31024,7 +31034,7 @@ while pctl.running:
                     if coll(rect):
                         ddt.draw_text((x1, y1), _("Date"), key_colour_on, 212)
                         if input.mouse_click:
-                            show_message("Date field copied to clipboard")
+                            show_message(_("Copied text to clipboard"))
                             copy_to_clipboard(tc.date)
                             input.mouse_click = False
                     else:
@@ -31040,7 +31050,7 @@ while pctl.running:
                         if coll(rect):
                             ddt.draw_text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_on, 212)
                             if input.mouse_click:
-                                show_message("Composer copied to clipboard")
+                                show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.album_artist)
                                 input.mouse_click = False
                         else:
@@ -31095,7 +31105,7 @@ while pctl.running:
                         if coll(rect):
                             ddt.draw_text((x1, y1), _("Comment"), key_colour_on, 212)
                             if input.mouse_click:
-                                show_message("Comment copied to clipboard")
+                                show_message(_("Copied text to clipboard"))
                                 copy_to_clipboard(tc.comment)
                                 input.mouse_click = False
                         else:
