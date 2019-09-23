@@ -4112,8 +4112,14 @@ class PlayerCtl:
                                     self.play_target(jump=not end)
                                 break
                             else:
-                                print("THERS ONLY ONE ALBUM IN THE PLAYLIST")
-                                self.stop()
+                                a = 0
+                                self.playlist_playing_position = a
+                                self.track_queue.append(self.playing_playlist()[a])
+                                self.queue_step = len(self.track_queue) - 1
+                                if play:
+                                    self.play_target(jump=not end)
+                                # print("THERS ONLY ONE ALBUM IN THE PLAYLIST")
+                                # self.stop()
 
             else:
                 print("ADVANCE ERROR - NO CASE!")
@@ -30483,20 +30489,16 @@ while pctl.running:
                               colours.sep_line)
 
 
-            # Title position logic
+            # Bottom title position logic
             gui.show_bottom_title = False
             gui.show_top_title = False
             if album_mode or prefs.meta_shows_selected_always:
                 gui.show_bottom_title = True
             elif gui.rsp:
-                if window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1500 * gui.scale or gui.maximized:
+                if prefs.side_panel_layout == 0 and window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1500 * gui.scale or gui.maximized:
                     gui.show_bottom_title = True
-                    # if window_size[0] < 820 * gui.scale:
-                    #     gui.show_top_title = True
             else:
                 gui.show_bottom_title = True
-                # if window_size[0] < 820 * gui.scale:
-                #     gui.show_top_title = True
 
 
             if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
