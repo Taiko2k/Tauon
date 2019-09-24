@@ -4203,6 +4203,8 @@ def update_title_do():
 
 if de_notify_support:
     song_notification = Notify.Notification.new("Next track notification")
+    value = GLib.Variant("s", t_id)
+    song_notification.set_hint("desktop-entry", value)
 
 
 def notify_song_fire(notification, delay, id):
@@ -14860,8 +14862,8 @@ def toggle_notifications(mode=0):
 
     if prefs.show_notifications:
         if not de_notify_support:
-            show_message("I'm not sure notifications are supported by this DE",
-                         'You should probably leave this disabled.', 'warning')
+            show_message("Notifications for this DE not supported",
+                         '', 'warning')
 
 # def toggle_al_pref_album_artist(mode=0):
 #
