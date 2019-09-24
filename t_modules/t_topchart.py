@@ -188,8 +188,6 @@ class TopChart:
                 ww += col_w + 20
 
 
-
-
         # Get lables
         text = ""
         b_text = ""
