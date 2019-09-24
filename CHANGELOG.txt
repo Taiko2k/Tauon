@@ -10,6 +10,7 @@ v4.8.1
  - Improved rename track box to allow single tracks only (hold shift)
  - Tweaked right side panel behavior to lock with full size art
  - Fixed text in bottom panel showing with center style side panel
+ - Fixed sub-menus possibly overlapping view box in compact view
 
 v4.8.0
 

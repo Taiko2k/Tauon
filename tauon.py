@@ -9250,6 +9250,8 @@ class Menu:
 
                     if sub_pos[0] + sub_w > window_size[0]:
                         sub_pos[0] = self.pos[0] - sub_w
+                        if view_box.active:
+                            sub_pos[0] -= view_box.w
 
                     fx = self.deco()
 
@@ -26579,8 +26581,8 @@ class ViewBox:
     def __init__(self):
         self.x = 0
         self.y = gui.panelY
-        self.w = 270 * gui.scale
-        self.h = 95 * gui.scale
+        self.w = 52 * gui.scale
+        self.h = 257 * gui.scale
         self.active = False
 
         self.border = 3 * gui.scale
@@ -26785,7 +26787,7 @@ class ViewBox:
 
         x = self.x - 40 * gui.scale
 
-        vr = [x, gui.panelY, 52 * gui.scale, 257 * gui.scale]
+        vr = [x, gui.panelY, self.w, self.h]
         #vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
         border_colour = colours.grey(30)
