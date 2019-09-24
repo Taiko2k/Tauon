@@ -484,8 +484,6 @@ quick_drag = False
 
 radiobox = False
 radio_field_text = "http://0.0.0.0:8000"
-renamebox = False
-
 
 # Playlist Panel
 pl_view_offset = 0
@@ -637,7 +635,6 @@ playlist_active = 0
 quick_search_mode = False
 search_index = 0
 
-rename_index = 0
 
 # ----------------------------------------
 # Playlist right click menu
@@ -920,7 +917,7 @@ class Prefs:    # Used to hold any kind of settings
         self.side_panel_layout = 0
         self.use_absolute_track_index = False
 
-        self.hide_bottom_title = True
+        self.hide_bottom_title = False
 
 prefs = Prefs()
 
@@ -9416,6 +9413,190 @@ repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
 
+
+class RenameTrackBox:
+
+    def __init__(self):
+
+        self.active = False
+        self.target_track_id = None
+        self.single_only = False
+
+    def activate(self, track_id):
+
+        self.active = True
+        self.target_track_id = track_id
+        if key_shift_down or key_shiftr_down:
+            self.single_only = True
+        else:
+            self.single_only = True
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        if gui.level_2_click:
+            input.mouse_click = True
+        gui.level_2_click = False
+
+        w = 420 * gui.scale
+        h = 155 * gui.scale
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80),
+                   True)
+        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+        ddt.text_background_colour = colours.sys_background_3
+
+        if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+            rename_track_box.active = False
+
+        r_todo = []
+
+        # Find matching folder tracks in playlist
+        if not self.single_only:
+            for item in default_playlist:
+                if pctl.master_library[item].parent_folder_path == pctl.master_library[
+                    self.target_track_id].parent_folder_path:
+
+                    # Close and display error if any tracks are not single local files
+                    if pctl.master_library[item].is_network is True:
+                        rename_track_box.active = False
+                        show_message("Cannot rename", "One or more tracks is from a network location!", 'info')
+                    if pctl.master_library[item].is_cue is True:
+                        rename_track_box.active = False
+                        show_message("This function does not support renaming CUE Sheet tracks.")
+                    else:
+                        r_todo.append(item)
+        else:
+            r_todo = [self.target_track_id]
+
+        ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Track Renaming"), colours.grey(230), 213)
+
+        # if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
+        if rename_files.text != prefs.rename_tracks_template and draw.button(_("Default"), x + w - 85 * gui.scale,
+                                                                             y + h - 35 * gui.scale,
+                                                                             70 * gui.scale):
+            rename_files.text = prefs.rename_tracks_template
+
+        # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+        rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
+        NRN = rename_files.text
+
+        ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+
+        afterline = ""
+        warn = False
+        underscore = False
+
+        for item in r_todo:
+
+            if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
+                    pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
+                warn = True
+
+            if item == self.target_track_id:
+                afterline = parse_template2(NRN, pctl.master_library[item])
+
+        ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.grey(100), 212)
+        line = trunc_line(pctl.master_library[self.target_track_id].filename, 12, 335)
+        ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
+
+        ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.grey(100), 212)
+        ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
+
+        if (len(NRN) > 3 and len(pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
+            pctl.master_library[self.target_track_id].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
+            ddt.text((x + 10 * gui.scale, y + 108 * gui.scale,), "Warning: This may change the file extension",
+                     [245, 90, 90, 255],
+                     13)
+
+        colour_warn = [143, 186, 65, 255]
+        if not unique_template(NRN):
+            ddt.text((x + 10 * gui.scale, y + 123 * gui.scale,), "Warning: The filename might not be unique",
+                     [245, 90, 90, 255],
+                     13)
+        if warn:
+            ddt.text((x + 10 * gui.scale, y + 135 * gui.scale,), "Warning: A track has incomplete metadata",
+                     [245, 90, 90, 255], 13)
+            colour_warn = [180, 60, 60, 255]
+
+        label = "Write (" + str(len(r_todo)) + ")"
+
+        if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale,
+                       fore_text=colours.grey(255), fg=colour_warn,
+                       tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
+            input.mouse_click = False
+            total_todo = len(r_todo)
+            pre_state = 0
+
+            for item in r_todo:
+
+                if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
+                    pre_state = pctl.stop(True)
+
+                try:
+
+                    afterline = parse_template2(NRN, pctl.master_library[item], strict=True)
+
+                    oldname = pctl.master_library[item].filename
+                    oldpath = pctl.master_library[item].fullpath
+
+                    print('Renaming...')
+
+                    star = star_store.full_get(item)
+                    star_store.remove(item)
+
+                    oldpath = pctl.master_library[item].fullpath
+
+                    oldsplit = os.path.split(oldpath)
+
+                    if os.path.exists(os.path.join(oldsplit[0], afterline)):
+                        print("A file with that name already exists")
+                        total_todo -= 1
+                        continue
+
+                    if not afterline:
+                        print("Rename Error")
+                        total_todo -= 1
+                        continue
+
+                    if "." in afterline and not afterline.split(".")[0]:
+                        print("A file does not have a target filename")
+                        total_todo -= 1
+                        continue
+
+                    os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
+
+                    pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
+                    pctl.master_library[item].filename = afterline
+
+                    if star is not None:
+                        star_store.insert(item, star)
+
+                except:
+                    total_todo -= 1
+
+            rename_track_box.active = False
+            print('Done')
+            if pre_state == 1:
+                pctl.revert()
+
+            if total_todo != len(r_todo):
+                show_message("Rename complete." + "  " + str(total_todo) + "/" + str(
+                    len(r_todo)) + " filenames written.", 'warning')
+
+            else:
+                show_message(_("Rename complete."),
+                             str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), 'done')
+            tauon.worker_save_state = True
+
+
+rename_track_box = RenameTrackBox()
+
+
 def toggle_repeat():
     pctl.repeat_mode ^= True
     if pctl.mpris is not None:
@@ -10454,6 +10635,12 @@ def re_template_word(word, tr):
     if word == "ux" or "upper" in word:
         return tr.file_ext.upper()
 
+    if word == "c" or "composer" in word:
+        return tr.composer
+
+    if "comment" in word:
+        return tr.comment.replace("\n", "").replace("\r", "")
+
     return ""
 
 
@@ -10519,6 +10706,10 @@ def parse_template(string, track_object, up_ext=False, strict=False):
                 if strict:
                     assert track_object.title
                 output += track_object.title
+            elif string[set] == 'c':
+                if strict:
+                    assert track_object.composer
+                output += track_object.composer
             elif string[set] == 'd':
                 if strict:
                     assert track_object.date
@@ -10557,12 +10748,12 @@ tab_menu = Menu(160, show_icons=True)
 def rename_playlist(index):
 
     gui.rename_playlist_box = True
-    rename_box.playlist_index = index
-    rename_box.x = mouse_position[0]
-    rename_box.y = mouse_position[1]
+    rename_playlist_box.playlist_index = index
+    rename_playlist_box.x = mouse_position[0]
+    rename_playlist_box.y = mouse_position[1]
 
-    if rename_box.y < gui.panelY:
-        rename_box.y = gui.panelY + 10 * gui.scale
+    if rename_playlist_box.y < gui.panelY:
+        rename_playlist_box.y = gui.panelY + 10 * gui.scale
 
     rename_text_area.set_text(pctl.multi_playlist[index][0])
     rename_text_area.highlight_all()
@@ -12633,23 +12824,30 @@ track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_
 track_menu.br()
 
 
-def rename_tracks(index):
-    global track_box
-    global rename_index
-    global input_text
-    global renamebox
+# def rename_tracks(index):
+#     global track_box
+#     global rename_index
+#     global input_text
+#     global rename_track_box.active
+#
+#     track_box = False
+#     rename_index = index
+#     rename_track_box.active = True
+#     input_text = ""
 
-    track_box = False
-    rename_index = index
-    renamebox = True
-    input_text = ""
 
+def rename_tracks_deco():
+
+    if key_shift_down or key_shiftr_down:
+        return [colours.menu_text, colours.menu_background, _("Rename (Single track)")]
+    else:
+        return [colours.menu_text, colours.menu_background, _("Rename Tracks…")]
 
 # rename_tracks_icon.colour = [244, 241, 66, 255]
 # rename_tracks_icon.colour = [204, 255, 66, 255]
 rename_tracks_icon.colour = [204, 100, 205, 255]
 rename_tracks_icon.xoff = 1
-track_menu.add_to_sub(_("Rename Tracks…"), 0, rename_tracks, pass_ref=True, icon=rename_tracks_icon)
+track_menu.add_to_sub("Rename Tracks…", 0, rename_track_box.activate, rename_tracks_deco, pass_ref=True, icon=rename_tracks_icon)
 
 
 def delete_folder(index, force=False):
@@ -13406,7 +13604,7 @@ folder_menu.add(_("↳ After Current Album"), add_album_to_queue_fc, pass_ref=Tr
 
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
-folder_menu.add(_("Rename Tracks…"), rename_tracks, pass_ref=True, icon=rename_tracks_icon)
+folder_menu.add(_("Rename Tracks…"), rename_track_box.activate, rename_tracks_deco, pass_ref=True, icon=rename_tracks_icon)
 
 folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
                    icon=edit_icon, render_func=edit_deco)
@@ -15236,7 +15434,7 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
                 send2trash(pctl.master_library[track].fullpath)
             except:
                 print("File trash error")
-               
+
             if os.path.isfile(pctl.master_library[track].fullpath):
                 try:
                     os.remove(pctl.master_library[track].fullpath)
@@ -15588,7 +15786,7 @@ class SearchOverlay:
         if self.active is False:
 
             if input_text != "" and gui.layer_focus == 0 and \
-                    not key_ctrl_down and not radiobox and not renamebox and \
+                    not key_ctrl_down and not radiobox and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
@@ -23021,7 +23219,7 @@ class ArtBox:
 
         # Draw picture metadata
         if showc is not None and coll(border) \
-                and renamebox is False \
+                and rename_track_box.active is False \
                 and radiobox is False \
                 and pref_box.enabled is False \
                 and gui.rename_playlist_box is False \
@@ -23261,7 +23459,8 @@ artist_list_scroll = ScrollBox()
 gallery_scroll = ScrollBox()
 
 
-class RenameBox:
+
+class RenamePlaylistBox:
 
     def __init__(self):
 
@@ -23302,7 +23501,7 @@ class RenameBox:
             input.key_return_press = False
 
 
-rename_box = RenameBox()
+rename_playlist_box = RenamePlaylistBox()
 
 
 class FilterBox:
@@ -27800,7 +27999,7 @@ def is_level_zero(include_menus=True):
 
     return not gui.rename_folder_box \
             and not track_box \
-            and not renamebox \
+            and not rename_track_box.active \
             and not radiobox \
             and not pref_box.enabled \
             and not quick_search_mode \
@@ -28433,7 +28632,7 @@ while pctl.running:
 
 
         # Disable keys for text cursor control
-        if not gui.rename_folder_box and not renamebox and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
+        if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox and not pref_box.enabled:
 
 
             if not quick_search_mode and not search_over.active:
@@ -28535,7 +28734,7 @@ while pctl.running:
 
 
 
-        if not quick_search_mode and not pref_box.enabled and not radiobox and not renamebox \
+        if not quick_search_mode and not pref_box.enabled and not radiobox and not rename_track_box.active \
                 and not gui.rename_folder_box \
                 and not gui.rename_playlist_box and not search_over.active:
 
@@ -28584,7 +28783,7 @@ while pctl.running:
                                              playlist_selected, pl_to_id(pctl.active_playlist_viewing)))
                     queue_timer_set()
 
-        if input.key_return_press and (gui.rename_folder_box or renamebox or radiobox):
+        if input.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox):
             input.key_return_press = False
             input.level_2_enter = True
 
@@ -28716,8 +28915,8 @@ while pctl.running:
 
         if keymaps.test("rename-playlist"):
             rename_playlist(pctl.active_playlist_viewing)
-            rename_box.x = 60 * gui.scale
-            rename_box.y = 60 * gui.scale
+            rename_playlist_box.x = 60 * gui.scale
+            rename_playlist_box.y = 60 * gui.scale
 
         # Transfer click register to menus
         if input.mouse_click:
@@ -28727,7 +28926,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or renamebox or view_box.active or filter_box.active) and not gui.message_box:
+        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or filter_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -28770,7 +28969,7 @@ while pctl.running:
         if right_click:
             level_2_right_click = True
 
-        if right_click and (radiobox or renamebox or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
+        if right_click and (radiobox or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
             right_click = False
 
         if mouse_wheel != 0:
@@ -28792,7 +28991,7 @@ while pctl.running:
                 gui.pl_update = 1
 
 
-        if quick_search_mode is False and renamebox is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
+        if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
 
 
             if keymaps.test("info-playing"):
@@ -29252,7 +29451,7 @@ while pctl.running:
             fields.add(rect)
 
             if (coll(rect) or side_drag is True) \
-                    and renamebox is False \
+                    and rename_track_box.active is False \
                     and radiobox is False \
                     and gui.rename_playlist_box is False \
                     and gui.message_box is False \
@@ -30737,7 +30936,7 @@ while pctl.running:
             style_overlay.hole_punches.clear()
 
             if gui.set_mode:
-                if renamebox is False \
+                if rename_track_box.active is False \
                         and radiobox is False \
                         and gui.rename_playlist_box is False \
                         and gui.message_box is False \
@@ -30755,7 +30954,7 @@ while pctl.running:
             # Overlay GUI ----------------------
 
             if gui.rename_playlist_box:
-                rename_box.render()
+                rename_playlist_box.render()
 
             # if filter_box.active:
             #     filter_box.render()
@@ -31215,157 +31414,160 @@ while pctl.running:
                 ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(200), 211, max_w=420 * gui.scale)
 
 
-            if renamebox:
 
-                if gui.level_2_click:
-                    input.mouse_click = True
-                gui.level_2_click = False
+            if rename_track_box.active:
 
-                w = 420 * gui.scale
-                h = 155 * gui.scale
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
-                ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
-                ddt.text_background_colour = colours.sys_background_3
-
-                if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
-                    renamebox = False
-
-                r_todo = []
-
-                # Find matching folder tracks in playlist
-                for item in default_playlist:
-                    if pctl.master_library[item].parent_folder_path == pctl.master_library[
-                                rename_index].parent_folder_path:
-
-                        # Close and display error if any tracks are not single local files
-                        if pctl.master_library[item].is_network is True:
-                            renamebox = False
-                            show_message("Cannot rename", "One or more tracks is from a network location!", 'info')
-                        if pctl.master_library[item].is_cue is True:
-                            renamebox = False
-                            show_message("This function does not support renaming CUE Sheet tracks.")
-                        else:
-                            r_todo.append(item)
-
-                ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Track Renaming"), colours.grey(230), 213)
-
-                #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
-                if rename_files.text != prefs.rename_tracks_template and draw.button(_("Default"), x + w - 85 * gui.scale, y + h - 35 * gui.scale,
-                               70 * gui.scale):
-                    rename_files.text = prefs.rename_tracks_template
-
-                # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-                rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
-                NRN = rename_files.text
-
-                ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
-
-                afterline = ""
-                warn = False
-                underscore = False
-
-                for item in r_todo:
-
-                    if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
-                                    pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
-                        warn = True
-
-                    if item == rename_index:
-                        afterline = parse_template2(NRN, pctl.master_library[item])
-
-                ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.grey(100), 212)
-                line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
-                ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
-
-                ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.grey(100), 212)
-                ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
-
-
-
-                if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
-                    pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
-                    ddt.text((x + 10 * gui.scale, y + 108 * gui.scale,), "Warning: This may change the file extension", [245, 90, 90, 255],
-                             13)
-
-                colour_warn = [143,186, 65, 255]
-                if not unique_template(NRN):
-                    ddt.text((x + 10 * gui.scale, y + 123 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
-                             13)
-                if warn:
-                    ddt.text((x + 10 * gui.scale, y + 135 * gui.scale,), "Warning: A track has incomplete metadata", [245, 90, 90, 255], 13)
-                    colour_warn = [180, 60, 60, 255]
-
-                label = "Write (" + str(len(r_todo)) + ")"
-
-                if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn, tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
-                    input.mouse_click = False
-                    total_todo = len(r_todo)
-                    pre_state = 0
-
-                    for item in r_todo:
-
-                        if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
-                            pre_state = pctl.stop(True)
-
-                        try:
-
-                            afterline = parse_template2(NRN, pctl.master_library[item], strict=True)
-
-                            oldname = pctl.master_library[item].filename
-                            oldpath = pctl.master_library[item].fullpath
-
-                            print('Renaming...')
-
-                            star = star_store.full_get(item)
-                            star_store.remove(item)
-
-                            oldpath = pctl.master_library[item].fullpath
-
-                            oldsplit = os.path.split(oldpath)
-
-                            if os.path.exists(os.path.join(oldsplit[0], afterline)):
-                                print("A file with that name already exists")
-                                total_todo -= 1
-                                continue
-
-                            if not afterline:
-                                print("Rename Error")
-                                total_todo -= 1
-                                continue
-
-                            if "." in afterline and not afterline.split(".")[0]:
-                                print("A file does not have a target filename")
-                                total_todo -= 1
-                                continue
-
-                            os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
-
-                            pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
-                            pctl.master_library[item].filename = afterline
-
-                            if star is not None:
-                                star_store.insert(item, star)
-
-                        except:
-                            total_todo -= 1
-
-                    renamebox = False
-                    print('Done')
-                    if pre_state == 1:
-                        pctl.revert()
-
-
-                    if total_todo != len(r_todo):
-                        show_message("Rename complete." + "  " + str(total_todo) + "/" + str(
-                            len(r_todo)) + " filenames written.", 'warning')
-
-                    else:
-                        show_message(_("Rename complete."),
-                                     str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), 'done')
-                    tauon.worker_save_state = True
+                rename_track_box.render()
+                #
+                # if gui.level_2_click:
+                #     input.mouse_click = True
+                # gui.level_2_click = False
+                #
+                # w = 420 * gui.scale
+                # h = 155 * gui.scale
+                # x = int(window_size[0] / 2) - int(w / 2)
+                # y = int(window_size[1] / 2) - int(h / 2)
+                #
+                # ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80), True)
+                # ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+                # ddt.text_background_colour = colours.sys_background_3
+                #
+                # if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+                #     rename_track_box.active = False
+                #
+                # r_todo = []
+                #
+                # # Find matching folder tracks in playlist
+                # for item in default_playlist:
+                #     if pctl.master_library[item].parent_folder_path == pctl.master_library[
+                #                 rename_index].parent_folder_path:
+                #
+                #         # Close and display error if any tracks are not single local files
+                #         if pctl.master_library[item].is_network is True:
+                #             rename_track_box.active = False
+                #             show_message("Cannot rename", "One or more tracks is from a network location!", 'info')
+                #         if pctl.master_library[item].is_cue is True:
+                #             rename_track_box.active = False
+                #             show_message("This function does not support renaming CUE Sheet tracks.")
+                #         else:
+                #             r_todo.append(item)
+                #
+                # ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Track Renaming"), colours.grey(230), 213)
+                #
+                # #if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
+                # if rename_files.text != prefs.rename_tracks_template and draw.button(_("Default"), x + w - 85 * gui.scale, y + h - 35 * gui.scale,
+                #                70 * gui.scale):
+                #     rename_files.text = prefs.rename_tracks_template
+                #
+                # # ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
+                # rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.alpha_grey(170), width=300)
+                # NRN = rename_files.text
+                #
+                # ddt.rect_a((x + 8 * gui.scale, y + 36 * gui.scale), (300 * gui.scale, 22 * gui.scale), colours.grey(50))
+                #
+                # afterline = ""
+                # warn = False
+                # underscore = False
+                #
+                # for item in r_todo:
+                #
+                #     if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
+                #                     pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
+                #         warn = True
+                #
+                #     if item == rename_index:
+                #         afterline = parse_template2(NRN, pctl.master_library[item])
+                #
+                # ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.grey(100), 212)
+                # line = trunc_line(pctl.master_library[rename_index].filename, 12, 335)
+                # ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
+                #
+                # ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.grey(100), 212)
+                # ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
+                #
+                #
+                #
+                # if (len(NRN) > 3 and len(pctl.master_library[rename_index].filename) > 3 and afterline[-3:].lower() !=
+                #     pctl.master_library[rename_index].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
+                #     ddt.text((x + 10 * gui.scale, y + 108 * gui.scale,), "Warning: This may change the file extension", [245, 90, 90, 255],
+                #              13)
+                # 
+                # colour_warn = [143,186, 65, 255]
+                # if not unique_template(NRN):
+                #     ddt.text((x + 10 * gui.scale, y + 123 * gui.scale,), "Warning: The filename might not be unique", [245, 90, 90, 255],
+                #              13)
+                # if warn:
+                #     ddt.text((x + 10 * gui.scale, y + 135 * gui.scale,), "Warning: A track has incomplete metadata", [245, 90, 90, 255], 13)
+                #     colour_warn = [180, 60, 60, 255]
+                # 
+                # label = "Write (" + str(len(r_todo)) + ")"
+                # 
+                # if draw.button(label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=colour_warn, tooltip="Physically renames all the tracks in the folder") or input.level_2_enter:
+                #     input.mouse_click = False
+                #     total_todo = len(r_todo)
+                #     pre_state = 0
+                # 
+                #     for item in r_todo:
+                # 
+                #         if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
+                #             pre_state = pctl.stop(True)
+                # 
+                #         try:
+                # 
+                #             afterline = parse_template2(NRN, pctl.master_library[item], strict=True)
+                # 
+                #             oldname = pctl.master_library[item].filename
+                #             oldpath = pctl.master_library[item].fullpath
+                # 
+                #             print('Renaming...')
+                # 
+                #             star = star_store.full_get(item)
+                #             star_store.remove(item)
+                # 
+                #             oldpath = pctl.master_library[item].fullpath
+                # 
+                #             oldsplit = os.path.split(oldpath)
+                # 
+                #             if os.path.exists(os.path.join(oldsplit[0], afterline)):
+                #                 print("A file with that name already exists")
+                #                 total_todo -= 1
+                #                 continue
+                # 
+                #             if not afterline:
+                #                 print("Rename Error")
+                #                 total_todo -= 1
+                #                 continue
+                # 
+                #             if "." in afterline and not afterline.split(".")[0]:
+                #                 print("A file does not have a target filename")
+                #                 total_todo -= 1
+                #                 continue
+                # 
+                #             os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
+                # 
+                #             pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
+                #             pctl.master_library[item].filename = afterline
+                # 
+                #             if star is not None:
+                #                 star_store.insert(item, star)
+                # 
+                #         except:
+                #             total_todo -= 1
+                # 
+                #     rename_track_box.active = False
+                #     print('Done')
+                #     if pre_state == 1:
+                #         pctl.revert()
+                # 
+                # 
+                #     if total_todo != len(r_todo):
+                #         show_message("Rename complete." + "  " + str(total_todo) + "/" + str(
+                #             len(r_todo)) + " filenames written.", 'warning')
+                # 
+                #     else:
+                #         show_message(_("Rename complete."),
+                #                      str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), 'done')
+                #     tauon.worker_save_state = True
 
             if radiobox:
 
