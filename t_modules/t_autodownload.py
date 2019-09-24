@@ -63,7 +63,8 @@ class AutoDownload:
 
             self.tauon.load_orders.append(copy.deepcopy(load_order))
             self.tauon.switch_playlist(pln)
-            self.tauon.gui.show_message("Import of downloaded tracks complete", 'done', "Remember to support the artists!")
+            self.tauon.gui.show_message("Import of downloaded tracks complete", "Remember to support the artists!",
+                                        'done')
 
     def embed_image(self, path, string):
 
@@ -100,7 +101,7 @@ class AutoDownload:
                 self.tauon.gui.show_message("Downloading Youtube tracks requires youtube-dl")
                 return
 
-            self.tauon.gui.show_message("Type detected: Youtube", 'info', 'Link: ' + text)
+            self.tauon.gui.show_message("Type detected: Youtube", 'Link: ' + text, 'info')
 
             # youtube_dir = os.path.join(dl_dir, 'Youtube')
             youtube_dir = dl_dir
@@ -175,7 +176,7 @@ class AutoDownload:
                 return
 
             self.downloading = True
-            self.tauon.gui.show_message("Type detected: Spotify", 'info', 'Link: ' + text)
+            self.tauon.gui.show_message("Type detected: Spotify", 'Link: ' + text, 'info')
             os.makedirs(os.path.join(dl_dir, code))
             line = self.tauon.launch_prefix + "spotdl --list=\"" + track_list_file + "\" --folder=\"" + os.path.join(dl_dir, code) + "\""
             subprocess.run(shlex.split(line))
@@ -189,7 +190,7 @@ class AutoDownload:
                 self.tauon.gui.show_message("Downloading Bandcamp albums requires bandcamp-dl")
                 return
 
-            self.tauon.gui.show_message("Type detected: Bandcamp", 'info', 'Link: ' + text)
+            self.tauon.gui.show_message("Type detected: Bandcamp", 'Link: ' + text, 'info')
             line = self.tauon.launch_prefix + "bandcamp-dl -e --base-dir=\"" + dl_dir + "\" --template=\"%{artist} - %{album}/%{track} - %{title}\" " + text
             self.downloading = True
             subprocess.run(shlex.split(line))
@@ -200,7 +201,7 @@ class AutoDownload:
                 self.tauon.gui.show_message("Downloading Soundcloud playlists requires scdl")
                 return
 
-            self.tauon.gui.show_message("Type detected: Soundcloud", 'info', 'Link: ' + text)
+            self.tauon.gui.show_message("Type detected: Soundcloud", 'Link: ' + text, 'info')
             line = self.tauon.launch_prefix + "scdl -l " + text + " --path=\"" + dl_dir + "\""
             self.downloading = True
             subprocess.run(shlex.split(line))
@@ -226,7 +227,8 @@ class AutoDownload:
 
         # Give warning about spotdl
         if 'open.spotify.com' in text:
-            self.tauon.gui.show_message("Download complete", 'done', "Warning: This method is unreliable, found tracks may not match")
+            self.tauon.gui.show_message("Download complete",
+                                        "Warning: This method is unreliable, found tracks may not match", 'done')
 
         self.downloading = False
 

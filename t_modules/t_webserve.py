@@ -29,7 +29,7 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
         from flask import Flask, redirect, send_file, abort, request, jsonify, render_template
     except:
         print("Failed to load Flask")
-        gui.show_message("Web server failed to start.", 'warning', "Required dependency 'flask' was not found.")
+        gui.show_message("Web server failed to start.", "Required dependency 'flask' was not found.", 'warning')
         return 0
 
     gui.web_running = True

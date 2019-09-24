@@ -265,7 +265,7 @@ class TDraw:
             SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
             SDL_RenderDrawRect(self.renderer, self.sdl_rect)
 
-    def rect_r(self, rectangle, colour, fill=False):
+    def rect(self, rectangle, colour, fill=False):
 
         self.sdl_rect.x = round(rectangle[0])
         self.sdl_rect.y = round(rectangle[1])
@@ -668,7 +668,7 @@ class TDraw:
 
         return dst.w    
 
-    def draw_text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
+    def text(self, location, text, colour, font, max_w=4000, bg=None, range_top=0, range_height=None):
 
         #print((text, font))
 
