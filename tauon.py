@@ -171,6 +171,9 @@ else:
 if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
     os.makedirs(os.path.join(user_directory, "artist-pictures"))
 
+if not os.path.isdir(os.path.join(user_directory, "theme")):
+    os.makedirs(os.path.join(user_directory, "theme"))
+
 if system == 'linux':
     system_config_directory = GLib.get_user_config_dir()
     xdg_dir_file = os.path.join(system_config_directory, 'user-dirs.dirs')
@@ -9095,7 +9098,8 @@ class Menu:
                     return
 
                 if colour is None:
-                    colour = [50, 50, 50, 255]
+                    colour = [145, 145, 145, 70]
+                    #colour = [50, 50, 50, 255]
 
                 icon.asset.render(x, y, colour)
 
@@ -19542,9 +19546,9 @@ class Over:
         self.w = full_width
         self.h = full_height
 
-        ddt.rect_a((x - 5 * gui.scale, y - 5 * gui.scale), (full_width + 10 * gui.scale, full_height + 10 * gui.scale), colours.grey(50), True)
+        border_colour = alpha_blend([255, 255, 255, 35], colours.sys_background)
+        ddt.rect((x - 5 * gui.scale, y - 5 * gui.scale, full_width + 10 * gui.scale, full_height + 10 * gui.scale), border_colour, True)
         ddt.rect_a((x, y), (full_width, full_height), colours.sys_background, True)
-
 
         current_tab = 0
         tab_height = 30
@@ -24157,7 +24161,7 @@ class ArtistList:
         light_mode = False
         line1_colour = [235, 235, 235, 255]
         # line2_colour = [150, 150, 150, 255]
-        line2_colour = alpha_mod(colours.side_bar_line2, 150)
+        line2_colour = [255, 255, 255, 120]
         fade_max = 50
 
 
@@ -26318,7 +26322,7 @@ class ColourPulse2:
             return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
         if off:
             rgb = colorsys.hls_to_rgb(low_hls[0], low_hls[1], low_hls[2])
-            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+            return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 70]
 
         ani_time = 0.15
 
@@ -26365,7 +26369,8 @@ class ColourPulse2:
         hue = high_hls[0]
 
         rgb = colorsys.hls_to_rgb(hue, lumi, sat)
-        return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), 255]
+        alpha = round(pro * 185)
+        return [int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255), alpha + 70]
 
 cctest = ColourPulse2()
 
@@ -26462,6 +26467,7 @@ class ViewBox:
                 colour = self.over_colour
 
         colour = colour_get.get(col, on, not on and not animate, low, high)
+
             # if "+" in name:
             #
             #     colour = cctest.get(col, on, [0, 0.2, 0.0], [0, 0.8, 0.8])
@@ -26594,7 +26600,8 @@ class ViewBox:
 
         func = None
 
-        low = (0, .15, 0)
+        #low = (0, .15, 0)
+        low = (0, .40, 0)
         if colours.lm:
             low = (0, .85, 0)
 
