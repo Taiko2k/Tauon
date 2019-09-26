@@ -1779,10 +1779,10 @@ p_force_queue = []
 reload_state = None
 
 
-def show_message(line1, line2="", message_mode='info'):
+def show_message(line1, line2="", mode='info'):
     gui.message_box = True
     gui.message_text = line1
-    gui.message_mode = message_mode
+    gui.message_mode = mode
     gui.message_subtext = line2
     message_box_min_timer.set()
     gui.update = 1
@@ -9416,6 +9416,7 @@ queue_menu = Menu(150)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
+lightning_menu = Menu(165)
 
 
 class RenameTrackBox:
@@ -9433,7 +9434,7 @@ class RenameTrackBox:
         if key_shift_down or key_shiftr_down:
             self.single_only = True
         else:
-            self.single_only = True
+            self.single_only = False
 
     def render(self):
 
@@ -9757,6 +9758,112 @@ def open_folder(index):
             subprocess.Popen(['open', line])
         else:
             subprocess.Popen(['xdg-open', line])
+
+
+def tag_to_new_playlist(tag_item):
+    path_stem_to_playlist(tag_item.path, tag_item.name)
+
+move_jobs = []
+move_in_progress = False
+
+def move_playling_folder_to_tag(tag_item):
+
+    track = pctl.playing_object()
+
+    if not track or pctl.playing_state == 0:
+        show_message("No item is currently playing")
+        return
+
+    move_folder = track.parent_folder_path
+
+    # Stop playing track if its in the current folder
+    if pctl.playing_state > 0:
+        if move_folder in pctl.playing_object().parent_folder_path:
+            pctl.stop(True)
+
+    target_base = tag_item.path
+
+    # Determine name for artist folder
+    artist = track.artist
+    if track.album_artist:
+        artist = track.album_artist
+
+    # Make filename friendly
+    for g in r'[]/\;,><&*:%=+@!#^()|?^.':
+        artist = artist.replace(g, '')
+
+    # Sanity checks
+    if track.is_network:
+        show_message("This track is a networked track.", mode="error")
+        return
+
+    if not os.path.isdir(move_folder):
+        show_message("The source folder does not exist.", mode="error")
+        return
+
+    if not os.path.isdir(target_base):
+        show_message("The destination folder does not exist.", mode="error")
+        return
+
+    if os.path.normpath(target_base) == os.path.normpath(move_folder):
+        show_message("The destination and source folders are the same.", mode="error")
+        return
+
+    if len(target_base) < 4:
+        show_message("Safety interupt! The source path seems oddly short.", target_base, 'error')
+        return
+
+    protect = ("", "Documents", "Music", "Desktop", "Downloads")
+    for fo in protect:
+        if move_folder.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
+            show_message("Better not do anything to that folder!", os.path.join(os.path.expanduser('~'), fo), 'warning')
+            return
+
+    if directory_size(move_folder) > 2500000000:
+        show_message("Folder size safety limit reached! (2.5GB)", move_folder, 'warning')
+        return
+
+    # Make artist folder if it does not exist
+    artist_folder = os.path.join(target_base, artist)
+    if not os.path.exists(artist_folder):
+        os.makedirs(artist_folder)
+
+    # Remove all tracks with the old paths
+    for pl in pctl.multi_playlist:
+        for i in reversed(range(len(pl[2]))):
+            if pctl.g(pl[2][i]).parent_folder_path == track.parent_folder_path:
+                del pl[2][i]
+
+    # Find insert location
+    pl = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    matches = []
+    insert = 0
+    for i, item in enumerate(pl):
+        if pctl.g(item).parent_folder_path == target_base:
+            matches.append((i, item))
+
+    if matches:
+        for item in matches:
+            if pctl.g(item[1]).parent_folder_path.startswith(artist_folder):
+                insert = item[0]
+                break
+        else:
+            insert = matches[0][0]
+
+    print("The folder to be moved is: " + move_folder)
+    load_order = LoadClass()
+    load_order.target = artist_folder
+    load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+    load_order.playlist_position = insert
+
+    print(artist_folder)
+    print(os.path.join(artist_folder, track.parent_folder_name))
+    move_jobs.append((move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
+                      track.parent_folder_name, load_order))
+
+
+lightning_menu.add(_("Filter to new playlist"), tag_to_new_playlist, pass_ref=True)
+lightning_menu.add(_("Move playing folder here"), move_playling_folder_to_tag, pass_ref=True)
 
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
@@ -12297,8 +12404,7 @@ def s_copy():
     #         subprocess.call(shlex.split(command), shell=True)
     #         os.system(command)
 
-move_jobs = []
-move_in_progress = False
+
 
 def directory_size(path):
     total = 0
@@ -12307,6 +12413,8 @@ def directory_size(path):
             path = os.path.join(dirpath, file)
             total += os.path.getsize(path)
     return total
+
+
 
 def lightning_paste():
 
@@ -14771,6 +14879,29 @@ def select_love():
 
 extra_menu.add('Love', bar_love, love_deco, icon=heart_icon)
 
+
+def locate_artist():
+    track = pctl.playing_object()
+    if not track:
+        return
+
+    pl = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    for i, track_id in enumerate(pl):
+        test = pctl.g(track_id)
+        if test.artist and test.artist in (track.artist, track.album_artist) or \
+            test.album_artist and test.album_artist in (track.artist, track.album_artist):
+            pctl.playlist_view_position = i
+            gui.pl_update += 1
+            break
+    else:
+        show_message(_("No exact matching artist could be found in this playlist"))
+        input.mouse_click = False
+        global quick_search_mode
+        if len(pctl.track_queue) > 0:
+            quick_search_mode = True
+            search_text.text = pctl.playing_object().artist
+
+
 def toggle_search():
     search_over.active = True
 
@@ -14779,6 +14910,8 @@ extra_menu.add(_('Global Search'), toggle_search, hint="CTRL + G")
 def goto_playing_extra():
     pctl.show_current(highlight=True)
 
+
+extra_menu.add(_("Locate Artist"), locate_artist)
 extra_menu.add(_("Go To Playing"), goto_playing_extra, hint="QUOTE")
 
 
@@ -14862,8 +14995,7 @@ def toggle_notifications(mode=0):
 
     if prefs.show_notifications:
         if not de_notify_support:
-            show_message("Notifications for this DE not supported",
-                         '', 'warning')
+            show_message("Notifications for this DE not supported", '', 'warning')
 
 # def toggle_al_pref_album_artist(mode=0):
 #
@@ -28796,7 +28928,6 @@ while pctl.running:
             pctl.multi_playlist[pctl.active_playlist_viewing][4] ^= 1
             gui.pl_update = 1
 
-
         if keymaps.test("find-playing-artist"):
             #standard_size()
             if len(pctl.track_queue) > 0:
@@ -30187,7 +30318,7 @@ while pctl.running:
 
                         if coll(hot_r):
                             gui.pt_off.set()
-                        if gui.pt_off.get() > 0.6:
+                        if gui.pt_off.get() > 0.6 and not lightning_menu.active:
                             gui.pt = 3
 
                             off = 0
@@ -30248,24 +30379,29 @@ while pctl.running:
                             i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
                             fields.add(i_rect)
 
-                            if coll(i_rect) and item.peak_x == 9 * gui.scale:
+                            if (coll(i_rect) or (lightning_menu.active and lightning_menu.reference
+                            == item)) and item.peak_x == 9 * gui.scale:
 
-                                minx = 100 * gui.scale
-                                maxx = minx * 2
+                                if not lightning_menu.active or lightning_menu.reference == item or right_click:
 
-                                ww = ddt.get_text_w(item.name, 213)
+                                    minx = 100 * gui.scale
+                                    maxx = minx * 2
 
-                                w = max(minx, ww)
-                                w = min(maxx, w)
+                                    ww = ddt.get_text_w(item.name, 213)
+
+                                    w = max(minx, ww)
+                                    w = min(maxx, w)
 
 
-                                ddt.rect((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
-                                ddt.text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+                                    ddt.rect((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
+                                    ddt.text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
 
-                                if input.mouse_click:
-                                    goto_album(item.position)
-                                if middle_click:
-                                    path_stem_to_playlist(item.path, item.name)
+                                    if input.mouse_click:
+                                        goto_album(item.position)
+                                    if right_click:
+                                        lightning_menu.activate(item, position=(window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
+                                    if middle_click:
+                                        path_stem_to_playlist(item.path, item.name)
 
 
 

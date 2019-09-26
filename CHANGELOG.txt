@@ -5,7 +5,10 @@ v4.8.1
 
  - Added cursor change on mouse-over to window resize hotspots
  - Added option to always show title in bottom panel
- - Added "composer" and "comment" as possible fields for rename tracks function
+ - Added "Composer" and "Comment" as possible fields for rename tracks function
+ - Added "Locate Artist" function to bottom panel menu
+ - Added context menu to gallery power bar
+ - Added "Move playing folder here" function to power bar menu
  - Improved colour blending for some elements in custom theme
  - Improved rename track box to allow single tracks only (hold shift)
  - Improved notifications to show app icon (KDE Plasma)
