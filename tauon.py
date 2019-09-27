@@ -29815,7 +29815,10 @@ while pctl.running:
                 if last_row != row_len:
                     last_row = row_len
 
-                    goto_album(pctl.playlist_playing_position)
+                    if playlist_selected < len(pctl.playing_playlist()):
+                        goto_album(playlist_selected)
+                    # else:
+                    #     goto_album(pctl.playlist_playing_position)
 
                 extend = 0
                 if card_mode:  # gui.gallery_show_text:
