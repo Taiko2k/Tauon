@@ -14463,10 +14463,10 @@ def toggle_album_mode(force_on=False):
 
     reload_albums(quiet=True)
 
-    if pctl.active_playlist_playing == pctl.active_playlist_viewing:
+    #if pctl.active_playlist_playing == pctl.active_playlist_viewing:
         #goto_album(pctl.playlist_playing_position)
-        if playlist_selected < len(pctl.playing_playlist()):
-            goto_album(playlist_selected)
+    if playlist_selected < len(pctl.playing_playlist()):
+        goto_album(playlist_selected)
 
 
 def switch_playlist(number, cycle=False):
