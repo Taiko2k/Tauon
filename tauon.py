@@ -34,6 +34,8 @@ import os
 import pickle
 import shutil
 
+
+
 n_version = "4.8.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
@@ -464,7 +466,6 @@ album_v_slide_value = 50
 
 album_mode_art_size = 200
 
-album_pos_px = 1
 time_last_save = 0
 window_default_size = [1110, 540]
 window_size = window_default_size
@@ -1245,11 +1246,12 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.compact_artist_list = False
 
         self.rsp_full_lock = False
+        
+        self.album_scroll_px = album_v_slide_value
 
 
 
 gui = GuiVar()
-
 
 # Functions for reading and setting play counts
 class StarStore:
@@ -6174,7 +6176,7 @@ class Drawing:
         fields.add(rect)
 
         if fore_text is None:
-            fore_text = colours.grey(240)
+            fore_text = colours.grey(250)
         if back_text is None:
             back_text = colours.grey(220)
         if bg is None:
@@ -14357,13 +14359,22 @@ def path_stem_to_playlist(path, title):  # Used with gallery power bar
 
 def goto_album(playlist_no, down=False, force=False):
 
-    if core_timer.get() < 1:
+    if core_timer.get() < 0.5:
         return
 
-
-    # (down flag not curretly used)
-    global album_pos_px
     global album_dex
+
+    # ----
+    w = gui.rspw
+    if window_size[0] < 750 * gui.scale:
+        w = window_size[0] - 20 * gui.scale
+        if gui.lsp:
+            w -= gui.lspw
+    area_x = w + 38 * gui.scale
+    row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
+    global last_row
+    last_row = row_len
+    # ----
 
     px = 0
     row = 0
@@ -14381,28 +14392,24 @@ def goto_album(playlist_no, down=False, force=False):
             row = 0
             px += album_mode_art_size + album_v_gap
 
-
     # If the album is within the view port already, dont jump to it
     # (unless we really want to with force)
-    if not force and album_pos_px + album_v_slide_value < px < album_pos_px + window_size[1]:
+    if not force and gui.album_scroll_px + album_v_slide_value < px < gui.album_scroll_px + window_size[1]:
 
         # Dont chance the view since its alread in the view port
         # But if the album is just out of view on the bottom, bring it into view on to bottom row
         if window_size[1] > (album_mode_art_size + album_v_gap) * 2:
-            while not album_pos_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < album_pos_px + window_size[
+            while not gui.album_scroll_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < gui.album_scroll_px + window_size[
                 1] - 40:
-                album_pos_px += 1
-
+                gui.album_scroll_px += 1
 
     else:
         # Set the view to the calculated position
-        album_pos_px = px
-        album_pos_px -= album_v_slide_value
+        gui.album_scroll_px = px
+        gui.album_scroll_px -= album_v_slide_value
 
-        if album_pos_px < 0 - album_v_slide_value:
-            album_pos_px = 0 - album_v_slide_value
-
-
+        if gui.album_scroll_px < 0 - album_v_slide_value:
+            gui.album_scroll_px = 0 - album_v_slide_value
 
     if len(album_dex) > 0:
         return album_dex[re]
@@ -14418,27 +14425,15 @@ def toggle_album_mode(force_on=False):
     global old_side_pos
     global album_playlist_width
     global old_album_pos
-    global album_pos_px
     global themeChange
 
     gui.gall_tab_enter = False
-
-    # if prefs.colour_from_image:
-    #     #prefs.colour_from_image = False
-    #     themeChange = True
-
-    # if gui.show_playlist is False:
-    #     gui.show_playlist = True
-    #     #gui.playlist_width = album_playlist_width  # int(window_size[0] * 0.25)
-    #     #gui.rspw = window_size[0] - gui.plw
-    #     if force_on:
-    #         return
 
     if album_mode is True:
 
         album_mode = False
         #album_playlist_width = gui.playlist_width
-        #old_album_pos = album_pos_px
+        #old_album_pos = gui.album_scroll_px
         gui.rspw = gui.pref_rspw
         gui.rsp = prefs.prefer_side
         #gui.rspw = old_side_pos
@@ -14465,8 +14460,10 @@ def toggle_album_mode(force_on=False):
 
     #if pctl.active_playlist_playing == pctl.active_playlist_viewing:
         #goto_album(pctl.playlist_playing_position)
-    if playlist_selected < len(pctl.playing_playlist()):
-        goto_album(playlist_selected)
+
+    if album_mode:
+        if playlist_selected < len(pctl.playing_playlist()):
+            goto_album(playlist_selected)
 
 
 def switch_playlist(number, cycle=False):
@@ -14475,7 +14472,6 @@ def switch_playlist(number, cycle=False):
     global playlist_selected
     global search_index
     global shift_selection
-    global album_pos_px
 
     # Close any active menus
     # for instance in Menu.instances:
@@ -14505,7 +14501,7 @@ def switch_playlist(number, cycle=False):
     gall_pl_switch_timer.set()
 
 
-    gui.gallery_positions[gui.previous_playlist_id] = album_pos_px
+    gui.gallery_positions[gui.previous_playlist_id] = gui.album_scroll_px
 
 
     if cycle:
@@ -14529,7 +14525,7 @@ def switch_playlist(number, cycle=False):
 
         id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         if id in gui.gallery_positions:
-            album_pos_px = gui.gallery_positions[id]
+            gui.album_scroll_px = gui.gallery_positions[id]
         else:
             goto_album(pctl.playlist_view_position)
 
@@ -17723,7 +17719,6 @@ def gen_power2():
 def reload_albums(quiet=False, return_playlist=-1):
     global album_dex
     global update_layout
-    global album_pos_px
     global old_album_pos
 
     if cm_clean_db:
@@ -17731,7 +17726,7 @@ def reload_albums(quiet=False, return_playlist=-1):
         return
 
     # if not quiet:
-    #     album_pos_px = old_album_pos
+    #     gui.album_scroll_px = old_album_pos
 
     dex = []
     current_folder = ""
@@ -28123,10 +28118,9 @@ pctl.notify_update()
 
 key_focused = 0
 
-album_pos_px = album_v_slide_value
-
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
-    album_pos_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
+    gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
+
 
 def is_level_zero(include_menus=True):
 
@@ -28959,7 +28953,9 @@ while pctl.running:
         # print(keymaps.hits)
 
         if keymaps.test('testkey'): #  F7: test
+            print(gui.album_scroll_px)
             pass
+
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -29763,19 +29759,19 @@ while pctl.running:
                         gui.frame_callback_list.append(TestTimer(0.9))
 
                     if prefs.gallery_row_scroll:
-                        album_pos_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
+                        gui.album_scroll_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
                     else:
-                        album_pos_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
+                        gui.album_scroll_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
-                    if album_pos_px < round(album_v_slide_value * -1):
-                        album_pos_px = round(album_v_slide_value * -1)
+                    if gui.album_scroll_px < round(album_v_slide_value * -1):
+                        gui.album_scroll_px = round(album_v_slide_value * -1)
                         if album_dex:
                             gallery_pulse_top.pulse()
 
-                    if album_pos_px > max_scroll:
-                        album_pos_px = max_scroll
-                        if album_pos_px < round(album_v_slide_value * -1):
-                            album_pos_px = round(album_v_slide_value * -1)
+                    if gui.album_scroll_px > max_scroll:
+                        gui.album_scroll_px = max_scroll
+                        if gui.album_scroll_px < round(album_v_slide_value * -1):
+                            gui.album_scroll_px = round(album_v_slide_value * -1)
 
                 gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
 
@@ -29813,7 +29809,7 @@ while pctl.running:
 
                     # Draw scroll bar
                     if gui.pt == 0:
-                        album_pos_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), album_pos_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click, extend_field=15*gui.scale) - album_v_slide_value
+                        gui.album_scroll_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), gui.album_scroll_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click, extend_field=15*gui.scale) - album_v_slide_value
 
 
                 if last_row != row_len:
@@ -29827,18 +29823,18 @@ while pctl.running:
 
                 # Process inputs first
                 if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
-                    while render_pos < album_pos_px + window_size[1]:
+                    while render_pos < gui.album_scroll_px + window_size[1]:
 
-                        if b_info_bar and render_pos > album_pos_px + b_info_y:
+                        if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
                             break
 
-                        if render_pos < album_pos_px - album_mode_art_size - album_v_gap:
+                        if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
                             # Skip row
                             render_pos += album_mode_art_size + album_v_gap
                             album_on += row_len
                         else:
                             # render row
-                            y = render_pos - album_pos_px
+                            y = render_pos - gui.album_scroll_px
                             row_x = 0
                             for a in range(row_len):
                                 if album_on > len(album_dex) - 1:
@@ -30014,18 +30010,18 @@ while pctl.running:
                     gui.first_in_grid = None
 
                 # Render album grid
-                while render_pos < album_pos_px + window_size[1] and default_playlist:
+                while render_pos < gui.album_scroll_px + window_size[1] and default_playlist:
 
-                    if b_info_bar and render_pos > album_pos_px + b_info_y:
+                    if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
                         break
 
-                    if render_pos < album_pos_px - album_mode_art_size - album_v_gap:
+                    if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
                         # Skip row
                         render_pos += album_mode_art_size + album_v_gap
                         album_on += row_len
                     else:
                         # render row
-                        y = render_pos - album_pos_px
+                        y = render_pos - gui.album_scroll_px
 
                         row_x = 0
 
@@ -32787,7 +32783,7 @@ pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
-gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = album_pos_px
+gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
 
 save_state()
 
