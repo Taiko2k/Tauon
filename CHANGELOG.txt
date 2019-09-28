@@ -13,9 +13,11 @@ v4.8.1
  - Improved rename track box to allow single tracks only (hold shift)
  - Improved notifications to show app icon (KDE Plasma)
  - Tweaked right side panel behavior to lock with full size art
- - Tweaked open gallery behavior to open at selected rather than playing
+ - Tweaked open gallery behavior to open at selected rather than playing track
  - Fixed text in bottom panel showing with center style side panel
  - Fixed sub-menus possibly overlapping view box in compact view
+ - Fixed repeat button alpha overlap in Carbon theme
+ - Fixed gallery scroll bar sliding view past bounds
 
 v4.8.0
 

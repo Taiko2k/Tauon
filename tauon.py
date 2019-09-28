@@ -14883,21 +14883,48 @@ def locate_artist():
     if not track:
         return
 
-    pl = pctl.multi_playlist[pctl.active_playlist_viewing][2]
-    for i, track_id in enumerate(pl):
-        test = pctl.g(track_id)
-        if test.artist and test.artist in (track.artist, track.album_artist) or \
-            test.album_artist and test.album_artist in (track.artist, track.album_artist):
-            pctl.playlist_view_position = i
-            gui.pl_update += 1
-            break
+    artist = track.artist
+    if track.album_artist:
+        artist = track.album_artist
+
+    block_starts = []
+    current = False
+    for i in range(len(default_playlist)):
+        track = pctl.g(default_playlist[i])
+        if current is False:
+            if track.artist == artist or track.album_artist == artist or (
+                    'artists' in track.misc and artist in track.misc['artists']):
+                block_starts.append(i)
+                current = True
+        else:
+            if track.artist != artist and track.album_artist != artist or (
+                    'artists' in track.misc and artist in track.misc['artists']):
+                current = False
+
+    if block_starts:
+
+        global playlist_selected
+        next = False
+        for start in block_starts:
+
+            if next:
+                playlist_selected = start
+                pctl.playlist_view_position = start
+                shift_selection.clear()
+                break
+
+            if playlist_selected == start:
+                next = True
+                continue
+
+        else:
+            playlist_selected = block_starts[0]
+            pctl.playlist_view_position = block_starts[0]
+            shift_selection.clear()
     else:
-        show_message(_("No exact matching artist could be found in this playlist"))
-        input.mouse_click = False
-        global quick_search_mode
-        if len(pctl.track_queue) > 0:
-            quick_search_mode = True
-            search_text.text = pctl.playing_object().artist
+        show_message("No exact matching artist could be found in this playlist")
+
+    gui.pl_update += 1
 
 
 def toggle_search():
@@ -21510,6 +21537,8 @@ class BottomBarType1:
                 if repeat_menu.active and not pctl.repeat_mode is True:
                     rpbc = colours.mode_button_over
 
+                rpbc = alpha_blend(rpbc, colours.bottom_panel_colour)  # bake in alpha in case of overlap
+
                 y += round(3 * gui.scale)
                 w = round(3 * gui.scale)
 
@@ -23541,7 +23570,7 @@ class ScrollBox():
                         if self.direction_lock:
                             flip = 1
 
-                        self.d_position = self.d_position + (((tt * jump_distance) / max_value) * flip)
+                        self.d_position = min(max(self.d_position + (((tt * jump_distance) / max_value) * flip), 0), 1)
 
             else:
                 self.slide_hold = False
