@@ -5938,6 +5938,13 @@ def draw_window_border():
 
 SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
 
+if desktop == "KDE":
+    try:
+        SDL_SetHint(b"SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", b"0")
+    except:
+        print("Old version of SDL2 detected")
+
+
 SDL_Init(SDL_INIT_VIDEO)
 
 #TTF_Init()
@@ -5996,8 +6003,10 @@ if system == 'windows':
 
 
 try:
-    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+    print(SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1"))
+
 except:
+    raise
     print("old version of SDL detected")
 
 # get window surface and set up renderer
