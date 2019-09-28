@@ -25867,7 +25867,9 @@ class ArtistInfoBox:
                 #text_max_w -= 15
 
             artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
-            ddt.text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, text_max_w - (text_max_w % 20), 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
+            width = text_max_w - (text_max_w % 20)
+            if width > 20 * gui.scale:
+                ddt.text((x + round(gui.artist_panel_height + 15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text, [230, 230, 230, 255], 14.5, bg=backgound, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
 
             yy = y + 12
             for item in self.urls:
