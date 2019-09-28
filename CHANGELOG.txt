@@ -18,6 +18,7 @@ v4.8.1
  - Fixed sub-menus possibly overlapping view box in compact view
  - Fixed repeat button alpha overlap in Carbon theme
  - Fixed gallery scroll bar sliding view past bounds
+ - Fixed a possible crash when resizing window with artist bio panel open
 
 v4.8.0
 
