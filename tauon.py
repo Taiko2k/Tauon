@@ -6003,10 +6003,9 @@ if system == 'windows':
 
 
 try:
-    print(SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1"))
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 
 except:
-    raise
     print("old version of SDL detected")
 
 # get window surface and set up renderer
