@@ -919,6 +919,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_absolute_track_index = False
 
         self.hide_bottom_title = False
+        self.auto_goto_playing = False
 
 prefs = Prefs()
 
@@ -2320,6 +2321,7 @@ def save_prefs():
     cf.update_value("side-panel-style", prefs.side_panel_layout)
     cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
+    cf.update_value("auto-show-playing", prefs.auto_goto_playing)
 
 
     cf.update_value("font-main-standard", prefs.linux_font)
@@ -2426,6 +2428,7 @@ def load_prefs():
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
     prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
+    prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -3080,7 +3083,7 @@ class PlayerCtl:
             return 0
 
 
-    def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None):
+    def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None, no_switch=False):
 
         # print("show------")
         # print(select)
@@ -3101,9 +3104,10 @@ class PlayerCtl:
             track_index = index
 
         # Switch to source playlist
-        if self.active_playlist_viewing != self.active_playlist_playing and (
-                    track_index not in self.multi_playlist[self.active_playlist_viewing][2]):
-            switch_playlist(self.active_playlist_playing)
+        if not no_switch:
+            if self.active_playlist_viewing != self.active_playlist_playing and (
+                        track_index not in self.multi_playlist[self.active_playlist_viewing][2]):
+                switch_playlist(self.active_playlist_playing)
 
         if gui.playlist_view_length < 1:
             return 0
@@ -4129,6 +4133,8 @@ class PlayerCtl:
 
         if self.active_playlist_viewing == self.active_playlist_playing:
             self.show_current(quiet=quiet)
+        elif prefs.auto_goto_playing:
+            self.show_current(quiet=quiet, this_only=True, playing=False, highlight=True, no_switch=True)
 
         # if album_mode:
         #     goto_album(self.playlist_playing)
@@ -14528,6 +14534,7 @@ def switch_playlist(number, cycle=False):
 
     shift_selection = [playlist_selected]
 
+
     if album_mode:
         reload_albums(True)
 
@@ -14537,6 +14544,8 @@ def switch_playlist(number, cycle=False):
         else:
             goto_album(pctl.playlist_view_position)
 
+    if prefs.auto_goto_playing:
+        pctl.show_current(this_only=True, playing=False, highlight=True, no_switch=True)
 
 
 def activate_info_box():
@@ -27481,6 +27490,9 @@ if system == 'linux':
         Notify.init("Tauon Music Box")
         g_tc_notify = Notify.Notification.new("Tauon Music Box",
                                               "Transcoding has finished.")
+
+        value = GLib.Variant("s", t_id)
+        g_tc_notify.set_hint("desktop-entry", value)
 
         g_tc_notify.add_action(
             "action_click",
