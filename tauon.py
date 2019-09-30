@@ -339,12 +339,13 @@ from xml.sax.saxutils import escape
 from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
+from isounidecode import unidecode
 import musicbrainzngs
 import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 # -----------------------------------------------------------
-# Detect locale for translations (currently none availiable)
+# Detect locale for translations (currently none available)
 
 def _(message):
     return message
@@ -920,6 +921,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.hide_bottom_title = False
         self.auto_goto_playing = False
+
+        self.diacritic_search = True
 
 prefs = Prefs()
 
@@ -2289,6 +2292,7 @@ def save_prefs():
     cf.update_value("plex-servername", prefs.plex_servername)
 
     cf.update_value("display-language", prefs.ui_lang)
+    cf.update_value("decode-search", prefs.diacritic_search)
 
     cf.update_value("use-log-volume-scale", prefs.log_vol)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
@@ -2386,8 +2390,10 @@ def load_prefs():
     cf.br()
     cf.add_text("[locale]")
     prefs.ui_lang = cf.sync_add("string", "display-language", prefs.ui_lang, "Override display language to use if "
-                                                                             "available. E.g. \"en\", \"ja\", \"zh_CH\"."
+                                                                             "available. E.g. \"en\", \"ja\", \"zh_CH\". "
                                                                              "Default: \"auto\"")
+    prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
+
 
     cf.br()
     cf.add_text("[tag-editor]")
@@ -2420,7 +2426,7 @@ def load_prefs():
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
     prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
-    prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition")
+    prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition (broken setting, is always enabled")
     prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
 
@@ -16510,6 +16516,7 @@ def worker2():
 
                 s_text = search_over.search_text.text.lower()
 
+
                 for playlist in pctl.multi_playlist:
 
                     if "<" in playlist[0]:
@@ -16518,8 +16525,8 @@ def worker2():
 
                     for track in playlist[2]:
 
-                        # if input_text != "":
-                        #     time.sleep(0.001)
+                        if input_text:
+                            time.sleep(0.001)
 
                         t = pctl.master_library[track]
 
@@ -16531,6 +16538,15 @@ def worker2():
                         album = t.album.lower()
                         genre = t.genre.lower()
                         filename = t.filename.lower()
+
+                        if prefs.diacritic_search:
+                            if all([ord(c) < 128 for c in s_text]):
+                                title = str(unidecode(title))
+                                artist = str(unidecode(artist))
+                                album_artist = str(unidecode(album_artist))
+                                composer = str(unidecode(composer))
+                                album = str(unidecode(album))
+                                filename = str(unidecode(filename))
 
                         stem = os.path.dirname(t.parent_folder_path)
 
@@ -29005,8 +29021,7 @@ while pctl.running:
         # print(keymaps.maps)
         # print(keymaps.hits)
 
-        if keymaps.test('testkey'): #  F7: test
-            print(gui.album_scroll_px)
+        if keymaps.test('testkey'):  # F7: test
             pass
 
 
@@ -31916,6 +31931,10 @@ while pctl.running:
                                        pctl.master_library[item].artist.lower() \
                                        + pctl.master_library[item].album.lower() + \
                                        pctl.master_library[item].filename.lower()
+
+                                if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+                                    line = str(unidecode(line))
+
                                 if all(word in line for word in search_terms):
                                     playlist.append(item)
                             if len(playlist) > 0:
@@ -31951,6 +31970,9 @@ while pctl.running:
                                 pctl.master_library[default_playlist[search_index]].artist.lower() \
                                 + pctl.master_library[default_playlist[search_index]].album.lower() + \
                                 pctl.master_library[default_playlist[search_index]].filename.lower()
+
+                            if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+                                line = str(unidecode(line))
 
                             if all(word in line for word in search_terms):
 
@@ -31996,6 +32018,9 @@ while pctl.running:
                             pctl.master_library[default_playlist[search_index]].artist.lower() \
                             + pctl.master_library[default_playlist[search_index]].album.lower() + \
                             pctl.master_library[default_playlist[search_index]].filename.lower()
+
+                        if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+                            line = str(unidecode(line))
 
                         if all(word in line for word in search_terms):
 
