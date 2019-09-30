@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v4.8.1
 
+ - Added diacritic search
  - Added cursor change on mouse-over to window resize hotspots
  - Added option to always show title in bottom panel
  - Added "Composer" and "Comment" as possible fields for rename tracks function
