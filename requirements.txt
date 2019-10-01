@@ -10,3 +10,5 @@ plexapi
 musicbrainzngs
 discogs_client
 pypresence
+isounidecode
+
