@@ -2318,7 +2318,7 @@ def save_prefs():
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
-    cf.update_value("hide-queue-when-empty", prefs.hide_queue)
+    #cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
@@ -2427,7 +2427,7 @@ def load_prefs():
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
-    prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
+    #prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition (broken setting, is always enabled")
@@ -17960,10 +17960,10 @@ def toggle_show_playlist_list(mode=0):
         return prefs.show_playlist_list
     prefs.show_playlist_list ^= True
 
-def toggle_hide_queue(mode=0):
-    if mode == 1:
-        return prefs.hide_queue ^ True
-    prefs.hide_queue ^= True
+# def toggle_hide_queue(mode=0):
+#     if mode == 1:
+#         return prefs.hide_queue ^ True
+#     prefs.hide_queue ^= True
 
 def scale1(mode=0):
 
@@ -19395,8 +19395,8 @@ class Over:
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
 
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
+        # y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
 
         y += 30 * gui.scale
 
@@ -25227,11 +25227,22 @@ class QueueBox:
         box_rect = (x, yy - 3 * gui.scale, w, h)
 
         ddt.rect(box_rect, [18, 18, 18, 255], True)
+        ddt.text_background_colour = [18, 18, 18, 255]
+
+        if coll(box_rect) and quick_drag:
+            ddt.rect(box_rect, [255, 255, 255, 2], True)
+            ddt.text_background_colour = alpha_blend([255, 255, 255, 2], ddt.text_background_colour)
 
         if y < gui.panelY * 2:
             ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), [18, 18, 18, 255], True)
+
+        if h > 40 * gui.scale:
             if not pctl.force_queue:
-                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), "Queue", [60, 60, 60, 255], 212)
+                if quick_drag:
+                    text = _("Add to Queue")
+                else:
+                    text = _("Queue")
+                ddt.text((x + (w // 2), y + 15 * gui.scale, 2), text, [60, 60, 60, 255], 212)
 
         qb_right_click = 0
 
@@ -30982,17 +30993,27 @@ while pctl.running:
 
                 pl_box_h = full
 
+                panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
+                #fields.add(panel_rect)
+
                 if prefs.artist_list:
-                    artist_list_box.render(0, gui.panelY, gui.lspw, pl_box_h)
+                    artist_list_box.render(*panel_rect)
 
                 else:
 
-                    if pctl.force_queue or not prefs.hide_queue:
+                    preview_queue = False
+                    if quick_drag and coll(panel_rect) and not pctl.force_queue and prefs.show_playlist_list:
+                        preview_queue = True
+
+                    if pctl.force_queue or preview_queue: # or not prefs.hide_queue:
 
                         if h_estimate < half:
                             pl_box_h = h_estimate
                         else:
                             pl_box_h = half
+
+                        if preview_queue:
+                            pl_box_h = int(round((full * 5 / 6)))
 
                     if prefs.show_playlist_list:
 
@@ -31000,7 +31021,7 @@ while pctl.running:
                     else:
                         pl_box_h = 0
 
-                    if pctl.force_queue or not prefs.hide_queue:
+                    if pctl.force_queue or preview_queue or not prefs.show_playlist_list:
 
                         queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
