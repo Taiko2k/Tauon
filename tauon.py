@@ -923,6 +923,8 @@ class Prefs:    # Used to hold any kind of settings
         self.auto_goto_playing = False
 
         self.diacritic_search = True
+        self.increase_gallery_row_spacing = False
+        self.center_gallery_text = False
 
 prefs = Prefs()
 
@@ -2318,7 +2320,6 @@ def save_prefs():
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
     cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
-    cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     cf.update_value("prefer-center-bg", prefs.center_bg)
@@ -2327,6 +2328,9 @@ def save_prefs():
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
 
+    cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
+    cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
+    cf.update_value("gallery-center-text", prefs.center_gallery_text)
 
     cf.update_value("font-main-standard", prefs.linux_font)
     cf.update_value("font-main-medium", prefs.linux_font_semibold)
@@ -2425,7 +2429,7 @@ def load_prefs():
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
     prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
-    prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
+
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition (broken setting, is always enabled")
     prefs.art_in_top_panel = cf.sync_add("bool", "enable-art-header-bar", prefs.art_in_top_panel, "Show art in top panel when window is narrow")
     prefs.always_art_header = cf.sync_add("bool", "always-art-header-bar", prefs.always_art_header, "Show art in top panel at any size. (Requires enable-art-header-bar)")
@@ -2435,6 +2439,12 @@ def load_prefs():
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
     prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
     prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
+
+    cf.br()
+    cf.add_text("[gallery]")
+    prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
+    prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
+    prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
 #show-current-on-transition", prefs.show_current_on_transition)
     if system != 'windows':
@@ -14264,6 +14274,14 @@ def toggle_gallery_thin(mode=0):
     gui.update += 1
     update_layout_do()
 
+def toggle_gallery_row_space(mode=0):
+    if mode == 1:
+        return prefs.increase_gallery_row_spacing
+
+    prefs.increase_gallery_row_spacing ^= True
+    gui.update += 1
+    update_layout_do()
+
 
 
 def toggle_galler_text(mode=0):
@@ -17579,9 +17597,20 @@ def worker1():
                     loaderCommandReady = False
                     break
 
-
+album_info_cache = {}
+perfs = []
+album_info_cache_key = (-1, -1)
 
 def get_album_info(position):
+
+    global album_info_cache_key
+
+    if album_info_cache_key != (playlist_selected, pctl.playing_object()):  # Premature optimisation?
+        album_info_cache.clear()
+        album_info_cache_key = (playlist_selected, pctl.playing_object())
+
+    if position in album_info_cache:
+        return album_info_cache[position]
 
     if position > len(default_playlist) - 1:
         position = len(default_playlist) - 1
@@ -17619,6 +17648,8 @@ def get_album_info(position):
     if not album:
         #album = [default_playlist[len(default_playlist) - 1]]
         album = [len(default_playlist) - 1]
+
+    album_info_cache[position] = playing, album, select
 
     return playing, album, select
 
@@ -17785,9 +17816,9 @@ def reload_albums(quiet=False, return_playlist=-1):
         # Doing reload while things are being removed may cause crash
         return
 
+
     # if not quiet:
     #     gui.album_scroll_px = old_album_pos
-
     dex = []
     current_folder = ""
     current_album = ""
@@ -17831,6 +17862,7 @@ def reload_albums(quiet=False, return_playlist=-1):
         return dex
 
     album_dex = dex
+    album_info_cache.clear()
     gui.update += 2
     gui.pl_update = 1
     update_layout = True
@@ -18617,7 +18649,12 @@ class Over:
         y += 25 * gui.scale
         if album_mode_art_size < 160:
             self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-        y += 55 * gui.scale
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
+        y += 25 * gui.scale
+        prefs.center_gallery_text = self.toggle_square(x, y, prefs.center_gallery_text, _("Center text"))
+
+        y += 40 * gui.scale
 
         ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
@@ -24992,7 +25029,7 @@ class QueueBox:
 
         # remove incomplete album from queue
         if insert_position == 0 and pctl.force_queue and pctl.force_queue[0][4] == 1:
-            split_queue_album(pctl.force_queue[0][6])
+            split_queue_album(pctl.force_queue[0][5])
 
         playlist_index = pctl.active_playlist_viewing
         playlist_id = pl_to_id(pctl.active_playlist_viewing)
@@ -27778,6 +27815,8 @@ def update_layout_do():
 
             album_v_slide_value = 45
 
+        if prefs.increase_gallery_row_spacing:
+            album_v_gap = round(album_v_gap * 1.3)
 
         gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
@@ -29798,11 +29837,10 @@ while pctl.running:
                 ddt.text_background_colour = colours.gallery_background
 
                 line1_colour = colours.gallery_artist_line
-                line2_colour = colours.side_bar_line1
+                line2_colour = colours.grey(240)  # colours.side_bar_line1
 
                 if colours.side_panel_background != colours.gallery_background:
-                    # Why? idk, might not make much difference
-                    line2_colour = [220, 220, 220, 255]
+                    line2_colour = [240, 240, 240, 255]
                     line1_colour = alpha_mod([220, 220, 220, 255], 120)
 
                 if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
@@ -30299,10 +30337,18 @@ while pctl.running:
                                 line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
 
+                                text_align = 0
+                                if prefs.center_gallery_text:
+                                    x = x + album_mode_art_size // 2
+                                    text_align = 2
+                                elif card_mode:
+                                    x += round(6 * gui.scale)
+
                                 if card_mode:
+
                                     if line2 == "":
 
-                                        ddt.text((x + 6 * gui.scale, y + album_mode_art_size + 8 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale),
                                                  line,
                                                  line1_colour,
                                                  310,
@@ -30310,14 +30356,14 @@ while pctl.running:
                                                  )
                                     else:
 
-                                        ddt.text((x + 6 * gui.scale, y + album_mode_art_size + 7 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 7 * gui.scale),
                                                  line2,
                                                  line2_colour,
                                                  311,
                                                  album_mode_art_size - 18 * gui.scale,
                                                  )
 
-                                        ddt.text((x + 6 * gui.scale, y + album_mode_art_size + (10 + 14) * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale),
                                                  line,
                                                  line1_colour,
                                                  10,
@@ -30326,7 +30372,7 @@ while pctl.running:
                                 else:
                                     if line2 == "":
 
-                                        ddt.text((x, y + album_mode_art_size + 9 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 9 * gui.scale, text_align),
                                                  line,
                                                  line1_colour,
                                                  311,
@@ -30334,14 +30380,14 @@ while pctl.running:
                                                  )
                                     else:
 
-                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
                                                  line2,
                                                  line2_colour,
                                                  212,
                                                  album_mode_art_size,
                                                  )
 
-                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
                                                  line,
                                                  line1_colour,
                                                  311,
@@ -30353,9 +30399,6 @@ while pctl.running:
                         if album_on > len(album_dex):
                             break
                         render_pos += album_mode_art_size + album_v_gap
-
-                #ddt.rect_a((0, 0), (window_size[0], gui.panelY), colours.top_panel_background, True)
-
 
 
                 # POWER TAG BAR --------------
