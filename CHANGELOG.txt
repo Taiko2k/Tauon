@@ -1,6 +1,14 @@
 
 Changelog-------------------------------------
 
+v4.8.2
+
+ - Added gallery option "Center text"
+ - Added gallery option "Increase row spacing"
+ - Slightly improved render speed in gallery
+ - Tweaked gallery text colour
+
+
 v4.8.1
 
  - Added diacritic search
