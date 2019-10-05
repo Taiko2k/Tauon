@@ -5,8 +5,10 @@ v4.8.2
 
  - Added gallery option "Center text"
  - Added gallery option "Increase row spacing"
+ - Added queue panel peak behavior when empty
  - Slightly improved render speed in gallery
  - Tweaked gallery text colour
+ - Removed "Hide queue when empty" option
 
 
 v4.8.1
