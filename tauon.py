@@ -9943,17 +9943,36 @@ def add_album_to_queue_fc(ref):
         show_message("")
 
     if not pctl.force_queue:
+
         pctl.force_queue.insert(0, queue_item_gen(playing_object.index,
                                     pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1))
         add_album_to_queue(ref)
         return
 
     if pctl.force_queue[0][4] == 1:
+
         pctl.force_queue.insert(1, queue_item_gen(ref,
                                     pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0))
     else:
-        pctl.force_queue.insert(0, queue_item_gen(ref,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0,))
+
+        p = pctl.g(ref).parent_folder_path
+        p = ""
+        if pctl.playing_ready():
+            p = pctl.playing_object().parent_folder_path
+
+        # fixme for network tracks
+
+        for i, item in enumerate(pctl.force_queue):
+
+            if p != pctl.g(item[0]).parent_folder_path:
+                pctl.force_queue.insert(i, queue_item_gen(ref,
+                                                          pctl.playlist_playing_position,
+                                                          pl_to_id(pctl.active_playlist_playing), 1, 0, ))
+                break
+
+        else:
+            pctl.force_queue.insert(len(pctl.force_queue), queue_item_gen(ref,
+                                        pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0,))
 
 
 def cancel_import():
@@ -25501,7 +25520,9 @@ class QueueBox:
 
                     if pl == pctl.active_playlist_playing and item[4] and playing_track and playing_track.parent_folder_path == album_parent_path:
                         i = pctl.playlist_playing_position + 1
-                    elif playlist[i] != item[0] and item[0] in playlist:
+
+
+                    elif i > len(playlist) - 1 or (playlist[i] != item[0] and item[0] in playlist):
                         i = playlist.index(item[0])
 
                     while i < len(playlist):
