@@ -36,7 +36,7 @@ import shutil
 
 
 
-n_version = "4.8.1"
+n_version = "4.8.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
