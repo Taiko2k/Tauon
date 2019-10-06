@@ -2319,7 +2319,7 @@ def save_prefs():
     cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
     cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
     cf.update_value("mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek)
-    #cf.update_value("hide-queue-when-empty", prefs.hide_queue)
+    cf.update_value("hide-queue-when-empty", prefs.hide_queue)
     cf.update_value("show-playlist-list", prefs.show_playlist_list)
     cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
     cf.update_value("always-art-header-bar", prefs.always_art_header)
@@ -2428,7 +2428,7 @@ def load_prefs():
     prefs.meta_shows_selected_always = cf.sync_add("bool", "side-panel-info-selected-always", prefs.meta_shows_selected_always, "Show album art and metadata of selected track at all times. (overides the above 2 settings)")
     prefs.stop_notifications_mini_mode = cf.sync_add("bool", "mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode, "Avoid sending track change notifications when in Mini Mode")
     prefs.mini_mode_micro_always_show_seek = cf.sync_add("bool", "mini-mode-micro-show-seek", prefs.mini_mode_micro_always_show_seek, "Always show the seek bar in Mini Mode Micro, otherwise shows on mouse over.")
-    #prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
+    prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
     prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
     prefs.show_current_on_transition = cf.sync_add("bool", "show-current-on-transition", prefs.show_current_on_transition, "Always jump to new playing track even with natural transition (broken setting, is always enabled")
@@ -17973,10 +17973,10 @@ def toggle_show_playlist_list(mode=0):
         return prefs.show_playlist_list
     prefs.show_playlist_list ^= True
 
-# def toggle_hide_queue(mode=0):
-#     if mode == 1:
-#         return prefs.hide_queue ^ True
-#     prefs.hide_queue ^= True
+def toggle_hide_queue(mode=0):
+    if mode == 1:
+        return prefs.hide_queue ^ True
+    prefs.hide_queue ^= True
 
 def scale1(mode=0):
 
@@ -19408,8 +19408,8 @@ class Over:
         y += 28 * gui.scale
         self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
 
-        # y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
 
         y += 30 * gui.scale
 
@@ -31010,7 +31010,7 @@ while pctl.running:
                     if quick_drag and coll(panel_rect) and not pctl.force_queue and prefs.show_playlist_list:
                         preview_queue = True
 
-                    if pctl.force_queue or preview_queue: # or not prefs.hide_queue:
+                    if pctl.force_queue or preview_queue or not prefs.hide_queue:
 
                         if h_estimate < half:
                             pl_box_h = h_estimate
