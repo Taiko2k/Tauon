@@ -22611,7 +22611,17 @@ class StandardPlaylist:
 
                         # Add folder to queue if middle click
                         if middle_click:
-                            add_album_to_queue(track_id, track_position)
+                            if key_ctrl_down:  # Add as ungrouped tracks
+                                i = track_position
+                                parent = pctl.g(default_playlist[i]).parent_folder_path
+                                while i < len(default_playlist) and parent == pctl.g(default_playlist[i]).parent_folder_path:
+                                    pctl.force_queue.append(queue_item_gen(default_playlist[i], i, pl_to_id(
+                                        pctl.active_playlist_viewing)))
+                                    i += 1
+                                queue_timer_set(plural=True)
+
+                            else:  # Add as grouped album
+                                add_album_to_queue(track_id, track_position)
                             playlist_selected = track_position
                             shift_selection = [playlist_selected]
                             gui.pl_update += 1
@@ -32219,17 +32229,20 @@ while pctl.running:
                     ddt.rect(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
                     ddt.rect(rect, queue_box.card_bg, True)
 
+                    fqo = copy.copy(pctl.force_queue[-1])
+
                     ddt.text_background_colour = queue_box.card_bg
                     top_text = "Track"
                     if gui.queue_toast_plural:
-                        top_text = "Tracks"
+                        top_text = "Album"
+                        fqo[3] = 1
                     if pctl.force_queue[-1][3] == 1:
                         top_text = "Album"
 
                     ddt.text((rect[0] + 165 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added", colours.grey(80), 11)
                     ddt.text((rect[0] + 165 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue", colours.grey(80), 11)
 
-                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 150 * gui.scale, 200 * gui.scale, rect[1] + 1 * gui.scale, track, pctl.force_queue[-1], False, False)
+                    queue_box.draw_card(rect[0] - 8 * gui.scale, 0, 150 * gui.scale, 200 * gui.scale, rect[1] + 1 * gui.scale, track, fqo, False, False)
 
 
         t = toast_mode_timer.get()
