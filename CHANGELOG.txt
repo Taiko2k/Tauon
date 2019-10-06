@@ -6,11 +6,12 @@ v4.8.2
  - Added gallery option "Center text"
  - Added gallery option "Increase row spacing"
  - Added queue panel peak behavior when empty
+ - Added hold ctrl to add album to queue ungrouped
  - Slightly improved render speed in gallery
  - Tweaked gallery text colour
  - Improved queue "Add album after current" to add after all playing album tracks
+ - Fixed letters possibly being dropped with fast text input
  - Removed "Hide queue when empty" option
-
 
 v4.8.1
 
