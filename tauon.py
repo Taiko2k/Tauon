@@ -31017,7 +31017,7 @@ while pctl.running:
                 else:
 
                     preview_queue = False
-                    if quick_drag and coll(panel_rect) and not pctl.force_queue and prefs.show_playlist_list:
+                    if quick_drag and coll(panel_rect) and not pctl.force_queue and prefs.show_playlist_list and prefs.hide_queue:
                         preview_queue = True
 
                     if pctl.force_queue or preview_queue or not prefs.hide_queue:
@@ -31036,7 +31036,7 @@ while pctl.running:
                     else:
                         pl_box_h = 0
 
-                    if pctl.force_queue or preview_queue or not prefs.show_playlist_list:
+                    if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
 
                         queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
 
