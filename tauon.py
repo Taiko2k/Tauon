@@ -1254,6 +1254,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.rsp_full_lock = False
         
         self.album_scroll_px = album_v_slide_value
+        self.queue_toast_plural = False
 
 
 
@@ -9916,8 +9917,6 @@ def finish_current():
 
 def add_album_to_queue(ref, position=None):
 
-    # if prefs.finish_current:
-    #     finish_current()
     if position is None:
         position = r_menu_position
 
@@ -9927,11 +9926,10 @@ def add_album_to_queue(ref, position=None):
         if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
-    # pctl.force_queue.append([ref,
-    #                          position, pl_to_id(pctl.active_playlist_viewing), 1, partway, uid_gen()])
     pctl.force_queue.append(queue_item_gen(ref,
                              position, pl_to_id(pctl.active_playlist_viewing), 1, partway))
     queue_timer_set()
+
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 
@@ -12869,18 +12867,14 @@ def pl_to_id(pl):
 
 
 def add_to_queue(ref):
-
     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
     queue_timer_set()
 
-def queue_timer_set():
-    #if not gui.lsp or (gui.lsp and not gui.artist_info_panel):
+
+def queue_timer_set(plural=False):
     queue_add_timer.set()
     gui.frame_callback_list.append(TestTimer(2.51))
-
-# def add_track_to_queue(track_id):
-#
-#     pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
+    gui.queue_toast_plural = plural
 
 
 def split_queue_album(id):
@@ -25062,7 +25056,7 @@ class QueueBox:
 
             # if shift selection contains only same folder
             for position in shift_selection:
-                if pctl.g(default_playlist[position]).parent_folder_path != pctl.g(main_track_id).parent_folder_path:
+                if pctl.g(default_playlist[position]).parent_folder_path != pctl.g(main_track_id).parent_folder_path or key_ctrl_down:
                     break
             else:
                 # Add as album type
@@ -28625,8 +28619,8 @@ while pctl.running:
         elif event.type == SDL_TEXTINPUT:
             k_input = True
             power += 5
-            input_text = event.text.text
-            input_text = input_text.decode('utf-8')
+            input_text += event.text.text.decode('utf-8')
+
             gui.update += 1
             #print(input_text)
 
@@ -30098,28 +30092,18 @@ while pctl.running:
                                             playlist_selected = album_dex[album_on]
                                             gui.pl_update += 1
 
-
-
                                     elif middle_click:
                                         # Middle click to add album to queue
-
-                                        # if prefs.finish_current:
-                                        #     finish_current()
-
-                                        partway = 0
-                                        if not pctl.force_queue:
-                                            if pctl.g(
-                                                    default_playlist[album_dex[album_on]]).parent_folder_path == pctl.playing_object().parent_folder_path:
-                                                partway = 1
-
-                                        # pctl.force_queue.append([default_playlist[album_dex[album_on]],
-                                        #                          album_dex[album_on],
-                                        #                          pl_to_id(pctl.active_playlist_viewing), 1, partway,
-                                        #                          uid_gen()])
-                                        pctl.force_queue.append(queue_item_gen(default_playlist[album_dex[album_on]],
-                                                                 album_dex[album_on],
-                                                                 pl_to_id(pctl.active_playlist_viewing), 1, partway))
-                                        queue_timer_set()
+                                        if key_ctrl_down:
+                                            # Add to queue ungrouped
+                                            album = get_album_info(album_dex[album_on])[1]
+                                            for item in album:
+                                                pctl.force_queue.append(queue_item_gen(default_playlist[item], item, pl_to_id(
+                                                    pctl.active_playlist_viewing)))
+                                            queue_timer_set(plural=True)
+                                        else:
+                                            # Add to queue grouped
+                                            add_album_to_queue(default_playlist[album_dex[album_on]])
 
                                     elif right_click:
                                         playlist_selected = album_dex[album_on]
@@ -32237,6 +32221,8 @@ while pctl.running:
 
                     ddt.text_background_colour = queue_box.card_bg
                     top_text = "Track"
+                    if gui.queue_toast_plural:
+                        top_text = "Tracks"
                     if pctl.force_queue[-1][3] == 1:
                         top_text = "Album"
 
@@ -32324,10 +32310,28 @@ while pctl.running:
             i_x, i_y = get_sdl_input.mouse()
             gui.drag_source_position = [0, 0]
 
-            if len(shift_selection) == 1:
-                ddt.rect((i_x + 20, i_y + 1, 10, 10), [160, 140, 235, 240], True)
+            block_size = round(10 * gui.scale)
+            x_offset = round(20 * gui.scale)
+            y_offset = round(1 * gui.scale)
+
+            if len(shift_selection) == 1:  # Single track
+                ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), [160, 140, 235, 240], True)
             else:
-                ddt.rect((i_x + 20, i_y + 1, 10, 25), [160, 140, 235, 240], True)
+                if key_ctrl_down:  # Add to queue undrouped
+                    small_block = round(6 * gui.scale)
+                    spacing = round(2 * gui.scale)
+                    ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), [160, 140, 235, 240], True)
+                    ddt.rect((i_x + x_offset + spacing + small_block, i_y + y_offset, small_block, small_block), [160, 140, 235, 240], True)
+                    ddt.rect((i_x + x_offset, i_y + y_offset + spacing + small_block, small_block, small_block), [160, 140, 235, 240], True)
+                    ddt.rect((i_x + x_offset + spacing + small_block, i_y + y_offset + spacing + small_block, small_block, small_block), [160, 140, 235, 240], True)
+                    ddt.rect((i_x + x_offset, i_y + y_offset + spacing + small_block + spacing + small_block, small_block, small_block),
+                             [160, 140, 235, 240], True)
+                    ddt.rect((i_x + x_offset + spacing + small_block, i_y + y_offset + spacing + small_block + spacing + small_block,
+                              small_block, small_block), [160, 140, 235, 240], True)
+
+                else:  # Multiple tracks
+                    long_block = round(25 * gui.scale)
+                    ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240], True)
 
             gui.update += 1
 
@@ -32351,6 +32355,7 @@ while pctl.running:
             ddt.text((i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1), gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
 
+        input_text = ""
         gui.update -= 1
         if gui.update > 1:
             gui.update = 1
