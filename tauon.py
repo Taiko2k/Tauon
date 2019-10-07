@@ -27686,7 +27686,21 @@ def update_layout_do():
     w = window_size[0]
     h = window_size[1]
 
-    # Auto shrink left side panel ----
+    # Restore in case of error
+    if gui.rspw < 30 * gui.scale:
+        gui.rspw = 100 * gui.scale
+
+    # Lock right side panel to full size if fully extended -----
+    if prefs.side_panel_layout == 0 and not album_mode:
+        max_w = round(
+            ((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
+        # 17 here is the art box inset value
+
+        if not album_mode and gui.rspw > max_w - 12 * gui.scale:
+            gui.rsp_full_lock = True
+    # ----------------------------------------------------------
+
+    # Auto shrink left side panel --------------
     pl_width = window_size[0]
     if gui.rsp:
         pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
@@ -27885,7 +27899,6 @@ def update_layout_do():
                 gui.art_max_ratio_lock = gui.art_aspect_ratio
 
 
-
         # print("Avaliabe: " + str(box_r))
         elif box_r <= 1:
             gui.art_unlock_ratio = False
@@ -27894,6 +27907,7 @@ def update_layout_do():
         if side_drag and key_shift_down:
             gui.art_unlock_ratio = True
             gui.art_max_ratio_lock = 5
+
 
         # Limit the right side panel width to height of area
         if gui.rsp and prefs.side_panel_layout == 0:
@@ -29772,22 +29786,20 @@ while pctl.running:
                 else:
                     max_w = window_size[0]
 
-
-                gui.rsp_full_lock = False
                 if not album_mode and target > max_w - 12 * gui.scale:
                     target = max_w
                     gui.rspw = target
                     gui.rsp_full_lock = True
+
                 else:
                     gui.rspw = target
+                    gui.rsp_full_lock = False
 
                 if album_mode:
                     gui.rspw = target
 
                 if album_mode and gui.rspw < album_mode_art_size + 50 * gui.scale:
                     gui.rspw = album_mode_art_size + 50 * gui.scale
-                #gui.update_layout()
-
 
                 # Prevent side bar getting too small
                 if gui.rspw < 120 * gui.scale:
@@ -30922,7 +30934,14 @@ while pctl.running:
 
                             bby = by + boxy
 
-                            text_y = y + round((h - bby) * 0.15) + by + boxy
+                            # We want the text in the center, but slightly raised when area is large
+                            text_y = y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round((h - bby - 94 * gui.scale) * 0.06)
+
+                            small_mode = False
+                            if window_size[1] < 550 * gui.scale:
+                                small_mode = True
+                                text_y = y + by + boxy + ((h - bby) // 2) - 38 * gui.scale
+
                             text_x = x + w // 2
 
                             if prefs.show_side_art:
@@ -30955,12 +30974,25 @@ while pctl.running:
                                     if not title:
                                         title = target_track.filename
 
-                                ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+                                if small_mode:
+                                    ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist,
+                                             colours.side_bar_line1, 315, max_w=ww)
 
-                                ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+                                    ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216,
+                                             max_w=ww)
 
-                                line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-                                ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+                                    line = " | ".join(
+                                        filter(None, (target_track.album, target_track.date, target_track.genre)))
+                                    ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313,
+                                             max_w=ww)
+
+                                else:
+                                    ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+
+                                    ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+
+                                    line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+                                    ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
 
                 # Seperation Line Drawing
