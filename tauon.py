@@ -22608,7 +22608,6 @@ class StandardPlaylist:
                     # Detect folder title click
                     if (input.mouse_click or right_click or middle_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
 
-
                         # Add folder to queue if middle click
                         if middle_click:
                             if key_ctrl_down:  # Add as ungrouped tracks
@@ -29775,7 +29774,7 @@ while pctl.running:
 
 
                 gui.rsp_full_lock = False
-                if not album_mode and target > max_w:
+                if not album_mode and target > max_w - 12 * gui.scale:
                     target = max_w
                     gui.rspw = target
                     gui.rsp_full_lock = True

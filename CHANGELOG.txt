@@ -9,6 +9,7 @@ v4.8.2
  - Added hold ctrl to add album to queue ungrouped
  - Slightly improved render speed in gallery
  - Tweaked gallery text colour
+ - Tweaked drag side panel to full size art to snap in place
  - Improved queue "Add album after current" to add after all playing album tracks
  - Fixed letters possibly being dropped with fast text input
 
