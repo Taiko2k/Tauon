@@ -6441,16 +6441,14 @@ class LyricsRen:
 
         self.lyrics_position = 0
 
-    def generate(self, index, w):
+    def test_update(self, track_object):
 
-        self.text = pctl.master_library[index].lyrics
-        self.lyrics_position = 0
+        if track_object.index != self.index or self.text != track_object.lyrics:
+            self.index = track_object.index
+            self.text = track_object.lyrics
+            self.lyrics_position = 0
 
-    def render(self, index, x, y, w, h, p):
-
-        if index != self.index or self.text != pctl.master_library[index].lyrics:
-            self.index = index
-            self.generate(index, w)
+    def render(self, x, y, w, h, p):
 
         colour = colours.lyrics
         if test_lumi(colours.gallery_background) < 0.5:
@@ -18660,12 +18658,12 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
         y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
+        # y += 25 * gui.scale
+        prefs.center_gallery_text = self.toggle_square(x, y, prefs.center_gallery_text, _("Center text"))
+        y += 25 * gui.scale
         if album_mode_art_size < 160:
             self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
-        y += 25 * gui.scale
-        prefs.center_gallery_text = self.toggle_square(x, y, prefs.center_gallery_text, _("Center text"))
 
         y += 40 * gui.scale
 
@@ -22158,8 +22156,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         if n_track.artist and colours.artist_text == colours.title_text:
             dash = True
 
-        if n_track.artist != "" or \
-                        n_track.title != "":
+        if n_track.title:
+
             line = track_number_process(n_track.track_number)
 
             indexLine = line
@@ -26697,14 +26695,14 @@ class Showcase:
                 tw, th = ddt.get_text_wh(lyrics_ren.text + "\n", 17,
                                          w, True)
 
+                lyrics_ren.test_update(track)
+
                 if lyrics_ren.lyrics_position < th * -1 + 100 * gui.scale:
                     lyrics_ren.lyrics_position = th * -1 + 100 * gui.scale
+                if lyrics_ren.lyrics_position > 70 * gui.scale:
+                    lyrics_ren.lyrics_position = 70 * gui.scale
 
-                if lyrics_ren.lyrics_position > 50 * gui.scale:
-                    lyrics_ren.lyrics_position = 50 * gui.scale
-
-                lyrics_ren.render(index,
-                                  x,
+                lyrics_ren.render(x,
                                   y + lyrics_ren.lyrics_position,
                                   w,
                                   int(window_size[1] - 100 * gui.scale),
@@ -30935,7 +30933,7 @@ while pctl.running:
                             bby = by + boxy
 
                             # We want the text in the center, but slightly raised when area is large
-                            text_y = y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round((h - bby - 94 * gui.scale) * 0.06)
+                            text_y = y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round((h - bby - 94 * gui.scale) * 0.08)
 
                             small_mode = False
                             if window_size[1] < 550 * gui.scale:
