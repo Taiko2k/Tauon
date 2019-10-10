@@ -432,6 +432,9 @@ class TDraw:
 
                 self.__render_text(sd, x, y, range_top, range_height, align)
 
+                self.ttl.remove(key)
+                self.ttl.append(key)
+
                 if wrap:
                     return sd[0].h
                 return sd[0].w
