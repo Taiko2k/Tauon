@@ -1353,6 +1353,7 @@ class Input:    # Used to keep track of button states (or should be)
         # self.right_click = False
         self.level_2_enter = False
         self.key_return_press = False
+        self.backspace_press = 0
 
 
 
@@ -6811,12 +6812,14 @@ class TextBox:
                 self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(self.text) - self.cursor_position:]
 
             # Handle backspace
-            if key_backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-                if self.selection != self.cursor_position:
-                    self.eliminate_selection()
-                else:
-                    self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
-            elif key_backspace_press and len(self.get_selection()) > 0:
+            if input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                while input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                    if self.selection != self.cursor_position:
+                        self.eliminate_selection()
+                    else:
+                        self.text = self.text[0:len(self.text) - self.cursor_position- 1] + self.text[len(self.text) - self.cursor_position:]
+                    input.backspace_press -= 1
+            elif input.backspace_press and len(self.get_selection()) > 0:
                 self.eliminate_selection()
 
             # Left and right arrow keys to move cursor
@@ -6976,8 +6979,11 @@ class TextBox:
                 self.text += input_text
                 if input_text != "":
                     self.cursor = True
-                if key_backspace_press and len(self.text) > 0:
+                    
+                while input.backspace_press and len(self.text) > 0:
                     self.text = self.text[:-1]
+                    input.backspace_press -= 1
+
                 if key_ctrl_down and key_v_press:
                     self.paste()
 
@@ -16020,11 +16026,11 @@ class SearchOverlay:
             w = window_size[0]
             h = window_size[1]
 
-            if key_backspace_press:
+            if input.backspace_press:
                 self.searched_text = ""
                 self.results.clear()
 
-                if len(self.search_text.text) <= 1:
+                if len(self.search_text.text) - input.backspace_press < 1:
                     self.active = False
                     self.search_text.text = ""
                     return
@@ -28315,7 +28321,7 @@ while pctl.running:
         key_left_press = False
         key_esc_press = False
         key_del = False
-        key_backspace_press = False
+        input.backspace_press = 0
         key_c_press = False
         key_v_press = False
         #key_f_press = False
@@ -28572,7 +28578,7 @@ while pctl.running:
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 input.key_return_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
-                key_backspace_press = True
+                input.backspace_press += 1
             elif event.key.keysym.sym == SDLK_DELETE:
                 key_del = True
             elif event.key.keysym.sym == SDLK_ESCAPE:
@@ -31277,7 +31283,7 @@ while pctl.running:
             #     filter_box.render()
 
             if track_box:
-                if input.key_return_press or right_click or key_esc_press or key_backspace_press or keymaps.test("quick-find"):
+                if input.key_return_press or right_click or key_esc_press or input.backspace_press or keymaps.test("quick-find"):
                     track_box = False
 
                     input.key_return_press = False
@@ -31868,7 +31874,7 @@ while pctl.running:
                 gui.level_2_click = False
 
             if gui.message_box:
-                if input.mouse_click or input.key_return_press or right_click or key_esc_press or key_backspace_press \
+                if input.mouse_click or input.key_return_press or right_click or key_esc_press or input.backspace_press \
                         or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
 
                     if not key_focused:
@@ -31965,7 +31971,7 @@ while pctl.running:
                 if len(input_text) > 0:
                     search_index = -1
 
-                if key_backspace_press and search_text.text == "":
+                if input.backspace_press and search_text.text == "":
                     quick_search_mode = False
 
                 if len(search_text.text) == 0:
@@ -31996,7 +32002,7 @@ while pctl.running:
                 if gui.search_error:
                     ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255], True)
                     ddt.text_background_colour = [180, 40, 40, 255] #alpha_blend([255,0,0,25], ddt.text_background_colour)
-                # if key_backspace_press:
+                # if input.backspace_press:
                 #     gui.search_error = False
 
                 search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213)
@@ -32052,7 +32058,7 @@ while pctl.running:
                         search_text.text = ""
                         quick_search_mode = False
 
-                if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or key_backspace_press\
+                if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or input.backspace_press\
                         or gui.force_search:
 
                     gui.pl_update = 1
@@ -32062,7 +32068,7 @@ while pctl.running:
 
 
 
-                    if key_backspace_press:
+                    if input.backspace_press:
                         search_index = 0
 
                     if len(search_text.text) > 0 and search_text.text[0] != "/":
