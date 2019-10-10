@@ -16,7 +16,7 @@
    version="1.1"
    id="svg5095"
    inkscape:version="0.92.4 5da689c313, 2019-01-14"
-   sodipodi:docname="tauonmb2.svg"
+   sodipodi:docname="tauonmb-alt1.svg"
    inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/v4-b.png"
    inkscape:export-xdpi="23.040001"
    inkscape:export-ydpi="23.040001">
@@ -52,17 +52,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.5"
-     inkscape:cx="-258.04969"
-     inkscape:cy="149.50216"
+     inkscape:zoom="1"
+     inkscape:cx="198.11667"
+     inkscape:cy="242.73985"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
      inkscape:window-width="1923"
      inkscape:window-height="832"
-     inkscape:window-x="103"
-     inkscape:window-y="101"
+     inkscape:window-x="868"
+     inkscape:window-y="109"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata5092">
@@ -72,7 +72,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -81,15 +81,6 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-164.70831)">
-    <circle
-       r="61.382797"
-       cy="231.69545"
-       cx="66.101631"
-       id="circle2052"
-       style="display:inline;opacity:0.27000002;fill:#000000;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
-       inkscape:export-xdpi="116.70237"
-       inkscape:export-ydpi="116.70237" />
     <circle
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
@@ -108,11 +99,6 @@
        inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/v3-b.png"
        inkscape:export-xdpi="116.70237"
        inkscape:export-ydpi="116.70237" />
-    <path
-       style="display:inline;opacity:0.18699999;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       d="m 66.186449,168.63004 a 61.382797,61.382797 0 0 0 -61.3834557,61.38344 61.382797,61.382797 0 0 0 0.035253,0.98642 61.382797,61.382797 0 0 1 61.3496107,-60.686 61.382797,61.382797 0 0 1 61.349673,60.3971 61.382797,61.382797 0 0 0 0.0353,-0.69752 61.382797,61.382797 0 0 0 -61.383479,-61.38344 z"
-       id="circle2038"
-       inkscape:connector-curvature="0" />
     <circle
        inkscape:export-ydpi="116.70237"
        inkscape:export-xdpi="116.70237"
@@ -153,5 +139,15 @@
        sodipodi:end="1.1327187"
        d="m -23.076729,-229.87187 a 42.832489,42.832489 0 0 1 -24.662972,38.78776"
        sodipodi:open="true" />
+    <path
+       style="display:inline;opacity:0.18699999;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       d="m 66.20584,168.66309 a 61.382798,61.382798 0 0 0 -61.3834554,61.38344 61.382798,61.382798 0 0 0 0.0352,0.98642 61.382798,61.382798 0 0 1 61.3496124,-60.686 61.382798,61.382798 0 0 1 61.349673,60.3971 61.382798,61.382798 0 0 0 0.0353,-0.69752 61.382798,61.382798 0 0 0 -61.38348,-61.38344 z"
+       id="circle2038"
+       inkscape:connector-curvature="0" />
+    <path
+       style="display:inline;fill:#000000;fill-opacity:0.09122807;stroke:none;stroke-width:13.39753723;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+       d="m 127.52984,228.92735 a 61.382798,61.382798 0 0 1 -61.344059,60.60819 61.382798,61.382798 0 0 1 -61.3440582,-60.28883 61.382798,61.382798 0 0 0 -0.038756,0.7767 61.382798,61.382798 0 0 0 61.3828142,61.38281 61.382798,61.382798 0 0 0 61.382819,-61.38281 61.382798,61.382798 0 0 0 -0.0388,-1.09606 z"
+       id="circle823"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>
