@@ -387,7 +387,7 @@ if system == 'linux':
     from t_modules import t_topchart
 
 from t_modules import t_autodownload
-
+from t_modules.t_dbus import Gnome
 from t_modules.t_gdk_extra import *
 
 
@@ -935,10 +935,9 @@ def open_uri(uri):
 
     for w in range(len(pctl.multi_playlist)):
         if pctl.multi_playlist[w][0] == "Default":
-            load_order.playlist = pctl.multi_playlist[w][6]  # copy.deepcopy(w)
+            load_order.playlist = pctl.multi_playlist[w][6]
             break
     else:
-        # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
         pctl.multi_playlist.append(pl_gen())
         load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
         switch_playlist(len(pctl.multi_playlist) - 1)
@@ -1355,6 +1354,7 @@ class Input:    # Used to keep track of button states (or should be)
         self.key_return_press = False
         self.backspace_press = 0
 
+        self.media_key = ""
 
 
 input = Input()
@@ -4912,7 +4912,6 @@ def love(set=True, track_id=None, no_delay=False):
         pctl.mpris.update(force=True)
 
 
-
 class LastScrob:
 
     def __init__(self):
@@ -5046,6 +5045,9 @@ class Tauon:
 
     def __init__(self):
 
+        self.t_title = t_title
+        self.t_id = t_id
+
         self.pctl = pctl
         self.lfm_scrobbler = lfm_scrobbler
         self.star_store = star_store
@@ -5059,6 +5061,12 @@ class Tauon:
         self.whicher = whicher
         self.load_orders = load_orders
         self.switch_playlist = None
+        self.open_uri = open_uri
+        self.love = love
+
+    def exit(self):
+        pctl.running = False
+
 
 tauon = Tauon()
 
@@ -5226,413 +5234,70 @@ def plex_get_album_thread():
 if system == "windows":
     from infi.systray import SysTrayIcon
 
-class STray:
+    class STray:
 
-    def __init__(self):
+        def __init__(self):
 
-        self.active = False
+            self.active = False
 
-    def up(self, systray):
-        SDL_ShowWindow(t_window)
-        SDL_RaiseWindow(t_window)
-        SDL_RestoreWindow(t_window)
+        def up(self, systray):
+            SDL_ShowWindow(t_window)
+            SDL_RaiseWindow(t_window)
+            SDL_RestoreWindow(t_window)
 
-        gui.lowered = False
+            gui.lowered = False
 
-    def down(self):
-        if self.active:
-            SDL_HideWindow(t_window)
+        def down(self):
+            if self.active:
+                SDL_HideWindow(t_window)
 
-    def advance(self, systray):
-        pctl.advance()
+        def advance(self, systray):
+            pctl.advance()
 
-    def back(self, systray):
-        pctl.back()
+        def back(self, systray):
+            pctl.back()
 
-    def pause(self, systray):
-         pctl.play_pause()
+        def pause(self, systray):
+             pctl.play_pause()
 
-    def track_stop(self, systray):
-         pctl.stop()
+        def track_stop(self, systray):
+             pctl.stop()
 
-    def on_quit_callback(self, systray):
-        pctl.running = False
+        def on_quit_callback(self, systray):
+            pctl.running = False
 
-    def start(self):
-        menu_options = (("Show", None, self.up),
-                        ("Play/Pause", None, self.pause),
-                        ("Stop", None, self.track_stop),
-                        ("Forward", None, self.advance),
-                        ("Back", None, self.back))
-        self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
-        self.systray.start()
-        self.active = True
+        def start(self):
+            menu_options = (("Show", None, self.up),
+                            ("Play/Pause", None, self.pause),
+                            ("Stop", None, self.track_stop),
+                            ("Forward", None, self.advance),
+                            ("Back", None, self.back))
+            self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
+            self.systray.start()
+            self.active = True
 
+        def stop(self):
+            self.systray.shutdown()
+            self.active = False
 
-    def stop(self):
-        self.systray.shutdown()
-        self.active = False
-
-
-tray = STray()
-
-if system == "windows":
-    tray.start()
-
-
-# ----------------------------------------------------------------------------------------------------
-mediaKey = ''
-mediaKey_pressed = False
-
-
-class Gnome:
-
-    def __init__(self):
-
-        self.bus_object = None
-
-    def focus(self):
-
-        if self.bus_object is not None:
-
-            # this is what gives us the multi media keys.
-            dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-            self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                           dbus_interface=dbus_interface)
-
-    def main(self):
-
-        from gi.repository import GObject
-        import dbus
-        import dbus.service
-        import dbus.mainloop.glib
-
-
-        def on_mediakey(comes_from, what):
-
-            global mediaKey
-            global mediaKey_pressed
-
-            if what == 'Play':
-                mediaKey = 'Play'
-                mediaKey_pressed = True
-            elif what == 'Pause':
-                mediaKey = 'Pause'
-                mediaKey_pressed = True
-            elif what == 'Stop':
-                mediaKey = 'Stop'
-                mediaKey_pressed = True
-            elif what == 'Next':
-                mediaKey = 'Next'
-                mediaKey_pressed = True
-            elif what == 'Previous':
-                mediaKey = 'Previous'
-                mediaKey_pressed = True
-
-            elif what == 'Rewind':
-                mediaKey = 'Rewind'
-                mediaKey_pressed = True
-            elif what == 'FastForward':
-                mediaKey = 'FastForward'
-                mediaKey_pressed = True
-            elif what == 'Repeat':
-                mediaKey = 'Repeat'
-                mediaKey_pressed = True
-            elif what == 'Shuffle':
-                mediaKey = 'Shuffle'
-                mediaKey_pressed = True
-
-            if mediaKey_pressed:
-                gui.update = 1
-
-        # set up the glib main loop.
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-        if prefs.mkey:
-            try:
-                bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-                bus_object = bus.get_object('org.gnome.SettingsDaemon.MediaKeys',
-                                            '/org/gnome/SettingsDaemon/MediaKeys')
-
-                self.bus_object = bus_object
-
-                # this is what gives us the multi media keys.
-                dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-                bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                               dbus_interface=dbus_interface)
-
-                # connect_to_signal registers our callback function.
-                bus_object.connect_to_signal('MediaPlayerKeyPressed',
-                                             on_mediakey)
-            except:
-                print("Could not connect to gnome media keys")
-
-
-        # ----------
-        if prefs.enable_mpris:
-            try:
-                bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-                bus_name = dbus.service.BusName('org.mpris.MediaPlayer2.tauon', bus)
-
-                class MPRIS(dbus.service.Object):
-
-                    def update(self, force=False):
-
-                        changed = {}
-
-                        if pctl.playing_state == 1:
-                            if self.player_properties['PlaybackStatus'] != 'Playing':
-                                self.player_properties['PlaybackStatus'] = 'Playing'
-                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
-                        elif pctl.playing_state == 0:
-                            if self.player_properties['PlaybackStatus'] != 'Stopped':
-                                self.player_properties['PlaybackStatus'] = 'Stopped'
-                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
-                        elif pctl.playing_state == 2:
-                            if self.player_properties['PlaybackStatus'] != 'Paused':
-                                self.player_properties['PlaybackStatus'] = 'Paused'
-                                changed['PlaybackStatus'] = self.player_properties['PlaybackStatus']
-
-                        if pctl.player_volume / 100 != self.player_properties['Volume']:
-                            self.player_properties['Volume'] = pctl.player_volume / 100
-                            changed['Volume'] = self.player_properties['Volume']
-
-                        if pctl.playing_object() is not None and (pctl.playing_object().index != self.playing_index or force):
-                            track = pctl.playing_object()
-                            self.playing_index = track.index
-                            id = f"/com/tauon/{track.index}/{pctl.playlist_playing_position}"
-
-                            d = {
-                                'mpris:trackid': id,
-                                'mpris:length': dbus.Int64(int(pctl.playing_length * 1000000)),
-                                'xesam:album': track.album,
-                                'xesam:albumArtist': dbus.Array([track.album_artist]),
-                                'xesam:artist': dbus.Array([track.artist]),
-                                'xesam:title': track.title,
-                                'xesam:url': "file://" + urllib.parse.quote(track.fullpath),
-                                'xesam:asText': track.lyrics,
-                                'xesam:autoRating': star_count2(star_store.get(track.index)),
-                                'xesam:composer': dbus.Array([track.composer]),
-                                'tauon:loved': love(False, track.index)
-
-                            }
-
-                            try:
-                                i_path = thumb_tracks.path(track)
-                                if i_path is not None:
-                                    d['mpris:artUrl'] = 'file://' + urllib.parse.quote(i_path)
-                            except:
-                                print("Thumbnail error")
-
-                            self.update_progress()
-
-                            self.player_properties['Metadata'] = dbus.Dictionary(d, signature='sv')
-                            changed['Metadata'] = self.player_properties['Metadata']
-
-                        if len(changed) > 0:
-                            self.PropertiesChanged('org.mpris.MediaPlayer2.Player', changed, [])
-
-                    def update_progress(self):
-                        self.player_properties['Position'] = dbus.Int64(int(pctl.playing_time * 1000000))
-
-                    def update_shuffle(self):
-                        self.player_properties['Shuffle'] = pctl.random_mode
-                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"Shuffle": pctl.random_mode}, [])
-
-                    def update_loop(self):
-                        self.player_properties['LoopStatus'] = self.get_loop_status()
-                        self.PropertiesChanged('org.mpris.MediaPlayer2.Player', {"LoopStatus": self.get_loop_status()}, [])
-
-                    def __init__(self, object_path):
-                        dbus.service.Object.__init__(self, bus, object_path)
-
-                        self.playing_index = -1
-
-                        self.root_properties = {
-                            'CanQuit': True,
-                            #'Fullscreen'
-                            #'CanSetFullscreen'
-                            'CanRaise': True,
-                            'HasTrackList': False,
-                            'Identity': t_title,
-                            'DesktopEntry': t_id,
-                            #'SupportedUriSchemes': ['file']
-                            'SupportedUriSchemes': dbus.Array([dbus.String("file")]),
-                            'SupportedMimeTypes': dbus.Array([
-                                 dbus.String("audio/mpeg"),
-                                 dbus.String("audio/flac"),
-                                 dbus.String("audio/ogg"),
-                                 dbus.String("audio/m4a"),
-                                 ])
-                        }
-
-                        self.player_properties = {
-                            'PlaybackStatus': 'Stopped',
-                            'LoopStatus': self.get_loop_status(),
-                            'Rate': 1.0,
-                            'Shuffle': pctl.random_mode,
-                            'Volume': pctl.player_volume / 100,
-                            'Position': 0,
-                            'MinimumRate': 1.0,
-                            'MaximumRate': 1.0,
-                            'CanGoNext': True,
-                            'CanGoPrevious': True,
-                            'CanPlay': True,
-                            'CanPause': True,
-                            'CanSeek': True,
-                            'CanControl': True
-
-                        }
-
-                        # self.update()
-
-                    def get_loop_status(self):
-                        if pctl.repeat_mode:
-                            if pctl.album_repeat_mode:
-                                return "Playlist"
-                            return "Track"
-                        return "None"
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
-                    def Raise(self):
-                        gui.request_raise = True
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2')
-                    def Quit(self):
-                        exit_func()
-
-                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                    in_signature='ss', out_signature='v')
-                    def Get(self, interface_name, property_name):
-                        if interface_name == 'org.mpris.MediaPlayer2':
-                            #return self.GetAll(interface_name)[property_name]
-                            return self.root_properties[property_name]
-                        elif interface_name == 'org.mpris.MediaPlayer2.Player':
-                            return self.player_properties[property_name]
-
-                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                    in_signature='s', out_signature='a{sv}')
-                    def GetAll(self, interface_name):
-                        #print(interface_name)
-                        if interface_name == 'org.mpris.MediaPlayer2':
-                            return self.root_properties
-                        elif interface_name == 'org.mpris.MediaPlayer2.Player':
-                            return self.player_properties
-                        else:
-                            return {}
-
-                    @dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE,
-                                    in_signature='ssv', out_signature='')
-                    def Set(self, interface_name, property_name, value):
-                        if interface_name == 'org.mpris.MediaPlayer2.Player':
-                            if property_name == "Volume":
-                                pctl.player_volume = min(max(int(value * 100), 0), 100)
-                                pctl.set_volume()
-                                gui.update += 1
-                            if property_name == "Shuffle":
-                                pctl.random_mode = bool(value)
-                                self.update_shuffle()
-                                gui.update += 1
-                            if property_name == "LoopStatus":
-                                if value == "None":
-                                    menu_repeat_off()
-                                elif value == "Track":
-                                    menu_set_repeat()
-                                elif value == "Playlist":
-                                    menu_album_repeat()
-                                gui.update += 1
-
-                        if interface_name == 'org.mpris.MediaPlayer2':
-                            pass
-
-                    @dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE,
-                                    signature='sa{sv}as')
-                    def PropertiesChanged(self, interface_name, change, inval):
-                        pass
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Next(self):
-                        pctl.advance()
-                        pass
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Previous(self):
-                        pctl.back()
-                        pass
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Pause(self):
-                        pctl.pause_only()
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def PlayPause(self):
-                        pctl.play_pause()
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Stop(self):
-                        pctl.stop()
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Play(self):
-                        pctl.play()
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Seek(self, offset):
-                        pctl.seek_time(pctl.playing_time + (offset / 1000000))
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def SetPosition(self, id, position):
-                        pctl.seek_time(position / 1000000)
-
-                        self.player_properties['Position'] = dbus.Int64(int(position))
-                        self.Seeked(pctl.playing_time)
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def OpenUri(self, uri):
-                        open_uri(uri)
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def LovePlaying(self):
-                        if not love(set=False):
-                            love(set=True, no_delay=True)
-                            self.update(True)
-                            gui.pl_update += 1
-
-                    @dbus.service.method(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def UnLovePlaying(self):
-                        if love(set=False):
-                            love(set=True, no_delay=True)
-                            self.update(True)
-                            gui.pl_update += 1
-
-                    @dbus.service.signal(dbus_interface='org.mpris.MediaPlayer2.Player')
-                    def Seeked(self, position):
-                        pass
-
-                    def seek_do(self, seconds):
-                        self.Seeked(dbus.Int64(int(seconds * 1000000)))
-
-                pctl.mpris = MPRIS("/org/mpris/MediaPlayer2")
-            except:
-                print("MPRIS2 CONNECT FAILED")
-
-        mainloop = GLib.MainLoop()
-        mainloop.run()
-
-
-gnome = Gnome()
 
 if system == "linux":
-    try:
 
+    gnome = Gnome(tauon)
+
+    try:
         gnomeThread = threading.Thread(target=gnome.main)
         gnomeThread.daemon = True
         gnomeThread.start()
-
     except:
         print("ERROR: Could not start Dbus thread")
 
+
 if system == "windows":
+
+    tray = STray()
+    tray.start()
+
     def keyboard_hook():
         from collections import namedtuple
 
@@ -5652,25 +5317,19 @@ if system == "windows":
                            }
 
             def low_level_handler(nCode, wParam, lParam):
-                global mediaKey
-                global mediaKey_pressed
 
                 event = KeyboardEvent(event_types[wParam], lParam[0], lParam[1],
                                       lParam[2] == 32, lParam[3])
 
                 if event[1] == 179 and event[0] == 'key down':
-                    mediaKey = 'play'
-                    mediaKey_pressed = True
+                    input.media_key = 'play'
                 elif event[1] == 178 and event[0] == 'key down':
-                    mediaKey = 'stop'
-                    mediaKey_pressed = True
+                    input.media_key = 'stop'
                 elif event[1] == 177 and event[0] == 'key down':
-                    mediaKey = 'back'
-                    mediaKey_pressed = True
+                    input.media_key = 'back'
                 elif event[1] == 176 and event[0] == 'key down':
-                    mediaKey = 'forward'
-                    mediaKey_pressed = True
-                if mediaKey_pressed:
+                    input.media_key = 'forward'
+                if input.media_key:
                     gui.update += 1
                 # Be a good neighbor and call the next hook.
                 return windll.user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
@@ -7353,6 +7012,7 @@ class ThumbTracks:
 
 
 thumb_tracks = ThumbTracks()
+tauon.thumb_tracks = thumb_tracks
 
 
 def img_slide_update_gall(value):
@@ -9661,6 +9321,10 @@ def menu_album_repeat():
     pctl.album_repeat_mode = True
     if pctl.mpris is not None:
         pctl.mpris.update_loop()
+
+tauon.menu_album_repeat = menu_album_repeat
+tauon.menu_repeat_off = menu_repeat_off
+tauon.menu_set_repeat = menu_set_repeat
 
 repeat_menu.add(_("Repeat OFF"), menu_repeat_off)
 repeat_menu.add(_("Repeat Track"), menu_set_repeat)
@@ -15402,11 +15066,7 @@ discord_icon.xoff = 3
 
 x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
-def exit_func():
-    pctl.running = False
-
-
-x_menu.add(_("Exit"), exit_func, hint="Alt+F4")
+x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4")
 
 
 def view_tracks():
@@ -19596,7 +19256,7 @@ class Over:
         y += 25 * gui.scale
         prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
 
-        x = x0 + 20 * gui.scale + 300 * gui.scale
+        x = x0 + 20 * gui.scale + 320 * gui.scale
         y = y0 + 100 * gui.scale
 
         if self.button(x, y, _("Randomise BG")):
@@ -25636,10 +25296,10 @@ class MetaBox:
 
     def draw(self, x, y, w ,h, track=None):
 
+        ddt.rect((x, y, w, h), colours.side_panel_background, True)
+
         if not track:
             return
-
-        ddt.rect((x, y, w, h), colours.side_panel_background, True)
 
         # Test for show lyric menu on right ckick
         if coll((x + 10, y, w - 10, h)):
@@ -29387,32 +29047,31 @@ while pctl.running:
     # if focused is True:
     #     mouse_down = False
 
-    if mediaKey_pressed:
-        if mediaKey == 'Play':
+    if input.media_key:
+        if input.media_key == 'Play':
             if pctl.playing_state == 0:
                 pctl.play()
             else:
                 pctl.pause()
-        elif mediaKey == 'Pause':
+        elif input.media_key == 'Pause':
             pctl.pause_only()
-        elif mediaKey == 'Stop':
+        elif input.media_key == 'Stop':
             pctl.stop()
-        elif mediaKey == 'Next':
+        elif input.media_key == 'Next':
             pctl.advance()
-        elif mediaKey == 'Previous':
+        elif input.media_key == 'Previous':
             pctl.back()
 
-        elif mediaKey == 'Rewind':
+        elif input.media_key == 'Rewind':
             pctl.seek_time(pctl.playing_time - 10)
-        elif mediaKey == 'FastForward':
+        elif input.media_key == 'FastForward':
             pctl.seek_time(pctl.playing_time + 10)
-        elif mediaKey == 'Repeat':
+        elif input.media_key == 'Repeat':
             toggle_repeat()
-        elif mediaKey == 'Shuffle':
+        elif input.media_key == 'Shuffle':
             toggle_random()
 
-
-        mediaKey_pressed = False
+        input.media_key = ""
 
     if len(load_orders) > 0:
         loading_in_progress = True
