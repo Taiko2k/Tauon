@@ -12,7 +12,7 @@ v4.8.2
  - Tweaked trackist to show filename when only title missing
  - Improved full art lock size reliability
  - Improved queue "Add album after current" to add after all playing album tracks
- - Fixed letters possibly being dropped with fast text input
+ - Fixed text input dropping letters while under load
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view
 
