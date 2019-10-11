@@ -16,6 +16,7 @@ v4.8.2
  - Fixed text input dropping letters while under load
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view
+ - Fixed extra empty playlist when dropping xspf onto left side panel
 
 v4.8.1
 
