@@ -5234,51 +5234,51 @@ def plex_get_album_thread():
 if system == "windows":
     from infi.systray import SysTrayIcon
 
-    class STray:
+class STray:
 
-        def __init__(self):
+    def __init__(self):
 
-            self.active = False
+        self.active = False
 
-        def up(self, systray):
-            SDL_ShowWindow(t_window)
-            SDL_RaiseWindow(t_window)
-            SDL_RestoreWindow(t_window)
+    def up(self, systray):
+        SDL_ShowWindow(t_window)
+        SDL_RaiseWindow(t_window)
+        SDL_RestoreWindow(t_window)
 
-            gui.lowered = False
+        gui.lowered = False
 
-        def down(self):
-            if self.active:
-                SDL_HideWindow(t_window)
+    def down(self):
+        if self.active:
+            SDL_HideWindow(t_window)
 
-        def advance(self, systray):
-            pctl.advance()
+    def advance(self, systray):
+        pctl.advance()
 
-        def back(self, systray):
-            pctl.back()
+    def back(self, systray):
+        pctl.back()
 
-        def pause(self, systray):
-             pctl.play_pause()
+    def pause(self, systray):
+         pctl.play_pause()
 
-        def track_stop(self, systray):
-             pctl.stop()
+    def track_stop(self, systray):
+         pctl.stop()
 
-        def on_quit_callback(self, systray):
-            pctl.running = False
+    def on_quit_callback(self, systray):
+        pctl.running = False
 
-        def start(self):
-            menu_options = (("Show", None, self.up),
-                            ("Play/Pause", None, self.pause),
-                            ("Stop", None, self.track_stop),
-                            ("Forward", None, self.advance),
-                            ("Back", None, self.back))
-            self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
-            self.systray.start()
-            self.active = True
+    def start(self):
+        menu_options = (("Show", None, self.up),
+                        ("Play/Pause", None, self.pause),
+                        ("Stop", None, self.track_stop),
+                        ("Forward", None, self.advance),
+                        ("Back", None, self.back))
+        self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
+        self.systray.start()
+        self.active = True
 
-        def stop(self):
-            self.systray.shutdown()
-            self.active = False
+    def stop(self):
+        self.systray.shutdown()
+        self.active = False
 
 
 if system == "linux":
@@ -5292,10 +5292,11 @@ if system == "linux":
     except:
         print("ERROR: Could not start Dbus thread")
 
+tray = STray()
 
 if system == "windows":
 
-    tray = STray()
+
     tray.start()
 
     def keyboard_hook():
@@ -13470,9 +13471,10 @@ gallery_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref
 folder_menu.br()
 
 # Copy album title text to clipboard
-folder_menu.add(_('Copy "Album Title"'), clip_title, pass_ref=True)
+folder_menu.add(_('Copy "Artist - Album"'), clip_title, pass_ref=True)
+
 # Copy artist name text to clipboard
-folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
+#folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
 
 selection_menu.add(_('Reload Metadata'), reload_metadata_selection)
 
@@ -13577,7 +13579,7 @@ def clip_ar_tr(index):
     SDL_SetClipboardText(line.encode('utf-8'))
 
 # Copy metadata to clipboard
-track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
+#track_menu.add(_('Copy "Artist - Album"'), clip_aar_al, pass_ref=True)
 # Copy metadata to clipboard
 track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
