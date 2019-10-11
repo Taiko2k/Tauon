@@ -5355,8 +5355,6 @@ if system == "windows":
 
         listen()
 
-
-
 if system == 'windows':
     print('Starting hook thread for Windows')
     keyboardHookThread = threading.Thread(target=keyboard_hook)
@@ -28092,6 +28090,10 @@ while pctl.running:
             # print(i_x < gui.lspw)
             # print( gui.mode == 1)
 
+            dropped_file_sdl = event.drop.file
+            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
+
+
             if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
                 x = top_panel.start_space_left
                 for w in range(len(pctl.multi_playlist)):
@@ -28133,16 +28135,13 @@ while pctl.running:
                     if new_playlist_cooldown:
                         playlist_target = pctl.active_playlist_viewing
                     else:
-                        playlist_target = new_playlist()
+                        if not target.lower().endswith(".xspf"):
+                            playlist_target = new_playlist()
                         new_playlist_cooldown = True
 
 
             else:
                 playlist_target = pctl.active_playlist_viewing
-
-
-            dropped_file_sdl = event.drop.file
-            target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
 
             if not os.path.exists(target) and flatpak_mode:
                 show_message(_("Could not access! Possible insufficient Flatpak permissions."),
