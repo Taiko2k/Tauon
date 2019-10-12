@@ -1419,7 +1419,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 if result is False:
                     gui.show_message("Device init failed. Try again maybe?", "", 'error')
                 else:
-                    gui.show_message("Set device", prefs.last_device, 'done')
+                    gui.show_message("Device set", prefs.last_device, 'done')
 
                 bass_player.try_unload()
 

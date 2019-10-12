@@ -984,8 +984,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         global update_layout
         update_layout = True
 
-    def show_message(self, line1, line2="", type="info"):
-        show_message(line1, line2, type)
+    def show_message(self, line1, line2="", mode="info"):
+        show_message(line1, line2, mode)
 
     def __init__(self):
 
@@ -1840,7 +1840,7 @@ try:
     #lfm_hash = save[16]
     if save[16] is not None and save[16]:  # it should be None from now on
         show_message("Upgrade note: Last.fm loggout.",
-                     "This new version changes how last.fm login works. You will need to log back in.", 'info')
+                     "This new version changes how last.fm login works. You will need to log back in.", mode='info')
     db_version = save[17]
     view_prefs = save[18]
     window_size = save[19]
@@ -2020,8 +2020,8 @@ try:
         prefs.showcase_vis = save[108]
     if save[109] is not None:
         prefs.spec2_colour_mode = save[109]
-    if save[110] is not None:
-        prefs.device_buffer = save[110]
+    # if save[110] is not None:
+    #     prefs.device_buffer = save[110]
     if save[111] is not None:
         prefs.use_eq = save[111]
     if save[112] is not None:
@@ -2301,6 +2301,7 @@ def save_prefs():
     cf.update_value("use-log-volume-scale", prefs.log_vol)
     cf.update_value("pause-fade-time", prefs.pause_fade_time)
     cf.update_value("cross-fade-time", prefs.cross_fade_time)
+    cf.update_value("device-buffer-length", prefs.device_buffer)
     cf.update_value("force-mono", prefs.mono)
     cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -2381,8 +2382,9 @@ def load_prefs():
     cf.br()
     cf.add_text("[audio]")
 
-    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. BASS only.")
-    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. BASS only.")
+    prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. BASS only. Default is 400.")
+    prefs.cross_fade_time = cf.sync_add("int", "cross-fade-time", prefs.cross_fade_time, "In milliseconds. BASS only. Default is 700.")
+    prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. BASS only. Default is 40.")
     prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "BASS only.")
     prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
@@ -4324,7 +4326,7 @@ class LastFMapi:
 
         self.sg = pylast.SessionKeyGenerator(self.network)
         self.url = self.sg.get_web_auth_url()
-        show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), 'arrow')
+        show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode='arrow')
         webbrowser.open(self.url, new=2, autoraise=True)
 
     def auth2(self):
@@ -4347,9 +4349,9 @@ class LastFMapi:
 
         except Exception as e:
             if 'Unauthorized Token' in str(e):
-                show_message("Error - Not authorized", 'error')
+                show_message("Error - Not authorized", mode='error')
             else:
-                show_message("Error", 'Unknown error.', 'error')
+                show_message("Error", 'Unknown error.', mode='error')
 
         if not toggle_lfm_auto(mode=1):
             toggle_lfm_auto()
@@ -4374,7 +4376,7 @@ class LastFMapi:
             return True
 
         if prefs.last_fm_token is None:
-            show_message("No Last.Fm account registered", "Authorise an account in settings", 'info')
+            show_message("No Last.Fm account registered", "Authorise an account in settings", mode='info')
             return
 
         print('Attempting to connect to Last.fm network')
@@ -4386,13 +4388,13 @@ class LastFMapi:
 
             self.connected = True
             if m_notify:
-                show_message("Connection to Last.fm was successful.", 'done')
+                show_message("Connection to Last.fm was successful.", mode='done')
 
             print('Connection to lastfm appears successful')
             return True
 
         except Exception as e:
-            show_message("Error connecting to Last.fm network", str(e), "warning")
+            show_message("Error connecting to Last.fm network", str(e), mode='warning')
             # print(e)
             return False
 
@@ -4417,7 +4419,7 @@ class LastFMapi:
             return True
 
         except Exception as e:
-            show_message("Error communicating with Last.fm network", str(e), "warning")
+            show_message("Error communicating with Last.fm network", str(e), mode='warning')
             print(e)
             return False
 
@@ -4496,7 +4498,7 @@ class LastFMapi:
                 except:
                     pass
 
-            show_message("Error: Could not scrobble. ", str(e), 'warning')
+            show_message("Error: Could not scrobble. ", str(e), mode='warning')
             print(e)
             return False
 
@@ -4558,7 +4560,7 @@ class LastFMapi:
             time.sleep(1)
             lastfm_user = self.network.get_user(username)
             friends = lastfm_user.get_friends(limit=None)
-            show_message("Getting friend data...", "This may take a very long time.", 'info')
+            show_message(_("Getting friend data..."), _("This may take a very long time."), mode='info')
             time.sleep(3)
             for friend in friends:
                 self.scanning_username = friend.name
@@ -4583,7 +4585,7 @@ class LastFMapi:
                             print("      ----- " + friend.name)
 
         except:
-            show_message("There was an error getting friends loves", "", 'warning')
+            show_message("There was an error getting friends loves", "", mode='warning')
 
         self.scanning_friends = False
 
@@ -4593,7 +4595,7 @@ class LastFMapi:
         username = prefs.last_fm_username
 
         if not username:
-            show_message("No username found", 'error')
+            show_message("No username found", mode='error')
             return
 
         if len(username) > 25:
@@ -4648,7 +4650,7 @@ class LastFMapi:
                 show_message("Of " + str(len(tracks)) + " loved tracks, no matches were found in local db")
                 return
         except:
-            show_message("This doesn't seem to be working :(", 'error')
+            show_message("This doesn't seem to be working :(", mode='error')
 
 
     def update(self, track_object):
@@ -4678,7 +4680,7 @@ class LastFMapi:
             print(e)
             if 'retry' in str(e):
                 return 2
-                show_message("Could not update Last.fm. ", str(e), 'warning')
+                show_message("Could not update Last.fm. ", str(e), mode='warning')
             pctl.b_time -= 5000
             return 1
 
@@ -4712,7 +4714,7 @@ class ListenBrainz:
         if self.hold is True:
             return
         if prefs.lb_token is None:
-            show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", 'error')
+            show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
 
         title = track_object.title
         album = track_object.album
@@ -4751,7 +4753,7 @@ class ListenBrainz:
 
         r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
-            show_message("There was an error submitting data to ListenBrainz", r.text, 'warning')
+            show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
             return False
 
     def listen_playing(self, track_object):
@@ -4761,7 +4763,7 @@ class ListenBrainz:
         if self.hold is True:
             return
         if prefs.lb_token is None:
-            show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", 'error')
+            show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
 
         title = track_object.title
         album = track_object.album
@@ -4799,7 +4801,7 @@ class ListenBrainz:
 
         r = requests.post(self.url, headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data))
         if r.status_code != 200:
-            show_message("There was an error submitting data to ListenBrainz", r.text, 'warning')
+            show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
             print("error")
             print(r.status_code)
             print(r.json())
@@ -4808,12 +4810,12 @@ class ListenBrainz:
 
         text = copy_from_clipboard()
         if text == "":
-            show_message("There is no text in the clipboard", "error")
+            show_message("There is no text in the clipboard", mode="error")
             return
         if len(text) == 36 and text[8] == "-":
             prefs.lb_token = text
         else:
-            show_message("That is not a valid token", "error")
+            show_message("That is not a valid token", mode='error')
 
     def clear_key(self):
 
@@ -4889,7 +4891,7 @@ def love(set=True, track_id=None, no_delay=False):
         try:
             lastfm.love(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
         except:
-            print("Failed updating last.fm love status", 'warning')
+            print("Failed updating last.fm love status", mode='warning')
             star = [star[0], star[1].strip("L")]
             star_store.insert(track_id, star)
 
@@ -4902,7 +4904,7 @@ def love(set=True, track_id=None, no_delay=False):
         try:
             lastfm.unlove(pctl.master_library[track_id].artist, pctl.master_library[track_id].title)
         except:
-            print("Failed updating last.fm love status", 'warning')
+            print("Failed updating last.fm love status", mode='warning')
             star = [star[0], star[1] + "L"]
             star_store.insert(track_id, star)
 
@@ -5095,24 +5097,24 @@ class PlexService:
 
         if not prefs.plex_username:
             show_message("PLEX Account - No username in config",
-                         'Enter details in config file then restart app to apply.', 'warning')
+                         'Enter details in config file then restart app to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.plex_password:
             show_message("PLEX Account - No password in config",
-                         'Enter details in config file then restart app to apply.', 'warning')
+                         'Enter details in config file then restart app to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.plex_servername:
             show_message("PLEX - No name of plex server in config",
-                         'Enter details in config file then restart app to apply.', 'warning')
+                         'Enter details in config file then restart app to apply.', mode='warning')
             self.scanning = False
             return
 
         try:
             from plexapi.myplex import MyPlexAccount
         except:
-            show_message("Error importing python-plexapi", 'error')
+            show_message("Error importing python-plexapi", mode='error')
             return
 
         try:
@@ -5120,7 +5122,7 @@ class PlexService:
             self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
         except:
             show_message(_("Error connecting to PLEX server"),
-                         "Try check login credentials and that server is accessible.", "error")
+                         "Try check login credentials and that server is accessible.", mode='error')
             self.scanning = False
             return
 
@@ -5761,11 +5763,11 @@ def bass_player_thread(player):
         player(pctl, gui, prefs, lfm_scrobbler, star_store)
     except:
         logging.exception('Exception on player thread')
-        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", 'error')
+        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         time.sleep(1)
-        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", 'error')
+        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         time.sleep(1)
-        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", 'error')
+        show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
 
 if prefs.backend == 1:
 
@@ -8332,7 +8334,7 @@ def load_xspf(path):
                         b = {}
 
     except:
-        show_message("Error importing XSPF playlist.", "Sorry about that.", 'warning')
+        show_message("Error importing XSPF playlist.", "Sorry about that.", mode='warning')
         return
 
     playlist = []
@@ -9165,7 +9167,7 @@ class RenameTrackBox:
                     # Close and display error if any tracks are not single local files
                     if pctl.master_library[item].is_network is True:
                         rename_track_box.active = False
-                        show_message("Cannot rename", "One or more tracks is from a network location!", 'info')
+                        show_message("Cannot rename", "One or more tracks is from a network location!", mode='info')
                     if pctl.master_library[item].is_cue is True:
                         rename_track_box.active = False
                         show_message("This function does not support renaming CUE Sheet tracks.")
@@ -9287,11 +9289,11 @@ class RenameTrackBox:
 
             if total_todo != len(r_todo):
                 show_message("Rename complete." + "  " + str(total_todo) + "/" + str(
-                    len(r_todo)) + " filenames written.", 'warning')
+                    len(r_todo)) + " filenames written.", mode='warning')
 
             else:
                 show_message(_("Rename complete."),
-                             str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), 'done')
+                             str(total_todo) + "/" + str(len(r_todo)) + _(" filenames were written."), mode='done')
             tauon.worker_save_state = True
 
 
@@ -9510,17 +9512,17 @@ def move_playling_folder_to_tag(tag_item):
         return
 
     if len(target_base) < 4:
-        show_message("Safety interupt! The source path seems oddly short.", target_base, 'error')
+        show_message("Safety interupt! The source path seems oddly short.", target_base, mode='error')
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
     for fo in protect:
         if move_folder.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
-            show_message("Better not do anything to that folder!", os.path.join(os.path.expanduser('~'), fo), 'warning')
+            show_message("Better not do anything to that folder!", os.path.join(os.path.expanduser('~'), fo), mode='warning')
             return
 
     if directory_size(move_folder) > 2500000000:
-        show_message("Folder size safety limit reached! (2.5GB)", move_folder, 'warning')
+        show_message("Folder size safety limit reached! (2.5GB)", move_folder, mode='warning')
         return
 
     # Make artist folder if it does not exist
@@ -9708,7 +9710,7 @@ def toggle_lyrics(track_object):
     if gui.combo_mode:
         prefs.show_lyrics_showcase ^= True
         if prefs.show_lyrics_showcase and track_object.lyrics == "":
-            show_message("No lyrics for this track")
+            show_message(_("No lyrics for this track"))
     else:
 
         # Handling for alt panel layout
@@ -9719,7 +9721,7 @@ def toggle_lyrics(track_object):
 
         prefs.show_lyrics_side ^= True
         if prefs.show_lyrics_side and track_object.lyrics == "":
-            show_message("No lyrics for this track")
+            show_message(_("No lyrics for this track"))
 
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
@@ -9731,7 +9733,7 @@ def get_lyric_fire(track_object, silent=False):
     if not prefs.lyrics_enables:
         if not silent:
             show_message(_("There are no lyric sources enabled."),
-                         "See 'lyrics settings' under 'functions' tab in settings.", 'info')
+                         "See 'lyrics settings' under 'functions' tab in settings.", mode='info')
         return
 
     t = lyrics_fetch_timer.get()
@@ -9742,7 +9744,7 @@ def get_lyric_fire(track_object, silent=False):
             show_message(_("Let's be polite and try later."))
 
             if t < -65:
-                show_message("Stop requesting lyrics AAAAAA.", 'error')
+                show_message("Stop requesting lyrics AAAAAA.", mode='error')
 
         # If the user keeps pressing, lets mess with them haha
         lyrics_fetch_timer.force_set(t - 5)
@@ -9807,7 +9809,7 @@ def get_lyric_fire(track_object, silent=False):
     if not found:
         print("no lyrics found")
         if not silent:
-            show_message("No lyrics for this track were found")
+            show_message(_("No lyrics for this track were found"))
     else:
         gui.message_box = False
         if not gui.showcase_mode:
@@ -9819,7 +9821,7 @@ def get_lyric_fire(track_object, silent=False):
 def get_lyric_wiki(track_object):
 
     if track_object.artist == "" or track_object.title == "":
-        show_message("Insufficient metadata to get lyrics", 'warning')
+        show_message("Insufficient metadata to get lyrics", mode='warning')
         return
 
     shoot_dl = threading.Thread(target=get_lyric_fire, args=([track_object]))
@@ -9969,7 +9971,7 @@ def save_embed_img(track_object):
                 try:
                     tt = tag[PIC][0]
                 except:
-                    show_message("Image save error.", "No embedded album art found in MP3 file", 'warning')
+                    show_message("Image save error.", "No embedded album art found in MP3 file", mode='warning')
                     return
             pic = tt.data
 
@@ -9978,7 +9980,7 @@ def save_embed_img(track_object):
             tt = Flac(filepath)
             tt.read(True)
             if tt.has_picture is False:
-                show_message("Image save error.", "No embedded album art found in FLAC file", 'warning')
+                show_message("Image save error.", "No embedded album art found in FLAC file", mode='warning')
                 return
             pic = tt.picture
 
@@ -9986,7 +9988,7 @@ def save_embed_img(track_object):
             tt = M4a(filepath)
             tt.read(True)
             if tt.has_picture is False:
-                show_message("Image save error.", "No embedded album art found in M4A file", 'warning')
+                show_message("Image save error.", "No embedded album art found in M4A file", mode='warning')
                 return
             pic = tt.picture
 
@@ -10007,7 +10009,7 @@ def save_embed_img(track_object):
         open_folder(track_object.index)
 
     except:
-        show_message("Image save error.", "A mysterious error occurred", "error")
+        show_message("Image save error.", "A mysterious error occurred", mode='error')
 
 picture_menu = Menu(170)
 
@@ -10110,7 +10112,7 @@ def download_art1(tr):
         return
 
     try:
-        show_message("Looking up MusicBrainz ID...")
+        show_message(_("Looking up MusicBrainz ID..."))
         if 'musicbrainz_releasegroupid' not in tr.misc or 'musicbrainz_artistids' not in tr.misc or not tr.misc['musicbrainz_artistids']:
 
             print("MusicBrainz ID lookup...")
@@ -10164,14 +10166,14 @@ def download_art1(tr):
                 elif info.get_content_subtype() == 'png':
                     filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
                 else:
-                    show_message("Could not detect downloaded filetype.", 'error')
+                    show_message("Could not detect downloaded filetype.", mode='error')
                     return
 
                 f = open(filepath, 'wb')
                 f.write(t.read())
                 f.close()
 
-                show_message("Cover art downloaded from fanart.tv", 'done')
+                show_message(_("Cover art downloaded from fanart.tv"), mode='done')
                 #clear_img_cache()
                 for track_id in default_playlist:
                     if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
@@ -10192,7 +10194,7 @@ def download_art1(tr):
             f.write(t.read())
             f.close()
 
-            show_message("Cover art downloaded from MusicBrainz", 'done')
+            show_message(_("Cover art downloaded from MusicBrainz"), mode='done')
             #clear_img_cache()
             clear_track_image_cache(tr)
 
@@ -10203,7 +10205,7 @@ def download_art1(tr):
             return
 
     except:
-        show_message("Matching cover art or ID could not be found.")
+        show_message(_("Matching cover art or ID could not be found."))
 
 def download_art1_fire(track_object):
 
@@ -10219,7 +10221,7 @@ def remove_embed_picture(track_object):
     if key_shift_down or key_shiftr_down:
         tracks = [index]
         if track_object.is_cue or track_object.is_network:
-            show_message("Error - No handling for this kind of track", 'warning')
+            show_message("Error - No handling for this kind of track", mode='warning')
             return
     else:
         tracks = []
@@ -10281,7 +10283,7 @@ def remove_embed_picture(track_object):
 
                     else:
                         show_message("Please install Flac on your host system for this.", "e.g. sudo apt install flac",
-                                     'info')
+                                     mode='info')
 
 
                 else:
@@ -10295,22 +10297,22 @@ def remove_embed_picture(track_object):
             clear_track_image_cache(tr)
 
     except Exception as e:
-        show_message("Image remove error", 'error')
+        show_message("Image remove error", mode='error')
         return
 
     if removed == 0:
-        show_message(_("Image removal failed."), "error")
+        show_message(_("Image removal failed."), mode='error')
         return
     elif removed == 1:
         if processed:
-            show_message(_("Processed one FLAC files"), 'done')
+            show_message(_("Processed one FLAC files"), mode='done')
         else:
-            show_message(_("Deleted embedded picture from file"), 'done')
+            show_message(_("Deleted embedded picture from file"), mode='done')
     else:
         if processed:
-            show_message("Processed " + str(removed) + " files", 'done')
+            show_message("Processed " + str(removed) + " files", mode='done')
         else:
-            show_message("Deleted embedded picture from " + str(removed) + " files", 'done')
+            show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
     if pr == 1:
         pctl.revert()
     #clear_img_cache()
@@ -10344,7 +10346,7 @@ def delete_file_image(track_object):
             clear_track_image_cache(track_object)
             print("Deleted file: " + source)
     except:
-        show_message("Something went wrong", 'error')
+        show_message("Something went wrong", mode='error')
 
 
 picture_menu.add(_('Delete Image File'), delete_file_image, delete_file_image_deco, pass_ref=True, pass_ref_deco=True, icon=delete_icon)
@@ -10717,7 +10719,7 @@ def convert_playlist(pl):
     if system == 'windows':
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', 'warning')
+                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
             return
         # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
         #     show_message("Error: Missing lame.exe from '/encoder' directory")
@@ -10912,7 +10914,7 @@ def re_import2(pl):
     load_order.notify = True
     load_order.playlist = pctl.multi_playlist[pl][6]
     load_orders.append(copy.deepcopy(load_order))
-    show_message("Rescanning folder...", path, 'info')
+    show_message("Rescanning folder...", path, mode='info')
 
 def s_append(index):
     paste(playlist=index)
@@ -11806,7 +11808,7 @@ def open_license():
 def reload_config_file():
 
     if transcode_list:
-        show_message("Cannot reload while a transcode is in progress!", 'error')
+        show_message("Cannot reload while a transcode is in progress!", mode='error')
         return
 
     load_prefs()
@@ -11815,7 +11817,7 @@ def reload_config_file():
     ddt.force_subpixel_text = prefs.force_subpixel_text
     ddt.clear_text_cache()
 
-    show_message(_("Configuration reloaded"), 'done')
+    show_message(_("Configuration reloaded"), mode="done")
     gui.update_layout()
 
 def open_config_file():
@@ -11827,7 +11829,7 @@ def open_config_file():
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
-    show_message(_("Config file opened."), _('Click "Reload config file" if you made any changes'), 'arrow')
+    show_message(_("Config file opened."), _('Click "Reload config file" if you made any changes'), mode='arrow')
     gui.opened_config_file = True
 
 def open_keymap_file():
@@ -11902,7 +11904,7 @@ def convert_folder(index):
     if system == 'windows':
         if not os.path.isfile(user_directory + '/encoder/ffmpeg.exe'):
             show_message("Error: Missing ffmpeg.exe from encoder directory",
-                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', 'warning')
+                         "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
             return
             # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
             #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
@@ -11933,7 +11935,7 @@ def convert_folder(index):
                                                                                  'mp4', 'ogg',
                                                                                  'aac'):
             show_message("NO! Bad user!", "Im not going to let you transcode a lossy codec to a lossless one!",
-                         'warning')
+                         mode='warning')
 
             return
         folder = [index]
@@ -11956,7 +11958,7 @@ def convert_folder(index):
                                                                                                       'mp4', 'ogg',
                                                                                                       'aac'):
                     show_message("NO! Bad user!", "Im not going to let you transcode a lossy codec to a lossless one!",
-                                 'warning')
+                                 mode='warning')
 
                     return
 
@@ -12144,7 +12146,7 @@ def lightning_paste():
     for item in cargo:
         if move_path != pctl.g(item).parent_folder_path:
             show_message("More than one folder is in the clipboard",
-                         'This function can only move one folder at a time.', 'info')
+                         'This function can only move one folder at a time.', mode='info')
             return
 
     match_track = pctl.g(default_playlist[shift_selection[0]])
@@ -12190,30 +12192,30 @@ def lightning_paste():
             print("Upper folder is: " + upper)
 
             if len(move_path) < 4:
-                show_message("Safety interupt! The source path seems oddly short.", move_path, 'error')
+                show_message("Safety interupt! The source path seems oddly short.", move_path, mode='error')
                 return
 
             if not os.path.isdir(upper):
-                show_message("The target directory is missing!", upper, 'warning')
+                show_message("The target directory is missing!", upper, mode='warning')
                 return
 
             if not os.path.isdir(move_path):
-                show_message("The source directory is missing!", move_path, 'warning')
+                show_message("The source directory is missing!", move_path, mode='warning')
                 return
 
             protect = ("", "Documents", "Music", "Desktop", "Downloads")
             for fo in protect:
                 if move_path.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
                     show_message("Better not do anything to that folder!", os.path.join(os.path.expanduser('~'), fo),
-                                 'warning')
+                                 mode='warning')
                     return
 
             if directory_size(move_path) > 1500000000:
-                show_message("Folder size safety limit reached! (1.5GB)", move_path, 'warning')
+                show_message("Folder size safety limit reached! (1.5GB)", move_path, mode='warning')
                 return
 
             if len(next(os.walk(move_path))[2]) > max(20, len(to_move) * 2):
-                show_message("Safety interupt! The source folder seems to have many files.", move_path, 'warning')
+                show_message("Safety interupt! The source folder seems to have many files.", move_path, mode='warning')
                 return
 
             artist = move_track.artist
@@ -12282,7 +12284,7 @@ def paste(playlist=None, position=None):
     #     try:
     #         lightning_paste()
     #     except OSError as e:
-    #         show_message("An error was encountered", 'error', str(e))
+    #         show_message("An error was encountered", mode='error', str(e))
     #
     #     return
     # items = None
@@ -12439,9 +12441,9 @@ def del_selected(force_delete=False):
                     if force_delete:
                         try:
                             os.remove(tr.fullpath)
-                            show_message("Files deleted", 'info')
+                            show_message("Files deleted", mode='info')
                         except:
-                            show_message("Error deleting one or more files", 'error')
+                            show_message("Error deleting one or more files", mode='error')
 
     else:
         undo.bk_tracks(pctl.active_playlist_viewing, li)
@@ -12625,18 +12627,18 @@ def delete_track(track_ref):
         if os.path.exists(fullpath):
             try:
                 os.remove(fullpath)
-                show_message("File deleted", fullpath, 'info')
+                show_message("File deleted", fullpath, mode='info')
             except:
-                show_message("Error deleting file", fullpath, 'error')
+                show_message("Error deleting file", fullpath, mode='error')
         else:
             show_message("File moved to trash")
 
     except:
         try:
             os.remove(fullpath)
-            show_message("File deleted", fullpath, 'info')
+            show_message("File deleted", fullpath, mode='info')
         except:
-            show_message("Error deleting file", fullpath, 'error')
+            show_message("Error deleting file", fullpath, mode='error')
 
     reload()
     refind_playing()
@@ -12679,7 +12681,7 @@ def delete_folder(index, force=False):
     track = pctl.master_library[index]
 
     if track.is_network:
-        show_message("Cannot physically delete", "One or more tracks is from a network location!", 'info')
+        show_message("Cannot physically delete", "One or more tracks is from a network location!", mode='info')
         return
 
     old = track.parent_folder_path
@@ -12687,22 +12689,22 @@ def delete_folder(index, force=False):
 
 
     if len(old) < 5:
-        show_message("This folder path seems short, I don't wanna try delete that", 'warning')
+        show_message("This folder path seems short, I don't wanna try delete that", mode='warning')
         return
 
     if not os.path.exists(old):
-        show_message("Error deleting folder. The folder seems to be missing.", "It's gone! Just gone!", 'error')
+        show_message("Error deleting folder. The folder seems to be missing.", "It's gone! Just gone!", mode='error')
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
 
     for fo in protect:
         if old.strip('\\/') == os.path.join(os.path.expanduser('~'), fo).strip("\\/"):
-            show_message("Woah, careful there!", "I don't think we should delete that folder.", 'warning')
+            show_message("Woah, careful there!", "I don't think we should delete that folder.", mode='warning')
             return
 
     if directory_size(old) > 1500000000:
-        show_message("Folder size safety limit reached! (1.5GB)", old, 'warning')
+        show_message("Folder size safety limit reached! (1.5GB)", old, mode='warning')
         return
 
     try:
@@ -12726,11 +12728,11 @@ def delete_folder(index, force=False):
 
         if not os.path.exists(old):
             if force:
-                show_message("Folder deleted.", old, 'done')
+                show_message("Folder deleted.", old, mode='done')
             else:
-                show_message("Folder sent to trash.", old, 'done')
+                show_message("Folder sent to trash.", old, mode='done')
         else:
-            show_message("Hmm, its still there", old, 'error')
+            show_message("Hmm, its still there", old, mode='error')
 
         if album_mode:
             prep_gal()
@@ -12738,9 +12740,9 @@ def delete_folder(index, force=False):
 
     except:
         if force:
-            show_message("Unable to comply.", "Could not delete folder. Try check permissions.", 'error')
+            show_message("Unable to comply.", "Could not delete folder. Try check permissions.", mode='error')
         else:
-            show_message("Folder could not be trashed.", "Try again while holding shift to force delete.", 'error')
+            show_message("Folder could not be trashed.", "Try again while holding shift to force delete.", mode='error')
 
     tauon.worker_save_state = True
 
@@ -12752,7 +12754,7 @@ def rename_parent(index, template):
     track = pctl.master_library[index]
 
     if track.is_network:
-        show_message("Cannot rename", "One or more tracks is from a network location!", 'info')
+        show_message("Cannot rename", "One or more tracks is from a network location!", mode='info')
         return
 
     old = track.parent_folder_path
@@ -12763,22 +12765,22 @@ def rename_parent(index, template):
 
 
     if len(new) < 1:
-        show_message("Rename error.", "The generated name is too short", 'warning')
+        show_message("Rename error.", "The generated name is too short", mode='warning')
         return
 
     if len(old) < 5:
-        show_message("Rename error.", "This folder path seems short, I don't wanna try rename that", 'warning')
+        show_message("Rename error.", "This folder path seems short, I don't wanna try rename that", mode='warning')
         return
 
     if not os.path.exists(old):
-        show_message("Rename Failed. The original folder is missing.", 'warning')
+        show_message("Rename Failed. The original folder is missing.", mode='warning')
         return
 
     protect = ("", "Documents", "Music", "Desktop", "Downloads")
 
     for fo in protect:
         if os.path.normpath(old) == os.path.normpath(os.path.join(os.path.expanduser('~'), fo)):
-            show_message("Woah, careful there!", "I don't think we should rename that folder.", 'warning')
+            show_message("Woah, careful there!", "I don't think we should rename that folder.", mode='warning')
             return
 
     print(track.parent_folder_path)
@@ -12804,7 +12806,7 @@ def rename_parent(index, template):
                 return
 
             if os.path.exists(new_parent_path):
-                show_message("Rename Failed.", "A folder with that name already exists", 'warning')
+                show_message("Rename Failed.", "A folder with that name already exists", mode='warning')
                 return
 
             if key == pctl.track_queue[pctl.queue_step] and pctl.playing_state > 0:
@@ -12828,10 +12830,10 @@ def rename_parent(index, template):
             print(new_parent_path)
         except:
 
-            show_message("Rename Failed!", 'error' "Something went wrong, sorry.")
+            show_message("Rename Failed!", mode='error' "Something went wrong, sorry.")
             return
 
-    show_message("Folder renamed.", "Renamed to: " + new, 'done')
+    show_message("Folder renamed.", "Renamed to: " + new, mode='done')
 
     if pre_state == 1:
         pctl.revert()
@@ -12864,7 +12866,7 @@ def move_folder_up(index, do=False):
     track = pctl.master_library[index]
 
     if track.is_network:
-        show_message("Cannot move", "One or more tracks is from a network location!", 'info')
+        show_message("Cannot move", "One or more tracks is from a network location!", mode='info')
         return
 
     parent_folder = os.path.dirname(track.parent_folder_path)
@@ -12874,7 +12876,7 @@ def move_folder_up(index, do=False):
 
     if not os.path.exists(track.parent_folder_path):
         if do:
-            show_message("Error shifting directory", "The directory does not appear to exist", 'warning')
+            show_message("Error shifting directory", "The directory does not appear to exist", mode='warning')
         return False
 
     if len(os.listdir(parent_folder)) > 1:
@@ -12903,7 +12905,7 @@ def move_folder_up(index, do=False):
         os.rename(os.path.join(upper_folder, "RMTEMP000"), os.path.join(upper_folder, folder_name))
 
     except Exception as e:
-        show_message("System Error!", str(e), 'error')
+        show_message("System Error!", str(e), mode='error')
 
     # Fix any other tracks paths that contain the old path
     old = track.parent_folder_path
@@ -12927,7 +12929,7 @@ def clean_folder(index, do=False):
     track = pctl.master_library[index]
 
     if track.is_network:
-        show_message("Cannot clean", "One or more tracks is from a network location!", 'info')
+        show_message("Cannot clean", "One or more tracks is from a network location!", mode='info')
         return
 
     folder = track.parent_folder_path
@@ -12964,7 +12966,7 @@ def clean_folder(index, do=False):
 
     except Exception as e:
         #show_message(str(e))
-        show_message("Error deleting files.", "May not have permission or file may be set to read-only", 'warning')
+        show_message("Error deleting files.", "May not have permission or file may be set to read-only", mode='warning')
         return 0
 
     return found
@@ -13139,7 +13141,7 @@ def editor(index):
 
         if not os.path.isfile(prefs.tag_editor_target.strip('"')):
             print(prefs.tag_editor_target)
-            show_message("Application not found", prefs.tag_editor_target, "info")
+            show_message("Application not found", prefs.tag_editor_target, mode='info')
             return
 
         ok = True
@@ -13161,11 +13163,11 @@ def editor(index):
     #         ok = True
 
     if not ok:
-        show_message(_("Tag editior app does not appear to be installed."), 'warning')
+        show_message(_("Tag editior app does not appear to be installed."), mode='warning')
 
         if flatpak_mode:
             show_message(_("App not found on host OR insufficient Flatpak permissions."),
-                         'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.', 'bubble')
+                         'See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.', mode='bubble')
 
         return
 
@@ -13174,7 +13176,7 @@ def editor(index):
 
     line = prefix + app + app_switch + file_line
 
-    show_message(prefs.tag_editor_name + " launched.", "Fields will be updated once application is closed.", 'arrow')
+    show_message(prefs.tag_editor_name + " launched.", "Fields will be updated once application is closed.", mode='arrow')
     gui.update = 1
 
     complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -13451,7 +13453,7 @@ def toggle_transfer(mode=0):
 
     if prefs.show_transfer:
         show_message("Warning! Using this function moves physical folders.",
-                     "This menu entry appears after selecting 'copy'. See manual (github wiki) for more info.", 'info')
+                     "This menu entry appears after selecting 'copy'. See manual (github wiki) for more info.", mode='info')
 
 
 transcode_icon.colour = [239, 74, 157, 255]
@@ -14378,7 +14380,7 @@ def export_database():
         xport.write(outline)
 
     xport.close()
-    show_message("Export complete.", "Saved as 'DatabaseExport.csv'.", 'done')
+    show_message("Export complete.", "Saved as 'DatabaseExport.csv'.", mode='done')
 
 
 def q_to_playlist():
@@ -14419,7 +14421,7 @@ def toggle_broadcast():
 
     if pctl.broadcast_active is not True:
         if len(default_playlist) == 0:
-            show_message("There are no tracks in this playlist to broadcast.", 'error')
+            show_message("There are no tracks in this playlist to broadcast.", mode='error')
             return 0
         pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
         pctl.broadcast_position = 0
@@ -14742,7 +14744,7 @@ def toggle_notifications(mode=0):
 
     if prefs.show_notifications:
         if not de_notify_support:
-            show_message("Notifications for this DE not supported", '', 'warning')
+            show_message("Notifications for this DE not supported", '', mode='warning')
 
 # def toggle_al_pref_album_artist(mode=0):
 #
@@ -15022,7 +15024,7 @@ def discord_loop():
                 break
 
     except:
-        show_message("Error connecting to Discord", 'error')
+        show_message("Error connecting to Discord", mode='error')
         prefs.disconnect_discord = False
         #raise
 
@@ -16763,7 +16765,7 @@ def worker1():
             if os.path.splitext(path)[1][1:].lower() in Archive_Formats:
                 if not prefs.auto_extract:
                     show_message("You attempted to drop an archive.",
-                                 'However the "extract archive" function is not enabled.', 'info')
+                                 'However the "extract archive" function is not enabled.', mode='info')
                 else:
                     type = os.path.splitext(path)[1][1:].lower()
                     split = os.path.splitext(path)
@@ -16791,18 +16793,18 @@ def worker1():
                                 if 'encrypted' in e:
                                     show_message("Failed to extract zip archive.",
                                                  "The archive is encrypted. You'll need to extract it manually with the password.",
-                                                 'warning')
+                                                 mode='warning')
                                 else:
                                     show_message("Failed to extract zip archive.",
                                                  "Maybe archive is corrupted? Does disk have enough space and have write permission?",
-                                                 'warning')
+                                                 mode='warning')
                                 return 1
                             except:
                                 print("Zip error 2")
                                 to_got = b
                                 show_message("Failed to extract zip archive.",
                                              "Maybe archive is corrupted? Does disk have enough space and have write permission?",
-                                             'warning')
+                                             mode='warning')
                                 return 1
 
                         elif type == 'rar':
@@ -16815,7 +16817,7 @@ def worker1():
                                 print(result)
                             except:
                                 to_got = b
-                                show_message("Failed to extract rar archive.", 'warning')
+                                show_message("Failed to extract rar archive.", mode='warning')
 
                                 return 1
 
@@ -16829,7 +16831,7 @@ def worker1():
                                 print(result)
                             except:
                                 to_got = b
-                                show_message("Failed to extract 7z archive.", 'warning')
+                                show_message("Failed to extract 7z archive.", mode='warning')
 
                                 return 1
 
@@ -16855,7 +16857,7 @@ def worker1():
                             try:
                                 send2trash(path)
                             except:
-                                show_message("Could not move archive to trash", path, 'info')
+                                show_message("Could not move archive to trash", path, mode='info')
 
 
                         to_got = b
@@ -16944,7 +16946,7 @@ def worker1():
         try:
             items_in_dir = os.listdir(direc)
         except PermissionError:
-            show_message("Permission error accessing one or more files", 'warning')
+            show_message("Permission error accessing one or more files", mode='warning')
             return
 
         for q in range(len(items_in_dir)):
@@ -17030,7 +17032,7 @@ def worker1():
             del move_jobs[0]
 
             if job[0].strip("\\/") == job[1].strip("\\/"):
-                show_message("Folder copy error.", "The target and source are the same.", "info")
+                show_message("Folder copy error.", "The target and source are the same.", mode='info')
                 gui.update += 1
                 move_in_progress = False
                 continue
@@ -17040,7 +17042,7 @@ def worker1():
             except:
                 move_in_progress = False
                 gui.update += 1
-                show_message("The folder copy has failed!", 'Some files may have been written.', 'warning')
+                show_message("The folder copy has failed!", 'Some files may have been written.', mode='warning')
                 continue
 
             if job[2] == True:
@@ -17048,14 +17050,14 @@ def worker1():
                     shutil.rmtree(job[0])
 
                 except:
-                    show_message("Something has gone horribly wrong!.", "Could not delete " + job[0], 'error')
+                    show_message("Something has gone horribly wrong!.", "Could not delete " + job[0], mode='error')
                     gui.update += 1
                     move_in_progress = False
                     return
 
-                show_message("Folder move complete.", "Folder name: " + job[3], 'done')
+                show_message("Folder move complete.", "Folder name: " + job[3], mode='done')
             else:
-                show_message("Folder copy complete.", "Folder name: " + job[3], 'done')
+                show_message("Folder copy complete.", "Folder name: " + job[3], mode='done')
 
 
 
@@ -17101,7 +17103,7 @@ def worker1():
                     items_removed += 1
 
             cm_clean_db = False
-            show_message("Cleaning complete.", str(items_removed) + " items were removed from the database.", 'done')
+            show_message("Cleaning complete.", str(items_removed) + " items were removed from the database.", mode='done')
             if album_mode:
                 reload_albums(True)
             if gui.combo_mode:
@@ -17207,7 +17209,7 @@ def worker1():
             except:
                 transcode_state = "Transcode Error"
                 time.sleep(0.2)
-                show_message("Transcode failed.", "An error was encountered.", 'error')
+                show_message("Transcode failed.", "An error was encountered.", mode='error')
                 gui.update += 1
                 time.sleep(0.1)
                 del transcode_list[0]
@@ -17216,13 +17218,13 @@ def worker1():
                 if gui.tc_cancel:
                     gui.tc_cancel = False
                     show_message("The transcode was canceled before completion.", "Incomplete files will remain.",
-                                 'warning')
+                                 mode='warning')
                 else:
                     line = "Press F9 to show output."
                     if prefs.transcode_codec == 'flac':
                         line = "Note that any associated output picture is a thumbnail and not an exact copy."
                     if not gui.message_box:
-                        show_message("Encoding complete.", line, 'done')
+                        show_message("Encoding complete.", line, mode='done')
                     if system == 'linux' and de_notify_support:
                         g_tc_notify.show()
 
@@ -17816,7 +17818,7 @@ def toggle_enable_web(mode=0):
         webThread = threading.Thread(target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory])
         webThread.daemon = True
         webThread.start()
-        show_message("Web server starting", "External connections will be accepted.", 'done')
+        show_message("Web server starting", "External connections will be accepted.", mode='done')
 
     elif prefs.enable_web is False:
         requests.post("http://localhost:7590/shutdown")
@@ -17842,7 +17844,7 @@ def toggle_lb(mode=0):
     if mode == 1:
         return lb.enable
     if not lb.enable and not prefs.lb_token:
-        show_message("Can't enable this if there's no token.", 'warning')
+        show_message("Can't enable this if there's no token.", mode='warning')
         return
     lb.enable ^= True
     if lb.enable:
@@ -17861,7 +17863,7 @@ def toggle_ex_del(mode=0):
         return prefs.auto_del_zip
     prefs.auto_del_zip ^= True
     # if prefs.auto_del_zip is True:
-    #     show_message("Caution! This function deletes things!", 'info', "This could result in data loss if the process were to malfunction.")
+    #     show_message("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
 
 def toggle_dl_mon(mode=0):
     if mode == 1:
@@ -17977,7 +17979,7 @@ def toggle_transcode_output(mode=0):
         show_message(
             "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
             "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.",
-            'warning')
+            mode='warning')
     else:
         transcode_icon.colour = [239, 74, 157, 255]
 
@@ -17993,7 +17995,7 @@ def toggle_transcode_inplace(mode=0):
         show_message(
             "DANGER! This will delete the original files. You may want to have backups in case of malfunction.",
             "For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first.",
-            'warning')
+            mode='warning')
     else:
         transcode_icon.colour = [239, 74, 157, 255]
 
@@ -18145,7 +18147,7 @@ def set_player_bass(mode=0):
         return True if prefs.backend == 1 else False
 
     if not os.path.isfile(install_directory + '/lib/libbass.so'):
-        show_message("Error: Could not find libbass.so", 'error')
+        show_message("Error: Could not find libbass.so", mode='error')
         return
 
     if prefs.backend != 1:
@@ -18160,7 +18162,7 @@ def set_player_gstreamer(mode=0):
         return True if prefs.backend == 2 else False
 
     if prefs.backend != 2:
-        show_message("Note: GStreamer support incomplete.", 'Some functions will be unavailable.', 'info')
+        show_message("Note: GStreamer support incomplete.", 'Some functions will be unavailable.', mode='info')
         prefs.backend = 2
         reload_backend()
         gui.spec = None
@@ -18185,7 +18187,7 @@ def gen_chart():
 
     except:
         gui.generating_chart = False
-        show_message("There was an error generating the chart", "Sorry!", 'error')
+        show_message("There was an error generating the chart", "Sorry!", mode='error')
         return
 
     gui.generating_chart = False
@@ -18193,10 +18195,10 @@ def gen_chart():
     if path:
         open_file(path)
     else:
-        show_message("There was an error generating the chart", "Sorry!", 'error')
+        show_message("There was an error generating the chart", "Sorry!", mode='error')
         return
 
-    show_message("Chart generated", 'done')
+    show_message("Chart generated", mode='done')
 
 
 class Over:
@@ -18503,7 +18505,7 @@ class Over:
             y = y0 + 240 * gui.scale
             x += 40 * gui.scale
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
-            prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
+            #prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
     def reload_device(self, _):
 
@@ -18823,7 +18825,7 @@ class Over:
 
                 text = copy_from_clipboard()
                 if text == "":
-                    show_message("There is no text in the clipboard", "error")
+                    show_message("There is no text in the clipboard", mode='error')
                 elif len(text) == 40:
                     prefs.discogs_pat = text
 
@@ -18844,7 +18846,7 @@ class Over:
                     # -----------------------------------
 
                 else:
-                    show_message("That is not a valid token", "error")
+                    show_message("That is not a valid token", mode='error')
             y += 30 * gui.scale
             if self.button(x, y, _("Clear")):
                 if not prefs.discogs_pat:
@@ -18949,7 +18951,7 @@ class Over:
 
         if not key_shift_down:
             show_message("This will mark all tracks in local database as unloved!",
-                         "Press button again while holding shift key if you're sure you want to do that.", 'warning')
+                         "Press button again while holding shift key if you're sure you want to do that.", mode='warning')
             return
 
         for key, star in star_store.db.items():
@@ -19296,7 +19298,7 @@ class Over:
                 show_message("Be patient!")
             else:
                 if not prefs.chart_font:
-                    show_message("No font set in config", 'error')
+                    show_message("No font set in config", mode='error')
                 else:
                     shoot = threading.Thread(target=gen_chart)
                     shoot.daemon = True
@@ -20285,7 +20287,7 @@ class TopPanel:
             self.dl_button.render(x, y + 1 * gui.scale, colour)
             if coll(rect) and input.mouse_click:
                 input.mouse_click = False
-                show_message("Downloader is running...", "You may need to restart app if download stalls", 'info')
+                show_message("Downloader is running...", "You may need to restart app if download stalls", mode='info')
             if os.path.isdir(auto_dl.dl_dir):
                 s = get_folder_size(auto_dl.dl_dir)
                 ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), get_filesize_string(s), [230, 100, 50, 255], 209)
@@ -20330,7 +20332,7 @@ class TopPanel:
                     if input.mouse_click:
                         input.mouse_click = False
                         show_message("It looks like something is being downloaded...", "Let's check back later...",
-                                     'info')
+                                     mode='info')
 
 
             else:
@@ -20513,10 +20515,10 @@ class TopPanel:
                 if len(pctl.broadcast_clients) == 0:
                     show_message("There are currently no connected clients")
                 elif len(pctl.broadcast_clients) == 1:
-                    show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", line, 'info')
+                    show_message("There is " + str(len(pctl.broadcast_clients)) + " inbound connection.", line, mode='info')
                 else:
                     show_message("There are " + str(len(pctl.broadcast_clients)) + " inbound connections.", line,
-                                 'info')
+                                 mode='info')
 
         # if pctl.playing_state > 0 and not pctl.broadcast_active and gui.show_top_title:
         #     ddt.draw_text((window_size[0] - offset, y, 1), p_text, colours.side_bar_line1, 12)
@@ -23940,7 +23942,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
         if prefs.fanart_notify:
             prefs.fanart_notify = False
             show_message("Notice: Artist image sourced from fanart.tv",
-                         'They encrouge you to contribute at https://fanart.tv', 'link')
+                         'They encrouge you to contribute at https://fanart.tv', mode='link')
         print("Found artist thumbnail from fanart.tv")
 
 class ArtistList:
@@ -27067,13 +27069,13 @@ def download_img(link, target_folder, track):
                 #clear_img_cache()
                 clear_track_image_cache(track)
             else:
-                show_message("Image types other than PNG or JPEG are currently not supported", 'warning')
+                show_message("Image types other than PNG or JPEG are currently not supported", mode='warning')
         else:
-            show_message("The link does not appear to refer to an image file.", 'warning')
+            show_message("The link does not appear to refer to an image file.", mode='warning')
         gui.image_downloading = False
 
     except Exception as e:
-        show_message("Image download failed.", str(e), 'warning')
+        show_message("Image download failed.", str(e), mode='warning')
         gui.image_downloading = False
 
 
@@ -27287,7 +27289,7 @@ print("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." + str(sv
 if prefs.backend == 2:
     print("Using GStreamer as fallback. Some functions disabled")
 elif prefs.backend == 0:
-    show_message("ERROR: No backend found", 'error')
+    show_message("ERROR: No backend found", mode='error')
 
 
 class Undo:
@@ -27867,7 +27869,7 @@ def save_state():
             prefs.tabs_on_top,
             prefs.showcase_vis,
             prefs.spec2_colour_mode,
-            prefs.device_buffer,
+            prefs.device_buffer,  # moved to config file
             prefs.use_eq,
             prefs.eq,
             prefs.bio_large,
@@ -28148,7 +28150,7 @@ while pctl.running:
             if not os.path.exists(target) and flatpak_mode:
                 show_message(_("Could not access! Possible insufficient Flatpak permissions."),
                              " See https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Permissions for details.",
-                             'bubble')
+                             mode='bubble')
 
             load_order = LoadClass()
             load_order.target = target
@@ -29327,7 +29329,7 @@ while pctl.running:
                     theme = 0
             except:
                 # raise
-                show_message("Error loading theme file", "", 'warning')
+                show_message("Error loading theme file", "", mode='warning')
 
         if theme == 0:
             gui.theme_name = "Mindaro"
@@ -30268,7 +30270,7 @@ while pctl.running:
                         gui.update += 2
                         gui.pl_update += 2
                         if order.notify and gui.message_box:
-                            show_message(_("Rescan folder complete."), order.target, 'done')
+                            show_message(_("Rescan folder complete."), order.target, mode='done')
                         reload()
 
 
@@ -31499,7 +31501,7 @@ while pctl.running:
                         radiobox = False
                         gui.update = 1
                         show_message("Could not validate URL.", "Make sure the URL starts with 'http://' or 'ftp://'.",
-                                     'info')
+                                     mode='info')
 
                 x -= 230 * gui.scale
                 # y += 30
