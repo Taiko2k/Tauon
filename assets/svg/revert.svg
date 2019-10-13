@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="13.989123"
+   height="13.011242"
+   viewBox="0 0 3.7012891 3.4425577"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="revert.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="5.8819477"
+     inkscape:cy="32.783956"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1196"
+     inkscape:window-height="738"
+     inkscape:window-x="27"
+     inkscape:window-y="109"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-50.813644,-187.68164)">
+    <path
+       inkscape:export-ydpi="36.547085"
+       inkscape:export-xdpi="36.547085"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/1.25x/revert.png"
+       sodipodi:nodetypes="ccssscc"
+       inkscape:connector-curvature="0"
+       id="path4642"
+       d="m 53.232222,189.00112 c -0.357018,-0.34174 -0.868015,-0.32071 -1.214466,-0.0107 -0.438953,0.39279 -0.409207,1.07577 -0.0091,1.48315 0.487344,0.4962 1.314851,0.45658 1.803832,-0.0146 0.57907,-0.55801 0.527409,-1.49024 -0.0393,-2.03683 -0.657075,-0.63376 -1.742,-0.5725 -2.373972,0.0622 -0.131564,0.13213 -0.241169,0.28473 -0.324156,0.45015"
+       style="fill:none;fill-rule:evenodd;stroke:#fefefe;stroke-width:0.58493614;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  </g>
+</svg>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="13.000087"
+   height="12.999878"
+   viewBox="0 0 3.4396066 3.4395511"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="pen.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="31.214252"
+     inkscape:cy="26.843705"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1196"
+     inkscape:window-height="738"
+     inkscape:window-x="27"
+     inkscape:window-y="109"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-44.111139,-186.11295)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.14603505;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+       id="rect1194"
+       width="1.0349581"
+       height="3.1048746"
+       x="-100.9279"
+       y="163.3105"
+       transform="rotate(-44.999994)"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/pen.png"
+       inkscape:export-xdpi="95.715988"
+       inkscape:export-ydpi="95.715988" />
+    <path
+       sodipodi:type="star"
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:4.26000023;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+       id="path1196"
+       sodipodi:sides="3"
+       sodipodi:cx="172.33363"
+       sodipodi:cy="44.322918"
+       sodipodi:r1="2.6458333"
+       sodipodi:r2="1.3229167"
+       sodipodi:arg1="1.5707963"
+       sodipodi:arg2="2.6179939"
+       inkscape:flatsided="true"
+       inkscape:rounded="-3.46945e-18"
+       inkscape:randomized="0"
+       d="m 172.33363,46.968751 -2.29136,-3.96875 4.58272,0 z"
+       inkscape:transform-center-y="-0.060987595"
+       transform="matrix(0.15969228,-0.15969224,0.18439712,0.18439708,11.369492,208.41194)"
+       inkscape:transform-center-x="0.060985506"
+       inkscape:export-filename="/home/kai/Documents/Tauon Music Box/dev/gui/2x/pen.png"
+       inkscape:export-xdpi="95.715988"
+       inkscape:export-ydpi="95.715988" />
+  </g>
+</svg>

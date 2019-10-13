@@ -73,7 +73,11 @@ user_directory = install_directory
 config_directory = user_directory
 cache_directory = os.path.join(user_directory, "cache")
 home_directory = os.path.join(os.path.expanduser('~'))
-asset_subfolder = "/assets/"
+
+asset_directory = os.path.join(install_directory, "assets")
+svg_directory = os.path.join(install_directory, "assets/svg")
+scaled_asset_directory = asset_directory
+
 music_directory = os.path.join(os.path.expanduser('~'), "Music")
 if not os.path.isdir(music_directory):
     music_directory = os.path.join(os.path.expanduser('~'), "music")
@@ -198,7 +202,6 @@ if not os.path.isdir(music_directory):
 transfer_target = user_directory + "/transfer.p"
 # print('Argument List: ' + str(sys.argv))
 print('Install directory: ' + install_directory)
-b_active_directory = install_directory.encode('utf-8')
 
 # # Find home music folder
 # music_folder = os.path.join(os.path.expanduser('~'), "Music")
@@ -2559,13 +2562,31 @@ if lang != 'en':
         print("No translation file available")
 
 # ----
+force_render = False
+if prefs.scale_want != 1:
+    scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
+    if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(os.listdir(scaled_asset_directory)):
+        print("Force rerender icons")
+        force_render = True
 
-if prefs.scale_want != prefs.ui_scale:
-    if prefs.scale_want in (1, 1.25, 2):
-        prefs.ui_scale = prefs.scale_want
-        prefs.playlist_row_height = round(22 * prefs.ui_scale)
-        prefs.playlist_font_size = 15
-        gui.__init__()
+
+if prefs.scale_want != prefs.ui_scale or force_render:
+
+    if prefs.scale_want != 1:
+        if os.path.isdir(scaled_asset_directory):
+            shutil.rmtree(scaled_asset_directory)
+        from t_modules.t_svgout import render_icons
+
+        if scaled_asset_directory != asset_directory:
+            print("Rendering icons...")
+            render_icons(svg_directory, scaled_asset_directory, prefs.scale_want)
+
+
+    #if prefs.scale_want in (1, 1.25, 2):
+    prefs.ui_scale = prefs.scale_want
+    prefs.playlist_row_height = round(22 * prefs.ui_scale)
+    #prefs.playlist_font_size = 15
+    gui.__init__()
 
 try:
     # star_lines = view_prefs['star-lines']
@@ -5707,7 +5728,7 @@ display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
 SDL_GetDisplayBounds(display_index, display_bounds)
 
-icon = IMG_Load(b_active_directory + asset_subfolder.encode() + b"icon-64.png")
+icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
 SDL_SetWindowIcon(t_window, icon)
 SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
 
@@ -8448,11 +8469,11 @@ b_panel_size = 300
 b_info_bar = False
 
 class LoadImageAsset:
-    def __init__(self, local_path, is_full_path=False):
+    def __init__(self, path, is_full_path=False):
         if is_full_path:
-            raw_image = IMG_Load(local_path.encode('utf-8'))
+            raw_image = IMG_Load(path.encode())
         else:
-            raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+            raw_image = IMG_Load(os.path.join(scaled_asset_directory, path).encode())
 
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 
@@ -8474,8 +8495,8 @@ class LoadImageAsset:
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 class WhiteModImageAsset:
-    def __init__(self, local_path):
-        raw_image = IMG_Load(b_active_directory + local_path.encode('utf-8'))
+    def __init__(self, path):
+        raw_image = IMG_Load(path.encode())
         self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
         self.colour = [255, 255, 255, 255]
         p_w = pointer(c_int(0))
@@ -8496,19 +8517,11 @@ class WhiteModImageAsset:
         SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
-if gui.scale == 2:
-    asset_dir = asset_subfolder + "2x/"
-elif gui.scale == 1.25:
-    asset_dir = asset_subfolder + "1.25x/"
-else:
-    asset_dir = asset_subfolder
-
-
 def asset_loader(name, mod=False):
-
+    target = os.path.join(scaled_asset_directory, name)
     if mod:
-        return WhiteModImageAsset(asset_dir + name)
-    return LoadImageAsset(asset_dir + name)
+        return WhiteModImageAsset(target)
+    return LoadImageAsset(target)
 
 message_info_icon = asset_loader("notice.png")
 message_warning_icon = asset_loader("warning.png")
@@ -23463,7 +23476,7 @@ class PlaylistBox:
 
         self.indicate_w = round(2 * gui.scale)
 
-        self.lock_icon = WhiteModImageAsset(asset_subfolder + 'lock-corner.png')
+        self.lock_icon = asset_loader('lock-corner.png', True)
 
         #if gui.scale == 1.25:
         self.tab_h = round(25 * gui.scale)
@@ -25486,7 +25499,7 @@ class ArtistInfoBox:
         self.w = 0
         self.lock = False
 
-        self.mini_box = WhiteModImageAsset(asset_subfolder + "mini-box.png")
+        self.mini_box = asset_loader("mini-box.png", True)
 
     def draw(self, x, y, w, h):
 
