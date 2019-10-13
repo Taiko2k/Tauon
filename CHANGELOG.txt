@@ -13,10 +13,13 @@ v4.8.2
  - Tweaked app icon to eliminate drop shadow
  - Improved full art lock size reliability
  - Improved queue "Add album after current" to add after all playing album tracks
+ - Improved queue "Add album after current" to add after all playing album tracks
  - Fixed text input dropping letters while under load
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view
  - Fixed extra empty playlist when dropping xspf onto left side panel
+ - Moved device buffer setting to config file
+ - Removed "Copy artist - album" from track menu and "Copy artist" from folder menu
 
 v4.8.1
 
