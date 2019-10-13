@@ -2417,7 +2417,7 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[ui]")
-    prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "Scaling for HiDPI displays. Accepted values: 1, 1.25 and 2. Change applies on restart.")
+    prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
 
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
