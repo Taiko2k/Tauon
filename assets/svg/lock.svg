@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="10.999997"
+   height="12.999984"
+   viewBox="0 0 2.9104161 3.439579"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="lock.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#212121"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="34.249883"
+     inkscape:cy="33.356968"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:pagecheckerboard="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1196"
+     inkscape:window-height="738"
+     inkscape:window-x="27"
+     inkscape:window-y="109"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-53.513319,-160.32548)">
+    <path
+       style="fill:#fffffc;fill-opacity:1;stroke:none;stroke-width:0.03763771"
+       d="m 53.74906,161.93984 c -0.130586,0 -0.235741,0.0989 -0.235741,0.22176 v 1.38177 c 0,0.12285 0.105155,0.22169 0.235741,0.22169 h 2.439016 c 0.130584,0 0.235659,-0.0988 0.235659,-0.22169 v -1.38177 c 0,-0.12284 -0.105075,-0.22176 -0.235659,-0.22176 z m 1.219467,0.42886 a 0.27340265,0.25719479 0 0 1 0.273419,0.25721 0.27340265,0.25719479 0 0 1 -0.13472,0.22131 v 0.34093 c 0,0.0835 -0.06187,0.15072 -0.138699,0.15072 -0.07683,0 -0.138699,-0.0672 -0.138699,-0.15072 v -0.34093 a 0.27340265,0.25719479 0 0 1 -0.134722,-0.22131 0.27340265,0.25719479 0 0 1 0.273421,-0.25721 z"
+       id="rect4926"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/lock.png"
+       inkscape:export-xdpi="15.085714"
+       inkscape:export-ydpi="15.085714" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4928"
+       d="m 53.929111,162.1354 v -0.63217 a 1.0394343,0.97781458 0 0 1 1.039433,-0.97781 1.0394343,0.97781458 0 0 1 1.039434,0.97781 v 0.63217"
+       style="fill:none;fill-opacity:1;stroke:#f4ffff;stroke-width:0.39987808;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       inkscape:export-filename="/home/kai/Tauon/dev/assets/lock.png"
+       inkscape:export-xdpi="15.085714"
+       inkscape:export-ydpi="15.085714" />
+  </g>
+</svg>
