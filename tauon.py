@@ -691,7 +691,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.enable_transcode = True
         self.show_rym = False
-        self.show_wiki = True
+        self.show_wiki = False
         self.show_transfer = True
         self.show_queue = True
         self.prefer_bottom_title = True
@@ -706,7 +706,7 @@ class Prefs:    # Used to hold any kind of settings
         self.device_name = ""
 
         self.cache_gallery = True
-        self.gallery_row_scroll = False
+        self.gallery_row_scroll = True
         self.gallery_scroll_wheel_px = 90
 
         self.playlist_font_size = 15
@@ -3257,7 +3257,7 @@ class PlayerCtl:
         self.render_playlist()
 
     def play_target_rr(self):
-
+        # tm.ready_playback()
         self.playing_length = pctl.master_library[self.track_queue[self.queue_step]].length
 
         if self.playing_length > 2:
@@ -3285,7 +3285,7 @@ class PlayerCtl:
 
 
     def play_target_gapless(self, jump=False):
-
+        #tm.ready_playback()
 
         queue_target = len(self.track_queue) - 1
         self.target_open = pctl.master_library[self.track_queue[queue_target]].fullpath
@@ -3309,6 +3309,8 @@ class PlayerCtl:
 
 
     def play_target(self, gapless=False, jump=False):
+
+        #tm.ready_playback()
 
         # print(self.track_queue)
         self.playing_time = 0
@@ -5768,18 +5770,6 @@ def bass_player_thread(player):
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
         time.sleep(1)
         show_message("Playback thread has crashed. Sorry about that.", "App will need to be restarted.", mode='error')
-
-if prefs.backend == 1:
-
-    playerThread = threading.Thread(target=bass_player_thread, args=[player])
-    playerThread.daemon = True
-    playerThread.start()
-
-elif prefs.backend == 2:
-
-    playerThread = threading.Thread(target=player3, args=[tauon])
-    playerThread.daemon = True
-    playerThread.start()
 
 
 if system == 'windows' and taskbar_progress:
@@ -11245,21 +11235,13 @@ def forget_pl_import_folder(pl):
     pctl.multi_playlist[pl][7] = ""
 
 
-
-
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
 tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
-tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
+# tab_menu.add_to_sub(_('Forget Import Folder'), 2, forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
-
-
-
-
-
-
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
@@ -11268,10 +11250,7 @@ def best(index):
     if pctl.master_library[index].length < 1:
         return 0
     return int(star_store.get(index))
-    # if key in pctl.star_library:
-    #     return int(pctl.star_library[key])  # / pctl.master_library[index].length)
-    # else:
-    #     return 0
+
 
 def key_modified(index):
     return pctl.master_library[index].modified_time
@@ -16171,6 +16150,10 @@ def worker3():
     while True:
         time.sleep(0.07)
 
+        # if tm.exit_worker3:
+        #     tm.exit_worker3 = False
+        #     return
+
         gall_ren.worker_render()
 
 
@@ -16179,6 +16162,10 @@ def worker2():
     while True:
 
         time.sleep(0.15)
+
+        # if tm.exit_worker2:
+        #     tm.exit_worker2 = False
+        #     return
 
         #gall_ren.worker_render()
 
@@ -16501,8 +16488,6 @@ def worker1():
 
     loaded_pathes_cache = {}
     added = []
-
-
 
     def get_end_folder(direc):
 
@@ -16989,6 +16974,10 @@ def worker1():
 
     while True:
         time.sleep(0.15)
+
+        # if tm.exit_worker1:
+        #     tm.exit_worker1 = False
+        #     return
 
         if after_scan:
             i = 0
@@ -18120,22 +18109,11 @@ def reload_backend():
 
     while pctl.playerCommand != 'done':
         time.sleep(0.01)
-        print(pctl.playerCommand)
         wait += 1
         if wait > 400:
             return
 
-    if prefs.backend == 1:
-        from t_modules.t_bass import player
-        playerThread = threading.Thread(target=bass_player_thread, args=[player])
-        playerThread.daemon = True
-        playerThread.start()
-
-    elif prefs.backend == 2:
-        from t_modules.t_gstreamer import player3
-        playerThread = threading.Thread(target=player3, args=[tauon])
-        playerThread.daemon = True
-        playerThread.start()
+    tm.ready_playback()
 
     if pre_state == 1:
         pctl.revert()
@@ -27226,17 +27204,94 @@ c_hit_callback = SDL_HitTest(hit_callback)
 SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 # --------------------------------------------------------------------------------------------
 
-worker1Thread = threading.Thread(target=worker1)
-worker1Thread.daemon = True
-worker1Thread.start()
 
-worker2Thread = threading.Thread(target=worker2)
-worker2Thread.daemon = True
-worker2Thread.start()
+class ThreadManager:
 
-worker3Thread = threading.Thread(target=worker3)
-worker3Thread.daemon = True
-worker3Thread.start()
+    def __init__(self):
+
+        self.worker1 = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
+        self.worker2 = None  # Art bg, search
+        self.worker3 = None  # Gallery rendering
+        self.playback = None
+
+        self.exit_worker1 = False
+        self.exit_worker2 = False
+        self.exit_worker3 = False
+
+        self.worker1 = threading.Thread(target=worker1)
+        self.worker2 = threading.Thread(target=worker2)
+        self.worker3 = threading.Thread(target=worker3)
+
+        self.worker1.daemon = True
+        self.worker2.daemon = True
+        self.worker3.daemon = True
+
+        self.sleeping = False
+
+    def ready_worker1(self):
+        if self.worker1 is None or not self.worker1.is_alive():
+            self.worker1 = threading.Thread(target=worker1)
+            self.worker1.daemon = True
+            self.worker1.start()
+        self.exit_worker1 = False
+
+    def ready_worker2(self):
+        if self.worker2 is None or not self.worker2.is_alive():
+            self.worker2 = threading.Thread(target=worker2)
+            self.worker2.daemon = True
+            self.worker2.start()
+        self.exit_worker1 = False
+
+    def ready_worker3(self):
+        if self.worker3 is None or not self.worker3.is_alive():
+            self.worker3 = threading.Thread(target=worker3)
+            self.worker3.daemon = True
+            self.worker3.start()
+        self.exit_worker3 = False
+
+    # def wake(self):
+    #     self.ready_worker1()
+    #     self.ready_worker2()
+    #     self.ready_worker3()
+    #
+    #     time.sleep(0.05)
+    #     self.ready_worker1()
+    #     self.ready_worker2()
+    #     self.ready_worker3()
+
+    # def sleep(self):
+    #
+    #     self.sleeping = True
+    #     if not loading_in_progress and not transcode_list:
+    #         self.exit_worker1 = True
+    #     self.exit_worker2 = True
+    #     self.exit_worker3 = True
+    #     if pctl.playing_state == 0 and not pctl.broadcast_active:
+    #         pctl.playerCommand = "unload"
+    #         pctl.playerCommandReady = True
+
+    def ready_playback(self):
+        if self.playback is None or not self.playback.is_alive():
+            if prefs.backend == 1:
+                self.playback = threading.Thread(target=bass_player_thread, args=[player])
+            elif prefs.backend == 2:
+                self.playback = threading.Thread(target=player3, args=[tauon])
+            self.playback.daemon = True
+            self.playback.start()
+
+    def check_playback_running(self):
+        if self.playback is None:
+            return False
+        return self.playback.is_alive()
+
+
+tm = ThreadManager()
+
+tm.ready_worker1()
+tm.ready_worker2()
+tm.ready_worker3()
+tm.ready_playback()
+
 # MAIN LOOP---------------------------------------------------------------------------
 
 if system == 'linux':
@@ -28372,6 +28427,7 @@ while pctl.running:
                 gui.lowered = True
                 if prefs.min_to_tray:
                     tray.down()
+                #tm.sleep()
 
             elif event.window.event == SDL_WINDOWEVENT_RESTORED:
 
@@ -28414,6 +28470,11 @@ while pctl.running:
             SDL_RaiseWindow(t_window)
             gui.lowered = False
 
+    # if tm.sleeping:
+    #     if not gui.lowered:
+    #         tm.wake()
+    if gui.lowered:
+        gui.update = 0
     # ----------------
     # This section of code controls the internal processing speed or 'frame-rate'.
     # It's pretty messy.
@@ -28476,9 +28537,7 @@ while pctl.running:
 
         if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
                 SDL_WaitEventTimeout(None, 1000)
-
                 check_transfer_p()
-
         continue
 
     else:
@@ -32542,7 +32601,7 @@ print("SDL unloaded")
 
 exit_timer = Timer()
 exit_timer.set()
-while pctl.playerCommand != 'done' or lfm_scrobbler.running:
+while tm.check_playback_running() or lfm_scrobbler.running:
     time.sleep(0.2)
     lfm_scrobbler.running = False
     if exit_timer.get() > 11:
