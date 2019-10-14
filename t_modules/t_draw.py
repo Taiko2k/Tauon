@@ -518,8 +518,6 @@ class TDraw:
 
         y_off = layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
-        if self.scale == 2:
-            y_off -= 2
 
         PangoCairo.show_layout(context, layout)
 

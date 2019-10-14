@@ -929,6 +929,8 @@ class Prefs:    # Used to hold any kind of settings
         self.increase_gallery_row_spacing = False
         self.center_gallery_text = False
 
+        self.tracklist_y_text_offset = 0
+
 prefs = Prefs()
 
 
@@ -2313,6 +2315,7 @@ def save_prefs():
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
     cf.update_value("ui-scale", prefs.scale_want)
+    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
     cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
     cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
@@ -2418,6 +2421,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[ui]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
+    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
@@ -8706,7 +8710,7 @@ class Menu:
         self.active = False
         self.clicked = False
         self.pos = [0, 0]
-        self.vertical_size = 22 * gui.scale#20
+        self.vertical_size = round(22 * gui.scale)
         if gui.scale == 1.25:
             self.vertical_size = 28
 
@@ -8832,15 +8836,16 @@ class Menu:
 
                 return
 
-            ytoff = 3
+            #ytoff = 3
             y_run = round(self.pos[1])
             to_call = None
 
-            if window_size[1] < 250 * gui.scale:
-                self.h = 14 * gui.scale
-                ytoff = -1 * gui.scale
-            else:
-                self.h = self.vertical_size
+            # if window_size[1] < 250 * gui.scale:
+            #     self.h = round(14 * gui.scale)
+            #     ytoff = -1 * gui.scale
+            # else:
+            self.h = self.vertical_size
+            ytoff = round(self.h * 0.71 - 13 * gui.scale)
 
             for i in range(len(self.items)):
                 # print(self.items[i])
@@ -15669,11 +15674,12 @@ class SearchOverlay:
                         and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                     artist_list_box.locate_artist_letter(input_text)
+                    print(artist_list_box.scroll_position)
+                    print("NEW")
                     return
 
                 self.active = True
                 self.old_mouse = copy.deepcopy(mouse_position)
-
 
         if self.active:
 
@@ -19479,6 +19485,8 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
+        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak Text Y"), "px", prefs.tracklist_y_text_offset, -5, 5)
+        y += 25 * gui.scale
 
         x += 65 * gui.scale
         self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
@@ -19530,6 +19538,7 @@ class Over:
 
         prefs.playlist_row_height = round(22 * prefs.ui_scale)
         prefs.playlist_font_size = 15
+        prefs.tracklist_y_text_offset = 0
         gui.update_layout()
 
     def large_preset(self):
@@ -24249,6 +24258,8 @@ class ArtistList:
                 break
 
         viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        if pctl.multi_playlist[pctl.active_playlist_viewing][10]:
+            viewing_pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][10]
         if viewing_pl_id in self.saves:
             self.saves[viewing_pl_id][2] = self.scroll_position
 
@@ -24566,7 +24577,6 @@ class ArtistList:
                 if artist not in self.thumb_cache:
                     self.load_img(artist)
                     break
-
 
 artist_list_box = ArtistList()
 
@@ -27614,14 +27624,19 @@ def update_layout_do():
 
         gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
         gui.playlist_row_height = prefs.playlist_row_height
-        gui.playlist_text_offset = 0
         gui.row_font_size = prefs.playlist_font_size  # 13
 
         gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
-        if gui.scale == 2:
-            gui.playlist_text_offset += 3
-        if gui.scale == 1.25:
-            gui.playlist_text_offset += 1
+        # if gui.scale == 2:
+        #     gui.playlist_text_offset += 3
+        # if gui.scale == 1.25:
+        #     gui.playlist_text_offset += 1
+        if gui.scale != 1:
+            gui.playlist_text_offset = round(gui.playlist_row_height * 0.74) - round(13 * gui.scale)
+
+        gui.playlist_text_offset += prefs.tracklist_y_text_offset
+
+
 
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
