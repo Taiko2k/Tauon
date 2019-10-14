@@ -2563,6 +2563,8 @@ if lang != 'en':
 
 # ----
 force_render = False
+
+
 if prefs.scale_want != 1:
     scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
     if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(os.listdir(scaled_asset_directory)):
@@ -26346,9 +26348,9 @@ class Showcase:
                 x -= 100 * gui.scale
                 w = window_size[0] - x - 30 * gui.scale
 
-                if key_up_press:
+                if key_up_press and not (key_ctrl_down or key_shift_down or key_shiftr_down):
                     lyrics_ren.lyrics_position += 35 * gui.scale
-                if key_down_press:
+                if key_down_press and not (key_ctrl_down or key_shift_down or key_shiftr_down):
                     lyrics_ren.lyrics_position -= 35 * gui.scale
 
                 tw, th = ddt.get_text_wh(lyrics_ren.text + "\n", 17,
@@ -32325,8 +32327,8 @@ while pctl.running:
                     if item > 20:
                         item = 20
 
-                    if gui.scale == 2:
-                        item *= gui.scale
+                    if gui.scale >= 2:
+                        item = round(item * gui.scale)
 
                     gui.bar.y = 0 + gui.spec_h - item
                     gui.bar.h = item

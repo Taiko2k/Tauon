@@ -18,6 +18,7 @@ v4.8.2
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view
  - Fixed extra empty playlist when dropping xspf onto left side panel
+ - Fixed lyrics scrolling when using volume change shortcut
  - Moved device buffer setting to config file
  - Removed "Copy artist - album" from track menu and "Copy artist" from folder menu
  - Removed "Forget import folder" function
