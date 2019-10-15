@@ -5107,13 +5107,6 @@ if prefs.backend == 1 and not os.path.isfile(install_directory + '/lib/libbass.s
         print("BASS not found")
         prefs.backend = 2
 
-if prefs.backend == 2:
-    from t_modules.t_gstreamer import player3
-
-if prefs.backend == 1:
-    from t_modules.t_bass import player
-
-
 
 class PlexService:
 
@@ -27302,8 +27295,10 @@ class ThreadManager:
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
             if prefs.backend == 1:
+                from t_modules.t_bass import player
                 self.playback = threading.Thread(target=bass_player_thread, args=[player])
             elif prefs.backend == 2:
+                from t_modules.t_gstreamer import player3
                 self.playback = threading.Thread(target=player3, args=[tauon])
             self.playback.daemon = True
             self.playback.start()
