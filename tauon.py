@@ -18664,8 +18664,8 @@ class Over:
         if w == 0:
             w = ddt.get_text_w(text, 211) + 10 * gui.scale
 
-        h = 20 * gui.scale
-        border_size = round(1 * gui.scale)
+        h = round(20 * gui.scale)
+        border_size = round(2 * gui.scale)
 
         rect = (x, y, w, h)
         rect2 = (x - border_size, y - border_size, w + border_size * 2, h + border_size * 2)
@@ -18676,7 +18676,7 @@ class Over:
         real_bg = bg
         hit = False
 
-        ddt.rect(rect2, [255, 255, 255, 16])
+        ddt.rect(rect2, [255, 255, 255, 18], True)
         ddt.rect(rect, bg, True)
 
         fields.add(rect)
@@ -18688,15 +18688,8 @@ class Over:
                 hit = True
                 if plug is not None:
                     plug()
-            # if mouse_down:
-            #     ddt.rect_r(rect, [255, 255, 255, 15], True)
-
         else:
             ddt.text((x + int(w / 2), rect[1] + 1 * gui.scale, 2), text, colours.grey_blend_bg(225), 211, bg=real_bg)
-
-        ddt.rect(rect, [255, 255, 255, 16])
-        rect2 = (x-1, y-1, w+2, 22 * gui.scale)
-        ddt.rect(rect2, [255, 255, 255, 16])
 
         return hit
 
@@ -19485,8 +19478,8 @@ class Over:
         y += 25 * gui.scale
         prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
         y += 25 * gui.scale
-        prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak Text Y"), "px", prefs.tracklist_y_text_offset, -5, 5)
-        y += 25 * gui.scale
+        # prefs.tracklist_y_text_offset = self.slide_control(x, y, _("Tweak Text Y"), "px", prefs.tracklist_y_text_offset, -5, 5)
+        # y += 25 * gui.scale
 
         x += 65 * gui.scale
         self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
@@ -22125,7 +22118,7 @@ class StandardPlaylist:
             inset_width += 10 * gui.scale
 
         if center_mode:
-            highlight_left = gui.scale * int(pow((window_size[0] * 0.01), 2))
+            highlight_left = int(pow((window_size[0] * 0.01), 2))
             if window_size[0] < 600 * gui.scale:
                 highlight_left = 3 * gui.scale
             highlight_width = highlight_width - (highlight_left * 2)
@@ -27528,8 +27521,6 @@ def update_layout_do():
 
     global renderer
 
-    #print("TEST")
-
     if prefs.spec2_colour_mode == 0:
         prefs.spec2_base = [10, 10, 100]
         prefs.spec2_multiply = [0.5, 1, 1]
@@ -27623,22 +27614,24 @@ def update_layout_do():
         gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
 
         gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+
+
+        # Tracklist row size and text positioning ---------------------------------
         gui.playlist_row_height = prefs.playlist_row_height
         gui.row_font_size = prefs.playlist_font_size  # 13
 
         gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
-        # if gui.scale == 2:
-        #     gui.playlist_text_offset += 3
-        # if gui.scale == 1.25:
-        #     gui.playlist_text_offset += 1
+
         if gui.scale != 1:
-            gui.playlist_text_offset = round(gui.playlist_row_height * 0.74) - round(13 * gui.scale)
+            real_font_px = ddt.f_dict[gui.row_font_size][2]
+            gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("abcd", gui.row_font_size, 100) + round(1.3 * gui.scale)
 
         gui.playlist_text_offset += prefs.tracklist_y_text_offset
 
-
-
         gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
+
+        # -------------------------------------------------------------------------
+
 
         gui.playlist_view_length = int((window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
 
