@@ -5248,8 +5248,7 @@ def get_network_thumbnail_url(track_object):
 def plex_get_album_thread():
 
 
-    pref_box.enabled = False
-    fader.fall()
+    pref_box.close()
     if plex.scanning:
         input.mouse_click = False
         show_message("Already scanning!")
@@ -16043,10 +16042,10 @@ class SearchOverlay:
 
                 if item[0] == 5:
                     cl = [250, 100, 50, int(255 * fade)]
-                    text = "META"
+                    text = "FOLDER"
                     xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 214, bg=[12, 12, 12, 255])
 
-                    ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
+                    ddt.text((49 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
                         ddt.rect((30 * gui.scale, yy - 3 * gui.scale, 4 * gui.scale, 20 * gui.scale), bar_colour, True)
 
@@ -16195,12 +16194,15 @@ def worker2():
 
         #if core_timer.get() > 2:
 
+
         if len(search_over.search_text.text) > 1:
             if search_over.search_text.text != search_over.searched_text:
 
                 temp_results = []
 
                 search_over.searched_text = search_over.search_text.text
+
+
 
                 artists = {}
                 albums = {}
@@ -16221,7 +16223,6 @@ def worker2():
 
                 s_text = search_over.search_text.text.lower()
 
-
                 for playlist in pctl.multi_playlist:
 
                     if "<" in playlist[0]:
@@ -16231,7 +16232,8 @@ def worker2():
                     for track in playlist[2]:
 
                         if input_text:
-                            time.sleep(0.001)
+                            time.sleep(0.005)
+
 
                         t = pctl.master_library[track]
 
@@ -16444,8 +16446,8 @@ def worker2():
 
 
                         br += 1
-                        if br > 100:
-                            time.sleep(0.0002)
+                        if br > 600:
+                            time.sleep(0.001)
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
                                 break
@@ -18211,6 +18213,8 @@ class Over:
         self.about_image2 = asset_loader('v4-b.png')
         self.about_image3 = asset_loader('v4-c.png')
         self.about_image4 = asset_loader('v4-d.png')
+        self.about_image5 = asset_loader('v4-e.png')
+        self.about_image6 = asset_loader('v4-f.png')
 
         # self.tab_width = round(115 * gui.scale)
         self.w = 100
@@ -19104,10 +19108,14 @@ class Over:
 
             if any(s in genre for s in ['ock', 'lt']):
                 self.about_image2.render(icon_rect[0], icon_rect[1])
+            elif any(s in genre for s in ['kpop', 'k-pop', 'anime']):
+                self.about_image6.render(icon_rect[0], icon_rect[1])
             elif any(s in genre for s in ['syn', 'pop']):
-                self.about_image4.render(icon_rect[0], icon_rect[1])
+                self.about_image3.render(icon_rect[0], icon_rect[1])
             elif any(s in genre for s in ['tro', 'cid']):
                 self.about_image4.render(icon_rect[0], icon_rect[1])
+            elif any(s in genre for s in ['uture']):
+                self.about_image5.render(icon_rect[0], icon_rect[1])
             else:
                 genre = ""
 
@@ -19611,14 +19619,19 @@ class Over:
 
         pctl.total_playtime = star_store.get_total()
 
+    def close(self):
+        self.enabled = False
+        fader.fall()
+        if gui.opened_config_file:
+            reload_config_file()
+
     def render(self):
 
         if self.init2done is False:
             self.init2()
 
         if key_esc_press:
-            self.enabled = False
-            fader.fall()
+            self.close()
 
         tab_width = 115 * gui.scale
 
@@ -19698,8 +19711,6 @@ class Over:
                 if current_tab == 6:
                     yy += 30
                     xx = x
-
-
 
         else:
 
@@ -27343,7 +27354,6 @@ event = SDL_Event()
 mouse_moved = False
 
 power = 0
-key_F7 = False
 
 r_arg_queue = copy.deepcopy(sys.argv)
 
@@ -28993,14 +29003,9 @@ while pctl.running:
                 mouse_wheel = 0
             else:
                 if input.mouse_click:
-                    pref_box.enabled = False
-                    if gui.opened_config_file == True:
-                        input.mouse_click = False
-                        show_message('Remember to click "Reload Config File" if you made changes or they will be lost')
-                    fader.fall()
+                    pref_box.close()
                 if right_click:
-                    pref_box.enabled = False
-                    fader.fall()
+                    pref_box.close()
                 if pref_box.lock is False:
                     pass
 
