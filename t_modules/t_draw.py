@@ -308,7 +308,7 @@ class TDraw:
 
     def prime_font(self, name, size, user_handle, offset=0):
 
-        self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size)
+        self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale )
 
     def get_text_wh(self, text, font, max_x, wrap=False):
 
@@ -338,11 +338,8 @@ class TDraw:
             self.layout.set_height(0)
         self.layout.set_text(text, -1)
 
-
         y_off = self.layout.get_baseline() / 1000
         y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
-        if self.scale == 2:
-            y_off -= 2
 
         return y_off
 
