@@ -14,12 +14,14 @@ v4.8.2
  - Improved UI scaling to accept any fractional value
  - Improved full art lock size reliability
  - Improved queue "Add album after current" to add after all playing album tracks
+ - Improved theme setting retention, now added to config file
  - Fixed text input dropping letters while under load
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view
  - Fixed extra empty playlist when dropping xspf onto left side panel
  - Fixed lyrics scrolling when using volume change shortcut
  - Fixed artist list key shortcuts not working with filtered playlist
+ - Fixed start of CUE based file playing briefly when switching tracks
  - Moved device buffer setting to config file
  - Renamed META in global search to FOLDER
  - Removed "Copy artist - album" from track menu and "Copy artist" from folder menu
