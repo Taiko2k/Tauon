@@ -815,6 +815,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     bytes_position = BASS_ChannelSeconds2Bytes(new_handle, target_time)
                     BASS_ChannelSetPosition(new_handle, bytes_position, 0)
 
+
                 if self.state == 'suspend' and prefs.use_pause_fade:
                     BASS_ChannelSlideAttribute(mixer, 2, pctl.player_volume / 100, prefs.pause_fade_time)
 
@@ -914,6 +915,14 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     # print("Create Mixer")
                     # print(BASS_ErrorGetCode())
 
+                    # Set the starting position
+                    if pctl.start_time_target > 0 or pctl.jump_time > 0:
+                        bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time_target + pctl.jump_time)
+                        BASS_ChannelSetPosition(new_handle, bytes_position, 0)
+                        pctl.playing_time = pctl.jump_time
+                        gui.update = 1
+                        pctl.jump_time = 0
+
                     BASS_Mixer_StreamAddChannel(new_mixer, new_handle, BASS_STREAM_AUTOFREE)
 
                     # print("Add channel")
@@ -931,16 +940,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                     # Add end callback
                     BASS_ChannelSetSync(new_mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync2, 0)
-
-
-
-                    # Set the starting position
-                    if pctl.start_time_target > 0 or pctl.jump_time > 0:
-                        bytes_position = BASS_ChannelSeconds2Bytes(new_handle, pctl.start_time_target + pctl.jump_time)
-                        BASS_ChannelSetPosition(new_handle, bytes_position, 0)
-                        pctl.playing_time = pctl.jump_time
-                        gui.update = 1
-                        pctl.jump_time = 0
 
                     if instant:
                         print("Do transition QUICK")
