@@ -692,12 +692,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             self.dl_ready = False
 
             target_object = pctl.target_object
+            url = None
 
             if target_object.is_network:
 
                 print("START STEAM")
 
-                url = None
+
                 self.url = ""
 
                 try:
