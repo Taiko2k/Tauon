@@ -495,8 +495,6 @@ pl_view_offset = 0
 pl_rect = (2, 12, 10, 10)
 
 theme = 7
-themeChange = True
-
 scroll_enable = True
 scroll_timer = Timer()
 scroll_timer.set()
@@ -930,6 +928,7 @@ class Prefs:    # Used to hold any kind of settings
         self.center_gallery_text = False
 
         self.tracklist_y_text_offset = 0
+        self.theme_name = "Astro"
 
 prefs = Prefs()
 
@@ -1259,7 +1258,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         
         self.album_scroll_px = album_v_slide_value
         self.queue_toast_plural = False
-
+        self.reload_theme = False
+        self.theme_number = 0
 
 
 gui = GuiVar()
@@ -2096,6 +2096,31 @@ def track_number_process(line):
         return "0" + line
     return line
 
+def advance_theme():
+    global theme
+    
+    theme += 1
+    gui.reload_theme = True
+
+def get_theme_number(name):
+    if name == "Mindaro":
+       return 0
+    themes = get_themes()
+    for i, theme in enumerate(themes):
+        if theme[1] == name:
+            return i + 1
+    return 0
+
+def get_theme_name(number):
+    if number == 0:
+        return 'Mindaro'
+    number -= 1
+    themes = get_themes()
+    print((number, themes))
+    if len(themes) > number:
+        return themes[number][1]
+    return ""
+
 
 # Upgrading from older versions
 if db_version > 0:
@@ -2275,10 +2300,14 @@ if db_version > 0:
            theme += 1
 
     if db_version <= 33:
-
+        print("Update to db 34")
         for key, value in master_library.items():
             if not hasattr(master_library[key], 'misc'):
                 setattr(master_library[key], 'misc', {})
+
+    if db_version <= 34:
+        print("Update to dv 35")
+        # Moved to after config load
 
 # Loading Config -----------------
 
@@ -2293,6 +2322,7 @@ if music_directory is not None and os.path.isdir(music_directory):
 from t_modules.t_config import Config
 
 cf = Config()
+
 
 def save_prefs():
 
@@ -2315,12 +2345,14 @@ def save_prefs():
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
     cf.update_value("ui-scale", prefs.scale_want)
-    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
+    cf.update_value("theme-name", prefs.theme_name)
+
     cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
     cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
     cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
     cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
     cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
+    cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
     cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
     cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
     cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
@@ -2421,6 +2453,7 @@ def load_prefs():
     cf.br()
     cf.add_text("[ui]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
+    prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
     prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
@@ -2532,6 +2565,12 @@ def load_prefs():
 
 load_prefs()
 save_prefs()
+
+# Temporary
+if 0 < db_version <= 34:
+        print("Update to dv 35")
+        prefs.theme_name = get_theme_name(theme)
+        print(prefs.theme_name)
 
 # Set UI language -----
 
@@ -14137,7 +14176,7 @@ def toggle_album_mode(force_on=False):
     global old_side_pos
     global album_playlist_width
     global old_album_pos
-    global themeChange
+    
 
     gui.gall_tab_enter = False
 
@@ -14662,8 +14701,8 @@ def toggle_auto_theme(mode=0):
 
     prefs.colour_from_image ^= True
     gui.theme_temp_current = -1
-    global themeChange
-    themeChange = True
+    
+    gui.reload_theme = True
 
     if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
         toggle_auto_bg()
@@ -14793,30 +14832,9 @@ def level_meter_special_2():
 theme_files = os.listdir(install_directory + '/theme')
 theme_files.sort()
 
-def advance_theme():
-    global theme
-    global themeChange
-    theme += 1
-    themeChange = True
-
-
-def set_theme_vape():
-    global theme
-    global themeChange
-    for i, theme in enumerate(theme_files):
-        if 'vape.ttheme' == theme:
-            theme = i + 1
-            themeChange = True
-            break
-
 
 def last_fm_menu_deco():
-    # if lastfm.connected:
-    #     line = 'Stop Last.fm Scrobbling'
-    #     bg = colours.menu_background
-    # else:
-    #     line = 'Start Last.fm Scrobbling'
-    #     bg = colours.menu_background
+
     if lastfm.hold:
 
         if not prefs.auto_lfm and lb.enable:
@@ -19004,9 +19022,9 @@ class Over:
 
     def devance_theme(self):
         global theme
-        global themeChange
+        
         theme -= 1
-        themeChange = True
+        gui.reload_theme = True
         if theme < 0:
             theme = len(get_themes())
 
@@ -27430,6 +27448,12 @@ def update_layout_do():
     w = window_size[0]
     h = window_size[1]
 
+    if gui.theme_name != prefs.theme_name:
+        gui.reload_theme = True
+        global theme
+        theme = get_theme_number(prefs.theme_name)
+        print("Config reload theme...")
+
     # Restore in case of error
     if gui.rspw < 30 * gui.scale:
         gui.rspw = 100 * gui.scale
@@ -27859,7 +27883,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            34,  # Version, used for upgrading
+            35,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -28024,6 +28048,10 @@ pctl.notify_update()
 
 key_focused = 0
 
+theme = get_theme_number(prefs.theme_name)
+print("theme")
+print(prefs.theme_name)
+
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
     gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
 
@@ -28170,12 +28198,6 @@ while pctl.running:
             # print((i_x, i_y))
             playlist_target = 0
             #print(event.drop)
-
-            # print("TEST")
-            # print(gui.lsp)
-            # print(gui.panelY < i_y < gui.panelBY)
-            # print(i_x < gui.lspw)
-            # print( gui.mode == 1)
 
             dropped_file_sdl = event.drop.file
             target = str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8"))).replace("file:///", "/").replace("\r", "")
@@ -28592,45 +28614,6 @@ while pctl.running:
 
     check_transfer_p()
 
-    # if check_file_timer.get() > 1.1:
-    #     check_file_timer.set()
-    #     if os.path.isfile(transfer_target):
-    #         r_arg_queue = pickle.load(open(transfer_target, "rb"))
-    #         os.remove(user_directory + "/transfer.p")
-    #         arg_queue = []
-    #         i = 0
-    #         for item in r_arg_queue:
-    #             if (os.path.isdir(item) or os.path.isfile(item)) and '.py' not in item:
-    #                 arg_queue.append(item)
-    #                 i += 1
-    #
-    #         if i == 0:
-    #             SDL_RaiseWindow(t_window)
-    #             SDL_RestoreWindow(t_window)
-    #
-    #     if arg_queue:
-    #         i = 0
-    #         while i < len(arg_queue):
-    #             load_order = LoadClass()
-    #
-    #             for w in range(len(pctl.multi_playlist)):
-    #                 if pctl.multi_playlist[w][0] == "Default":
-    #                     load_order.playlist = pctl.multi_playlist[w][6] # copy.deepcopy(w)
-    #                     break
-    #             else:
-    #                 # pctl.multi_playlist.append(["Default", 0, [], 0, 0, 0])
-    #                 pctl.multi_playlist.append(pl_gen())
-    #                 load_order.playlist = pctl.multi_playlist[len(pctl.multi_playlist) - 1][6]
-    #                 switch_playlist(len(pctl.multi_playlist) - 1)
-    #
-    #             load_order.target = arg_queue[i]
-    #             load_orders.append(copy.deepcopy(load_order))
-    #
-    #             i += 1
-    #         arg_queue = []
-    #         gui.auto_play_import = True
-
-
     if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
         #print(SDL_GetMouseState(None, None))
         if SDL_GetGlobalMouseState(None, None) == 0:
@@ -28649,10 +28632,6 @@ while pctl.running:
 
         if key_ctrl_down:
             gui.pl_update += 1
-            # quick_view_box.trigger1()
-        # if not key_ctrl_down:
-        #     quick_view_box.active = False
-        #     quick_view_box.prime = False
 
         if mouse_enter_window:
             input.key_return_press = False
@@ -28874,7 +28853,7 @@ while pctl.running:
                     show_message(_("Enabled auto theme"))
                 else:
                     show_message(_("Disabled auto theme"))
-                    themeChange = True
+                    gui.reload_theme = True
                     gui.theme_temp_current = -1
 
             if mouse4 or keymaps.test("toggle-gallery"):
@@ -29210,7 +29189,7 @@ while pctl.running:
     # -----------------------------------------------------
     # THEME SWITCHER--------------------------------------------------------------------
     if keymaps.test("cycle-theme"):
-        themeChange = True
+        gui.reload_theme = True
         gui.theme_temp_current = -1
         gui.temp_themes.clear()
         theme += 1
@@ -29221,13 +29200,14 @@ while pctl.running:
         pref_box.devance_theme()
 
     if keymaps.test("reload-theme"):
-        themeChange = True
+        gui.reload_theme = True
 
 
-    if themeChange is True:
+    if gui.reload_theme is True:
         gui.light_mode = False
         gui.draw_frame = False
         gui.pl_update = 1
+
         if theme > 25:
             theme = 0
         if theme > 0:
@@ -29420,8 +29400,10 @@ while pctl.running:
             colours.__init__()
             colours.post_config()
 
+        prefs.theme_name = gui.theme_name
+
         print("Theme number: " + str(theme))
-        themeChange = False
+        gui.reload_theme = False
         ddt.text_background_colour = colours.playlist_panel_background
 
     # ---------------------------------------------------------------------------------------------------------
