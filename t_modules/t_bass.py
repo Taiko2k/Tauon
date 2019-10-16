@@ -106,6 +106,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                                                ctypes.c_ulong)(('BASS_ChannelSlideAttribute', bass_module))
     BASS_ChannelSetAttribute = function_type(ctypes.c_bool, ctypes.c_ulong, ctypes.c_ulong, ctypes.c_float)(
         ('BASS_ChannelSetAttribute', bass_module))
+    BASS_ChannelGetAttribute = function_type(ctypes.c_int64, ctypes.c_ulong, ctypes.c_ulong)(
+        ('BASS_ChannelGetAttribute', bass_module))
+
     BASS_PluginLoad = function_type(ctypes.c_ulong, ctypes.c_char_p, ctypes.c_ulong)(
         ('BASS_PluginLoad', bass_module))
     BASS_PluginFree = function_type(ctypes.c_bool, ctypes.c_ulong)(('BASS_PluginFree', bass_module))
@@ -325,6 +328,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     BASS_SetConfig(BASS_CONFIG_ASYNCFILE_BUFFER, 4000000)
     BASS_SetConfig(BASS_CONFIG_DEV_BUFFER, prefs.device_buffer)
+    #BASS_SetConfigPtr(BASS_CONFIG_LIBSSL, b"/usr/lib/libssl.so.1.0.0")
 
     #else:
     #    open_flag = BASS_UNICODE
@@ -676,6 +680,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                             break
 
                         f.write(chunk)
+
             self.dl_ready = True
 
         def start(self, instant=False, resume=False):
@@ -735,6 +740,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     target = target.decode().replace("/", "\\")
 
                 new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
+                #new_handle = BASS_StreamCreateURL(url, 0, self.open_file_flags, 0, 0)
 
             else:
 
@@ -832,7 +838,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 self.channel = mixer
                 self.decode_channel = new_handle
                 self.state = 'playing'
-                return
 
             elif self.state == 'playing':
 
@@ -853,6 +858,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # pos = BASS_Mixer_ChannelGetPositionEx(self.decode_channel, BASS_POS_BYTE, buffered)
                 # BASS_ChannelLock(self.channel, False)
                 # tpos = BASS_ChannelBytes2Seconds(self.decode_channel, pos)
+
+                if url and pctl.playing_ready():  # not actually currently playing but next / hacky
+                    tlen = pctl.playing_object().length
 
                 err = BASS_ErrorGetCode()
                 #print(err)
@@ -900,7 +908,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                     # self.channel = mixer
                     self.decode_channel = new_handle
-                    return
 
                 else:
 
@@ -959,16 +966,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     self.channel = new_mixer
                     self.decode_channel = new_handle
 
-            if pctl.finish_transition:
-
-                # if pctl.finish_transition:
-                #     add_time = player_timer.hit()
-                #     if add_time > 2 or add_time < 0:
-                #         add_time = 0
-                #     pctl.playing_time += add_time
-                #     print("progress...")
-
-                pctl.finalise()
 
     bass_player = BASSPlayer()
 
@@ -1316,7 +1313,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             if status == 1:
                 # Playing
-                #print("Channel is playing " + str(pctl.playing_time))
+                # print("Channel is playing " + str(pctl.playing_time))
                 pass
             elif status == 3 or status == 0:
                 # Paused? Stopped? Try unpause

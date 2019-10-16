@@ -2546,9 +2546,9 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[plex_account]")
-    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username)
-    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password)
-    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername)
+    prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username, "Probably the email address you used to make your PLEX account.")
+    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password, "The password associated with your PLEX account" )
+    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername, "Probably your servers hostname")
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -3040,16 +3040,7 @@ class PlayerCtl:
         self.start_time_target = 0
 
         self.decode_time = 0
-
-    def finalise(self):
-
-        if self.finish_transition:
-            self.playing_time = 0
-            self.decode_time = 0
-            self.queue_step = len(self.track_queue) - 1
-            self.start_time = self.start_time_target
-            self.playing_length = pctl.g(pctl.track_queue[self.queue_step]).length
-            self.finish_transition = False
+        self.download_time = 0
 
 
     def update_shuffle_pool(self, pl_id, track_list):
@@ -5176,6 +5167,7 @@ class PlexService:
             from plexapi.myplex import MyPlexAccount
         except:
             show_message("Error importing python-plexapi", mode='error')
+            self.scanning = False
             return
 
         try:
@@ -9490,12 +9482,16 @@ power_bar_icon = asset_loader('power.png', True)
 
 def open_folder(index):
 
+    track = pctl.master_library[index]
+    if track.is_network:
+        show_message("Can't open folder of a network track.")
+
     if system == 'windows':
         line = r'explorer /select,"%s"' % (
-            pctl.master_library[index].fullpath.replace("/", "\\"))
+            track.fullpath.replace("/", "\\"))
         subprocess.Popen(line)
     else:
-        line = pctl.master_library[index].parent_folder_path
+        line = track.parent_folder_path
         line += "/"
         if system == 'mac':
             subprocess.Popen(['open', line])
@@ -12877,6 +12873,11 @@ def rename_folders(index):
 
     track_box = False
     rename_index = index
+
+    if pctl.g(index).is_network:
+        show_message("Not applicable for a network track.")
+        return
+
     gui.rename_folder_box = True
     input_text = ""
     shift_selection.clear()
@@ -13266,11 +13267,20 @@ def editor(index):
 
 
 def launch_editor(index):
+    if pctl.g(index).is_network:
+        show_message("Cannot edit tags of a network track.")
+        return
     mini_t = threading.Thread(target=editor, args=[index])
     mini_t.daemon = True
     mini_t.start()
 
 def launch_editor_selection(index):
+
+    for index in shift_selection:
+        if pctl.g(index).is_network:
+            show_message("Cannot edit tags of a network track.")
+            return
+
     mini_t = threading.Thread(target=editor, args=[None])
     mini_t.daemon = True
     mini_t.start()
@@ -20709,6 +20719,14 @@ class BottomBarType1:
             self.seek_time = pctl.playing_time
 
         if pctl.playing_length > 0:
+
+            # if pctl.download_time > 0:
+            #     gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
+            #                           int(pctl.download_time * self.seek_bar_size[0] / pctl.playing_length),
+            #                self.seek_bar_size[1])
+            #     ddt.rect(gui.seek_bar_rect,
+            #              [255, 255, 255, 5], True)
+
             gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
                                   int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
                        self.seek_bar_size[1])
@@ -28049,8 +28067,6 @@ pctl.notify_update()
 key_focused = 0
 
 theme = get_theme_number(prefs.theme_name)
-print("theme")
-print(prefs.theme_name)
 
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
     gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
