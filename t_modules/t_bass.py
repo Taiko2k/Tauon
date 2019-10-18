@@ -22,6 +22,7 @@
 from t_modules.t_extra import Timer
 import ctypes
 from ctypes.util import find_library
+from hsaudiotag import auto
 import time
 import math
 import datetime
@@ -667,8 +668,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         def download_part(self, url, target):
 
             self.part = requests.get(url, stream=True)
+            bitrate = 0
 
             a = 0
+            z = 0
             with open(target, 'wb') as f:
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
@@ -680,6 +683,18 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                             break
 
                         f.write(chunk)
+                    z += 1
+                    if z == 50:
+                        z = 0
+                        if bitrate == 0:
+                            audio = auto.File(target)
+                            bitrate = audio.bitrate
+                        if bitrate > 0:
+                            gui.update += 1
+                            pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+
+
+            pctl.download_time = -1
 
             self.dl_ready = True
 
@@ -693,11 +708,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             target_object = pctl.target_object
             url = None
+            pctl.download_time = 0
 
             if target_object.is_network:
 
-                print("START STEAM")
-
+                print("START STREAM")
 
                 self.url = ""
 
