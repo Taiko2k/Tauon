@@ -7167,6 +7167,21 @@ class AlbumArt():
         self.blur_texture = None
         self.blur_rect = None
 
+        self.download_in_progress = False
+        self.downloaded_image = None
+        self.downloaded_track = None
+
+
+    def async_download_network_image(self, track):
+
+        print("start network image download")
+        response = urllib.request.urlopen(get_network_thumbnail_url(track))
+        self.downloaded_image = response
+        self.downloaded_track = track
+        self.download_in_progress = False
+        gui.update += 1
+
+
     def get_info(self, track_object):
 
         sources = self.get_sources(track_object)
@@ -7663,8 +7678,34 @@ class AlbumArt():
                 source_image = io.BytesIO(self.get_embed(track))
             elif source[offset][0] == 2:
                 try:
-                    response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                    source_image = response
+                    # We want to download the image asynchronously as to not block the UI
+                    if self.downloaded_image and self.downloaded_track == track:
+                        source_image = self.downloaded_image
+
+                    elif self.download_in_progress:
+                        return 0
+
+                    else:
+                        self.download_in_progress = True
+                        shoot_dl = threading.Thread(target=self.async_download_network_image, args=([track]))
+                        shoot_dl.daemon = True
+                        shoot_dl.start()
+
+                        # We'll block with a small timeout to avoid unwanted flashing between frames
+                        s = 0
+                        while self.download_in_progress:
+                            s += 1
+                            time.sleep(0.01)
+                            if s > 20:  # 200 ms
+                                break
+
+                        if self.downloaded_image and self.downloaded_track == track:
+                            source_image = self.downloaded_image
+                        else:
+                            return 0
+
+                    # response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                    # source_image = response
                 except:
                     print("IMAGE NETWORK LOAD ERROR")
 
@@ -20721,12 +20762,21 @@ class BottomBarType1:
 
         if pctl.playing_length > 0:
 
-            # if pctl.download_time > 0:
-            #     gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
-            #                           int(pctl.download_time * self.seek_bar_size[0] / pctl.playing_length),
-            #                self.seek_bar_size[1])
-            #     ddt.rect(gui.seek_bar_rect,
-            #              [255, 255, 255, 5], True)
+            if pctl.download_time != 0:
+
+                if pctl.download_time == -1:
+                    pctl.download_time = pctl.playing_length
+
+                colour = (255, 255, 255, 10)
+                if gui.theme_name == "Lavender Light" or gui.theme_name == "Carbon":
+                    colour = (255, 255, 255, 40)
+
+
+                gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
+                                      int(pctl.download_time * self.seek_bar_size[0] / pctl.playing_length),
+                           self.seek_bar_size[1])
+                ddt.rect(gui.seek_bar_rect,
+                         colour, True)
 
             gui.seek_bar_rect = (self.seek_bar_position[0], self.seek_bar_position[1],
                                   int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
