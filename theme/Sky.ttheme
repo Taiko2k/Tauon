@@ -26,7 +26,7 @@
 120,120,120,33		select highlight
 255,195,50		gallery highlight
 
-25,25,25		buttons off
+35,35,35		buttons off
 245,245,245		buttons over
 233,233,233		buttons active
 
@@ -45,10 +45,10 @@
 223,223,223		seek bar
 223,223,223		volume bar
 28,28,28		seek bg
-19,19,19		volume bg
+23,23,23		volume bg
 50,50,50		scroll bar
 
-30,30,30		mode off
+40,40,40		mode off
 210,210,210		mode over
 190,190,190		mode on
 

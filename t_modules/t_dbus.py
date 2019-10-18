@@ -207,7 +207,6 @@ class Gnome:
                             'CanPause': True,
                             'CanSeek': True,
                             'CanControl': True
-
                         }
 
                     def get_loop_status(self):
