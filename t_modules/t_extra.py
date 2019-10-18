@@ -263,6 +263,8 @@ class ColourGenCache:
         return colour
 
 
+
+
 def folder_file_scan(path, extensions):
 
     match = 0

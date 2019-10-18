@@ -51,12 +51,12 @@
 
   <releases>
 
-    <release version="4.8.1" date="2019-10-01">
+    <release version="4.8.2" date="2019-10-17">
       <description>
         <ul>
-          <li>Improved search for diacritics</li>
-          <li>Improved compatibility with KDE Plasma</li>
-          <li>Various other UI tweaks and bug fixes</li>
+          <li>Added option for centered text in gallery view</li>
+          <li>Added empty queue peak when dragging tracks to side panel</li>
+          <li>Various other tweaks and bug fixes</li>
         </ul>
       </description>
     </release>

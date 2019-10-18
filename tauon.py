@@ -928,7 +928,7 @@ class Prefs:    # Used to hold any kind of settings
         self.center_gallery_text = False
 
         self.tracklist_y_text_offset = 0
-        self.theme_name = "Astro"
+        self.theme_name = "Sky"
 
 prefs = Prefs()
 
@@ -15184,6 +15184,7 @@ def switch_showcase(index=-1):
     if gui.combo_mode:
         toggle_combo_view()
     toggle_combo_view(showcase=True)
+    input.mouse_click = False
 
 def toggle_library_mode():
     if gui.set_mode:
@@ -26762,9 +26763,8 @@ class ViewBox:
         #vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
         border_colour = colours.grey(30)
-        if not colours.lm:
-
-            ddt.rect((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), border_colour, True)
+        #if not colours.lm:
+        ddt.rect((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), border_colour, True)
         ddt.rect(vr, colours.menu_background, True)
 
         x = x + 7 * gui.scale
@@ -26775,7 +26775,7 @@ class ViewBox:
         #low = (0, .15, 0)
         low = (0, .40, 0)
         if colours.lm:
-            low = (0, .85, 0)
+            low = (0, 0.5, 0)
 
         # ----
 
@@ -26816,20 +26816,20 @@ class ViewBox:
 
         # ---
 
-        y += 50 * gui.scale
+        y += 45 * gui.scale
 
         high = (.7, .6, .75)
         if colours.lm:
             #high = (.7, .75, .75)
             high = (.0, .25, .0)
 
-        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", False, low=low, high=high)
+        test = self.button(x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour, "Showcase + Lyrics", low=low, high=high)
         if test is not None:
             func = test
 
         # --
 
-        y += 40 * gui.scale
+        y += 45 * gui.scale
 
         high = (.14, .6, .75)
         if colours.lm:
@@ -30131,7 +30131,7 @@ while pctl.running:
 
                                     if line2 == "":
 
-                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
                                                  line,
                                                  line1_colour,
                                                  310,
@@ -30139,14 +30139,14 @@ while pctl.running:
                                                  )
                                     else:
 
-                                        ddt.text((x, y + album_mode_art_size + 7 * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + 7 * gui.scale, text_align),
                                                  line2,
                                                  line2_colour,
                                                  311,
                                                  album_mode_art_size - 18 * gui.scale,
                                                  )
 
-                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale),
+                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
                                                  line,
                                                  line1_colour,
                                                  10,
