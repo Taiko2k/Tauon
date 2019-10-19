@@ -48,8 +48,6 @@ Installation is avaliable by Flatpak.
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 For **Arch Linux** based distros, you can install via the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
-
-    trizen -S tauon-music-box
 ___
 
 For manual and further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
