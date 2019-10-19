@@ -5188,7 +5188,7 @@ class PlexService:
         self.connected = True
 
     def resolve_stream(self, location):
-
+        print("Get plex stream")
         if not self.connected:
             self.connect()
 
@@ -5199,7 +5199,9 @@ class PlexService:
 
         if not self.connected:
             self.connect()
-        return self.resource.url(location, True)
+        if self.connected:
+            return self.resource.url(location, True)
+        return None
 
     def get_albums(self):
 
@@ -5265,7 +5267,9 @@ plex = PlexService()
 def get_network_thumbnail_url(track_object):
 
     if track_object.file_ext == "PLEX":
-        return plex.resolve_thumbnail(track_object.art_url_key)
+        url = plex.resolve_thumbnail(track_object.art_url_key)
+        assert url is not None
+        return url
     return None
 
 
@@ -6814,7 +6818,8 @@ class GallClass:
 
                     elif source[0] == 2:
                         try:
-                            response = urllib.request.urlopen(get_network_thumbnail_url(key[0]))
+                            url = get_network_thumbnail_url(key[0])
+                            response = urllib.request.urlopen(url)
                             source_image = response
                         except:
                             print("IMAGE NETWORK LOAD ERROR")
@@ -7026,6 +7031,7 @@ class ThumbTracks:
 
         elif source[0] == 2:
             try:
+
                 response = urllib.request.urlopen(get_network_thumbnail_url(track))
                 source_image = response
             except:
@@ -11834,6 +11840,7 @@ def gen_sort_album(index):
 tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Loved"), 0, gen_love, pass_ref=True)
 tab_menu.add_to_sub(_("Has Comment"), 0, gen_comment, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Has Comment"), 0, gen_comment, pass_ref=True)
 tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Has Lyrics"), 0, gen_lyrics, pass_ref=True)
 
