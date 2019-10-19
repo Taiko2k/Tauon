@@ -6,6 +6,7 @@ v4.8.2
  - Added gallery option "Center text"
  - Added queue panel peak behavior when empty
  - Added hold ctrl to add album to queue ungrouped
+ - Added download progress to seek bar for network tracks (PLEX)
  - Tweaked gallery text colour
  - Tweaked drag side panel to full size art to snap in place
  - Tweaked tracklist to show filename when title missing
@@ -16,7 +17,7 @@ v4.8.2
  - Improved full art lock size reliability
  - Improved queue "Add album after current" to add after all playing album tracks
  - Improved theme setting retention, now added to config file
- - Improved handling of PLEX tracks
+ - Improved album art to avoid blocking when downloading from network (PLEX)
  - Fixed text input dropping letters while under load
  - Fixed side panel center mode text position with small window
  - Fixed showcase lyrics jumping position slightly when entering view

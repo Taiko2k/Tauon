@@ -51,11 +51,12 @@
 
   <releases>
 
-    <release version="4.8.2" date="2019-10-17">
+    <release version="4.8.2" date="2019-10-19">
       <description>
         <ul>
           <li>Added option for centered text in gallery view</li>
           <li>Added empty queue peak when dragging tracks to side panel</li>
+          <li>Improved PLEX streaming support</li>
           <li>Various other tweaks and bug fixes</li>
         </ul>
       </description>
