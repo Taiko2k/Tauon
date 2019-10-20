@@ -21430,8 +21430,11 @@ class MiniMode:
         h1 = h - y1
 
         # Draw background
-        ddt.rect((0, 0, w, h), colours.mini_mode_background, True)
-        ddt.text_background_colour = colours.mini_mode_background
+        bg = colours.mini_mode_background
+        #bg = [250, 250, 250, 255]
+
+        ddt.rect((0, 0, w, h), bg, True)
+        ddt.text_background_colour = bg
 
         detect_mouse_rect = (3, 3, w - 6, h - 6)
         fields.add(detect_mouse_rect)
@@ -21460,7 +21463,7 @@ class MiniMode:
         mouse_in_area = coll(control_hit_area)
         fields.add(control_hit_area)
 
-
+        ddt.rect((0, 0, w, w), (0, 0, 0, 45), True)
         if track is not None:
 
 
@@ -24287,10 +24290,14 @@ class ArtistList:
 
                 if 'artists' in track.misc:
                     artists = track.misc['artists']
-                elif prefs.artist_list_prefer_album_artist and track.album_artist:
-                    artists = [track.album_artist]
                 else:
-                    artists = [get_artist_strip_feat(track)]
+                    if prefs.artist_list_prefer_album_artist and track.album_artist:
+                        artists = track.album_artist
+                    else:
+                        artists = get_artist_strip_feat(track)
+
+                    artists = [x.strip() for x in artists.split(';')]
+
 
                 for artist in artists:
 
