@@ -43,12 +43,11 @@ Style your desktop with the available *mini-modes*
 
 ## Download and Install :dizzy:
 
-For __Arch Linux__ based distros, install is available from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
-
-For __Other Linux distributions__, a Flatpak package is available.
+Installation is avaliable by Flatpak.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
+For **Arch Linux** based distros, you can install via the [AUR](https://aur.archlinux.org/packages/tauon-music-box/).
 ___
 
 For manual and further documentation see the [wiki](https://github.com/Taiko2k/tauonmb/wiki/Basic-Use-Guide).
