@@ -3,7 +3,10 @@ Changelog-------------------------------------
 
 v4.8.3
 
+ - Improved artist list to handle separate artists by colon
+ - Tweaked mini mode background colour
  - Fixed add queue toast possibly changing on queue re-order
+ - Fixed track title not appearing in bottom panel if track had no metadata
 
 v4.8.2
 
