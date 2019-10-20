@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v4.8.3
+
+ - Fixed add queue toast possibly changing on queue re-order
+
 v4.8.2
 
  - Added gallery option "Center text"

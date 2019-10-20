@@ -1260,6 +1260,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.queue_toast_plural = False
         self.reload_theme = False
         self.theme_number = 0
+        self.toast_queue_object = None
 
 
 gui = GuiVar()
@@ -3135,16 +3136,21 @@ class PlayerCtl:
     def title_text(self):
 
         line = ""
-        if self.playing_state < 3 and pctl.playing_ready():
-            title = self.master_library[self.track_queue[self.queue_step]].title
-            artist = self.master_library[self.track_queue[self.queue_step]].artist
+        track = pctl.playing_object()
+        if self.playing_state < 3 and track:
+            title = track.title
+            artist = track.artist
 
-            if artist != "":
-                line += artist
-            if title != "":
-                if line != "":
-                    line += "  -  "
-                line += title
+            if not title:
+                line = track.filename
+            else:
+                if artist != "":
+                    line += artist
+                if title != "":
+                    if line != "":
+                        line += "  -  "
+                    line += title
+
         elif not gui.combo_mode:
             line = self.tag_meta
 
@@ -12618,6 +12624,8 @@ def queue_timer_set(plural=False):
     queue_add_timer.set()
     gui.frame_callback_list.append(TestTimer(2.51))
     gui.queue_toast_plural = plural
+    if pctl.force_queue:
+        gui.toast_queue_object = pctl.force_queue[-1]
 
 
 def split_queue_album(id):
@@ -16543,7 +16551,6 @@ def worker2():
                         temp_results[i][4] = years[item[1]]
 
                 temp_results[:] = [item for item in temp_results if item is not None]
-
                 search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
                 search_over.on = 0
@@ -32047,8 +32054,8 @@ while pctl.running:
         # Add to queue toast
         if pctl.force_queue: # and not (gui.lsp and not gui.artist_info_panel):
             t = queue_add_timer.get()
-            if t < 2.5:
-                track = pctl.g(pctl.force_queue[-1][0])
+            if t < 2.5 and gui.toast_queue_object:
+                track = pctl.g(gui.toast_queue_object[0])
 
                 ww = 0
                 if gui.lsp:
