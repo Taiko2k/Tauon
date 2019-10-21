@@ -36,7 +36,7 @@ import shutil
 
 
 
-n_version = "4.8.2"
+n_version = "5.0.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -929,6 +929,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.tracklist_y_text_offset = 0
         self.theme_name = "Sky"
+        self.left_panel_mode = "playlist"
 
 prefs = Prefs()
 
@@ -3275,7 +3276,7 @@ class PlayerCtl:
             else:
                 goto_album(playlist_selected)
 
-        if prefs.artist_list and gui.lsp and not quiet:
+        if prefs.left_panel_mode == "artist list" and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
 
         return 0
@@ -5983,7 +5984,6 @@ if system == "linux":
     ddt.prime_font(standard_font, 13, 319)
     ddt.prime_font(standard_font, 24, 330)
 
-
     standard_font = prefs.linux_font_bold
 
     ddt.prime_font(standard_font, 6, 209)
@@ -6000,6 +6000,8 @@ if system == "linux":
     ddt.prime_font(standard_font, 20, 220)
     ddt.prime_font(standard_font, 25, 228)
 
+    standard_font = "Nimbus Sans Narrow"
+    ddt.prime_font(standard_font, 11, 414)
 
 else:
     standard_font = "Meiryo"
@@ -9201,6 +9203,28 @@ repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
 lightning_menu = Menu(165)
+lsp_menu = Menu(135)
+
+
+def enable_artist_list():
+    prefs.left_panel_mode = "artist list"
+    gui.lsp = True
+    gui.update_layout()
+
+def enable_playlist_list():
+    prefs.left_panel_mode = "playlist"
+    gui.lsp = True
+    gui.update_layout()
+
+def enable_folder_list():
+    prefs.left_panel_mode = "folder view"
+    gui.lsp = True
+    gui.update_layout()
+
+
+lsp_menu.add(_("Playlists + Queue"), enable_playlist_list)
+lsp_menu.add(_("Artist List"), enable_artist_list)
+lsp_menu.add(_("Folder Tree"), enable_folder_list)
 
 
 class RenameTrackBox:
@@ -15747,7 +15771,7 @@ class SearchOverlay:
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
-                if gui.lsp and prefs.artist_list and 2 < mouse_position[0] < gui.lspw \
+                if gui.lsp and pprefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
                         and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                     artist_list_box.locate_artist_letter(input_text)
@@ -19995,7 +20019,8 @@ class TopPanel:
                 gui.update += 1
 
             if right_click:
-                prefs.artist_list ^= True
+                #prefs.artist_list ^= True
+                lsp_menu.activate(position=(20 * gui.scale, gui.panelY))
                 update_layout_do()
 
         colour = colours.corner_button #[230, 230, 230, 255]
@@ -20003,10 +20028,18 @@ class TopPanel:
         if gui.lsp:
             colour = colours.corner_button_active
 
-        if prefs.artist_list:
+
+        if prefs.left_panel_mode == "artist list":
             self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+        elif prefs.left_panel_mode == "folder view":
+            pass
         else:
             self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+
+        # if prefs.artist_list:
+        #     self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+        # else:
+        #     self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
         if playlist_box.drag:
             drag_mode = False
@@ -24686,6 +24719,144 @@ class ArtistList:
 artist_list_box = ArtistList()
 
 
+class TreeView:
+
+    def __init__(self):
+        self.tree = []  # Main tree data
+        self.rows = []  # For display (parsed from tree)
+
+        self.opens = []  # Folders clicks to show
+
+        self.playlist_id_on = ""
+        self.scroll_position = 0
+
+        # Recursive gen_rows vars
+        self.count = 0
+        self.depth = 0
+
+    def render(self, x, y, w, h):
+
+        if not self.tree or pctl.multi_playlist[pctl.active_playlist_viewing][6] != self.playlist_id_on:
+            self.gen_tree()
+            self.gen_rows()
+            self.playlist_id_on = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+        yy = y + 15
+        xx = x + 25
+
+        self.scroll_position += mouse_wheel * -1
+        if self.scroll_position < 0:
+            self.scroll_position = 0
+
+        max_w = w - 35
+        for i, item in enumerate(self.rows):
+
+            if i < self.scroll_position:
+                continue
+
+            if yy > y + h - 22:
+                break
+            inset = item[2] * 15
+
+            rect = (xx + inset, yy, max_w - inset, 21)
+            fields.add(rect)
+
+            text_colour = colours.grey(100)
+            target = item[1] + "/" + item[0]
+            if coll(rect):
+                if input.mouse_click:
+
+                    if target not in self.opens:
+                        self.opens.append(target)
+                    else:
+                        for s in reversed(range(len(self.opens))):
+                            if self.opens[s].startswith(target):
+                                del self.opens[s]
+
+                    if item[3]:
+                        for p, id in enumerate(default_playlist):
+                            if pctl.g(id).fullpath.startswith(target):
+                                pctl.show_current(select=True, index=id, no_switch=True, highlight=True)
+                                break
+
+                    self.gen_rows()
+                text_colour = colours.grey(190)
+
+            ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+
+            if item[3]:
+              ddt.rect((xx + inset - 9, yy + 7, 4, 4), [200, 100, 50, 255], True)
+            elif True:
+                if not coll(rect):
+                    text_colour = colours.grey(60)
+                if target in self.opens:
+                    ddt.text((xx + inset - 7, yy, 2), "-", text_colour, 19)
+                else:
+                    ddt.text((xx + inset - 7, yy, 2), "+", text_colour, 19)
+
+            yy += 22
+
+
+    def gen_row(self, tree_point, path):
+
+        for item in tree_point:
+            p = path + "/" + item[1]
+            self.count += 1
+
+            if len(item[0]) != 1:
+
+                if path in self.opens or self.depth == 0:
+                    self.rows.append([item[1], path, self.depth, len(item[0]) == 0])
+                    # Folder name, folder path, depth, is bottom
+
+                self.depth += 1
+
+            self.gen_row(item[0], p)
+            if len(item[0]) != 1:
+                self.depth -= 1
+
+    def gen_rows(self):
+
+        self.count = 0
+        self.depth = 0
+        self.rows.clear()
+
+        self.gen_row(self.tree, "")
+
+    def gen_tree(self):
+
+        # Generate list of all unique folder paths
+        paths = []
+        for p in default_playlist:
+            path = pctl.g(p).parent_folder_path
+            if path not in paths:
+                paths.append(path)
+
+        # Genterate tree from folder paths
+        tree = []
+        news = []
+        for path in paths:
+            split_path = path.split("/")
+            on = tree
+            for level in split_path:
+                if not level:
+                    continue
+                # Find if level already exists
+                for sub_level in on:
+                    if sub_level[1] == level:
+                        on = sub_level[0]
+                        break
+                else:  # Create new level
+                    new = [[], level]
+                    news.append(new)
+                    on.append(new)
+                    on = new[0]
+
+        self.tree = tree
+
+
+tree_view_box = TreeView()
+
 # class QuickView:
 #
 #     def __init__(self):
@@ -27568,12 +27739,15 @@ def update_layout_do():
         if pl_width < 700 * gui.scale:
             gui.lspw = 150 * gui.scale
 
-        if prefs.artist_list:
+        if prefs.left_panel_mode == "artist list":
             gui.compact_artist_list = True
             gui.lspw = 75 * gui.scale
     else:
         gui.lspw = 220 * gui.scale
         gui.compact_artist_list = False
+
+    if prefs.left_panel_mode == "folder view":
+        gui.lspw = 240 * gui.scale
     # -----
 
     # Set bg art strength according to setting ----
@@ -28931,6 +29105,57 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
+
+            # # Generate list of all unique folder paths
+            # paths = []
+            # for p in default_playlist:
+            #     path = pctl.g(p).parent_folder_path
+            #     if path not in paths:
+            #         paths.append(path)
+            #
+            # # Genterate tree from folder paths
+            # tree = []
+            # news = []
+            # for path in paths:
+            #     split_path = path.split("/")
+            #     on = tree
+            #     for level in split_path:
+            #         if not level:
+            #             continue
+            #         # Find if level already exists
+            #         for sub_level in on:
+            #             if sub_level[1] == level:
+            #                 on = sub_level[0]
+            #                 break
+            #         else:  # Create new level
+            #             new = [[], level]
+            #             news.append(new)
+            #             on.append(new)
+            #             on = new[0]
+
+            # text = ""
+            # count = 0
+            # depth = 0
+            # def geta(tree_point, path):
+            #     global text
+            #     global count
+            #     global depth
+            #
+            #     for item in tree_point:
+            #         p = path + "/" + item[1]
+            #         count += 1
+            #
+            #         if len(item[0]) != 1:
+            #             text += ("--" * depth) + item[1] + "\n"
+            #             depth += 1
+            #         geta(item[0], p)
+            #         if len(item[0]) != 1:
+            #             depth -= 1
+            #
+            # geta(tree, "")
+            # print(text)
+
+
 
 
         if gui.mode < 3:
@@ -30859,9 +31084,10 @@ while pctl.running:
                 panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
                 #fields.add(panel_rect)
 
-                if prefs.artist_list:
+                if prefs.left_panel_mode == "folder view":
+                    tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
+                elif prefs.left_panel_mode == "artist list":
                     artist_list_box.render(*panel_rect)
-
                 else:
 
                     preview_queue = False
