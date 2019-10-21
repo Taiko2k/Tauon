@@ -6002,7 +6002,7 @@ if system == "linux":
     ddt.prime_font(standard_font, 20, 220)
     ddt.prime_font(standard_font, 25, 228)
 
-    standard_font = "Nimbus Sans Narrow"
+    standard_font = "Noto Sans, ExtraCondensed"
     ddt.prime_font(standard_font, 11, 414)
 
 else:
@@ -24725,8 +24725,10 @@ class TreeView:
             self.rows_id = pl_id
 
 
-        yy = y + 15
-        xx = x + 25
+        yy = y + 11
+        xx = x + 22
+
+        spacing = 21
 
         max_scroll = len(self.rows) - (h // 22)
 
@@ -24747,11 +24749,11 @@ class TreeView:
             if i < self.scroll_position:
                 continue
 
-            if yy > y + h - 22:
+            if yy > y + h - spacing:
                 break
             inset = item[2] * 10
 
-            rect = (xx + inset - 15, yy, max_w - inset + 15, 21)
+            rect = (xx + inset - 15, yy, max_w - inset + 15, spacing - 1)
             fields.add(rect)
 
             text_colour = colours.grey(100)
@@ -24813,7 +24815,7 @@ class TreeView:
                 else:
                     ddt.text((xx + inset - 7, yy + 1, 2), "+", text_colour, 19)
 
-            yy += 22
+            yy += spacing
 
 
     def gen_row(self, tree_point, path):
