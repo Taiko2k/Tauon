@@ -1,8 +1,11 @@
 
 Changelog-------------------------------------
 
-v4.8.3
+v5.0.0
+ todo
+   - Fix side panel lyric switch weirdness
 
+ - Added folder tree view to left side panel
  - Improved artist list to handle separate artists by colon
  - Tweaked mini mode background colour
  - Fixed add queue toast possibly changing on queue re-order
