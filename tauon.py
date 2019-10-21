@@ -2075,6 +2075,8 @@ try:
         gui.gallery_positions = save[132]
     if save[133] is not None:
         prefs.chart_bg = save[133]
+    if save[134] is not None:
+        prefs.left_panel_mode = save[134]
 
     state_file.close()
     del save
@@ -9224,7 +9226,7 @@ def enable_folder_list():
 
 lsp_menu.add(_("Playlists + Queue"), enable_playlist_list)
 lsp_menu.add(_("Artist List"), enable_artist_list)
-lsp_menu.add(_("Folder Tree"), enable_folder_list)
+lsp_menu.add(_("Folder Navigator"), enable_folder_list)
 
 
 class RenameTrackBox:
@@ -10792,6 +10794,7 @@ def export_xspf(pl):
 def reload():
     if album_mode:
         reload_albums(quiet=True)
+    tree_view_box.clear_all()
     # elif gui.combo_mode:
     #     reload_albums(quiet=True)
     #     combo_pl_render.prep()
@@ -18326,7 +18329,6 @@ class Over:
         self.item_x_offset = round(25 * gui.scale)
 
         self.current_path = os.path.expanduser('~')
-        self.ext_colours = {}
         self.view_offset = 0
         self.ext_ratio = {}
         self.last_db_size = -1
@@ -19949,6 +19951,7 @@ class TopPanel:
         self.restore_button = asset_loader('restore.png', True)
         self.playlist_icon = asset_loader('playlist.png', True)
         self.artist_list_icon = asset_loader('artist-list.png', True)
+        self.folder_list_icon = asset_loader('folder-list.png', True)
         self.dl_button = asset_loader('dl.png', True)
 
         self.adds = []
@@ -20032,7 +20035,7 @@ class TopPanel:
         if prefs.left_panel_mode == "artist list":
             self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
         elif prefs.left_panel_mode == "folder view":
-            pass
+            self.folder_list_icon.render(14 * gui.scale, yy + 8 * gui.scale, colour)
         else:
             self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
@@ -23513,7 +23516,7 @@ artist_info_scroll = ScrollBox()
 device_scroll = ScrollBox()
 artist_list_scroll = ScrollBox()
 gallery_scroll = ScrollBox()
-
+tree_view_scroll = ScrollBox()
 
 
 class RenamePlaylistBox:
@@ -24244,58 +24247,6 @@ class ArtistList:
 
             self.to_fetch = ""
 
-            #self.to_fetch_mbid_a = ""
-
-            # if get_lfm_wait_timer.get() < 0.3:
-            #     return
-            #
-            # artist = self.to_fetch
-            # filename = artist + '-lfm.png'
-            # filename2 = artist + '-lfm.txt'
-            # filepath = os.path.join(cache_directory, filename)
-            # filepath2 = os.path.join(cache_directory, filename2)
-            # try:
-            #     data = lastfm.artist_info(artist)
-            #     get_lfm_wait_timer.set()
-            #     if data[0] is not False:
-            #         cover_link = data[2]
-            #         text = data[1]
-            #
-            #         if not os.path.exists(filepath2):
-            #             f = open(filepath2, 'w', encoding='utf-8')
-            #             f.write(text)
-            #             f.close()
-            #
-            #         if cover_link and 'http' in cover_link:
-            #
-            #             print("Fetching artist image... " + artist)
-            #             response = urllib.request.urlopen(cover_link)
-            #             info = response.info()
-            #
-            #             t = io.BytesIO()
-            #             t.seek(0)
-            #             t.write(response.read())
-            #             l = 0
-            #             t.seek(0, 2)
-            #             l = t.tell()
-            #             t.seek(0)
-            #
-            #             if info.get_content_maintype() == 'image' and l > 1000:
-            #                 f = open(filepath, 'wb')
-            #                 f.write(t.read())
-            #                 f.close()
-            # except:
-            #     print("Fetch artist image failed")
-            #
-            # if os.path.exists(filepath):
-            #     gui.update += 1
-            # else:
-            #     if artist not in prefs.failed_artists:
-            #         print("Failed featching: " + artist)
-            #         prefs.failed_artists.append(artist)
-            #
-            # self.to_fetch = ""
-
     def prep(self):
 
         #self.current_artists.clear()
@@ -24722,33 +24673,75 @@ artist_list_box = ArtistList()
 class TreeView:
 
     def __init__(self):
-        self.tree = []  # Main tree data
+
+        self.trees = {}  # Per playlist tree
         self.rows = []  # For display (parsed from tree)
+        self.rows_id = ""
 
         self.opens = []  # Folders clicks to show
 
-        self.playlist_id_on = ""
         self.scroll_position = 0
 
         # Recursive gen_rows vars
         self.count = 0
         self.depth = 0
 
+        self.background_processing = False
+        self.d_click_timer = Timer(100)
+        self.d_click_id = ""
+
+    def clear_all(self):
+        self.rows_id = ""
+        self.trees.clear()
+
+
     def render(self, x, y, w, h):
 
-        if not self.tree or pctl.multi_playlist[pctl.active_playlist_viewing][6] != self.playlist_id_on:
-            self.gen_tree()
-            self.gen_rows()
+        pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        tree = self.trees.get(pl_id)
+
+        if tree is None:
+            if not self.background_processing:
+                self.background_processing = True
+                shoot_dl = threading.Thread(target=self.gen_tree, args=[pl_id])
+                shoot_dl.daemon = True
+                shoot_dl.start()
+
             self.playlist_id_on = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+
+        area = (x, y, w, h)
+        ddt.rect(area, colours.side_panel_background, True)
+        ddt.text_background_colour = colours.side_panel_background
+
+        if self.background_processing:
+            ddt.text((x + w // 2, y + (h // 7), 2), _("Loading..."), alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
+            return
+
+        if not tree:
+            return
+        if self.rows_id != pl_id:
+            self.gen_rows(tree)
+            self.rows_id = pl_id
+
 
         yy = y + 15
         xx = x + 25
 
-        self.scroll_position += mouse_wheel * -1
-        if self.scroll_position < 0:
-            self.scroll_position = 0
+        max_scroll = len(self.rows) - (h // 22)
 
-        max_w = w - 35
+        if mouse_wheel and coll(area):
+            self.scroll_position += mouse_wheel * -2
+            if self.scroll_position < 0:
+                self.scroll_position = 0
+            if self.scroll_position > max_scroll:
+                self.scroll_position = max_scroll
+
+        self.scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, self.scroll_position,
+                                                       max_scroll, r_click=right_click, jump_distance=40)
+
+        playing_track = pctl.playing_object()
+        max_w = w - 45
         for i, item in enumerate(self.rows):
 
             if i < self.scroll_position:
@@ -24756,14 +24749,21 @@ class TreeView:
 
             if yy > y + h - 22:
                 break
-            inset = item[2] * 15
+            inset = item[2] * 10
 
-            rect = (xx + inset, yy, max_w - inset, 21)
+            rect = (xx + inset - 15, yy, max_w - inset + 15, 21)
             fields.add(rect)
 
             text_colour = colours.grey(100)
+            box_colour = [200, 100, 50, 255]
             target = item[1] + "/" + item[0]
-            if coll(rect):
+
+            if playing_track and playing_track.parent_folder_name == item[0]:
+                text_colour = colours.grey(170)
+                box_colour = [140, 220, 20, 255]
+
+            mouse_in = coll(rect) and is_level_zero()
+            if mouse_in and not tree_view_scroll.held:
                 if input.mouse_click:
 
                     if target not in self.opens:
@@ -24774,25 +24774,44 @@ class TreeView:
                                 del self.opens[s]
 
                     if item[3]:
-                        for p, id in enumerate(default_playlist):
-                            if pctl.g(id).fullpath.startswith(target):
-                                pctl.show_current(select=True, index=id, no_switch=True, highlight=True)
-                                break
 
-                    self.gen_rows()
-                text_colour = colours.grey(190)
+                        if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
+                            for p, id in enumerate(default_playlist):
+                                if pctl.g(id).fullpath.startswith(target):
+                                    pctl.show_current(select=True, index=id, no_switch=True, highlight=True)
+                                    break
+                            self.d_click_timer.set()
+                            self.d_click_id = target
+                        else:
+                            for p, id in enumerate(default_playlist):
+                                if pctl.g(id).fullpath.startswith(target):
+                                    pctl.jump(id)
+                                    break
+
+                    self.gen_rows(tree)
+                text_colour = colours.grey(230)
 
             ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
 
+
+            # for p, id in enumerate(default_playlist):
+            #     tr = pctl.g(id)
+            #     if tr.fullpath.startswith(target):
+            #         if tr.file_ext in format_colours:
+            #             box_colour = format_colours[tr.file_ext]
+            #             break
+
+
+
             if item[3]:
-              ddt.rect((xx + inset - 9, yy + 7, 4, 4), [200, 100, 50, 255], True)
+              ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
             elif True:
-                if not coll(rect):
+                if not mouse_in or tree_view_scroll.held:
                     text_colour = colours.grey(60)
                 if target in self.opens:
-                    ddt.text((xx + inset - 7, yy, 2), "-", text_colour, 19)
+                    ddt.text((xx + inset - 7, yy + 1, 2), "-", text_colour, 19)
                 else:
-                    ddt.text((xx + inset - 7, yy, 2), "+", text_colour, 19)
+                    ddt.text((xx + inset - 7, yy + 1, 2), "+", text_colour, 19)
 
             yy += 22
 
@@ -24803,31 +24822,54 @@ class TreeView:
             p = path + "/" + item[1]
             self.count += 1
 
-            if len(item[0]) != 1:
+            # go = len(tree_point) > 1
+            # if not go:
+
+
+            if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
 
                 if path in self.opens or self.depth == 0:
-                    self.rows.append([item[1], path, self.depth, len(item[0]) == 0])
+
+                    if len(item[0]) == 1 and len(item[0][0][0]) == 1 and len(item[0][0][0][0][0]) == 0:
+                        self.rows.append([item[1] + "/" + item[0][0][1] + "/" + item[0][0][0][0][1], path, self.depth, True])
+                    elif len(item[0]) == 1 and len(item[0][0][0]) == 0:
+                        self.rows.append([item[1] + "/" + item[0][0][1], path, self.depth, True])
+                    else:
+                        self.rows.append([item[1], path, self.depth, len(item[0]) == 0])
                     # Folder name, folder path, depth, is bottom
 
                 self.depth += 1
 
             self.gen_row(item[0], p)
-            if len(item[0]) != 1:
+
+            #if len(item[0]) != 1:
+            if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
                 self.depth -= 1
 
-    def gen_rows(self):
+    def gen_rows(self, tree):
 
         self.count = 0
         self.depth = 0
         self.rows.clear()
 
-        self.gen_row(self.tree, "")
+        self.gen_row(tree, "")
 
-    def gen_tree(self):
+    def gen_tree(self, pl_id):
 
+        pl_no = id_to_pl(pl_id)
+        if pl_no is None:
+            return
+
+        playlist = pctl.multi_playlist[pl_no][2]
         # Generate list of all unique folder paths
         paths = []
-        for p in default_playlist:
+        z = 0
+        for p in playlist:
+
+            z += 1
+            if z == 5000:
+                time.sleep(0.001)  # Throttle thread
+                z = 0
             path = pctl.g(p).parent_folder_path
             if path not in paths:
                 paths.append(path)
@@ -24836,6 +24878,10 @@ class TreeView:
         tree = []
         news = []
         for path in paths:
+            z += 1
+            if z == 5000:
+                time.sleep(0.001)  # Throttle thread
+                z = 0
             split_path = path.split("/")
             on = tree
             for level in split_path:
@@ -24852,8 +24898,12 @@ class TreeView:
                     on.append(new)
                     on = new[0]
 
-        self.tree = tree
+        self.trees[pl_id] = tree
 
+
+        #self.gen_rows(tree)
+        self.background_processing = False
+        gui.update += 1
 
 tree_view_box = TreeView()
 
@@ -26639,10 +26689,11 @@ class Showcase:
                 if key_down_press and not (key_ctrl_down or key_shift_down or key_shiftr_down):
                     lyrics_ren.lyrics_position -= 35 * gui.scale
 
+                lyrics_ren.test_update(track)
                 tw, th = ddt.get_text_wh(lyrics_ren.text + "\n", 17,
                                          w, True)
 
-                lyrics_ren.test_update(track)
+
 
                 if lyrics_ren.lyrics_position < th * -1 + 100 * gui.scale:
                     lyrics_ren.lyrics_position = th * -1 + 100 * gui.scale
@@ -27747,7 +27798,7 @@ def update_layout_do():
         gui.compact_artist_list = False
 
     if prefs.left_panel_mode == "folder view":
-        gui.lspw = 240 * gui.scale
+        gui.lspw = 260 * gui.scale
     # -----
 
     # Set bg art strength according to setting ----
@@ -28263,7 +28314,7 @@ def save_state():
             after_scan,
             gui.gallery_positions,
             prefs.chart_bg,
-            ]
+            prefs.left_panel_mode]
 
 
 
