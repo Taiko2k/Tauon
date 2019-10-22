@@ -931,6 +931,8 @@ class Prefs:    # Used to hold any kind of settings
         self.theme_name = "Sky"
         self.left_panel_mode = "playlist"
 
+        self.folder_tree_codec_colours = False
+
 prefs = Prefs()
 
 
@@ -3169,7 +3171,7 @@ class PlayerCtl:
             return 0
 
 
-    def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None, no_switch=False):
+    def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None, no_switch=False, folder_list=True):
 
         # print("show------")
         # print(select)
@@ -3281,7 +3283,7 @@ class PlayerCtl:
         if prefs.left_panel_mode == "artist list" and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
 
-        if prefs.left_panel_mode == "folder view" and gui.lsp and not quiet:
+        if folder_list and prefs.left_panel_mode == "folder view" and gui.lsp and not quiet:
             tree_view_box.show_track(pctl.playing_object())
 
         return 0
@@ -24633,7 +24635,7 @@ class ArtistList:
             if default_playlist:
                 text = _("Artist threshold not met")
             if self.load:
-                text = _("Loading...")
+                text = _("Loading Artist List...")
                 if loading_in_progress or transcode_list or after_scan:
                     text = _("Busy...")
 
@@ -24692,6 +24694,8 @@ class TreeView:
         self.background_processing = False
         self.d_click_timer = Timer(100)
         self.d_click_id = ""
+
+        self.folder_colour_cache = {}
 
     def clear_all(self):
         self.rows_id = ""
@@ -24760,7 +24764,7 @@ class TreeView:
         ddt.text_background_colour = colours.side_panel_background
 
         if self.background_processing:
-            ddt.text((x + w // 2, y + (h // 7), 2), _("Loading..."), alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
+            ddt.text((x + w // 2, y + (h // 7), 2), _("Loading Folder Tree..."), alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
             return
 
         if not tree:
@@ -24793,6 +24797,10 @@ class TreeView:
         # Draw folder rows
         playing_track = pctl.playing_object()
         max_w = w - 45
+
+        light_mode = test_lumi(colours.side_panel_background) < 0.3
+        semilight_mode = test_lumi(colours.side_panel_background) < 0.8
+
         for i, item in enumerate(self.rows):
 
             if i < self.scroll_position:
@@ -24800,19 +24808,32 @@ class TreeView:
 
             if yy > y + h - spacing:
                 break
-            inset = item[2] * 10
 
+            target = item[1] + "/" + item[0]
+
+            inset = item[2] * 10
             rect = (xx + inset - 15, yy, max_w - inset + 15, spacing - 1)
             fields.add(rect)
 
-            text_colour = colours.grey(100)
+            text_colour = [255, 255, 255, 100]
             box_colour = [200, 100, 50, 255]
-            target = item[1] + "/" + item[0]
+
+            if semilight_mode:
+                text_colour = [255, 255, 255, 180]
+
+            if light_mode:
+                text_colour = [0, 0, 0, 200]
+
 
             # Set highlight colours if folder is playing
-            if playing_track and playing_track.parent_folder_name == item[0]:
-                text_colour = colours.grey(170)
+            if playing_track and (playing_track.parent_folder_name == item[0] or ("/" in item[0] and playing_track.parent_folder_path.endswith(item[0]))):
+                text_colour = [255, 255, 255, 170]
                 box_colour = [140, 220, 20, 255]
+                if semilight_mode:
+                    text_colour = (255, 255, 255, 255)
+                if light_mode:
+                    text_colour = [0, 0, 0, 255]
+
 
             mouse_in = coll(rect) and is_level_zero()
             if mouse_in and not tree_view_scroll.held:
@@ -24832,7 +24853,7 @@ class TreeView:
                         if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).fullpath.startswith(target):
-                                    pctl.show_current(select=True, index=id, no_switch=True, highlight=True)
+                                    pctl.show_current(select=True, index=id, no_switch=True, highlight=True, folder_list=False)
                                     break
                             self.d_click_timer.set()
                             self.d_click_id = target
@@ -24848,24 +24869,35 @@ class TreeView:
                     self.gen_rows(tree, opens)
 
                 # Highlight folder text on mouse over
-                text_colour = colours.grey(230)
+                text_colour = (255, 255, 255, 230)
+                if semilight_mode:
+                    text_colour = (255, 255, 255, 255)
+                if light_mode:
+                    text_colour = [0, 0, 0, 255]
 
             # Render folder name text
             ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
 
-            # for p, id in enumerate(default_playlist):
-            #     tr = pctl.g(id)
-            #     if tr.fullpath.startswith(target):
-            #         if tr.file_ext in format_colours:
-            #             box_colour = format_colours[tr.file_ext]
-            #             break
+            if prefs.folder_tree_codec_colours:
+                box_colour = self.folder_colour_cache.get(item[1] + "/" + item[0])
+                if box_colour is None:
+                    box_colour = (150, 150, 150 , 255)
 
             # Draw indicator box and +/- icons next to folder name
             if item[3]:
-              ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
+                if light_mode or semilight_mode:
+                    ddt.rect((xx + inset - 9 - 1, yy + 7 - 1, 4 + 2, 4 + 2), [0, 0, 0, 150], True)
+                ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
+
+
+
             elif True:
                 if not mouse_in or tree_view_scroll.held:
-                    text_colour = colours.grey(60)
+                    text_colour = [255, 255, 255, 50]
+                    if semilight_mode:
+                        text_colour = [255, 255, 255, 70]
+                    if light_mode:
+                        text_colour = [0, 0, 0, 70]
                 if target in opens:
                     ddt.text((xx + inset - 7, yy + 1, 2), "-", text_colour, 19)
                 else:
@@ -24928,9 +24960,11 @@ class TreeView:
             if z == 5000:
                 time.sleep(0.001)  # Throttle thread
                 z = 0
-            path = pctl.g(p).parent_folder_path
+            track = pctl.g(p)
+            path = track.parent_folder_path
             if path not in paths:
                 paths.append(path)
+                self.folder_colour_cache[path] = format_colours.get(track.file_ext)
 
         # Genterate tree from folder paths
         tree = []
