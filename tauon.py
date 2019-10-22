@@ -9211,6 +9211,8 @@ shuffle_menu = Menu(120)
 artist_list_menu = Menu(150)
 lightning_menu = Menu(165)
 lsp_menu = Menu(135)
+folder_tree_menu = Menu(165, show_icons=True)
+folder_tree_stem_menu = Menu(140)
 
 
 def enable_artist_list():
@@ -9586,6 +9588,15 @@ def open_folder(index):
 def tag_to_new_playlist(tag_item):
     path_stem_to_playlist(tag_item.path, tag_item.name)
 
+def folder_to_new_playlist_by_track_id(track_id):
+    track = pctl.g(track_id)
+    path_stem_to_playlist(track.parent_folder_path, track.parent_folder_name)
+
+def stem_to_new_playlist(path):
+    path_stem_to_playlist(path, os.path.basename(path))
+
+
+
 move_jobs = []
 move_in_progress = False
 
@@ -9685,8 +9696,10 @@ def move_playling_folder_to_tag(tag_item):
                       track.parent_folder_name, load_order))
 
 
-lightning_menu.add(_("Filter to new playlist"), tag_to_new_playlist, pass_ref=True)
-lightning_menu.add(_("Move playing folder here"), move_playling_folder_to_tag, pass_ref=True)
+lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True)
+folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True)
+folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True)
+lightning_menu.add(_("Move Playing Folder Here"), move_playling_folder_to_tag, pass_ref=True)
 
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
@@ -10986,7 +10999,7 @@ def delete_playlist(index):
         pctl.active_playlist_playing = pctl.active_playlist_viewing
         pctl.playlist_playing_position = -1
 
-    reload()
+    #reload()
     test_show_add_home_music()
 
     # Remove any old gallery positions
@@ -13552,6 +13565,7 @@ folder_menu = Menu(190, show_icons=True)
 folder_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
+folder_tree_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 # folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(_("↳ After Current Album"), add_album_to_queue_fc, pass_ref=True)
@@ -13559,6 +13573,7 @@ folder_menu.add(_("↳ After Current Album"), add_album_to_queue_fc, pass_ref=Tr
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
 folder_menu.add(_("Rename Tracks…"), rename_track_box.activate, rename_tracks_deco, pass_ref=True, icon=rename_tracks_icon)
+folder_tree_menu.add(_("Rename Tracks…"), rename_track_box.activate, pass_ref=True, icon=rename_tracks_icon)
 
 folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
                    icon=edit_icon, render_func=edit_deco)
@@ -24695,6 +24710,7 @@ class TreeView:
         self.d_click_timer = Timer(100)
         self.d_click_id = ""
 
+        self.menu_selected = ""
         self.folder_colour_cache = {}
 
     def clear_all(self):
@@ -24801,6 +24817,8 @@ class TreeView:
         light_mode = test_lumi(colours.side_panel_background) < 0.3
         semilight_mode = test_lumi(colours.side_panel_background) < 0.8
 
+        focused = is_level_zero()
+
         for i, item in enumerate(self.rows):
 
             if i < self.scroll_position:
@@ -24824,6 +24842,14 @@ class TreeView:
             if light_mode:
                 text_colour = [0, 0, 0, 200]
 
+            full_folder_path = item[1] + "/" + item[0]
+
+            if full_folder_path == self.menu_selected and (folder_tree_menu.active or folder_tree_stem_menu.active):
+                text_colour = [255, 255, 255, 170]
+                if semilight_mode:
+                    text_colour = (255, 255, 255, 255)
+                if light_mode:
+                    text_colour = [0, 0, 0, 255]
 
             # Set highlight colours if folder is playing
             if playing_track and (playing_track.parent_folder_name == item[0] or ("/" in item[0] and playing_track.parent_folder_path.endswith(item[0]))):
@@ -24835,10 +24861,31 @@ class TreeView:
                     text_colour = [0, 0, 0, 255]
 
 
-            mouse_in = coll(rect) and is_level_zero()
+
+
+            if right_click:
+                mouse_in = coll(rect) and is_level_zero(False)
+            else:
+                mouse_in = coll(rect) and focused
+
             if mouse_in and not tree_view_scroll.held:
 
-                if input.mouse_click:
+                if middle_click:
+                    stem_to_new_playlist(full_folder_path)
+
+                elif right_click:
+
+                    if item[3]:
+                        for p, id in enumerate(default_playlist):
+                            if pctl.g(id).fullpath.startswith(target):
+                                folder_tree_menu.activate(in_reference=id)
+                                self.menu_selected = full_folder_path
+                                break
+                    else:
+                        folder_tree_stem_menu.activate(in_reference=full_folder_path)
+                        self.menu_selected = full_folder_path
+
+                elif input.mouse_click:
                     # Click tree level folder to open/close branch
                     if target not in opens:
                         opens.append(target)
@@ -24879,7 +24926,7 @@ class TreeView:
             ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
 
             if prefs.folder_tree_codec_colours:
-                box_colour = self.folder_colour_cache.get(item[1] + "/" + item[0])
+                box_colour = self.folder_colour_cache.get(full_folder_path)
                 if box_colour is None:
                     box_colour = (150, 150, 150 , 255)
 
@@ -24912,28 +24959,29 @@ class TreeView:
             p = path + "/" + item[1]
             self.count += 1
 
-            # go = len(tree_point) > 1
-            # if not go:
+            if len(tree_point) > 1:  # Ignore levels that are only a single folder wide
 
+                if path in opens or self.depth == 0:  # Only show if parent stem is open, but always show the root displayed folders
 
-            if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
-
-                if path in opens or self.depth == 0:
-
+                    # If there is a single base folder in subfolder, combine the path and show it in upper level
                     if len(item[0]) == 1 and len(item[0][0][0]) == 1 and len(item[0][0][0][0][0]) == 0:
                         self.rows.append([item[1] + "/" + item[0][0][1] + "/" + item[0][0][0][0][1], path, self.depth, True])
                     elif len(item[0]) == 1 and len(item[0][0][0]) == 0:
                         self.rows.append([item[1] + "/" + item[0][0][1], path, self.depth, True])
+
+                    # Add normal base folder type
                     else:
-                        self.rows.append([item[1], path, self.depth, len(item[0]) == 0])
-                    # Folder name, folder path, depth, is bottom
+                        self.rows.append([item[1], path, self.depth, len(item[0]) == 0])  # Folder name, folder path, depth, is bottom
+
+                    # If folder is open and has only one subfolder, mark that subfolder as open
+                    if len(item[0]) == 1 and p in opens:
+                        opens.append(p + "/" + item[0][0][1])
 
                 self.depth += 1
 
             self.gen_row(item[0], p, opens)
 
-            #if len(item[0]) != 1:
-            if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
+            if len(tree_point) > 1:
                 self.depth -= 1
 
     def gen_rows(self, tree, opens):
