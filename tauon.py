@@ -9212,7 +9212,7 @@ artist_list_menu = Menu(150)
 lightning_menu = Menu(165)
 lsp_menu = Menu(135)
 folder_tree_menu = Menu(165, show_icons=True)
-folder_tree_stem_menu = Menu(140)
+folder_tree_stem_menu = Menu(165, show_icons=True)
 
 
 def enable_artist_list():
@@ -9556,6 +9556,9 @@ def show_in_playlist():
     pctl.render_playlist()
 
 
+filter_icon = MenuIcon(asset_loader('filter.png', True))
+filter_icon.colour = [43, 213, 255, 255]
+filter_icon.xoff = 1
 
 folder_icon = MenuIcon(asset_loader('folder.png', True))
 info_icon = MenuIcon(asset_loader('info.png', True))
@@ -9565,6 +9568,19 @@ info_icon.colour = [61, 247, 163, 255]
 
 power_bar_icon = asset_loader('power.png', True)
 
+def open_folder_stem(path):
+
+    if system == 'windows':
+        line = r'explorer /select,"%s"' % (
+            path.replace("/", "\\"))
+        subprocess.Popen(line)
+    else:
+        line = path
+        line += "/"
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
 
 def open_folder(index):
 
@@ -9583,6 +9599,9 @@ def open_folder(index):
             subprocess.Popen(['open', line])
         else:
             subprocess.Popen(['xdg-open', line])
+
+
+
 
 
 def tag_to_new_playlist(tag_item):
@@ -9696,12 +9715,18 @@ def move_playling_folder_to_tag(tag_item):
                       track.parent_folder_name, load_order))
 
 
-lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True)
-folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True)
-folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True)
+folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
+folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
+
+lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon)
+folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
+folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon)
 lightning_menu.add(_("Move Playing Folder Here"), move_playling_folder_to_tag, pass_ref=True)
 
+
+
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
+
 gallery_menu.add(_("Show in Playlist"), show_in_playlist)
 
 
@@ -24700,7 +24725,7 @@ class TreeView:
 
         self.opens = {}  # Folders clicks to show per playlist
 
-        self.scroll_position = 0
+        self.scroll_positions = {}
 
         # Recursive gen_rows vars
         self.count = 0
@@ -24712,6 +24737,8 @@ class TreeView:
 
         self.menu_selected = ""
         self.folder_colour_cache = {}
+
+        self.force_opens = []
 
     def clear_all(self):
         self.rows_id = ""
@@ -24733,6 +24760,10 @@ class TreeView:
         if not tree:
             return
 
+        scroll_position = self.scroll_positions.get(pl_id)
+        if scroll_position is None:
+            scroll_position = 0
+
         # Clear all opened folders
         opens.clear()
 
@@ -24749,10 +24780,12 @@ class TreeView:
         # Locate and set scroll position to playing folder
         for i, row in enumerate(self.rows):
             if row[1] + "/" + row[0] == track.parent_folder_path:
-                self.scroll_position = i - 4
-                if self.scroll_position < 0:
-                    self.scroll_position = 0
+                scroll_position = i - 4
+                if scroll_position < 0:
+                    scroll_position = 0
                 break
+
+        self.scroll_positions[pl_id] = scroll_position
 
     def render(self, x, y, w, h):
 
@@ -24773,6 +24806,10 @@ class TreeView:
         if opens is None:
             opens = []
             self.opens[pl_id] = opens
+
+        scroll_position = self.scroll_positions.get(pl_id)
+        if scroll_position is None:
+            scroll_position = 0
 
         area = (x, y, w, h)
         fields.add(area)
@@ -24799,16 +24836,18 @@ class TreeView:
 
         # Mouse wheel scrolling
         if mouse_in and mouse_wheel:
-                self.scroll_position += mouse_wheel * -2
-                if self.scroll_position < 0:
-                    self.scroll_position = 0
-                if self.scroll_position > max_scroll:
-                    self.scroll_position = max_scroll
+                scroll_position += mouse_wheel * -2
+                if scroll_position < 0:
+                    scroll_position = 0
+                if scroll_position > max_scroll:
+                    scroll_position = max_scroll
 
         # Draw scroll bar
         if mouse_in or tree_view_scroll.held:
-            self.scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, self.scroll_position,
+            scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, scroll_position,
                                                            max_scroll, r_click=right_click, jump_distance=40)
+
+        self.scroll_positions[pl_id] = scroll_position
 
         # Draw folder rows
         playing_track = pctl.playing_object()
@@ -24821,7 +24860,7 @@ class TreeView:
 
         for i, item in enumerate(self.rows):
 
-            if i < self.scroll_position:
+            if i < scroll_position:
                 continue
 
             if yy > y + h - spacing:
@@ -24852,13 +24891,14 @@ class TreeView:
                     text_colour = [0, 0, 0, 255]
 
             # Set highlight colours if folder is playing
-            if playing_track and (playing_track.parent_folder_name == item[0] or ("/" in item[0] and playing_track.parent_folder_path.endswith(item[0]))):
-                text_colour = [255, 255, 255, 170]
-                box_colour = [140, 220, 20, 255]
-                if semilight_mode:
-                    text_colour = (255, 255, 255, 255)
-                if light_mode:
-                    text_colour = [0, 0, 0, 255]
+            if 0 < pctl.playing_state < 3 and playing_track:
+                if playing_track.parent_folder_path == full_folder_path or full_folder_path + "/" in playing_track.fullpath:
+                    text_colour = [255, 255, 255, 170]
+                    box_colour = [140, 220, 20, 255]
+                    if semilight_mode:
+                        text_colour = (255, 255, 255, 255)
+                    if light_mode:
+                        text_colour = [0, 0, 0, 255]
 
 
 
@@ -24936,8 +24976,6 @@ class TreeView:
                     ddt.rect((xx + inset - 9 - 1, yy + 7 - 1, 4 + 2, 4 + 2), [0, 0, 0, 150], True)
                 ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
 
-
-
             elif True:
                 if not mouse_in or tree_view_scroll.held:
                     text_colour = [255, 255, 255, 50]
@@ -24959,9 +24997,9 @@ class TreeView:
             p = path + "/" + item[1]
             self.count += 1
 
-            if len(tree_point) > 1:  # Ignore levels that are only a single folder wide
+            if len(tree_point) > 1 or path in self.force_opens:  # Ignore levels that are only a single folder wide
 
-                if path in opens or self.depth == 0:  # Only show if parent stem is open, but always show the root displayed folders
+                if path in opens or self.depth == 0 or path in self.force_opens:  # Only show if parent stem is open, but always show the root displayed folders
 
                     # If there is a single base folder in subfolder, combine the path and show it in upper level
                     if len(item[0]) == 1 and len(item[0][0][0]) == 1 and len(item[0][0][0][0][0]) == 0:
@@ -24974,8 +25012,8 @@ class TreeView:
                         self.rows.append([item[1], path, self.depth, len(item[0]) == 0])  # Folder name, folder path, depth, is bottom
 
                     # If folder is open and has only one subfolder, mark that subfolder as open
-                    if len(item[0]) == 1 and p in opens:
-                        opens.append(p + "/" + item[0][0][1])
+                    if len(item[0]) == 1 and (p in opens or p in self.force_opens):
+                        self.force_opens.append(p + "/" + item[0][0][1])
 
                 self.depth += 1
 
@@ -24989,6 +25027,7 @@ class TreeView:
         self.count = 0
         self.depth = 0
         self.rows.clear()
+        self.force_opens.clear()
 
         self.gen_row(tree, "", opens)
 
