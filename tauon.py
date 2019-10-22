@@ -3281,6 +3281,9 @@ class PlayerCtl:
         if prefs.left_panel_mode == "artist list" and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
 
+        if prefs.left_panel_mode == "folder view" and gui.lsp and not quiet:
+            tree_view_box.show_track(pctl.playing_object())
+
         return 0
 
     def set_volume(self, notify=True):
@@ -15774,7 +15777,7 @@ class SearchOverlay:
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
-                if gui.lsp and pprefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
+                if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
                         and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                     artist_list_box.locate_artist_letter(input_text)
@@ -24678,7 +24681,7 @@ class TreeView:
         self.rows = []  # For display (parsed from tree)
         self.rows_id = ""
 
-        self.opens = []  # Folders clicks to show
+        self.opens = {}  # Folders clicks to show per playlist
 
         self.scroll_position = 0
 
@@ -24694,12 +24697,49 @@ class TreeView:
         self.rows_id = ""
         self.trees.clear()
 
+    def show_track(self, track):
+
+        if track is None:
+            return
+
+        # Get tree and opened folder data for this playlist
+        pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+        opens = self.opens.get(pl_id)
+        if opens is None:
+            opens = []
+            self.opens[pl_id] = opens
+
+        tree = self.trees.get(pl_id)
+        if not tree:
+            return
+
+        # Clear all opened folders
+        opens.clear()
+
+        # Set every folder in path as opened
+        path = ""
+        crumbs = track.parent_folder_path.split("/")[1:]
+        for c in crumbs:
+            path += "/" + c
+            opens.append(path)
+
+        # Regenerate row display
+        self.gen_rows(tree, opens)
+
+        # Locate and set scroll position to playing folder
+        for i, row in enumerate(self.rows):
+            if row[1] + "/" + row[0] == track.parent_folder_path:
+                self.scroll_position = i - 4
+                if self.scroll_position < 0:
+                    self.scroll_position = 0
+                break
 
     def render(self, x, y, w, h):
 
         pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         tree = self.trees.get(pl_id)
 
+        # Generate tree data if not done yet
         if tree is None:
             if not self.background_processing:
                 self.background_processing = True
@@ -24709,8 +24749,13 @@ class TreeView:
 
             self.playlist_id_on = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
+        opens = self.opens.get(pl_id)
+        if opens is None:
+            opens = []
+            self.opens[pl_id] = opens
 
         area = (x, y, w, h)
+        fields.add(area)
         ddt.rect(area, colours.side_panel_background, True)
         ddt.text_background_colour = colours.side_panel_background
 
@@ -24721,27 +24766,31 @@ class TreeView:
         if not tree:
             return
         if self.rows_id != pl_id:
-            self.gen_rows(tree)
+            self.gen_rows(tree, opens)
             self.rows_id = pl_id
-
 
         yy = y + 11
         xx = x + 22
 
         spacing = 21
-
         max_scroll = len(self.rows) - (h // 22)
 
-        if mouse_wheel and coll(area):
-            self.scroll_position += mouse_wheel * -2
-            if self.scroll_position < 0:
-                self.scroll_position = 0
-            if self.scroll_position > max_scroll:
-                self.scroll_position = max_scroll
+        mouse_in = coll(area)
 
-        self.scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, self.scroll_position,
-                                                       max_scroll, r_click=right_click, jump_distance=40)
+        # Mouse wheel scrolling
+        if mouse_in and mouse_wheel:
+                self.scroll_position += mouse_wheel * -2
+                if self.scroll_position < 0:
+                    self.scroll_position = 0
+                if self.scroll_position > max_scroll:
+                    self.scroll_position = max_scroll
 
+        # Draw scroll bar
+        if mouse_in or tree_view_scroll.held:
+            self.scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, self.scroll_position,
+                                                           max_scroll, r_click=right_click, jump_distance=40)
+
+        # Draw folder rows
         playing_track = pctl.playing_object()
         max_w = w - 45
         for i, item in enumerate(self.rows):
@@ -24760,23 +24809,26 @@ class TreeView:
             box_colour = [200, 100, 50, 255]
             target = item[1] + "/" + item[0]
 
+            # Set highlight colours if folder is playing
             if playing_track and playing_track.parent_folder_name == item[0]:
                 text_colour = colours.grey(170)
                 box_colour = [140, 220, 20, 255]
 
             mouse_in = coll(rect) and is_level_zero()
             if mouse_in and not tree_view_scroll.held:
-                if input.mouse_click:
 
-                    if target not in self.opens:
-                        self.opens.append(target)
+                if input.mouse_click:
+                    # Click tree level folder to open/close branch
+                    if target not in opens:
+                        opens.append(target)
                     else:
-                        for s in reversed(range(len(self.opens))):
-                            if self.opens[s].startswith(target):
-                                del self.opens[s]
+                        for s in reversed(range(len(opens))):
+                            if opens[s].startswith(target):
+                                del opens[s]
 
                     if item[3]:
 
+                        # Single click base folder to locate in playlist
                         if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).fullpath.startswith(target):
@@ -24784,17 +24836,22 @@ class TreeView:
                                     break
                             self.d_click_timer.set()
                             self.d_click_id = target
+
+                        # Double click base folder to play
                         else:
                             for p, id in enumerate(default_playlist):
                                 if pctl.g(id).fullpath.startswith(target):
                                     pctl.jump(id)
                                     break
 
-                    self.gen_rows(tree)
+                    # Regenerate display rows after clicking
+                    self.gen_rows(tree, opens)
+
+                # Highlight folder text on mouse over
                 text_colour = colours.grey(230)
 
+            # Render folder name text
             ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
-
 
             # for p, id in enumerate(default_playlist):
             #     tr = pctl.g(id)
@@ -24803,14 +24860,13 @@ class TreeView:
             #             box_colour = format_colours[tr.file_ext]
             #             break
 
-
-
+            # Draw indicator box and +/- icons next to folder name
             if item[3]:
               ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
             elif True:
                 if not mouse_in or tree_view_scroll.held:
                     text_colour = colours.grey(60)
-                if target in self.opens:
+                if target in opens:
                     ddt.text((xx + inset - 7, yy + 1, 2), "-", text_colour, 19)
                 else:
                     ddt.text((xx + inset - 7, yy + 1, 2), "+", text_colour, 19)
@@ -24818,7 +24874,7 @@ class TreeView:
             yy += spacing
 
 
-    def gen_row(self, tree_point, path):
+    def gen_row(self, tree_point, path, opens):
 
         for item in tree_point:
             p = path + "/" + item[1]
@@ -24830,7 +24886,7 @@ class TreeView:
 
             if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
 
-                if path in self.opens or self.depth == 0:
+                if path in opens or self.depth == 0:
 
                     if len(item[0]) == 1 and len(item[0][0][0]) == 1 and len(item[0][0][0][0][0]) == 0:
                         self.rows.append([item[1] + "/" + item[0][0][1] + "/" + item[0][0][0][0][1], path, self.depth, True])
@@ -24842,19 +24898,19 @@ class TreeView:
 
                 self.depth += 1
 
-            self.gen_row(item[0], p)
+            self.gen_row(item[0], p, opens)
 
             #if len(item[0]) != 1:
             if (len(item[0]) > 0 or len(item[0]) == 0) and len(tree_point) > 1:
                 self.depth -= 1
 
-    def gen_rows(self, tree):
+    def gen_rows(self, tree, opens):
 
         self.count = 0
         self.depth = 0
         self.rows.clear()
 
-        self.gen_row(tree, "")
+        self.gen_row(tree, "", opens)
 
     def gen_tree(self, pl_id):
 
@@ -24902,8 +24958,6 @@ class TreeView:
 
         self.trees[pl_id] = tree
 
-
-        #self.gen_rows(tree)
         self.background_processing = False
         gui.update += 1
 
