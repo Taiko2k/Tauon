@@ -2,12 +2,11 @@
 Changelog-------------------------------------
 
 v5.0.0
- todo
-   - Fix side panel lyric switch weirdness
 
  - Added folder tree view to left side panel
  - Improved artist list to handle separate artists by colon
  - Tweaked mini mode background colour
+ - Tweaked side panel show lyrics menu button behavior
  - Fixed add queue toast possibly changing on queue re-order
  - Fixed track title not appearing in bottom panel if track had no metadata
 
