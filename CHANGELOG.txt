@@ -7,6 +7,7 @@ v5.0.0
  - Improved artist list to handle separate artists by colon
  - Tweaked mini mode background colour
  - Tweaked side panel show lyrics menu button behavior
+ - Moved "Transfer Folder" function to folder navigator
  - Fixed add queue toast possibly changing on queue re-order
  - Fixed track title not appearing in bottom panel if track had no metadata
 

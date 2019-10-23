@@ -9211,7 +9211,7 @@ repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
 artist_list_menu = Menu(150, show_icons=True)
 lightning_menu = Menu(165)
-lsp_menu = Menu(135)
+lsp_menu = Menu(145)
 folder_tree_menu = Menu(175, show_icons=True)
 folder_tree_stem_menu = Menu(190, show_icons=True)
 
@@ -9232,9 +9232,18 @@ def enable_folder_list():
     gui.update_layout()
 
 
-lsp_menu.add(_("Playlists + Queue"), enable_playlist_list)
-lsp_menu.add(_("Artist List"), enable_artist_list)
-lsp_menu.add(_("Folder Navigator"), enable_folder_list)
+def lsp_menu_test_playlist(_):
+    return not prefs.left_panel_mode == "playlist"
+
+def lsp_menu_test_tree(_):
+    return not prefs.left_panel_mode == "folder view"
+
+def lsp_menu_test_artist(_):
+    return not prefs.left_panel_mode == "artist list"
+
+lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, show_test=lsp_menu_test_playlist)
+lsp_menu.add(_("Artist List"), enable_artist_list, show_test=lsp_menu_test_artist)
+lsp_menu.add(_("Folder Navigator"), enable_folder_list, show_test=lsp_menu_test_tree)
 
 
 class RenameTrackBox:
@@ -12787,7 +12796,7 @@ track_menu.br()
 #track_menu.add('Remove', del_selected)
 track_menu.add(_('Copy'), s_copy, pass_ref=False)
 
-track_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
+#track_menu.add(_('Paste + Transfer Folder'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
 
 track_menu.add(_('Paste'), menu_paste, paste_deco, pass_ref=True)
 
@@ -13702,8 +13711,8 @@ selection_menu.add(_('Delete Files'), force_del_selected, show_test=test_shift, 
 folder_menu.add(_('Copy'), s_copy)
 gallery_menu.add(_('Copy'), s_copy)
 # folder_menu.add(_('Cut'), s_cut)
-folder_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
-gallery_menu.add(_('Transfer Folder Here'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
+#folder_menu.add(_('Paste + Transfer Folder'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
+#gallery_menu.add(_('Paste + Transfer Folder'), lightning_paste, pass_ref=False, show_test=lightning_move_test)
 folder_menu.add(_('Remove'), del_selected)
 gallery_menu.add(_('Remove'), del_selected)
 
@@ -20110,7 +20119,7 @@ class TopPanel:
 
             if right_click:
                 #prefs.artist_list ^= True
-                lsp_menu.activate(position=(20 * gui.scale, gui.panelY))
+                lsp_menu.activate(position=(5 * gui.scale, gui.panelY))
                 update_layout_do()
 
         colour = colours.corner_button #[230, 230, 230, 255]
@@ -20479,6 +20488,12 @@ class TopPanel:
                 view_box.activate(xx)
 
         view_box.render()
+
+        # if True:
+        #     border = round(3 * gui.scale)
+        #     border_colour = colours.grey(30)
+        #     rect = (5 * gui.scale, gui.panelY, round(90 * gui.scale), round(25 * gui.scale))
+        #
 
         dl = len(dl_mon.ready)
         watching = len(dl_mon.watching)
@@ -24884,6 +24899,8 @@ class TreeView:
                 if scroll_position > max_scroll:
                     scroll_position = max_scroll
 
+        focused = is_level_zero()
+
         # Draw scroll bar
         if mouse_in or tree_view_scroll.held:
             scroll_position = tree_view_scroll.draw(x + w - round(12 * gui.scale), y + 1, round(11 * gui.scale), h, scroll_position,
@@ -24898,7 +24915,7 @@ class TreeView:
         light_mode = test_lumi(colours.side_panel_background) < 0.3
         semilight_mode = test_lumi(colours.side_panel_background) < 0.8
 
-        focused = is_level_zero()
+
 
         for i, item in enumerate(self.rows):
 
@@ -27275,7 +27292,7 @@ class ViewBox:
 
         border_colour = colours.grey(30)
         #if not colours.lm:
-        ddt.rect((vr[0] - 4, vr[1], vr[2] + 8, vr[3] + 4), border_colour, True)
+        ddt.rect((vr[0] - round(4  * gui.scale), vr[1], vr[2] + round(8 * gui.scale), vr[3] + round(4 * gui.scale)), border_colour, True)
         ddt.rect(vr, colours.menu_background, True)
 
         x = x + 7 * gui.scale
@@ -28585,6 +28602,12 @@ theme = get_theme_number(prefs.theme_name)
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
     gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
 
+
+def menu_is_open():
+    for menu in Menu.instances:
+        if menu.active:
+            return True
+    return False
 
 def is_level_zero(include_menus=True):
 
@@ -31410,10 +31433,8 @@ while pctl.running:
             fields.add(gui.scroll_hide_box)
             if scroll_hide_timer.get() < 0.9 or (coll(
                     gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
-                    not x_menu.active and \
-                    not tab_menu.active and \
+                    not menu_is_open() and \
                     not pref_box.enabled and \
-                    not extra_tab_menu.active and \
                     not gui.rename_playlist_box \
                     and gui.layer_focus == 0 and gui.show_playlist:
 
