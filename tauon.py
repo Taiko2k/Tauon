@@ -6136,8 +6136,9 @@ class LyricsRenMini:
 
     def render(self, index, x, y, w, h, p):
 
-
-        if not prefs.show_side_art:  # Hacky tweak
+        if prefs.show_side_art and prefs.side_panel_layout == 0:  # Hacky tweak
+            pass
+        else:
             y += 5 * gui.scale
 
         if index != self.index or self.text != pctl.master_library[index].lyrics:
@@ -9208,11 +9209,11 @@ artist_info_menu = Menu(135)
 queue_menu = Menu(150)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
-artist_list_menu = Menu(150)
+artist_list_menu = Menu(150, show_icons=True)
 lightning_menu = Menu(165)
 lsp_menu = Menu(135)
-folder_tree_menu = Menu(165, show_icons=True)
-folder_tree_stem_menu = Menu(165, show_icons=True)
+folder_tree_menu = Menu(175, show_icons=True)
+folder_tree_stem_menu = Menu(190, show_icons=True)
 
 
 def enable_artist_list():
@@ -9619,7 +9620,7 @@ def stem_to_new_playlist(path):
 move_jobs = []
 move_in_progress = False
 
-def move_playling_folder_to_tag(tag_item):
+def move_playing_folder_to_stem(path):
 
     track = pctl.playing_object()
 
@@ -9634,7 +9635,7 @@ def move_playling_folder_to_tag(tag_item):
         if move_folder in pctl.playing_object().parent_folder_path:
             pctl.stop(True)
 
-    target_base = tag_item.path
+    target_base = path
 
     # Determine name for artist folder
     artist = track.artist
@@ -9676,10 +9677,16 @@ def move_playling_folder_to_tag(tag_item):
         show_message("Folder size safety limit reached! (2.5GB)", move_folder, mode='warning')
         return
 
+
+    # Use target folder if it already is an artist folder
+    if os.path.basename(target_base).lower() == artist.lower():
+        artist_folder = target_base
+
     # Make artist folder if it does not exist
-    artist_folder = os.path.join(target_base, artist)
-    if not os.path.exists(artist_folder):
-        os.makedirs(artist_folder)
+    else:
+        artist_folder = os.path.join(target_base, artist)
+        if not os.path.exists(artist_folder):
+            os.makedirs(artist_folder)
 
     # Remove all tracks with the old paths
     for pl in pctl.multi_playlist:
@@ -9691,21 +9698,30 @@ def move_playling_folder_to_tag(tag_item):
     pl = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     matches = []
     insert = 0
-    for i, item in enumerate(pl):
-        if pctl.g(item).parent_folder_path == target_base:
-            matches.append((i, item))
 
-    if matches:
-        for item in matches:
-            if pctl.g(item[1]).parent_folder_path.startswith(artist_folder):
-                insert = item[0]
-                break
-        else:
-            insert = matches[0][0]
+    for i, item in enumerate(pl):
+        if pctl.g(item).fullpath.startswith(target_base):
+            insert = i
+
+    for i, item in enumerate(pl):
+        if pctl.g(item).fullpath.startswith(artist_folder):
+            insert = i
+
+    # for i, item in enumerate(pl):
+    #     if pctl.g(item).parent_folder_path == target_base:
+    #         matches.append((i, item))
+    #
+    # if matches:
+    #     for item in matches:
+    #         if pctl.g(item[1]).parent_folder_path.startswith(artist_folder):
+    #             insert = item[0]
+    #             break
+    #     else:
+    #         insert = matches[0][0]
 
     print("The folder to be moved is: " + move_folder)
     load_order = LoadClass()
-    load_order.target = artist_folder
+    load_order.target = os.path.join(artist_folder, track.parent_folder_name)
     load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
     load_order.playlist_position = insert
 
@@ -9715,13 +9731,19 @@ def move_playling_folder_to_tag(tag_item):
                       track.parent_folder_name, load_order))
 
 
+def move_playing_folder_to_tag(tag_item):
+    move_playling_folder_to_stem(tag_item.path)
+
+
 folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
 folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon)
 folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
 folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon)
-lightning_menu.add(_("Move Playing Folder Here"), move_playling_folder_to_tag, pass_ref=True)
+lightning_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True)
+
+folder_tree_stem_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_stem, pass_ref=True)
 
 
 
@@ -9754,9 +9776,9 @@ def add_album_to_queue(ref, position=None):
         if pctl.g(ref).parent_folder_path == playing_object.parent_folder_path:
             partway = 1
 
-    pctl.force_queue.append(queue_item_gen(ref,
-                             position, pl_to_id(pctl.active_playlist_viewing), 1, partway))
-    queue_timer_set()
+    queue_object = queue_item_gen(ref, position, pl_to_id(pctl.active_playlist_viewing), 1, partway)
+    pctl.force_queue.append(queue_object)
+    queue_timer_set(queue_object=queue_object)
 
 
 gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
@@ -9768,17 +9790,19 @@ def add_album_to_queue_fc(ref):
     if playing_object is None:
         show_message("")
 
-    if not pctl.force_queue:
+    queue_item = None
 
-        pctl.force_queue.insert(0, queue_item_gen(playing_object.index,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1))
+    if not pctl.force_queue:
+        queue_item = queue_item_gen(playing_object.index,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 1)
+        pctl.force_queue.insert(0, queue_item)
         add_album_to_queue(ref)
         return
 
     if pctl.force_queue[0][4] == 1:
-
-        pctl.force_queue.insert(1, queue_item_gen(ref,
-                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0))
+        queue_item = queue_item_gen(ref,
+                                    pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0)
+        pctl.force_queue.insert(1, queue_item)
     else:
 
         p = pctl.g(ref).parent_folder_path
@@ -9791,15 +9815,18 @@ def add_album_to_queue_fc(ref):
         for i, item in enumerate(pctl.force_queue):
 
             if p != pctl.g(item[0]).parent_folder_path:
-                pctl.force_queue.insert(i, queue_item_gen(ref,
+                queue_item = queue_item_gen(ref,
                                                           pctl.playlist_playing_position,
-                                                          pl_to_id(pctl.active_playlist_playing), 1, 0, ))
+                                                          pl_to_id(pctl.active_playlist_playing), 1, 0, )
+                pctl.force_queue.insert(i, queue_item)
                 break
 
         else:
-            pctl.force_queue.insert(len(pctl.force_queue), queue_item_gen(ref,
-                                        pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0,))
-
+            queue_item = queue_item_gen(ref,
+                                        pctl.playlist_playing_position, pl_to_id(pctl.active_playlist_playing), 1, 0,)
+            pctl.force_queue.insert(len(pctl.force_queue), queue_item)
+    if queue_item:
+        queue_timer_set(queue_object=queue_item)
 
 def cancel_import():
 
@@ -9823,8 +9850,8 @@ def toggle_side_art_deco():
         line = _("Hide Art box")
     else:
         line = _("Show Art Box")
-    # if pctl.playing_object().lyrics == "":
-    #     colour = colours.menu_text_disabled
+    if pctl.playing_ready() and pctl.playing_object().lyrics and prefs.show_lyrics_side and not prefs.side_panel_layout == 0:
+        colour = colours.menu_text_disabled
 
     return [colour, colours.menu_background, line]
 
@@ -9846,9 +9873,13 @@ def toggle_lyrics_deco(track_object):
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
 
-    if prefs.side_panel_layout == 1 and prefs.show_side_art:
-        line = _("Show lyrics")
-        if track_object.lyrics == "":
+    if prefs.side_panel_layout == 1: #and prefs.show_side_art:
+
+        if prefs.show_lyrics_side:
+            line = _("Hide lyrics")
+        else:
+            line = _("Show lyrics")
+        if not prefs.show_lyrics_side and track_object.lyrics == "":
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
 
@@ -9873,10 +9904,10 @@ def toggle_lyrics(track_object):
     else:
 
         # Handling for alt panel layout
-        if prefs.side_panel_layout == 1 and prefs.show_side_art:
-            prefs.show_side_art = False
-            prefs.show_lyrics_side = True
-            return
+        # if prefs.side_panel_layout == 1 and prefs.show_side_art:
+        #     #prefs.show_side_art = False
+        #     prefs.show_lyrics_side = True
+        #     return
 
         prefs.show_lyrics_side ^= True
         if prefs.show_lyrics_side and track_object.lyrics == "":
@@ -12690,12 +12721,15 @@ def add_to_queue(ref):
     queue_timer_set()
 
 
-def queue_timer_set(plural=False):
+def queue_timer_set(plural=False, queue_object=None):
     queue_add_timer.set()
     gui.frame_callback_list.append(TestTimer(2.51))
     gui.queue_toast_plural = plural
-    if pctl.force_queue:
-        gui.toast_queue_object = pctl.force_queue[-1]
+    if queue_object:
+        gui.toast_queue_object = queue_object
+    else:
+        if pctl.force_queue:
+            gui.toast_queue_object = pctl.force_queue[-1]
 
 
 def split_queue_album(id):
@@ -12990,6 +13024,7 @@ def rename_parent(index, template):
     if pre_state == 1:
         pctl.revert()
 
+    tree_view_box.clear_all()
     tauon.worker_save_state = True
 
 def rename_folders(index):
@@ -13593,7 +13628,7 @@ folder_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_f
 folder_tree_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 # folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
-folder_menu.add(_("↳ After Current Album"), add_album_to_queue_fc, pass_ref=True)
+folder_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
 
 gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_folder_icon)
 
@@ -13602,6 +13637,9 @@ folder_tree_menu.add(_("Rename Tracks…"), rename_track_box.activate, pass_ref=
 
 folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
                    icon=edit_icon, render_func=edit_deco)
+
+folder_tree_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
+folder_tree_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
 
 def lightning_copy():
     s_copy()
@@ -14813,8 +14851,12 @@ def locate_artist():
             playlist_selected = block_starts[0]
             pctl.playlist_view_position = block_starts[0]
             shift_selection.clear()
+
+        tree_view_box.show_track(pctl.g(default_playlist[playlist_selected]))
     else:
         show_message("No exact matching artist could be found in this playlist")
+
+
 
     gui.pl_update += 1
 
@@ -24826,11 +24868,11 @@ class TreeView:
             self.gen_rows(tree, opens)
             self.rows_id = pl_id
 
-        yy = y + 11
-        xx = x + 22
+        yy = y + round(11 * gui.scale)
+        xx = x + round(22 * gui.scale)
 
-        spacing = 21
-        max_scroll = len(self.rows) - (h // 22)
+        spacing = round(21 * gui.scale)
+        max_scroll = len(self.rows) - (h // round(22 * gui.scale))
 
         mouse_in = coll(area)
 
@@ -24844,14 +24886,14 @@ class TreeView:
 
         # Draw scroll bar
         if mouse_in or tree_view_scroll.held:
-            scroll_position = tree_view_scroll.draw(x + w - 12, y + 1, 11, h, scroll_position,
+            scroll_position = tree_view_scroll.draw(x + w - round(12 * gui.scale), y + 1, round(11 * gui.scale), h, scroll_position,
                                                            max_scroll, r_click=right_click, jump_distance=40)
 
         self.scroll_positions[pl_id] = scroll_position
 
         # Draw folder rows
         playing_track = pctl.playing_object()
-        max_w = w - 45
+        max_w = w - round(45 * gui.scale)
 
         light_mode = test_lumi(colours.side_panel_background) < 0.3
         semilight_mode = test_lumi(colours.side_panel_background) < 0.8
@@ -24868,8 +24910,8 @@ class TreeView:
 
             target = item[1] + "/" + item[0]
 
-            inset = item[2] * 10
-            rect = (xx + inset - 15, yy, max_w - inset + 15, spacing - 1)
+            inset = item[2] * round(10 * gui.scale)
+            rect = (xx + inset - round(15 * gui.scale), yy, max_w - inset + round(15 * gui.scale), spacing - 1)
             fields.add(rect)
 
             text_colour = [255, 255, 255, 100]
@@ -24900,13 +24942,10 @@ class TreeView:
                     if light_mode:
                         text_colour = [0, 0, 0, 255]
 
-
-
-
             if right_click:
                 mouse_in = coll(rect) and is_level_zero(False)
             else:
-                mouse_in = coll(rect) and focused
+                mouse_in = coll(rect) and focused and not quick_drag
 
             if mouse_in and not tree_view_scroll.held:
 
@@ -24972,9 +25011,11 @@ class TreeView:
 
             # Draw indicator box and +/- icons next to folder name
             if item[3]:
+                rect = (xx + inset - 9, yy + 7, 4, 4)
                 if light_mode or semilight_mode:
-                    ddt.rect((xx + inset - 9 - 1, yy + 7 - 1, 4 + 2, 4 + 2), [0, 0, 0, 150], True)
-                ddt.rect((xx + inset - 9, yy + 7, 4, 4), box_colour, True)
+                    border = round(1 * gui.scale)
+                    ddt.rect((rect[0] - border, rect[1] - border, rect[2] + border * 2, rect[3] + border * 2), [0, 0, 0, 150], True)
+                ddt.rect(rect, box_colour, True)
 
             elif True:
                 if not mouse_in or tree_view_scroll.held:
@@ -24984,9 +25025,9 @@ class TreeView:
                     if light_mode:
                         text_colour = [0, 0, 0, 70]
                 if target in opens:
-                    ddt.text((xx + inset - 7, yy + 1, 2), "-", text_colour, 19)
+                    ddt.text((xx + inset - round(7 * gui.scale), yy + round(1 * gui.scale), 2), "-", text_colour, 19)
                 else:
-                    ddt.text((xx + inset - 7, yy + 1, 2), "+", text_colour, 19)
+                    ddt.text((xx + inset - round(7 * gui.scale), yy + round(1 * gui.scale), 2), "+", text_colour, 19)
 
             yy += spacing
 
@@ -31188,7 +31229,7 @@ while pctl.running:
                         ddt.rect((x, y, w, h), colours.side_panel_background, True)
 
                         # Draw lyrics if avaliable
-                        if prefs.show_lyrics_side and target_track and target_track.lyrics != "" and not prefs.show_side_art:
+                        if prefs.show_lyrics_side and target_track and target_track.lyrics != "": # and not prefs.show_side_art:
                             meta_box.lyrics(x, y, w, h, target_track)
                             if right_click and coll((x, y, w, h)) and target_track:
                                 center_info_menu.activate(target_track)
