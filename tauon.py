@@ -9209,7 +9209,7 @@ artist_info_menu = Menu(135)
 queue_menu = Menu(150)
 repeat_menu = Menu(120)
 shuffle_menu = Menu(120)
-artist_list_menu = Menu(150, show_icons=True)
+artist_list_menu = Menu(165, show_icons=True)
 lightning_menu = Menu(165)
 lsp_menu = Menu(145)
 folder_tree_menu = Menu(175, show_icons=True)
@@ -9233,13 +9233,13 @@ def enable_folder_list():
 
 
 def lsp_menu_test_playlist(_):
-    return not prefs.left_panel_mode == "playlist"
+    return not prefs.left_panel_mode == "playlist" or not gui.lsp
 
 def lsp_menu_test_tree(_):
-    return not prefs.left_panel_mode == "folder view"
+    return not prefs.left_panel_mode == "folder view" or not gui.lsp
 
 def lsp_menu_test_artist(_):
-    return not prefs.left_panel_mode == "artist list"
+    return not prefs.left_panel_mode == "artist list" or not gui.lsp
 
 lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, show_test=lsp_menu_test_playlist)
 lsp_menu.add(_("Artist List"), enable_artist_list, show_test=lsp_menu_test_artist)
@@ -24103,7 +24103,7 @@ def create_artist_pl(artist, replace=False):
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
-artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True)
+artist_list_menu.add(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon)
 
 
 def verify_discogs():
@@ -24645,6 +24645,10 @@ class ArtistList:
                     self.d_click_ref = artist
                     self.d_click_timer.set()
 
+            if middle_click:
+                self.click_ref = artist
+                self.click_highlight_timer.set()
+                create_artist_pl(artist)
 
             if right_click:
                 self.click_ref = artist
@@ -24846,6 +24850,8 @@ class TreeView:
 
     def render(self, x, y, w, h):
 
+        global quick_drag
+
         pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         tree = self.trees.get(pl_id)
 
@@ -24962,7 +24968,7 @@ class TreeView:
             if right_click:
                 mouse_in = coll(rect) and is_level_zero(False)
             else:
-                mouse_in = coll(rect) and focused and not quick_drag
+                mouse_in = coll(rect) and focused and not (quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15))
 
             if mouse_in and not tree_view_scroll.held:
 
@@ -24982,6 +24988,14 @@ class TreeView:
                         self.menu_selected = full_folder_path
 
                 elif input.mouse_click:
+                    quick_drag = True
+                    shift_selection.clear()
+                    gui.drag_source_position = copy.deepcopy(click_location)
+                    for p, id in enumerate(default_playlist):
+                        if pctl.g(id).fullpath.startswith(target):
+                            shift_selection.append(p)
+
+                elif mouse_up:
                     # Click tree level folder to open/close branch
                     if target not in opens:
                         opens.append(target)
