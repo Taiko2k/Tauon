@@ -13822,6 +13822,9 @@ def drop_tracks_to_new_playlist(track_list):
     elif len(track_list) == 1 and artists:
         pctl.multi_playlist[pl][0] = artists[0]
 
+    if tree_view_box.dragging_name:
+        pctl.multi_playlist[pl][0] = tree_view_box.dragging_name
+
     tauon.worker_save_state = True
 
 
@@ -24798,8 +24801,10 @@ class TreeView:
 
         self.menu_selected = ""
         self.folder_colour_cache = {}
+        self.dragging_name = ""
 
         self.force_opens = []
+        self.click_drag_souce = None
 
     def clear_all(self):
         self.rows_id = ""
@@ -24948,12 +24953,23 @@ class TreeView:
 
             full_folder_path = item[1] + "/" + item[0]
 
-            if full_folder_path == self.menu_selected and (folder_tree_menu.active or folder_tree_stem_menu.active):
+            # Hold highlight while menu open
+            if (folder_tree_menu.active or folder_tree_stem_menu.active) and full_folder_path == self.menu_selected:
                 text_colour = [255, 255, 255, 170]
                 if semilight_mode:
                     text_colour = (255, 255, 255, 255)
                 if light_mode:
                     text_colour = [0, 0, 0, 255]
+
+            # Hold highlight while dragging folder
+            if quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+                if shift_selection:
+                    if pctl.g(default_playlist[shift_selection[0]]).fullpath.startswith(full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
+                        text_colour = (255, 255, 255, 230)
+                        if semilight_mode:
+                            text_colour = (255, 255, 255, 255)
+                        if light_mode:
+                            text_colour = [0, 0, 0, 255]
 
             # Set highlight colours if folder is playing
             if 0 < pctl.playing_state < 3 and playing_track:
@@ -24988,12 +25004,11 @@ class TreeView:
                         self.menu_selected = full_folder_path
 
                 elif input.mouse_click:
-                    quick_drag = True
-                    shift_selection.clear()
-                    gui.drag_source_position = copy.deepcopy(click_location)
-                    for p, id in enumerate(default_playlist):
-                        if pctl.g(id).fullpath.startswith(target):
-                            shift_selection.append(p)
+                    #quick_drag = True
+
+                    if not self.click_drag_souce:
+                        self.click_drag_souce = item
+                        gui.drag_source_position = copy.deepcopy(click_location)
 
                 elif mouse_up:
                     # Click tree level folder to open/close branch
@@ -25061,6 +25076,26 @@ class TreeView:
                     ddt.text((xx + inset - round(7 * gui.scale), yy + round(1 * gui.scale), 2), "+", text_colour, 19)
 
             yy += spacing
+
+
+        if self.click_drag_souce and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+            quick_drag = True
+            self.dragging_name = self.click_drag_souce[0]
+
+            if "/" in self.dragging_name:
+                self.dragging_name = os.path.basename(self.dragging_name)
+
+            shift_selection.clear()
+            gui.drag_source_position = copy.deepcopy(click_location)
+            for p, id in enumerate(default_playlist):
+                if pctl.g(id).fullpath.startswith(self.click_drag_souce[1] + "/" + self.click_drag_souce[0]):
+                    shift_selection.append(p)
+            self.click_drag_souce = None
+
+        if self.dragging_name and not quick_drag:
+            self.dragging_name = ""
+        if not mouse_down:
+            self.click_drag_souce = None
 
 
     def gen_row(self, tree_point, path, opens):
