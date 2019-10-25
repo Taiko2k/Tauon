@@ -9744,12 +9744,34 @@ def move_playing_folder_to_tag(tag_item):
     move_playling_folder_to_stem(tag_item.path)
 
 
+def re_import3(stem):
+
+    p = None
+    for i, id in enumerate(default_playlist):
+        if pctl.g(id).fullpath.startswith(stem + "/"):
+            p = i
+            break
+
+    load_order = LoadClass()
+
+    if p:
+        load_order.playlist_position = p
+    load_order.replace_stem = True
+    load_order.target = stem
+    load_order.notify = True
+    load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+    load_orders.append(copy.deepcopy(load_order))
+    show_message("Rescanning folder...", stem, mode='info')
+
+
+
 folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
 folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
 lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon)
 folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
 folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon)
+folder_tree_stem_menu.add(_("Rescan Folder"), re_import3, pass_ref=True)
 lightning_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True)
 
 folder_tree_stem_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_stem, pass_ref=True)
@@ -10877,7 +10899,8 @@ def export_xspf(pl):
 def reload():
     if album_mode:
         reload_albums(quiet=True)
-    tree_view_box.clear_all()
+
+    #tree_view_box.clear_all()
     # elif gui.combo_mode:
     #     reload_albums(quiet=True)
     #     combo_pl_render.prep()
@@ -11108,6 +11131,7 @@ def re_import2(pl):
     path = pctl.multi_playlist[pl][7]
     if path == "":
         return
+
     load_order = LoadClass()
     load_order.replace_stem = True
     load_order.target = path
@@ -11115,6 +11139,8 @@ def re_import2(pl):
     load_order.playlist = pctl.multi_playlist[pl][6]
     load_orders.append(copy.deepcopy(load_order))
     show_message("Rescanning folder...", path, mode='info')
+
+
 
 def s_append(index):
     paste(playlist=index)
@@ -12638,14 +12664,14 @@ def del_selected(force_delete=False):
     else:
         undo.bk_tracks(pctl.active_playlist_viewing, li)
 
-
     reload()
+    tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
 
     if playlist_selected > len(default_playlist) - 1:
         playlist_selected = len(default_playlist) - 1
 
     shift_selection = [playlist_selected]
-
+    gui.pl_update += 1
     refind_playing()
 
 
@@ -12940,6 +12966,7 @@ def delete_folder(index, force=False):
             show_message("Folder could not be trashed.", "Try again while holding shift to force delete.", mode='error')
 
     tauon.worker_save_state = True
+    tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
 
 
 def rename_parent(index, template):
@@ -13033,7 +13060,7 @@ def rename_parent(index, template):
     if pre_state == 1:
         pctl.revert()
 
-    tree_view_box.clear_all()
+    tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
     tauon.worker_save_state = True
 
 def rename_folders(index):
@@ -20281,6 +20308,7 @@ class TopPanel:
                         if modified:
                             tauon.worker_save_state = True
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                            tree_view_box.clear_target_pl(i)
 
             x += tab_width + self.tab_spacing
 
@@ -23876,6 +23904,7 @@ class PlaylistBox:
                         if modified:
                             tauon.worker_save_state = True
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
+                            tree_view_box.clear_target_pl(i)
 
             # Toggle hidden flag on click
             if draw_pin_indicator and input.mouse_click and coll((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale , 26  * gui.scale)):
@@ -24804,11 +24833,31 @@ class TreeView:
         self.dragging_name = ""
 
         self.force_opens = []
-        self.click_drag_souce = None
+        self.click_drag_source = None
+
 
     def clear_all(self):
         self.rows_id = ""
         self.trees.clear()
+
+    def clear_target_pl(self, pl_number):
+
+        pl_id = pl_to_id(pl_number)
+
+        if gui.lsp and prefs.left_panel_mode == "folder view":
+
+            if pl_id in self.trees:
+                if not self.background_processing:
+                    self.background_processing = True
+                    shoot_dl = threading.Thread(target=self.gen_tree, args=[pl_id])
+                    shoot_dl.daemon = True
+                    shoot_dl.start()
+        else:
+            if pl_id in self.trees:
+                del self.trees[pl_id]
+        # if self.rows_id == pl_id:
+        #     self.rows_id = ""
+
 
     def show_track(self, track):
 
@@ -24884,15 +24933,19 @@ class TreeView:
         ddt.rect(area, colours.side_panel_background, True)
         ddt.text_background_colour = colours.side_panel_background
 
-        if self.background_processing:
+        if self.background_processing and self.rows_id != pl_id:
             ddt.text((x + w // 2, y + (h // 7), 2), _("Loading Folder Tree..."), alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
             return
 
         if not tree:
             return
         if self.rows_id != pl_id:
-            self.gen_rows(tree, opens)
-            self.rows_id = pl_id
+
+            if not self.background_processing:
+                self.gen_rows(tree, opens)
+                self.rows_id = pl_id
+            else:
+                return
 
         yy = y + round(11 * gui.scale)
         xx = x + round(22 * gui.scale)
@@ -25006,8 +25059,8 @@ class TreeView:
                 elif input.mouse_click:
                     #quick_drag = True
 
-                    if not self.click_drag_souce:
-                        self.click_drag_souce = item
+                    if not self.click_drag_source:
+                        self.click_drag_source = item
                         gui.drag_source_position = copy.deepcopy(click_location)
 
                 elif mouse_up:
@@ -25040,7 +25093,8 @@ class TreeView:
                     # Regenerate display rows after clicking
                     self.gen_rows(tree, opens)
 
-                # Highlight folder text on mouse over
+            # Highlight folder text on mouse over
+            if (mouse_in and not mouse_down) or item == self.click_drag_source:
                 text_colour = (255, 255, 255, 230)
                 if semilight_mode:
                     text_colour = (255, 255, 255, 255)
@@ -25078,9 +25132,9 @@ class TreeView:
             yy += spacing
 
 
-        if self.click_drag_souce and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+        if self.click_drag_source and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
             quick_drag = True
-            self.dragging_name = self.click_drag_souce[0]
+            self.dragging_name = self.click_drag_source[0]
 
             if "/" in self.dragging_name:
                 self.dragging_name = os.path.basename(self.dragging_name)
@@ -25088,14 +25142,14 @@ class TreeView:
             shift_selection.clear()
             gui.drag_source_position = copy.deepcopy(click_location)
             for p, id in enumerate(default_playlist):
-                if pctl.g(id).fullpath.startswith(self.click_drag_souce[1] + "/" + self.click_drag_souce[0]):
+                if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
                     shift_selection.append(p)
-            self.click_drag_souce = None
+            self.click_drag_source = None
 
         if self.dragging_name and not quick_drag:
             self.dragging_name = ""
         if not mouse_down:
-            self.click_drag_souce = None
+            self.click_drag_source = None
 
 
     def gen_row(self, tree_point, path, opens):
@@ -25147,12 +25201,12 @@ class TreeView:
         playlist = pctl.multi_playlist[pl_no][2]
         # Generate list of all unique folder paths
         paths = []
-        z = 0
+        z = 5000
         for p in playlist:
 
             z += 1
-            if z == 5000:
-                time.sleep(0.001)  # Throttle thread
+            if z > 1000:
+                time.sleep(0.01)  # Throttle thread
                 z = 0
             track = pctl.g(p)
             path = track.parent_folder_path
@@ -25185,7 +25239,7 @@ class TreeView:
                     on = new[0]
 
         self.trees[pl_id] = tree
-
+        self.rows_id = ""
         self.background_processing = False
         gui.update += 1
 
@@ -30943,9 +30997,6 @@ while pctl.running:
 
                 # END POWER BAR ------------------------
 
-
-
-
             # End of gallery view
             # --------------------------------------------------------------------------
             # Main Playlist:
@@ -30968,20 +31019,26 @@ while pctl.running:
                             print("Error: Target playlist lost")
                             break
 
+
+                        if order.replace_stem:
+                            for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
+                                if pctl.g(id).parent_folder_path.startswith(order.target):
+                                    del pctl.multi_playlist[target_pl][2][ii]
+
                         # print(order.tracks)
                         if order.playlist_position is not None:
                             # print(order.playlist_position)
                             pctl.multi_playlist[target_pl][2][order.playlist_position:order.playlist_position] = order.tracks
+                        #else:
+
                         else:
-
-                            if order.replace_stem:
-                                for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl][2]))):
-                                    if pctl.g(id).parent_folder_path.startswith(order.target):
-                                        del pctl.multi_playlist[target_pl][2][ii]
-
-
                             pctl.multi_playlist[target_pl][2] += order.tracks
-                            pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6], order.tracks)
+
+                        pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6], order.tracks)
+
+
+
+
 
 
                         gui.update += 2
@@ -30989,7 +31046,7 @@ while pctl.running:
                         if order.notify and gui.message_box:
                             show_message(_("Rescan folder complete."), order.target, mode='done')
                         reload()
-
+                        tree_view_box.clear_target_pl(target_pl)
 
                         if order.play and order.tracks:
 
@@ -32080,7 +32137,7 @@ while pctl.running:
                 if key_shift_down:
                     text = _("Delete")
                     tt = "Physically deletes folder from disk"
-                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt):
+                if draw.button(text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale, fore_text=colours.grey(255), fg=[180, 60, 60, 255], tooltip=tt, press=mouse_up):
                     if key_shift_down:
                         delete_folder(rename_index, True)
                     else:
