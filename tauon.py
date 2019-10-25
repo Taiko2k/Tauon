@@ -16463,7 +16463,7 @@ def worker2():
                     for track in playlist[2]:
 
                         if input_text:
-                            time.sleep(0.005)
+                            time.sleep(0.05)
 
 
                         t = pctl.master_library[track]
@@ -16677,8 +16677,8 @@ def worker2():
 
 
                         br += 1
-                        if br > 600:
-                            time.sleep(0.001)
+                        if br > 700:
+                            time.sleep(0.001)  # Throttle thread
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
                                 break
@@ -25157,7 +25157,7 @@ class TreeView:
         for item in tree_point:
             p = path + "/" + item[1]
             self.count += 1
-
+            enter_level = False
             if len(tree_point) > 1 or path in self.force_opens:  # Ignore levels that are only a single folder wide
 
                 if path in opens or self.depth == 0 or path in self.force_opens:  # Only show if parent stem is open, but always show the root displayed folders
@@ -25177,11 +25177,14 @@ class TreeView:
                         self.force_opens.append(p + "/" + item[0][0][1])
 
                 self.depth += 1
+                enter_level = True
 
             self.gen_row(item[0], p, opens)
 
-            if len(tree_point) > 1:
+            if enter_level:
                 self.depth -= 1
+
+
 
     def gen_rows(self, tree, opens):
 
@@ -25219,8 +25222,8 @@ class TreeView:
         news = []
         for path in paths:
             z += 1
-            if z == 5000:
-                time.sleep(0.001)  # Throttle thread
+            if z > 5000:
+                time.sleep(0.01)  # Throttle thread
                 z = 0
             split_path = path.split("/")
             on = tree
