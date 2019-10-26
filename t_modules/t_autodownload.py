@@ -103,14 +103,15 @@ class AutoDownload:
 
             self.tauon.gui.show_message("Type detected: Youtube", 'Link: ' + text, 'info')
 
-            # youtube_dir = os.path.join(dl_dir, 'Youtube')
-            youtube_dir = dl_dir
-            # os.makedirs(youtube_dir)
+            youtube_dir = os.path.join(dl_dir, text.rstrip("/").split("/")[-1])
+            #youtube_dir = dl_dir
+            os.makedirs(youtube_dir)
 
             line = self.tauon.launch_prefix + "youtube-dl -f bestaudio -o \"" + youtube_dir + "/%(title)s.%(ext)s\" --extract-audio --embed-thumbnail --add-metadata --audio-quality 160K --audio-format mp3 " + text
             self.downloading = True
             subprocess.run(shlex.split(line))
 
+            # For every mp3 in folder, crop the embedded image
             for item in os.listdir(youtube_dir):
                 if item.endswith(".mp3"):
                     path = os.path.join(youtube_dir, item)
