@@ -9741,7 +9741,7 @@ def move_playing_folder_to_stem(path):
 
 
 def move_playing_folder_to_tag(tag_item):
-    move_playling_folder_to_stem(tag_item.path)
+    move_playing_folder_to_stem(tag_item.path)
 
 
 def re_import3(stem):
@@ -14310,11 +14310,19 @@ def standard_size():
 
 
 def path_stem_to_playlist(path, title):  # Used with gallery power bar
+
     playlist = []
 
-    for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
-        if path in pctl.master_library[item].parent_folder_path:
-                playlist.append(item)
+    # Hack for networked tracks
+    if path.lstrip("/") == title:
+        for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
+            if title == os.path.basename(pctl.master_library[item].parent_folder_path):
+                    playlist.append(item)
+
+    else:
+        for item in pctl.multi_playlist[pctl.active_playlist_viewing][2]:
+            if path in pctl.master_library[item].parent_folder_path:
+                    playlist.append(item)
 
     pctl.multi_playlist.append(pl_gen(title=os.path.basename(title).upper(),
                                       playlist=copy.deepcopy(playlist),
@@ -25074,21 +25082,29 @@ class TreeView:
 
                     if item[3]:
 
-                        # Single click base folder to locate in playlist
-                        if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
+                        # Locate the first track of folder in playlist
+                        track_id = None
+                        for p, id in enumerate(default_playlist):
+                            if pctl.g(id).fullpath.startswith(target):
+                                track_id = id
+                                break
+                        else:  # Fallback to folder name if full-path not found (hack for networked items)
                             for p, id in enumerate(default_playlist):
-                                if pctl.g(id).fullpath.startswith(target):
-                                    pctl.show_current(select=True, index=id, no_switch=True, highlight=True, folder_list=False)
+                                if pctl.g(id).parent_folder_name == item[0]:
+                                    track_id = id
                                     break
-                            self.d_click_timer.set()
-                            self.d_click_id = target
 
-                        # Double click base folder to play
-                        else:
-                            for p, id in enumerate(default_playlist):
-                                if pctl.g(id).fullpath.startswith(target):
-                                    pctl.jump(id)
-                                    break
+                        if track_id is not None:
+                            # Single click base folder to locate in playlist
+                            if self.d_click_timer.get() > 0.4 or self.d_click_id != target:
+                                pctl.show_current(select=True, index=track_id, no_switch=True, highlight=True, folder_list=False)
+                                self.d_click_timer.set()
+                                self.d_click_id = target
+
+                            # Double click base folder to play
+                            else:
+                                pctl.jump(track_id)
+
 
                     # Regenerate display rows after clicking
                     self.gen_rows(tree, opens)
