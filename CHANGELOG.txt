@@ -5,11 +5,13 @@ v5.0.0
 
  - Added new folder tree type view to left side panel
  - Added icon for menu item "Filter to new playlist"
+ - Added change right side panel layout by middle click shortcut
  - Improved artist list to handle separate artists by colon
  - Tweaked mini mode background colour
  - Tweaked side panel show lyrics menu button behavior
  - Tweaked artist list to allow middle click to filter to new playlist
  - Tweaked left side panel mode switcher button menu to hide items already open
+ - Tweaked youtube downloader to place items in a subfolder
  - Moved "Transfer Folder" function to folder navigator
  - Fixed add queue toast possibly changing on queue re-order
  - Fixed track title not appearing in bottom panel if track had no metadata

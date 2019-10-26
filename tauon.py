@@ -22006,6 +22006,7 @@ def set_mini_mode():
     if mini_mode.save_position:
         SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
 
+    gui.update += 3
 
 restore_ignore_timer = Timer()
 restore_ignore_timer.force_set(100)
@@ -24895,7 +24896,8 @@ class TreeView:
         # Locate and set scroll position to playing folder
         for i, row in enumerate(self.rows):
             if row[1] + "/" + row[0] == track.parent_folder_path:
-                scroll_position = i - 4
+
+                scroll_position = i - 5
                 if scroll_position < 0:
                     scroll_position = 0
                 break
@@ -24976,10 +24978,8 @@ class TreeView:
         playing_track = pctl.playing_object()
         max_w = w - round(45 * gui.scale)
 
-        light_mode = test_lumi(colours.side_panel_background) < 0.3
+        light_mode = test_lumi(colours.side_panel_background) < 0.5
         semilight_mode = test_lumi(colours.side_panel_background) < 0.8
-
-
 
         for i, item in enumerate(self.rows):
 
@@ -25063,7 +25063,7 @@ class TreeView:
                         self.click_drag_source = item
                         gui.drag_source_position = copy.deepcopy(click_location)
 
-                elif mouse_up:
+                elif mouse_up and self.click_drag_source == item:
                     # Click tree level folder to open/close branch
                     if target not in opens:
                         opens.append(target)
@@ -25247,49 +25247,6 @@ class TreeView:
         gui.update += 1
 
 tree_view_box = TreeView()
-
-# class QuickView:
-#
-#     def __init__(self):
-#
-#         self.ani_timer = Timer(100)
-#         self.ap = (0, 0)
-#         self.prime = False
-#         self.active = False
-#         self.t = 0.1
-#
-#     def trigger1(self):
-#         if not self.active and not self.prime:
-#             self.ap = tuple(mouse_position)
-#             self.prime = True
-#
-#     def render(self):
-#
-#         if self.prime and not self.active:
-#             if point_distance(mouse_position, self.ap) > 30 * gui.scale:
-#                 self.active = True
-#                 self.ani_timer.set()
-#
-#         if self.active:
-#             gui.update += 1
-#             start = self.ap[0] + 30 * gui.scale, self.ap[1]
-#             end = self.ap[0] + 90 * gui.scale, self.ap[1]
-#
-#             tt = self.ani_timer.get()
-#
-#             if tt < self.t:
-#
-#                 pos = round(start[0] + (end[0] - start[0]) * (tt / self.t)), round(start[1] + (end[1] - start[1]) * (tt / self.t))
-#
-#                 colour = [100, 150, 200, round((tt / self.t) * 255)]
-#                 ddt.rect_r((pos[0] - 10, pos[1] - 10, 55, 35), [20, 20, 20, round((tt / self.t) * 170)], True)
-#                 view_box.gallery1_img.render(pos[0], pos[1], colour)
-#             else:
-#                 colour = [100, 150, 200, 255]
-#                 ddt.rect_r((end[0] - 10, end[1] - 10, 55, 35), [20, 20, 20, 170], True)
-#                 view_box.gallery1_img.render(end[0], end[1], colour)
-#
-# quick_view_box = QuickView()
 
 
 def queue_pause_deco():
@@ -31332,6 +31289,13 @@ while pctl.running:
                 if gui.rsp and not album_mode:
 
                     target_track = pctl.show_object()
+
+                    if middle_click:
+                        if coll((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY)):
+                            if prefs.side_panel_layout == 0:
+                                prefs.side_panel_layout = 1
+                            else:
+                                prefs.side_panel_layout = 0
 
                     if prefs.side_panel_layout == 0:
 
