@@ -540,6 +540,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "AAC": [79, 247, 168, 255],
     "WV": [229, 23, 18, 255],
     "PLEX": [229, 160, 13, 255],
+    "KOEL": [111, 98, 190, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -798,6 +799,10 @@ class Prefs:    # Used to hold any kind of settings
         self.plex_username = ""
         self.plex_password = ""
         self.plex_servername = ""
+
+        self.koel_username = ""
+        self.koel_password = ""
+        self.koel_server_url = ""
 
         self.auto_lyrics = False
         self.auto_lyrics_checked = []
@@ -2336,6 +2341,10 @@ def save_prefs():
     cf.update_value("plex-password", prefs.plex_password)
     cf.update_value("plex-servername", prefs.plex_servername)
 
+    cf.update_value("koel-username", prefs.koel_username)
+    cf.update_value("koel-password", prefs.koel_password)
+    cf.update_value("koel-server-url", prefs.koel_server_url)
+
     cf.update_value("display-language", prefs.ui_lang)
     cf.update_value("decode-search", prefs.diacritic_search)
 
@@ -2553,8 +2562,14 @@ def load_prefs():
     cf.br()
     cf.add_text("[plex_account]")
     prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username, "Probably the email address you used to make your PLEX account.")
-    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password, "The password associated with your PLEX account" )
-    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername, "Probably your servers hostname")
+    prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password, "The password associated with your PLEX account." )
+    prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername, "Probably your servers hostname.")
+
+    cf.br()
+    cf.add_text("[koel_account]")
+    prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username)
+    prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
+    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL where the Koel server is hosted.")
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -3061,7 +3076,11 @@ class PlayerCtl:
 
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
-            return plex.resolve_stream(track_object.url_key)
+            return plex.resolve_stream(track_object.url_key), None
+
+        if track_object.file_ext == "KOEL":
+            return koel.resolve_stream(track_object.url_key)
+
         return None
 
     def playing_playlist(self):
@@ -5278,17 +5297,187 @@ class PlexService:
 plex = PlexService()
 
 
+class KoelService:
+
+    def __init__(self):
+        self.connected = False
+        self.resource = None
+        self.scanning = False
+        self.server = ""
+
+        self.token = ""
+
+    def connect(self):
+
+        if not prefs.koel_username:
+            show_message("Koel - No username in config",
+                         'Enter details in config file then restart app to apply.', mode='warning')
+            self.scanning = False
+            return
+        if not prefs.koel_password:
+            show_message("Koel - No password in config",
+                         'Enter details in config file then restart app to apply.', mode='warning')
+            self.scanning = False
+            return
+        if not prefs.koel_server_url:
+            show_message("Koel - No target url server in config",
+                         'Enter details in config file then restart app to apply.', mode='warning')
+            self.scanning = False
+            return
+
+        if self.token:
+            self.connected = True
+            print("Already authorised")
+            return
+
+        password = prefs.koel_password
+        username = prefs.koel_username
+        server = prefs.koel_server_url
+        self.server = server
+
+        target = server + "/api/me"
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+        body = {
+            "email": username,
+            "password": password,
+        }
+
+        r = requests.post(target, json=body, headers=headers)
+        if r.status_code == 200:
+            # print(r.json())
+            self.token = r.json()["token"]
+            if self.token:
+                print("GOT KOEL TOKEN")
+                self.connected = True
+            else:
+                print("AUTH ERROR")
+
+        else:
+            print("AUTH ERROR")
+
+
+
+
+    def resolve_stream(self, id):
+        print("Get koel stream")
+        if not self.connected:
+            self.connect()
+
+        target = f"{self.server}/api/{id}/play/0/0"
+
+        params = {
+            "jwt-token": self.token,
+        }
+
+        return target, params
+
+    # def resolve_thumbnail(self, location):
+    #
+    #     if not self.connected:
+    #         self.connect()
+    #     if self.connected:
+    #         return self.resource.url(location, True)
+    #     return None
+
+    def get_albums(self):
+
+        gui.update += 1
+
+        if not self.connected:
+            self.connect()
+
+        if not self.connected:
+            return
+
+        global master_count
+
+        playlist = []
+
+        target = self.server + "/api/data"
+        headers = {
+            "Authorization": "Bearer " + self.token,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        }
+
+        r = requests.get(target, headers=headers)
+        data = r.json()
+
+        artists = data["artists"]
+        albums = data["albums"]
+        songs = data["songs"]
+
+        artist_ids = {}
+        for artist in artists:
+            id = artist["id"]
+            if id not in artist_ids:
+                artist_ids[id] = artist["name"]
+
+        album_ids = {}
+        covers = {}
+        for album in albums:
+            id = album["id"]
+            if id not in album_ids:
+                album_ids[id] = album["name"]
+                if "cover" in album:
+                    covers[id] = album["cover"]
+
+        for song in songs:
+            nt = TrackClass()
+
+            nt.title = song["title"]
+            nt.index = master_count
+            if "track" in song and song["track"] is not None:
+                nt.track_number = song["track"]
+            if "disc" in song and song["disc"] is not None:
+                nt.disc = song["disc"]
+            nt.length = float(song["length"])
+
+            nt.artist = artist_ids.get(song["artist_id"], "")
+            nt.album = album_ids.get(song["album_id"], "")
+            nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
+            nt.parent_folder_path = nt.parent_folder_name
+
+            nt.art_url_key = covers.get(song["album_id"], "")
+            nt.url_key = song["id"]
+            nt.is_network = True
+            nt.file_ext = "KOEL"
+
+            pctl.master_library[master_count] = nt
+            master_count += 1
+
+            playlist.append(nt.index)
+
+        self.scanning = False
+
+        pctl.multi_playlist.append(pl_gen(title="Koel Collection", playlist=playlist))
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+koel = KoelService()
+
+
+
 def get_network_thumbnail_url(track_object):
 
     if track_object.file_ext == "PLEX":
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
         return url
+
+    if track_object.file_ext == "KOEL":
+        url = track_object.art_url_key
+        assert url
+        return url
+
     return None
 
 
 def plex_get_album_thread():
-
 
     pref_box.close()
     if plex.scanning:
@@ -5297,8 +5486,20 @@ def plex_get_album_thread():
         return
     plex.scanning = True
 
-
     shoot_dl = threading.Thread(target=plex.get_albums)
+    shoot_dl.daemon = True
+    shoot_dl.start()
+
+def koel_get_album_thread():
+
+    pref_box.close()
+    if koel.scanning:
+        input.mouse_click = False
+        show_message("Already scanning!")
+        return
+    koel.scanning = True
+
+    shoot_dl = threading.Thread(target=koel.get_albums)
     shoot_dl.daemon = True
     shoot_dl.start()
 
@@ -7198,7 +7399,9 @@ class AlbumArt():
 
         print("start network image download")
         response = urllib.request.urlopen(get_network_thumbnail_url(track))
-        self.downloaded_image = response
+        #r = requests.get(get_network_thumbnail_url(track))
+
+        self.downloaded_image = io.BytesIO(response.read())
         self.downloaded_track = track
         self.download_in_progress = False
         gui.update += 1
@@ -7691,6 +7894,7 @@ class AlbumArt():
                     self.render(unit, location)
                     return 0
 
+        close = True
         # Render new...
         try:
 
@@ -7700,6 +7904,7 @@ class AlbumArt():
                 source_image = io.BytesIO(self.get_embed(track))
             elif source[offset][0] == 2:
                 try:
+                    close = False
                     # We want to download the image asynchronously as to not block the UI
                     if self.downloaded_image and self.downloaded_track == track:
                         source_image = self.downloaded_image
@@ -7942,7 +8147,8 @@ class AlbumArt():
             # Clean uo
             SDL_FreeSurface(s_image)
             g.close()
-            source_image.close()
+            if close:
+                source_image.close()
 
             unit = ImageObject()
             unit.index = index
@@ -19020,8 +19226,10 @@ class Over:
             self.account_view = 3
 
 
-        y += 150 * gui.scale
-        self.button(x, y, _("Import PLEX music"), plex_get_album_thread)
+        y += 130 * gui.scale
+        self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=round(115*gui.scale))
+        y += 30 * gui.scale
+        self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=round(115*gui.scale))
 
 
         x = x0 + 255 * gui.scale
@@ -20647,6 +20855,9 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
+        elif koel.scanning:
+            text = "Accessing KOEL library..."
+            bg = [111, 98, 190, 255]
         # elif transcode_list:
         #     # if key_ctrl_down and key_c_press:
         #     #     del transcode_list[1:]
@@ -24947,15 +25158,27 @@ class TreeView:
             ddt.text((x + w // 2, y + (h // 7), 2), _("Loading Folder Tree..."), alpha_mod(colours.side_bar_line2, 100), 212, max_w=w - 17 * gui.scale)
             return
 
+        # if not tree or not self.rows:
+        #     ddt.text((x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
+        #              212, max_w=w - 17 * gui.scale)
+        #     return
         if not tree:
+            ddt.text((x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
+                     212, max_w=w - 17 * gui.scale)
             return
-        if self.rows_id != pl_id:
 
+        if self.rows_id != pl_id:
             if not self.background_processing:
                 self.gen_rows(tree, opens)
                 self.rows_id = pl_id
             else:
                 return
+
+        if not self.rows:
+            ddt.text((x + w // 2, y + (h // 7), 2), _("Folder Tree"), alpha_mod(colours.side_bar_line2, 100),
+                     212, max_w=w - 17 * gui.scale)
+            return
+
 
         yy = y + round(11 * gui.scale)
         xx = x + round(22 * gui.scale)
@@ -29476,57 +29699,6 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-
-            # # Generate list of all unique folder paths
-            # paths = []
-            # for p in default_playlist:
-            #     path = pctl.g(p).parent_folder_path
-            #     if path not in paths:
-            #         paths.append(path)
-            #
-            # # Genterate tree from folder paths
-            # tree = []
-            # news = []
-            # for path in paths:
-            #     split_path = path.split("/")
-            #     on = tree
-            #     for level in split_path:
-            #         if not level:
-            #             continue
-            #         # Find if level already exists
-            #         for sub_level in on:
-            #             if sub_level[1] == level:
-            #                 on = sub_level[0]
-            #                 break
-            #         else:  # Create new level
-            #             new = [[], level]
-            #             news.append(new)
-            #             on.append(new)
-            #             on = new[0]
-
-            # text = ""
-            # count = 0
-            # depth = 0
-            # def geta(tree_point, path):
-            #     global text
-            #     global count
-            #     global depth
-            #
-            #     for item in tree_point:
-            #         p = path + "/" + item[1]
-            #         count += 1
-            #
-            #         if len(item[0]) != 1:
-            #             text += ("--" * depth) + item[1] + "\n"
-            #             depth += 1
-            #         geta(item[0], p)
-            #         if len(item[0]) != 1:
-            #             depth -= 1
-            #
-            # geta(tree, "")
-            # print(text)
-
-
 
 
         if gui.mode < 3:

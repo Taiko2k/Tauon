@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.0.0
 
  - Added new folder tree type view to left side panel
+ - Added koel streaming support
  - Added icon for menu item "Filter to new playlist"
  - Added change right side panel layout by middle click shortcut
  - Improved artist list to handle separate artists by colon

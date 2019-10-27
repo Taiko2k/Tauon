@@ -665,9 +665,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     BASS_ChannelSlideAttribute(self.channel, 2, pctl.player_volume / 100, prefs.pause_fade_time)
                 self.state = 'playing'
 
-        def download_part(self, url, target):
+        def download_part(self, url, target, params):
 
-            self.part = requests.get(url, stream=True)
+            self.part = requests.get(url, stream=True, params=params)
+            print(self.part.status_code)
+
             bitrate = 0
 
             a = 0
@@ -676,15 +678,16 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
                         a += 1
-                        if a == 50:
+                        if a == 350:  # kilobyes~
                             self.dl_ready = True
                         if url != self.url:
                             self.part.close()
                             break
 
                         f.write(chunk)
+
                     z += 1
-                    if z == 50:
+                    if z == 60:
                         z = 0
                         if bitrate == 0:
                             audio = auto.File(target)
@@ -715,9 +718,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 print("START STREAM")
 
                 self.url = ""
+                params = None
 
                 try:
-                    url = pctl.get_url(target_object).encode()
+                    url, params = pctl.get_url(target_object)
                 except:
                     gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
                     pctl.stop()
@@ -729,7 +733,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     return
 
                 print(url)
-
                 self.save_temp = prefs.cache_directory + "/" + self.alt + "-temp.mp3"
 
                 if self.alt == 'a':
@@ -737,9 +740,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 else:
                     self.alt = 'a'
 
-                self.url = url.decode()
+                self.url = url
 
-                shoot_dl = threading.Thread(target=self.download_part, args=([url.decode(), self.save_temp]))
+                shoot_dl = threading.Thread(target=self.download_part, args=([url, self.save_temp, params]))
                 shoot_dl.daemon = True
                 shoot_dl.start()
 
