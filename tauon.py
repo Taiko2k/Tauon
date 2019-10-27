@@ -942,7 +942,7 @@ prefs = Prefs()
 
 
 def open_uri(uri):
-
+    print("OPEN URI")
     load_order = LoadClass()
 
     for w in range(len(pctl.multi_playlist)):
@@ -960,6 +960,7 @@ def open_uri(uri):
         gui.auto_play_import = True
 
     load_orders.append(copy.deepcopy(load_order))
+    gui.update += 1
 
 
 def check_transfer_p():
@@ -968,6 +969,7 @@ def check_transfer_p():
         global arg_queue
         check_file_timer.set()
         if os.path.isfile(transfer_target):
+
             r_arg_queue = pickle.load(open(transfer_target, "rb"))
             os.remove(user_directory + "/transfer.p")
             arg_queue = []
@@ -29409,7 +29411,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders: # or mouse_moved:
         power = 1000
 
     if prefs.art_bg and core_timer.get() < 3:
@@ -30271,7 +30273,7 @@ while pctl.running:
     if gui.pl_update and not gui.update:
         gui.update = 1
 
-    if gui.update > 0 and gui.lowered != True and not resize_mode:
+    if gui.update > 0 and not resize_mode:
         if gui.update > 2:
             gui.update = 2
 
@@ -31183,9 +31185,6 @@ while pctl.running:
                             pctl.multi_playlist[target_pl][2] += order.tracks
 
                         pctl.update_shuffle_pool(pctl.multi_playlist[target_pl][6], order.tracks)
-
-
-
 
 
 

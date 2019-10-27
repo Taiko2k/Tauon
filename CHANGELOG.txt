@@ -16,6 +16,7 @@ v5.0.0
  - Moved "Transfer Folder" function to folder navigator
  - Fixed add queue toast possibly changing on queue re-order
  - Fixed track title not appearing in bottom panel if track had no metadata
+ - Fixed open track URI from external not working while window was lowered
 
 v4.8.2
 
