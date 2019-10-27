@@ -1272,6 +1272,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.theme_number = 0
         self.toast_queue_object = None
 
+        self.force_side_on_drag = False
+
 
 gui = GuiVar()
 
@@ -28332,6 +28334,8 @@ def update_layout_do():
         if prefs.left_panel_mode == "artist list":
             gui.compact_artist_list = True
             gui.lspw = 75 * gui.scale
+            if gui.force_side_on_drag:
+                gui.lspw = 180 * gui.scale
     else:
         gui.lspw = 220 * gui.scale
         gui.compact_artist_list = False
@@ -31634,11 +31638,19 @@ while pctl.running:
                 pl_box_h = full
 
                 panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
-                #fields.add(panel_rect)
+                fields.add(panel_rect)
 
-                if prefs.left_panel_mode == "folder view":
+                if gui.force_side_on_drag and not quick_drag and not coll(panel_rect):
+                    gui.force_side_on_drag = False
+                    update_layout_do()
+                if quick_drag and not coll_point(gui.drag_source_position, panel_rect) and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
+                    gui.force_side_on_drag = True
+                    update_layout_do()
+
+
+                if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
                     tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
-                elif prefs.left_panel_mode == "artist list":
+                elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
                     artist_list_box.render(*panel_rect)
                 else:
 

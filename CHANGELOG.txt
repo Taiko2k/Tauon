@@ -8,6 +8,7 @@ v5.0.0
  - Added icon for menu item "Filter to new playlist"
  - Added change right side panel layout by middle click shortcut
  - Improved artist list to handle separate artists by colon
+ - Improved left side panel to always show playlists+queue when dragging
  - Tweaked mini mode background colour
  - Tweaked side panel show lyrics menu button behavior
  - Tweaked artist list to allow middle click to filter to new playlist
@@ -17,6 +18,7 @@ v5.0.0
  - Fixed add queue toast possibly changing on queue re-order
  - Fixed track title not appearing in bottom panel if track had no metadata
  - Fixed open track URI from external not working while window was lowered
+ - Fixed artwork with network tracks not showing after resizing side panel
 
 v4.8.2
 
