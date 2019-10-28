@@ -21,6 +21,7 @@ v5.0.0
  - Fixed track title not appearing in bottom panel if track had no metadata
  - Fixed open track URI from external not working while window was lowered
  - Fixed artwork with network tracks not showing after resizing side panel
+ - Fixed pageup/down not selecting track
 
 v4.8.2
 
