@@ -25370,9 +25370,9 @@ class TreeView:
                 if self.tooltip_on != item:
                     self.tooltip_on = item
                     self.tooltip_timer.set()
-                    gui.frame_callback_list.append(TestTimer(0.45))
+                    gui.frame_callback_list.append(TestTimer(0.6))
 
-                if tw > max_w - inset and self.tooltip_on == item and self.tooltip_timer.get() >= 0.45:
+                if tw > max_w - inset and self.tooltip_on == item and self.tooltip_timer.get() >= 0.6:
                     rect = (xx + inset, yy - 2 * gui.scale, tw + round(20 * gui.scale), 20 * gui.scale)
                     ddt.rect(rect, ddt.text_background_colour, True)
                     ddt.text((xx + inset, yy), item[0], text_colour, 414)
@@ -29861,12 +29861,16 @@ while pctl.running:
                 if pctl.playlist_view_position > len(default_playlist):
                     pctl.playlist_view_position = len(default_playlist) - 2
                 gui.pl_update = 1
+                playlist_selected = pctl.playlist_view_position
+                shift_selection.clear()
         if keymaps.test('pageup'):
             if len(default_playlist) > 0:
                 pctl.playlist_view_position -= gui.playlist_view_length - 4
                 if pctl.playlist_view_position < 0:
                     pctl.playlist_view_position = 0
                 gui.pl_update = 1
+                playlist_selected = pctl.playlist_view_position
+                shift_selection.clear()
 
 
         if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
