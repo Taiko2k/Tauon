@@ -7,6 +7,7 @@ v5.0.0
  - Added koel streaming support
  - Added icon for menu item "Filter to new playlist"
  - Added change right side panel layout by middle click shortcut
+ - Added middle click left panel button to switch to preview view
  - Improved artist list to handle separate artists by colon
  - Improved left side panel to always show playlists+queue when dragging
  - Tweaked mini mode background colour
