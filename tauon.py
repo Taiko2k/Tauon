@@ -1138,6 +1138,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.present = False
         self.drag_source_position = (0, 0)
+        self.drag_source_position_persist = (0, 0)
         self.album_tab_mode = False
         self.main_art_box = (0, 0, 10, 10)
         self.gall_tab_enter = False
@@ -1276,7 +1277,14 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.last_left_panel_mode = "playlist"
 
 
+
 gui = GuiVar()
+
+
+def set_drag_source():
+    gui.drag_source_position = tuple(click_location)
+    gui.drag_source_position_persist = tuple(click_location)
+
 
 # Functions for reading and setting play counts
 class StarStore:
@@ -20526,7 +20534,7 @@ class TopPanel:
                     playlist_box.drag_source = 0
                     playlist_box.drag_on = i
                     switch_playlist(i)
-                    gui.drag_source_position = copy.deepcopy(mouse_position)
+                    set_drag_source()
 
                 # Drag to move playlist
                 if mouse_up and playlist_box.drag:
@@ -22836,7 +22844,7 @@ class StandardPlaylist:
                         if input.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale):
 
                             quick_drag = True
-                            gui.drag_source_position = copy.deepcopy(click_location)
+                            set_drag_source()
 
                             if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
 
@@ -22956,7 +22964,7 @@ class StandardPlaylist:
             # Begin drag single track
             if input.mouse_click and line_hit:
                 quick_drag = True
-                gui.drag_source_position = copy.copy(click_location)
+                set_drag_source()
 
 
             # Shift Move Selection
@@ -24091,7 +24099,7 @@ class PlaylistBox:
                         self.drag_on = i
                         self.drag = True
                         self.drag_source = 1
-                        gui.drag_source_position = copy.deepcopy(mouse_position)
+                        set_drag_source()
 
 
             if coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
@@ -24128,7 +24136,7 @@ class PlaylistBox:
                         self.drag_on = i
                         self.drag = True
                         self.drag_source = 1
-                        gui.drag_source_position = copy.deepcopy(mouse_position)
+                        set_drag_source()
 
 
                 # Process input of dragging tracks onto tab
@@ -25316,7 +25324,7 @@ class TreeView:
 
                     if not self.click_drag_source:
                         self.click_drag_source = item
-                        gui.drag_source_position = copy.deepcopy(click_location)
+                        set_drag_source()
 
                 elif mouse_up and self.click_drag_source == item:
                     # Click tree level folder to open/close branch
@@ -25419,7 +25427,7 @@ class TreeView:
                 self.dragging_name = os.path.basename(self.dragging_name)
 
             shift_selection.clear()
-            gui.drag_source_position = copy.deepcopy(click_location)
+            set_drag_source()
             for p, id in enumerate(default_playlist):
                 if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
                     shift_selection.append(p)
@@ -31648,7 +31656,8 @@ while pctl.running:
                 if gui.force_side_on_drag and not quick_drag and not coll(panel_rect):
                     gui.force_side_on_drag = False
                     update_layout_do()
-                if quick_drag and not coll_point(gui.drag_source_position, panel_rect) and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
+
+                if quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and not point_proximity_test(gui.drag_source_position, mouse_position, 10 * gui.scale):
                     gui.force_side_on_drag = True
                     update_layout_do()
 
@@ -32962,7 +32971,7 @@ while pctl.running:
         # Drag icon next to cursor
         if quick_drag and mouse_down and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
             i_x, i_y = get_sdl_input.mouse()
-            gui.drag_source_position = [0, 0]
+            gui.drag_source_position = (0, 0)
 
             block_size = round(10 * gui.scale)
             x_offset = round(20 * gui.scale)
