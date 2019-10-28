@@ -1273,6 +1273,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.toast_queue_object = None
 
         self.force_side_on_drag = False
+        self.last_left_panel_mode = "playlist"
 
 
 gui = GuiVar()
@@ -2088,6 +2089,8 @@ try:
         prefs.chart_bg = save[133]
     if save[134] is not None:
         prefs.left_panel_mode = save[134]
+    if save[135] is not None:
+        gui.last_left_panel_mode = save[135]
 
     state_file.close()
     del save
@@ -2573,7 +2576,8 @@ def load_prefs():
     cf.add_text("[koel_account]")
     prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username)
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
-    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL where the Koel server is hosted.")
+    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted.")
+    prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -9427,16 +9431,22 @@ folder_tree_stem_menu = Menu(190, show_icons=True)
 
 
 def enable_artist_list():
+    if prefs.left_panel_mode != "artist list":
+        gui.last_left_panel_mode = prefs.left_panel_mode
     prefs.left_panel_mode = "artist list"
     gui.lsp = True
     gui.update_layout()
 
 def enable_playlist_list():
+    if prefs.left_panel_mode != "playlist":
+        gui.last_left_panel_mode = prefs.left_panel_mode
     prefs.left_panel_mode = "playlist"
     gui.lsp = True
     gui.update_layout()
 
 def enable_folder_list():
+    if prefs.left_panel_mode != "folder view":
+        gui.last_left_panel_mode = prefs.left_panel_mode
     prefs.left_panel_mode = "folder view"
     gui.lsp = True
     gui.update_layout()
@@ -9450,6 +9460,13 @@ def lsp_menu_test_tree(_):
 
 def lsp_menu_test_artist(_):
     return not prefs.left_panel_mode == "artist list" or not gui.lsp
+
+def toggle_left_last():
+    gui.lsp = True
+    t = prefs.left_panel_mode
+    if t != gui.last_left_panel_mode:
+        prefs.left_panel_mode = gui.last_left_panel_mode
+        gui.last_left_panel_mode = t
 
 lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, show_test=lsp_menu_test_playlist)
 lsp_menu.add(_("Artist List"), enable_artist_list, show_test=lsp_menu_test_artist)
@@ -20367,6 +20384,11 @@ class TopPanel:
                 update_layout = True
                 gui.update += 1
 
+            if middle_click:
+                toggle_left_last()
+                update_layout = True
+                gui.update += 1
+
             if right_click:
                 #prefs.artist_list ^= True
                 lsp_menu.activate(position=(5 * gui.scale, gui.panelY))
@@ -28857,7 +28879,8 @@ def save_state():
             after_scan,
             gui.gallery_positions,
             prefs.chart_bg,
-            prefs.left_panel_mode]
+            prefs.left_panel_mode,
+            gui.last_left_panel_mode]
 
 
 
@@ -29695,6 +29718,10 @@ while pctl.running:
 
         if keymaps.test('toggle-left-panel'):
             gui.lsp ^= True
+            update_layout_do()
+
+        if keymaps.test('toggle-last-left-panel'):
+            toggle_left_last()
             update_layout_do()
 
         if keymaps.test("toggle-broadcast"):

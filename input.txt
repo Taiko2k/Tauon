@@ -61,6 +61,7 @@ love-selected
 
 
 toggle-left-panel ~
+toggle-last-left-panel
 toggle-right-panel
 toggle-gallery
 toggle-gallery-keycontrol Tab
