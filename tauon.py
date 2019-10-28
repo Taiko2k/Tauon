@@ -7177,6 +7177,7 @@ class GallClass:
                     del self.gall[key]
                     del self.key_list[0]
 
+                gui.update += 1
                 return True
 
         else:
