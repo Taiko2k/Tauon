@@ -5365,31 +5365,19 @@ class KoelService:
                 print("AUTH ERROR")
 
         else:
-            print("AUTH ERROR")
-
-
+            gui.show_message("Could not establish koel connection/authorisation", mode="error")
 
 
     def resolve_stream(self, id):
-        print("Get koel stream")
+
         if not self.connected:
             self.connect()
 
         target = f"{self.server}/api/{id}/play/0/0"
-
-        params = {
-            "jwt-token": self.token,
-        }
+        params = {"jwt-token": self.token,}
 
         return target, params
 
-    # def resolve_thumbnail(self, location):
-    #
-    #     if not self.connected:
-    #         self.connect()
-    #     if self.connected:
-    #         return self.resource.url(location, True)
-    #     return None
 
     def get_albums(self):
 
@@ -5469,7 +5457,6 @@ class KoelService:
 koel = KoelService()
 
 
-
 def get_network_thumbnail_url(track_object):
 
     if track_object.file_ext == "PLEX":
@@ -5498,6 +5485,7 @@ def plex_get_album_thread():
     shoot_dl.daemon = True
     shoot_dl.start()
 
+
 def koel_get_album_thread():
 
     pref_box.close()
@@ -5514,6 +5502,7 @@ def koel_get_album_thread():
 
 if system == "windows":
     from infi.systray import SysTrayIcon
+
 
 class STray:
 
@@ -14735,6 +14724,39 @@ def switch_playlist(number, cycle=False):
         pctl.show_current(this_only=True, playing=False, highlight=True, no_switch=True)
 
 
+def cycle_playlist_pinned(step):
+
+    if step > 0:
+        p = pctl.active_playlist_viewing
+        le = len(pctl.multi_playlist)
+        on = p
+        on -= 1
+        while True:
+            if on < 0:
+                on = le - 1
+            if on == p:
+                break
+            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
+                switch_playlist(on)
+                break
+            on -= 1
+
+    elif step < 0:
+        p = pctl.active_playlist_viewing
+        le = len(pctl.multi_playlist)
+        on = p
+        on += 1
+        while True:
+            if on == le:
+                on = 0
+            if on == p:
+                break
+            if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
+                switch_playlist(on)
+                break
+            on += 1
+
+
 def activate_info_box():
     fader.rise()
     pref_box.enabled = True
@@ -20692,34 +20714,7 @@ class TopPanel:
         # (This is a bit complicated because we need to skip over hidden playlists)
         if mouse_wheel != 0 and 1 < mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and 5 < mouse_position[0]:
 
-            if mouse_wheel > 0:
-                p = pctl.active_playlist_viewing
-                le = len(pctl.multi_playlist)
-                on = p
-                on -= 1
-                while True:
-                    if on < 0:
-                        on = le - 1
-                    if on == p:
-                        break
-                    if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
-                        switch_playlist(on)
-                        break
-                    on -= 1
-            if mouse_wheel < 0:
-                p = pctl.active_playlist_viewing
-                le = len(pctl.multi_playlist)
-                on = p
-                on += 1
-                while True:
-                    if on == le:
-                        on = 0
-                    if on == p:
-                        break
-                    if pctl.multi_playlist[on][8] is False or not prefs.tabs_on_top:
-                        switch_playlist(on)
-                        break
-                    on += 1
+            cycle_playlist_pinned(mouse_wheel)
 
             gui.pl_update = 1
             if pctl.active_playlist_viewing not in shown: # and not gui.lsp:
@@ -25081,6 +25076,8 @@ class TreeView:
         self.force_opens = []
         self.click_drag_source = None
 
+        self.tooltip_on = ""
+        self.tooltip_timer = Timer(10)
 
     def clear_all(self):
         self.rows_id = ""
@@ -25367,7 +25364,23 @@ class TreeView:
                     text_colour = [0, 0, 0, 255]
 
             # Render folder name text
-            ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+            if mouse_in:
+                tw = ddt.get_text_w(item[0], 414)
+
+                if self.tooltip_on != item:
+                    self.tooltip_on = item
+                    self.tooltip_timer.set()
+                    gui.frame_callback_list.append(TestTimer(0.45))
+
+                if tw > max_w - inset and self.tooltip_on == item and self.tooltip_timer.get() >= 0.45:
+                    rect = (xx + inset, yy - 2 * gui.scale, tw + round(20 * gui.scale), 20 * gui.scale)
+                    ddt.rect(rect, ddt.text_background_colour, True)
+                    ddt.text((xx + inset, yy), item[0], text_colour, 414)
+                else:
+                    ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+            else:
+                ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+
 
             if prefs.folder_tree_codec_colours:
                 box_colour = self.folder_colour_cache.get(full_folder_path)
@@ -29438,7 +29451,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders or gui.frame_callback_list: # or mouse_moved:
         power = 1000
 
     if prefs.art_bg and core_timer.get() < 3:
@@ -29564,56 +29577,17 @@ while pctl.running:
                 close_all_menus()
                 del_selected()
 
-
             # Arrow keys to change playlist
             if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1 \
                     and not search_over.active:
-                    #and not key_shiftr_down\
-                    #and not key_shift_down\
-
-                    #and not key_ctrl_down\
-                    #and not key_rctrl_down\
-                    # and not key_meta\
-                    # and not key_lalt\
-                    # and not key_ralt:
 
                 gui.pl_update = 1
                 gui.update += 1
-                if gui.lsp:
-                    if keymaps.test('cycle-playlist-left'):
-                        switch_playlist(-1, True)
-                    if keymaps.test('cycle-playlist-right'):
-                        switch_playlist(1, True)
-                else:
-                    if keymaps.test('cycle-playlist-left'):
-                        p = pctl.active_playlist_viewing
-                        le = len(pctl.multi_playlist)
-                        on = p
-                        on -= 1
-                        while True:
-                            if on < 0:
-                                on = le - 1
-                            if on == p:
-                                break
-                            if pctl.multi_playlist[on][8] is False:
-                                switch_playlist(on)
-                                break
-                            on -= 1
 
-                    if keymaps.test('cycle-playlist-right'):
-                        p = pctl.active_playlist_viewing
-                        le = len(pctl.multi_playlist)
-                        on = p
-                        on += 1
-                        while True:
-                            if on == le:
-                                on = 0
-                            if on == p:
-                                break
-                            if pctl.multi_playlist[on][8] is False:
-                                switch_playlist(on)
-                                break
-                            on += 1
+                if keymaps.test('cycle-playlist-left'):
+                    cycle_playlist_pinned(1)
+                if keymaps.test('cycle-playlist-right'):
+                    cycle_playlist_pinned(-1)
 
             if keymaps.test("start"):
                 if pctl.playing_time < 4:
@@ -29637,7 +29611,6 @@ while pctl.running:
                 pctl.playlist_view_position = n
                 playlist_selected = len(default_playlist) - 1
                 gui.pl_update = 1
-
 
 
         if not quick_search_mode and not pref_box.enabled and not radiobox and not rename_track_box.active \
