@@ -51,13 +51,12 @@
 
   <releases>
 
-    <release version="4.8.2" date="2019-10-19">
+    <release version="5.0.0" date="2019-10-29">
       <description>
         <ul>
-          <li>Added option for centered text in gallery view</li>
-          <li>Added empty queue peak when dragging tracks to side panel</li>
-          <li>Improved PLEX streaming support</li>
-          <li>Various other tweaks and bug fixes</li>
+          <li>Added folder tree view to side panel</li>
+          <li>Added experimental koel streaming support</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>

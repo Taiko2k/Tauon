@@ -938,6 +938,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.folder_tree_codec_colours = False
 
+        self.network_stream_bitrate = 0  # 0 is off
+
 prefs = Prefs()
 
 
@@ -2359,6 +2361,7 @@ def save_prefs():
     cf.update_value("koel-username", prefs.koel_username)
     cf.update_value("koel-password", prefs.koel_password)
     cf.update_value("koel-server-url", prefs.koel_server_url)
+    cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
     cf.update_value("display-language", prefs.ui_lang)
     cf.update_value("decode-search", prefs.diacritic_search)
@@ -2582,10 +2585,11 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[koel_account]")
-    prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username)
+    prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
-    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted.")
+    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://0.0.0.8050 or https://0.0.0.8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
+    prefs.network_stream_bitrate = cf.sync_add("int", "stream-bitrate", prefs.network_stream_bitrate, "Optional bitrate server should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -5260,6 +5264,7 @@ class PlexService:
             self.connect()
 
         if not self.connected:
+            self.scanning = False
             return
 
         global master_count
@@ -5363,6 +5368,7 @@ class KoelService:
         }
 
         r = requests.post(target, json=body, headers=headers)
+
         if r.status_code == 200:
             # print(r.json())
             self.token = r.json()["token"]
@@ -5373,7 +5379,11 @@ class KoelService:
                 print("AUTH ERROR")
 
         else:
-            gui.show_message("Could not establish koel connection/authorisation", mode="error")
+            error = ""
+            j = r.json()
+            if "message" in j:
+                error = j["message"]
+            gui.show_message("Could not establish koel connection/authorisation", error, mode="error")
 
 
     def resolve_stream(self, id):
@@ -5381,7 +5391,10 @@ class KoelService:
         if not self.connected:
             self.connect()
 
-        target = f"{self.server}/api/{id}/play/0/0"
+        if prefs.network_stream_bitrate > 0:
+            target = f"{self.server}/api/{id}/play/1/{prefs.network_stream_bitrate}"
+        else:
+            target = f"{self.server}/api/{id}/play/0/0"
         params = {"jwt-token": self.token,}
 
         return target, params
@@ -5395,6 +5408,7 @@ class KoelService:
             self.connect()
 
         if not self.connected:
+            self.scanning = False
             return
 
         global master_count
@@ -5459,6 +5473,7 @@ class KoelService:
         self.scanning = False
 
         pctl.multi_playlist.append(pl_gen(title="Koel Collection", playlist=playlist))
+        standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -15520,7 +15535,6 @@ def discord_loop():
     except:
         show_message("Error connecting to Discord", mode='error')
         prefs.disconnect_discord = False
-        #raise
 
     prefs.discord_active = False
 
