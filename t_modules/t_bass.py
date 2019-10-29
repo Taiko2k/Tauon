@@ -678,7 +678,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
                         a += 1
-                        if a == 350:  # kilobyes~
+                        if a == 300:  # kilobyes~
                             self.dl_ready = True
                         if url != self.url:
                             self.part.close()
@@ -758,7 +758,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 if pctl.system == "windows":
                     target = target.decode().replace("/", "\\")
 
-                new_handle = BASS_StreamCreateFile(False, target, 0, 0, self.open_file_flags)
+                new_handle = BASS_StreamCreateFile(False, target, 0, 0, BASS_STREAM_DECODE | BASS_SAMPLE_FLOAT)
                 #new_handle = BASS_StreamCreateURL(url, 0, self.open_file_flags, 0, 0)
 
             else:
