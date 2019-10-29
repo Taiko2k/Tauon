@@ -2587,7 +2587,7 @@ def load_prefs():
     cf.add_text("[koel_account]")
     prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
-    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://0.0.0.8050 or https://0.0.0.8060")
+    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://0.0.0.0:8050 or https://0.0.0.0:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
     prefs.network_stream_bitrate = cf.sync_add("int", "stream-bitrate", prefs.network_stream_bitrate, "Optional bitrate server should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
