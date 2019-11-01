@@ -51,12 +51,10 @@
 
   <releases>
 
-    <release version="5.0.0" date="2019-10-29">
+    <release version="5.0.1" date="2019-11-01">
       <description>
         <ul>
-          <li>Added folder tree view to side panel</li>
-          <li>Added experimental koel streaming support</li>
-          <li>Various tweaks and bug fixes</li>
+          <li>Fixed an issue with high CPU usage</li>
         </ul>
       </description>
     </release>

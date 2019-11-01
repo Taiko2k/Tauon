@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.0.1
+
+ - Fixed an issue with continuous high CPU usage with gallery layout
+
 v5.0.0
 
  - Added new folder tree type view to left side panel
