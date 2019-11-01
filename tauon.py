@@ -36,7 +36,7 @@ import shutil
 
 
 
-n_version = "5.0.0"
+n_version = "5.0.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -7172,6 +7172,7 @@ class GallClass:
                 order[2] = c
                 order[3] = dst
                 self.gall[(track, size, offset)] = order
+                gui.update += 1
 
             if order[0] == 3:
                 # ready
@@ -7200,7 +7201,7 @@ class GallClass:
                     del self.gall[key]
                     del self.key_list[0]
 
-                gui.update += 1
+
                 return True
 
         else:
@@ -22609,6 +22610,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                   y + num_y_offset, 0), line,
                  alpha_mod(timec, album_fade), gui.row_font_size)
 
+
         f_store.recall_all()
 
 pl_bg = None
@@ -33034,6 +33036,7 @@ while pctl.running:
 
         input_text = ""
         gui.update -= 1
+        # print("FRAME " + str(core_timer.get()))
         if gui.update > 1:
             gui.update = 1
         gui.present = True
