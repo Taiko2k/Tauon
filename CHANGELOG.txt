@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.0.2
 
  - Fixed folder tree view scroll position when showing playing
+ - Improved gallery loading performance
 
 v5.0.1
 
