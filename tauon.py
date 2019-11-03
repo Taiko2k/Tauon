@@ -34,9 +34,7 @@ import os
 import pickle
 import shutil
 
-
-
-n_version = "5.0.1"
+n_version = "5.0.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -84,7 +82,7 @@ if not os.path.isdir(music_directory):
 
 download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 
-# Detect if we are installed or running portably
+# Detect if we are installed or running portable
 install_mode = False
 flatpak_mode = False
 if install_directory.startswith("/opt/")\
@@ -1277,7 +1275,6 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.force_side_on_drag = False
         self.last_left_panel_mode = "playlist"
-
 
 
 gui = GuiVar()
@@ -5316,7 +5313,7 @@ class PlexService:
 
 
 plex = PlexService()
-
+tauon.plex = plex
 
 class KoelService:
 
@@ -5478,10 +5475,10 @@ class KoelService:
 
 
 koel = KoelService()
+tauon.koel = koel
 
 
-def get_network_thumbnail_url(track_object):
-
+def get_network_thumbnail_url(self, track_object):
     if track_object.file_ext == "PLEX":
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
@@ -6997,7 +6994,7 @@ class GallClass:
             self.i += 1
 
             try:
-                key = self.queue.pop(0)
+                key = self.queue[0]
             except:
                 print("thumb queue empty")
                 break
@@ -7041,8 +7038,6 @@ class GallClass:
                     img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
 
                     # gall_render_last_timer.set()
-
-
 
                     if prefs.cache_gallery and os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                         source_image = open(os.path.join(cache_directory, img_name + '.jpg'), 'rb')
@@ -7090,13 +7085,11 @@ class GallClass:
                 order = [2, g, None, None]
                 self.gall[key] = order
 
-
-                # if not prefs.cache_gallery:
-                #     time.sleep(0.01)
-                # else:
                 time.sleep(0.001)
 
                 gui.update += 1
+                del self.queue[0]
+
                 if gui.combo_mode:
                     gui.pl_update = 1
 
@@ -7108,6 +7101,8 @@ class GallClass:
                 print('Image load failed on track: ' + key[0].fullpath)
                 order = [0, None, None, None]
                 self.gall[key] = order
+                gui.update += 1
+                del self.queue[0]
 
             if size < 150:
                 random.shuffle(self.queue)
@@ -7172,7 +7167,6 @@ class GallClass:
                 order[2] = c
                 order[3] = dst
                 self.gall[(track, size, offset)] = order
-                gui.update += 1
 
             if order[0] == 3:
                 # ready
@@ -7201,31 +7195,12 @@ class GallClass:
                     del self.gall[key]
                     del self.key_list[0]
 
-
                 return True
 
         else:
-            # Create new
-            # stage, raw, texture, rect
-            #self.gall[(track, size, offset)] = [1, None, None, None]
+
             if key not in self.queue:
                 self.queue.append(key)
-
-            # self.key_list.append((track, size, offset))
-
-            # # Remove old images to conserve RAM usage
-            # limit = 110
-            # if size and size < 150:
-            #     limit = 500
-            #
-            # if len(self.key_list) > limit:
-            #     key = self.key_list[0]
-            #     while key in self.queue:
-            #         self.queue.remove(key)
-            #     if self.gall[key][2] is not None:
-            #         SDL_DestroyTexture(self.gall[key][2])
-            #     del self.gall[key]
-            #     del self.key_list[0]
 
         return False
 
@@ -7530,14 +7505,6 @@ class AlbumArt():
                 tt.read()
                 if tt.has_picture:
                     source_list.append([1, filepath])
-
-                    # elif '.opus' in filepath or '.OPUS' in filepath or ".ogg" in filepath or ".OGG" in filepath:
-                    #
-                    #     tt = Opus(filepath)
-                    #     tt.read()
-                    #     print("test")
-                    #     if tt.has_picture is True and len(tt.picture) > 30:
-                    #         source_list.append([True, filepath])
 
         except:
 
@@ -8242,6 +8209,7 @@ class AlbumArt():
 
 
 
+#from t_modules.t_art_render import AlbumArt
 
 album_art_gen = AlbumArt()
 
@@ -9923,8 +9891,8 @@ def move_playing_folder_to_stem(path):
             show_message("Better not do anything to that folder!", os.path.join(os.path.expanduser('~'), fo), mode='warning')
             return
 
-    if directory_size(move_folder) > 2500000000:
-        show_message("Folder size safety limit reached! (2.5GB)", move_folder, mode='warning')
+    if directory_size(move_folder) > 3000000000:
+        show_message("Folder size safety limit reached! (3GB)", move_folder, mode='warning')
         return
 
 
@@ -10473,7 +10441,7 @@ def save_embed_img(track_object):
     except:
         show_message("Image save error.", "A mysterious error occurred", mode='error')
 
-picture_menu = Menu(170)
+picture_menu = Menu(175)
 
 def open_image_deco(track_object):
 
@@ -10526,13 +10494,13 @@ def cycle_image_deco(track_object):
 def cycle_offset(track_object):
     album_art_gen.cycle_offset(track_object)
 
-def cycle_offset_b(track_object):
+def cycle_offset_back(track_object):
     album_art_gen.cycle_offset_reverse(track_object)
 
 
 # Next and previous pictures
-picture_menu.add(_("Next"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
-picture_menu.add(_("Previous"), cycle_offset_b, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+#picture_menu.add(_("Next"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
 
 # Extract embedded artwork from file
 picture_menu.add(_('Extract Image'), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True)
@@ -10543,24 +10511,6 @@ def dl_art_deco(tr):
     if not tr.album or not tr.artist:
         return [colours.menu_text_disabled, colours.menu_background, None]
     return [colours.menu_text, colours.menu_background, None]
-
-
-def remove_embed_deco(track_object):
-    info = album_art_gen.get_info(track_object)
-
-    if info is None:
-        return [colours.menu_text_disabled, colours.menu_background, None]
-
-    if pctl.playing_state > 0 and info[0] == 1 and (track_object.file_ext == "MP3" or track_object.file_ext == "FLAC"):
-        line_colour = colours.menu_text
-    else:
-        line_colour = colours.menu_text_disabled
-
-    text = _("Delete Embedded | Folder")
-    if key_shift_down or key_shiftr_down:
-        text = _("Delete Embedded | Track")
-
-    return [line_colour, colours.menu_background, text]
 
 
 def download_art1(tr):
@@ -10777,25 +10727,10 @@ def remove_embed_picture(track_object):
             show_message("Deleted embedded picture from " + str(removed) + " files", mode='done')
     if pr == 1:
         pctl.revert()
-    #clear_img_cache()
 
-
-
-# Delete all embedded album artwork from all files in the same folder as this track
-picture_menu.add('Delete Embedded | Folder', remove_embed_picture, remove_embed_deco, pass_ref=True, pass_ref_deco=True)
 
 delete_icon = MenuIcon(asset_loader('del.png', True))
 
-
-def delete_file_image_deco(track_object):
-
-    info = album_art_gen.get_info(track_object)
-    if info and info[0] == 0:
-        line_colour = colours.menu_text
-    else:
-        line_colour = colours.menu_text_disabled
-
-    return [line_colour, colours.menu_background, None]
 
 def delete_file_image(track_object):
 
@@ -10811,7 +10746,46 @@ def delete_file_image(track_object):
         show_message("Something went wrong", mode='error')
 
 
-picture_menu.add(_('Delete Image File'), delete_file_image, delete_file_image_deco, pass_ref=True, pass_ref_deco=True, icon=delete_icon)
+
+def delete_track_image_deco(track_object):
+    info = album_art_gen.get_info(track_object)
+
+    text = _("Delete Image File")
+    line_colour = colours.menu_text
+
+    if info is None:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+    elif info and info[0] == 0:
+        text = _("Delete Image File")
+
+    elif info and info[0] == 1:
+        if pctl.playing_state > 0 and (track_object.file_ext == "MP3" or track_object.file_ext == "FLAC"):
+            line_colour = colours.menu_text
+        else:
+            line_colour = colours.menu_text_disabled
+
+        text = _("Delete Embedded | Folder")
+        if key_shift_down or key_shiftr_down:
+            text = _("Delete Embedded | Track")
+
+    return [line_colour, colours.menu_background, text]
+
+
+def delete_track_image(track_object):
+    info = album_art_gen.get_info(track_object)
+    if info and info[0] == 0:
+        delete_file_image(track_object)
+    elif info and info[0] == 1:
+        remove_embed_deco(track_object)
+
+picture_menu.add('Delete Image <combined>', delete_track_image, delete_track_image_deco, pass_ref=True, pass_ref_deco=True, icon=delete_icon)
+
+
+
+
+
+
 
 picture_menu.add(_('Quick-Fetch Cover Art'), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True)
 
@@ -12667,8 +12641,8 @@ def lightning_paste():
                                  mode='warning')
                     return
 
-            if directory_size(move_path) > 1500000000:
-                show_message("Folder size safety limit reached! (1.5GB)", move_path, mode='warning')
+            if directory_size(move_path) > 3000000000:
+                show_message("Folder size safety limit reached! (3GB)", move_path, mode='warning')
                 return
 
             if len(next(os.walk(move_path))[2]) > max(20, len(to_move) * 2):
@@ -16680,7 +16654,7 @@ search_over = SearchOverlay()
 def worker3():
 
     while True:
-        time.sleep(0.07)
+        time.sleep(0.01)
 
         # if tm.exit_worker3:
         #     tm.exit_worker3 = False
@@ -25169,6 +25143,10 @@ class TreeView:
                     scroll_position = 0
                 break
 
+        max_scroll = len(self.rows) - (h // round(22 * gui.scale))
+        if scroll_position > max_scroll:
+            scroll_position = max_scroll
+
         self.scroll_positions[pl_id] = scroll_position
 
     def render(self, x, y, w, h):
@@ -26249,14 +26227,14 @@ class MetaBox:
         # Check for lyrics if auto setting
         test_auto_lyrics(track)
 
-        # Draw lyrics if avaliable
-        if prefs.show_lyrics_side and pctl.track_queue \
-                    and track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
-
-            self.lyrics(x, y, w, h, track)
+        # # Draw lyrics if avaliable
+        # if prefs.show_lyrics_side and pctl.track_queue \
+        #             and track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
+        #
+        #     self.lyrics(x, y, w, h, track)
 
         # Draw standard metadata
-        elif len(pctl.track_queue) > 0:
+        if len(pctl.track_queue) > 0:
 
             if pctl.playing_state == 0:
                 if not prefs.meta_persists_stop and not prefs.meta_shows_selected and not prefs.meta_shows_selected_always:
@@ -28011,7 +27989,6 @@ def download_img(link, target_folder, track):
 
 def display_you_heart(x, yy, just=0):
 
-
     rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
     gui.heart_fields.append(rect)
     fields.add(rect, update_playlist_call)
@@ -29476,7 +29453,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders or gui.frame_callback_list: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders or gui.frame_callback_list or gall_ren.queue: # or mouse_moved:
         power = 1000
 
     if prefs.art_bg and core_timer.get() < 3:
@@ -29510,6 +29487,7 @@ while pctl.running:
         if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
                 SDL_WaitEventTimeout(None, 1000)
                 check_transfer_p()
+
         continue
 
     else:
@@ -29558,7 +29536,7 @@ while pctl.running:
         if mouse_enter_window:
             input.key_return_press = False
 
-        if input.mouse_click or right_click:
+        if input.mouse_click or right_click or mouse_up:
             last_click_location = copy.deepcopy(click_location)
             click_location = copy.deepcopy(mouse_position)
 
@@ -31517,7 +31495,11 @@ while pctl.running:
                             else:
                                 prefs.side_panel_layout = 0
 
-                    if prefs.side_panel_layout == 0:
+                    if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
+
+                        meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
+
+                    elif prefs.side_panel_layout == 0:
 
                         boxw = gui.rspw
                         boxh = gui.rspw
@@ -31546,7 +31528,7 @@ while pctl.running:
 
                         # Draw lyrics if avaliable
                         if prefs.show_lyrics_side and target_track and target_track.lyrics != "": # and not prefs.show_side_art:
-                            meta_box.lyrics(x, y, w, h, target_track)
+                            #meta_box.lyrics(x, y, w, h, target_track)
                             if right_click and coll((x, y, w, h)) and target_track:
                                 center_info_menu.activate(target_track)
                         else:
