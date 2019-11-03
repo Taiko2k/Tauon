@@ -4570,7 +4570,7 @@ class LastFMapi:
 
     def scrobble(self, track_object, timestamp=None):
         if self.hold:
-            return
+            return True
         if prefs.auto_lfm:
             self.connect(False)
 
@@ -4610,6 +4610,7 @@ class LastFMapi:
             show_message("Error: Could not scrobble. ", str(e), mode='warning')
             print(e)
             return False
+        return True
 
     def get_bio(self, artist):
         #if self.connected:
@@ -4789,7 +4790,7 @@ class LastFMapi:
             print(e)
             if 'retry' in str(e):
                 return 2
-                show_message("Could not update Last.fm. ", str(e), mode='warning')
+                # show_message("Could not update Last.fm. ", str(e), mode='warning')
             pctl.b_time -= 5000
             return 1
 
@@ -4819,9 +4820,9 @@ class ListenBrainz:
     def listen_full(self, track_object, time):
 
         if self.enable is False:
-            return
+            return True
         if self.hold is True:
-            return
+            return True
         if prefs.lb_token is None:
             show_message("ListenBrains is enabled but there is no token.", "How did this even happen.", mode='error')
 
@@ -4830,7 +4831,7 @@ class ListenBrainz:
         artist = get_artist_strip_feat(track_object)
 
         if title == "" or artist == "":
-            return
+            return True
 
         data = {"listen_type": "single", "payload": []}
         metadata = {"track_name": title, "artist_name": artist}
@@ -4864,6 +4865,7 @@ class ListenBrainz:
         if r.status_code != 200:
             show_message("There was an error submitting data to ListenBrainz", r.text, mode='warning')
             return False
+        return True
 
     def listen_playing(self, track_object):
 
@@ -5040,46 +5042,37 @@ class LastScrob:
         mini_t.daemon = True
         mini_t.start()
 
+
     def process_queue(self):
 
-        time.sleep(0.5)
+        time.sleep(0.4)
 
         while self.queue:
 
+            print("TRY SCROBBLE")
+            print(self.queue)
             try:
                 tr = self.queue.pop()
 
                 gui.pl_update = 1
                 print("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
 
-                lfm_success = True
-                lb_success = True
+                success = True
 
-                if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-                    lfm_success = lastfm.scrobble(tr[0], tr[1])
-                    if not lfm_success:
-                        # Try again
-                        time.sleep(2)
-                        lfm_success = lastfm.scrobble(tr[0], tr[1])
+                if tr[2] == "lfm" and prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+                    success = lastfm.scrobble(tr[0], tr[1])
+                elif tr[2] == "lb" and lb.enable:
+                    success = lb.listen_full(tr[0], tr[1])
 
-                if lb.enable:
-                    lb_success = lb.listen_full(tr[0], tr[1])
-                    if not lb_success:
-                        # Try again
-                        time.sleep(2)
-                        lb_success = lb.listen_full(tr[0], tr[1])
-
-                if not lfm_success and not lb_success and self.running:
+                if not success:
                     print("Re-queue scrobble")
                     self.queue.append(tr)
                     time.sleep(30)
                     break
 
-                time.sleep(0.2)
-
             except:
                 print("SCROBBLE QUEUE ERROR")
-                # raise
+                #raise
 
         self.running = False
 
@@ -5135,20 +5128,21 @@ class LastScrob:
                     mini_t.daemon = True
                     mini_t.start()
 
+        send_full = False
         if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
                 * 0.50 and self.a_sc is False:
             self.a_sc = True
-            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) or lb.enable:
-                #print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index], int(time.time())))
-
+            send_full = True
 
         if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
             self.a_sc = True
-            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())) or lb.enable:
-                #print("Queue Scrobble")
-                self.queue.append((pctl.master_library[self.a_index], int(time.time())))
+            send_full = True
 
+        if send_full:
+            if (prefs.auto_lfm and (lastfm.connected or lastfm.details_ready())):
+                self.queue.append((pctl.master_library[self.a_index], int(time.time()), "lfm"))
+            if lb.enable:
+                self.queue.append((pctl.master_library[self.a_index], int(time.time()), "lb"))
 
 lfm_scrobbler = LastScrob()
 
@@ -7184,6 +7178,7 @@ class GallClass:
                     limit = 500
 
                 if len(self.key_list) > limit:
+                    gui.update += 1
                     key = self.key_list[0]
                     # while key in self.queue:
                     #     self.queue.remove(key)
@@ -28182,6 +28177,7 @@ class ThreadManager:
             self.worker3 = threading.Thread(target=worker3)
             self.worker3.daemon = True
             self.worker3.start()
+
         self.exit_worker3 = False
 
     # def wake(self):
