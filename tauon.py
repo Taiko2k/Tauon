@@ -6971,6 +6971,7 @@ class GallClass:
         self.key_list = []
         self.save_out = save_out
         self.i = 0
+        self.lock = threading.Lock()
 
     def get_file_source(self, track_object):
 
@@ -6985,6 +6986,8 @@ class GallClass:
 
     def worker_render(self):
 
+        self.lock.acquire()
+
         while len(self.queue) > 0:
 
             if gui.halt_image_rendering:
@@ -6994,7 +6997,8 @@ class GallClass:
             self.i += 1
 
             try:
-                key = self.queue[0]
+                #key = self.queue[0]
+                key = self.queue.pop(0)
             except:
                 print("thumb queue empty")
                 break
@@ -7032,7 +7036,7 @@ class GallClass:
                     if source is False:
                         order[0] = 0
                         self.gall[key] = order
-                        del self.queue[0]
+                        #del self.queue[0]
                         continue
 
                     img_name = str(key[2]) + "-" + str(size) + '-' + str(key[0].index) + "-" + str(source[2])
@@ -7073,7 +7077,6 @@ class GallClass:
                         im = im.convert("RGB")
                     im.thumbnail((size, size), Image.ANTIALIAS)
 
-
                     im.save(g, 'BMP')
                     if self.save_out and prefs.cache_gallery and not os.path.isfile(os.path.join(cache_directory, img_name + '.jpg')):
                         im.save(os.path.join(cache_directory, img_name + '.jpg'), 'JPEG', quality=95)
@@ -7085,16 +7088,10 @@ class GallClass:
                 order = [2, g, None, None]
                 self.gall[key] = order
 
-                time.sleep(0.001)
-
                 gui.update += 1
-                del self.queue[0]
+                #del self.queue[0]
 
-                if gui.combo_mode:
-                    gui.pl_update = 1
-
-                g = io.BytesIO()
-                g.seek(0)
+                time.sleep(0.001)
 
             except:
                 #raise
@@ -7102,7 +7099,7 @@ class GallClass:
                 order = [0, None, None, None]
                 self.gall[key] = order
                 gui.update += 1
-                del self.queue[0]
+                #del self.queue[0]
 
             if size < 150:
                 random.shuffle(self.queue)
@@ -7201,6 +7198,11 @@ class GallClass:
 
             if key not in self.queue:
                 self.queue.append(key)
+                try:
+                    self.lock.release()
+                except:
+                    pass
+
 
         return False
 
@@ -16654,7 +16656,7 @@ search_over = SearchOverlay()
 def worker3():
 
     while True:
-        time.sleep(0.01)
+        #time.sleep(0.04)
 
         # if tm.exit_worker3:
         #     tm.exit_worker3 = False
@@ -28173,6 +28175,10 @@ class ThreadManager:
 
     def ready_worker3(self):
         if self.worker3 is None or not self.worker3.is_alive():
+            self.worker3 = threading.Thread(target=worker3)
+            self.worker3.daemon = True
+            self.worker3.start()
+
             self.worker3 = threading.Thread(target=worker3)
             self.worker3.daemon = True
             self.worker3.start()
