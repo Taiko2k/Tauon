@@ -5,6 +5,7 @@ v5.0.2
 
  - Fixed folder tree view scroll position when showing playing
  - Fixed scrobble queue no working
+ - Fixed text box text exceeding bounds
  - Improved gallery loading performance
 
 v5.0.1

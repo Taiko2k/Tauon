@@ -5049,8 +5049,6 @@ class LastScrob:
 
         while self.queue:
 
-            print("TRY SCROBBLE")
-            print(self.queue)
             try:
                 tr = self.queue.pop()
 
@@ -6642,6 +6640,333 @@ def link_activate(x, y, link_pa):
             track_box = True
 
 
+
+text_box_canvas_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas_hide_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
+SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
+
+class TextBox2:
+    cursor = True
+
+    def __init__(self):
+
+        self.text = ""
+        self.cursor_position = 0
+        self.selection = 0
+        self.offset = 0
+        self.down_lock = False
+
+    def paste(self):
+
+        if SDL_HasClipboardText():
+            clip = SDL_GetClipboardText().decode('utf-8')
+
+            if 'http://' in self.text and 'http://' in clip:
+                self.text = ""
+
+            clip = clip.rstrip(" ").lstrip(" ")
+            clip = clip.replace('\n', ' ').replace('\r', '')
+
+            self.eliminate_selection()
+            self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+                self.text) - self.cursor_position:]
+
+    def copy(self):
+
+        text = self.get_selection()
+        if text != "":
+            SDL_SetClipboardText(text.encode('utf-8'))
+
+    def set_text(self, text):
+
+        self.text = text
+        self.cursor_position = 0
+        self.selection = 0
+
+    def clear(self):
+        self.text = ""
+
+    def highlight_all(self):
+
+        self.selection = len(self.text)
+        self.cursor_position = 0
+
+    def eliminate_selection(self):
+        if self.selection != self.cursor_position:
+            if self.selection > self.cursor_position:
+                self.text = self.text[0: len(self.text) - self.selection] + self.text[
+                                                                            len(self.text) - self.cursor_position:]
+                self.selection = self.cursor_position
+            else:
+                self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[
+                                                                                  len(self.text) - self.selection:]
+                self.cursor_position = self.selection
+
+    def get_selection(self, p=1):
+        if self.selection != self.cursor_position:
+            if p == 1:
+                if self.selection > self.cursor_position:
+                    return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
+
+                else:
+                    return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
+            if p == 0:
+                return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+            if p == 2:
+                return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+
+        else:
+            return ""
+
+    def draw(self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18,
+             big=False):
+
+        # A little bit messy.
+        # For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+        # otherwise it is fixed to end
+
+        SDL_SetRenderTarget(renderer, text_box_canvas)
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+
+        text_box_canvas_rect.x = 0
+        text_box_canvas_rect.y = 0
+        SDL_RenderFillRect(renderer, text_box_canvas_rect)
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+
+        selection_height *= gui.scale
+
+        if click is False:
+            click = input.mouse_click
+
+        if width > 0 and active:
+
+            rect = (x - 3, y - 2, width - 3, 21)
+
+            # Activate Menu
+            if coll(rect):
+                if right_click or level_2_right_click:
+                    field_menu.activate(self)
+
+            if click and field_menu.active:
+                # field_menu.click()
+                click = False
+
+            # Add text from input
+            if input_text != "":
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(
+                    self.text) - self.cursor_position:]
+
+
+            # Handle backspace
+            if input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                while input.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+                    if self.selection != self.cursor_position:
+                        self.eliminate_selection()
+                    else:
+                        self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
+                            self.text) - self.cursor_position:]
+                    input.backspace_press -= 1
+            elif input.backspace_press and len(self.get_selection()) > 0:
+                self.eliminate_selection()
+
+            # Left and right arrow keys to move cursor
+            if key_right_press:
+                if self.cursor_position > 0:
+                    self.cursor_position -= 1
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+
+            if key_left_press:
+                if self.cursor_position < len(self.text):
+                    self.cursor_position += 1
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+            # Paste via ctrl-v
+            if key_ctrl_down and key_v_press:
+                clip = SDL_GetClipboardText().decode('utf-8')
+                self.eliminate_selection()
+                self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+                    self.text) - self.cursor_position:]
+
+            if key_ctrl_down and key_c_press:
+                self.copy()
+
+            if key_ctrl_down and key_x_press:
+                if len(self.get_selection()) > 0:
+                    text = self.get_selection()
+                    if text != "":
+                        SDL_SetClipboardText(text.encode('utf-8'))
+                    self.eliminate_selection()
+
+            # ddt.rect_r(rect, [255, 50, 50, 80], True)
+            if coll(rect) and not field_menu.active:
+                gui.cursor_want = 2
+
+            fields.add(rect)
+
+            # Delete key to remove text in front of cursor
+            if key_del:
+                if self.selection != self.cursor_position:
+                    self.eliminate_selection()
+                else:
+                    self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+                        self.text) - self.cursor_position + 1:]
+                    if self.cursor_position > 0:
+                        self.cursor_position -= 1
+                    self.selection = self.cursor_position
+
+            if key_home_press:
+                self.cursor_position = len(self.text)
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+            if key_end_press:
+                self.cursor_position = 0
+                if not key_shift_down and not key_shiftr_down:
+                    self.selection = self.cursor_position
+
+            width -= round(15 * gui.scale)
+            t_len = ddt.get_text_w(self.text, font)
+            if not click and not self.down_lock:
+                cursor_x = ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+                if self.cursor_position == 0 or cursor_x < self.offset + round(15 * gui.scale) or cursor_x > self.offset + width:
+                    if t_len > width:
+                        self.offset = t_len - width
+
+                        if cursor_x < self.offset:
+                            self.offset = cursor_x - round(15 * gui.scale)
+                            if self.offset < 0:
+                                self.offset = 0
+                    else:
+                        self.offset = 0
+
+            x -= self.offset
+
+
+            if coll(rect): #coll((x - 15, y, width + 16, selection_height + 1)):
+                # ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
+                if click:
+                    pre = 0
+                    post = 0
+                    if mouse_position[0] < x + 1:
+                        self.cursor_position = len(self.text)
+                    else:
+                        for i in range(len(self.text)):
+                            post = ddt.get_text_w(self.text[0:i + 1], font)
+                            # pre_half = int((post - pre) / 2)
+
+                            if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+                                diff = post - pre
+                                if mouse_position[0] >= x + pre + int(diff / 2):
+                                    self.cursor_position = len(self.text) - i - 1
+                                else:
+                                    self.cursor_position = len(self.text) - i
+                                break
+                            pre = post
+                        else:
+                            self.cursor_position = 0
+                    self.selection = 0
+                    self.down_lock = True
+
+            if mouse_up:
+                self.down_lock = False
+            if self.down_lock:
+                pre = 0
+                post = 0
+                if mouse_position[0] < x + 1:
+
+                    self.selection = len(self.text)
+                else:
+
+                    for i in range(len(self.text)):
+                        post = ddt.get_text_w(self.text[0:i + 1], font)
+                        # pre_half = int((post - pre) / 2)
+
+                        if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+                            diff = post - pre
+
+                            if mouse_position[0] >= x + pre + int(diff / 2):
+                                self.selection = len(self.text) - i - 1
+
+                            else:
+                                self.selection = len(self.text) - i
+
+                            break
+                        pre = post
+
+                    else:
+                        self.selection = 0
+
+            a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+            # print("")
+            # print(self.selection)
+            # print(self.cursor_position)
+
+            b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
+
+            # rint((a, b))
+
+            top = y
+            if big:
+                top -= 12 * gui.scale
+
+            ddt.rect([x + a, top, b - a, selection_height], [40, 120, 180, 255], True)
+
+            if self.selection != self.cursor_position:
+                inf_comp = 0
+                space = ddt.text((0, 0), self.get_selection(0), colour, font)
+                space += ddt.text((0 + space - inf_comp, 0), self.get_selection(1), [240, 240, 240, 255], font,
+                                  bg=[40, 120, 180, 255], )
+                ddt.text((0 + space - (inf_comp * 2), 0), self.get_selection(2), colour, font)
+            else:
+                ddt.text((0, 0), self.text, colour, font)
+
+            space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+
+            if TextBox.cursor and self.selection == self.cursor_position:
+                # ddt.line(x + space, y + 2, x + space, y + 15, colour)
+
+                ddt.rect((0 + space, 0 + 2, 1 * gui.scale, 14 * gui.scale), colour, True)
+
+            if click:
+                self.selection = self.cursor_position
+
+
+        if active and editline != "" and editline != input_text:
+            ex = ddt.text((x + space + 4, y), editline, [240, 230, 230, 255], font)
+            # ddt.line(x + space + 4, y + 13, x + space + 4 + ex, y + 13, [245, 245, 245, 255])
+
+        animate_monitor_timer.set()
+
+        text_box_canvas_hide_rect.x = 0
+        text_box_canvas_hide_rect.y = 0
+
+        #if self.offset:
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
+
+        text_box_canvas_hide_rect.w = self.offset
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+
+        text_box_canvas_hide_rect.w = round(t_len)
+        text_box_canvas_hide_rect.x = self.offset + width + round(5 * gui.scale)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+        SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+        SDL_SetRenderTarget(renderer, gui.main_texture)
+
+        text_box_canvas_rect.x = x
+        text_box_canvas_rect.y = y
+        SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
+
+
 class TextBox:
 
     cursor = True
@@ -6652,6 +6977,8 @@ class TextBox:
         self.cursor_position = 0
         self.selection = 0
         self.down_lock = False
+
+
 
     def paste(self):
 
@@ -6941,15 +7268,13 @@ class TextBox:
 
 rename_text_area = TextBox()
 search_text = TextBox()
-last_fm_user_field = TextBox()
-last_fm_pass_field = TextBox()
-rename_files = TextBox()
+rename_files = TextBox2()
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
-radio_field = TextBox()
+radio_field = TextBox2()
 radio_field.text = radio_field_text
-rename_folder = TextBox()
+rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
     rename_folder.text = rename_folder_previous
