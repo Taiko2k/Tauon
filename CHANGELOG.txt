@@ -7,7 +7,10 @@ v5.0.2
  - Fixed scrobble queue no working
  - Fixed text box text exceeding bounds
  - Tweaked global search performance
+ - Tweaked mini mode colours
  - Improved gallery loading performance
+ - Moved "Toggle art" function to ctrl+h shortcut
+ - Removed lyrics under art feature
 
 v5.0.1
 

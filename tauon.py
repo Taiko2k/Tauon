@@ -1635,8 +1635,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.pluse_colour = [244, 212, 66, 255]
 
-        self.mini_mode_background = [24, 24, 24, 255]
-        self.mini_mode_border = [60, 60, 60, 255]
+        self.mini_mode_background = [20, 20, 20, 255]
+        self.mini_mode_border = [50, 50, 50, 255]
 
         self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
@@ -2333,6 +2333,14 @@ if db_version > 0:
     if db_version <= 34:
         print("Update to dv 35")
         # Moved to after config load
+
+    if db_version <= 35:
+        print("Updating database to version 36")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("toggle-show-art H Ctrl\n")
+
 
 # Loading Config -----------------
 
@@ -10424,9 +10432,9 @@ def toggle_lyrics_deco(track_object):
 
     if gui.combo_mode:
         if prefs.show_lyrics_showcase:
-            line = _("Hide lyrics")
+            line = _("Hide Lyrics")
         else:
-            line = _("Show lyrics")
+            line = _("Show Lyrics")
         if not track_object or track_object.lyrics == "":
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
@@ -10434,17 +10442,17 @@ def toggle_lyrics_deco(track_object):
     if prefs.side_panel_layout == 1: #and prefs.show_side_art:
 
         if prefs.show_lyrics_side:
-            line = _("Hide lyrics")
+            line = _("Hide Lyrics")
         else:
-            line = _("Show lyrics")
-        if not prefs.show_lyrics_side and track_object.lyrics == "":
+            line = _("Show Lyrics")
+        if track_object.lyrics == "":
             colour = colours.menu_text_disabled
         return [colour, colours.menu_background, line]
 
     if prefs.show_lyrics_side:
-        line = _("Hide lyrics")
+        line = _("Hide Lyrics")
     else:
-        line = _("Show lyrics")
+        line = _("Show Lyrics")
     if track_object.lyrics == "":
         colour = colours.menu_text_disabled
     return [colour, colours.menu_background, line]
@@ -10470,8 +10478,6 @@ def toggle_lyrics(track_object):
         prefs.show_lyrics_side ^= True
         if prefs.show_lyrics_side and track_object.lyrics == "":
             show_message(_("No lyrics for this track"))
-
-showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -10698,10 +10704,10 @@ def split_lyrics(track_object):
 
 showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
-
-showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
-center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+#showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+#center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 center_info_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 def save_embed_img(track_object):
@@ -11131,7 +11137,8 @@ def ser_gimage(track_object):
 
 picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
 
-picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+#picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+picture_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 def append_here():
     global cargo
@@ -22228,8 +22235,6 @@ class MiniMode:
             line2 = track.title
 
             # Calculate seek bar position
-            seek_w = 240 * gui.scale
-
             seek_w = int(w * 0.65)
 
             seek_r = [(w - seek_w) // 2, y1 + 57 * gui.scale, seek_w, 6 * gui.scale]
@@ -22242,7 +22247,7 @@ class MiniMode:
                              window_size[0] - 30 * gui.scale)
                 else:
 
-                    ddt.text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(180), 313,
+                    ddt.text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(100), 313,
                              window_size[0] - 30 * gui.scale)
 
                     ddt.text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(249), 214,
@@ -25470,9 +25475,11 @@ class TreeView:
                     scroll_position = 0
                 break
 
-        max_scroll = len(self.rows) - (h // round(22 * gui.scale))
+        max_scroll = len(self.rows) - ((window_size[0] - (gui.panelY + gui.panelBY)) // round(22 * gui.scale))
         if scroll_position > max_scroll:
             scroll_position = max_scroll
+        if scroll_position < 0:
+            scroll_position = 0
 
         self.scroll_positions[pl_id] = scroll_position
 
@@ -29072,7 +29079,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            35,  # Version, used for upgrading
+            36,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -30077,6 +30084,9 @@ while pctl.running:
                     gui.album_tab_mode ^= True
                     if gui.album_tab_mode:
                         show_in_gal(playlist_selected, silent=True)
+
+            if keymaps.test("toggle-show-art"):
+                toggle_side_art()
 
         elif gui.mode == 3:
             if keymaps.test("toggle-minimode"):
