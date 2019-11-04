@@ -16350,6 +16350,7 @@ class SearchOverlay:
         self.delay_enter = False
         self.last_animate_time = 0
         self.animate_timer = Timer(100)
+        self.input_timer = Timer(100)
 
     def click_artist(self, name, get_list=False):
 
@@ -16556,10 +16557,27 @@ class SearchOverlay:
                 gui.update += 1
 
             # No results found message
-            elif not self.results and len(self.search_text.text) > 2:
-                ddt.text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
+            elif not self.results and len(self.search_text.text) > 1:
+                if self.input_timer.get() > 0.5 and not self.sip:
+                    ddt.text((130 * gui.scale, 200 * gui.scale), "No results found", [250, 250, 250, 255], 216, bg=[12, 12, 12, 255])
 
             self.search_text.draw(80 * gui.scale, 60 * gui.scale, [230, 230, 230, 255], True, False, 30, window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
+
+            if input_text or key_backspace_press:
+                self.input_timer.set()
+
+                gui.update += 1
+            else:
+                if self.input_timer.get() >= 0.4 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
+                    try:
+                        print("release")
+                        self.sip = True
+                        worker2_lock.release()
+                    except:
+                        pass
+
+            if self.input_timer.get() < 10:
+                gui.frame_callback_list.append(TestTimer(0.1))
 
             yy = 110 * gui.scale
 
@@ -16985,32 +17003,24 @@ def worker3():
         gall_ren.worker_render()
 
 
+def worker4():
+    time.sleep(0.2)
+
+    if prefs.art_bg:
+        style_overlay.worker()
+
+worker2_lock = threading.Lock()
 def worker2():
 
     while True:
-
-        time.sleep(0.15)
-
-        # if tm.exit_worker2:
-        #     tm.exit_worker2 = False
-        #     return
-
-        #gall_ren.worker_render()
-
-        if prefs.art_bg:
-            style_overlay.worker()
-
-        #if core_timer.get() > 2:
-
+        worker2_lock.acquire()
 
         if len(search_over.search_text.text) > 1:
-            if search_over.search_text.text != search_over.searched_text:
+            if True:
 
                 temp_results = []
 
                 search_over.searched_text = search_over.search_text.text
-
-
 
                 artists = {}
                 albums = {}
@@ -17039,8 +17049,8 @@ def worker2():
 
                     for track in playlist[2]:
 
-                        if input_text:
-                            time.sleep(0.05)
+                        # if input_text:
+                        #     time.sleep(0.05)
 
 
                         t = pctl.master_library[track]
@@ -17252,10 +17262,9 @@ def worker2():
 
                                         tracks.add(t)
 
-
                         br += 1
                         if br > 700:
-                            time.sleep(0.001)  # Throttle thread
+                            time.sleep(0.003)  # Throttle thread
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
                                 break
@@ -28465,67 +28474,6 @@ class ThreadManager:
         self.worker3 = None  # Gallery rendering
         self.playback = None
 
-        self.exit_worker1 = False
-        self.exit_worker2 = False
-        self.exit_worker3 = False
-
-        self.worker1 = threading.Thread(target=worker1)
-        self.worker2 = threading.Thread(target=worker2)
-        self.worker3 = threading.Thread(target=worker3)
-
-        self.worker1.daemon = True
-        self.worker2.daemon = True
-        self.worker3.daemon = True
-
-        self.sleeping = False
-
-    def ready_worker1(self):
-        if self.worker1 is None or not self.worker1.is_alive():
-            self.worker1 = threading.Thread(target=worker1)
-            self.worker1.daemon = True
-            self.worker1.start()
-        self.exit_worker1 = False
-
-    def ready_worker2(self):
-        if self.worker2 is None or not self.worker2.is_alive():
-            self.worker2 = threading.Thread(target=worker2)
-            self.worker2.daemon = True
-            self.worker2.start()
-        self.exit_worker1 = False
-
-    def ready_worker3(self):
-        if self.worker3 is None or not self.worker3.is_alive():
-            self.worker3 = threading.Thread(target=worker3)
-            self.worker3.daemon = True
-            self.worker3.start()
-
-            self.worker3 = threading.Thread(target=worker3)
-            self.worker3.daemon = True
-            self.worker3.start()
-
-        self.exit_worker3 = False
-
-    # def wake(self):
-    #     self.ready_worker1()
-    #     self.ready_worker2()
-    #     self.ready_worker3()
-    #
-    #     time.sleep(0.05)
-    #     self.ready_worker1()
-    #     self.ready_worker2()
-    #     self.ready_worker3()
-
-    # def sleep(self):
-    #
-    #     self.sleeping = True
-    #     if not loading_in_progress and not transcode_list:
-    #         self.exit_worker1 = True
-    #     self.exit_worker2 = True
-    #     self.exit_worker3 = True
-    #     if pctl.playing_state == 0 and not pctl.broadcast_active:
-    #         pctl.playerCommand = "unload"
-    #         pctl.playerCommandReady = True
-
     def ready_playback(self):
         if self.playback is None or not self.playback.is_alive():
             if prefs.backend == 1:
@@ -28544,11 +28492,26 @@ class ThreadManager:
 
 
 tm = ThreadManager()
-
-tm.ready_worker1()
-tm.ready_worker2()
-tm.ready_worker3()
 tm.ready_playback()
+
+thread = threading.Thread(target=worker1)
+thread.daemon = True
+thread.start()
+
+thread = threading.Thread(target=worker2)
+thread.daemon = True
+thread.start()
+
+thread = threading.Thread(target=worker3)
+thread.daemon = True
+thread.start()
+thread = threading.Thread(target=worker3)
+thread.daemon = True
+thread.start()
+
+thread = threading.Thread(target=worker4)
+thread.daemon = True
+thread.start()
 
 # MAIN LOOP---------------------------------------------------------------------------
 
@@ -29321,6 +29284,7 @@ while pctl.running:
         key_esc_press = False
         key_del = False
         input.backspace_press = 0
+        key_backspace_press = False
         key_c_press = False
         key_v_press = False
         #key_f_press = False
@@ -29573,6 +29537,7 @@ while pctl.running:
                 input.key_return_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 input.backspace_press += 1
+                key_backspace_press = True
             elif event.key.keysym.sym == SDLK_DELETE:
                 key_del = True
             elif event.key.keysym.sym == SDLK_ESCAPE:
