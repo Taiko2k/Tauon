@@ -6346,17 +6346,11 @@ class LyricsRenMini:
 
     def render(self, index, x, y, w, h, p):
 
-        if prefs.show_side_art and prefs.side_panel_layout == 0:  # Hacky tweak
-            pass
-        else:
-            y += 5 * gui.scale
-
         if index != self.index or self.text != pctl.master_library[index].lyrics:
             self.index = index
             self.generate(index, w)
 
         colour = colours.side_bar_line1
-
 
         ddt.text((x, y, 4, w), self.text, colour, 15, w - (w % 2), colours.side_panel_background)
 
@@ -9515,6 +9509,8 @@ class Menu:
 
                         if self.items[i][1] is False:
                             to_call = i
+                            global mouse_down
+                            mouse_down = False
 
                         else:
                             self.clicked = False
@@ -26488,8 +26484,17 @@ class MetaBox:
 
     def lyrics(self, x, y, w, h, track):
 
+        ddt.rect((x, y, w, h), colours.side_panel_background, True)
+        ddt.text_background_colour = colours.side_panel_background
+
         if not track:
             return
+
+        # Test for show lyric menu on right ckick
+        if coll((x + 10, y, w - 10, h)):
+            if right_click: # and 3 > pctl.playing_state > 0:
+                gui.force_showcase_index = -1
+                showcase_menu.activate(track)
 
         # Test for scroll wheel input
         if mouse_wheel != 0 and coll((x + 10, y, w - 10, h)):
@@ -31787,7 +31792,7 @@ while pctl.running:
                             else:
                                 prefs.side_panel_layout = 0
 
-                    if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
+                    if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
 
                         meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
 
