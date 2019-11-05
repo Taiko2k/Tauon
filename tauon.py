@@ -351,8 +351,10 @@ musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Tai
 def _(message):
     return message
 
-
-locale.setlocale(locale.LC_ALL, '')
+try:
+    locale.setlocale(locale.LC_ALL, '')
+except:
+    print("SET LOCALE ERROR")
 
 # ------------------------------------------------
 
