@@ -15489,10 +15489,13 @@ def locate_artist():
     gui.pl_update += 1
 
 
-def toggle_search():
+def activate_search_overlay():
     search_over.active = True
+    search_over.search_text.selection = 0
+    search_over.search_text.cursor_position = 0
 
-extra_menu.add(_('Global Search'), toggle_search, hint="CTRL + G")
+
+extra_menu.add(_('Global Search'), activate_search_overlay, hint="CTRL + G")
 
 def goto_playing_extra():
     pctl.show_current(highlight=True)
@@ -16484,20 +16487,20 @@ class SearchOverlay:
 
         if self.active is False:
 
+            # Activate search overlay on key presses
             if input_text != "" and gui.layer_focus == 0 and \
                     not key_ctrl_down and not radiobox and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
                     and not gui.rename_folder_box and input_text.isalnum():
 
+                # Divert to artist list if mouse over
                 if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
                         and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
                     artist_list_box.locate_artist_letter(input_text)
-                    print(artist_list_box.scroll_position)
-                    print("NEW")
                     return
 
-                self.active = True
+                activate_search_overlay()
                 self.old_mouse = copy.deepcopy(mouse_position)
 
         if self.active:
@@ -30290,7 +30293,7 @@ while pctl.running:
                 select_love()
 
             if keymaps.test("global-search"):
-                toggle_search()
+                activate_search_overlay()
 
     # if mouse_position[1] < 1:
     #     mouse_down = False

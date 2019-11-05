@@ -8,6 +8,7 @@ v5.0.2
  - Fixed scrobble queue no working
  - Fixed text box text exceeding bounds
  - Fixed text box shortcuts not functioning
+ - Fixed search overlay text box cursor bug
  - Tweaked global search performance
  - Tweaked mini mode colours
  - Improved gallery loading performance
