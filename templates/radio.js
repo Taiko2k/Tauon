@@ -1,7 +1,8 @@
 
 var connect_fault = 5;
 var index = -1;
-var init = false
+var status = 0;
+var sound = document.createElement('audio');
 
 function setArt(){
 
@@ -32,15 +33,29 @@ function update() {
                       setArt();
                     }
 
-                    if (init == false) {
-                        init = true
+                    if (status == 1 && data.index == -1) {
+                        status = 2;
+                        sound.stop();
+                    }
+
+                    if (status == 2 && data.index > -1){
+                        status = 1;
+                        sound.currentTime = 0;
+                        sound.load();
+                        sound.play();
+                    }
+
+                    if (status == 0 && data.index > -1) {
+                        status = 1;
                         console.log(window.location.hostname + ":" + data.port);
-                        var sound      = document.createElement('audio');
+
                         sound.id       = 'audio-player';
                         sound.controls = 'controls';
                         sound.src      = "http://" + window.location.hostname + ":" + data.port;
                         sound.type     = 'audio/ogg';
+
                         document.getElementById('player').appendChild(sound);
+                        sound.play();
                     }
                 });
         }

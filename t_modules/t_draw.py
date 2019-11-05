@@ -117,7 +117,6 @@ if system == "windows":
                 
             return rect.right, rect.bottom
             
-          
 
         def renderText(self, text, bg, fg, wrap=False, max_x=100, max_y=None):
 
@@ -126,7 +125,6 @@ if system == "windows":
             t = self.drawDC.GetSafeHdc()
 
             win32gui.SetBkMode(t, win32con.TRANSPARENT)
-
 
             #create the compatible bitmap:
 

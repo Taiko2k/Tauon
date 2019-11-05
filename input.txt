@@ -88,6 +88,6 @@ reload-theme F10
 opacity-up = Ctrl
 opacity-down - Ctrl
 
-
+toggle-show-art H Ctrl
 
 

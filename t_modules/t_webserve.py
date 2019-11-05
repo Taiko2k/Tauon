@@ -74,9 +74,9 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
                 position = pctl.broadcast_time / track.length
             else:
                 position = 0
-            return jsonify(position=position, index=track.index)
+            return jsonify(position=position, index=track.index, port=str(prefs.broadcast_port))
         else:
-            return jsonify(position=0, index=0)
+            return jsonify(position=0, index=-1)
 
     @app.route('/radio/getpic', methods=['GET'])
     def get64pic_radio():
@@ -105,9 +105,9 @@ def webserve(pctl, prefs, gui, album_art_gen, install_directory):
 
     if prefs.expose_web is True:
         if pctl.system == "linux":
-            app.run(host='0.0.0.0', port=prefs.server_port)
+            app.run(host='0.0.0.0', port=prefs.metadata_page_port)
         else:
-            app.run(host='127.0.0.1', port=prefs.server_port)
+            app.run(host='127.0.0.1', port=prefs.metadata_page_port)
     else:
-        app.run(port=prefs.server_port)
+        app.run(port=prefs.metadata_page_port)
 
