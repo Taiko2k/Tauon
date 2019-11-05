@@ -15491,6 +15491,7 @@ def locate_artist():
 
 def activate_search_overlay():
     search_over.active = True
+    search_over.delay_enter = False
     search_over.search_text.selection = 0
     search_over.search_text.cursor_position = 0
 
@@ -16520,9 +16521,12 @@ class SearchOverlay:
                     return
 
             if key_esc_press:
-                self.active = False
-                self.search_text.text = ""
-                return
+                if self.delay_enter:
+                    self.delay_enter = False
+                else:
+                    self.active = False
+                    self.search_text.text = ""
+                    return
 
             if gui.level_2_click and mouse_position[0] > 350 * gui.scale:
                 self.active = False
@@ -16584,7 +16588,6 @@ class SearchOverlay:
             else:
                 if self.input_timer.get() >= 0.4 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
                     try:
-                        print("release")
                         self.sip = True
                         worker2_lock.release()
                     except:
@@ -16620,11 +16623,12 @@ class SearchOverlay:
 
             enter = False
 
-            if self.delay_enter and not self.sip:
+            print((self.search_text, self.searched_text))
+            if self.delay_enter and not self.sip and self.search_text.text == self.searched_text:
                 enter = True
                 self.delay_enter = False
             elif input.key_return_press:
-                if self.sip:
+                if self.sip or self.input_timer.get() < 0.4:
                     self.delay_enter = True
                 else:
                     enter = True
