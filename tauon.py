@@ -21299,21 +21299,25 @@ class TopPanel:
 
             x += ddt.text((x, y), text, bg, 311) + 8 * gui.scale
 
-
-
         elif pctl.broadcast_active:
+
             text = "Now Streaming:"
+            rect = [x, y, 0, round(15 * gui.scale)]
+
             ddt.text((x, y), text, [95, 110, 230, 255], 311) # [70, 85, 230, 255]
             x += ddt.get_text_w(text, 11) + 6 * gui.scale
 
             text = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
                 pctl.broadcast_index].title
             trunc = window_size[0] - x - 150 * gui.scale
-            #text = trunc_line(text, 11, trunc)
-            ddt.text((x, y), text, colours.grey(130), 311, max_w=trunc)
-            x += ddt.get_text_w(text, 11) + 6* gui.scale
+            text_w = ddt.text((x, y), text, colours.grey(130), 311, max_w=trunc)
 
-            x += 7
+            rect[2] = (x - rect[0]) + text_w
+            if coll(rect) and input.mouse_click:
+                pctl.show_current(index=pctl.broadcast_index)
+
+            x += text_w + 13 * gui.scale
+
             progress = int(pctl.broadcast_time / int(pctl.master_library[pctl.broadcast_index].length) * 100 * gui.scale)
             ddt.rect_a((x, y + 4), (progress, 9 * gui.scale), [65, 80, 220, 255], True)
             ddt.rect_a((x, y + 4), (100 * gui.scale, 9 * gui.scale), colours.grey(30))
@@ -23567,7 +23571,7 @@ class StandardPlaylist:
 
 
             # Highlight blue if track is being broadcast
-            if tr.index == pctl.broadcast_index and pctl.broadcast_active:
+            if tr.index == pctl.broadcast_index and pctl.broadcast_active and pl_to_id(pctl.active_playlist_viewing) == pctl.broadcast_playlist:
                 ddt.rect(track_box, [40, 40, 190, 80], True)
                 ddt.text_background_colour = alpha_blend([40, 40, 190, 80], ddt.text_background_colour)
 
