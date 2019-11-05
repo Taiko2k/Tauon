@@ -1,6 +1,7 @@
 
 var connect_fault = 5;
 var index = -1;
+var init = false
 
 function setArt(){
 
@@ -20,7 +21,6 @@ function setArt(){
       });
 }
 
-
 function update() {
             connect_fault = connect_fault - 1
             $.getJSON("/radio/update_radio",
@@ -31,9 +31,18 @@ function update() {
                     if (data.index != index){
                       setArt();
                     }
+
+                    if (init == false) {
+                        init = true
+                        console.log(window.location.hostname + ":" + data.port);
+                        var sound      = document.createElement('audio');
+                        sound.id       = 'audio-player';
+                        sound.controls = 'controls';
+                        sound.src      = "http://" + window.location.hostname + ":" + data.port;
+                        sound.type     = 'audio/ogg';
+                        document.getElementById('player').appendChild(sound);
+                    }
                 });
-
-
         }
 
 function tick(){
@@ -43,13 +52,5 @@ function tick(){
   else { alert("Connection lost, reload page to continue.")}
 }
 
-
-console.log(window.location.hostname + ":8000")
-var sound      = document.createElement('audio');
-sound.id       = 'audio-player';
-sound.controls = 'controls';
-sound.src      = "http://" + window.location.hostname + ":8000";
-sound.type     = 'audio/ogg';
-document.getElementById('player').appendChild(sound);
 
 tick()

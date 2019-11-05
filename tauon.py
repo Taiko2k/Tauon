@@ -738,7 +738,6 @@ class Prefs:    # Used to hold any kind of settings
         self.scrobble_mark = False
         self.enable_mpris = True
 
-        self.server_port = 7590
         self.mkey = True
         self.replay_gain = 0  # 0=off 1=track 2=album
         self.radio_page_lyrics = True
@@ -880,6 +879,7 @@ class Prefs:    # Used to hold any kind of settings
         self.dd_index = False
 
         self.broadcast_port = 8000
+        self.metadata_page_port = 7590
         self.broadcast_bitrate = 128
 
         self.custom_encoder_output = ""
@@ -2431,6 +2431,7 @@ def save_prefs():
     cf.update_value("listenbrainz-token", prefs.lb_token)
 
     cf.update_value("broadcast-port", prefs.broadcast_port)
+    cf.update_value("metadata-page-port", prefs.metadata_page_port)
     cf.update_value("broadcast-bitrate", prefs.broadcast_bitrate)
     cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
 
@@ -2598,7 +2599,8 @@ def load_prefs():
 
     cf.br()
     cf.add_text("[broadcasting]")
-    prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port, "Changing this breaks player on landing page")
+    prefs.broadcast_port = cf.sync_add("int", "broadcast-port", prefs.broadcast_port)
+    prefs.metadata_page_port = cf.sync_add("int", "metadata-page-port", prefs.metadata_page_port, "Make sure to stop server first or restart app after changing this. Must be different to the broadcast port")
     prefs.broadcast_bitrate = cf.sync_add("int", "broadcast-bitrate", prefs.broadcast_bitrate, "Codec is OGG. Higher values may reduce latency.")
 
     cf.br()
@@ -6745,7 +6747,8 @@ class TextBox2:
 
         if width > 0 and active:
 
-            rect = (x - 3, y - 2, width - 3, 21)
+            rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+            select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
 
             # Activate Menu
             if coll(rect):
@@ -6854,7 +6857,7 @@ class TextBox2:
             x -= self.offset
 
 
-            if coll(rect): #coll((x - 15, y, width + 16, selection_height + 1)):
+            if coll(select_rect): #coll((x - 15, y, width + 16, selection_height + 1)):
                 # ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
                 if click:
                     pre = 0
@@ -7058,11 +7061,14 @@ class TextBox:
             click = input.mouse_click
 
 
+
         if width > 0 and active:
 
             rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+            select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
             if big:
                 rect = (x - 3, y - 15 * gui.scale, width - 3, 35 * gui.scale)
+                select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
 
             # Activate Menu
             if coll(rect):
@@ -7152,7 +7158,7 @@ class TextBox:
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
 
-            if coll(rect):
+            if coll(select_rect):
                 #ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
                 if click:
                     pre = 0
@@ -16625,7 +16631,6 @@ class SearchOverlay:
 
             enter = False
 
-            print((self.search_text, self.searched_text))
             if self.delay_enter and not self.sip and self.search_text.text == self.searched_text:
                 enter = True
                 self.delay_enter = False
@@ -18669,7 +18674,7 @@ def toggle_enable_web(mode=0):
         show_message("Web server starting", "External connections will be accepted.", mode='done')
 
     elif prefs.enable_web is False:
-        requests.post("http://localhost:7590/shutdown")
+        requests.post(f"http://localhost:{str(prefs.metadata_page_port)}/shutdown")
         time.sleep(0.25)
 
 
@@ -19439,7 +19444,7 @@ class Over:
                 # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
                 # fields.add(link_rect)
 
-                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), "http://localhost:" + str(prefs.server_port) + "/radio", colours.grey_blend_bg3(190), 13)
+                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg3(190), 13)
                 link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
@@ -26509,6 +26514,36 @@ queue_box = QueueBox()
 
 class MetaBox:
 
+    def l_panel(self, x, y, w, h, track):
+
+        ddt.rect((x, y, w, h), colours.gallery_background, True)
+        ddt.rect((x, y, w, round(2 * gui.scale)), [255, 255, 255, 30], True)
+
+        ddt.text_background_colour = colours.gallery_background
+
+        insert = round(9 * gui.scale)
+        border = round(2 * gui.scale)
+
+        art_rect = (x + insert - 2 * gui.scale, y + insert, h - insert * 2 + 1 * gui.scale, h - insert * 2 + 1 * gui.scale)
+        border_rect = (art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
+
+        ddt.rect(border_rect, [255, 255, 255, 30], True)
+        ddt.rect(art_rect, colours.gallery_background, True)
+        album_art_gen.display(track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+
+        text_x = border_rect[0] + border_rect[2] + round(10 * gui.scale)
+        yy = y + 15 * gui.scale
+
+        ddt.text((text_x, yy), track.title, [255, 255, 255, 235], 316)
+
+        yy += 20 * gui.scale
+        ddt.text((text_x, yy), track.artist, [255, 255, 255, 200], 14)
+        yy += 30 * gui.scale
+        ddt.text((text_x, yy), track.album, [255, 255, 255, 200], 14)
+
+        yy += 20
+        ddt.text((text_x, yy), track.date, [255, 255, 255, 200], 14)
+
 
     def lyrics(self, x, y, w, h, track):
 
@@ -31828,7 +31863,15 @@ while pctl.running:
 
                     if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
 
-                        meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
+
+                        l_panel_h = round(200 * gui.scale)
+                        l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+
+                        #meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
+
+                        meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
+                        meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+
 
                     elif prefs.side_panel_layout == 0:
 
