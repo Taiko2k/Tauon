@@ -6806,7 +6806,11 @@ class TextBox2:
                         SDL_SetClipboardText(text.encode('utf-8'))
                     self.eliminate_selection()
 
-            # ddt.rect_r(rect, [255, 50, 50, 80], True)
+            if key_ctrl_down and key_a_press:
+                self.cursor_position = 0
+                self.selection = len(self.text)
+
+            #ddt.rect(rect, [255, 50, 50, 80], True)
             if coll(rect) and not field_menu.active:
                 gui.cursor_want = 2
 
@@ -6917,7 +6921,7 @@ class TextBox2:
             if big:
                 top -= 12 * gui.scale
 
-            ddt.rect([x + a, top, b - a, selection_height], [40, 120, 180, 255], True)
+            ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255], True)
 
             if self.selection != self.cursor_position:
                 inf_comp = 0
@@ -7112,6 +7116,10 @@ class TextBox:
                     if text != "":
                         SDL_SetClipboardText(text.encode('utf-8'))
                     self.eliminate_selection()
+
+            if key_ctrl_down and key_a_press:
+                self.cursor_position = 0
+                self.selection = len(self.text)
 
 
             # ddt.rect_r(rect, [255, 50, 50, 80], True)
@@ -30099,9 +30107,6 @@ while pctl.running:
 
         ab_click = False
 
-        if key_a_press and key_ctrl_down:
-            gui.pl_update = 1
-            shift_selection = range(len(default_playlist))
 
 
         if key_t_press and key_ctrl_down:
@@ -30200,13 +30205,19 @@ while pctl.running:
                     r_menu_index = pctl.g(default_playlist[playlist_selected]).index
                     track_box = True
 
-            if keymaps.test("advance"):
-                key_right_press = False
-                pctl.advance()
+            # These need to be disabled when text fields are active
+            if not search_over.active and not radiobox and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box:
+                if keymaps.test("advance"):
+                    key_right_press = False
+                    pctl.advance()
 
-            if keymaps.test("previous"):
-                key_left_press = False
-                pctl.back()
+                if keymaps.test("previous"):
+                    key_left_press = False
+                    pctl.back()
+
+                if key_a_press and key_ctrl_down:
+                    gui.pl_update = 1
+                    shift_selection = range(len(default_playlist))
 
             if keymaps.test("vol-down"):
                 if pctl.player_volume > 3:
