@@ -7060,7 +7060,9 @@ class TextBox:
 
         if width > 0 and active:
 
-            rect = (x - 3, y - 2, width - 3, 21)
+            rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+            if big:
+                rect = (x - 3, y - 15 * gui.scale, width - 3, 35 * gui.scale)
 
             # Activate Menu
             if coll(rect):
@@ -7150,7 +7152,7 @@ class TextBox:
                 if not key_shift_down and not key_shiftr_down:
                     self.selection = self.cursor_position
 
-            if coll((x - 15, y, width + 16, selection_height + 1)):
+            if coll(rect):
                 #ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
                 if click:
                     pre = 0
