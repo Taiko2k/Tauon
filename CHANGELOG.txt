@@ -12,6 +12,7 @@ v5.0.2
  - Fixed text box shortcuts not functioning
  - Fixed search overlay text box cursor bug
  - Fixed broadcast listener count not resetting on start
+ - Fixed edit tags with selection menu sometimes causing crash
  - Tweaked global search performance
  - Tweaked mini mode colours
  - Improved gallery loading performance
