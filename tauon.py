@@ -14047,8 +14047,8 @@ def launch_editor(index):
 
 def launch_editor_selection(index):
 
-    for index in shift_selection:
-        if pctl.g(index).is_network:
+    for position in shift_selection:
+        if pctl.g(default_playlist[position]).is_network:
             show_message("Cannot edit tags of a network track.")
             return
 
