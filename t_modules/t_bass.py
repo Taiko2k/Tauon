@@ -1589,6 +1589,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 BASS_Encode_Stop(encoder)
                 BASS_ChannelStop(handle3)
                 BASS_StreamFree(handle3)
+                pctl.broadcast_clients.clear()
                 pctl.broadcast_active = False
 
             if command == "encstart":
