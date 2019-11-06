@@ -17180,18 +17180,18 @@ def worker2():
 
                                     for split in genre.split("/"):
                                         if s_text in split:
-                                            split = split.strip()
+                                            split = split.strip().title()
                                             if split in genres:
                                                 genres[split] += 3
                                             else:
                                                 temp_results.append([3, split, track, playlist[6], 0])
                                                 genres[split] = 1
                                 else:
-                                    if t.genre in genres:
-                                        genres[t.genre] += 3
+                                    if t.genre.title() in genres:
+                                        genres[t.genre.title()] += 3
                                     else:
-                                        temp_results.append([3, t.genre, track, playlist[6], 0])
-                                        genres[t.genre] = 1
+                                        temp_results.append([3, t.genre.title(), track, playlist[6], 0])
+                                        genres[t.genre.title()] = 1
 
                             if s_text in composer:
 
