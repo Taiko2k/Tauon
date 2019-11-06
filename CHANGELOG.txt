@@ -13,6 +13,7 @@ v5.0.2
  - Fixed search overlay text box cursor bug
  - Fixed broadcast listener count not resetting on start
  - Fixed edit tags with selection menu sometimes causing crash
+ - Fixed genre search results with multiple genres and capitalisation
  - Tweaked global search performance
  - Tweaked mini mode colours
  - Improved gallery loading performance
