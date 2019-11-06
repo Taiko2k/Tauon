@@ -17204,12 +17204,12 @@ def worker2():
                                     temp_results.append([5, stem, track, playlist[6], 0])
                                     metas[stem] = 2
 
-                            if s_text in genre:
+                            if s_text.replace("-", "") in genre.replace("-", ""):
 
                                 if "/" in genre:
 
                                     for split in genre.split("/"):
-                                        if s_text in split:
+                                        if s_text.replace("-", "") in split.replace("-", ""):
                                             split = split.strip().title()
                                             if split in genres:
                                                 genres[split] += 3
