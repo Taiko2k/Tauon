@@ -16484,18 +16484,48 @@ class SearchOverlay:
     def click_genre(self, name, get_list=False):
 
         playlist = []
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
-                track = pctl.master_library[item]
-                if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
-                    if item not in playlist:
-                        playlist.append(item)
-                elif "/" in track.genre:
-                    for split in track.genre.split("/"):
-                        split = split.strip()
-                        if name.lower().replace("-", "") == split.lower().replace("-", ""):
-                            if item not in playlist:
-                                playlist.append(item)
+
+        if name.endswith("+"):
+            name2 = name.rstrip("+")
+            genres = []
+            for pl in pctl.multi_playlist:
+                for item in pl[2]:
+                    track = pctl.master_library[item]
+                    if "/" in track.genre:
+                        gs = track.genre.replace("-", "").lower().split("/")
+                        for g in gs:
+                            if g.strip() == name2.lower().replace("-", ""):
+                                for split2 in track.genre.split("/"):
+                                    split2 = split2.strip().replace("-", "").lower()
+                                    if split2 not in genres:
+                                        genres.append(split2)
+                                break
+
+            for pl in pctl.multi_playlist:
+                for item in pl[2]:
+                    track = pctl.master_library[item]
+                    if "/" in track.genre:
+                        for split in track.genre.split("/"):
+                            split = split.strip().replace("-", "").lower()
+                            if split in genres:
+                                if item not in playlist:
+                                    playlist.append(item)
+
+
+        else:
+
+            for pl in pctl.multi_playlist:
+                for item in pl[2]:
+                    track = pctl.master_library[item]
+                    if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
+                        if item not in playlist:
+                            playlist.append(item)
+                    elif "/" in track.genre:
+                        for split in track.genre.split("/"):
+                            split = split.strip()
+                            if name.lower().replace("-", "") == split.lower().replace("-", ""):
+                                if item not in playlist:
+                                    playlist.append(item)
 
 
         if get_list:
@@ -17181,6 +17211,13 @@ def worker2():
                                     for split in genre.split("/"):
                                         if s_text in split:
                                             split = split.strip().title()
+                                            if split in genres:
+                                                genres[split] += 3
+                                            else:
+                                                temp_results.append([3, split, track, playlist[6], 0])
+                                                genres[split] = 1
+
+                                            split = split.strip().title() + "+"
                                             if split in genres:
                                                 genres[split] += 3
                                             else:
