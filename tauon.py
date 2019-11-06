@@ -16504,12 +16504,12 @@ class SearchOverlay:
             for pl in pctl.multi_playlist:
                 for item in pl[2]:
                     track = pctl.master_library[item]
-                    if "/" in track.genre:
-                        for split in track.genre.split("/"):
-                            split = split.strip().replace("-", "").lower()
-                            if split in genres:
-                                if item not in playlist:
-                                    playlist.append(item)
+                    for split in track.genre.split("/"):
+                        split = split.strip().replace("-", "").lower()
+                        if split in genres:
+                            if item not in playlist:
+                                playlist.append(item)
+
 
 
         else:
