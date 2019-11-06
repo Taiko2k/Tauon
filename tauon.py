@@ -940,6 +940,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.network_stream_bitrate = 0  # 0 is off
 
+        self.show_side_lyrics_art_panel = True
+
 prefs = Prefs()
 
 
@@ -1277,6 +1279,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.force_side_on_drag = False
         self.last_left_panel_mode = "playlist"
+        self.showing_l_panel = False
 
 
 gui = GuiVar()
@@ -2405,6 +2408,7 @@ def save_prefs():
     cf.update_value("always-art-header-bar", prefs.always_art_header)
     cf.update_value("prefer-center-bg", prefs.center_bg)
     cf.update_value("side-panel-style", prefs.side_panel_layout)
+    cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
     cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
@@ -2521,6 +2525,7 @@ def load_prefs():
 
     prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
     prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
+    prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
     prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
     prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
@@ -19408,6 +19413,13 @@ class Over:
 
             self.button(x, y, _("Return"), self.toggle_lyrics_view, width=65*gui.scale)
 
+            x = x0 + 25 * gui.scale
+            y = y0 - 10 * gui.scale
+            y += 30 * gui.scale
+            x += 260 * gui.scale
+            prefs.show_side_lyrics_art_panel = self.toggle_square(x, y, prefs.show_side_lyrics_art_panel, _("Show info under side panel lyrics"))
+
+
         else:
 
             y += 35 * gui.scale
@@ -31900,8 +31912,9 @@ while pctl.running:
                 # ALBUM ART
 
                 # Right side panel drawing
-                if gui.rsp and not album_mode:
 
+                if gui.rsp and not album_mode:
+                    gui.showing_l_panel = False
                     target_track = pctl.show_object()
 
                     if middle_click:
@@ -31913,15 +31926,14 @@ while pctl.running:
 
                     if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
 
-
-                        l_panel_h = round(200 * gui.scale)
-                        l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
-
-                        #meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
-
-                        meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
-                        meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
-
+                        if prefs.show_side_lyrics_art_panel:
+                            l_panel_h = round(200 * gui.scale)
+                            l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+                            gui.showing_l_panel = True
+                            meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
+                            meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+                        else:
+                            meta_box.lyrics(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY, target_track)
 
                     elif prefs.side_panel_layout == 0:
 
@@ -32046,16 +32058,20 @@ while pctl.running:
 
             # Bottom title position logic
             gui.show_bottom_title = False
-            if album_mode or prefs.meta_shows_selected_always:
-                gui.show_bottom_title = True
-            elif gui.rsp:
-                if prefs.side_panel_layout == 0 and window_size[1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[0] > 1500 * gui.scale or gui.maximized:
-                    gui.show_bottom_title = True
-            else:
-                gui.show_bottom_title = True
-
             if not prefs.hide_bottom_title:
                 gui.show_bottom_title = True
+            else:
+                if album_mode or prefs.meta_shows_selected_always:
+                    gui.show_bottom_title = True
+                elif gui.rsp:
+                    if prefs.side_panel_layout == 0 and window_size[
+                            1] - gui.panelY - gui.panelBY - gui.rspw < 59 * gui.scale or window_size[
+                            0] > 1500 * gui.scale or gui.maximized:
+                        gui.show_bottom_title = True
+                    if prefs.show_lyrics_side and gui.showing_l_panel:
+                        gui.show_bottom_title = False
+                else:
+                    gui.show_bottom_title = True
 
             if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
                 artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
