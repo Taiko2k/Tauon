@@ -16486,9 +16486,17 @@ class SearchOverlay:
         playlist = []
         for pl in pctl.multi_playlist:
             for item in pl[2]:
-                if pctl.master_library[item].genre.lower().replace("-", "") == name.lower().replace("-", ""):
+                track = pctl.master_library[item]
+                if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
                     if item not in playlist:
                         playlist.append(item)
+                elif "/" in track.genre:
+                    for split in track.genre.split("/"):
+                        split = split.strip()
+                        if name.lower().replace("-", "") == split.lower().replace("-", ""):
+                            if item not in playlist:
+                                playlist.append(item)
+
 
         if get_list:
             return playlist
@@ -17168,11 +17176,22 @@ def worker2():
 
                             if s_text in genre:
 
-                                if t.genre in genres:
-                                    genres[t.genre] += 3
+                                if "/" in genre:
+
+                                    for split in genre.split("/"):
+                                        if s_text in split:
+                                            split = split.strip()
+                                            if split in genres:
+                                                genres[split] += 3
+                                            else:
+                                                temp_results.append([3, split, track, playlist[6], 0])
+                                                genres[split] = 1
                                 else:
-                                    temp_results.append([3, t.genre, track, playlist[6], 0])
-                                    genres[t.genre] = 1
+                                    if t.genre in genres:
+                                        genres[t.genre] += 3
+                                    else:
+                                        temp_results.append([3, t.genre, track, playlist[6], 0])
+                                        genres[t.genre] = 1
 
                             if s_text in composer:
 
