@@ -10632,8 +10632,17 @@ def get_bio(track_object):
     if track_object.artist != "":
         lastfm.get_bio(track_object.artist)
 
+def search_lyrics_deco(track_object):
 
-showcase_menu.add(_('Search Lyrics'), get_lyric_wiki, pass_ref=True)
+    if not track_object.lyrics:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+showcase_menu.add(_('Search Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add_sub("Misc…", 110)
 
 
 def search_guitarparty(track_object):
@@ -10682,7 +10691,7 @@ def clear_chord_lyrics(track_object):
 showcase_menu.add(_('Paste Chord Lyrics'), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 showcase_menu.add(_('Clear Chord Lyrics'), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 
-showcase_menu.add(_('Paste Lyrics'), paste_lyrics, paste_lyrics_deco, pass_ref=True)
+showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
 def copy_lyrics_deco(track_object):
 
@@ -10693,10 +10702,12 @@ def copy_lyrics_deco(track_object):
 
     return [line_colour, colours.menu_background, None]
 
+
+
 def copy_lyrics(track_object):
     copy_to_clipboard(track_object.lyrics)
 
-showcase_menu.add(_('Copy Lyrics'), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 
 
@@ -10720,8 +10731,8 @@ def split_lyrics(track_object):
         pass
 
 
-showcase_menu.add(_('Clear Lyrics'), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-showcase_menu.add(_('Split Lines'), split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add_to_sub(_('Split Lines'), 0, split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 
 #showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
@@ -24027,63 +24038,7 @@ class ArtBox:
                 xw = gui.art_drawn_rect[0] + gui.art_drawn_rect[2]
                 yh = gui.art_drawn_rect[1] + gui.art_drawn_rect[3]
 
-            if not key_shift_down:
-
-                line = ""
-                if showc[0] == 1:
-                    line += 'E '
-                elif showc[0] == 2:
-                    line += 'N '
-                else:
-                    line += 'F '
-
-                line += str(showc[2] + 1) + "/" + str(showc[1])
-
-                y = yh - 40 * gui.scale
-
-                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
-                          [8, 8, 8, 255], True)
-                ddt.text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-            else:   # Extended metadata
-
-                line = ""
-                if showc[0] == 1:
-                    line += 'Embedded'
-                elif showc[0] == 2:
-                    line += 'Network'
-                else:
-                    line += 'File'
-
-                y = yh - 76 * gui.scale
-
-                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
-                          [8, 8, 8, 255], True)
-                ddt.text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-                y += 18 * gui.scale
-
-                line = ""
-                line += showc[4]
-                line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
-
-                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
-                          [8, 8, 8, 255], True)
-                ddt.text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-                y += 18 * gui.scale
-
-                line = ""
-                line += str(showc[2] + 1) + "/" + str(showc[1])
-
-                tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-                ddt.rect_a((xw - (tag_width + padding), y), (tag_width, 18 * gui.scale),
-                          [8, 8, 8, 255], True)
-                ddt.text(((xw) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
+            art_metadata_overlay(xw, yh, showc)
 
 art_box = ArtBox()
 
@@ -26514,12 +26469,87 @@ class QueueBox:
 queue_box = QueueBox()
 
 
+def art_metadata_overlay(right, bottom, showc):
+
+    padding = 6 * gui.scale
+
+    if not key_shift_down:
+
+        line = ""
+        if showc[0] == 1:
+            line += 'E '
+        elif showc[0] == 2:
+            line += 'N '
+        else:
+            line += 'F '
+
+        line += str(showc[2] + 1) + "/" + str(showc[1])
+
+        y = bottom - 40 * gui.scale
+
+        tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+        ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                   [8, 8, 8, 255], True)
+        ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+    else:  # Extended metadata
+
+        line = ""
+        if showc[0] == 1:
+            line += 'Embedded'
+        elif showc[0] == 2:
+            line += 'Network'
+        else:
+            line += 'File'
+
+        y = bottom - 76 * gui.scale
+
+        tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+        ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                   [8, 8, 8, 255], True)
+        ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+        y += 18 * gui.scale
+
+        line = ""
+        line += showc[4]
+        line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
+
+        tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+        ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                   [8, 8, 8, 255], True)
+        ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+        y += 18 * gui.scale
+
+        line = ""
+        line += str(showc[2] + 1) + "/" + str(showc[1])
+
+        tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+        ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale),
+                   [8, 8, 8, 255], True)
+        ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+
 class MetaBox:
 
     def l_panel(self, x, y, w, h, track):
 
-        ddt.rect((x, y, w, h), colours.gallery_background, True)
-        ddt.rect((x, y, w, round(2 * gui.scale)), [255, 255, 255, 30], True)
+        if not track:
+            return
+
+        border_colour = [255, 255, 255, 30]
+        line1_colour = [255, 255, 255, 235]
+        line2_colour = [255, 255, 255, 200]
+        if test_lumi(colours.playlist_box_background) < 0.55:
+            border_colour = [0, 0, 0, 30]
+            line1_colour = [0, 0, 0, 200]
+            line2_colour = [0, 0, 0, 230]
+
+        rect = (x, y, w, h)
+
+        ddt.rect(rect, colours.gallery_background, True)
+        ddt.rect((x, y, w, round(2 * gui.scale)), border_colour, True)
 
         ddt.text_background_colour = colours.gallery_background
 
@@ -26529,22 +26559,40 @@ class MetaBox:
         art_rect = (x + insert - 2 * gui.scale, y + insert, h - insert * 2 + 1 * gui.scale, h - insert * 2 + 1 * gui.scale)
         border_rect = (art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
 
-        ddt.rect(border_rect, [255, 255, 255, 30], True)
+        if (input.mouse_click or right_click) and is_level_zero(False):
+            if coll(border_rect):
+                if input.mouse_click:
+                    album_art_gen.cycle_offset(target_track)
+                if right_click:
+                    picture_menu.activate(in_reference=target_track)
+            elif coll(rect):
+                if input.mouse_click:
+                    pctl.show_current()
+                if right_click:
+                    center_info_menu.activate(track)
+
+        ddt.rect(border_rect, border_colour, True)
         ddt.rect(art_rect, colours.gallery_background, True)
         album_art_gen.display(track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+
+        fields.add(border_rect)
+        if coll(border_rect) and is_level_zero(True):
+            showc = album_art_gen.get_info(target_track)
+            art_metadata_overlay(art_rect[0] + art_rect[2] + 2 * gui.scale, art_rect[1] + art_rect[3] + 12 * gui.scale, showc)
+
 
         text_x = border_rect[0] + border_rect[2] + round(10 * gui.scale)
         yy = y + 15 * gui.scale
 
-        ddt.text((text_x, yy), track.title, [255, 255, 255, 235], 316)
+        ddt.text((text_x, yy), track.title, line1_colour, 316)
 
         yy += 20 * gui.scale
-        ddt.text((text_x, yy), track.artist, [255, 255, 255, 200], 14)
+        ddt.text((text_x, yy), track.artist, line2_colour, 14)
         yy += 30 * gui.scale
-        ddt.text((text_x, yy), track.album, [255, 255, 255, 200], 14)
+        ddt.text((text_x, yy), track.album, line2_colour, 14)
 
         yy += 20
-        ddt.text((text_x, yy), track.date, [255, 255, 255, 200], 14)
+        ddt.text((text_x, yy), track.date, line2_colour, 14)
 
 
     def lyrics(self, x, y, w, h, track):

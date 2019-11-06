@@ -48,6 +48,7 @@ function update() {
                         // Stream starts again
                         status = 1;
                         sound.src = "http://" + window.location.hostname + ":" + data.port;
+
                     }
 
                     if (status == 0 && data.index > -1) {
