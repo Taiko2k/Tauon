@@ -16485,47 +16485,24 @@ class SearchOverlay:
 
         playlist = []
 
+        include_multi = False
         if name.endswith("+"):
-            name2 = name.rstrip("+")
-            genres = []
-            for pl in pctl.multi_playlist:
-                for item in pl[2]:
-                    track = pctl.master_library[item]
-                    if "/" in track.genre:
-                        gs = track.genre.replace("-", "").lower().split("/")
-                        for g in gs:
-                            if g.strip() == name2.lower().replace("-", ""):
-                                for split2 in track.genre.split("/"):
-                                    split2 = split2.strip().replace("-", "").lower()
-                                    if split2 not in genres:
-                                        genres.append(split2)
-                                break
+            name = name.rstrip("+")
+            include_multi = True
 
-            for pl in pctl.multi_playlist:
-                for item in pl[2]:
-                    track = pctl.master_library[item]
-                    for split in track.genre.split("/"):
-                        split = split.strip().replace("-", "").lower()
-                        if split in genres:
+
+        for pl in pctl.multi_playlist:
+            for item in pl[2]:
+                track = pctl.master_library[item]
+                if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
+                    if item not in playlist:
+                        playlist.append(item)
+                elif include_multi and ("/" in track.genre or "," in track.genre):
+                    for split in track.genre.replace(",", "/").split("/"):
+                        split = split.strip()
+                        if name.lower().replace("-", "") == split.lower().replace("-", ""):
                             if item not in playlist:
                                 playlist.append(item)
-
-
-
-        else:
-
-            for pl in pctl.multi_playlist:
-                for item in pl[2]:
-                    track = pctl.master_library[item]
-                    if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
-                        if item not in playlist:
-                            playlist.append(item)
-                    elif "/" in track.genre:
-                        for split in track.genre.split("/"):
-                            split = split.strip()
-                            if name.lower().replace("-", "") == split.lower().replace("-", ""):
-                                if item not in playlist:
-                                    playlist.append(item)
 
 
         if get_list:
@@ -16916,7 +16893,11 @@ class SearchOverlay:
                 if item[0] == 3:
                     cl = [240, 240, 160, int(255 * fade)]
                     text = "Genre"
-                    xx = ddt.text((120 * gui.scale, yy), item[1], [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+                    xx = ddt.text((120 * gui.scale, yy), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], 215, bg=[12, 12, 12, 255])
+
+                    if item[1].endswith("+"):
+                        ddt.text((xx + 127 * gui.scale, yy - 1 * gui.scale), "(Include multi-tag results)", [255, 255, 255, int(255 * fade) // 2], 313,
+                                 bg=[12, 12, 12, 255])
 
                     ddt.text((65 * gui.scale, yy), text, cl, 214, bg=[12, 12, 12, 255])
                     if fade == 1:
@@ -17206,16 +17187,10 @@ def worker2():
 
                             if s_text.replace("-", "") in genre.replace("-", ""):
 
-                                if "/" in genre:
+                                if "/" in genre or "," in genre:
 
-                                    for split in genre.split("/"):
+                                    for split in genre.replace(",", "/").split("/"):
                                         if s_text.replace("-", "") in split.replace("-", ""):
-                                            split = split.strip().title()
-                                            if split in genres:
-                                                genres[split] += 3
-                                            else:
-                                                temp_results.append([3, split, track, playlist[6], 0])
-                                                genres[split] = 1
 
                                             split = split.strip().title() + "+"
                                             if split in genres:
