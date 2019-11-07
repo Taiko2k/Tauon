@@ -26686,7 +26686,7 @@ class MetaBox:
             margin += 1 * gui.scale
 
         lyrics_ren_mini.render(pctl.track_queue[pctl.queue_step], x + margin,
-                                    y + lyrics_ren_mini.lyrics_position + 11 * gui.scale,
+                                    y + lyrics_ren_mini.lyrics_position + 13 * gui.scale,
                                     w - 50 * gui.scale,
                                     None, 0)
 
