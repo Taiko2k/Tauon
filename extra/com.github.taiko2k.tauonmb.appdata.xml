@@ -51,10 +51,11 @@
 
   <releases>
 
-    <release version="5.0.1" date="2019-11-01">
+    <release version="5.0.2" date="2019-11-07">
       <description>
         <ul>
-          <li>Fixed an issue with high CPU usage</li>
+          <li>Improved side panel lyrics view</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>
