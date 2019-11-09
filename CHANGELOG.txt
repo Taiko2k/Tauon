@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.0.3
+
+ - Changed "Broadcast This" to allow starting a broadcast
+
 v5.0.2
 
  - Added click "now streaming" to show broadcast track in playlist

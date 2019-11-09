@@ -1529,7 +1529,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                         pctl.record_stream = False
 
             if command == 'cast-next':
-                print("Next Enc Rec")
+                #print("Next Enc Rec")
 
                 if pctl.system != 'windows':
                     pctl.target_open = pctl.target_open.encode('utf-8')
@@ -1549,17 +1549,16 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     BASS_ChannelSetPosition(handle3, bytes_position, 0)
 
                 BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-
                 channel1 = BASS_ChannelPlay(mhandle, True)
 
                 broadcast_timer.hit()
 
                 encerror = BASS_ErrorGetCode()
-                print(encerror)
-                print(pctl.broadcast_line)
+                #print(encerror)
+                #print(pctl.broadcast_line)
                 line = pctl.broadcast_line.encode('utf-8')
                 BASS_Encode_CastSetTitle(encoder, line, 0)
-                print(BASS_ErrorGetCode())
+                #print(BASS_ErrorGetCode())
                 if encerror != 0:
                     pctl.broadcast_active = False
                     BASS_Encode_Stop(encoder)
@@ -1614,27 +1613,22 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 flag |= 0x200000
                 # print(flag)
 
-                print(pctl.target_open)
+                #print(pctl.target_open)
 
                 handle3 = BASS_StreamCreateFile(False, pctl.target_open, 0, 0, flag)
-
                 mhandle = BASS_Mixer_StreamCreate(44100, 2, 0)
-
                 BASS_Mixer_StreamAddChannel(mhandle, handle3, 0)
-
                 channel1 = BASS_ChannelPlay(mhandle, True)
-
                 BASS_ChannelSetAttribute(mhandle, 2, 0)
 
-                print(BASS_ErrorGetCode())
+                #print(BASS_ErrorGetCode())
 
                 line = "--bitrate " + bitrate
                 line = line.encode('utf-8')
 
-                print(BASS_ErrorGetCode())
+                #print(BASS_ErrorGetCode())
 
                 encoder = BASS_Encode_OGG_Start(mhandle, line, 0, None, None)
-
                 result = BASS_Encode_ServerInit(encoder, port.encode(), 32000, 32000, 2, client_connect, None)
 
                 if BASS_ErrorGetCode() == -1:
@@ -1647,7 +1641,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # Trying to send the stream title here causes the stream to fail for some reason
                 # line2 = pctl.broadcast_line.encode('utf-8')
                 # BASS_Encode_CastSetTitle(encoder, line2,0)
-                print("after set title")
+                # print("after set title")
                 e = BASS_ErrorGetCode()
                 if result != 0:
                     gui.show_message("Server initiated successfully.", "Listening on port " + port + ".", "done")
@@ -1657,7 +1651,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     pctl.playerCommand = "encstop"
                     pctl.playerCommandReady = True
 
-                print(BASS_ErrorGetCode())
+                #print(BASS_ErrorGetCode())
 
             # OPEN COMMAND
 
