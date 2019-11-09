@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.0.2"
+n_version = "5.0.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -14440,23 +14440,30 @@ def queue_deco():
     return [line_colour, colours.menu_background, None]
 
 
-def broadcast_feature_deco():
-    return menu_standard_or_grey(pctl.broadcast_active)
+# def broadcast_feature_deco():
+#     return menu_standard_or_grey(pctl.broadcast_active)
 
 
-def broadcast_select_track(index):
+def broadcast_select_track(track_id):
+
+    pctl.broadcast_index = track_id
+    track = pctl.g(track_id)
+
+    pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
+    pctl.broadcast_position = default_playlist.index(pctl.broadcast_index)
+    pctl.broadcast_time = 0
+    pctl.target_open = track.fullpath
+    pctl.b_start_time = track.start_time
+    pctl.broadcast_line = track.artist + " - " + \
+                          track.title
+
     if pctl.broadcast_active:
-        pctl.broadcast_index = index
-        pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
-
-        pctl.broadcast_position = default_playlist.index(pctl.broadcast_index)
-        pctl.broadcast_time = 0
-        pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
-        pctl.b_start_time = pctl.master_library[pctl.broadcast_index].start_time
         pctl.playerCommand = "cast-next"
         pctl.playerCommandReady = True
-        pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
-                              pctl.master_library[pctl.broadcast_index].title
+    else:
+        pctl.playerCommand = "encstart"
+        pctl.playerCommandReady = True
+
 
 if prefs.enable_transcode or prefs.backend == 1:
     track_menu.br()
@@ -14465,7 +14472,7 @@ if prefs.enable_transcode or prefs.backend == 1:
 track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
 if prefs.backend == 1:
-    track_menu.add(_('Broadcast This'), broadcast_select_track, broadcast_feature_deco, pass_ref=True)
+    track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -17066,10 +17073,12 @@ def worker3():
 
 
 def worker4():
-    time.sleep(0.2)
 
-    if prefs.art_bg:
-        style_overlay.worker()
+    while True:
+        time.sleep(0.2)
+
+        if prefs.art_bg:
+            style_overlay.worker()
 
 worker2_lock = threading.Lock()
 def worker2():

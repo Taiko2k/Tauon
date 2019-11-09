@@ -51,11 +51,10 @@
 
   <releases>
 
-    <release version="5.0.2" date="2019-11-07">
+    <release version="5.0.3" date="2019-11-10">
       <description>
         <ul>
-          <li>Improved side panel lyrics view</li>
-          <li>Various tweaks and bug fixes</li>
+          <li>Fixed background art function not working</li>
         </ul>
       </description>
     </release>
