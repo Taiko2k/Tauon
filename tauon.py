@@ -1281,6 +1281,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.last_left_panel_mode = "playlist"
         self.showing_l_panel = False
 
+        self.worker4_releases = 0
+
 
 gui = GuiVar()
 
@@ -3107,6 +3109,13 @@ class PlayerCtl:
 
         if self.mpris is not None:
             self.mpris.update()
+
+        if prefs.art_bg:
+            gui.worker4_releases += 2
+            try:
+                worker4_lock.release()
+            except:
+                pass
 
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
@@ -17072,13 +17081,21 @@ def worker3():
         gall_ren.worker_render()
 
 
+worker4_lock = threading.Lock()
 def worker4():
 
     while True:
-        time.sleep(0.2)
-
         if prefs.art_bg:
             style_overlay.worker()
+
+        time.sleep(1)
+        gui.worker4_releases -= 1
+        if gui.worker4_releases > 3:
+            gui.worker4_releases = 3
+        if gui.worker4_releases < 1:
+            gui.worker4_releases = 0
+            worker4_lock.acquire()
+
 
 worker2_lock = threading.Lock()
 def worker2():
@@ -17895,7 +17912,7 @@ def worker1():
     global move_in_progress
 
     while True:
-        time.sleep(0.15)
+        time.sleep(0.2)
 
         # if tm.exit_worker1:
         #     tm.exit_worker1 = False
