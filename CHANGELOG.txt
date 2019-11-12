@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v5.0.4
+
+ - Fixed a rendering performance issue
+ - Fixed paste not updating playlist immediately
+
 v5.0.3
 
  - Changed "Broadcast This" to allow starting a broadcast

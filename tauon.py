@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.0.3"
+n_version = "5.0.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -7501,6 +7501,7 @@ class GallClass:
 
             if order[0] == 2:
                 # finish processing
+
                 wop = rw_from_object(order[1])
                 s_image = IMG_Load_RW(wop, 0)
                 c = SDL_CreateTextureFromSurface(renderer, s_image)
@@ -13160,6 +13161,8 @@ def paste(playlist=None, position=None):
             transfer(position, (2, 2))
     else:
         append_playlist(playlist)
+
+    gui.pl_update += 1
     return
 
     # print('Importing from clipboard')
@@ -17077,6 +17080,7 @@ def worker3():
         # if tm.exit_worker3:
         #     tm.exit_worker3 = False
         #     return
+        #time.sleep(1)
 
         gall_ren.worker_render()
 
@@ -18418,6 +18422,8 @@ def reload_albums(quiet=False, return_playlist=-1):
     global album_dex
     global update_layout
     global old_album_pos
+
+    print("RELOAD")
 
     if cm_clean_db:
         # Doing reload while things are being removed may cause crash
@@ -25854,7 +25860,6 @@ class TreeView:
 
 
     def gen_rows(self, tree, opens):
-
         self.count = 0
         self.depth = 0
         self.rows.clear()
@@ -25863,7 +25868,6 @@ class TreeView:
         self.gen_row(tree, "", opens)
 
     def gen_tree(self, pl_id):
-
         pl_no = id_to_pl(pl_id)
         if pl_no is None:
             return
@@ -28692,9 +28696,9 @@ thread.start()
 thread = threading.Thread(target=worker3)
 thread.daemon = True
 thread.start()
-thread = threading.Thread(target=worker3)
-thread.daemon = True
-thread.start()
+# thread = threading.Thread(target=worker3)
+# thread.daemon = True
+# thread.start()
 
 thread = threading.Thread(target=worker4)
 thread.daemon = True
@@ -29932,7 +29936,7 @@ while pctl.running:
         SDL_Delay(3)
         power = 1000
 
-    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds or transcode_list or load_orders or gui.frame_callback_list or gall_ren.queue: # or mouse_moved:
+    if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds: # or mouse_moved:
         power = 1000
 
     if prefs.art_bg and core_timer.get() < 3:
@@ -29963,7 +29967,7 @@ while pctl.running:
 
         SDL_Delay(30)
 
-        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not mouse_down:
+        if pctl.playing_state == 0 and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
                 SDL_WaitEventTimeout(None, 1000)
                 check_transfer_p()
 
@@ -31849,8 +31853,6 @@ while pctl.running:
                 if gui.heart_fields:
                     for field in gui.heart_fields:
                         fields.add(field, update_playlist_call)
-
-
 
                 if gui.pl_update > 0:
 
