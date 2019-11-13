@@ -10656,8 +10656,8 @@ def search_lyrics_deco(track_object):
 
     return [line_colour, colours.menu_background, None]
 
-showcase_menu.add(_('Search Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-showcase_menu.add_sub("Misc…", 110)
+showcase_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+
 
 
 def search_guitarparty(track_object):
@@ -10706,7 +10706,6 @@ def clear_chord_lyrics(track_object):
 showcase_menu.add(_('Paste Chord Lyrics'), paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 showcase_menu.add(_('Clear Chord Lyrics'), clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test)
 
-showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
 
 def copy_lyrics_deco(track_object):
 
@@ -10718,12 +10717,8 @@ def copy_lyrics_deco(track_object):
     return [line_colour, colours.menu_background, None]
 
 
-
 def copy_lyrics(track_object):
     copy_to_clipboard(track_object.lyrics)
-
-showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-
 
 
 def clear_lyrics(track_object):
@@ -10746,13 +10741,18 @@ def split_lyrics(track_object):
         pass
 
 
+showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+showcase_menu.add_sub("Misc…", 110)
+showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
+showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Split Lines'), 0, split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-
 #showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 #center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+
+center_info_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 center_info_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+
 
 def save_embed_img(track_object):
 
@@ -11182,7 +11182,10 @@ def ser_gimage(track_object):
 picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
 
 #picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+
+picture_menu.add(_('Search for Lyrics'), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 picture_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+
 
 def append_here():
     global cargo
@@ -16572,12 +16575,14 @@ class SearchOverlay:
             h = window_size[1]
 
             if input.backspace_press:
-                self.searched_text = ""
-                self.results.clear()
+                # self.searched_text = ""
+                # self.results.clear()
 
                 if len(self.search_text.text) - input.backspace_press < 1:
                     self.active = False
                     self.search_text.text = ""
+                    self.results.clear()
+                    self.searched_text = ""
                     return
 
             if key_esc_press:
@@ -16586,6 +16591,8 @@ class SearchOverlay:
                 else:
                     self.active = False
                     self.search_text.text = ""
+                    self.results.clear()
+                    self.searched_text = ""
                     return
 
             if gui.level_2_click and mouse_position[0] > 350 * gui.scale:
@@ -16646,7 +16653,7 @@ class SearchOverlay:
 
                 gui.update += 1
             else:
-                if self.input_timer.get() >= 0.4 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
+                if self.input_timer.get() >= 0.25 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
                     try:
                         self.sip = True
                         worker2_lock.release()
@@ -16686,12 +16693,17 @@ class SearchOverlay:
             if self.delay_enter and not self.sip and self.search_text.text == self.searched_text:
                 enter = True
                 self.delay_enter = False
+
             elif input.key_return_press:
-                if self.sip or self.input_timer.get() < 0.4:
-                    self.delay_enter = True
-                else:
+                if self.results:
                     enter = True
                     self.delay_enter = False
+                else:
+                    if self.sip or self.input_timer.get() < 0.25:
+                        self.delay_enter = True
+                    else:
+                        enter = True
+                        self.delay_enter = False
 
             input.key_return_press = False
 
@@ -17067,6 +17079,9 @@ class SearchOverlay:
 
                 yy += 22 * gui.scale
 
+            if enter:
+                self.results.clear()
+                self.searched_text = ""
 
 search_over = SearchOverlay()
 
@@ -17109,7 +17124,7 @@ def worker2():
 
         if len(search_over.search_text.text) > 1:
             if True:
-
+                #perf_timer.set()
                 temp_results = []
 
                 search_over.searched_text = search_over.search_text.text
@@ -17367,8 +17382,8 @@ def worker2():
                                         tracks.add(t)
 
                         br += 1
-                        if br > 700:
-                            time.sleep(0.003)  # Throttle thread
+                        if br > 900:
+                            time.sleep(0.005)  # Throttle thread
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
                                 break
@@ -17398,6 +17413,7 @@ def worker2():
 
                 search_over.on = 0
                 search_over.force_select = 0
+                #print(perf_timer.get())
 
 def encode_folder_name(track_object):
 
@@ -18423,12 +18439,9 @@ def reload_albums(quiet=False, return_playlist=-1):
     global update_layout
     global old_album_pos
 
-    print("RELOAD")
-
     if cm_clean_db:
         # Doing reload while things are being removed may cause crash
         return
-
 
     # if not quiet:
     #     gui.album_scroll_px = old_album_pos
