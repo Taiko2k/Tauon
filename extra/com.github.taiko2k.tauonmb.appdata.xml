@@ -51,10 +51,10 @@
 
   <releases>
 
-    <release version="5.0.3" date="2019-11-10">
+    <release version="5.0.4" date="2019-11-13">
       <description>
         <ul>
-          <li>Fixed background art function not working</li>
+          <li>Fixed a performance issue</li>
         </ul>
       </description>
     </release>

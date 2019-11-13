@@ -6,6 +6,7 @@ v5.0.4
  - Fixed a rendering performance issue
  - Fixed paste not updating playlist immediately
  - Fixed text not truncating in lyric metadata box
+ - Tweaked global search input control behavior
 
 v5.0.3
 
