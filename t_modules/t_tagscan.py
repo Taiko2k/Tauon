@@ -1039,26 +1039,25 @@ class M4a:
             # hope the file is formatted normally
 
             if name == b'\xa9nam':
-                self.title = meta_get(f, size).decode()
-
+                self.title = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9alb':
-                self.album = meta_get(f, size).decode()
+                self.album = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9ART':
-                self.artist = meta_get(f, size).decode()
+                self.artist = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9wrt':
-                self.composer = meta_get(f, size).decode()
+                self.composer = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9cmt':
-                self.comment = meta_get(f, size).decode()
+                self.comment = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9lyr':
-                self.lyrics = meta_get(f, size).decode()
+                self.lyrics = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'\xa9day':
-                day = meta_get(f, size).decode()
+                day = meta_get(f, size).decode().replace("\x00", "")
                 if len(day) > 10 and day[10] == "T":
                     day = day[:10]
                 self.date = day
@@ -1071,10 +1070,10 @@ class M4a:
                 #self.genre = meta_get(f, size).decode()
 
             if name == b'\xa9gen':
-                self.genre = meta_get(f, size).decode()
+                self.genre = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'aART':
-                self.album_artist = meta_get(f, size).decode()
+                self.album_artist = meta_get(f, size).decode().replace("\x00", "")
 
             if name == b'covr':
                 self.has_picture = True
