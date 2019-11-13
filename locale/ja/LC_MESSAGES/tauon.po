@@ -1225,7 +1225,7 @@ msgstr "クレジット"
 
 #: tauon.py:20151
 msgid "Show License"
-msgstr "ライセンスを表示"
+msgstr "ライセンス"
 
 #: tauon.py:20158
 msgid "Chart Grid Generator"
