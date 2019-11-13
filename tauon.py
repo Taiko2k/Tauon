@@ -26655,17 +26655,16 @@ class MetaBox:
 
 
         text_x = border_rect[0] + border_rect[2] + round(10 * gui.scale)
+        max_w = w - (border_rect[2] + 28 * gui.scale)
         yy = y + 15 * gui.scale
 
-        ddt.text((text_x, yy), track.title, line1_colour, 316)
-
+        ddt.text((text_x, yy), track.title, line1_colour, 316, max_w=max_w)
         yy += 20 * gui.scale
-        ddt.text((text_x, yy), track.artist, line2_colour, 14)
+        ddt.text((text_x, yy), track.artist, line2_colour, 14, max_w=max_w)
         yy += 30 * gui.scale
-        ddt.text((text_x, yy), track.album, line2_colour, 14)
-
+        ddt.text((text_x, yy), track.album, line2_colour, 14, max_w=max_w)
         yy += 20
-        ddt.text((text_x, yy), track.date, line2_colour, 14)
+        ddt.text((text_x, yy), track.date, line2_colour, 14, max_w=max_w)
 
 
     def lyrics(self, x, y, w, h, track):
