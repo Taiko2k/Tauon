@@ -19382,9 +19382,9 @@ class Over:
             # y += 23 * gui.scale
 
             self.toggle_square(x, y, switch_rg_album, _("Album gain"))
-            x += 105 * gui.scale
+            x += 115 * gui.scale
             self.toggle_square(x, y, switch_rg_track, _("Track gain"))
-            x -= 105 * gui.scale
+            x -= 115 * gui.scale
 
             y += 46 * gui.scale
 
@@ -19749,7 +19749,7 @@ class Over:
             ddt.text((x + 0 * gui.scale, y), _("For this you will need a \"Personal Access Token\""),
                      colours.grey_blend_bg(90), 11)
 
-            y += 14 * gui.scale
+            y += 15 * gui.scale
             ddt.text((x + 0 * gui.scale, y), _("You can generate one with a Discogs account here:"),
                      colours.grey_blend_bg(90), 11)
 
@@ -19863,7 +19863,8 @@ class Over:
 
             y += 30 * gui.scale
             self.button(x, y, _("Paste Token"), lb.paste_key)
-            self.button(x + 85 * gui.scale, y, _("Clear"), lb.clear_key)
+
+            self.button(x + ddt.get_text_w(_("Paste Token"), 211) + 21 * gui.scale, y, _("Clear"), lb.clear_key)
 
             y += 35 * gui.scale
 
@@ -20144,15 +20145,16 @@ class Over:
         # y = self.box_y + self.h - 35 * gui.scale
 
         y = y0 + h0 - round(33 * gui.scale)
-        x = x0 + w0 - round(165 * gui.scale)
-
-        if self.button(x, y, _("Credits")):
-            self.ani_cred = 1
-            self.ani_fade_on_timer.set()
 
         x = x0 + w0 - 100 * gui.scale
 
         self.button(x, y, _("Show License"), open_license)
+
+        x -= ddt.get_text_w(_("Credits"), 211) + round(21 * gui.scale)
+
+        if self.button(x, y, _("Credits")):
+            self.ani_cred = 1
+            self.ani_fade_on_timer.set()
 
     def topchart(self, x0, y0, w0, h0):
 
