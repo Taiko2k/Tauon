@@ -80,7 +80,7 @@ def player3(tauon):  # GStreamer
             # (player) -> [(volume) -> (output)]
 
             # Set callback for the main callback loop
-            GLib.timeout_add(500, self.main_callback)
+            GLib.timeout_add(50, self.main_callback)
 
             # self.playbin.connect("about-to-finish", self.about_to_finish)
 
@@ -329,4 +329,3 @@ def player3(tauon):  # GStreamer
 
     # Notify main thread we have closed cleanly
     player.exit()
-
