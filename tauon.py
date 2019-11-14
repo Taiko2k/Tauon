@@ -847,8 +847,7 @@ class Prefs:    # Used to hold any kind of settings
         self.playback_follow_cursor = False
         self.short_buffer = False
 
-        self.gst_sink = ""
-        self.gst_sink_props = ""
+        self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
         self.art_bg = False
         self.art_bg_stronger = 1
@@ -2478,8 +2477,7 @@ def load_prefs():
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
-    prefs.gst_sink = cf.sync_add("string", "sink-name", prefs.gst_sink, "GStreamer Only. Leave blank to allow GStreamer to decide.")
-    prefs.gst_sink_props = cf.sync_add("string", "sink-props", prefs.gst_sink_props, "GStreamer Only. Format is 'property1=value;property2=value;...'")
+    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True

@@ -51,24 +51,25 @@ def player3(tauon):  # GStreamer
             self.mainloop = GLib.MainLoop()
 
             # Create main "playbin" pipeline thingy for simple playback
-            self.pl = Gst.ElementFactory.make("playbin", "player")
+            self.playbin = Gst.ElementFactory.make("playbin", "player")
+            self._output = Gst.parse_bin_from_description(
+                prefs.gst_output, ghost_unlinked_pads=True)
 
-            # Set up output sink
-            if prefs.gst_sink:
-                sink = Gst.ElementFactory.make(prefs.gst_sink, "output")
+            self._sink = Gst.ElementFactory.make("bin", "sink")
+            self._sink.add(self._output)
 
-                sink_props = prefs.gst_sink_props.split(';')
-                for entry in sink_props:
-                    lhs, rhs = entry.split('=')
-                    sink.set_property(lhs, rhs)
+            ghost = Gst.GhostPad.new(
+                "sink", self._output.get_static_pad("sink"))
 
-                # Pipe playbin -> output sink
-                self.pl.set_property('audio-sink', sink)
+            self._sink.add_pad(ghost)
+
+            self.playbin.set_property("audio-sink", self._sink)
+
 
             # Set callback for the main callback loop
             GLib.timeout_add(500, self.main_callback)
 
-            self.pl.connect("about-to-finish", self.about_to_finish)
+            # self.playbin.connect("about-to-finish", self.about_to_finish)
 
             self.mainloop.run()
 
@@ -82,14 +83,14 @@ def player3(tauon):  # GStreamer
 
             if current_track is not None and current_track.length < 1:
 
-                result = self.pl.query_duration(Gst.Format.TIME)
+                result = self.playbin.query_duration(Gst.Format.TIME)
 
                 if result[0] is True:
                     current_track.length = result[1] / Gst.SECOND
 
                 else:  # still loading? I guess we wait and try again.
                     time.sleep(1.5)
-                    result = self.pl.query_duration(Gst.Format.TIME)
+                    result = self.playbin.query_duration(Gst.Format.TIME)
 
                     if result[0] is True:
                         current_track.length = result[1] / Gst.SECOND
@@ -164,8 +165,8 @@ def player3(tauon):  # GStreamer
 
                     if self.play_state != 0:
                         # Determine time position of currently playing track
-                        current_time = self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND
-                        current_duration = self.pl.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
+                        current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
+                        current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
                         print("We are " + str(current_duration - current_time) + " seconds from end.")
 
                     # If we are close to the end of the track, try transition gaplessly
@@ -176,12 +177,12 @@ def player3(tauon):  # GStreamer
 
                     # If we are not supposed to be playing, stop (crossfade todo)
                     else:
-                        self.pl.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.READY)
 
                     self.play_state = 1
-                    self.pl.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.pl.set_property('volume', pctl.player_volume / 100)
-                    self.pl.set_state(Gst.State.PLAYING)
+                    self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
+                    self.playbin.set_property('volume', pctl.player_volume / 100)
+                    self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
                         pctl.playing_time = 0
 
@@ -189,18 +190,18 @@ def player3(tauon):  # GStreamer
 
                     # The position to start is not always the beginning of the file, so seek to position
                     if pctl.start_time_target > 0 or pctl.jump_time > 0:
-                        self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             (pctl.start_time_target + pctl.jump_time) * Gst.SECOND)
                         pctl.playing_time = 0
                         gui.update = 1
 
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
-                        while self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
+                        while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
                             time.sleep(0.1)
                             t += 1
 
-                            if self.pl.get_state(0).state != Gst.State.PLAYING:
+                            if self.playbin.get_state(0).state != Gst.State.PLAYING:
                                 break
 
                             if t > 40:
@@ -217,43 +218,43 @@ def player3(tauon):  # GStreamer
                 #
                 #    # Stop if playing or paused
                 #    if self.play_state == 1 or self.play_state == 2:
-                #        self.pl.set_state(Gst.State.NULL)
+                #        self.playbin.set_state(Gst.State.NULL)
                 #
                 #    # Open URL stream
-                #    self.pl.set_property('uri', pctl.url)
-                #    self.pl.set_property('volume', pctl.player_volume / 100)
-                #    self.pl.set_state(Gst.State.PLAYING)
+                #    self.playbin.set_property('uri', pctl.url)
+                #    self.playbin.set_property('volume', pctl.player_volume / 100)
+                #    self.playbin.set_state(Gst.State.PLAYING)
                 #    self.play_state = 3
                 #    self.player_timer.hit()
 
                 elif pctl.playerCommand == 'volume':
                     if self.play_state == 1:
-                        self.pl.set_property('volume', pctl.player_volume / 100)
+                        self.playbin.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'stop' or pctl.playerCommand == 'runstop':
                     if self.play_state > 0:
-                        self.pl.set_state(Gst.State.READY)
+                        self.playbin.set_state(Gst.State.READY)
                     self.play_state = 0
                     pctl.playerCommand = "stopped"
 
                 elif pctl.playerCommand == 'seek':
                     if self.play_state > 0:
-                        self.pl.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                        self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
 
                 elif pctl.playerCommand == 'pauseon':
                     self.player_timer.hit()
                     self.play_state = 2
-                    self.pl.set_state(Gst.State.PAUSED)
+                    self.playbin.set_state(Gst.State.PAUSED)
 
                 elif pctl.playerCommand == 'pauseoff':
                     self.player_timer.hit()
-                    self.pl.set_state(Gst.State.PLAYING)
+                    self.playbin.set_state(Gst.State.PLAYING)
                     self.play_state = 1
 
                 elif pctl.playerCommand == 'unload':
                     if self.play_state > 0:
-                        self.pl.set_state(Gst.State.NULL)
+                        self.playbin.set_state(Gst.State.NULL)
                         time.sleep(0.5)
 
                     self.mainloop.quit()
@@ -272,14 +273,14 @@ def player3(tauon):  # GStreamer
                     add_time = 0
 
                 # Progress main seek head
-                if self.pl.get_state(0).state == Gst.State.PLAYING:
-                    pctl.playing_time = max(0, (self.pl.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
+                if self.playbin.get_state(0).state == Gst.State.PLAYING:
+                    pctl.playing_time = max(0, (self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND) -
                                                  pctl.start_time_target)
                     pctl.decode_time = pctl.playing_time  # A difference isn't discerned in this module
 
                 else:
                     # We're supposed to be playing but it's not? Give it a push I guess.
-                    self.pl.set_state(Gst.State.PLAYING)
+                    self.playbin.set_state(Gst.State.PLAYING)
                     pctl.playing_time += add_time
                     pctl.decode_time = pctl.playing_time
 
@@ -299,7 +300,7 @@ def player3(tauon):  # GStreamer
             if not pctl.running:
                 print("unloading gstreamer")
                 if self.play_state > 0:
-                    self.pl.set_state(Gst.State.NULL)
+                    self.playbin.set_state(Gst.State.NULL)
                     time.sleep(0.5)
 
                 self.mainloop.quit()
