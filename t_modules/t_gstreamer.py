@@ -53,10 +53,22 @@ def player3(tauon):  # GStreamer
             # Create main "playbin" pipeline thingy for simple playback
             self.pl = Gst.ElementFactory.make("playbin", "player")
 
+            # Set up output sink
+            if prefs.gst_sink:
+                sink = Gst.ElementFactory.make(prefs.gst_sink, "output")
+
+                sink_props = prefs.gst_sink_props.split(';')
+                for entry in sink_props:
+                    lhs, rhs = entry.split('=')
+                    sink.set_property(lhs, rhs)
+
+                # Pipe playbin -> output sink
+                self.pl.set_property('audio-sink', sink)
+
             # Set callback for the main callback loop
             GLib.timeout_add(500, self.main_callback)
 
-            # self.pl.connect("about-to-finish", self.about_to_finish)
+            self.pl.connect("about-to-finish", self.about_to_finish)
 
             self.mainloop.run()
 
