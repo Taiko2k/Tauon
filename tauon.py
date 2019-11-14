@@ -30205,8 +30205,9 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-
-
+            window_size[0] = int(1600 * gui.scale)
+            window_size[1] = int(900 * gui.scale)
+            SDL_SetWindowSize(t_window, window_size[0], window_size[1])
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
                 prefs.colour_from_image ^= True
@@ -30959,7 +30960,11 @@ while pctl.running:
                 h = window_size[1] - gui.panelY - gui.panelBY
 
                 if not gui.show_playlist and input.mouse_click:
-                    if mouse_position[0] < 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
+                    left = 0
+                    if gui.lsp:
+                        left = gui.lspw
+
+                    if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
                         toggle_album_mode()
                         input.mouse_click = False
                         mouse_down = False
@@ -31153,7 +31158,7 @@ while pctl.running:
 
                                         if m_in and mouse_up and prefs.gallery_single_click:
 
-                                            if is_level_zero():
+                                            if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
 
                                                 if info[0] == 1 and pctl.playing_state == 2:
                                                     pctl.play()
@@ -31180,7 +31185,7 @@ while pctl.running:
                                     if input.mouse_click:
 
                                         if prefs.gallery_single_click:
-                                            pass
+                                            gui.d_click_ref = album_dex[album_on]
 
                                         else:
 
