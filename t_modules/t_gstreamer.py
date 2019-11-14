@@ -52,19 +52,32 @@ def player3(tauon):  # GStreamer
 
             # Create main "playbin" pipeline thingy for simple playback
             self.playbin = Gst.ElementFactory.make("playbin", "player")
+
+            # Create output bin
             self._output = Gst.parse_bin_from_description(
                 prefs.gst_output, ghost_unlinked_pads=True)
 
+            # Create a bin for the audio pipeline
             self._sink = Gst.ElementFactory.make("bin", "sink")
             self._sink.add(self._output)
 
+            # Create volume element
+            self._vol = Gst.ElementFactory.make("volume", "volume")
+            self._sink.add(self._vol)
+            self._vol.link(self._output)
+
+            # Set up sink pad for the intermediate bin via the
+            #  first element (volume)
             ghost = Gst.GhostPad.new(
-                "sink", self._output.get_static_pad("sink"))
+                "sink", self._vol.get_static_pad("sink"))
 
             self._sink.add_pad(ghost)
 
+            # Connect the playback bin to to the intermediate bin sink pad
             self.playbin.set_property("audio-sink", self._sink)
 
+            # The pipeline should look something like this -
+            # (player) -> [(volume) -> (output)]
 
             # Set callback for the main callback loop
             GLib.timeout_add(500, self.main_callback)
@@ -181,7 +194,7 @@ def player3(tauon):  # GStreamer
 
                     self.play_state = 1
                     self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
-                    self.playbin.set_property('volume', pctl.player_volume / 100)
+                    self._vol.set_property('volume', pctl.player_volume / 100)
                     self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
                         pctl.playing_time = 0
