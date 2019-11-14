@@ -847,6 +847,9 @@ class Prefs:    # Used to hold any kind of settings
         self.playback_follow_cursor = False
         self.short_buffer = False
 
+        self.gst_sink = ""
+        self.gst_sink_props = ""
+
         self.art_bg = False
         self.art_bg_stronger = 1
         self.art_bg_opacity = 10
@@ -2474,6 +2477,9 @@ def load_prefs():
     prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+
+    prefs.gst_sink = cf.sync_add("string", "sink-name", prefs.gst_sink, "GStreamer Only. Leave blank to allow GStreamer to decide.")
+    prefs.gst_sink_props = cf.sync_add("string", "sink-props", prefs.gst_sink_props, "GStreamer Only. Format is 'property1=value;property2=value;...'")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
