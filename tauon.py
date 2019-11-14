@@ -2388,6 +2388,8 @@ def save_prefs():
     cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     cf.update_value("use-short-buffering", prefs.short_buffer)
 
+    cf.update_value("gst-output", prefs.gst_output)
+
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
