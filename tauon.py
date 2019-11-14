@@ -31110,38 +31110,12 @@ while pctl.running:
                                 # if m_in:
                                 #     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
 
-                                if not side_drag and is_level_zero():
-
-                                    if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-                                        info = get_album_info(album_dex[album_on])
-
-                                        if m_in and mouse_up and prefs.gallery_single_click:
-
-                                            if is_level_zero():
-
-                                                if info[0] == 1 and pctl.playing_state == 2:
-                                                    pctl.play()
-                                                elif info[0] == 1 and pctl.playing_state > 0:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                else:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
-                                                pctl.show_current()
-
-                                        elif mouse_down and not m_in:
-                                            info = get_album_info(album_dex[album_on])
-                                            quick_drag = True
-                                            if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
-                                                playlist_hold = True
-                                            shift_selection = info[1]
-                                            gui.pl_update += 1
-                                            click_location = [0, 0]
-
                                 # Quick drag and drop
-                                if (playlist_hold and m_in) and not side_drag:
+                                if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
+
                                     info = get_album_info(album_dex[album_on])
-                                    if mouse_up and info[1] and shift_selection:
+                                    if info[1]:
+
                                         track_position = info[1][0]
 
                                         if track_position > shift_selection[0]:
@@ -31172,30 +31146,45 @@ while pctl.running:
                                         reload_albums(True)
                                         tauon.worker_save_state = True
 
+                                elif not side_drag and is_level_zero():
+
+                                    if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                                        info = get_album_info(album_dex[album_on])
+
+                                        if m_in and mouse_up and prefs.gallery_single_click:
+
+                                            if is_level_zero():
+
+                                                if info[0] == 1 and pctl.playing_state == 2:
+                                                    pctl.play()
+                                                elif info[0] == 1 and pctl.playing_state > 0:
+                                                    pctl.playlist_view_position = album_dex[album_on]
+                                                else:
+                                                    pctl.playlist_view_position = album_dex[album_on]
+                                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                                pctl.show_current()
+
+                                        elif mouse_down and not m_in:
+                                            info = get_album_info(album_dex[album_on])
+                                            quick_drag = True
+                                            if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+                                                playlist_hold = True
+                                            shift_selection = info[1]
+                                            gui.pl_update += 1
+                                            click_location = [0, 0]
 
                                 if m_in:
 
                                     info = get_album_info(album_dex[album_on])
-
                                     if input.mouse_click:
 
                                         if prefs.gallery_single_click:
-
                                             pass
-
-                                            # if info[0] == 1 and pctl.playing_state == 2:
-                                            #     pctl.play()
-                                            # elif info[0] == 1 and pctl.playing_state > 0:
-                                            #     pctl.playlist_view_position = album_dex[album_on]
-                                            # else:
-                                            #     pctl.playlist_view_position = album_dex[album_on]
-                                            #     pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-                                            #
-                                            # pctl.show_current()
 
                                         else:
 
-                                            if d_click_timer.get() < 1 and gui.d_click_ref == album_dex[album_on]:
+                                            if d_click_timer.get() < 0.5 and gui.d_click_ref == album_dex[album_on]:
 
                                                 if info[0] == 1 and pctl.playing_state == 2:
                                                     pctl.play()

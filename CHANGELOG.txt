@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.0.5
+
+ - Fixed album grid drag and drop
+
 v5.0.4
 
  - Fixed a rendering performance issue
