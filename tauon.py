@@ -673,6 +673,33 @@ album_position = 0
 
 
 class Prefs:    # Used to hold any kind of settings
+
+    def gen_gst_out(self):
+        # "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
+        line = ""
+        if prefs.replay_gain:
+            line += "rgvolume pre-amp=0 fallback-gain=0 album-mode="
+            if prefs.replay_gain == 1:
+                line += "false"
+            else:
+                line += "true"
+
+        if line:
+            line += " ! "
+
+        if prefs.gst_device == "Auto":
+            line += "autoaudiosink"
+        elif prefs.gst_device == "PulseAudio":
+            line += f"pulsesink client-name=\"{t_title}\""
+        elif prefs.gst_device == "JACK":
+            line += f"jackaudiosink client-name=\"{t_title}\""
+        elif prefs.gst_device == "ALSA":
+            line += "alsasink"
+        else:
+            line += f"{pctl.gst_outputs[prefs.gst_device][0]} device={pctl.gst_outputs[prefs.gst_device][1]} client-name=\"{t_title}\""
+
+        return line
+
     def __init__(self):
         self.colour_from_image = False
         self.dim_art = False
@@ -943,6 +970,9 @@ class Prefs:    # Used to hold any kind of settings
         self.network_stream_bitrate = 0  # 0 is off
 
         self.show_side_lyrics_art_panel = True
+
+        self.gst_use_custom_output = False
+        self.gst_device = "PulseAudio"
 
 prefs = Prefs()
 
@@ -2107,6 +2137,8 @@ try:
         prefs.left_panel_mode = save[134]
     if save[135] is not None:
         gui.last_left_panel_mode = save[135]
+    if save[136] is not None:
+        prefs.gst_device = save[136]
 
     state_file.close()
     del save
@@ -2389,6 +2421,7 @@ def save_prefs():
     cf.update_value("use-short-buffering", prefs.short_buffer)
 
     cf.update_value("gst-output", prefs.gst_output)
+    cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
 
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
@@ -2480,6 +2513,8 @@ def load_prefs():
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
+    prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true if you manually edited the above string")
+
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
@@ -2624,7 +2659,6 @@ def load_prefs():
     prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
     prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
     prefs.chart_font = cf.sync_add("string", "chart-font", prefs.chart_font, "Format is fontname + size. Default is Monospace 10")
-
 
 load_prefs()
 save_prefs()
@@ -3090,6 +3124,11 @@ class PlayerCtl:
 
         self.bass_devices = []
         self.set_device = 0
+
+        self.gst_devices = []  # Display names
+        self.gst_outputs = {}  # Display name : (sink, device)
+
+
         self.mpris = None
         self.eq = [0] * 2  # not used
         self.enable_eq = True  # not used
@@ -3583,6 +3622,7 @@ class PlayerCtl:
             loop = 0
             while self.playerCommand != "stopped":
                 time.sleep(0.03)
+                loop += 1
                 if loop > 110:
                     break
 
@@ -7307,6 +7347,8 @@ class TextBox:
 
 
 rename_text_area = TextBox()
+gst_output_field = TextBox2()
+gst_output_field.text = prefs.gst_output
 search_text = TextBox()
 rename_files = TextBox2()
 rename_files.text = prefs.rename_tracks_template
@@ -12262,6 +12304,21 @@ def gen_comment(pl):
                                           hide_title=0))
     else:
         show_message("Nothing of interest was found.")
+
+
+def gen_replay(pl):
+    playlist = []
+
+    for item in pctl.multi_playlist[pl][2]:
+        if pctl.master_library[item].track_gain:
+            playlist.append(item)
+
+    if len(playlist) > 0:
+        pctl.multi_playlist.append(pl_gen(title="ReplayGain Tracks",
+                                          playlist=copy.deepcopy(playlist),
+                                          hide_title=0))
+    else:
+        show_message("No replay gain tags were found.")
 
 
 def gen_sort_len(index):
@@ -19064,18 +19121,18 @@ def reload_backend():
     while pctl.playerCommandReady:
         time.sleep(0.01)
         wait += 1
-        if wait > 400:
-            return
+        if wait > 50:
+            break
 
     pctl.playerCommand = "unload"
     pctl.playerCommandReady = True
 
-
+    wait = 0
     while pctl.playerCommand != 'done':
         time.sleep(0.01)
         wait += 1
-        if wait > 400:
-            return
+        if wait > 50:
+            break
 
     tm.ready_playback()
 
@@ -19364,6 +19421,94 @@ class Over:
         if system == "linux":
             ddt.text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
             self.toggle_square(x - 20 * gui.scale, y - 24 * gui.scale, set_player_gstreamer, "                          ")
+
+        # Gstreamer
+        if prefs.backend == 2:
+
+            y = y0 + 70 * gui.scale
+            x = x0 + 33 * gui.scale
+
+            reload = False
+            bk_gain = prefs.replay_gain
+
+            if not prefs.gst_use_custom_output:
+                ddt.text((x, y), _("ReplayGain"), colours.grey_blend_bg(90), 12)
+                y += round(22 * gui.scale)
+
+                self.toggle_square(x, y, switch_rg_off, "Off")
+                y += round(22 * gui.scale)
+                self.toggle_square(x, y, switch_rg_album, _("Album gain"))
+                y += round(22 * gui.scale)
+                self.toggle_square(x, y, switch_rg_track, _("Track gain"))
+            else:
+                y += round(66 * gui.scale)
+
+            if bk_gain != prefs.replay_gain:
+                reload = True
+
+            y += 80 * gui.scale
+            prefs.gst_use_custom_output = self.toggle_square(x, y, prefs.gst_use_custom_output, _("Customise GStreamer output"))
+            y += 22 * gui.scale
+
+            if prefs.gst_use_custom_output:
+                rect = (x, y, 400 * gui.scale, 22 * gui.scale)
+                ddt.rect(rect, colours.grey(8), True)
+                bk = ddt.text_background_colour
+                ddt.text_background_colour = colours.grey(8)
+                gst_output_field.text = prefs.gst_output
+                gst_output_field.draw(x + 5 * gui.scale, y, colours.grey(180), width=rect[2] - 8 * gui.scale, click=self.click)
+                ddt.text_background_colour = bk
+
+                self.button(x + rect[2] + 15 * gui.scale, y, _("Reload"), reload_backend)
+
+            y = y0 + 37 * gui.scale
+            x = x0 + 270 * gui.scale
+
+            if not prefs.gst_use_custom_output:
+                ddt.text((x, y - 22 * gui.scale), _("Set audio output device"), [220, 220, 220, 255], 212)
+
+                if len(pctl.gst_devices) > 13:
+                    self.device_scroll_bar_position = device_scroll.draw(x + 250 * gui.scale, y, 11, 180, self.device_scroll_bar_position, len(pctl.gst_devices) - 11, click=self.click)
+
+
+                for i, name in enumerate(pctl.gst_devices):
+
+                    if i < self.device_scroll_bar_position:
+                        continue
+                    if y > self.box_y + self.h - 40 * gui.scale:
+                        break
+
+                    rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
+
+                    if self.click and coll(rect):
+                        prefs.gst_device = name
+                        reload = True
+                    #     prefs.last_device = item[0]
+                    #     pctl.playerCommandReady = True
+                    #     pctl.playerCommand = "setdev"
+
+                    line = trunc_line(name, 10, 245 * gui.scale)
+
+                    fields.add(rect)
+
+                    if prefs.gst_device == name:
+                        ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                        ddt.text((x - 12 * gui.scale, y + 1 * gui.scale), ">", [140, 140, 140, 255], 213)
+                    else:
+                        if coll(rect):
+                            ddt.text((x, y), line, [150, 150, 150, 255], 10)
+                        else:
+                            ddt.text((x, y), line, [100, 100, 100, 255], 10)
+                    y += 14 * gui.scale
+
+            if not prefs.gst_use_custom_output:
+                prefs.gst_output = prefs.gen_gst_out()
+                gst_output_field.text = prefs.gst_output
+            else:
+                prefs.gst_output = gst_output_field.text
+
+            if reload:
+                reload_backend()
 
 
         if prefs.backend == 1:
@@ -29396,7 +29541,8 @@ def save_state():
             gui.gallery_positions,
             prefs.chart_bg,
             prefs.left_panel_mode,
-            gui.last_left_panel_mode]
+            gui.last_left_panel_mode,
+            prefs.gst_device]
 
 
 
@@ -30211,9 +30357,11 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-            window_size[0] = int(1600 * gui.scale)
-            window_size[1] = int(900 * gui.scale)
-            SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+            # gen_replay(0)
+            # window_size[0] = int(1600 * gui.scale)
+            # window_size[1] = int(900 * gui.scale)
+            # SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
                 prefs.colour_from_image ^= True

@@ -40,6 +40,8 @@ def player3(tauon):  # GStreamer
 
         def __init__(self):
 
+
+
             # This is used to keep track of time between callbacks to progress the seek bar
             self.player_timer = Timer()
 
@@ -50,10 +52,30 @@ def player3(tauon):  # GStreamer
             Gst.init([])
             self.mainloop = GLib.MainLoop()
 
+            # Get list of available audio device
+            pctl.gst_devices = ["Auto", "PulseAudio", "ALSA", "JACK"]
+            pctl.gst_outputs.clear()
+            dm = Gst.DeviceMonitor()
+            dm.start()
+            for device in dm.get_devices():
+                if device.get_device_class() == "Audio/Sink":
+                    element = device.create_element(None)
+                    type_name = element.get_factory().get_name()
+                    device_name = element.props.device
+                    display_name = device.get_display_name()
+
+                    pctl.gst_outputs[display_name] = (type_name, device_name)
+                    pctl.gst_devices.append(display_name)
+
+            dm.stop()
+
             # Create main "playbin" pipeline thingy for simple playback
             self.playbin = Gst.ElementFactory.make("playbin", "player")
 
             # Create output bin
+            if not prefs.gst_use_custom_output:
+                prefs.gst_output = prefs.gen_gst_out()
+
             self._output = Gst.parse_bin_from_description(
                 prefs.gst_output, ghost_unlinked_pads=True)
 

@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v5.0.5
 
+ - Added device selection and replay gain to GStreamer backend
  - Fixed album grid drag and drop
  - Fixed compact view gallery exit field with panel open
 
