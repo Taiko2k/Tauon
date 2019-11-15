@@ -847,6 +847,8 @@ class Prefs:    # Used to hold any kind of settings
         self.playback_follow_cursor = False
         self.short_buffer = False
 
+        self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
+
         self.art_bg = False
         self.art_bg_stronger = 1
         self.art_bg_opacity = 10
@@ -2386,6 +2388,8 @@ def save_prefs():
     cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
     cf.update_value("use-short-buffering", prefs.short_buffer)
 
+    cf.update_value("gst-output", prefs.gst_output)
+
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
@@ -2474,6 +2478,8 @@ def load_prefs():
     prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
     prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+
+    prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
 
     if prefs.dc_device_setting == 'on':
         prefs.dc_device = True
