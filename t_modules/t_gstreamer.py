@@ -21,6 +21,7 @@
 import time
 import urllib.parse
 import os
+#import re
 from t_modules.t_extra import Timer
 import gi
 from gi.repository import GLib
@@ -39,8 +40,6 @@ def player3(tauon):  # GStreamer
     class GPlayer:
 
         def __init__(self):
-
-
 
             # This is used to keep track of time between callbacks to progress the seek bar
             self.player_timer = Timer()
@@ -83,6 +82,18 @@ def player3(tauon):  # GStreamer
             self._sink = Gst.ElementFactory.make("bin", "sink")
             self._sink.add(self._output)
 
+            # Spectrum
+            # This kind of works, but is a different result to that of the bass backend.
+            # This seems linear and also less visually appealing.
+
+            # self.spectrum = Gst.ElementFactory.make("spectrum", "spectrum")
+            # self.spectrum.set_property('bands', 280)
+            # self.spectrum.set_property('interval', 10000000)
+            # self.spectrum.set_property('post-messages', True)
+            # self.spectrum.set_property('message-magnitude', True)
+            #
+            # self.playbin.set_property('audio-filter', self.spectrum)
+
             # Create volume element
             self._vol = Gst.ElementFactory.make("volume", "volume")
             self._sink.add(self._vol)
@@ -106,7 +117,28 @@ def player3(tauon):  # GStreamer
 
             # self.playbin.connect("about-to-finish", self.about_to_finish)
 
+            # bus = self.playbin.get_bus()
+            # bus.add_signal_watch()
+            # bus.connect('message::element', self.on_message)
+
             self.mainloop.run()
+
+        # def on_message(self, bus, msg):
+        #     struct = msg.get_structure()
+        #     if struct.get_name() == 'spectrum':
+        #         struct_str = struct.to_string()
+        #         magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
+        #         if magnitude_str:
+        #             magnitude = map(float, magnitude_str.group(1).split(','))
+        #
+        #             l = list(magnitude)
+        #             k = []
+        #             for a in l[:23]:
+        #                 k.append(a + 60)
+        #             gui.spec = k
+        #             #print(k)
+        #             gui.level_update = True
+
 
         def check_duration(self):
 
