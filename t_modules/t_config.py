@@ -133,7 +133,10 @@ class Config:
                 self.live.append(['string', key, default_value, comment])
                 return default_value
 
-            old_value = old_value.strip('"')
+            #old_value = old_value.strip('"')
+            if old_value and old_value[0] == old_value[-1] == "\"":
+                old_value = old_value[1:-1]
+
             if not got_old:
                 self.live.append(['string', key, default_value, comment])
                 return default_value
