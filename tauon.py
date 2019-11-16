@@ -5549,7 +5549,7 @@ koel = KoelService()
 tauon.koel = koel
 
 
-def get_network_thumbnail_url(self, track_object):
+def get_network_thumbnail_url(track_object):
     if track_object.file_ext == "PLEX":
         url = plex.resolve_thumbnail(track_object.art_url_key)
         assert url is not None
@@ -5565,6 +5565,10 @@ def get_network_thumbnail_url(self, track_object):
 
 def plex_get_album_thread():
 
+    if prefs.backend != 1:
+        show_message("This feature is currently only available with the BASS backend")
+        return
+
     pref_box.close()
     if plex.scanning:
         input.mouse_click = False
@@ -5578,6 +5582,10 @@ def plex_get_album_thread():
 
 
 def koel_get_album_thread():
+
+    if prefs.backend != 1:
+        show_message("This feature is currently only available with the BASS backend")
+        return
 
     pref_box.close()
     if koel.scanning:
