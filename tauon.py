@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.0.4"
+n_version = "5.1.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -334,6 +334,8 @@ import warnings
 import colorsys
 import requests
 import stat
+import hashlib
+import platform
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -345,6 +347,7 @@ import musicbrainzngs
 import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
+arch = platform.machine()
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
@@ -1054,6 +1057,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.message_text = ""
         self.message_mode = 'info'
         self.message_subtext = ""
+        self.message_subtext2 = ""
 
 
         self.save_size = [450, 310]
@@ -1314,7 +1318,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.showing_l_panel = False
 
         self.worker4_releases = 0
-
+        self.downloading_bass = False
 
 gui = GuiVar()
 
@@ -1854,11 +1858,12 @@ p_force_queue = []
 reload_state = None
 
 
-def show_message(line1, line2="", mode='info'):
+def show_message(line1, line2="", line3="", mode='info'):
     gui.message_box = True
     gui.message_text = line1
     gui.message_mode = mode
     gui.message_subtext = line2
+    gui.message_subtext2 = line3
     message_box_min_timer.set()
     gui.update = 1
 
@@ -3047,6 +3052,7 @@ class PlayerCtl:
         self.system = system
         self.windows_native = windows_native
         self.install_directory = install_directory
+        self.user_directory = user_directory
         self.config_directory = config_directory
 
         # Database
@@ -3372,6 +3378,7 @@ class PlayerCtl:
 
         if pctl.playlist_view_position < 0:
             pctl.playlist_view_position = 0
+
         if pctl.playlist_view_position > len(self.multi_playlist[self.active_playlist_viewing][2]) - 1:
             print("Run Over")
 
@@ -5246,7 +5253,7 @@ class Tauon:
 tauon = Tauon()
 
 # Check if BASS is present and fall back to Gstreamer if not
-if prefs.backend == 1 and not os.path.isfile(install_directory + '/lib/libbass.so'):
+if prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
     if system != "windows":
         print("BASS not found")
         prefs.backend = 2
@@ -19140,14 +19147,44 @@ def reload_backend():
         pctl.revert()
 
 
+def download_bass():
+    show_message("Downloading... Please wait")
+    input.mouse_click = False
+    user_lib_dir = user_directory + "/lib"
+    if os.path.isdir(user_lib_dir):
+        shutil.rmtree(user_lib_dir)
+    os.makedirs(user_lib_dir)
+
+    bass_zip = user_lib_dir + "/bass.zip"
+    urllib.request.urlretrieve('https://github.com/Taiko2k/TauonMusicBox/releases/download/v3.9.1/basslibs64-Apr10.zip',
+                               bass_zip)
+    if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3":
+        show_message("Checksum failed", mode="error")
+        gui.downloading_bass = False
+        return
+    with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
+        zip_ref.extractall(user_lib_dir)
+    show_message("BASS Download Complete.", "Restart app and enable bass backend again to complete.", mode="done")
+    input.mouse_click = False
+    gui.downloading_bass = False
+
 def set_player_bass(mode=0):
 
     if mode == 1:
         return True if prefs.backend == 1 else False
 
-    if not os.path.isfile(install_directory + '/lib/libbass.so'):
-        show_message("Error: Could not find libbass.so", mode='error')
+    if key_shift_down:
+        shoot_dl = threading.Thread(target=download_bass)
+        shoot_dl.daemon = True
+        shoot_dl.start()
         return
+
+    # if not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
+    #     #show_message("Error: Could not find libbass.so", mode='error')
+    #     show_message("BASS not installed. Click again while holding the Shift key to auto-download (<1MB).",
+    #                  "BASS is proprietary and subject to the BASS license. See https://un4seen.com for details.",
+    #                  "BASS is currently required for features: Crossfade, Broadcasting/Streaming and Visualisers", mode='link')
+    #     return
 
     if prefs.backend != 1:
         prefs.backend = 1
@@ -19273,6 +19310,7 @@ class Over:
         self.view_view = 0
         self.chart_view = 0
         self.eq_view = False
+
 
 
     def theme(self, x0, y0, w0, h0):
@@ -19415,8 +19453,22 @@ class Over:
 
         colour = [220, 220, 220, 255]
 
-        ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
-        self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                          ")
+        if not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
+            if arch == "x86_64":
+                if not gui.downloading_bass:
+                    if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
+                        shoot_dl = threading.Thread(target=download_bass)
+                        shoot_dl.daemon = True
+                        shoot_dl.start()
+                        gui.downloading_bass = True
+                if self.button(x + 145 * gui.scale, y, _("?")):
+                    show_message("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB).",
+                                 "BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details.",
+                                 "Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers.", mode='link')
+
+        else:
+            ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
+            self.toggle_square(x - 20 * gui.scale, y, set_player_bass, "                                        ")
 
         if system == "linux":
             ddt.text((x, y - 25 * gui.scale), "GStreamer", [220, 220, 220, 255], 213)
@@ -19592,6 +19644,12 @@ class Over:
 
             y = y0 + 240 * gui.scale
             x += 40 * gui.scale
+            if os.path.isfile(user_directory + '/lib/libbass.so'):
+                if self.button(x + 130 * gui.scale, y, _("Uninstall BASS")):
+                    shutil.rmtree(user_directory + "/lib")
+                    show_message("BASS Deleted.", "Restart app to complete uninstall.",
+                                 mode="info")
+
             # ddt.draw_text((x + 75 * gui.scale, y - 2 * gui.scale), _("Settings apply after track change"), colours.grey(100), 11)
             #prefs.device_buffer = self.slide_control(x, y, _("Device buffer length"), 'ms', prefs.device_buffer, 10, 500, 10, self.reload_device)
 
@@ -30482,7 +30540,7 @@ while pctl.running:
         if pref_box.enabled:
 
             if pref_box.inside():
-                if input.mouse_click:
+                if input.mouse_click and not gui.message_box:
                     pref_box.click = True
                     input.mouse_click = False
                 if right_click:
@@ -33158,12 +33216,16 @@ while pctl.running:
 
                 w1 = ddt.get_text_w(gui.message_text, 15) + 74 * gui.scale
                 w2 = ddt.get_text_w(gui.message_subtext, 12) + 74 * gui.scale
-                w = max(w1, w2)
+                w3 = ddt.get_text_w(gui.message_subtext2, 12) + 74 * gui.scale
+                w = max(w1, w2, w3)
 
                 if w < 210 * gui.scale:
                     w = 210 * gui.scale
 
-                h = 60 * gui.scale
+                h = round(60 * gui.scale)
+                if gui.message_subtext2:
+                    h += round(15 * gui.scale)
+
                 x = int(window_size[0] / 2) - int(w / 2)
                 y = int(window_size[1] / 2) - int(h / 2)
 
@@ -33188,13 +33250,17 @@ while pctl.running:
                 elif gui.message_mode == 'link':
                     message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
 
-                if len(gui.message_subtext) > 0:
+                if gui.message_subtext:
                     ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
                     if gui.message_mode == "bubble" or gui.message_mode == 'link':
                         link_pa = draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
                         link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
                     else:
                         ddt.text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
+
+                    if gui.message_subtext2:
+                        ddt.text((x + 63 * gui.scale, y + (9 + 42) * gui.scale), gui.message_subtext2, colours.message_box_text, 12)
+
                 else:
                     ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.message_box_text, 15)
 
