@@ -1,8 +1,9 @@
 
 Changelog-------------------------------------
 
-v5.0.5
+v5.1.0
 
+ - Added BASS library downloader function
  - Added device selection and replay gain to GStreamer backend
  - Fixed album grid drag and drop
  - Fixed compact view gallery exit field with panel open

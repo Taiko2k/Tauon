@@ -41,8 +41,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
     linux_lib_dir = pctl.install_directory + '/lib/'
 
-    # if not os.path.isfile(linux_lib_dir + "libbass.so"):
-    #     linux_lib_dir = pctl.user_directory + '/lib/'
+    if not os.path.isfile(linux_lib_dir + "libbass.so"):
+        linux_lib_dir = pctl.user_directory + '/lib/'
 
     b_linux_lib_dir = linux_lib_dir.encode()
 
@@ -565,7 +565,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         def seek(self):
 
-            if self.state is not 'stopped':
+            if self.state != 'stopped':
 
                 BASS_ChannelStop(self.channel)
 
