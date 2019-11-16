@@ -42,6 +42,9 @@ t_id = 'tauonmb'
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
+bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v3.9.1/basslibs64-Apr10.zip"
+bass_archive_checksum = "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3"  # sha256
+
 # Detect platform
 windows_native = False
 if sys.platform == 'win32':
@@ -1037,8 +1040,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         global update_layout
         update_layout = True
 
-    def show_message(self, line1, line2="", mode="info"):
-        show_message(line1, line2, mode)
+    def show_message(self, line1, line2="", line3="", mode="info"):
+        show_message(line1, line2, line3, mode=mode)
 
     def __init__(self):
 
@@ -2673,6 +2676,11 @@ if 0 < db_version <= 34:
         print("Update to dv 35")
         prefs.theme_name = get_theme_name(theme)
         print(prefs.theme_name)
+
+if 0 < db_version <= 36 and prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
+    show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
+                 "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
+                 "If you do nothing, GStreamer will be used for playback instead.")
 
 # Set UI language -----
 
@@ -19156,6 +19164,7 @@ def reload_backend():
 
 
 def download_bass():
+
     show_message(_("Downloading... Please wait"))
     input.mouse_click = False
     user_lib_dir = user_directory + "/lib"
@@ -19164,9 +19173,9 @@ def download_bass():
     os.makedirs(user_lib_dir)
 
     bass_zip = user_lib_dir + "/bass.zip"
-    urllib.request.urlretrieve('https://github.com/Taiko2k/TauonMusicBox/releases/download/v3.9.1/basslibs64-Apr10.zip',
+    urllib.request.urlretrieve(bass_archive_link,
                                bass_zip)
-    if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3":
+    if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != bass_archive_checksum:
         show_message("Checksum failed", mode="error")
         gui.downloading_bass = False
         return
@@ -19175,6 +19184,7 @@ def download_bass():
     show_message(_("BASS Download Complete."), mode="done")
     input.mouse_click = False
     gui.downloading_bass = False
+
 
 def set_player_bass(mode=0):
 
@@ -19186,13 +19196,6 @@ def set_player_bass(mode=0):
         shoot_dl.daemon = True
         shoot_dl.start()
         return
-
-    # if not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
-    #     #show_message("Error: Could not find libbass.so", mode='error')
-    #     show_message("BASS not installed. Click again while holding the Shift key to auto-download (<1MB).",
-    #                  "BASS is proprietary and subject to the BASS license. See https://un4seen.com for details.",
-    #                  "BASS is currently required for features: Crossfade, Broadcasting/Streaming and Visualisers", mode='link')
-    #     return
 
     if prefs.backend != 1:
         prefs.backend = 1
@@ -19206,7 +19209,6 @@ def set_player_gstreamer(mode=0):
         return True if prefs.backend == 2 else False
 
     if prefs.backend != 2:
-        show_message("Note: GStreamer support incomplete.", 'Some functions will be unavailable.', mode='info')
         prefs.backend = 2
         reload_backend()
         gui.spec = None

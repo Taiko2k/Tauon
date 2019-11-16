@@ -2,7 +2,7 @@
 Changelog-------------------------------------
 
 v5.1.0
-
+    - todo bump db version
  - Added BASS library downloader function
  - Added device selection and replay gain to GStreamer backend
  - Fixed album grid drag and drop
