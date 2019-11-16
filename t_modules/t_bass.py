@@ -269,8 +269,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         ('BASS_StreamGetFilePosition', bass_module))
 
 
-
-
     # BASS_StreamGetFilePosition
 
     BASS_FILEPOS_CURRENT = 0

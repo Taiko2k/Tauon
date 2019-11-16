@@ -27,7 +27,9 @@ import gi
 from gi.repository import GLib
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
-
+import threading
+import requests
+from hsaudiotag import auto
 
 def player3(tauon):  # GStreamer
 
@@ -120,6 +122,10 @@ def player3(tauon):  # GStreamer
             # bus = self.playbin.get_bus()
             # bus.add_signal_watch()
             # bus.connect('message::element', self.on_message)
+            self.alt = "a"
+            self.url = None
+            self.dl_ready = False
+
 
             self.mainloop.run()
 
@@ -138,6 +144,44 @@ def player3(tauon):  # GStreamer
         #             gui.spec = k
         #             #print(k)
         #             gui.level_update = True
+
+        # Network file downloader WIP
+        def download_part(self, url, target, params):
+            # This function is to be called in a separate thread to download file async
+            # Note that download from koel server requires special header parameter with token
+
+            self.part = requests.get(url, stream=True, params=params)
+            print(self.part.status_code)
+
+            bitrate = 0
+            a = 0
+            z = 0
+            with open(target, 'wb') as f:
+                for chunk in self.part.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        a += 1
+                        # Disabled, wait for entire file to download, gstreamer doesn't stream part file (by deafult)
+                        # if a == 300:  # kilobyes~
+                        #     self.dl_ready = True
+                        if url != self.url:
+                            self.part.close()
+                            break
+
+                        f.write(chunk)
+
+                    # Get track bitrate so we can estimate download progress
+                    z += 1
+                    if z == 60:
+                        z = 0
+                        if bitrate == 0:
+                            audio = auto.File(target)
+                            bitrate = audio.bitrate
+                        if bitrate > 0:
+                            gui.update += 1
+                            pctl.download_time = a * 1024 / (bitrate / 8) / 1000
+
+            pctl.download_time = -1
+            self.dl_ready = True
 
 
         def check_duration(self):
@@ -209,11 +253,18 @@ def player3(tauon):  # GStreamer
                 # prefs.use_transition_crossfade (if true, fade rather than transition gaplessly at end of file) todo
                 # prefs.use_jump_crossfade (if true and not end of file, fade rather than switch instantly) todo
                 # prefs.use_pause_fade (if true, fade when pausing, rather than pausing instantly) todo
-
-                if pctl.playerCommand == 'open' and pctl.target_open != '':
+                url = None
+                if pctl.playerCommand == 'open' and pctl.target_object:
 
                     # Check if the file exists, mark it as missing if not
-                    if os.path.isfile(pctl.target_object.fullpath):
+                    if pctl.target_object.is_network:
+                        try:
+                            url, params = pctl.get_url(pctl.target_object)
+                        except:
+                            gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
+                            pctl.stop()
+
+                    elif os.path.isfile(pctl.target_object.fullpath):
                         # File exists so continue
                         pctl.target_object.found = True
                     else:
@@ -229,6 +280,26 @@ def player3(tauon):  # GStreamer
                     gapless = False
                     current_time = 0
                     current_duration = 0
+
+                    # Prepare download of network track WIP --------------
+                    if pctl.target_object.is_network:
+                        print(url)
+                        self.save_temp = prefs.cache_directory + "/" + self.alt + "-temp.mp3"
+                        if self.alt == 'a':
+                            self.alt = 'b'
+                        else:
+                            self.alt = 'a'
+                        self.url = url
+                        self.dl_ready = False
+                        shoot_dl = threading.Thread(target=self.download_part, args=([url, self.save_temp, params]))
+                        shoot_dl.daemon = True
+                        shoot_dl.start()
+                        while not self.dl_ready:
+                            time.sleep(0.02)
+                        if url is None:
+                            pass
+                            #return
+                    # --------------------------------------
 
                     if self.play_state != 0:
                         # Determine time position of currently playing track
@@ -247,7 +318,13 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_state(Gst.State.READY)
 
                     self.play_state = 1
-                    self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
+                    if url:
+                        # Play temporary file downloaded from network location
+                        self.playbin.set_property('uri',
+                                                  'file://' + urllib.parse.quote(self.save_temp))
+                    else:
+                        # Play file on disk
+                        self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
                     self._vol.set_property('volume', pctl.player_volume / 100)
                     self.playbin.set_state(Gst.State.PLAYING)
                     if pctl.jump_time == 0:
@@ -278,7 +355,6 @@ def player3(tauon):  # GStreamer
                     pctl.jump_time = 0
                     time.sleep(0.15)
                     self.check_duration()
-
                     self.player_timer.hit()
 
                 # elif pctl.playerCommand == 'url': (todo)
