@@ -7,7 +7,7 @@
   <summary>Play your music collection with style</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>GPL-3.0+</project_license>
   <url type="homepage">https://github.com/Taiko2k/TauonMusicBox</url>
   <url type="bugtracker">https://github.com/Taiko2k/TauonMusicBox/issues</url>
   <url type="help">https://github.com/Taiko2k/TauonMusicBox/wiki</url>
@@ -22,7 +22,6 @@
       <li>Gapless playback</li>
       <li>CUE sheet detection</li>
       <li>Lookup artists on Rate Your Music</li>
-      <li>Audio broadcasting</li>
       <li>Scrobble and love tracks to last.fm</li>
       <li>Support for Listenbrainz and launching the Musicbrainz Picard tag editor</li>
       <li>Import downloaded music archives in one click</li>
@@ -37,16 +36,16 @@
   <screenshots>
 
     <screenshot type="default">
-      <image type="source">https://user-images.githubusercontent.com/17271572/68852412-b091d180-073c-11ea-9bb8-3b67a57afdee.png</image>
-      <caption>Player window showing folder-list, track-list and album grid</caption>
+      <image type="source">https://user-images.githubusercontent.com/17271572/68988176-59a10f00-0898-11ea-9d5f-2b9852eace1e.jpg</image>
+      <caption>Main window showing folder-list and album grid</caption>
     </screenshot>
     <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/61632863-f0dac900-ace1-11e9-9144-852fe2a40251.png</image>
-      <caption>Player window showing tracklist and album art</caption>
+      <caption>Player window showing track-list and album art</caption>
     </screenshot>
     <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/68853658-61996b80-073f-11ea-9b64-21e0d5da18a6.png</image>
-      <caption>Player window resized to a narrow width showing artist and track list</caption>
+      <caption>Player window resized to a narrow width</caption>
     </screenshot>
   </screenshots>
 
@@ -57,9 +56,10 @@
 
   <releases>
 
-    <release version="5.0.5" date="2019-11-15">
+    <release version="5.1.0" date="2019-11-16">
       <description>
         <ul>
+          <li>Set GStreamer as the default backend</li>
           <li>Fixed an issue with gallery drag and drop</li>
         </ul>
       </description>
