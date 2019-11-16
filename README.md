@@ -25,7 +25,7 @@ Designed to be simple and streamlined while putting the user in control of their
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
-  - Background **radio broadcasting** functionality. :radio: :satellite: 
+  - Background **radio broadcasting**. :radio: :satellite: (Bass only)
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
@@ -33,13 +33,6 @@ Designed to be simple and streamlined while putting the user in control of their
 
 - [x] FLAC, APE, TTA, WV, MP3, M4A(aac, alac), OGG, OPUS
 - [x] XSPF, CUE (automatic detection)
-
-
-### Mini modes
-
-Style your desktop with the available *mini-modes*
-
-<img src="https://user-images.githubusercontent.com/17271572/64147703-51c6f680-ce75-11e9-9761-2c595dd53ef8.png" height="350px" hspace="0px" vspace="60px">
 
 
 ## Download and Install :dizzy:
