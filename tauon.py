@@ -14556,8 +14556,10 @@ if prefs.enable_transcode or prefs.backend == 1:
 
 track_menu.add(_('Transcode Folder'), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon, show_test=toggle_transcode)
 
-if prefs.backend == 1:
-    track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True)
+def bass_test(_):
+    return prefs.backend == 1
+
+track_menu.add(_('Broadcast This'), broadcast_select_track, pass_ref=True, show_test=bass_test)
 
 # Create top menu
 x_menu = Menu(190, show_icons=True)
@@ -15223,8 +15225,6 @@ add_icon.colour = [237, 80 ,221, 255] #[230, 118, 195, 225]#[237, 75, 218, 255]
 
 x_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
-def bass_test(_):
-    return prefs.backend == 1
 
 x_menu.add(_("Open Stream…"), activate_radio_box, show_test=bass_test)
 
@@ -19148,7 +19148,7 @@ def reload_backend():
 
 
 def download_bass():
-    show_message("Downloading... Please wait")
+    show_message(_("Downloading... Please wait"))
     input.mouse_click = False
     user_lib_dir = user_directory + "/lib"
     if os.path.isdir(user_lib_dir):
@@ -19164,7 +19164,7 @@ def download_bass():
         return
     with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
         zip_ref.extractall(user_lib_dir)
-    show_message("BASS Download Complete.", "Restart app and enable bass backend again to complete.", mode="done")
+    show_message(_("BASS Download Complete."), mode="done")
     input.mouse_click = False
     gui.downloading_bass = False
 
@@ -19708,8 +19708,9 @@ class Over:
         else:
 
             y += 35 * gui.scale
-            self.toggle_square(x, y, toggle_enable_web,
-                               _("Serve webpage for broadcast metadata"))
+            if prefs.backend == 1 or prefs.enable_web:
+                self.toggle_square(x, y, toggle_enable_web,
+                                   _("Serve webpage for broadcast metadata"))
 
             y += 30 * gui.scale
             self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
@@ -30416,9 +30417,10 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             pass
             # gen_replay(0)
-            # window_size[0] = int(1600 * gui.scale)
-            # window_size[1] = int(900 * gui.scale)
-            # SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+            window_size[0] = int(1600 * gui.scale)
+            window_size[1] = int(900 * gui.scale)
+            SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+            gui.update_layout()
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
