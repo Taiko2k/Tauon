@@ -2,11 +2,14 @@
 Changelog-------------------------------------
 
 v5.1.0
-    - todo bump db version
+
+ - Added "Collapse All" function to folder tree
  - Added BASS library downloader function
  - Added device selection and replay gain to GStreamer backend
+ - Tweaked middle click right side panel to also cycle lyrics view
  - Fixed album grid drag and drop
  - Fixed compact view gallery exit field with panel open
+ - Fixed folder tree scroll position after collapsing
 
 v5.0.4
 
