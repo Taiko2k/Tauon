@@ -1260,7 +1260,8 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 else:
                     meta = BASS_ChannelGetTags(bass_player.channel, 2)
                     if meta is not None:
-                        meta = pctl.tag_meta.decode('utf-8', 'ignore')
+                        if type(meta) is not str:
+                            meta = pctl.tag_meta.decode('utf-8', 'ignore')
                     else:
                         meta = ""
 

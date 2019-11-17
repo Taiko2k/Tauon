@@ -65,12 +65,13 @@ def player3(tauon):  # GStreamer
                     device_name = element.props.device
                     display_name = device.get_display_name()
 
+                    # This is used by the UI to present list of options to the user in audio settings
                     pctl.gst_outputs[display_name] = (type_name, device_name)
                     pctl.gst_devices.append(display_name)
 
             dm.stop()
 
-            # Create main "playbin" pipeline thingy for simple playback
+            # Create main "playbin" pipeline for playback
             self.playbin = Gst.ElementFactory.make("playbin", "player")
 
             # Create output bin
@@ -84,10 +85,10 @@ def player3(tauon):  # GStreamer
             self._sink = Gst.ElementFactory.make("bin", "sink")
             self._sink.add(self._output)
 
-            # Spectrum
-            # This kind of works, but is a different result to that of the bass backend.
-            # This seems linear and also less visually appealing.
-
+            # # Spectrum -------------------------
+            # # This kind of works, but is a different result to that of the bass backend.
+            # # This seems linear and also less visually appealing.
+            #
             # self.spectrum = Gst.ElementFactory.make("spectrum", "spectrum")
             # self.spectrum.set_property('bands', 280)
             # self.spectrum.set_property('interval', 10000000)
@@ -95,6 +96,7 @@ def player3(tauon):  # GStreamer
             # self.spectrum.set_property('message-magnitude', True)
             #
             # self.playbin.set_property('audio-filter', self.spectrum)
+            # # ------------------------------------
 
             # Create volume element
             self._vol = Gst.ElementFactory.make("volume", "volume")
@@ -117,18 +119,39 @@ def player3(tauon):  # GStreamer
             # Set callback for the main callback loop
             GLib.timeout_add(50, self.main_callback)
 
-            # self.playbin.connect("about-to-finish", self.about_to_finish)
+            # self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used by anything
 
+            # # Enable bus to get spectrum messages
             # bus = self.playbin.get_bus()
             # bus.add_signal_watch()
             # bus.connect('message::element', self.on_message)
-            self.alt = "a"
+
+            # Variables used with network downloading
+            self.temp_id = "a"
             self.url = None
             self.dl_ready = False
+            self.temp_path = ""  # Full path + filename
 
+            # # Broadcasting pipeline ------------
+            #
+            # # This works, but only for one track, switching tracks seems to be a more complicated process.
+            #
+            # self.b_playbin = Gst.ElementFactory.make("playbin", "player")
+            #
+            # # Create output bin
+            # # Using tcpserversink seems to mostly work with the html5 player, though an HTTP server may be preferred.
+            # self._b_output = Gst.parse_bin_from_description(
+            #    "audioconvert ! vorbisenc ! oggmux ! tcpserversink port=8000", ghost_unlinked_pads=True)
+            #    #"autoaudiosink", ghost_unlinked_pads=True)
+            #
+            # # Connect the playback bin to to the output bin
+            # self.b_playbin.set_property("audio-sink", self._b_output)
+            # # ----------------------------------------
 
+            # Start GLib mainloop
             self.mainloop.run()
 
+        # # Used to get spectrum data and pass onto UI
         # def on_message(self, bus, msg):
         #     struct = msg.get_structure()
         #     if struct.get_name() == 'spectrum':
@@ -161,6 +184,7 @@ def player3(tauon):  # GStreamer
                     if chunk:  # filter out keep-alive new chunks
                         a += 1
                         # Disabled, wait for entire file to download, gstreamer doesn't stream part file (by deafult)
+                        # Is there a way to achieve desired behavior?
                         # if a == 300:  # kilobyes~
                         #     self.dl_ready = True
                         if url != self.url:
@@ -232,6 +256,8 @@ def player3(tauon):  # GStreamer
                 # suspend: Pause and disconnect from output device (not used, playbin automatically does this)
                 # unload: Cleanup and exit
                 # done: Tell the main thread we finished doing a special request it was waiting for (such as unload)
+                # encstart: Start broadcasting given track at start time (same way as open)
+                # cast-next: Switch broadcasting to given track at start time (same way as open)
 
                 # Note that functions such as gapless playback are entirely implemented on this side.
                 # We wont be told, we just guess when we need to do them and hold loop until we are done.
@@ -263,6 +289,7 @@ def player3(tauon):  # GStreamer
                         except:
                             gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
                             pctl.stop()
+                            # todo failure, don't continue down from here
 
                     elif os.path.isfile(pctl.target_object.fullpath):
                         # File exists so continue
@@ -284,20 +311,21 @@ def player3(tauon):  # GStreamer
                     # Prepare download of network track WIP --------------
                     if pctl.target_object.is_network:
                         print(url)
-                        self.save_temp = prefs.cache_directory + "/" + self.alt + "-temp.mp3"
-                        if self.alt == 'a':
-                            self.alt = 'b'
+                        self.temp_path = prefs.cache_directory + "/" + self.temp_id + "-temp.mp3"
+                        if self.temp_id == 'a':
+                            self.temp_id = 'b'
                         else:
-                            self.alt = 'a'
+                            self.temp_id = 'a'
                         self.url = url
                         self.dl_ready = False
-                        shoot_dl = threading.Thread(target=self.download_part, args=([url, self.save_temp, params]))
+                        shoot_dl = threading.Thread(target=self.download_part, args=([url, self.temp_path, params]))
                         shoot_dl.daemon = True
                         shoot_dl.start()
                         while not self.dl_ready:
                             time.sleep(0.02)
                         if url is None:
                             pass
+                            # todo abort
                             #return
                     # --------------------------------------
 
@@ -321,7 +349,7 @@ def player3(tauon):  # GStreamer
                     if url:
                         # Play temporary file downloaded from network location
                         self.playbin.set_property('uri',
-                                                  'file://' + urllib.parse.quote(self.save_temp))
+                                                  'file://' + urllib.parse.quote(self.temp_path))
                     else:
                         # Play file on disk
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
@@ -356,6 +384,19 @@ def player3(tauon):  # GStreamer
                     time.sleep(0.15)
                     self.check_duration()
                     self.player_timer.hit()
+
+                # elif pctl.playerCommand == 'encstart':
+                #     print("Start Gstreamer broadcast")
+                #     self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
+                #     self.b_playbin.set_state(Gst.State.PLAYING)
+                #     pctl.broadcast_active = True
+                #
+                # elif pctl.playerCommand == 'cast-next':
+                #     print("castt next")
+                #     self.playbin.set_state(Gst.State.READY)
+                #     time.sleep(0.15)
+                #     self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
+                #     self.b_playbin.set_state(Gst.State.PLAYING)
 
                 # elif pctl.playerCommand == 'url': (todo)
                 #
