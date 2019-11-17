@@ -10403,9 +10403,23 @@ def re_import3(stem):
     show_message("Rescanning folder...", stem, mode='info')
 
 
+def collapse_tree_deco():
+
+    pl_id = pl_to_id(pctl.active_playlist_viewing)
+    if tree_view_box.opens.get(pl_id):
+        return [colours.menu_text, colours.menu_background, None]
+    else:
+        return [colours.menu_text_disabled, colours.menu_background, None]
+
+def collapse_tree():
+    tree_view_box.collapse_all()
 
 folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
 folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
+
+folder_tree_stem_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
+folder_tree_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
+
 
 lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon)
 folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
@@ -11948,6 +11962,7 @@ def standard_sort(pl):
     sort_path_pl(pl)
     sort_track_2(pl)
     reload_albums()
+    tree_view_box.clear_target_pl(pl)
 
 
 def year_s(plt):
@@ -12011,6 +12026,7 @@ def year_sort(pl):
     # We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
     pctl.multi_playlist[pl][2][:] = pl2[:]
     reload_albums()
+    tree_view_box.clear_target_pl(pl)
 
 
 
@@ -19168,13 +19184,26 @@ def download_bass():
     show_message(_("Downloading... Please wait"))
     input.mouse_click = False
     user_lib_dir = user_directory + "/lib"
-    if os.path.isdir(user_lib_dir):
-        shutil.rmtree(user_lib_dir)
-    os.makedirs(user_lib_dir)
+
+    try:
+        if os.path.isdir(user_lib_dir):
+            shutil.rmtree(user_lib_dir)
+        os.makedirs(user_lib_dir)
+    except:
+        show_message("Folder access error", mode="error")
+        gui.downloading_bass = False
+        return
 
     bass_zip = user_lib_dir + "/bass.zip"
-    urllib.request.urlretrieve(bass_archive_link,
-                               bass_zip)
+
+    try:
+        urllib.request.urlretrieve(bass_archive_link,
+                                   bass_zip)
+    except Exception as e:
+        show_message("Download of archive failed.", str(e), mode="error")
+        gui.downloading_bass = False
+        return
+
     if hashlib.sha256(open(bass_zip, 'rb').read()).hexdigest() != bass_archive_checksum:
         show_message("Checksum failed", mode="error")
         gui.downloading_bass = False
@@ -25707,6 +25736,17 @@ class TreeView:
         self.rows_id = ""
         self.trees.clear()
 
+    def collapse_all(self):
+        pl_id = pl_to_id(pctl.active_playlist_viewing)
+
+        opens = self.opens.get(pl_id)
+        if opens is None:
+            opens = []
+            self.opens[pl_id] = opens
+
+        opens.clear()
+        self.rows_id = ""
+
     def clear_target_pl(self, pl_number):
 
         pl_id = pl_to_id(pl_number)
@@ -25824,6 +25864,10 @@ class TreeView:
             if not self.background_processing:
                 self.gen_rows(tree, opens)
                 self.rows_id = pl_id
+                max_scroll = len(self.rows) - (h // round(22 * gui.scale))
+                if scroll_position > max_scroll:
+                    scroll_position = max_scroll
+
             else:
                 return
 
@@ -26101,6 +26145,7 @@ class TreeView:
         self.force_opens.clear()
 
         self.gen_row(tree, "", opens)
+
 
     def gen_tree(self, pl_id):
         pl_no = id_to_pl(pl_id)
@@ -29492,7 +29537,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            36,  # Version, used for upgrading
+            37,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -32210,10 +32255,21 @@ while pctl.running:
 
                     if middle_click:
                         if coll((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY)):
-                            if prefs.side_panel_layout == 0:
+
+                            if target_track and target_track.lyrics and prefs.show_lyrics_side:
+                                prefs.show_lyrics_side ^= True
                                 prefs.side_panel_layout = 1
                             else:
-                                prefs.side_panel_layout = 0
+
+                                if prefs.side_panel_layout == 0:
+
+                                    if target_track and target_track.lyrics and not prefs.show_lyrics_side:
+                                        prefs.show_lyrics_side = True
+                                        prefs.side_panel_layout = 1
+                                    else:
+                                        prefs.side_panel_layout = 1
+                                else:
+                                    prefs.side_panel_layout = 0
 
                     if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
 
