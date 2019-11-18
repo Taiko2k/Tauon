@@ -60,6 +60,7 @@
       <description>
         <ul>
           <li>Set GStreamer as the default backend</li>
+          <li>Added collapse all option to folder tree view</li>
           <li>Fixed an issue with gallery drag and drop</li>
         </ul>
       </description>
