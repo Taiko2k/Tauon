@@ -42,7 +42,7 @@ t_id = 'tauonmb'
 print(f"{t_title} {t_version}")
 print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
 
-bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v3.9.1/basslibs64-Apr10.zip"
+bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.1.0/basslibs64-Apr10.zip"
 bass_archive_checksum = "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3"  # sha256
 
 # Detect platform
@@ -19211,6 +19211,7 @@ def download_bass():
         return
     with zipfile.ZipFile(bass_zip, 'r') as zip_ref:
         zip_ref.extractall(user_lib_dir)
+
     show_message(_("BASS Download Complete."), mode="done")
     input.mouse_click = False
     gui.downloading_bass = False
@@ -30472,9 +30473,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-            toggle_broadcast()
-
-
+            # toggle_broadcast()
 
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
