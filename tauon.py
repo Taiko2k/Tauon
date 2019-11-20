@@ -18279,11 +18279,13 @@ def worker1():
                     if system == 'linux' and de_notify_support:
                         g_tc_notify.show()
 
-        while len(to_scan) > 0:
-            track = to_scan[0]
-            pctl.master_library[track] = tag_scan(pctl.master_library[track])
-            del to_scan[0]
-            gui.update += 1
+        if to_scan:
+            while to_scan:
+                track = to_scan[0]
+                pctl.master_library[track] = tag_scan(pctl.master_library[track])
+                del to_scan[0]
+                gui.update += 1
+            album_artist_dict.clear()
 
         if loaderCommandReady is True:
 
@@ -18595,6 +18597,7 @@ def reload_albums(quiet=False, return_playlist=-1):
     gui.update += 2
     gui.pl_update = 1
     update_layout = True
+
 
     if not quiet:
         goto_album(pctl.playlist_playing_position)
