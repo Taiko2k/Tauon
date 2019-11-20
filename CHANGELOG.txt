@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+5.1.1
+
+ - Fixed artist text not appearing in gallery after import
+
 v5.1.0
 
  - Added "Collapse All" function to folder tree
