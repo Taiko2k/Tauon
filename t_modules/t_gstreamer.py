@@ -234,8 +234,8 @@ def player3(tauon):  # GStreamer
         def main_callback(self):
 
             # This is the main callback function to be triggered continuously as long as application is running
-
-            pctl.test_progress()  # This function triggers an advance if we are near end of track
+            if self.play_state == 1:
+                pctl.test_progress()  # This function triggers an advance if we are near end of track
 
             if pctl.playerCommandReady:
                 pctl.playerCommandReady = False
@@ -337,7 +337,7 @@ def player3(tauon):  # GStreamer
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
-                            0.2 < current_duration - current_time < 5.5:
+                            0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now':
                         print("Use GStreamer Gapless transition")
                         gapless = True
 
@@ -345,7 +345,9 @@ def player3(tauon):  # GStreamer
                     else:
                         self.playbin.set_state(Gst.State.READY)
 
+                    pctl.playerSubCommand = ""
                     self.play_state = 1
+
                     if url:
                         # Play temporary file downloaded from network location
                         self.playbin.set_property('uri',
@@ -370,15 +372,24 @@ def player3(tauon):  # GStreamer
                     if gapless:  # Hold thread while a gapless transition is in progress
                         t = 0
                         while self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND >= current_time > 0:
+
                             time.sleep(0.1)
                             t += 1
 
                             if self.playbin.get_state(0).state != Gst.State.PLAYING:
                                 break
 
-                            if t > 40:
+                            if t > 50:
                                 print("Gonna stop waiting...")  # Cant wait forever
                                 break
+
+                            if pctl.playerCommand == 'open' and pctl.playerCommandReady:
+                                # Cancel the gapless transition
+                                self.playbin.set_state(Gst.State.READY)
+                                time.sleep(0.1)
+                                GLib.timeout_add(19, self.main_callback)
+                                return
+
 
                     pctl.jump_time = 0
                     time.sleep(0.15)
