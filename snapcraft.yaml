@@ -11,6 +11,8 @@ base: core18
 apps:
   tauon:
     command: tauon.py
+    environment:
+      PYSDL2_DLL_PATH: $PYSDL2_DLL_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
     extensions:
       - gnome-3-28
     plugs:
@@ -51,4 +53,3 @@ parts:
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
-    
