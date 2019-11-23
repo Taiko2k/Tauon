@@ -31010,10 +31010,10 @@ while pctl.running:
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
                                     colours.menu_background = colours.bottom_panel_colour
-                                # if 'mini bg' in p:
-                                #     colours.mini_mode_background = get_colour_from_line(p)
-                                # if 'mini border' in p:
-                                #     colours.mini_mode_border = get_colour_from_line(p)
+                                if 'mini bg' in p:
+                                    colours.mini_mode_background = get_colour_from_line(p)
+                                if 'mini border' in p:
+                                    colours.mini_mode_border = get_colour_from_line(p)
                                 if 'column-' in p:
                                     key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)

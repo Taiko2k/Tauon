@@ -56,12 +56,11 @@
 
   <releases>
 
-    <release version="5.1.0" date="2019-11-16">
+    <release version="5.1.1" date="2019-11-23">
       <description>
         <ul>
-          <li>Set GStreamer as the default backend</li>
-          <li>Added collapse all option to folder tree view</li>
-          <li>Fixed an issue with gallery drag and drop</li>
+          <li>Fixed a possible crash in gallery view</li>
+          <li>Tweaked mini mode appearance</li>
         </ul>
       </description>
     </release>

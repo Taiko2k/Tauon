@@ -79,5 +79,5 @@
 
 #-Mini Mode---------
 
-24,24,24        mini bg
-60,60,60        mini border
+15,15,15        mini bg
+40,40,40        mini border
