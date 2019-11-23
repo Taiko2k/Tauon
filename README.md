@@ -3,7 +3,7 @@
 
 ## Tauon Music Box
 
-A desktop music player for playback of local audio files. Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer or optionally BASS Audio Library for playback. 
+**A music player for the Linux desktop.** Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer or optionally BASS Audio Library for playback. 
 
 <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
 
