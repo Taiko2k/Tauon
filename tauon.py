@@ -1325,6 +1325,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.worker4_releases = 0
         self.downloading_bass = False
+        self.d_click_ref = -1
 
 gui = GuiVar()
 
@@ -21504,7 +21505,8 @@ class TopPanel:
                 s = get_folder_size(auto_dl.dl_dir)
 
                 if s < 1000:
-                    line = ""
+                    line = "" + "." * (round(core_timer.get()) % 4)
+                    gui.delay_frame(1)
                 else:
                     line = get_filesize_string(s)
 
