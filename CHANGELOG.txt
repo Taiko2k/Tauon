@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 5.1.1
 
+ - Tweaked mini mode appearance
  - Fixed artist text not appearing in gallery after import
  - Fixed GStreamer backend performing gapless transition with user jump
  - Fixed delete folder not immediately redrawing playlist
