@@ -1684,8 +1684,8 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
 
         self.pluse_colour = [244, 212, 66, 255]
 
-        self.mini_mode_background = [20, 20, 20, 255]
-        self.mini_mode_border = [50, 50, 50, 255]
+        self.mini_mode_background = [19, 19, 19, 255]
+        self.mini_mode_border = [45, 45, 45, 255]
 
         self.queue_drag_indicator_colour = [200, 50, 240, 255]
 
@@ -6317,6 +6317,16 @@ if system == "linux":
 
     standard_font = "Noto Sans, ExtraCondensed"
     ddt.prime_font(standard_font, 11, 414)
+    ddt.prime_font(standard_font, 12, 415)
+    ddt.prime_font(standard_font, 13, 416)
+
+
+    standard_font = "Noto Sans, ExtraCondensed Bold"
+    ddt.prime_font(standard_font, 10, 513)
+    ddt.prime_font(standard_font, 11, 514)
+    ddt.prime_font(standard_font, 12, 515)
+    ddt.prime_font(standard_font, 13, 516)
+
 
 else:
     standard_font = "Meiryo"
@@ -19166,7 +19176,7 @@ def reload_backend():
     while pctl.playerCommandReady:
         time.sleep(0.01)
         wait += 1
-        if wait > 50:
+        if wait > 20:
             break
 
     pctl.playerCommand = "unload"
@@ -19176,7 +19186,7 @@ def reload_backend():
     while pctl.playerCommand != 'done':
         time.sleep(0.01)
         wait += 1
-        if wait > 50:
+        if wait > 20:
             break
 
     tm.ready_playback()
@@ -22626,9 +22636,9 @@ class MiniMode:
             line2 = track.title
 
             # Calculate seek bar position
-            seek_w = int(w * 0.65)
+            seek_w = int(w * 0.70)
 
-            seek_r = [(w - seek_w) // 2, y1 + 57 * gui.scale, seek_w, 6 * gui.scale]
+            seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
             seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
 
             if w != h or mouse_in_area:
@@ -22638,10 +22648,10 @@ class MiniMode:
                              window_size[0] - 30 * gui.scale)
                 else:
 
-                    ddt.text((w // 2, y1 + 9 * gui.scale, 2), line1, colours.grey(100), 313,
+                    ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, colours.grey(100), 514,
                              window_size[0] - 30 * gui.scale)
 
-                    ddt.text((w // 2, y1 + 30 * gui.scale, 2), line2, colours.grey(249), 214,
+                    ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, colours.grey(249), 414,
                              window_size[0] - 30 * gui.scale)
 
 
@@ -30998,10 +31008,10 @@ while pctl.running:
                                 if 'bottom panel' in p:
                                     colours.bottom_panel_colour = get_colour_from_line(p)
                                     colours.menu_background = colours.bottom_panel_colour
-                                if 'mini bg' in p:
-                                    colours.mini_mode_background = get_colour_from_line(p)
-                                if 'mini border' in p:
-                                    colours.mini_mode_border = get_colour_from_line(p)
+                                # if 'mini bg' in p:
+                                #     colours.mini_mode_background = get_colour_from_line(p)
+                                # if 'mini border' in p:
+                                #     colours.mini_mode_border = get_colour_from_line(p)
                                 if 'column-' in p:
                                     key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
                                     value = get_colour_from_line(p)
