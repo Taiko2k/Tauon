@@ -1043,6 +1043,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
     def show_message(self, line1, line2="", line3="", mode="info"):
         show_message(line1, line2, line3, mode=mode)
 
+    def delay_frame(self, t):
+        gui.frame_callback_list.append(TestTimer(t))
+
     def __init__(self):
 
         self.scale = prefs.ui_scale
@@ -13598,8 +13601,6 @@ def delete_folder(index, force=False):
 
     old = track.parent_folder_path
 
-
-
     if len(old) < 5:
         show_message("This folder path seems short, I don't wanna try delete that", mode='warning')
         return
@@ -13658,6 +13659,7 @@ def delete_folder(index, force=False):
 
     tauon.worker_save_state = True
     tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
+    gui.pl_update += 1
 
 
 def rename_parent(index, template):
@@ -21490,7 +21492,13 @@ class TopPanel:
                 show_message("Downloader is running...", "You may need to restart app if download stalls", mode='info')
             if os.path.isdir(auto_dl.dl_dir):
                 s = get_folder_size(auto_dl.dl_dir)
-                ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), get_filesize_string(s), [230, 100, 50, 255], 209)
+
+                if s < 1000:
+                    line = ""
+                else:
+                    line = get_filesize_string(s)
+
+                ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), line, [230, 100, 50, 255], 209)
 
         elif (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
             x += 52 * gui.scale

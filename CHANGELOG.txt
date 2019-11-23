@@ -5,6 +5,7 @@ Changelog-------------------------------------
 
  - Fixed artist text not appearing in gallery after import
  - Fixed GStreamer backend performing gapless transition with user jump
+ - Fixed delete folder not immediately redrawing playlist
 
 v5.1.0
 
