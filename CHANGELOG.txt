@@ -4,6 +4,7 @@ Changelog-------------------------------------
 5.1.2
 
  - Added initial loading screen
+ - Added picture preview to artist list
 
 5.1.1
 
