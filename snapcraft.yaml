@@ -1,8 +1,6 @@
 name: tauon
 version: git
-summary: Tauon Music Box
-description: |
-  A desktop music player for playback of local audio files. Designed to be simple and streamlined, putting the user in control of their music collection. Uses GStreamer or optionally BASS Audio Library for playback.
+adopt-info: tauon
 
 grade: stable
 confinement: strict
@@ -50,6 +48,7 @@ parts:
   tauon:
     plugin: dump
     source: .
+    parse-info: [extra/com.github.taiko2k.tauonmb.appdata.xml]
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
