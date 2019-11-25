@@ -1502,14 +1502,53 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.max_window_tex = max_window_tex
         self.main_texture = main_texture
+        self.main_texture_overlay_temp = main_texture_overlay_temp
+
+        self.preview_artist = ""
+        self.preview_artist_location = (0, 0)
+        self.preview_artist_loading = False
 
 
 gui = GuiVar()
 
 
+
+
+def set_artist_preview(path, artist, x, y):
+    m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
+    artist_preview_render.load(path, box_size=m)
+    artist_preview_render.show = True
+    ah = artist_preview_render.size[1]
+    ay = round(y) - (ah // 2)
+    if ay < gui.panelY + 20 * gui.scale:
+        ay = gui.panelY + round(20 * gui.scale)
+    if ay + ah > window_size[1] - (gui.panelBY + 5 * gui.scale):
+        ay = window_size[1] - (gui.panelBY + ah + round(5 * gui.scale))
+    gui.preview_artist = artist
+    gui.preview_artist_location = (x + 15 * gui.scale,
+                                   ay)
+
+
+def get_artist_preview(artist, x, y):
+
+    show_message(_("Loading artist image..."))
+
+    gui.preview_artist_loading = True
+    artist_info_box.get_data(artist)
+    path = artist_info_box.get_data(artist, get_img_path=True)
+    if not path:
+        show_message(_("No artist image found."))
+        gui.preview_artist_loading = False
+        return
+    set_artist_preview(path, artist, x, y)
+    gui.message_box = False
+    gui.preview_artist_loading = False
+
+
 def set_drag_source():
     gui.drag_source_position = tuple(click_location)
     gui.drag_source_position_persist = tuple(click_location)
+
 
 
 # Functions for reading and setting play counts
@@ -1668,9 +1707,7 @@ class KeyMap:
 
 keymaps = KeyMap()
 
-shoot = threading.Thread(target=keymaps.load)
-shoot.daemon = True
-shoot.start()
+
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
@@ -25585,11 +25622,12 @@ class ArtistList:
         #     back_colour = [200, 200, 200, 255]
         #     back_colour_2 = [240, 240, 240, 255]
         #     border_colour = [160, 160, 160, 255]
+        rect = (thumb_x, round(y), self.thumb_size, self.thumb_size)
 
         if thin_mode and coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY:
             tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
 
-            rect = (thumb_x, round(y), self.thumb_size, self.thumb_size)
+
             for r in subtract_rect(tab_rect, rect):
                 r = SDL_Rect(r[0], r[1], r[2], r[3])
                 style_overlay.hole_punches.append(r)
@@ -25597,8 +25635,21 @@ class ArtistList:
             ddt.rect(tab_rect, back_colour_2, True)
             bg = back_colour_2
 
-        ddt.rect((thumb_x, round(y), self.thumb_size, self.thumb_size), back_colour, True)
-        ddt.rect((thumb_x, round(y), self.thumb_size, self.thumb_size), border_colour)
+        ddt.rect(rect, back_colour, True)
+        ddt.rect(rect, border_colour)
+
+        if not thin_mode and coll(rect) and input.mouse_click and not gui.preview_artist_loading:
+            input.mouse_click = False
+            gui.preview_artist = ""
+            path = artist_info_box.get_data(artist, get_img_path=True)
+            if not path:
+                shoot = threading.Thread(target=get_artist_preview, args=((artist, round(thumb_x + self.thumb_size), round(y))))
+                shoot.daemon = True
+                shoot.start()
+
+            if path:
+                set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
+
 
         if artist in self.thumb_cache:
             thumb = self.thumb_cache[artist]
@@ -27270,6 +27321,7 @@ class PictureRender:
         self.image_data = None
         self.texture = None
         self.sdl_rect = None
+        self.size = (0, 0)
 
 
 
@@ -27290,6 +27342,8 @@ class PictureRender:
         g.seek(0)
         self.image_data = g
         print("Save BMP to memory")
+        self.size = im.size[0], im.size[1]
+
 
     def draw(self, x, y):
 
@@ -27321,6 +27375,7 @@ class PictureRender:
             style_overlay.hole_punches.append(self.sdl_rect)
 
 artist_picture_render = PictureRender()
+artist_preview_render = PictureRender()
 
 
 class ArtistInfoBox:
@@ -27369,8 +27424,6 @@ class ArtistInfoBox:
 
         backgound = [27, 27, 27, 255]
         ddt.rect((x + 10, y + 5, w - 15, h - 5), backgound, True)
-
-
 
         if artist != self.artist_on:
             if artist == "":
@@ -27504,22 +27557,36 @@ class ArtistInfoBox:
             ddt.text((x + w // 2 , y + h // 2 - 7 * gui.scale , 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
 
 
-    def get_data(self, artist):
+    def get_data(self, artist, get_img_path=False):
 
         print("Load Bio Data")
 
         if artist is None:
             self.artist_on = artist
             self.lock = False
-            return
+            return ""
 
-        #filename = artist + '-lfm.png'
         img_filename = artist + '-ftv-full.jpg'
         text_filename = artist + '-lfm.txt'
         img_filepath_lfm = os.path.join(cache_directory, artist + '-lfm.png')
         img_filepath_dcg = os.path.join(cache_directory, artist + '-dcg.jpg')
         img_filepath = os.path.join(cache_directory, img_filename)
         text_filepath = os.path.join(cache_directory, text_filename)
+
+        image_paths = [
+            os.path.join(user_directory, "artist-pictures/" + artist + ".png"),
+            os.path.join(user_directory, "artist-pictures/" + artist + ".jpg"),
+            img_filepath,
+            img_filepath_dcg,
+            img_filepath_lfm
+        ]
+
+        if get_img_path:
+            for path in image_paths:
+                print(path)
+                if os.path.isfile(path):
+                    return path
+            return ""
 
         # Check for cache
         try:
@@ -27529,27 +27596,36 @@ class ArtistInfoBox:
 
                 artist_picture_render.show = False
 
-                if os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".png")):
-                    filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
-                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
+                for path in image_paths:
+                    if os.path.isfile(path):
+                        filepath = path
+                        artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                        artist_picture_render.show = True
+                        break
 
-                elif os.path.isfile(os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")):
-                    filepath = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
-                    artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
+                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".png")
+                # if os.path.isfile(path):
+                #     filepath = path
+                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                #     artist_picture_render.show = True
 
-                elif os.path.isfile(img_filepath):
-                    artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
-
-                elif os.path.isfile(img_filepath_dcg):
-                    artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
-
-                elif os.path.isfile(img_filepath_lfm):
-                    artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
-                    artist_picture_render.show = True
+                # path = os.path.join(user_directory, "artist-pictures/" + artist + ".jpg")
+                # elif os.path.isfile(path):
+                #     filepath = path
+                #     artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                #     artist_picture_render.show = True
+                #
+                # elif os.path.isfile(img_filepath):
+                #     artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
+                #     artist_picture_render.show = True
+                #
+                # elif os.path.isfile(img_filepath_dcg):
+                #     artist_picture_render.load(img_filepath_dcg, round(gui.artist_panel_height - 20 * gui.scale))
+                #     artist_picture_render.show = True
+                #
+                # elif os.path.isfile(img_filepath_lfm):
+                #     artist_picture_render.load(img_filepath_lfm, round(gui.artist_panel_height - 20 * gui.scale))
+                #     artist_picture_render.show = True
 
                 with open(text_filepath, encoding="utf-8") as f:
                     self.text = f.read()
@@ -27558,7 +27634,7 @@ class ArtistInfoBox:
                 self.artist_on = artist
                 self.lock = False
 
-                return
+                return ""
 
             # Get new from last.fm
             data = lastfm.artist_info(artist)
@@ -32827,6 +32903,10 @@ while pctl.running:
 
             # if filter_box.active:
             #     filter_box.render()
+            if gui.preview_artist:
+                artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
+                if input.mouse_click or right_click or mouse_wheel:
+                    gui.preview_artist = ""
 
             if track_box:
                 if input.key_return_press or right_click or key_esc_press or input.backspace_press or keymaps.test("quick-find"):
