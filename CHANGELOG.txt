@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+5.1.2
+
+ - Added initial loading screen
+
 5.1.1
 
  - Tweaked mini mode appearance

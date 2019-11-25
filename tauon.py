@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.1.1"
+n_version = "5.1.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -53,6 +53,7 @@ if sys.platform == 'win32':
 else:
     system = 'linux'
     import fcntl
+
 
 if not windows_native:
     import gi
@@ -277,6 +278,177 @@ if system == 'windows':
 # ------------------------------------
 # Continue startup
 
+os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
+
+from sdl2 import *
+from sdl2.sdlimage import *
+from ctypes import pointer
+
+SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
+if desktop == "KDE":
+    try:
+        SDL_SetHint(b"SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", b"0")
+    except:
+        print("Old version of SDL2 detected")
+try:
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+except:
+    print("old version of SDL detected")
+
+draw_border = True
+window_default_size = [1120, 600]
+window_size = window_default_size
+window_opacity = 1
+scale = 1
+
+try:
+    state_file = open(user_directory + "/window.p", "rb")
+    save = pickle.load(state_file)
+
+    draw_border = save[0]
+    window_size = save[1]
+    window_opacity = save[2]
+    scale = save[3]
+
+    del save
+
+except:
+    print('Error loading window state file')
+
+
+## Init SDL2
+
+SDL_Init(SDL_INIT_VIDEO)
+
+window_title = t_title
+window_title = window_title.encode('utf-8')
+
+flags = SDL_WINDOW_RESIZABLE # SDL_WINDOW_HIDDEN |
+
+if draw_border:
+    flags |= SDL_WINDOW_BORDERLESS
+
+t_window = SDL_CreateWindow(window_title,
+                            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                            window_size[0], window_size[1],
+                            flags)
+
+SDL_SetWindowOpacity(t_window, window_opacity)
+
+renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+
+# window_surface = SDL_GetWindowSurface(t_window)
+
+SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+
+display_index = SDL_GetWindowDisplayIndex(t_window)
+display_bounds = SDL_Rect(0, 0)
+SDL_GetDisplayBounds(display_index, display_bounds)
+
+icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+SDL_SetWindowIcon(t_window, icon)
+SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
+
+SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+
+
+max_window_tex = 1000
+if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
+
+    while window_size[0] > max_window_tex:
+        max_window_tex += 1000
+    while window_size[1] > max_window_tex:
+        max_window_tex += 1000
+
+
+main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
+main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
+
+tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex, max_window_tex)
+tracklist_texture_rect = SDL_Rect(0, 0, max_window_tex, max_window_tex)
+SDL_SetTextureBlendMode(tracklist_texture, SDL_BLENDMODE_BLEND)
+
+
+SDL_SetRenderTarget(renderer, None)
+
+# Paint main texture
+SDL_SetRenderTarget(renderer, main_texture)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+
+SDL_SetRenderTarget(renderer, main_texture_overlay_temp)
+SDL_SetTextureBlendMode(main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+SDL_RenderClear(renderer)
+
+
+
+SDL_SetRenderTarget(renderer, None)
+SDL_SetRenderDrawColor(renderer, 6, 6, 6, 255)
+SDL_RenderClear(renderer)
+#SDL_RenderPresent(renderer)
+
+class LoadImageAsset:
+    def __init__(self, path, is_full_path=False):
+        if is_full_path:
+            raw_image = IMG_Load(path.encode())
+        else:
+            raw_image = IMG_Load(os.path.join(scaled_asset_directory, path).encode())
+
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+
+        if is_full_path:
+            SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
+
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        SDL_FreeSurface(raw_image)
+        self.w = p_w.contents.value
+        self.h = p_h.contents.value
+
+    def render(self, x, y, colour=None):
+        self.rect.x = round(x)
+        self.rect.y = round(y)
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+
+
+class WhiteModImageAsset:
+    def __init__(self, path):
+        raw_image = IMG_Load(path.encode())
+        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+        self.colour = [255, 255, 255, 255]
+        p_w = pointer(c_int(0))
+        p_h = pointer(c_int(0))
+        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
+        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
+        SDL_FreeSurface(raw_image)
+        self.w = p_w.contents.value
+        self.h = p_h.contents.value
+
+    def render(self, x, y, colour):
+        if colour != self.colour:
+            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
+            SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
+            self.colour = colour
+        self.rect.x = round(x)
+        self.rect.y = round(y)
+        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+
+
+def asset_loader(name, mod=False):
+    target = os.path.join(scaled_asset_directory, name)
+    if mod:
+        return WhiteModImageAsset(target)
+    return LoadImageAsset(target)
+
+loading_image = asset_loader('loading.png')
+loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
+SDL_RenderPresent(renderer)
+
+
+
 # if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
 #     print("Config file is missing... copying template from program files")
 #     shutil.copy(os.path.join(install_directory, "config.txt"), config_directory)
@@ -364,8 +536,6 @@ except:
 
 # ------------------------------------------------
 
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_title  # This sets the window title under some desktop environments
-
 if system == 'windows':
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
 else:
@@ -374,8 +544,7 @@ else:
 
 
 # Other imports
-from sdl2 import *
-from sdl2.sdlimage import *
+
 from PIL import Image, ImageDraw, ImageFilter
 from hsaudiotag import auto
 import stagger
@@ -398,6 +567,11 @@ if system == 'linux':
 from t_modules import t_autodownload
 from t_modules.t_dbus import Gnome
 from t_modules.t_gdk_extra import *
+
+
+
+
+
 
 
 if system == "linux":
@@ -454,7 +628,7 @@ vis_update = False
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
-draw_border = True
+
 resize_mode = False
 
 side_panel_text_align = 0
@@ -477,8 +651,7 @@ album_v_slide_value = 50
 album_mode_art_size = 200
 
 time_last_save = 0
-window_default_size = [1110, 540]
-window_size = window_default_size
+
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
 fullscreen = False
 
@@ -784,7 +957,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.log_vol = False
 
-        self.ui_scale = 1
+        self.ui_scale = scale
         self.last_device = "PulseAudio Sound Server"
 
         # if flatpak_mode:
@@ -845,7 +1018,7 @@ class Prefs:    # Used to hold any kind of settings
         self.user_directory = user_directory
         self.cache_directory = cache_directory
 
-        self.window_opacity = 1
+        self.window_opacity = window_opacity
         self.gallery_single_click = True
         self.custom_bg_opacity = 40
 
@@ -1145,8 +1318,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.playlist_text_offset = 0
         self.row_font_size = 13
         self.compact_bar = False
-        self.abc = None
-        self.ttext = None
+        self.tracklist_texture_rect = tracklist_texture_rect
+        self.tracklist_texture = tracklist_texture
 
         self.trunk_end = "..." # "…"
         self.temp_themes = {}
@@ -1326,6 +1499,10 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.worker4_releases = 0
         self.downloading_bass = False
         self.d_click_ref = -1
+
+        self.max_window_tex = max_window_tex
+        self.main_texture = main_texture
+
 
 gui = GuiVar()
 
@@ -1915,12 +2092,9 @@ try:
     folder_image_offsets = save[14]
     #lfm_username = save[15]
     #lfm_hash = save[16]
-    if save[16] is not None and save[16]:  # it should be None from now on
-        show_message("Upgrade note: Last.fm loggout.",
-                     "This new version changes how last.fm login works. You will need to log back in.", mode='info')
     db_version = save[17]
     view_prefs = save[18]
-    window_size = save[19]
+    # window_size = save[19]
     gui.save_size = copy.copy(save[19])
     gui.rspw = save[20]
     # savetime = save[21]
@@ -2155,9 +2329,7 @@ try:
     state_file.close()
     del save
 
-
 except:
-
     print('Error loading save file')
 
 core_timer.set()
@@ -5999,21 +6171,6 @@ def draw_window_border():
 # -------------------------------------------------------------------------------------------
 # initiate SDL2 --------------------------------------------------------------------C-IS-----
 
-SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b'1')
-
-if desktop == "KDE":
-    try:
-        SDL_SetHint(b"SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR", b"0")
-    except:
-        print("Old version of SDL2 detected")
-
-
-SDL_Init(SDL_INIT_VIDEO)
-
-#TTF_Init()
-
-window_title = t_title
-window_title = window_title.encode('utf-8')
 
 
 cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
@@ -6037,15 +6194,6 @@ else:
 
 
 
-flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE
-
-if draw_border:
-    flags = SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
-
-t_window = SDL_CreateWindow(window_title,
-                            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                            window_size[0], window_size[1],
-                            flags)
 
 #print(SDL_GetError())
 
@@ -6065,72 +6213,77 @@ if system == 'windows':
     gui.window_id = sss.info.win.window
 
 
-try:
-    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-
-except:
-    print("old version of SDL detected")
+# try:
+#     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+#
+# except:
+#     print("old version of SDL detected")
 
 # get window surface and set up renderer
 #renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
 
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
-
-# window_surface = SDL_GetWindowSurface(t_window)
-
-SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-
-display_index = SDL_GetWindowDisplayIndex(t_window)
-display_bounds = SDL_Rect(0, 0)
-SDL_GetDisplayBounds(display_index, display_bounds)
-
-icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
-SDL_SetWindowIcon(t_window, icon)
-SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-
-SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-#SDL_SetWindowMinimumSize(t_window, 413, 330)
-
-gui.max_window_tex = 1000
-if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-
-    while window_size[0] > gui.max_window_tex:
-        gui.max_window_tex += 1000
-    while window_size[1] > gui.max_window_tex:
-        gui.max_window_tex += 1000
-
-gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-
-# gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
-
-SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+#
+# # window_surface = SDL_GetWindowSurface(t_window)
+#
+# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+#
+# display_index = SDL_GetWindowDisplayIndex(t_window)
+# display_bounds = SDL_Rect(0, 0)
+# SDL_GetDisplayBounds(display_index, display_bounds)
+#
+# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+# SDL_SetWindowIcon(t_window, icon)
+# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
+#
+# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
+#
+#
+# gui.max_window_tex = 1000
+# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+#
+#     while window_size[0] > gui.max_window_tex:
+#         gui.max_window_tex += 1000
+#     while window_size[1] > gui.max_window_tex:
+#         gui.max_window_tex += 1000
+#
+# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+#
+# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
+#
+# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+#
+# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+#
+# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+#
+# SDL_SetRenderTarget(renderer, None)
+#
+# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+#
+# SDL_SetRenderTarget(renderer, gui.main_texture)
+# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+#
+# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+#
+# SDL_RenderClear(renderer)
+#
+# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+# gui.pl_update = 2
+#
+# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
 
 gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
 gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
 gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
 gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-
 SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-
-SDL_SetRenderTarget(renderer, None)
-
-gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-
-SDL_SetRenderTarget(renderer, gui.main_texture)
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-
-SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-
-SDL_RenderClear(renderer)
-
-gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
-gui.pl_update = 2
-
-SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
 
 
 def bass_player_thread(player):
@@ -9198,60 +9351,7 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-class LoadImageAsset:
-    def __init__(self, path, is_full_path=False):
-        if is_full_path:
-            raw_image = IMG_Load(path.encode())
-        else:
-            raw_image = IMG_Load(os.path.join(scaled_asset_directory, path).encode())
 
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-
-        if is_full_path:
-            SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
-
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-        SDL_FreeSurface(raw_image)
-        self.w = p_w.contents.value
-        self.h = p_h.contents.value
-
-    def render(self, x, y, colour=None):
-        self.rect.x = round(x)
-        self.rect.y = round(y)
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
-
-class WhiteModImageAsset:
-    def __init__(self, path):
-        raw_image = IMG_Load(path.encode())
-        self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-        self.colour = [255, 255, 255, 255]
-        p_w = pointer(c_int(0))
-        p_h = pointer(c_int(0))
-        SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
-        self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
-        SDL_FreeSurface(raw_image)
-        self.w = p_w.contents.value
-        self.h = p_h.contents.value
-
-    def render(self, x, y, colour):
-        if colour != self.colour:
-            SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
-            SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
-            self.colour = colour
-        self.rect.x = round(x)
-        self.rect.y = round(y)
-        SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
-
-
-def asset_loader(name, mod=False):
-    target = os.path.join(scaled_asset_directory, name)
-    if mod:
-        return WhiteModImageAsset(target)
-    return LoadImageAsset(target)
 
 message_info_icon = asset_loader("notice.png")
 message_warning_icon = asset_loader("warning.png")
@@ -18719,7 +18819,7 @@ def scale1(mode=0):
             return False
 
     prefs.ui_scale = 1
-    pref_box.small_preset()
+    pref_box.large_preset()
 
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
@@ -18733,7 +18833,7 @@ def scale125(mode=0):
             return False
 
     prefs.ui_scale = 1.25
-    pref_box.small_preset()
+    pref_box.large_preset()
 
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
@@ -18751,7 +18851,7 @@ def scale2(mode=0):
             return False
 
     prefs.ui_scale = 2
-    pref_box.small_preset()
+    pref_box.large_preset()
 
     if prefs.ui_scale != gui.scale:
         show_message(_("Change will be applied on restart."))
@@ -23386,7 +23486,7 @@ class StandardPlaylist:
         cv = 0  # update gui.playlist_current_visible_tracks
 
         # Draw the background
-        SDL_SetRenderTarget(renderer, gui.ttext)
+        SDL_SetRenderTarget(renderer, gui.tracklist_texture)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
         SDL_RenderClear(renderer)
 
@@ -24290,7 +24390,7 @@ class StandardPlaylist:
             playlist_menu.activate()
 
         SDL_SetRenderTarget(renderer, gui.main_texture)
-        SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
+        SDL_RenderCopy(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
         if mouse_down is False:
             playlist_hold = False
@@ -24299,7 +24399,7 @@ class StandardPlaylist:
 
     def cache_render(self):
 
-        SDL_RenderCopy(renderer, gui.ttext, None, gui.abc)
+        SDL_RenderCopy(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
 
 playlist_render = StandardPlaylist()
@@ -29429,17 +29529,17 @@ def update_layout_do():
                 gui.max_window_tex += 1000
 
 
-            gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+            gui.tracklist_texture_rect = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
 
-            SDL_DestroyTexture(gui.ttext)
+            SDL_DestroyTexture(gui.tracklist_texture)
             SDL_RenderClear(renderer)
-            gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
-                                          gui.max_window_tex)
+            gui.tracklist_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+                                                      gui.max_window_tex)
 
-            SDL_SetRenderTarget(renderer, gui.ttext)
+            SDL_SetRenderTarget(renderer, gui.tracklist_texture)
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
             SDL_RenderClear(renderer)
-            SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+            SDL_SetTextureBlendMode(gui.tracklist_texture, SDL_BLENDMODE_BLEND)
 
             # SDL_SetRenderTarget(renderer, gui.main_texture)
             # SDL_RenderClear(renderer)
@@ -29467,11 +29567,12 @@ def update_layout_do():
         update_set()
 
 
-SDL_SetRenderTarget(renderer, None)
-SDL_RenderClear(renderer)
-SDL_RenderPresent(renderer)
 
-SDL_ShowWindow(t_window)
+# SDL_RenderClear(renderer)
+# SDL_RenderPresent(renderer)
+
+
+#SDL_ShowWindow(t_window)
 
 # Clear spectogram texture
 SDL_SetRenderTarget(renderer, gui.spec2_tex)
@@ -29683,9 +29784,17 @@ def save_state():
             gui.last_left_panel_mode,
             prefs.gst_device]
 
-
-
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
+
+    save = [
+        draw_border,
+        window_size,
+        window_opacity,
+        gui.scale
+
+    ]
+
+    pickle.dump(save, open(user_directory + "/window.p", "wb"))
 
     save_prefs()
 
@@ -29756,6 +29865,13 @@ def is_level_zero(include_menus=True):
             and not quick_search_mode \
             and not gui.rename_playlist_box \
             and not search_over.active
+
+
+# Hold the splash/loading screen for a minimum duration
+# while core_timer.get() < 0.5:
+#     time.sleep(0.01)
+
+SDL_SetRenderTarget(renderer, None)
 
 while pctl.running:
     # bm.get('main')
@@ -29989,6 +30105,9 @@ while pctl.running:
             focused = True
             power += 5
             gui.update += 1
+
+            if ggc == 2:  # dont click on first full frame
+                continue
 
             if event.button.button == SDL_BUTTON_RIGHT:
                 right_click = True
@@ -33846,7 +33965,7 @@ while pctl.running:
         gui.present = True
 
         SDL_SetRenderTarget(renderer, None)
-        SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+        SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 
         if gui.turbo:
             gui.level_update = True
@@ -33875,7 +33994,7 @@ while pctl.running:
         SDL_SetRenderTarget(renderer, None)
         if not gui.present:
 
-            SDL_RenderCopy(renderer, gui.main_texture, None, gui.abc)
+            SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
             gui.present = True
 
         if gui.vis == 3:
@@ -34302,7 +34421,7 @@ if de_notify_support:
 
 print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
-SDL_DestroyTexture(gui.ttext)
+SDL_DestroyTexture(gui.tracklist_texture)
 SDL_DestroyTexture(gui.spec2_tex)
 SDL_DestroyTexture(gui.spec1_tex)
 SDL_DestroyTexture(gui.spec_level_tex)
