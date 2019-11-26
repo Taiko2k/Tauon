@@ -47,6 +47,7 @@ parts:
       - gstreamer1.0-plugins-ugly
       - gstreamer1.0-libav
       - libgpm2
+      - libslang2
   tauon:
     plugin: dump
     source: .
