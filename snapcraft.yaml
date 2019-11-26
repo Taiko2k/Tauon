@@ -6,6 +6,9 @@ grade: stable
 confinement: strict
 base: core18
 
+architectures:
+  - amd64
+
 apps:
   tauon:
     command: tauon.py
