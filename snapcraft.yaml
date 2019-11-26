@@ -25,6 +25,7 @@ apps:
       - home
       - removable-media
       - gsettings
+      - opengl
 
 parts:
   python-deps:
