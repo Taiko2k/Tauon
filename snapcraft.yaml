@@ -69,6 +69,10 @@ parts:
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
+      # temp fix for https://github.com/marcusva/py-sdl2/issues/148
+      cd /usr/lib/$SNAPCRAFT_ARCH_TRIPLET
+      ln -sf libSDL2-2.0.so.0 libSDL2-2.0.so
+      ln -sf libSDL2_image-2.0.so.0 libSDL2_image-2.0.so
 
 slots:
   dbus-tauon:
