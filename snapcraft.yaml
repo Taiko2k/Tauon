@@ -26,6 +26,7 @@ apps:
       - removable-media
       - gsettings
       - opengl
+      - audio-playback
 
 parts:
   python-deps:
