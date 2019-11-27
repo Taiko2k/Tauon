@@ -383,7 +383,7 @@ SDL_RenderClear(renderer)
 
 
 SDL_SetRenderTarget(renderer, None)
-SDL_SetRenderDrawColor(renderer, 6, 6, 6, 255)
+SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 SDL_RenderClear(renderer)
 #SDL_RenderPresent(renderer)
 
@@ -23703,7 +23703,7 @@ class StandardPlaylist:
 
 
                         # Add folder to selection if clicked
-                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale):
+                        if input.mouse_click and not (scroll_enable and mouse_position[0] < 30 * gui.scale) and not side_drag:
 
                             quick_drag = True
                             set_drag_source()
@@ -23824,7 +23824,7 @@ class StandardPlaylist:
             #         playlist_hold = True
 
             # Begin drag single track
-            if input.mouse_click and line_hit:
+            if input.mouse_click and line_hit and not side_drag:
                 quick_drag = True
                 set_drag_source()
 
