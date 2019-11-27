@@ -27,6 +27,7 @@ apps:
       - gsettings
       - opengl
       - audio-playback
+      - pulseaudio
 
 parts:
   python-deps:
@@ -53,6 +54,9 @@ parts:
       - gstreamer1.0-libav
       - libgpm2
       - libslang2
+      - libpulse0
+      - libglu1-mesa
+      - libgl1
   tauon:
     plugin: dump
     source: .
