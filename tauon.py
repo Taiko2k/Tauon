@@ -1687,6 +1687,7 @@ class KeyMap:
 
     def test(self, function):
 
+
         if not self.hits:
             return False
         if function not in self.maps:
@@ -1707,7 +1708,9 @@ class KeyMap:
 
 keymaps = KeyMap()
 
-
+shoot = threading.Thread(target=keymaps.load)
+shoot.daemon = True
+shoot.start()
 
 def update_set():   # This is used to scale columns when windows is resized or items added/removed
 
@@ -30866,7 +30869,6 @@ while pctl.running:
 
 
         if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox:
-
 
             if keymaps.test("info-playing"):
                 if playlist_selected < len(default_playlist):
