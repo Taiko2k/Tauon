@@ -12,6 +12,7 @@ architectures:
 apps:
   tauon:
     command: tauon.py
+    common-id: com.github.taiko2k.tauonmb.desktop
     environment:
       PYSDL2_DLL_PATH: $PYSDL2_DLL_PATH:$SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
     extensions:
