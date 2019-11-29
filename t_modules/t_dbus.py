@@ -32,11 +32,14 @@ class Gnome:
     def focus(self):
 
         if self.bus_object is not None:
-
-            # this is what gives us the multi media keys.
-            dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
-            self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
-                                           dbus_interface=dbus_interface)
+            try:
+                # this is what gives us the multi media keys.
+                dbus_interface = 'org.gnome.SettingsDaemon.MediaKeys'
+                self.bus_object.GrabMediaPlayerKeys("TauonMusicBox", 0,
+                                               dbus_interface=dbus_interface)
+            except:
+                # Error connecting to org.gnome.SettingsDaemon.MediaKeys
+                pass
 
     def main(self):
 
