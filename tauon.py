@@ -5453,6 +5453,7 @@ class Tauon:
 
         self.t_title = t_title
         self.t_id = t_id
+        self.desktop = desktop
 
         self.pctl = pctl
         self.lfm_scrobbler = lfm_scrobbler
@@ -6182,7 +6183,7 @@ def draw_window_border():
     right_rect = (window_size[0] - 1 * gui.scale, 20 * gui.scale, 10, window_size[1] - 40 * gui.scale)
     fields.add(right_rect)
 
-    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 3 * gui.scale)
+    top_rect = (20 * gui.scale, 0, window_size[0] - 40 * gui.scale, 1 * gui.scale)
     fields.add(top_rect)
 
     left_rect = (0, 10 * gui.scale, 4 * gui.scale, window_size[1] - 50 * gui.scale)
@@ -23272,6 +23273,74 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                           ], alpha_mod(colour, album_fade), True)
                 star_x += 6
 
+
+        # if True:
+        #
+        #     sx = width + start_x - 40 * gui.scale - offset_font_extra
+        #     sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
+        #     # if gui.scale == 1.25:
+        #     #     sy += 1
+        #     playtime_stars = star_count(total, pctl.master_library[index].length) - 1
+        #
+        #     sx2 = sx
+        #     selected_star = -2
+        #     rated_star = -1
+        #
+        #     rect = (sx2, ry, 12, gui.playlist_row_height - 1)
+        #     gui.heart_fields.append(rect)
+        #     if coll(rect):
+        #         selected_star = 10
+        #
+        #
+        #     for count in range(5):
+        #         sx2 -= round(13 * gui.scale)
+        #         rect = (sx2, ry, 12, gui.playlist_row_height - 1)
+        #         #ddt.rect_r(rect, [0, 0, 255, 50], True)
+        #         gui.heart_fields.append(rect)
+        #         if coll(rect):
+        #             selected_star = count
+        #             gui.pl_update += 1
+        #
+        #     c = 60
+        #     d = 6
+        #
+        #     colour = [230, 230, 70, 255]
+        #     if colours.lm:
+        #         colour = [90, 90, 90, 255]
+        #     #colour = alpha_mod(indexc, album_fade)
+        #
+        #     for count in range(8):
+        #
+        #         if selected_star < count or rated_star < count:
+        #             break
+        #
+        #         if count == 0:
+        #             sx -= round(13 * gui.scale)
+        #             star_x += round(13 * gui.scale)
+        #         else:
+        #             if playtime_stars > 3:
+        #                 dd = round((13 - (playtime_stars - 3) * gui.scale))
+        #                 sx -= dd
+        #                 star_x += dd
+        #             else:
+        #                 sx -= round(13 * gui.scale)
+        #                 star_x += round(13 * gui.scale)
+        #
+        #         if playtime_stars > 4:
+        #             colour = [c + d * count, c + d * count, c + d * count, 255]
+        #         if playtime_stars > 6: # and count < 1:
+        #             colour = [230, 220, 60, 255]
+        #
+        #         # if selected_star > -2:
+        #         #     if selected_star >= count:
+        #         #         colour = (220, 200, 60, 255)
+        #         # else:
+        #         #     if rated_star >= count:
+        #         #         colour = (220, 200, 60, 255)
+        #
+        #         star_row_icon.render(sx, sy, colour)
+
+
         if gui.star_mode == 'star' and total > 0 and pctl.master_library[
             index].length != 0:
 
@@ -23285,22 +23354,9 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
             selected_star = -2
             rated_star = -1
 
-            # if key_ctrl_down:
-            #
-            #     rect = (sx2, sy, 12, 12)
-            #     gui.heart_fields.append(rect)
-            #     if coll(rect):
-            #         selected_star = -1
-            #
-            #
-            #     for count in range(5):
-            #         sx2 -= round(13 * gui.scale)
-            #         rect = (sx2, sy, 12, 12)
-            #         #ddt.rect_r(rect, [0, 0, 255, 50], True)
-            #         gui.heart_fields.append(rect)
-            #         if coll(rect):
-            #             selected_star = count
-            #             gui.pl_update += 1
+            #if key_ctrl_down:
+
+
 
             c = 60
             d = 6
@@ -29087,7 +29143,7 @@ def hit_callback(win, point, data):
         if point.contents.y < 0 and point.contents.x < 1:
             return SDL_HITTEST_RESIZE_TOPLEFT
 
-        if draw_border and point.contents.y < 4 * gui.scale and point.contents.x < window_size[0] - 40 * gui.scale and not gui.maximized:
+        if draw_border and point.contents.y < 2 * gui.scale and point.contents.x < window_size[0] - 40 * gui.scale and not gui.maximized:
             return SDL_HITTEST_RESIZE_TOP
 
     if point.contents.y < gui.panelY:
