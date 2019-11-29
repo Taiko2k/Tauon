@@ -28,4 +28,5 @@ stats.txt
 *.idl
 *.tlb
 *.mo
-
+prime/
+*.snap
