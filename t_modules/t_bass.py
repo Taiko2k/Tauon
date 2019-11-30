@@ -721,12 +721,12 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 try:
                     url, params = pctl.get_url(target_object)
                 except:
-                    gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
+                    gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
                     pctl.stop()
                     return
 
                 if url is None:
-                    print(gui.show_message("Failed to query url", "Bad login? Server offline?", 'info'))
+                    print(gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info'))
                     pctl.stop()
                     return
 
@@ -1278,7 +1278,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 if BASS_ChannelIsActive(bass_player.channel) == 0:
                     pctl.playing_state = 0
-                    gui.show_message("Stream stopped.", "The stream either ended or the connection was lost.", "info")
+                    gui.show_message("Stream stopped.", "The stream either ended or the connection was lost.", mode="info")
                     bass_player.stop()
                     pctl.playing_time = 0
                     if pctl.record_stream:
@@ -1312,7 +1312,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     print(file)
                     if BASS_ErrorGetCode() != 0:
                         gui.show_message("Recording error.", "An unknown error occurred when splitting the track.",
-                                         "warning")
+                                         mode="warning")
 
         if pctl.broadcast_active and pctl.encoder_pause == 0:
             pctl.broadcast_time += broadcast_timer.hit()
@@ -1431,9 +1431,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 result = BASS_SetDevice(pctl.set_device)
                 print(result)
                 if result is False:
-                    gui.show_message("Device init failed. Try again maybe?", "", 'error')
+                    gui.show_message("Device init failed. Try again maybe?", "", mode='error')
                 else:
-                    gui.show_message("Device set", prefs.last_device, 'done')
+                    gui.show_message("Device set", prefs.last_device, mode='done')
 
                 bass_player.try_unload()
 
@@ -1455,23 +1455,23 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 bass_player.decode_channel = bass_player.channel
                 bass_error = BASS_ErrorGetCode()
                 if bass_error == 40:
-                    gui.show_message("Stream error", "Connection timeout", "warning")
+                    gui.mode=age("Stream error", "Connection timeout", mode="warning")
                 elif bass_error == 32:
-                    gui.show_message("Stream error", "No internet connection", "warning")
+                    gui.show_message("Stream error", "No internet connection", mode="warning")
                 elif bass_error == 20:
-                    gui.show_message("Stream error", "Bad URL", "warning")
+                    gui.show_message("Stream error", "Bad URL", mode="warning")
                 elif bass_error == 2:
-                    gui.show_message("Stream error", "Could not open stream", "warning")
+                    gui.show_message("Stream error", "Could not open stream", mode="warning")
                 elif bass_error == 41:
-                    gui.show_message("Stream error", "Unknown file format", "warning")
+                    gui.show_message("Stream error", "Unknown file format", mode="warning")
                 elif bass_error == 44:
-                    gui.show_message("Stream error", "Unknown/unsupported codec", "warning")
+                    gui.show_message("Stream error", "Unknown/unsupported codec", mode="warning")
                 elif bass_error == 10:
-                    gui.show_message("Stream error", "SSL/HTTPS support not available", "warning")
+                    gui.show_message("Stream error", "SSL/HTTPS support not available", mode="warning")
                 elif bass_error == -1:
-                    gui.show_message("Stream error", "Its a mystery!!", "warning")
+                    gui.show_message("Stream error", "Its a mystery!!", mode="warning")
                 elif bass_error != 0:
-                    gui.show_message("Stream error", "Something went wrong... somewhere", "warning")
+                    gui.show_message("Stream error", "Something went wrong... somewhere", mode="warning")
                     print("BASS error: ", end="")
                     print(bass_error)
                 if bass_error == 0:
@@ -1522,9 +1522,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                     if rec_handle != 0 and BASS_ErrorGetCode() == 0:
                         gui.show_message("Recording started.",
-                                         "Outputting as ogg to encoder directory, press F9 to show.", "done")
+                                         "Outputting as ogg to encoder directory, press F9 to show.", mode="done")
                     else:
-                        gui.show_message("Recording Error.", "An unknown was encountered", "warning")
+                        gui.show_message("Recording Error.", "An unknown was encountered", mode="warning")
                         pctl.record_stream = False
 
             if command == 'cast-next':
@@ -1631,7 +1631,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 result = BASS_Encode_ServerInit(encoder, port.encode(), 32000, 32000, 2, client_connect, None)
 
                 if BASS_ErrorGetCode() == -1:
-                    gui.show_message("Server initialisation error.", "Sorry, something isn't working right.", "warning")
+                    gui.show_message("Server initialisation error.", "Sorry, something isn't working right.", mode="warning")
                 channel1 = BASS_ChannelPlay(mhandle, True)
 
                 line = pctl.broadcast_line.encode('utf-8')
@@ -1643,9 +1643,9 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 # print("after set title")
                 e = BASS_ErrorGetCode()
                 if result != 0:
-                    gui.show_message("Server initiated successfully.", "Listening on port " + port + ".", "done")
+                    gui.show_message("Server initiated successfully.", "Listening on port " + port + ".", mode="done")
                 else:
-                    gui.show_message("Error staring broadcast.", 'Error code ' + str(e) + ".", 'warning')
+                    gui.show_message("Error staring broadcast.", 'Error code ' + str(e) + ".", mode='warning')
 
                     pctl.playerCommand = "encstop"
                     pctl.playerCommandReady = True
