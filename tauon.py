@@ -61,7 +61,8 @@ if not windows_native:
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
-de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
+#de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
+de_notify_support = True
 
 # Find the directory we are running from
 install_directory = sys.path[0]
@@ -978,9 +979,7 @@ class Prefs:    # Used to hold any kind of settings
         self.use_transition_crossfade = False
         self.use_pause_fade = True
 
-        self.show_notifications = False
-        if de_notify_support:
-            self.show_notifications = True
+        self.show_notifications = True
 
         self.true_shuffle = True
         self.append_total_time = False
@@ -4640,6 +4639,45 @@ def update_title_do():
         line = "Tauon Music Box"
         line = line.encode('utf-8')
         SDL_SetWindowTitle(t_window, line)
+
+
+def open_encode_out():
+    if system == 'windows':
+        line = r'explorer ' + prefs.encoder_output.replace("/", "\\")
+        subprocess.Popen(line)
+    else:
+        line = prefs.encoder_output
+        line += "/"
+        if system == 'mac':
+            subprocess.Popen(['open', line])
+        else:
+            subprocess.Popen(['xdg-open', line])
+
+def g_open_encode_out(a, b, c):
+    open_encode_out()
+#
+if system == 'linux':
+
+    try:
+        Notify.init("Tauon Music Box")
+        g_tc_notify = Notify.Notification.new("Tauon Music Box",
+                                              "Transcoding has finished.")
+        value = GLib.Variant("s", t_id)
+        g_tc_notify.set_hint("desktop-entry", value)
+
+        g_tc_notify.add_action(
+            "action_click",
+            "Open Output Folder",
+            g_open_encode_out,
+            None
+        )
+
+        de_notify_support = True
+
+    except:
+        print("Failed init notifications")
+
+
 
 if de_notify_support:
     song_notification = Notify.Notification.new("Next track notification")
@@ -12930,20 +12968,7 @@ def open_data_directory():
     else:
         subprocess.call(["xdg-open", target])
 
-def open_encode_out():
-    if system == 'windows':
-        line = r'explorer ' + prefs.encoder_output.replace("/", "\\")
-        subprocess.Popen(line)
-    else:
-        line = prefs.encoder_output
-        line += "/"
-        if system == 'mac':
-            subprocess.Popen(['open', line])
-        else:
-            subprocess.Popen(['xdg-open', line])
 
-def g_open_encode_out(a, b, c):
-    open_encode_out()
 
 
 def remove_folder(index):
@@ -29245,21 +29270,7 @@ thread.start()
 
 # MAIN LOOP---------------------------------------------------------------------------
 
-if system == 'linux':
-    if de_notify_support:
-        Notify.init("Tauon Music Box")
-        g_tc_notify = Notify.Notification.new("Tauon Music Box",
-                                              "Transcoding has finished.")
 
-        value = GLib.Variant("s", t_id)
-        g_tc_notify.set_hint("desktop-entry", value)
-
-        g_tc_notify.add_action(
-            "action_click",
-            "Open Output Folder",
-            g_open_encode_out,
-            None
-        )
 
 
 # print("Almost done...")
