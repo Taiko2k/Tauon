@@ -90,12 +90,15 @@ download_directory = os.path.join(os.path.expanduser('~'), "Downloads")
 # Detect if we are installed or running portable
 install_mode = False
 flatpak_mode = False
+snap_mode = False
 if install_directory.startswith("/opt/")\
         or install_directory.startswith("/usr/")\
         or install_directory.startswith("/app/")\
         or install_directory.startswith("/snap/"):
 
     install_mode = True
+    if install_directory[:6] == "/snap/":
+        snap_mode = True
     if install_directory[:5] == "/app/":
         # Flatpak mode
 
@@ -444,11 +447,12 @@ def asset_loader(name, mod=False):
         return WhiteModImageAsset(target)
     return LoadImageAsset(target)
 
+if scale != 1:
+    scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
+
 loading_image = asset_loader('loading.png')
 loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 SDL_RenderPresent(renderer)
-
-
 
 # if install_directory != config_directory and not os.path.isfile(os.path.join(config_directory, "config.txt")):
 #     print("Config file is missing... copying template from program files")
@@ -1151,6 +1155,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.gst_use_custom_output = False
         self.gst_device = "PulseAudio"
+
+        self.notify_include_album = True
 
 prefs = Prefs()
 
@@ -2674,6 +2680,7 @@ def save_prefs():
     cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
+    cf.update_value("notify-include-album", prefs.notify_include_album)
 
     cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
     cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
@@ -2765,7 +2772,7 @@ def load_prefs():
     cf.add_text("[ui]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset)
+    prefs.tracklist_y_text_offset = cf.sync_add("int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset, "If you're using a UI scale, you may need to tweak this")
 
     prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
     prefs.gallery_scroll_wheel_px = cf.sync_add("int", "scroll-gallery-distance", 90, "Only has effect if scroll-gallery-by-row is false.")
@@ -2795,6 +2802,8 @@ def load_prefs():
     prefs.use_absolute_track_index = cf.sync_add("bool", "absolute-track-indices", prefs.use_absolute_track_index, "For playlists with titles disabled only")
     prefs.hide_bottom_title = cf.sync_add("bool", "auto-hide-bottom-title", prefs.hide_bottom_title, "Hide title in bottom panel when already shown in side panel")
     prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
+
+    prefs.notify_include_album = cf.sync_add("bool", "notify-include-album", prefs.notify_include_album, "Include album name in track change notifications")
 
     cf.br()
     cf.add_text("[gallery]")
@@ -4721,11 +4730,14 @@ def notify_song(notify_of_end=False, delay=0):
         except:
             print("Thumbnail error")
 
-        bottom_line = (track.artist + " | " + track.album).strip("| ")
         top_line = track.title
-
         if not top_line:
             top_line = track.filename
+
+        if prefs.notify_include_album:
+            bottom_line = (track.artist + " | " + track.album).strip("| ")
+        else:
+            bottom_line = track.artist
 
         gui.notify_main_id = uid_gen()
         id = gui.notify_main_id
@@ -5508,6 +5520,7 @@ class Tauon:
         self.switch_playlist = None
         self.open_uri = open_uri
         self.love = love
+        self.snap_mode = snap_mode
 
     def exit(self):
         pctl.running = False
@@ -6950,14 +6963,15 @@ def draw_linked_text(location, text, colour, font, force=False):
     if gui.scale == 2:
         tweak *= 2
         tweak += 4
-    if gui.scale == 1.25:
-        tweak = round(tweak * 1.25)
-        tweak += 1
+    else:
+        tweak = round(tweak * gui.scale)
+        tweak += 2
 
     if system == "windows":
         tweak += 1
 
-    ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
+    #ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
+    ddt.rect((x + left,  y + tweak + 2, right, round(1 * gui.scale)), alpha_mod(colours.link_text, 120), True)
 
     return left, right - left, link_text
 
@@ -20411,18 +20425,25 @@ class Over:
 
         y += 25 * gui.scale
 
+        if system == "linux":
+            x += round(10 * gui.scale)
+            prefs.notify_include_album = self.toggle_square(x, y, prefs.notify_include_album, _("Include album title"))
+            x -= round(10 * gui.scale)
+
+        y += 25 * gui.scale
+
         self.toggle_square(x, y, toggle_borderless, _("Draw own window decorations"))
 
         y += 25 * gui.scale
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 25 * gui.scale
+        # y += 25 * gui.scale
+        #
+        # if system == "windows":
+        #     self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
 
-        if system == "windows":
-            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
-
-        y += 30 * gui.scale
+        y += 32 * gui.scale
 
         ddt.text((x, y), _("Misc"), colours.grey_blend_bg(100), 12)
 
@@ -29536,7 +29557,7 @@ def update_layout_do():
         global album_h_gap
         global album_v_slide_value
 
-        album_v_slide_value = 50
+        album_v_slide_value = round(50 * gui.scale)
         if gui.gallery_show_text:
             album_h_gap = 30 * gui.scale
             album_v_gap = 66 * gui.scale
@@ -29553,7 +29574,7 @@ def update_layout_do():
                 album_h_gap = 17 * gui.scale
                 album_v_gap = 15 * gui.scale
 
-            album_v_slide_value = 45
+            album_v_slide_value = round(45 * gui.scale)
 
         if prefs.increase_gallery_row_spacing:
             album_v_gap = round(album_v_gap * 1.3)
