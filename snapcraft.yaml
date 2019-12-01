@@ -72,6 +72,12 @@ parts:
       - unrar
       - flac
     after: [alsa-mixin]
+    override-build: |
+      snapcraftctl build
+      # temp fix for https://github.com/marcusva/py-sdl2/issues/148
+      cd $SNAPCRAFT_PART_INSTALL/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
+      ln -sf libSDL2-2.0.so.0 libSDL2-2.0.so
+      ln -sf libSDL2_image-2.0.so.0 libSDL2_image-2.0.so
   tauon:
     plugin: dump
     source: .
@@ -79,12 +85,6 @@ parts:
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
-    override-prime: |
-      snapcraftctl prime
-      # temp fix for https://github.com/marcusva/py-sdl2/issues/148
-      cd /usr/lib/$SNAPCRAFT_ARCH_TRIPLET
-      ln -sf libSDL2-2.0.so.0 libSDL2-2.0.so
-      ln -sf libSDL2_image-2.0.so.0 libSDL2_image-2.0.so
   alsa-mixin:
     plugin: nil
     source: https://github.com/diddlesnaps/snapcraft-alsa.git
