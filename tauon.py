@@ -6963,7 +6963,7 @@ def draw_linked_text(location, text, colour, font, force=False):
     if gui.scale == 2:
         tweak *= 2
         tweak += 4
-    else:
+    elif gui.scale != 1:
         tweak = round(tweak * gui.scale)
         tweak += 2
 
@@ -6971,7 +6971,7 @@ def draw_linked_text(location, text, colour, font, force=False):
         tweak += 1
 
     #ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(colours.link_text, 120))
-    ddt.rect((x + left,  y + tweak + 2, right, round(1 * gui.scale)), alpha_mod(colours.link_text, 120), True)
+    ddt.rect((x + left,  y + tweak + 2, right - left, round(1 * gui.scale)), alpha_mod(colours.link_text, 120), True)
 
     return left, right - left, link_text
 
@@ -29955,7 +29955,7 @@ def save_state():
 
     save = [
         draw_border,
-        window_size,
+        gui.save_size,
         window_opacity,
         gui.scale
 

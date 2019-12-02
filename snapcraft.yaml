@@ -34,6 +34,7 @@ apps:
       - opengl
       - audio-playback
       - pulseaudio
+      - jack1
     slots:
     - mpris
 
