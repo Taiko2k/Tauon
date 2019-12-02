@@ -427,6 +427,7 @@ def player3(tauon):  # GStreamer
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'stop' or pctl.playerCommand == 'runstop':
+
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.READY)
                     self.play_state = 0
