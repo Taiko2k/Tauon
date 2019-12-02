@@ -35,6 +35,7 @@ apps:
       - audio-playback
       - pulseaudio
       - jack1
+      - alsa
     slots:
     - mpris
 
