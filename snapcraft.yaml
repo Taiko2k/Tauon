@@ -147,8 +147,3 @@ parts:
       - libasound2
       - libasound2-plugins
 
-slots:
-  dbus-tauon:
-    interface: dbus
-    name: org.mpris.MediaPlayer2.tauon
-    bus: session
