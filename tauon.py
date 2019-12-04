@@ -14348,6 +14348,11 @@ def editor(index):
 
 
 def launch_editor(index):
+
+    if snap_mode:
+        show_message("Sorry, the feature isn't (yet) available with Snap.")
+        return
+
     if pctl.g(index).is_network:
         show_message("Cannot edit tags of a network track.")
         return
@@ -14555,8 +14560,9 @@ gallery_menu.add(_("Modify Folder…"), rename_folders, pass_ref=True, icon=mod_
 folder_menu.add(_("Rename Tracks…"), rename_track_box.activate, rename_tracks_deco, pass_ref=True, icon=rename_tracks_icon)
 folder_tree_menu.add(_("Rename Tracks…"), rename_track_box.activate, pass_ref=True, icon=rename_tracks_icon)
 
-folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
-                   icon=edit_icon, render_func=edit_deco)
+if not snap_mode:
+    folder_menu.add("Edit with", launch_editor_selection, pass_ref=True,
+                       icon=edit_icon, render_func=edit_deco)
 
 folder_tree_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_tree_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)

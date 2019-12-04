@@ -39,6 +39,18 @@ apps:
     - mpris
 
 parts:
+  desktop-icon:
+    source: .
+    plugin: nil
+    override-build: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/applications
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps
+      cp -v extra/tauonmb.desktop $SNAPCRAFT_PART_INSTALL/usr/share/applications/
+      cp -v extra/tauonmb.svg $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps/
+      cp -v extra/tauonmb-symbolic.svg $SNAPCRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps/
+      sed -i 's|Icon=tauonmb|Icon=/usr/share/icons/hicolor/scalable/apps/tauonmb.svg|' $SNAPCRAFT_PART_INSTALL/usr/share/applications/tauonmb.desktop
+      snapcraftctl build
+
   python-deps:
     plugin: python
     source: .
@@ -68,7 +80,6 @@ parts:
       - libglu1-mesa
       - libgl1
       - ffmpeg
-      - picard
       - p7zip-full
       - unrar
       - flac
@@ -82,7 +93,6 @@ parts:
   tauon:
     plugin: dump
     source: .
-    parse-info: [extra/com.github.taiko2k.tauonmb.appdata.xml]
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
