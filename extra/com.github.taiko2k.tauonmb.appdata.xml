@@ -56,11 +56,11 @@
 
   <releases>
 
-    <release version="5.1.1" date="2019-11-23">
+    <release version="5.1.2" date="2019-12-05">
       <description>
         <ul>
-          <li>Fixed a possible crash in gallery view</li>
-          <li>Tweaked mini mode appearance</li>
+          <li>Added click to preview artist thumbnail</li>
+          <li>Added option to toggle album name in track notification</li>
         </ul>
       </description>
     </release>
