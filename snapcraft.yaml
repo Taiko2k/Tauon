@@ -16,7 +16,7 @@ layout:
 apps:
   tauon:
     command: tauon.py
-    command-chain: [“snap/command-chain/alsa-launch”]
+    command-chain: ["snap/command-chain/alsa-launch"]
     common-id: tauonmb
     desktop: usr/share/applications/tauonmb.desktop
     environment:
