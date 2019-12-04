@@ -55,6 +55,9 @@ def player3(tauon):  # GStreamer
 
             # Get list of available audio device
             pctl.gst_devices = ["Auto", "PulseAudio", "ALSA", "JACK"]
+            if tauon.snap_mode:
+                pctl.gst_devices.remove("JACK")
+                pctl.gst_devices.remove("ALSA")
             pctl.gst_outputs.clear()
             dm = Gst.DeviceMonitor()
             dm.start()
