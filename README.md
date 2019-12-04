@@ -47,6 +47,6 @@ For manual and further documentation see the [wiki](https://github.com/Taiko2k/t
 
 Feel free to submit any issues or suggestions. I'd love to hear your feedback.
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![Platform](https://img.shields.io/badge/platform-linux--64-lightgrey.svg?style=for-the-badge)
+[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) ![Platform](https://img.shields.io/badge/platform-linux-lightgrey.svg?style=for-the-badge)
 
 
