@@ -16,6 +16,7 @@ layout:
 apps:
   tauon:
     command: tauon.py
+    command-chain: [“snap/command-chain/alsa-launch”]
     common-id: tauonmb
     desktop: usr/share/applications/tauonmb.desktop
     environment:
@@ -35,8 +36,6 @@ apps:
       - opengl
       - audio-playback
       - pulseaudio
-      - jack1
-      - alsa
     slots:
     - mpris
 

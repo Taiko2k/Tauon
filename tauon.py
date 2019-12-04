@@ -14350,12 +14350,13 @@ def editor(index):
 def launch_editor(index):
 
     if snap_mode:
-        show_message("Sorry, the feature isn't (yet) available with Snap.")
+        show_message("Sorry, this feature isn't (yet) available with Snap.")
         return
 
     if pctl.g(index).is_network:
         show_message("Cannot edit tags of a network track.")
         return
+
     mini_t = threading.Thread(target=editor, args=[index])
     mini_t.daemon = True
     mini_t.start()
