@@ -483,6 +483,9 @@ try:
 except:
     discord_allow = False
 
+if snap_mode:
+    discord_allow = False
+
 if system == "windows":
     import win32con, win32api, win32gui, win32ui, comtypes
     import atexit
