@@ -55,7 +55,7 @@ msgstr "Erreur de connexion au serveur PLEX"
 
 #: tauon.py:10090
 msgid "Playlists + Queue"
-msgstr "Liste de lectre + File d'attente"
+msgstr "Liste de lecture + File d'attente"
 
 #: tauon.py:10091
 msgid "Artist List"
