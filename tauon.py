@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.1.2"
+n_version = "5.1.3"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -7319,8 +7319,8 @@ class TextBox2:
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
         SDL_SetRenderTarget(renderer, gui.main_texture)
 
-        text_box_canvas_rect.x = x
-        text_box_canvas_rect.y = y
+        text_box_canvas_rect.x = round(x)
+        text_box_canvas_rect.y = round(y)
         SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
 
 
