@@ -1,14 +1,18 @@
 
 Changelog-------------------------------------
 
-5.1.2
+v5.1.3
+
+ - Fixed crash with renaming tracks
+
+v5.1.2
 
  - Added toggle to show album title in notification
  - Added loading screen on app start
  - Added picture preview to artist list
  - Fixed some UI scale issues
 
-5.1.1
+v5.1.1
 
  - Tweaked mini mode appearance
  - Fixed artist text not appearing in gallery after import
