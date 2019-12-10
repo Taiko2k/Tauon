@@ -25793,14 +25793,18 @@ class ArtistList:
         if coll(rect):
             self.hover_any = True
 
+            hover_delay = 0.5
+            if gui.compact_artist_list:
+                hover_delay = 2
+
             if gui.preview_artist != artist:
                 if self.hover_on != artist:
                     self.hover_on = artist
                     gui.preview_artist = ""
                     self.hover_timer.set()
-                    gui.delay_frame(0.5)
+                    gui.delay_frame(hover_delay)
                 else:
-                    if self.hover_timer.get() > 0.5 and not gui.preview_artist_loading:
+                    if self.hover_timer.get() > hover_delay and not gui.preview_artist_loading:
                         gui.preview_artist = ""
                         path = artist_info_box.get_data(artist, get_img_path=True)
                         if not path:
@@ -25811,7 +25815,9 @@ class ArtistList:
 
                         if path:
                             set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
-
+            if input.mouse_click:
+                self.hover_timer.force_set(-2)
+                gui.delay_frame(2 + hover_delay)
 
         if artist in self.thumb_cache:
             thumb = self.thumb_cache[artist]
