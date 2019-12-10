@@ -1514,7 +1514,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.preview_artist = ""
         self.preview_artist_location = (0, 0)
-        self.preview_artist_loading = False
+        self.preview_artist_loading = ""
 
 
 gui = GuiVar()
@@ -1539,18 +1539,18 @@ def set_artist_preview(path, artist, x, y):
 
 def get_artist_preview(artist, x, y):
 
-    show_message(_("Loading artist image..."))
+    #show_message(_("Loading artist image..."))
 
-    gui.preview_artist_loading = True
+    gui.preview_artist_loading = artist
     artist_info_box.get_data(artist)
     path = artist_info_box.get_data(artist, get_img_path=True)
     if not path:
         show_message(_("No artist image found."))
-        gui.preview_artist_loading = False
+        gui.preview_artist_loading = ""
         return
     set_artist_preview(path, artist, x, y)
     gui.message_box = False
-    gui.preview_artist_loading = False
+    gui.preview_artist_loading = ""
 
 
 def set_drag_source():
@@ -7306,12 +7306,12 @@ class TextBox2:
         #if self.offset:
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE)
 
-        text_box_canvas_hide_rect.w = self.offset
+        text_box_canvas_hide_rect.w = round(self.offset)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
         SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
 
         text_box_canvas_hide_rect.w = round(t_len)
-        text_box_canvas_hide_rect.x = self.offset + width + round(5 * gui.scale)
+        text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * gui.scale))
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
         SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
 
@@ -9894,6 +9894,7 @@ class Menu:
                     for i in self.subs[self.sub_active]:
                         if i[7] is not None:
                             xoff = 24 * gui.scale
+                            break
 
                     for w in range(len(self.subs[self.sub_active])):
 
@@ -19598,9 +19599,11 @@ class Over:
 
         y += 65 * gui.scale
 
-        self.button(x + 110 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=100 * gui.scale)
-        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=100 * gui.scale)
-        ddt.text((x + 105 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
+        #. Limited space. Max 14 chars.
+        self.button(x + 115 * gui.scale, y + 5 * gui.scale, _("Next Theme") + " (F2)", advance_theme, width=105 * gui.scale)
+        #. Limited space. Max 14 chars.
+        self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
+        ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
         y = y0 + 20 * gui.scale
         x = x0 + 295 * gui.scale
@@ -19705,15 +19708,17 @@ class Over:
         if not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
             if arch == "x86_64":
                 if not gui.downloading_bass:
+                    #. Limited width. Max 27 chars. Alt: Download BASS
                     if self.button(x - 15 * gui.scale, y, _("Install BASS Audio Library")):
                         shoot_dl = threading.Thread(target=download_bass)
                         shoot_dl.daemon = True
                         shoot_dl.start()
                         gui.downloading_bass = True
+                #. A button that shows detailed information about context. Max 5 chars.
                 if self.button(x + 145 * gui.scale, y, _("?")):
-                    show_message("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB).",
-                                 "BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details.",
-                                 "Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers.", mode='link')
+                    show_message(_("BASS Audio library is not currently installed. Clicking install will initiate download (<1MB)."),
+                                 _("BASS is proprietary/closed-cource and subject to the BASS license. See https://un4seen.com for details."),
+                                 _("Installing will enable features: Crossfade, Broadcasting/Streaming and Visualisers."), mode='link')
 
         else:
             ddt.text((x, y - 2 * gui.scale), "BASS Audio Library", colour, 213)
@@ -19894,6 +19899,7 @@ class Over:
             y = y0 + 240 * gui.scale
             x += 40 * gui.scale
             if os.path.isfile(user_directory + '/lib/libbass.so'):
+                #. Limited width. Max 17 chars.
                 if self.button(x + 130 * gui.scale, y, _("Uninstall BASS")):
                     shutil.rmtree(user_directory + "/lib")
                     show_message("BASS Deleted.", "Restart app to complete uninstall.",
@@ -19986,10 +19992,12 @@ class Over:
 
             y += 35 * gui.scale
 
+            #. Limited width. Max 19 chars.
             self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
 
             y += 26 * gui.scale
 
+            #. Limited width. Max 19 chars.
             if system == 'linux' and self.button(x, y, _("Chart generator..."), width=115 * gui.scale):
                 self.chart_view = 1
 
@@ -20044,20 +20052,24 @@ class Over:
 
             y = y0 + 216 * gui.scale
 
+            #. Limited width. Max 19 chars.
             self.button(x, y, _("Open config file"), open_config_file, 115 * gui.scale)
 
             bg = None
             if gui.opened_config_file:
                 bg = [90, 50, 130, 255]
 
+            #. Limited width. Max 19 chars.
             self.button(x + 122 * gui.scale, y, _("Reload config file"), reload_config_file,
                         115 * gui.scale, bg=bg)
 
             y += 27 * gui.scale
 
+            #. Limited width. Max 19 chars.
             self.button(x + 122 * gui.scale, y, _("Open keymap file"), open_keymap_file,
                         115 * gui.scale)
 
+            #. Limited width. Max 19 chars.
             self.button(x, y, _("Open data folder"), open_data_directory, 115 * gui.scale)
 
 
@@ -20184,9 +20196,12 @@ class Over:
 
 
         y += 130 * gui.scale
-        self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=round(115*gui.scale))
+
+        w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211)) + 20 * gui.scale)
+
+        self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
         y += 30 * gui.scale
-        self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=round(115*gui.scale))
+        self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
 
 
         x = x0 + 255 * gui.scale
@@ -20610,6 +20625,7 @@ class Over:
 
         x = x0 + w0 - 100 * gui.scale
 
+        #. Limited space. Max 13 chars.
         self.button(x, y, _("Show License"), open_license)
 
         x -= ddt.get_text_w(_("Credits"), 211) + round(21 * gui.scale)
@@ -20669,9 +20685,10 @@ class Over:
         y += 25 * gui.scale
         prefs.chart_text = self.toggle_square(x, y, prefs.chart_text, _("Include text"))
 
-        x = x0 + 20 * gui.scale + 320 * gui.scale
+        x = x0 + 15 * gui.scale + 320 * gui.scale
         y = y0 + 100 * gui.scale
 
+        #. Limited width. Max 13 chars.
         if self.button(x, y, _("Randomise BG")):
 
             r = round(random.random() * 40)
@@ -20704,6 +20721,7 @@ class Over:
 
         dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
 
+        #. Limited width. Max 9 chars.
         if self.button(x, y, _("Generate"), width=75*gui.scale):
             if gui.generating_chart:
                 show_message("Be patient!")
@@ -20735,6 +20753,8 @@ class Over:
 
         x = x0 + round(20 * gui.scale)
         y = y0 + 240 * gui.scale
+
+        #. Limited width. Max 8 chars.
         if self.button(x, y, _("Return"), width=75 * gui.scale):
             self.chart_view = 0
 
@@ -25422,6 +25442,9 @@ class ArtistList:
 
         self.shown_letters = []
 
+        self.hover_on = "NONE"
+        self.hover_timer = Timer(10)
+
     def load_img(self, artist):
 
         filepath = os.path.join(cache_directory, artist + "-lfm.png")
@@ -25755,17 +25778,39 @@ class ArtistList:
         ddt.rect(rect, back_colour, True)
         ddt.rect(rect, border_colour)
 
-        if not thin_mode and coll(rect) and input.mouse_click and not gui.preview_artist_loading:
-            input.mouse_click = False
-            gui.preview_artist = ""
-            path = artist_info_box.get_data(artist, get_img_path=True)
-            if not path:
-                shoot = threading.Thread(target=get_artist_preview, args=((artist, round(thumb_x + self.thumb_size), round(y))))
-                shoot.daemon = True
-                shoot.start()
+        # if not thin_mode and coll(rect) and input.mouse_click and not gui.preview_artist_loading:
+        #     input.mouse_click = False
+        #     gui.preview_artist = ""
+        #     path = artist_info_box.get_data(artist, get_img_path=True)
+        #     if not path:
+        #         shoot = threading.Thread(target=get_artist_preview, args=((artist, round(thumb_x + self.thumb_size), round(y))))
+        #         shoot.daemon = True
+        #         shoot.start()
+        #
+        #     if path:
+        #         set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
+        fields.add(rect)
+        if coll(rect):
+            self.hover_any = True
 
-            if path:
-                set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
+            if gui.preview_artist != artist:
+                if self.hover_on != artist:
+                    self.hover_on = artist
+                    gui.preview_artist = ""
+                    self.hover_timer.set()
+                    gui.delay_frame(0.5)
+                else:
+                    if self.hover_timer.get() > 0.5 and not gui.preview_artist_loading:
+                        gui.preview_artist = ""
+                        path = artist_info_box.get_data(artist, get_img_path=True)
+                        if not path:
+                            gui.preview_artist_loading = artist
+                            shoot = threading.Thread(target=get_artist_preview, args=((artist, round(thumb_x + self.thumb_size), round(y))))
+                            shoot.daemon = True
+                            shoot.start()
+
+                        if path:
+                            set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
 
 
         if artist in self.thumb_cache:
@@ -25796,6 +25841,10 @@ class ArtistList:
             text = str(album_count) + " album"
             if album_count > 1:
                 text += "s"
+
+            if gui.preview_artist_loading == artist:
+                #. Max 20 chars. Alt: Downloading image, Loading image
+                text = _("Downloading data...")
 
             ddt.text((x_text, y + self.tab_h // 2 - 23 * gui.scale), artist, line1_colour, artist_font, extra_text_space + w - x_text - 35 * gui.scale, bg=bg)
             ddt.text((x_text, y + self.tab_h // 2 + 0 * gui.scale), text, line2_colour, count_font, extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
@@ -25973,9 +26022,13 @@ class ArtistList:
 
         self.shown_letters.clear()
 
+        self.hover_any = False
+
         for i, artist in enumerate(self.current_artists[i:], start=i):
 
             if not prefetch_mode:
+
+
                 self.draw_card(artist, x, round(yy), w)
 
                 yy += self.tab_h
@@ -25991,6 +26044,12 @@ class ArtistList:
                 if artist not in self.thumb_cache:
                     self.load_img(artist)
                     break
+
+        if not self.hover_any:
+            gui.preview_artist = ""
+            self.hover_timer.force_set(10)
+            artist_preview_render.show = False
+            self.hover_on = False
 
 artist_list_box = ArtistList()
 
@@ -30049,6 +30108,49 @@ def is_level_zero(include_menus=True):
 # Hold the splash/loading screen for a minimum duration
 # while core_timer.get() < 0.5:
 #     time.sleep(0.01)
+
+# Resize menu widths to text length (length can vary due to translations)
+for menu in Menu.instances:
+
+    w = 0
+    icon_space = 0
+
+    if menu.show_icons:
+        icon_space = 25 * gui.scale
+
+    for item in menu.items:
+        if item is None:
+            continue
+        test_width = ddt.get_text_w(item[0], menu.font) + icon_space + 21 * gui.scale
+        if not item[1] and item[6]:
+            test_width += ddt.get_text_w(item[6], menu.font) + 4 * gui.scale
+
+        if test_width > w:
+            w = test_width
+
+        # sub
+        if item[1]:
+            ww = 0
+            sub_icon_space = 0
+            for i in menu.subs[item[2]]:
+                if i[7] is not None:
+                    sub_icon_space = 25 * gui.scale
+                    break
+            for sub in menu.subs[item[2]]:
+
+                test_width = ddt.get_text_w(sub[0], menu.font) + sub_icon_space + 23 * gui.scale
+                if test_width > ww:
+                    ww = test_width
+
+            if ww > item[4]:
+                print("extend")
+                print(item)
+                item[4] = ww
+
+    if w > menu.w:
+        menu.w = w
+
+
 
 SDL_SetRenderTarget(renderer, None)
 
