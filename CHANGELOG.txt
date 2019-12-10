@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v5.1.4
+
+ - Changed artist image preview to activate on hover
+ - Fixed crash on select GStreamer custom output setting
+
 v5.1.3
 
  - Fixed crash with renaming tracks
