@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.1.3"
+n_version = "5.1.4"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1089,7 +1089,7 @@ class Prefs:    # Used to hold any kind of settings
         self.artist_list_prefer_album_artist = False
 
         self.mini_mode_mode = 0
-        self.dc_device_setting = "auto"
+        self.dc_device_setting = "on"
 
         self.download_dir1 = ""
         self.dd_index = False
@@ -2742,7 +2742,7 @@ def load_prefs():
     prefs.device_buffer = cf.sync_add("int", "device-buffer-length", prefs.device_buffer, "In milliseconds. BASS only. Default is 40.")
     prefs.log_vol = cf.sync_add("bool", "use-log-volume-scale", prefs.log_vol, "BASS only.")
     prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "BASS only.")
-    prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"auto\", \"on\" or \"off\". BASS only.")
+    prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
     prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
     prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification")
@@ -10090,10 +10090,12 @@ def toggle_left_last():
         prefs.left_panel_mode = gui.last_left_panel_mode
         gui.last_left_panel_mode = t
 
+#. Menu entry: A side panel view layout.
 lsp_menu.add(_("Playlists + Queue"), enable_playlist_list, show_test=lsp_menu_test_playlist)
+#. Menu entry: Side panel view layout showing a list of artists with thumbnails.
 lsp_menu.add(_("Artist List"), enable_artist_list, show_test=lsp_menu_test_artist)
+#. Menu entry: A side panel view layout. Alternative name: Folder Tree.
 lsp_menu.add(_("Folder Navigator"), enable_folder_list, show_test=lsp_menu_test_tree)
-
 
 class RenameTrackBox:
 
