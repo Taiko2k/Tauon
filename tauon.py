@@ -1161,6 +1161,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.notify_include_album = True
 
+        self.auto_dl_artist_data = False
+
 prefs = Prefs()
 
 
@@ -2704,6 +2706,7 @@ def save_prefs():
     cf.update_value("enable-mpris", prefs.enable_mpris)
     cf.update_value("enable-gnome-mediakeys", prefs.mkey)
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
+    cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -2849,6 +2852,7 @@ def load_prefs():
     prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+    prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
 
     cf.br()
     cf.add_text("[tokens]")
@@ -10402,9 +10406,12 @@ def flush_artist_bio(artist):
 def test_shift(_):
     return key_shift_down or key_shiftr_down
 
+def test_artist_dl(_):
+    return not prefs.auto_dl_artist_data
+
 artist_info_menu.add(_("Close Panel"), artist_info_panel_close)
 artist_info_menu.add(_("Make Large"), toggle_bio_size, toggle_bio_size_deco)
-artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift)
+
 
 
 def show_in_playlist():
@@ -19066,6 +19073,13 @@ def toggle_true_shuffle(mode=0):
         return prefs.true_shuffle
     prefs.true_shuffle ^= True
 
+def toggle_auto_artist_dl(mode=0):
+    if mode == 1:
+        return prefs.auto_dl_artist_data
+    prefs.auto_dl_artist_data ^= True
+    for artist, value in list(artist_list_box.thumb_cache.items()):
+        if value is None:
+            del artist_list_box.thumb_cache[artist]
 
 def toggle_enable_web(mode=0):
     if mode == 1:
@@ -19967,7 +19981,13 @@ class Over:
             self.toggle_square(x, y, toggle_enable_web,
                                _("Serve webpage for broadcast metadata"))
 
-            y += 30 * gui.scale
+
+            y += 28 * gui.scale
+
+            self.toggle_square(x, y, toggle_auto_artist_dl,
+                               _("Enable auto fetch artist data"))
+
+            y += 28 * gui.scale
             self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
             #y += 30 * gui.scale
             # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
@@ -22579,12 +22599,14 @@ class BottomBarType1:
                     #pctl.random_mode ^= True
                     toggle_random()
                     gui.tool_tip_lock_off_f = True
-                    if window_size[0] < 600 * gui.scale:
-                        gui.mode_toast_text = _("Shuffle On")
-                        if not pctl.random_mode:
-                            gui.mode_toast_text = _("Shuffle Off")
-                        toast_mode_timer.set()
-                        gui.frame_callback_list.append(TestTimer(1))
+                    # if window_size[0] < 600 * gui.scale:
+                    #. Shuffle set to on
+                    gui.mode_toast_text = _("Shuffle On")
+                    if not pctl.random_mode:
+                        #. Shuffle set to off
+                        gui.mode_toast_text = _("Shuffle Off")
+                    toast_mode_timer.set()
+                    gui.delay_frame(1)
                 if middle_click:
                     pctl.advance(rr=True)
                     gui.tool_tip_lock_off_f = True
@@ -22609,12 +22631,14 @@ class BottomBarType1:
                 if right_click:
                     toggle_repeat()
                     gui.tool_tip_lock_off_b = True
-                    if window_size[0] < 600 * gui.scale:
-                        gui.mode_toast_text = "Repeat On"
-                        if not pctl.repeat_mode:
-                            gui.mode_toast_text = "Repeat Off"
-                        toast_mode_timer.set()
-                        gui.frame_callback_list.append(TestTimer(1))
+                    #if window_size[0] < 600 * gui.scale:
+                    #. Repeat set to on
+                    gui.mode_toast_text = _("Repeat On")
+                    if not pctl.repeat_mode:
+                        #. Repeat set to off
+                        gui.mode_toast_text = _("Repeat Off")
+                    toast_mode_timer.set()
+                    gui.delay_frame(1)
                 if middle_click:
                     pctl.revert()
                     gui.tool_tip_lock_off_b = True
@@ -25504,9 +25528,11 @@ class ArtistList:
             self.thumb_cache[artist] = None
         else:
             if not self.to_fetch:
-                # if gall_render_last_timer.get() < 4:
-                #     return
-                self.to_fetch = artist
+
+                if prefs.auto_dl_artist_data:
+                    self.to_fetch = artist
+                else:
+                    self.thumb_cache[artist] = None
 
 
     def worker(self):
@@ -27581,6 +27607,28 @@ class ArtistInfoBox:
 
         self.mini_box = asset_loader("mini-box.png", True)
 
+    def manual_dl(self):
+
+        track = pctl.playing_object()
+        if track is None or not track.artist:
+            show_message("No artist name found", mode="warning")
+            return
+
+        # Check if the artist has changed.
+        self.artist_on = track.artist
+
+        if not self.lock and self.artist_on:
+            self.lock = True
+            # self.min_rq_timer.set()
+
+            self.scroll_y = 0
+            self.status = _("Looking up...")
+            self.process_text_artist = ""
+
+            shoot_dl = threading.Thread(target=self.get_data, args=([self.artist_on, False, True]))
+            shoot_dl.daemon = True
+            shoot_dl.start()
+
     def draw(self, x, y, w, h):
 
         if gui.artist_panel_height > 300 and w < 500 * gui.scale:
@@ -27600,7 +27648,7 @@ class ArtistInfoBox:
         artist = track.artist
         wait = False
 
-        # Activat menu
+        # Activate menu
         if right_click and coll((x, y ,w, h)):
             artist_info_menu.activate(in_reference=artist)
 
@@ -27630,7 +27678,7 @@ class ArtistInfoBox:
                 #self.min_rq_timer.set()
 
                 self.scroll_y = 0
-                self.status = _("Looking up...")
+                self.status = _("Loading...")
 
                 shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
                 shoot_dl.daemon = True
@@ -27739,7 +27787,7 @@ class ArtistInfoBox:
             ddt.text((x + w // 2 , y + h // 2 - 7 * gui.scale , 2), self.status, [80, 80, 80, 255], 313, bg=backgound)
 
 
-    def get_data(self, artist, get_img_path=False):
+    def get_data(self, artist, get_img_path=False, force_dl=False):
 
         print("Load Bio Data")
 
@@ -27818,7 +27866,18 @@ class ArtistInfoBox:
 
                 return ""
 
+            if not force_dl and not prefs.auto_dl_artist_data:
+                #. Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
+                self.status = _("No artist data downloaded")
+                self.artist_on = artist
+                artist_picture_render.show = False
+                self.lock = False
+                return
+
             # Get new from last.fm
+            #. Alt: Looking up artist data...
+            self.status = _("Looking up...")
+            gui.update += 1
             data = lastfm.artist_info(artist)
             if data[0] is False:
                 self.text = ""
@@ -27852,6 +27911,13 @@ class ArtistInfoBox:
                             artist_picture_render.show = True
                         except:
                             print("Failed to find image from discogs")
+
+                # Trigger reload of thumbnail in artist list box
+                for key, value in list(artist_list_box.thumb_cache.items()):
+                    if key is None and key == artist:
+                        del artist_list_box.thumb_cache[artist]
+                        break
+
 
                 self.status = "Ready"
                 gui.update = 2
@@ -27896,6 +27962,9 @@ class ArtistInfoBox:
 # artist info box def
 artist_info_box = ArtistInfoBox()
 
+
+artist_info_menu.add(_("Download Artist Data"), artist_info_box.manual_dl, show_test=test_artist_dl)
+artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift)
 
 
 class GuitarChords:
