@@ -1163,6 +1163,10 @@ class Prefs:    # Used to hold any kind of settings
 
         self.auto_dl_artist_data = False
 
+        self.enable_fanart_artist = True
+        self.enable_fanart_cover = True
+
+
 prefs = Prefs()
 
 
@@ -2708,6 +2712,12 @@ def save_prefs():
     cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
     cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
 
+    cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
+    cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
+
+
+
+
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
 
@@ -2853,6 +2863,8 @@ def load_prefs():
     prefs.mkey = cf.sync_add("bool", "enable-gnome-mediakeys", prefs.mkey)
     prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
+    prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
+    prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
 
     cf.br()
     cf.add_text("[tokens]")
@@ -11224,48 +11236,49 @@ def download_art1(tr):
             print("Using tagged release group ID: " + album_id)
             print("Using tagged artist ID: " + artist_id)
 
-        try:
-            show_message("Searching fanart.tv for cover art...")
+        if prefs.enable_fanart_cover:
+            try:
+                show_message("Searching fanart.tv for cover art...")
 
-            r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
-                             + artist_id + "?api_key=" + prefs.fatvap)
+                r = requests.get("http://webservice.fanart.tv/v3/music/albums/" \
+                                 + artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
 
-            artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
-            id = r.json()['albums'][album_id]['albumcover'][0]['id']
+                artlink = r.json()['albums'][album_id]['albumcover'][0]['url']
+                id = r.json()['albums'][album_id]['albumcover'][0]['id']
 
-            response = urllib.request.urlopen(artlink)
-            info = response.info()
+                response = urllib.request.urlopen(artlink)
+                info = response.info()
 
-            t = io.BytesIO()
-            t.seek(0)
-            t.write(response.read())
-            l = 0
-            t.seek(0, 2)
-            l = t.tell()
-            t.seek(0)
+                t = io.BytesIO()
+                t.seek(0)
+                t.write(response.read())
+                l = 0
+                t.seek(0, 2)
+                l = t.tell()
+                t.seek(0)
 
-            if info.get_content_maintype() == 'image' and l > 1000:
+                if info.get_content_maintype() == 'image' and l > 1000:
 
-                if info.get_content_subtype() == 'jpeg':
-                    filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
-                elif info.get_content_subtype() == 'png':
-                    filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
-                else:
-                    show_message("Could not detect downloaded filetype.", mode='error')
+                    if info.get_content_subtype() == 'jpeg':
+                        filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
+                    elif info.get_content_subtype() == 'png':
+                        filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
+                    else:
+                        show_message("Could not detect downloaded filetype.", mode='error')
+                        return
+
+                    f = open(filepath, 'wb')
+                    f.write(t.read())
+                    f.close()
+
+                    show_message(_("Cover art downloaded from fanart.tv"), mode='done')
+                    #clear_img_cache()
+                    for track_id in default_playlist:
+                        if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
+                            clear_track_image_cache(pctl.g(track_id))
                     return
-
-                f = open(filepath, 'wb')
-                f.write(t.read())
-                f.close()
-
-                show_message(_("Cover art downloaded from fanart.tv"), mode='done')
-                #clear_img_cache()
-                for track_id in default_playlist:
-                    if tr.parent_folder_path == pctl.g(track_id).parent_folder_path:
-                        clear_track_image_cache(pctl.g(track_id))
-                return
-        except:
-            print("Failed to get from fanart.tv")
+            except:
+                print("Failed to get from fanart.tv")
 
         show_message("Searching MusicBrainz for cover art...")
         t = io.BytesIO(musicbrainzngs.get_release_group_image_front(album_id, size=None))
@@ -20214,8 +20227,13 @@ class Over:
         if self.button2(x, y, "Discogs", width=84*gui.scale):
             self.account_view = 3
 
+        y += 30 * gui.scale
 
-        y += 130 * gui.scale
+        if self.button2(x, y, "fanart.tv", width=84*gui.scale):
+            self.account_view = 4
+
+
+        y += 100 * gui.scale
 
         w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211)) + 20 * gui.scale)
 
@@ -20227,6 +20245,30 @@ class Over:
         x = x0 + 255 * gui.scale
         y = y0 + round(20 * gui.scale)
 
+
+        if self.account_view == 4:
+
+            ddt.text((x, y), 'fanart.tv', colours.grey_blend_bg(220), 213)
+
+            y += 25 * gui.scale
+            # . Limited space available, line 1 of 2. Max 50 chars, overflow onto line 2.
+            ddt.text((x + 0 * gui.scale, y), _("Fanart.tv can be used for sourcing of artist images"),
+                     colours.grey_blend_bg(90), 11)
+            y += 17 * gui.scale
+            # . Limited space available, line 2 of 2.
+            ddt.text((x + 0 * gui.scale, y), _("and cover art."),
+                     colours.grey_blend_bg(90), 11)
+
+            y += 22 * gui.scale
+            #. Limited space available. Limit 55 chars.
+            link_pa2 = draw_linked_text((x + 0 * gui.scale, y), _("They encourage you to contribute at https://fanart.tv"),
+                     colours.grey_blend_bg(90), 11)
+            link_activate(x, y, link_pa2)
+
+            y += 35 * gui.scale
+            prefs.enable_fanart_cover = self.toggle_square(x, y, prefs.enable_fanart_cover, _("Cover art (Manual only)"))
+            y += 25 * gui.scale
+            prefs.enable_fanart_artist = self.toggle_square(x, y, prefs.enable_fanart_artist, _("Artist images (May be automatic)"))
 
         if self.account_view == 3:
 
@@ -25407,13 +25449,13 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
     print("Searching fanart.tv for image...")
     #print("mbid is " + mbid)
     r = requests.get("http://webservice.fanart.tv/v3/music/" \
-                     + mbid + "?api_key=" + prefs.fatvap)
+                     + mbid + "?api_key=" + prefs.fatvap, timeout=5)
     # print(r.json())
     thumblink = r.json()['artistthumb'][0]['url']
     if preview:
         thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-    response = urllib.request.urlopen(thumblink)
+    response = urllib.request.urlopen(thumblink, timeout=10)
     info = response.info()
 
     t = io.BytesIO()
@@ -25431,8 +25473,8 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 
         if prefs.fanart_notify:
             prefs.fanart_notify = False
-            show_message("Notice: Artist image sourced from fanart.tv",
-                         'They encrouge you to contribute at https://fanart.tv', mode='link')
+            show_message(_("Notice: Artist image sourced from fanart.tv"),
+                         _('They encourage you to contribute at https://fanart.tv'), mode='link')
         print("Found artist thumbnail from fanart.tv")
 
 class ArtistList:
@@ -25565,6 +25607,7 @@ class ArtistList:
             filepath2 = os.path.join(cache_directory, filename2)
             filepath3 = os.path.join(cache_directory, filename3)
             filepath4 = os.path.join(cache_directory, filename4)
+            got_image = False
             try:
 
                 # Lookup artist info on last.fm
@@ -25580,19 +25623,19 @@ class ArtistList:
                 #         f.write(text)
                 #         f.close()
 
-
-                if mbid:
+                if mbid and prefs.enable_fanart_artist:
                     save_fanart_artist_thumb(mbid, filepath3, preview=True)
+                    got_image = True
 
 
             except:
-                #raise
                 print("Failed to find image from fanart.tv")
-                if verify_discogs():
-                    try:
-                        save_discogs_artist_thumb(artist, filepath4)
-                    except:
-                        print("Failed to find image from discogs")
+
+            if not got_image and verify_discogs():
+                try:
+                    save_discogs_artist_thumb(artist, filepath4)
+                except:
+                    print("Failed to find image from discogs")
 
             if os.path.exists(filepath3) or os.path.exists(filepath4):
                 gui.update += 1
@@ -27896,7 +27939,7 @@ class ArtistInfoBox:
                 print("save bio text")
 
                 artist_picture_render.show = False
-                if data[3]:
+                if data[3] and prefs.enable_fanart_artist:
                     try:
                         save_fanart_artist_thumb(data[3], img_filepath)
                         artist_picture_render.load(img_filepath, round(gui.artist_panel_height - 20 * gui.scale))
@@ -27964,7 +28007,7 @@ artist_info_box = ArtistInfoBox()
 
 
 artist_info_menu.add(_("Download Artist Data"), artist_info_box.manual_dl, show_test=test_artist_dl)
-artist_info_menu.add(_("Reload Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift)
+artist_info_menu.add(_("Reset Bio"), flush_artist_bio, pass_ref=True)
 
 
 class GuitarChords:

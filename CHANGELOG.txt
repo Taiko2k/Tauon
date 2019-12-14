@@ -5,6 +5,7 @@ v5.1.4
 
  - Added toggle of automatic artist data downloading
  - Added manual trigger for artist bio download to menu
+ - Added toggles for fanart.tv sourcing
  - Changed artist image preview to activate on hover
  - Fixed crash on select GStreamer custom output setting
 
