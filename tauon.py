@@ -71,6 +71,9 @@ install_directory = sys.path[0]
 if 'base_library' in install_directory:
     install_directory = os.path.dirname(install_directory)
 
+if system == "windows":
+    os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+
 # Set data folders (portable mode)
 user_directory = install_directory
 config_directory = user_directory
@@ -573,13 +576,10 @@ if system == 'linux':
     from t_modules import t_topchart
 
 from t_modules import t_autodownload
-from t_modules.t_dbus import Gnome
-from t_modules.t_gdk_extra import *
 
-
-
-
-
+if system == "linux":
+    from t_modules.t_dbus import Gnome
+    from t_modules.t_gdk_extra import *
 
 
 if system == "linux":
@@ -2920,7 +2920,7 @@ if 0 < db_version <= 34:
         prefs.theme_name = get_theme_name(theme)
         print(prefs.theme_name)
 
-if 0 < db_version <= 36 and prefs.backend == 1 and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
+if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so')):
     show_message("Welcome to v5.1.0! 🚨 Just letting you know that BASS is no longer included by default.",
                  "You can enable it again by going MENU > Settings > Audio > Install BASS Audio Library.",
                  "If you do nothing, GStreamer will be used for playback instead.")
@@ -4706,11 +4706,10 @@ if system == 'linux':
         print("Failed init notifications")
 
 
-
-if de_notify_support:
-    song_notification = Notify.Notification.new("Next track notification")
-    value = GLib.Variant("s", t_id)
-    song_notification.set_hint("desktop-entry", value)
+    if de_notify_support:
+        song_notification = Notify.Notification.new("Next track notification")
+        value = GLib.Variant("s", t_id)
+        song_notification.set_hint("desktop-entry", value)
 
 
 def notify_song_fire(notification, delay, id):
@@ -5936,7 +5935,7 @@ class STray:
                         ("Stop", None, self.track_stop),
                         ("Forward", None, self.advance),
                         ("Back", None, self.back))
-        self.systray = SysTrayIcon(install_directory + asset_subfolder + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
+        self.systray = SysTrayIcon(install_directory + "\\assets\\" + "icon.ico", "Tauon Music Box", menu_options, on_quit=self.on_quit_callback)
         self.systray.start()
         self.active = True
 
@@ -6625,12 +6624,6 @@ else:
     ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
     ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
 
-    if gui.scale == 1:
-        ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=1)
-        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=1)
-    else:
-        ddt.win_prime_font("Arial", 14 + 1, 412, weight=500, y_offset=2)
-        ddt.win_prime_font("Arial", 15 + 1, 413, weight=500, y_offset=2)
 
     standard_weight = 550
     ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
@@ -6641,6 +6634,29 @@ else:
     ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
     ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
+
+    standard_font = "Arial Narrow"
+    standard_weight = 500
+
+    ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
+
+    standard_weight = 600
+
+    ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
+    ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
 
 class DropShadow:
 
@@ -20527,10 +20543,10 @@ class Over:
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        # y += 25 * gui.scale
-        #
-        # if system == "windows":
-        #     self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+        y += 25 * gui.scale
+
+        if system == "windows":
+            self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
 
         y += 32 * gui.scale
 
@@ -30635,12 +30651,11 @@ while pctl.running:
             # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-
-                gnome.focus()
+                if system == "linux":
+                    gnome.focus()
                 k_input = True
 
                 mouse_enter_window = True
-
                 focused = True
                 gui.lowered = False
                 key_focused = 2
@@ -34811,15 +34826,15 @@ save_state()
 
 if system == "windows":
     tray.stop()
+else:
+    if de_notify_support:
+        song_notification.close()
+        Notify.uninit()
 
 try:
     fp.close()
 except:
     print("No lock object to close")
-
-if de_notify_support:
-    song_notification.close()
-    Notify.uninit()
 
 print("Unloading SDL...")
 SDL_DestroyTexture(gui.main_texture)
