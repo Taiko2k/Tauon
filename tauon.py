@@ -706,6 +706,7 @@ right_down = False
 click_location = [200, 200]
 last_click_location = [0, 0]
 mouse_position = [0, 0]
+mouse_up_position = [0, 0]
 
 k_input = True
 key_shift_down = False
@@ -21505,15 +21506,15 @@ class TopPanel:
 
         x_start = x
 
-        if mouse_up and playlist_box.drag:
+        if playlist_box.drag:
+            if mouse_up:
+                    if mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and mouse_up_position[1] > gui.panelY:
+                        playlist_box.drag = False
 
-            if mouse_position[0] > (gui.lspw if gui.lsp else 0) and mouse_position[1] > gui.panelY:
-                playlist_box.drag = False
-
-                if playlist_box.drag_source == 0:
-                    pctl.multi_playlist[playlist_box.drag_on][8] = True
-                else:
-                    pctl.multi_playlist[playlist_box.drag_on][8] = False
+                        if playlist_box.drag_source == 0:
+                            pctl.multi_playlist[playlist_box.drag_on][8] = True
+                        else:
+                            pctl.multi_playlist[playlist_box.drag_on][8] = False
 
 
         # TAB INPUT PROCESSING
@@ -21554,7 +21555,7 @@ class TopPanel:
                     set_drag_source()
 
                 # Drag to move playlist
-                if mouse_up and playlist_box.drag:
+                if mouse_up and playlist_box.drag and coll_point(mouse_up_position, f_rect):
 
                     if playlist_box.drag_source == 1:
                         pctl.multi_playlist[playlist_box.drag_on][8] = False
@@ -25033,6 +25034,7 @@ class PlaylistBox:
         self.drag_source = 0
         self.drag_on = -1
 
+
         self.adds = []
 
         self.indicate_w = round(2 * gui.scale)
@@ -25142,7 +25144,7 @@ class PlaylistBox:
                     #delete_playlist(i)
                     #break
 
-                if mouse_up and self.drag:
+                if mouse_up and self.drag and coll_point(mouse_up_position, (tab_start, yy - 1, tab_width, (self.tab_h + 1))):
 
                     # If drag from top bar to side panel, make hidden
                     if self.drag_source == 0:
@@ -30571,6 +30573,8 @@ while pctl.running:
             elif event.button.button == SDL_BUTTON_LEFT:
                 if mouse_down:
                     mouse_up = True
+                    mouse_up_position[0] = event.motion.x
+                    mouse_up_position[1] = event.motion.y
 
                 mouse_down = False
         elif event.type == SDL_KEYDOWN:
