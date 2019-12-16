@@ -6,8 +6,10 @@ v5.1.4
  - Added toggle of automatic artist data downloading
  - Added manual trigger for artist bio download to menu
  - Added toggles for fanart.tv sourcing
+ - Added "Enqueue album next" entry to gallery menu
  - Changed artist image preview to activate on hover
  - Fixed crash on select GStreamer custom output setting
+ - Fixed artist bio panel not reducing to small size
 
 v5.1.3
 

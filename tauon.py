@@ -1547,6 +1547,7 @@ def get_artist_preview(artist, x, y):
 
     #show_message(_("Loading artist image..."))
 
+
     gui.preview_artist_loading = artist
     artist_info_box.get_data(artist)
     path = artist_info_box.get_data(artist, get_img_path=True)
@@ -10073,7 +10074,7 @@ playlist_menu = Menu(130)
 showcase_menu = Menu(125)
 center_info_menu = Menu(125)
 cancel_menu = Menu(100)
-gallery_menu = Menu(170, show_icons=True)
+gallery_menu = Menu(175, show_icons=True)
 artist_info_menu = Menu(135)
 queue_menu = Menu(150)
 repeat_menu = Menu(120)
@@ -10383,12 +10384,15 @@ shuffle_menu.add(_("Random Albums"), menu_album_random)
 def bio_set_large():
     #if window_size[0] >= round(1000 * gui.scale):
     #gui.artist_panel_height = 320 * gui.scale
+    prefs.bio_large = True
     if gui.artist_info_panel:
         artist_info_box.get_data(artist_info_box.artist_on)
 
 
 def bio_set_small():
     #gui.artist_panel_height = 200 * gui.scale
+    prefs.bio_large = False
+    update_layout_do()
     if gui.artist_info_panel:
         artist_info_box.get_data(artist_info_box.artist_on)
 
@@ -10713,9 +10717,6 @@ def add_album_to_queue(ref, position=None):
     queue_timer_set(queue_object=queue_object)
 
 
-gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
-
-
 def add_album_to_queue_fc(ref):
 
     playing_object = pctl.playing_object()
@@ -10759,6 +10760,10 @@ def add_album_to_queue_fc(ref):
             pctl.force_queue.insert(len(pctl.force_queue), queue_item)
     if queue_item:
         queue_timer_set(queue_object=queue_item)
+
+gallery_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
+gallery_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
+
 
 def cancel_import():
 
@@ -27692,7 +27697,7 @@ class ArtistInfoBox:
 
         if gui.artist_panel_height > 300 and w < 500 * gui.scale:
             bio_set_small()
-            update_layout_do()
+
 
         if w < 300 * gui.scale:
             gui.artist_info_panel = False
@@ -27715,6 +27720,7 @@ class ArtistInfoBox:
         ddt.rect((x + 10, y + 5, w - 15, h - 5), backgound, True)
 
         if artist != self.artist_on:
+
             if artist == "":
                 return
 
@@ -28014,16 +28020,28 @@ class ArtistInfoBox:
             self.status = "Load Failed"
 
         self.artist_on = artist
+        self.processed_text = ""
+        self.process_text_artist = ""
         self.min_rq_timer.set()
         self.lock = False
+        gui.update = 2
+        return ""
+
 
 
 # artist info box def
 artist_info_box = ArtistInfoBox()
 
 
-artist_info_menu.add(_("Download Artist Data"), artist_info_box.manual_dl, show_test=test_artist_dl)
-artist_info_menu.add(_("Reset Bio"), flush_artist_bio, pass_ref=True)
+def artist_dl_deco():
+
+    if artist_info_box.status == "Ready":
+        return [colours.menu_text_disabled, colours.menu_background, None]
+    else:
+        return [colours.menu_text, colours.menu_background, None]
+
+artist_info_menu.add(_("Download Artist Data"), artist_info_box.manual_dl, artist_dl_deco, show_test=test_artist_dl)
+artist_info_menu.add(_("Clear Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift)
 
 
 class GuitarChords:
