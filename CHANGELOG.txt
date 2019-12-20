@@ -8,6 +8,7 @@ v5.1.4
  - Added toggles for fanart.tv sourcing
  - Added "Enqueue album next" entry to gallery menu
  - Changed artist image preview to activate on hover
+ - Tweaked folder nodes in tree to be bold if contains many sub items
  - Fixed crash on select GStreamer custom output setting
  - Fixed artist bio panel not reducing to small size
  - Fixed playlist tabs being incorrectly dragged during UI stall
