@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2019 Taiko2k captain.gxj@gmail.com -->
 <component type="desktop-application">
-  <id type="desktop">com.github.taiko2k.tauonmb.desktop</id>
+  <id>com.github.taiko2k.tauonmb</id>
   <name>Tauon Music Box</name>
   <developer_name>Taiko2k</developer_name>
   <summary>Play your music collection with style</summary>

@@ -20549,10 +20549,13 @@ class Over:
         if not draw_border:
             self.toggle_square(x, y, toggle_titlebar_line, _("Show playing in titlebar"))
 
-        y += 25 * gui.scale
+
 
         if system == "windows":
+            y += 25 * gui.scale
             self.toggle_square(x, y, toggle_min_tray, "Minimize to tray")
+        else:
+            y += 5 * gui.scale
 
         y += 32 * gui.scale
 
@@ -26182,6 +26185,8 @@ class TreeView:
         self.tooltip_on = ""
         self.tooltip_timer = Timer(10)
 
+        # self.bold_colours = ColourGenCache(0.6, 0.7)
+
     def clear_all(self):
         self.rows_id = ""
         self.trees.clear()
@@ -26488,8 +26493,15 @@ class TreeView:
                     text_colour = [0, 0, 0, 255]
 
             # Render folder name text
+            if item[4] > 50:
+                font = 514
+                text_label_colour = text_colour  # self.bold_colours.get(full_folder_path)
+            else:
+                font = 414
+                text_label_colour = text_colour
+
             if mouse_in:
-                tw = ddt.get_text_w(item[0], 414)
+                tw = ddt.get_text_w(item[0], font)
 
                 if self.tooltip_on != item:
                     self.tooltip_on = item
@@ -26499,11 +26511,11 @@ class TreeView:
                 if tw > max_w - inset and self.tooltip_on == item and self.tooltip_timer.get() >= 0.6:
                     rect = (xx + inset, yy - 2 * gui.scale, tw + round(20 * gui.scale), 20 * gui.scale)
                     ddt.rect(rect, ddt.text_background_colour, True)
-                    ddt.text((xx + inset, yy), item[0], text_colour, 414)
+                    ddt.text((xx + inset, yy), item[0], text_label_colour, font)
                 else:
-                    ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+                    ddt.text((xx + inset, yy), item[0], text_label_colour, font, max_w=max_w - inset)
             else:
-                ddt.text((xx + inset, yy), item[0], text_colour, 414, max_w=max_w - inset)
+                ddt.text((xx + inset, yy), item[0], text_label_colour, font, max_w=max_w - inset)
 
 
             if prefs.folder_tree_codec_colours:
@@ -26566,13 +26578,13 @@ class TreeView:
 
                     # If there is a single base folder in subfolder, combine the path and show it in upper level
                     if len(item[0]) == 1 and len(item[0][0][0]) == 1 and len(item[0][0][0][0][0]) == 0:
-                        self.rows.append([item[1] + "/" + item[0][0][1] + "/" + item[0][0][0][0][1], path, self.depth, True])
+                        self.rows.append([item[1] + "/" + item[0][0][1] + "/" + item[0][0][0][0][1], path, self.depth, True, len(item[0])])
                     elif len(item[0]) == 1 and len(item[0][0][0]) == 0:
-                        self.rows.append([item[1] + "/" + item[0][0][1], path, self.depth, True])
+                        self.rows.append([item[1] + "/" + item[0][0][1], path, self.depth, True, len(item[0])])
 
                     # Add normal base folder type
                     else:
-                        self.rows.append([item[1], path, self.depth, len(item[0]) == 0])  # Folder name, folder path, depth, is bottom
+                        self.rows.append([item[1], path, self.depth, len(item[0]) == 0, len(item[0])])  # Folder name, folder path, depth, is bottom
 
                     # If folder is open and has only one subfolder, mark that subfolder as open
                     if len(item[0]) == 1 and (p in opens or p in self.force_opens):
