@@ -1162,7 +1162,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.notify_include_album = True
 
-        self.auto_dl_artist_data = False
+        self.auto_dl_artist_data = True
 
         self.enable_fanart_artist = True
         self.enable_fanart_cover = True
@@ -1550,10 +1550,12 @@ def get_artist_preview(artist, x, y):
 
 
     gui.preview_artist_loading = artist
-    artist_info_box.get_data(artist)
+    artist_info_box.get_data(artist, force_dl=True)
     path = artist_info_box.get_data(artist, get_img_path=True)
     if not path:
         show_message(_("No artist image found."))
+        if not prefs.enable_fanart_artist and not verify_discogs():
+            show_message(_("No artist image found."), _("No providers are enabled in settings!"), mode='warning')
         gui.preview_artist_loading = ""
         return
     set_artist_preview(path, artist, x, y)
@@ -27892,8 +27894,8 @@ class ArtistInfoBox:
 
         if get_img_path:
             for path in image_paths:
-                print(path)
                 if os.path.isfile(path):
+                    print(path)
                     return path
             return ""
 
