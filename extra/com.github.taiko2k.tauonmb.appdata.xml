@@ -56,12 +56,12 @@
 
   <releases>
 
-    <release version="5.1.3" date="2019-12-07">
+    <release version="5.1.4" date="2019-12-21">
       <description>
         <ul>
-          <li>Added click to preview artist thumbnail</li>
-          <li>Added option to toggle album name in track notification</li>
-          <li>Fixed crash with renaming tracks</li>
+          <li>Improved control over artist data downloading</li>
+          <li>Fixed possible crash when changing GStreamer output setting</li>
+          <li>Fixed various UI bugs</li>
         </ul>
       </description>
     </release>
