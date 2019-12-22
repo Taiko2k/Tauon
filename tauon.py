@@ -307,6 +307,7 @@ window_default_size = [1120, 600]
 window_size = window_default_size
 window_opacity = 1
 scale = 1
+maximized = False
 
 try:
     state_file = open(user_directory + "/window.p", "rb")
@@ -316,6 +317,8 @@ try:
     window_size = save[1]
     window_opacity = save[2]
     scale = save[3]
+    maximized = save[4]
+
 
     del save
 
@@ -339,6 +342,9 @@ t_window = SDL_CreateWindow(window_title,
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_size[0], window_size[1],
                             flags)
+
+if maximized:
+    SDL_MaximizeWindow(t_window)
 
 SDL_SetWindowOpacity(t_window, window_opacity)
 
@@ -454,6 +460,17 @@ if scale != 1:
     scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
 
 loading_image = asset_loader('loading.png')
+
+if maximized:
+    i_x = pointer(c_int(0))
+    i_y = pointer(c_int(0))
+    import time
+    time.sleep(0.02)
+    SDL_PumpEvents()
+    SDL_GetWindowSize(t_window, i_x, i_y)
+    window_size[0] = i_x.contents.value
+    window_size[1] = i_y.contents.value
+
 loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 SDL_RenderPresent(renderer)
 
@@ -1500,7 +1517,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.compact_artist_list = False
 
         self.rsp_full_lock = False
-        
+
         self.album_scroll_px = album_v_slide_value
         self.queue_toast_plural = False
         self.reload_theme = False
@@ -2406,7 +2423,7 @@ def track_number_process(line):
 
 def advance_theme():
     global theme
-    
+
     theme += 1
     gui.reload_theme = True
 
@@ -2801,7 +2818,7 @@ def load_prefs():
     if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
         prefs.custom_bg_opacity = 40
         print("Warning: Invalid value for mascot-opacity")
-        
+
     prefs.sync_lyrics_time_offset = cf.sync_add("int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset, "In milliseconds. May be negative.")
     prefs.artist_list_prefer_album_artist = cf.sync_add("bool", "artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist, "May require restart for change to take effect.")
     prefs.meta_persists_stop = cf.sync_add("bool", "side-panel-info-persists", prefs.meta_persists_stop, "Show album art and metadata of last played track when stopped.")
@@ -3481,7 +3498,7 @@ class PlayerCtl:
         return self.master_library[index]
 
     def show_object(self):  # The track to show in the metadata side panel
-        
+
         target_track = None
         if 3 > self.playing_state > 0:
             target_track = self.playing_object()
@@ -3496,7 +3513,7 @@ class PlayerCtl:
         if prefs.meta_shows_selected_always:
             if -1 < playlist_selected < len(self.multi_playlist[self.active_playlist_viewing][2]):
                 target_track = self.g(self.multi_playlist[self.active_playlist_viewing][2][playlist_selected])
-        
+
         return target_track
 
     def playing_object(self):
@@ -6311,9 +6328,6 @@ else:
 
 #print(SDL_GetError())
 
-if gui.maximized:
-    SDL_MaximizeWindow(t_window)
-
 # t_window = SDL_CreateShapedWindow(window_title,
 #                              SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 #                              window_size[0], window_size[1],
@@ -7640,7 +7654,7 @@ class TextBox:
                 self.text += input_text
                 if input_text != "":
                     self.cursor = True
-                    
+
                 while input.backspace_press and len(self.text) > 0:
                     self.text = self.text[:-1]
                     input.backspace_press -= 1
@@ -15350,7 +15364,7 @@ def toggle_album_mode(force_on=False):
     global old_side_pos
     global album_playlist_width
     global old_album_pos
-    
+
 
     gui.gall_tab_enter = False
 
@@ -15914,7 +15928,7 @@ def toggle_auto_theme(mode=0):
 
     prefs.colour_from_image ^= True
     gui.theme_temp_current = -1
-    
+
     gui.reload_theme = True
 
     if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
@@ -20515,7 +20529,7 @@ class Over:
 
     def devance_theme(self):
         global theme
-        
+
         theme -= 1
         gui.reload_theme = True
         if theme < 0:
@@ -30196,7 +30210,8 @@ def save_state():
         draw_border,
         gui.save_size,
         window_opacity,
-        gui.scale
+        gui.scale,
+        gui.maximized,
 
     ]
 
