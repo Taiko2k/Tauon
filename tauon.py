@@ -6324,7 +6324,8 @@ else:
     cursor_bottom_side = cursor_standard
 
 
-
+if not maximized and gui.maximized:
+    SDL_MaximizeWindow(t_window)
 
 #print(SDL_GetError())
 
