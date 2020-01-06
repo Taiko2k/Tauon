@@ -34,13 +34,13 @@ import os
 import pickle
 import shutil
 
-n_version = "5.1.4"
+n_version = "5.2.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
 
 print(f"{t_title} {t_version}")
-print('Copyright 2015-2019 Taiko2k captain.gxj@gmail.com\n')
+print('Copyright 2015-2020 Taiko2k captain.gxj@gmail.com\n')
 
 bass_archive_link = "https://github.com/Taiko2k/TauonMusicBox/releases/download/v5.1.0/basslibs64-Apr10.zip"
 bass_archive_checksum = "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867bbe390efa3"  # sha256
@@ -647,6 +647,9 @@ toast_mode_timer = Timer(100)
 f_store = FunctionStore()
 
 after_scan = []
+
+search_string_cache = {}
+search_dia_string_cache = {}
 
 vis_update = False
 # GUI Variables -------------------------------------------------------------------------------------------
@@ -2400,6 +2403,10 @@ try:
         gui.last_left_panel_mode = save[135]
     if save[136] is not None:
         prefs.gst_device = save[136]
+    if save[137] is not None:
+        search_string_cache = save[137]
+    if save[138] is not None:
+        search_dia_string_cache = save[138]
 
     state_file.close()
     del save
@@ -10308,6 +10315,9 @@ class RenameTrackBox:
                     pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
                     pctl.master_library[item].filename = afterline
 
+                    search_string_cache.pop(item, None)
+                    search_dia_string_cache.pop(item, None)
+
                     if star is not None:
                         star_store.insert(item, star)
 
@@ -13988,12 +13998,17 @@ def rename_parent(index, template):
             object.parent_folder_path = new_parent_path
             object.fullpath = new_fullpath
 
+            search_string_cache.pop(object.index, None)
+            search_dia_string_cache.pop(object.index, None)
+
         # Fix any other tracks paths that contain the old path
         if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
                 and os.path.normpath(object.fullpath)[len(old)] in ('/', '\\'):
             object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip('\\/'))
             object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip('\\/'))
 
+            search_string_cache.pop(object.index, None)
+            search_dia_string_cache.pop(object.index, None)
 
     if new_parent_path is not None:
         try:
@@ -14093,6 +14108,9 @@ def move_folder_up(index, do=False):
                 and os.path.normpath(object.fullpath)[len(old)] in ('/', '\\'):
             object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip('\\/'))
             object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip('\\/'))
+
+            search_string_cache.pop(object.index, None)
+            search_dia_string_cache.pop(object.index, None)
 
             print(object.fullpath)
             print(object.parent_folder_path)
@@ -14215,6 +14233,9 @@ def reload_metadata(input, keep_star=True):
             del todo[i]
 
     for track in todo:
+
+        search_string_cache.pop(track.index, None)
+        search_dia_string_cache.pop(track.index, None)
 
         print('Reloading Metadata for ' + track.filename)
 
@@ -14566,6 +14587,9 @@ def intel_moji(index):
 
             if key != None:
                 star_store.insert(item, key)
+
+            search_string_cache.pop(track.index, None)
+            search_dia_string_cache.pop(track.index, None)
 
     else:
         show_message("Autodetect failed")
@@ -17021,7 +17045,7 @@ class SearchOverlay:
 
                 gui.update += 1
             else:
-                if self.input_timer.get() >= 0.25 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
+                if self.input_timer.get() >= 0.20 and len(search_over.search_text.text) > 1 and search_over.search_text.text != search_over.searched_text:
                     try:
                         self.sip = True
                         worker2_lock.release()
@@ -17514,7 +17538,15 @@ def worker2():
                 search_over.sip = True
                 gui.update += 1
 
-                s_text = search_over.search_text.text.lower()
+                s_text = search_over.search_text.text.lower().replace("-", "")
+
+                dia_mode = False
+                if all([ord(c) < 128 for c in s_text]):
+                    dia_mode = True
+
+                artist_mode = False
+                if s_text.startswith("artist "):
+                    artist_mode = True
 
                 for playlist in pctl.multi_playlist:
 
@@ -17524,20 +17556,37 @@ def worker2():
 
                     for track in playlist[2]:
 
-                        # if input_text:
-                        #     time.sleep(0.05)
-
+                        if not artist_mode:  # todo, handle artist keyword with caching
+                            if dia_mode:
+                                cache_string = search_dia_string_cache.get(track)
+                                if cache_string is not None:
+                                    if not search_magic_any(s_text, cache_string):
+                                        continue
+                                    # if s_text not in cache_string:
+                                    #     continue
+                            else:
+                                cache_string = search_string_cache.get(track)
+                                if cache_string is not None:
+                                    if not search_magic_any(s_text, cache_string):
+                                        continue
 
                         t = pctl.master_library[track]
 
-                        title = t.title.lower()
-                        artist = t.artist.lower()
-                        album_artist = t.album_artist.lower()
-                        composer = t.composer.lower()
-                        date = t.date.lower()
-                        album = t.album.lower()
-                        genre = t.genre.lower()
-                        filename = t.filename.lower()
+                        title = t.title.lower().replace("-", "")
+                        artist = t.artist.lower().replace("-", "")
+                        album_artist = t.album_artist.lower().replace("-", "")
+                        composer = t.composer.lower().replace("-", "")
+                        date = t.date.lower().replace("-", "")
+                        album = t.album.lower().replace("-", "")
+                        genre = t.genre.lower().replace("-", "")
+                        filename = t.filename.lower().replace("-", "")
+                        stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
+
+                        if cache_string is None:
+                            if dia_mode:
+                                search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + filename + stem
+                            else:
+                                search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + filename + stem
 
                         if prefs.diacritic_search:
                             if all([ord(c) < 128 for c in s_text]):
@@ -17750,7 +17799,7 @@ def worker2():
                                         tracks.add(t)
 
                         br += 1
-                        if br > 900:
+                        if br > 800:
                             time.sleep(0.005)  # Throttle thread
                             br = 0
                             if search_over.searched_text != search_over.search_text.text:
@@ -30203,7 +30252,10 @@ def save_state():
             prefs.chart_bg,
             prefs.left_panel_mode,
             gui.last_left_panel_mode,
-            prefs.gst_device]
+            prefs.gst_device,
+            search_string_cache,
+            search_dia_string_cache,
+        ]
 
     pickle.dump(save, open(user_directory + "/state.p", "wb"))
 
