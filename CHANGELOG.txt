@@ -1,6 +1,11 @@
 
 Changelog-------------------------------------
 
+v5.2.0
+
+ - Improved global search speed
+ - Fixed restore to maximized on app open smoothness
+
 v5.1.4
 
  - Added toggle of automatic artist data downloading
