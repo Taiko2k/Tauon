@@ -4,7 +4,10 @@ Changelog-------------------------------------
 v5.2.0
 
  - Improved global search speed
+ - Added global search filter keywords: composer, year, album
  - Fixed restore to maximized on app open smoothness
+ - Fixed mouse over state when mouse leaves window at non edge
+ - Removed option to disable diacritic mode searching
 
 v5.1.4
 
