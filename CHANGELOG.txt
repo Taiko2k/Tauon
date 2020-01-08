@@ -3,11 +3,15 @@ Changelog-------------------------------------
 
 v5.2.0
 
- - Improved global search speed
  - Added global search filter keywords: composer, year, album
+ - Improved global search speed
+ - Moved various options to config file
+ - Moved "lyrics side info panel" toggle setting to menu
  - Fixed restore to maximized on app open smoothness
  - Fixed mouse over state when mouse leaves window at non edge
  - Removed option to disable diacritic mode searching
+ - Removed search images on Google function
+ - Removed lyrics function "Split Lines"
 
 v5.1.4
 
