@@ -2693,6 +2693,8 @@ def save_prefs():
     cf.update_value("tag-editor-name", prefs.tag_editor_name)
     cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
+    cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
+
     cf.update_value("ui-scale", prefs.scale_want)
     cf.update_value("theme-name", prefs.theme_name)
 
@@ -2732,6 +2734,7 @@ def save_prefs():
     cf.update_value("double-digit-indices", prefs.dd_index)
     cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
     cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
+    cf.update_value("import-auto-sort", prefs.auto_sort)
 
     cf.update_value("encode-output-dir", prefs.custom_encoder_output)
     cf.update_value("add_download_directory", prefs.download_dir1)
@@ -2814,6 +2817,11 @@ def load_prefs():
         prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "picard", "The name of the binary to call.")
 
     cf.br()
+    cf.add_text("[playback]")
+    prefs.playback_follow_cursor = cf.sync_add("bool", "playback-follow-cursor", prefs.playback_follow_cursor, "When advancing, always play the track that is selected")
+
+
+    cf.br()
     cf.add_text("[ui]")
     prefs.scale_want = cf.sync_add("float", "ui-scale", prefs.scale_want, "UI scale factor. Default is 1.0, try increase if using a HiDPI display." )
     prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
@@ -2871,6 +2879,7 @@ def load_prefs():
     prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
     prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
+    prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort, "Automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist on import.")
 
 
     cf.br()
@@ -9740,10 +9749,10 @@ class Menu:
         self.sub_number += 1
         self.subs.append([])
 
-    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None, icon=None, pass_ref_deco=False):
+    def add_to_sub(self, title, sub, func, render_func=None, no_exit=False, pass_ref=False, args=None, icon=None, pass_ref_deco=False, show_test=None):
         if render_func is None:
             render_func = self.deco
-        item = [title, False, func, render_func, no_exit, pass_ref, args, icon, pass_ref_deco]
+        item = [title, False, func, render_func, no_exit, pass_ref, args, icon, pass_ref_deco, show_test]
         self.subs[sub].append(item)
 
     def test_item_active(self, item):
@@ -9956,6 +9965,10 @@ class Menu:
                             break
 
                     for w in range(len(self.subs[self.sub_active])):
+
+                        if len(self.subs[self.sub_active][w]) > 5 and self.subs[self.sub_active][w][9] is not None:
+                            if not self.subs[self.sub_active][w][9](self.reference):
+                                continue
 
                         # Get item colours
                         if len(self.subs[self.sub_active][w]) > 5 and self.subs[self.sub_active][w][8]:
@@ -10812,18 +10825,27 @@ def toggle_lyrics_show(a):
 
 def toggle_side_art_deco():
     colour = colours.menu_text
-    if prefs.show_side_art:
-        line = _("Hide Art box")
+    if prefs.show_side_lyrics_art_panel:
+        line = _("Hide Metadata Panel")
     else:
-        line = _("Show Art Box")
-    if pctl.playing_ready() and pctl.playing_object().lyrics and prefs.show_lyrics_side and not prefs.side_panel_layout == 0:
+        line = _("Show Metadata Panel")
+
+    if gui.combo_mode:
         colour = colours.menu_text_disabled
 
     return [colour, colours.menu_background, line]
 
 
+def lyrics_in_side_show(track_object):
+
+    if gui.combo_mode or not prefs.show_lyrics_side or (prefs.show_lyrics_side and not track_object.lyrics):
+        return False
+    return True
+
+
+
 def toggle_side_art():
-    prefs.show_side_art ^= True
+    prefs.show_side_lyrics_art_panel ^= True
 
 
 def toggle_lyrics_deco(track_object):
@@ -11109,11 +11131,12 @@ def split_lyrics(track_object):
 
 
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-showcase_menu.add_sub("Misc…", 110)
+showcase_menu.add_sub("Misc…", 150)
 showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
 showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
-showcase_menu.add_to_sub(_('Split Lines'), 0, split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
+# showcase_menu.add_to_sub(_('Split Lines'), 0, split_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True, show_test=lyrics_in_side_show)
+showcase_menu.add_to_sub('Toggle art panel', 0, toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show)
 #showcase_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 #center_info_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
@@ -11547,7 +11570,7 @@ def ser_gimage(track_object):
         line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(track_object.artist + " " + track_object.album)
         webbrowser.open(line, new=2, autoraise=True)
 
-picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
+# picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
 
 #picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
 
@@ -19016,15 +19039,15 @@ def toggle_meta_shows_selected(mode=0):
     prefs.meta_shows_selected_always ^= True
 
 
-def toggle_show_playlist_list(mode=0):
-    if mode == 1:
-        return prefs.show_playlist_list
-    prefs.show_playlist_list ^= True
+# def toggle_show_playlist_list(mode=0):
+#     if mode == 1:
+#         return prefs.show_playlist_list
+#     prefs.show_playlist_list ^= True
 
-def toggle_hide_queue(mode=0):
-    if mode == 1:
-        return prefs.hide_queue ^ True
-    prefs.hide_queue ^= True
+# def toggle_hide_queue(mode=0):
+#     if mode == 1:
+#         return prefs.hide_queue ^ True
+#     prefs.hide_queue ^= True
 
 def scale1(mode=0):
 
@@ -19147,10 +19170,10 @@ def toggle_scroll(mode=0):
 #             prefs.end_setting = 'stop'
 
 
-def toggle_playback_follow(mode=0):
-    if mode == 1:
-        return prefs.playback_follow_cursor
-    prefs.playback_follow_cursor ^= True
+# def toggle_playback_follow(mode=0):
+#     if mode == 1:
+#         return prefs.playback_follow_cursor
+#     prefs.playback_follow_cursor ^= True
 
 
 def toggle_hide_bar(mode=0):
@@ -19161,13 +19184,13 @@ def toggle_hide_bar(mode=0):
     show_message("Tip: You can also toggle this from a right-click context menu")
 
 
-def toggle_auto_import_sort(mode=0):
-    if mode == 1:
-        return prefs.auto_sort
-    prefs.auto_sort ^= True
-    if prefs.auto_sort:
-        show_message(
-            "This will automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist when importing.")
+# def toggle_auto_import_sort(mode=0):
+#     if mode == 1:
+#         return prefs.auto_sort
+#     prefs.auto_sort ^= True
+#     if prefs.auto_sort:
+#         show_message(
+#             "This will automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist when importing.")
 
 
 def toggle_append_total_time(mode=0):
@@ -19472,11 +19495,11 @@ config_items.append([_('Add total duration to folder title'), toggle_append_tota
 
 config_items.append(None)
 
-config_items.append([_('Playback follows selected'), toggle_playback_follow])
+# config_items.append([_('Playback follows selected'), toggle_playback_follow])
 
-config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
+# config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
 
-config_items.append([_('Hide column bar'), toggle_hide_bar])
+# config_items.append([_('Hide column bar'), toggle_hide_bar])
 
 # config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
 
@@ -19744,11 +19767,11 @@ class Over:
         # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
         self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, _("Show titles under art"))
+        self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
         y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
         # y += 25 * gui.scale
-        prefs.center_gallery_text = self.toggle_square(x, y, prefs.center_gallery_text, _("Center text"))
+        prefs.center_gallery_text = self.toggle_square(x + round(10 * gui.scale), y, prefs.center_gallery_text, _("Center alignment"))
         y += 25 * gui.scale
         if album_mode_art_size < 160:
             self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
@@ -20087,7 +20110,7 @@ class Over:
             y = y0 - 10 * gui.scale
             y += 30 * gui.scale
             x += 260 * gui.scale
-            prefs.show_side_lyrics_art_panel = self.toggle_square(x, y, prefs.show_side_lyrics_art_panel, _("Show info under side panel lyrics"))
+            # prefs.show_side_lyrics_art_panel = self.toggle_square(x, y, prefs.show_side_lyrics_art_panel, _("Show info under side panel lyrics"))
 
 
         else:
@@ -20167,24 +20190,24 @@ class Over:
                         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
             y += 30 * gui.scale
-            x += 280 * gui.scale
+            x += 320 * gui.scale
 
             ddt.text((x, y), _("Show in context menus:"), colours.grey(100), 11)
             y += 23 * gui.scale
 
-            self.toggle_square(x, y, toggle_wiki, _("Search artist on Wikipedia"))
+            self.toggle_square(x, y, toggle_wiki, _("Wikipedia search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_rym, _("Search artist on Sonemic"))
+            self.toggle_square(x, y, toggle_rym, _("Sonemic search"))
+            # y += 23 * gui.scale
+            # self.toggle_square(x, y, toggle_gimage, _("Google image search"))
             y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_gimage, _("Search images on Google"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_gen, _("Search track on Genius"))
+            self.toggle_square(x, y, toggle_gen, _("Genius search"))
             if discord_allow:
                 y += 23 * gui.scale
-                self.toggle_square(x, y, toggle_show_discord, _("Show playing in Discord"))
+                self.toggle_square(x, y, toggle_show_discord, _("Discord RP"))
 
             #y = self.box_y + 216 * gui.scale
-            x -= 15 * gui.scale
+            x -= 55 * gui.scale
 
             y = y0 + 216 * gui.scale
 
@@ -20658,25 +20681,25 @@ class Over:
         x = x0 + self.item_x_offset + 260 * gui.scale
         y = y0 + 20 * gui.scale
 
-        ddt.text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
+        #ddt.text((x, y), _("Left panel (Queue and artist list)"), colours.grey_blend_bg(100), 12)
 
-        y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
+        #y += 28 * gui.scale
+        #self.toggle_square(x, y, toggle_show_playlist_list, _("Show playlist list in panel"))
 
+        #y += 25 * gui.scale
+        #self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
+
+        #y += 30 * gui.scale
+
+        ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
+        #
         y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_hide_queue, _("Show empty queue in panel"))
+        # self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
+        #
+        # y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
 
-        y += 30 * gui.scale
-
-        ddt.text((x, y), _("Right panel (Metadata and art)"), colours.grey_blend_bg(100), 12)
-
-        y += 28 * gui.scale
-        self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
-
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
-
-        y += 25 * gui.scale
+        #y += 25 * gui.scale
         self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
 
         y += 30 * gui.scale
@@ -21094,7 +21117,8 @@ class Over:
         self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
 
         y += 90 * gui.scale
-        x -= 90 * gui.scale
+        # x -= 90 * gui.scale
+        x = x0 + self.item_x_offset
 
         ddt.text((x, y), _("End of playlist action"), colours.grey_blend_bg(90), 12)
 
@@ -21104,7 +21128,7 @@ class Over:
         self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
         #y += 25
         y -= 25 * gui.scale
-        x += 120 * gui.scale
+        x += 140 * gui.scale
         self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
         y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
@@ -27466,7 +27490,7 @@ class MetaBox:
                 if input.mouse_click:
                     pctl.show_current()
                 if right_click:
-                    center_info_menu.activate(track)
+                    showcase_menu.activate(track)
 
         ddt.rect(border_rect, border_colour, True)
         ddt.rect(art_rect, colours.gallery_background, True)
@@ -30249,7 +30273,7 @@ def save_state():
             prefs.discord_show,
             prefs.min_to_tray,
             prefs.guitar_chords,
-            prefs.playback_follow_cursor,
+            None, #prefs.playback_follow_cursor,
             prefs.art_bg,
             pctl.random_mode,
             pctl.repeat_mode,
@@ -30257,7 +30281,7 @@ def save_state():
             prefs.art_bg_always_blur,
             prefs.failed_artists,
             prefs.artist_list,
-            prefs.auto_sort,
+            None, #prefs.auto_sort,
             prefs.lyrics_enables,
             prefs.fanart_notify,
             prefs.bg_showcase_only,
