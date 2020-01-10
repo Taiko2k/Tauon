@@ -17906,22 +17906,36 @@ def worker1():
                 return direc
         return None
 
+    def get_quoted_from_line(line):
+
+        # e.g extract quoted file name from: 'FILE "01 - Track01.wav" WAVE'
+
+        file_name = ""
+        enable = False
+
+        for cha in line:
+            if not enable and cha == "\"":
+                enable = True
+            elif enable:
+                if cha == "\"":
+                    return file_name
+                file_name += cha
+
+        return file_name
+
+
+
     def add_from_cue(path):
 
         global added
         global master_count
 
-        cued = []
-
-        try:
+        if system != "windows":  # Windows terminal doesn't like unicode
             print("Reading CUE file: " + path)
-        except:
-            print("Error reading path")
 
         try:
 
             try:
-
                 with open(path, encoding="utf_8") as f:
                     content = f.readlines()
             except:
@@ -17941,200 +17955,187 @@ def worker1():
 
             f.close()
 
-            # GET "FILE" LINE
-            count = 0
-            fileline = -1
+            # We want to detect if this is a cue sheet that points to either a single file with subtracks, or multiple
+            # files with mutiple subtracks, but not multiple files that are individual tracks.
+            # i.e, is there really any splitting going on.
 
-            # print(content)
+            files = 0
+            files_with_subtracks = 0
+            subtrack_count = 0
+            for line in content:
+                if line.startswith("FILE "):
+                    files += 1
+                    if subtrack_count > 2:  # A hack way to avoid non-compliant EAC CUE sheet
+                        files_with_subtracks += 1
+                    subtrack_count = 0
+                elif line.strip().startswith("TRACK "):
+                    subtrack_count += 1
+            if subtrack_count > 2:
+                files_with_subtracks += 1
 
-            for i in range(len(content)):
-                if 'FILE "' in content[i]:
-                    count += 1
-                    fileline = i
-                    if count > 1:
-                        return 1
 
-            if fileline == -1:
+            if files == 1:
+                pass
+            elif files_with_subtracks > 1:
+                pass
+            else:
                 return 1
 
-            FILE = content[fileline]
-            # print("FILELINE IS :" + FILE)
+            cue_performer = ""
+            cue_date = ""
+            cue_album = ""
+            cue_genre = ""
+            cue_main_performer = ""
 
-            filename = ""
-            switch = 0
-            for i in range(len(FILE)):
-                if switch == 1 and FILE[i] == '"':
+            cd = []
+            cds = []
+            files = []
+
+            file_name = ""
+            file_path = ""
+
+            in_header = True
+
+            i = -1
+            while True:
+                i += 1
+
+                if i > len(content) - 1:
                     break
 
-                if switch == 1:
-                    filename += FILE[i]
+                line = content[i]
 
-                if FILE[i] == '"':
-                    switch = 1
+                line = line.strip()
 
-            filepath = os.path.dirname(path.replace('\\', '/')) + "/" + filename
+                if in_header:
+                    if line.startswith("REM "):
+                        line = line[4:]
 
-            try:
-                # print(filepath)
-                if os.path.isfile(filepath) is True:
+                    if line.startswith("TITLE \""):
+                        cue_album = get_quoted_from_line(line)
+                    if line.startswith("PERFORMER \""):
+                        cue_performer = get_quoted_from_line(line)
+                    if line.startswith("MAIN PERFORMER \""):
+                        cue_main_performer = get_quoted_from_line(line)
+                    if line.startswith("GENRE \""):
+                        cue_genre = line[5:].strip().replace("\"", "")
+                    if line.startswith("DATE "):
+                        cue_date = line[5:].strip().replace("\"", "")
 
-                    source_track = TrackClass()
-                    source_track.fullpath = filepath
-                    source_track = tag_scan(source_track)
-                    lasttime = source_track.length
-
-                else:
-                    print("CUE: The referenced source file wasn't found. Searching for matching file name...")
-
-                    for item in os.listdir(os.path.dirname(filepath)):
-                        if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[
-                                0] and "cue" not in item.lower():
-                            filepath = os.path.dirname(filepath) + "/" + item
-                            print("CUE: Source found")
-                            break
+                    if line.startswith("FILE "):
+                        in_header = False
                     else:
-                        print("CUE: Source file not found")
-                        return 1
+                        continue
 
-                    source_track = TrackClass()
-                    source_track.fullpath = filepath
-                    source_track = tag_scan(source_track)
-                    lasttime = source_track.length
+                if line.startswith("FILE "):
 
-            except:
-                print("CUE Error: Unable to read file length")
-                return 1
+                    if cd:
+                        cds.append(cd)
+                        cd = []
 
-            # Get length from backend
-            if lasttime == 0 and prefs.backend == 1:
-                lasttime = get_backend_time(filepath)
+                    file_name = get_quoted_from_line(line)
+                    file_path = os.path.join(os.path.dirname(path), file_name)
 
-            LENGTH = 0
-            PERFORMER = ""
-            TITLE = ""
-            START = 0
-            DATE = ""
-            ALBUM = ""
-            GENRE = ""
-            MAIN_PERFORMER = ""
-
-            for LINE in content:
-                if 'TITLE "' in LINE:
-                    ALBUM = LINE[7:len(LINE) - 2]
-
-                if 'PERFORMER "' in LINE:
-                    while LINE[0] != "P":
-                        LINE = LINE[1:]
-
-                    MAIN_PERFORMER = LINE[11:len(LINE) - 2]
-
-                if 'REM DATE' in LINE:
-                    DATE = LINE[9:len(LINE) - 1]
-
-                if 'REM GENRE' in LINE:
-                    GENRE = LINE[10:len(LINE) - 1]
-
-                if 'TRACK ' in LINE:
-                    break
-
-            for LINE in reversed(content):
-                if len(LINE) > 100:
-                    return 1
-                if "INDEX 01 " in LINE:
-                    temp = ""
-                    pos = len(LINE)
-                    pos -= 1
-                    while LINE[pos] != ":":
-                        pos -= 1
-                        if pos < 8:
-                            break
-
-                    START = int(LINE[pos - 2:pos]) + (int(LINE[pos - 5:pos - 3]) * 60)
-                    LENGTH = int(lasttime) - START
-                    lasttime = START
-
-                elif 'PERFORMER "' in LINE:
-                    switch = 0
-                    for i in range(len(LINE)):
-                        if switch == 1 and LINE[i] == '"':
-                            break
-                        if switch == 1:
-                            PERFORMER += LINE[i]
-                        if LINE[i] == '"':
-                            switch = 1
-
-                elif 'TITLE "' in LINE:
-
-                    switch = 0
-                    for i in range(len(LINE)):
-                        if switch == 1 and LINE[i] == '"':
-                            break
-                        if switch == 1:
-                            TITLE += LINE[i]
-                        if LINE[i] == '"':
-                            switch = 1
-
-                elif 'TRACK ' in LINE:
-                    pos = 0
-                    while LINE[pos] != 'K':
-                        pos += 1
-                        if pos > 15:
+                    if not os.path.isfile(file_path):
+                        if files == 1:
+                            print("CUE: The referenced source file wasn't found. Searching for matching file name...")
+                            for item in os.listdir(os.path.dirname(path)):
+                                if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
+                                    if ".cue" not in item.lower():
+                                        file_name = item
+                                        file_path = os.path.join(os.path.dirname(path), file_name)
+                                        print("CUE: Source found")
+                                        break
+                            else:
+                                print("CUE: Source file not found")
+                                return 1
+                        else:
+                            print("CUE: Source file not found")
                             return 1
-                    TN = LINE[pos + 2:pos + 4]
 
-                    TN = int(TN)
-
-                    # try:
-                    #     bitrate = audio.info.bitrate
-                    # except:
-                    #     bitrate = 0
-
-                    if PERFORMER == "":
-                        PERFORMER = MAIN_PERFORMER
+                if line.startswith("TRACK "):
+                    line = line[6:]
+                    if line.endswith("AUDIO"):
+                        line = line[:-5]
 
                     nt = TrackClass()
                     nt.index = master_count
-                    nt.fullpath = filepath.replace('\\', '/')
-                    nt.filename = filename
-                    nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
-                    nt.parent_folder_name = os.path.splitext(os.path.basename(filepath))[0]
-                    nt.file_ext = os.path.splitext(os.path.basename(filepath))[1][1:].upper()
-
-                    nt.album_artist = MAIN_PERFORMER
-                    nt.artist = PERFORMER
-                    nt.title = TITLE
-                    nt.length = LENGTH
-                    nt.genre = GENRE
-                    nt.bitrate = source_track.bitrate
-                    nt.album = ALBUM
-                    nt.date = DATE.replace('"', '')
-                    nt.track_number = TN
-                    nt.start_time = START
+                    master_count += 1
+                    nt.fullpath = file_path
+                    nt.filename = file_name
+                    nt.parent_folder_path = os.path.dirname(file_path.replace('\\', '/'))
+                    nt.parent_folder_name = os.path.splitext(os.path.basename(file_path))[0]
+                    nt.file_ext = os.path.splitext(file_name)[1][1:].upper()
                     nt.is_cue = True
-                    nt.size = 0 #source_track.size
-                    nt.samplerate = source_track.samplerate
-                    if TN == 1:
+
+                    nt.album_artist = cue_main_performer
+                    nt.artist = cue_performer
+                    nt.genre = cue_genre
+                    nt.album = cue_album
+                    nt.date = cue_date.replace('"', '')
+                    nt.track_number = int(line.strip())
+                    if nt.track_number == 1:
                         nt.size = os.path.getsize(nt.fullpath)
 
-                    pctl.master_library[master_count] = nt
+                    while True:
+                        i += 1
+                        if i > len(content) - 1 or content[i].startswith("FILE ") or content[i].strip().startswith("TRACK"):
+                            break
 
-                    cued.append(master_count)
-                    loaded_pathes_cache[filepath.replace('\\', '/')] = master_count
-                    # added.append(master_count)
+                        line = content[i]
+                        line = line.strip()
 
-                    master_count += 1
-                    LENGTH = 0
-                    PERFORMER = ""
-                    TITLE = ""
-                    START = 0
-                    TN = 0
+                        if line.startswith("TITLE"):
+                            nt.title = get_quoted_from_line(line)
+                        if line.startswith("PERFORMER"):
+                            nt.artist = get_quoted_from_line(line)
+                        if line.startswith("INDEX 01 ") and ":" in line:
+                            line = line[9:]
+                            times = line.split(":")
+                            nt.start_time = int(times[0]) * 60 + int(times[1]) + int(times[2]) / 100
 
-            added += reversed(cued)
-            cue_list.append(filepath)
+                    i -= 1
+                    cd.append(nt)
+
+            if cd:
+                cds.append(cd)
+
+
+            for cd in cds:
+
+                last_end = None
+                end_track = TrackClass()
+                end_track.fullpath = cd[-1].fullpath
+                tag_scan(end_track)
+
+                # Remove target track if already imported
+                for i in reversed(range(len(added))):
+                    if pctl.g(added[i]).fullpath == end_track.fullpath:
+                        del added[i]
+
+                # Update with with proper length
+                for track in reversed(cd):
+
+                    if last_end == None:
+                        last_end = end_track.length
+
+                    track.length = last_end - track.start_time
+                    track.samplerate = end_track.samplerate
+                    track.bitrate = end_track.bitrate
+                    last_end = track.start_time
+
+            # Add all tracks for import to playlist
+            for cd in cds:
+                for track in cd:
+                    pctl.master_library[track.index] = track
+                    if track.fullpath not in cue_list:
+                        cue_list.append(track.fullpath)
+                    loaded_pathes_cache[track.fullpath] = track.index
+                    added.append(track.index)
 
         except:
             print("Error in processing CUE file")
-            # raise
+            #raise
 
     def add_file(path, force_scan=False):
         # bm.get("add file start")
@@ -18268,10 +18269,13 @@ def worker1():
 
         if path in loaded_pathes_cache:
             de = loaded_pathes_cache[path]
+
             if pctl.master_library[de].fullpath in cue_list:
-                # bm.get("File has an associated .cue file... Skipping")
+                print("File has an associated .cue file... Skipping")
                 return
+
             added.append(de)
+
             # if gui.auto_play_import:
             #     pctl.jump(copy.deepcopy(de))
             #
@@ -18293,8 +18297,6 @@ def worker1():
         nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
         #nt = tag_scan(nt)
-
-
         if nt.cue_sheet != "":
             cue_scan(nt.cue_sheet, nt)
             del nt
@@ -18303,6 +18305,7 @@ def worker1():
 
             pctl.master_library[master_count] = nt
             added.append(master_count)
+
 
             if prefs.auto_sort or force_scan:
                 tag_scan(nt)
@@ -18668,6 +18671,7 @@ def worker1():
                         break
 
                     loaderCommand = LC_Done
+                    # print("LOAD ORDER")
                     order.tracks = added
 
                     # Double check for cue dupes

@@ -5,10 +5,12 @@ v5.2.0
 
  - Added global search filter keywords: composer, year, album
  - Improved global search speed
+ - Improved CUE sheet compatibility for multiple target file CUE sheets
  - Moved various options to config file
  - Moved "lyrics side info panel" toggle setting to menu
  - Fixed restore to maximized on app open smoothness
  - Fixed mouse over state when mouse leaves window at non edge
+ - Fixed CUE sheet imports with APE files sometimes importing duplicate
  - Removed option to disable diacritic mode searching
  - Removed search images on Google function
  - Removed lyrics function "Split Lines"
