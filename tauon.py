@@ -33401,6 +33401,13 @@ while pctl.running:
             # if filter_box.active:
             #     filter_box.render()
             if gui.preview_artist:
+
+                border = round(4 * gui.scale)
+                ddt.rect((gui.preview_artist_location[0] - border,
+                          gui.preview_artist_location[1] - border,
+                          artist_preview_render.size[0] + border * 2,
+                          artist_preview_render.size[0] + border * 2), (20, 20, 20, 255), True)
+
                 artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
                 if input.mouse_click or right_click or mouse_wheel:
                     gui.preview_artist = ""

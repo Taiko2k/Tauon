@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.2.0
 
  - Added global search filter keywords: composer, year, album
+ - Added border to artist thumbnail hover preview
  - Improved global search speed
  - Improved CUE sheet compatibility for multiple target file CUE sheets
  - Moved various options to config file
