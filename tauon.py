@@ -719,6 +719,7 @@ playlist_hold = False
 selection_stage = 0
 
 shift_selection = []
+shift_id_selection = []
 # Control Variables--------------------------------------------------------------------------
 
 mouse_down = False
@@ -3686,7 +3687,7 @@ class PlayerCtl:
         if prefs.left_panel_mode == "artist list" and gui.lsp and not quiet:
             artist_list_box.locate_artist(pctl.playing_object())
 
-        if folder_list and prefs.left_panel_mode == "folder view" and gui.lsp and not quiet:
+        if folder_list and prefs.left_panel_mode == "folder view" and gui.lsp and not quiet and not tree_view_box.lock_pl:
             tree_view_box.show_track(pctl.playing_object())
 
         return 0
@@ -10562,7 +10563,13 @@ def stem_to_new_playlist(path):
 move_jobs = []
 move_in_progress = False
 
-def move_playing_folder_to_stem(path):
+def move_playing_folder_to_tree_stem(path):
+    move_playing_folder_to_stem(path, pl_id=tree_view_box.get_pl_id())
+
+def move_playing_folder_to_stem(path, pl_id=None):
+
+    if not pl_id:
+        pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
 
     track = pctl.playing_object()
 
@@ -10637,7 +10644,8 @@ def move_playing_folder_to_stem(path):
                 del pl[2][i]
 
     # Find insert location
-    pl = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    pl = pctl.multi_playlist[id_to_pl(pl_id)][2]
+
     matches = []
     insert = 0
 
@@ -10649,22 +10657,10 @@ def move_playing_folder_to_stem(path):
         if pctl.g(item).fullpath.startswith(artist_folder):
             insert = i
 
-    # for i, item in enumerate(pl):
-    #     if pctl.g(item).parent_folder_path == target_base:
-    #         matches.append((i, item))
-    #
-    # if matches:
-    #     for item in matches:
-    #         if pctl.g(item[1]).parent_folder_path.startswith(artist_folder):
-    #             insert = item[0]
-    #             break
-    #     else:
-    #         insert = matches[0][0]
-
     print("The folder to be moved is: " + move_folder)
     load_order = LoadClass()
     load_order.target = os.path.join(artist_folder, track.parent_folder_name)
-    load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+    load_order.playlist = pl_id
     load_order.playlist_position = insert
 
     print(artist_folder)
@@ -10699,7 +10695,8 @@ def re_import3(stem):
 
 def collapse_tree_deco():
 
-    pl_id = pl_to_id(pctl.active_playlist_viewing)
+    pl_id = tree_view_box.get_pl_id()
+
     if tree_view_box.opens.get(pl_id):
         return [colours.menu_text, colours.menu_background, None]
     else:
@@ -10708,12 +10705,22 @@ def collapse_tree_deco():
 def collapse_tree():
     tree_view_box.collapse_all()
 
+def lock_folder_tree():
+
+    if tree_view_box.lock_pl:
+        tree_view_box.lock_pl = None
+    else:
+        tree_view_box.lock_pl = pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
+def lock_folder_tree_deco():
+
+    if tree_view_box.lock_pl:
+        return [colours.menu_text, colours.menu_background, _("Unlock Panel")]
+    else:
+        return [colours.menu_text, colours.menu_background, _("Lock Panel to Playlist")]
+
 folder_tree_stem_menu.add(_('Open Folder'), open_folder_stem, pass_ref=True, icon=folder_icon)
 folder_tree_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
-
-folder_tree_stem_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
-folder_tree_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
-
 
 lightning_menu.add(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon)
 folder_tree_menu.add(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon)
@@ -10721,9 +10728,18 @@ folder_tree_stem_menu.add(_("Filter to New Playlist"), stem_to_new_playlist, pas
 folder_tree_stem_menu.add(_("Rescan Folder"), re_import3, pass_ref=True)
 lightning_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True)
 
-folder_tree_stem_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_stem, pass_ref=True)
+folder_tree_stem_menu.add(_("Move Playing Folder Here"), move_playing_folder_to_tree_stem, pass_ref=True)
 
 
+
+folder_tree_stem_menu.br()
+
+folder_tree_stem_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
+
+
+
+folder_tree_stem_menu.add("lock", lock_folder_tree, lock_folder_tree_deco, show_test=test_shift)
+#folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
 
 gallery_menu.add(_('Open Folder'), open_folder, pass_ref=True, icon=folder_icon)
 
@@ -12408,14 +12424,9 @@ def rescan_deco(pl):
     return [line_colour, colours.menu_background, None]
 
 
-def open_filter_box(pl):
-    filter_box.active = True
-
 extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
-
-#tab_menu.add(_("SORT"), open_filter_box, pass_ref=True)
 
 tab_menu.add_sub(_("Generate…"), 150)
 tab_menu.add_sub(_("Sort…"), 170)
@@ -14680,6 +14691,11 @@ if not snap_mode:
 
 folder_tree_menu.add(_("Add Album to Queue"), add_album_to_queue, pass_ref=True)
 folder_tree_menu.add(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True)
+
+folder_tree_menu.br()
+folder_tree_menu.add(_('Collapse All'), collapse_tree, collapse_tree_deco)
+folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco, show_test=test_shift)
+
 
 def lightning_copy():
     s_copy()
@@ -17500,6 +17516,84 @@ class SearchOverlay:
                 self.searched_text = ""
 
 search_over = SearchOverlay()
+
+
+class MessageBox:
+
+    def __init__(self):
+        pass
+
+    def get_rect(self):
+
+        w1 = ddt.get_text_w(gui.message_text, 15) + 74 * gui.scale
+        w2 = ddt.get_text_w(gui.message_subtext, 12) + 74 * gui.scale
+        w3 = ddt.get_text_w(gui.message_subtext2, 12) + 74 * gui.scale
+        w = max(w1, w2, w3)
+
+        if w < 210 * gui.scale:
+            w = 210 * gui.scale
+
+        h = round(60 * gui.scale)
+        if gui.message_subtext2:
+            h += round(15 * gui.scale)
+
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        return x, y, w, h
+
+    def render(self):
+
+        if input.mouse_click or input.key_return_press or right_click or key_esc_press or input.backspace_press \
+                or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
+
+            if not key_focused:
+                gui.message_box = False
+                gui.update += 1
+                input.key_return_press = False
+
+        x, y, w, h = self.get_rect()
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+                   colours.grey(55), True)
+        ddt.rect_a((x, y), (w, h), colours.message_box_bg, True)
+
+        ddt.text_background_colour = colours.message_box_bg
+
+        if gui.message_mode == 'info':
+            message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'warning':
+            message_warning_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'done':
+            message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'arrow':
+            message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
+        elif gui.message_mode == 'error':
+            message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
+        elif gui.message_mode == 'bubble':
+            message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
+        elif gui.message_mode == 'link':
+            message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
+
+        if gui.message_subtext:
+            ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
+            if gui.message_mode == "bubble" or gui.message_mode == 'link':
+                link_pa = draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext,
+                                           colours.message_box_text, 12)
+                link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
+            else:
+                ddt.text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text,
+                         12)
+
+            if gui.message_subtext2:
+                ddt.text((x + 63 * gui.scale, y + (9 + 42) * gui.scale), gui.message_subtext2, colours.message_box_text,
+                         12)
+
+        else:
+            ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.message_box_text, 15)
+
+
+message_box = MessageBox()
 
 # LOADER----------------------------------------------------------------------
 
@@ -25089,53 +25183,6 @@ class RenamePlaylistBox:
 rename_playlist_box = RenamePlaylistBox()
 
 
-class FilterBox:
-
-    def __init__(self):
-
-        self.x = 300
-        self.y = 300
-        self.active = False
-
-
-    def render(self):
-
-        if not self.active:
-            return
-
-        if gui.level_2_click:
-            input.mouse_click = True
-        gui.level_2_click = False
-
-        rect = [self.x, self.y, 400 * gui.scale, 120 * gui.scale]
-
-        border = 4 * gui.scale
-        rect2 = [rect[0] - border, rect[1] - border, rect[2] + border  * 2, rect[3] + border * 2]
-
-        bg = [60, 40, 80, 255]
-        ddt.text_background_colour = bg
-
-        # Draw background
-        ddt.rect(rect2, [130, 100, 150, 255], True)
-        ddt.rect(rect2, [130, 100, 150, 255], True)
-        ddt.rect(rect, bg, True)
-
-        # Draw text entry
-        # rename_text_area.draw(rect[0] + 10 * gui.scale, rect[1] + 8 * gui.scale, colours.alpha_grey(250),
-        #                       width=350 * gui.scale, font=315)
-        #
-        # # Draw accent
-        # rect2 = [self.x, self.y + rect[3] - 4 * gui.scale, rect[2], 4 * gui.scale]
-        # ddt.rect_r(rect2, [255, 255, 255, 60], True)
-
-        # If enter or click outside of box: save and close
-        if input.key_return_press or (key_esc_press and len(editline) == 0) \
-                or ((input.mouse_click or level_2_right_click) and not coll(rect)):
-            self.active = False
-
-
-filter_box = FilterBox()
-
 
 class PlaylistBox:
 
@@ -26294,6 +26341,8 @@ class TreeView:
         self.tooltip_on = ""
         self.tooltip_timer = Timer(10)
 
+        self.lock_pl = None
+
         # self.bold_colours = ColourGenCache(0.6, 0.7)
 
     def clear_all(self):
@@ -26302,6 +26351,9 @@ class TreeView:
 
     def collapse_all(self):
         pl_id = pl_to_id(pctl.active_playlist_viewing)
+
+        if self.lock_pl:
+            pl_id = self.lock_pl
 
         opens = self.opens.get(pl_id)
         if opens is None:
@@ -26380,12 +26432,18 @@ class TreeView:
 
         self.scroll_positions[pl_id] = scroll_position
 
+    def get_pl_id(self):
+        if self.lock_pl:
+            return self.lock_pl
+        else:
+            return pctl.multi_playlist[pctl.active_playlist_viewing][6]
+
     def render(self, x, y, w, h):
 
         global quick_drag
 
+        pl_id = self.get_pl_id()
 
-        pl_id = pctl.multi_playlist[pctl.active_playlist_viewing][6]
         tree = self.trees.get(pl_id)
 
         # Generate tree data if not done yet
@@ -26510,7 +26568,7 @@ class TreeView:
             # Hold highlight while dragging folder
             if quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
                 if shift_selection:
-                    if pctl.g(default_playlist[shift_selection[0]]).fullpath.startswith(full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
+                    if pctl.g(pctl.multi_playlist[id_to_pl(pl_id)][2][shift_selection[0]]).fullpath.startswith(full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
                         text_colour = (255, 255, 255, 230)
                         if semilight_mode:
                             text_colour = (255, 255, 255, 255)
@@ -26540,7 +26598,7 @@ class TreeView:
                 elif right_click:
 
                     if item[3]:
-                        for p, id in enumerate(default_playlist):
+                        for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                             if pctl.g(id).fullpath.startswith(target):
                                 folder_tree_menu.activate(in_reference=id)
                                 self.menu_selected = full_folder_path
@@ -26656,8 +26714,12 @@ class TreeView:
             yy += spacing
 
 
-        if self.click_drag_source and not point_proximity_test(gui.drag_source_position, mouse_position, 15):
+
+        if self.click_drag_source and not point_proximity_test(gui.drag_source_position, mouse_position, 15) and default_playlist is pctl.multi_playlist[id_to_pl(pl_id)][2]:
             quick_drag = True
+            global playlist_hold
+            playlist_hold = True
+
             self.dragging_name = self.click_drag_source[0]
 
             if "/" in self.dragging_name:
@@ -26665,7 +26727,7 @@ class TreeView:
 
             shift_selection.clear()
             set_drag_source()
-            for p, id in enumerate(default_playlist):
+            for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)][2]):
                 if pctl.g(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
                     shift_selection.append(p)
             self.click_drag_source = None
@@ -31295,7 +31357,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or filter_box.active) and not gui.message_box:
+        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -31795,8 +31857,9 @@ while pctl.running:
         gui.cursor_want = 0
 
         gui.layer_focus = 0
-        if filter_box.active:
-            gui.layer_focus = 1
+
+        if input.mouse_click or mouse_wheel or right_click:
+            mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
 
         if input.mouse_click:
             n_click_time = time.time()
@@ -31804,8 +31867,10 @@ while pctl.running:
                 d_mouse_click = True
             click_time = n_click_time
 
-        if input.mouse_click or mouse_wheel or right_click:
-            mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+            # Don't register bottom level click when closing message box
+            if gui.message_box and pref_box.enabled and not key_focused and not coll(message_box.get_rect()):
+                input.mouse_click = False
+                gui.message_box = False
 
         # Enable the garbage collecter (since we disabled it during startup)
         if ggc > 0:
@@ -32105,6 +32170,8 @@ while pctl.running:
 
                                 # Quick drag and drop
                                 if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
+
+                                    print("DROP")
 
                                     info = get_album_info(album_dex[album_on])
                                     if info[1]:
@@ -33398,8 +33465,6 @@ while pctl.running:
             if gui.rename_playlist_box:
                 rename_playlist_box.render()
 
-            # if filter_box.active:
-            #     filter_box.render()
             if gui.preview_artist:
 
                 border = round(4 * gui.scale)
@@ -34004,63 +34069,7 @@ while pctl.running:
                 gui.level_2_click = False
 
             if gui.message_box:
-                if input.mouse_click or input.key_return_press or right_click or key_esc_press or input.backspace_press \
-                        or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
-
-                    if not key_focused:
-                        gui.message_box = False
-                        gui.update += 1
-                        input.key_return_press = False
-
-                w1 = ddt.get_text_w(gui.message_text, 15) + 74 * gui.scale
-                w2 = ddt.get_text_w(gui.message_subtext, 12) + 74 * gui.scale
-                w3 = ddt.get_text_w(gui.message_subtext2, 12) + 74 * gui.scale
-                w = max(w1, w2, w3)
-
-                if w < 210 * gui.scale:
-                    w = 210 * gui.scale
-
-                h = round(60 * gui.scale)
-                if gui.message_subtext2:
-                    h += round(15 * gui.scale)
-
-                x = int(window_size[0] / 2) - int(w / 2)
-                y = int(window_size[1] / 2) - int(h / 2)
-
-                ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
-                          colours.grey(55), True)
-                ddt.rect_a((x, y), (w, h), colours.message_box_bg, True)
-
-                ddt.text_background_colour = colours.message_box_bg
-
-                if gui.message_mode == 'info':
-                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'warning':
-                    message_warning_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'done':
-                    message_tick_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'arrow':
-                    message_arrow_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_info_icon.h / 2) - 1)
-                elif gui.message_mode == 'error':
-                    message_error_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_error_icon.h / 2) - 1)
-                elif gui.message_mode == 'bubble':
-                    message_bubble_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
-                elif gui.message_mode == 'link':
-                    message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(message_bubble_icon.h / 2) - 1)
-
-                if gui.message_subtext:
-                    ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, colours.message_box_text, 15)
-                    if gui.message_mode == "bubble" or gui.message_mode == 'link':
-                        link_pa = draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
-                        link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
-                    else:
-                        ddt.text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, colours.message_box_text, 12)
-
-                    if gui.message_subtext2:
-                        ddt.text((x + 63 * gui.scale, y + (9 + 42) * gui.scale), gui.message_subtext2, colours.message_box_text, 12)
-
-                else:
-                    ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, colours.message_box_text, 15)
+                message_box.render()
 
             # SEARCH
             # if key_ctrl_down and key_v_press:

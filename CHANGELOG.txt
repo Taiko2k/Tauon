@@ -5,6 +5,7 @@ v5.2.0
 
  - Added global search filter keywords: composer, year, album
  - Added border to artist thumbnail hover preview
+ - Added "lock folder tree to playlist" hidden menu option
  - Improved global search speed
  - Improved CUE sheet compatibility for multiple target file CUE sheets
  - Moved various options to config file
