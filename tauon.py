@@ -12303,13 +12303,26 @@ def year_sort(pl):
     plt = []
     pl2 = []
     artist = ""
+    album_artist = ""
 
     p = 0
     while p < len(playlist):
-        if get_object(playlist[p]).artist != artist:
-            artist = get_object(playlist[p]).artist
-            pl2 += year_s(plt)
-            plt = []
+
+        track = get_object(playlist[p])
+
+        if track.artist != artist:
+           if album_artist and track.album_artist and album_artist == track.album_artist:
+               pass
+           elif len(artist) > 5 and artist.lower() in track.parent_folder_name.lower():
+               pass
+           else:
+                artist = track.artist
+                pl2 += year_s(plt)
+                plt = []
+
+
+        if track.album_artist:
+            album_artist = track.album_artist
 
         if p > len(playlist) - 1:
             break
