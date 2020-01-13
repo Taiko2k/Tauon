@@ -8,6 +8,7 @@ v5.2.0
  - Added "lock folder tree to playlist" hidden menu option
  - Improved global search speed
  - Improved CUE sheet compatibility for multiple target file CUE sheets
+ - Improved "sort year per artist" function to consider album-artist tag
  - Moved various options to config file
  - Moved "lyrics side info panel" toggle setting to menu
  - Fixed restore to maximized on app open smoothness
