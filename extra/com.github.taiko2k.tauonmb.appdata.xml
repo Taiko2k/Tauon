@@ -56,12 +56,12 @@
 
   <releases>
 
-    <release version="5.1.4" date="2019-12-21">
+    <release version="5.2.0" date="2020-01-14">
       <description>
         <ul>
-          <li>Improved control over artist data downloading</li>
-          <li>Fixed possible crash when changing GStreamer output setting</li>
-          <li>Fixed various UI bugs</li>
+          <li>Improved search function speed</li>
+          <li>Improved CUE sheet compatibility</li>
+          <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
     </release>

@@ -4,7 +4,7 @@
 
 # Tauon Music Box
 
-# Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2020, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18514,6 +18514,8 @@ def worker1():
                 else:
                     break
 
+            album_artist_dict.clear()
+
         artist_list_box.worker()
 
         if prefs.auto_extract and prefs.monitor_downloads:
@@ -26054,7 +26056,7 @@ class ArtistList:
         #     if path:
         #         set_artist_preview(path, artist, round(thumb_x + self.thumb_size), round(y))
         fields.add(rect)
-        if coll(rect):
+        if coll(rect) and is_level_zero(True):
             self.hover_any = True
 
             hover_delay = 0.5
@@ -32512,7 +32514,7 @@ while pctl.running:
                                     pass
                                 else:
                                     i = album_dex[album_on]
-                                    if pctl.master_library[default_playlist[i]].album_artist != "":
+                                    if pctl.master_library[default_playlist[i]].album_artist:
                                         album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
                                     else:
                                         while i < len(default_playlist) - 1:
@@ -32817,6 +32819,7 @@ while pctl.running:
                         if not load_orders:
                             loading_in_progress = False
                             tauon.worker_save_state = True
+                            album_artist_dict.clear()
                         break
                 gui.auto_play_import = False
 
