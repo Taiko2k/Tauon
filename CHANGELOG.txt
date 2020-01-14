@@ -14,6 +14,7 @@ v5.2.0
  - Fixed restore to maximized on app open smoothness
  - Fixed mouse over state when mouse leaves window at non edge
  - Fixed CUE sheet imports with APE files sometimes importing duplicate
+ - Fixed a bug with artist titles sometimes not appearing in gallery
  - Removed option to disable diacritic mode searching
  - Removed search images on Google function
  - Removed lyrics function "Split Lines"
