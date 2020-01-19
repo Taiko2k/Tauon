@@ -1,12 +1,12 @@
-# Language fr translations for TauonMusicBox package.
-# Copyright (C) 2019 ORGANIZATION
-# brunob <bruno@eliaz.fr>, 2019.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-01-09 18:36+1300\n"
-"PO-Revision-Date: 2020-01-19 13:25+0100\n"
+"PO-Revision-Date: 2020-01-19 14:50+0100\n"
 "Last-Translator: b_b <bruno@eliaz.fr>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -118,11 +118,11 @@ msgstr "Albums aléatoires"
 
 #: tauon.py:10449
 msgid "Make Large Size"
-msgstr ""
+msgstr "Grand format"
 
 #: tauon.py:10451
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Format compact"
 
 #: tauon.py:10486
 msgid "Close Panel"
@@ -130,7 +130,7 @@ msgstr "Fermer le panneau"
 
 #: tauon.py:10487
 msgid "Make Large"
-msgstr ""
+msgstr "Afficher en grand"
 
 #: tauon.py:10711 tauon.py:10712 tauon.py:10728 tauon.py:13681 tauon.py:14664
 msgid "Open Folder"
@@ -262,7 +262,7 @@ msgstr "Pochette téléchargée depuis MusicBrainz"
 
 #: tauon.py:11379
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Aucune pochette correspondante trouvée."
 
 #: tauon.py:11475
 msgid "Image removal failed."
@@ -326,7 +326,7 @@ msgstr "Trier..."
 
 #: tauon.py:12422
 msgid "From Current…"
-msgstr ""
+msgstr "À partir de l'actuel..."
 
 #: tauon.py:12427
 msgid "Sort by Filepath"
@@ -536,7 +536,7 @@ msgstr "Encoder le dossier"
 
 #: tauon.py:14716
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Réinitialiser le nombre d'écoutes"
 
 #: tauon.py:14722
 msgid "Copy \"Artist - Album\""
@@ -765,7 +765,7 @@ msgstr ""
 
 #: tauon.py:15970
 msgid "Go To Playing"
-msgstr ""
+msgstr "Aller à l'élément en cours de lecture"
 
 #: tauon.py:16117
 msgid "ListenBrainz is Paused"
@@ -887,7 +887,7 @@ msgstr "Flou"
 
 #: tauon.py:19748
 msgid "Showcase only"
-msgstr ""
+msgstr "Mode présentation seulement"
 
 #: tauon.py:19751
 msgid "Always center"
@@ -923,11 +923,11 @@ msgstr "Centrer le texte"
 
 #: tauon.py:19777
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Espacement fin"
 
 #: tauon.py:19781
 msgid "Gallery art size"
-msgstr ""
+msgstr "Taille des pochettes"
 
 #. Limited width. Max 8 chars.
 #: tauon.py:19794 tauon.py:20107 tauon.py:20949 tauon.py:28565
@@ -1277,7 +1277,7 @@ msgstr "Visualisation dans le panneau supérieur"
 
 #: tauon.py:20677
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Visualisation en mode présentation"
 
 #: tauon.py:20694
 msgid "Metadata side panel"
