@@ -91,6 +91,7 @@ parts:
       cd $SNAPCRAFT_PART_INSTALL/usr/lib/$SNAPCRAFT_ARCH_TRIPLET
       ln -sf libSDL2-2.0.so.0 libSDL2-2.0.so
       ln -sf libSDL2_image-2.0.so.0 libSDL2_image-2.0.so
+      
   tauon:
     plugin: dump
     source: .
@@ -98,6 +99,9 @@ parts:
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
+      chmod +x compile-translations.py
+      python3 compile-translations.py
+      
   alsa-mixin:
     plugin: nil
     source: https://github.com/diddlesnaps/snapcraft-alsa.git
