@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-01-09 18:36+1300\n"
-"PO-Revision-Date: 2020-01-19 14:50+0100\n"
+"PO-Revision-Date: 2020-01-19 19:46+0100\n"
 "Last-Translator: b_b <bruno@eliaz.fr>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -346,7 +346,7 @@ msgstr "Coller"
 
 #: tauon.py:12441
 msgid "Append Playing"
-msgstr ""
+msgstr "Ajouter l'élément en cours de lecture"
 
 #: tauon.py:12446
 msgid "Misc…"
@@ -761,7 +761,7 @@ msgstr "Recherche générale"
 
 #: tauon.py:15969
 msgid "Locate Artist"
-msgstr ""
+msgstr "Trouver l'artiste"
 
 #: tauon.py:15970
 msgid "Go To Playing"
@@ -1045,11 +1045,11 @@ msgstr "Utilises du scrapping. À utiliser à votre gré."
 
 #: tauon.py:20101
 msgid "Tip: The order enabled will be the order searched."
-msgstr ""
+msgstr "Astuce : l'ordre défini sera utilisé lors de la recherche"
 
 #: tauon.py:20121
 msgid "Serve webpage for broadcast metadata"
-msgstr ""
+msgstr "Diffuser les métadonnées via une page web"
 
 #: tauon.py:20127
 msgid "Enable auto fetch artist data"
@@ -1138,13 +1138,12 @@ msgid "Import KOEL music"
 msgstr "Importer la musique depuis KOEL"
 
 #: tauon.py:20381
-#, fuzzy
 msgid "Fanart.tv can be used for sourcing of artist images"
-msgstr "Discogs peut être utilisé comme source d'images pour les artistes."
+msgstr "Fanart.tv peut être utilisé comme source d'images pour les artistes"
 
 #: tauon.py:20385
 msgid "and cover art."
-msgstr ""
+msgstr "et les pochettes."
 
 #. Limited space available. Limit 55 chars.
 #: tauon.py:20390 tauon.py:25608
@@ -1153,11 +1152,11 @@ msgstr "Contributions bienvenues sur https://fanart.tv"
 
 #: tauon.py:20395
 msgid "Cover art (Manual only)"
-msgstr ""
+msgstr "Pochette (manuel)"
 
 #: tauon.py:20397
 msgid "Artist images (May be automatic)"
-msgstr ""
+msgstr "Image de l'artiste (peut être automatisé)"
 
 #: tauon.py:20404
 msgid "Discogs can be used for sourcing artist images."
@@ -1220,8 +1219,9 @@ msgid "Clear friend loves"
 msgstr "Vider les favoris des ami⋅e⋅s"
 
 #: tauon.py:20516 tauon.py:20549
+#, fuzzy
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Afficher les séparateurs"
 
 #: tauon.py:20581
 msgid "Output codec setting:"
@@ -1310,7 +1310,7 @@ msgstr ""
 
 #: tauon.py:20836
 msgid "Target playlist:   "
-msgstr ""
+msgstr "Liste de lecture cible : "
 
 #: tauon.py:20864
 msgid "Rows"
@@ -1322,11 +1322,11 @@ msgstr "Colonnes"
 
 #: tauon.py:20873
 msgid "Cascade style"
-msgstr ""
+msgstr "Styles en cascade"
 
 #: tauon.py:20875
 msgid "Use padding"
-msgstr ""
+msgstr "Espacer"
 
 #: tauon.py:20877
 msgid "Include text"
@@ -1335,7 +1335,7 @@ msgstr "Inclure le texte"
 #. Limited width. Max 13 chars.
 #: tauon.py:20883
 msgid "Randomise BG"
-msgstr ""
+msgstr "Fond aléatoire"
 
 #. Limited width. Max 9 chars.
 #: tauon.py:20916
@@ -1535,11 +1535,11 @@ msgstr "Ajouter à une nouvelle liste de lecture"
 
 #: tauon.py:26960
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Annuler l'arrêt automatique"
 
 #: tauon.py:26962
 msgid "Auto-Stop"
-msgstr ""
+msgstr "Arrêt automatique"
 
 #: tauon.py:27078
 msgid "Queue"
@@ -1552,7 +1552,7 @@ msgstr "Recherche en cours..."
 
 #: tauon.py:27851
 msgid "Cooldown..."
-msgstr ""
+msgstr "Tranquille..."
 
 #: tauon.py:27866
 #, fuzzy
@@ -1571,7 +1571,7 @@ msgstr "Aucune biographie trouvée"
 
 #: tauon.py:28163
 msgid "Download Artist Data"
-msgstr ""
+msgstr "Télécharger les données de l'artiste"
 
 #: tauon.py:28164
 #, fuzzy
@@ -1649,7 +1649,7 @@ msgstr "Paroles"
 
 #: tauon.py:33804
 msgid "Folder Modification"
-msgstr ""
+msgstr "Modifier le répertoire"
 
 #: tauon.py:33819
 msgid "Trash"
@@ -1657,7 +1657,7 @@ msgstr "Poubelle"
 
 #: tauon.py:33833
 msgid "Raise"
-msgstr ""
+msgstr "Remonter"
 
 #: tauon.py:33878
 msgid "Open HTTP Audio Stream"
