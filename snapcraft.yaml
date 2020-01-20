@@ -99,10 +99,11 @@ parts:
     build-packages:
       - gettext
     override-build: |
-      snapcraftctl build
-      chmod +x tauon.py
       chmod +x compile-translations.py
       python3 compile-translations.py
+      snapcraftctl build
+      chmod +x tauon.py
+
       
   alsa-mixin:
     plugin: nil
