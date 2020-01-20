@@ -97,7 +97,7 @@ parts:
     source: .
     parse-info: [extra/com.github.taiko2k.tauonmb.appdata.xml]
     build-packages:
-      - gettext-base
+      - gettext
     override-build: |
       snapcraftctl build
       chmod +x tauon.py
