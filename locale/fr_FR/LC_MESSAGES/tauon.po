@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2020-01-09 18:36+1300\n"
-"PO-Revision-Date: 2020-01-19 19:46+0100\n"
+"PO-Revision-Date: 2020-01-20 10:33+0100\n"
 "Last-Translator: b_b <bruno@eliaz.fr>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -672,8 +672,9 @@ msgid "Comment"
 msgstr "Commentaire"
 
 #: tauon.py:15182
+#, fuzzy
 msgid "Starline"
-msgstr ""
+msgstr "Ligne de lectures"
 
 #: tauon.py:15185 tauon.py:26806
 msgid "Remove This"
@@ -1083,7 +1084,7 @@ msgstr "Paramètres des paroles..."
 #. Limited width. Max 19 chars.
 #: tauon.py:20160
 msgid "Chart generator..."
-msgstr ""
+msgstr "Planches de contact"
 
 #: tauon.py:20195
 msgid "Show in context menus:"
@@ -1103,7 +1104,7 @@ msgstr "Rechercher sur Genius"
 
 #: tauon.py:20207
 msgid "Discord RP"
-msgstr ""
+msgstr "Discord RP"
 
 #. Limited width. Max 19 chars.
 #: tauon.py:20215
@@ -1269,7 +1270,7 @@ msgstr "Divers"
 
 #: tauon.py:20670
 msgid "Force subpixel text rendering"
-msgstr ""
+msgstr "Forcer le rendu de texte en sous-pixels"
 
 #: tauon.py:20675
 msgid "Top-panel visualisation"
@@ -1306,7 +1307,7 @@ msgstr "Crédits"
 
 #: tauon.py:20833
 msgid "Chart Grid Generator"
-msgstr ""
+msgstr "Générateur de planches de contact"
 
 #: tauon.py:20836
 msgid "Target playlist:   "
@@ -1417,8 +1418,9 @@ msgid "Copied text to clipboard"
 msgstr "Texte copié dans le presse-papiers"
 
 #: tauon.py:22708
+#, fuzzy
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Lecture, RC : aller à l'élément en cours"
 
 #: tauon.py:22736
 msgid "Pause"
@@ -1426,7 +1428,7 @@ msgstr "Pause"
 
 #: tauon.py:22753
 msgid "Stop, RC: Toggle auto-stop"
-msgstr ""
+msgstr "Arrêter, RC : activer/ l'arrêt automatique"
 
 #. Shuffle set to on
 #: tauon.py:22776
@@ -1452,7 +1454,7 @@ msgstr "Répétition désactivée"
 
 #: tauon.py:22818
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Retour, RC : basculer la répétition, MC : annuler"
 
 #: tauon.py:22874 tauon.py:22876
 msgid "Shuffle"
@@ -1494,8 +1496,9 @@ msgid "No artists in playlist"
 msgstr "Aucun artiste dans la liste de lecture"
 
 #: tauon.py:26211
+#, fuzzy
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Seuil d'artistes non atteind"
 
 #: tauon.py:26213
 msgid "Loading Artist List..."
@@ -1584,11 +1587,11 @@ msgstr "En cours"
 
 #: tauon.py:28638
 msgid "Prefer synced"
-msgstr ""
+msgstr "Mode synchronisé"
 
 #: tauon.py:28640
 msgid "Prefer static"
-msgstr ""
+msgstr "Mode statique"
 
 #: tauon.py:28651
 msgid "Auto-Scroll"
