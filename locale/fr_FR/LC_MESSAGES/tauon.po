@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2020-01-09 18:36+1300\n"
-"PO-Revision-Date: 2020-01-20 10:33+0100\n"
+"POT-Creation-Date: 2020-01-21 17:57+0100\n"
+"PO-Revision-Date: 2020-01-21 18:18+0100\n"
 "Last-Translator: b_b <bruno@eliaz.fr>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -17,935 +17,955 @@ msgstr ""
 "X-Generator: Poedit 1.8.7.1\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: tauon.py:1577 tauon.py:1579
+#: tauon.py:1578 tauon.py:1580
 msgid "No artist image found."
 msgstr "Aucune image trouvée pour l'artiste"
 
-#: tauon.py:1579
+#: tauon.py:1580
 msgid "No providers are enabled in settings!"
 msgstr "Aucune source définie dans les paramètres !"
 
-#: tauon.py:4803
+#: tauon.py:4804
 msgid "End of playlist"
 msgstr "Fin de la liste de lecture"
 
-#: tauon.py:4847
+#: tauon.py:4848
 msgid "Once authorised click the 'done' button."
 msgstr "Cliquez sur le bouton 'Terminé' après avoir autorisé."
 
-#: tauon.py:4847
+#: tauon.py:4848
 msgid "Web auth page opened"
 msgstr "Page d'identification ouverte"
 
-#: tauon.py:4855
+#: tauon.py:4856
 msgid "You need to login first"
 msgstr "Vous devez d'abord vous identifier"
 
-#: tauon.py:5082
+#: tauon.py:5083
 msgid "Getting friend data..."
 msgstr "Chargement des données des ami⋅e⋅s..."
 
-#: tauon.py:5082
+#: tauon.py:5083
 msgid "This may take a very long time."
 msgstr "Cela peut prendre un certain temps."
 
-#: tauon.py:5630
+#: tauon.py:5631
 msgid "Error connecting to PLEX server"
 msgstr "Erreur de connexion au serveur PLEX"
 
 #. Menu entry: A side panel view layout.
-#: tauon.py:10167
+#: tauon.py:10168
 msgid "Playlists + Queue"
 msgstr "Liste de lecture + File d'attente"
 
 #. Menu entry: Side panel view layout showing a list of artists with thumbnails.
-#: tauon.py:10169
+#: tauon.py:10170
 msgid "Artist List"
 msgstr "Liste d'artistes"
 
 #. Menu entry: A side panel view layout. Alternative name: Folder Tree.
-#: tauon.py:10171
+#: tauon.py:10172
 msgid "Folder Navigator"
 msgstr "Explorateur de dossiers"
 
-#: tauon.py:10232
+#: tauon.py:10233
 msgid "Track Renaming"
 msgstr "Renommer la piste"
 
-#: tauon.py:10235 tauon.py:33806
+#: tauon.py:10236 tauon.py:33934
 msgid "Default"
 msgstr "Par défaut"
 
-#: tauon.py:10259
+#: tauon.py:10260
 msgid "BEFORE"
 msgstr "AVANT"
 
-#: tauon.py:10263
+#: tauon.py:10264
 msgid "AFTER"
 msgstr "APRÈS"
 
-#: tauon.py:10351
+#: tauon.py:10352
 msgid "Rename complete."
 msgstr "Rennomage terminé."
 
-#: tauon.py:10352
+#: tauon.py:10353
 msgid " filenames were written."
 msgstr " fichiers renommés."
 
-#: tauon.py:10386
+#: tauon.py:10387
 msgid "Repeat OFF"
 msgstr "Répétition désactivée"
 
-#: tauon.py:10387
+#: tauon.py:10388
 msgid "Repeat Track"
 msgstr "Répéter la piste"
 
-#: tauon.py:10388
+#: tauon.py:10389
 msgid "Repeat Album"
 msgstr "Répéter l'album"
 
-#: tauon.py:10422
+#: tauon.py:10423
 msgid "Shuffle OFF"
 msgstr "Aléatoire désactivé"
 
-#: tauon.py:10423
+#: tauon.py:10424
 msgid "Shuffle Tracks"
 msgstr "Pistes aléatoires"
 
-#: tauon.py:10424
+#: tauon.py:10425
 msgid "Random Albums"
 msgstr "Albums aléatoires"
 
-#: tauon.py:10449
+#: tauon.py:10450
 msgid "Make Large Size"
 msgstr "Grand format"
 
-#: tauon.py:10451
+#: tauon.py:10452
 msgid "Make Compact Size"
 msgstr "Format compact"
 
-#: tauon.py:10486
+#: tauon.py:10487
 msgid "Close Panel"
 msgstr "Fermer le panneau"
 
-#: tauon.py:10487
+#: tauon.py:10488
 msgid "Make Large"
 msgstr "Afficher en grand"
 
-#: tauon.py:10711 tauon.py:10712 tauon.py:10728 tauon.py:13681 tauon.py:14664
+#: tauon.py:10718
+msgid "Unlock Panel"
+msgstr "Détacher le panneau"
+
+#: tauon.py:10720
+msgid "Lock Panel to Playlist"
+msgstr "Attacher le panneau à la liste de lecture"
+
+#: tauon.py:10722 tauon.py:10723 tauon.py:10744 tauon.py:13705 tauon.py:14688
 msgid "Open Folder"
 msgstr "Ouvrir le dossier"
 
-#: tauon.py:10714 tauon.py:10715
-msgid "Collapse All"
-msgstr "Tout replier"
-
-#: tauon.py:10718 tauon.py:10719 tauon.py:10720 tauon.py:25528
+#: tauon.py:10725 tauon.py:10726 tauon.py:10727 tauon.py:25630
 msgid "Filter to New Playlist"
 msgstr "Placer dans une nouvelle liste de lecture"
 
-#: tauon.py:10721 tauon.py:12438
+#: tauon.py:10728 tauon.py:12462
 msgid "Rescan Folder"
 msgstr "Réanalyser le dossier"
 
-#: tauon.py:10722 tauon.py:10724
+#: tauon.py:10729 tauon.py:10731
 msgid "Move Playing Folder Here"
 msgstr "Déplacer le dossier en cours de lecture ici"
 
-#: tauon.py:10730
+#: tauon.py:10737 tauon.py:14709
+msgid "Collapse All"
+msgstr "Tout replier"
+
+#: tauon.py:10746
 msgid "Show in Playlist"
 msgstr "Afficher dans la liste de lecture"
 
-#: tauon.py:10806 tauon.py:14669 tauon.py:14681
+#: tauon.py:10822 tauon.py:14693 tauon.py:14705
 msgid "Add Album to Queue"
 msgstr "Ajouter l'album à la file d'attente"
 
-#: tauon.py:10807 tauon.py:14670 tauon.py:14682
+#: tauon.py:10823 tauon.py:14694 tauon.py:14706
 msgid "Enqueue Album Next"
 msgstr "Ajouter l'album à la file d'attente"
 
-#: tauon.py:10819
+#: tauon.py:10835
 msgid "Cancel"
 msgstr "Annuler"
 
-#: tauon.py:10829
+#: tauon.py:10845
 msgid "Hide Metadata Panel"
 msgstr "Masquer le panneau des métadonnées"
 
-#: tauon.py:10831
+#: tauon.py:10847
 msgid "Show Metadata Panel"
 msgstr "Afficher le panneau des métadonnées"
 
-#: tauon.py:10857 tauon.py:10867 tauon.py:10875
+#: tauon.py:10873 tauon.py:10883 tauon.py:10891
 msgid "Hide Lyrics"
 msgstr "Masquer les paroles"
 
-#: tauon.py:10859 tauon.py:10869 tauon.py:10877
+#: tauon.py:10875 tauon.py:10885 tauon.py:10893
 msgid "Show Lyrics"
 msgstr "Afficher les paroles"
 
-#: tauon.py:10891 tauon.py:10902
+#: tauon.py:10907 tauon.py:10918
 msgid "No lyrics for this track"
 msgstr "Pas de paroles pour cette piste"
 
-#: tauon.py:10911
+#: tauon.py:10927
 msgid "There are no lyric sources enabled."
 msgstr "Aucune source activée pour les paroles."
 
-#: tauon.py:10920
+#: tauon.py:10936
 msgid "Let's be polite and try later."
 msgstr "Soyons sympa et essayons plus tard."
 
-#: tauon.py:10937
+#: tauon.py:10953
 msgid "Searching..."
 msgstr "Recherche en cours..."
 
-#: tauon.py:10988
+#: tauon.py:11004
 msgid "No lyrics for this track were found"
 msgstr "Aucune parole trouvée pour cette piste"
 
-#: tauon.py:11048 tauon.py:11143 tauon.py:11577
+#: tauon.py:11064 tauon.py:11159 tauon.py:11593
 msgid "Search for Lyrics"
 msgstr "Rechercher les paroles"
 
-#: tauon.py:11060
+#: tauon.py:11076
 msgid "Search GuitarParty"
 msgstr "Rerchercher sur GuitarParty"
 
-#: tauon.py:11095
+#: tauon.py:11111
 msgid "Paste Chord Lyrics"
 msgstr "Coller les partitions"
 
-#: tauon.py:11096
+#: tauon.py:11112
 msgid "Clear Chord Lyrics"
 msgstr "Effacer les partitions"
 
-#: tauon.py:11133 tauon.py:11144 tauon.py:11578
+#: tauon.py:11149 tauon.py:11160 tauon.py:11594
 msgid "Toggle Lyrics"
 msgstr "Afficher/Masquer les paroles"
 
-#: tauon.py:11135
+#: tauon.py:11151
 msgid "Paste Lyrics"
 msgstr "Coller les paroles"
 
-#: tauon.py:11136
+#: tauon.py:11152
 msgid "Copy Lyrics"
 msgstr "Copier les paroles"
 
-#: tauon.py:11137
+#: tauon.py:11153
 msgid "Clear Lyrics"
 msgstr "Effacer les paroles"
 
-#: tauon.py:11237
+#: tauon.py:11253
 msgid "Open Image"
 msgstr "Ouvrir l'image"
 
-#: tauon.py:11261
+#: tauon.py:11277
 msgid "Previous"
 msgstr "Précédent"
 
-#: tauon.py:11264
+#: tauon.py:11280
 msgid "Extract Image"
 msgstr "Extraire l'image"
 
-#: tauon.py:11285
+#: tauon.py:11301
 msgid "Looking up MusicBrainz ID..."
 msgstr "Recherche de l'ID  MusicBrainz..."
 
-#: tauon.py:11347
+#: tauon.py:11363
 msgid "Cover art downloaded from fanart.tv"
 msgstr "Pochette téléchargée depuis fanart.tv"
 
-#: tauon.py:11368
+#: tauon.py:11384
 msgid "Cover art downloaded from MusicBrainz"
 msgstr "Pochette téléchargée depuis MusicBrainz"
 
-#: tauon.py:11379
+#: tauon.py:11395
 msgid "Matching cover art or ID could not be found."
 msgstr "Aucune pochette correspondante trouvée."
 
-#: tauon.py:11475
+#: tauon.py:11491
 msgid "Image removal failed."
 msgstr "La suppression de l'image a échoué."
 
-#: tauon.py:11479
+#: tauon.py:11495
 msgid "Processed one FLAC files"
 msgstr "Un fichier FLAC traîté"
 
-#: tauon.py:11481
+#: tauon.py:11497
 msgid "Deleted embedded picture from file"
 msgstr "Supprimer la pochette des métadonnées du fichier"
 
-#: tauon.py:11512 tauon.py:11519
+#: tauon.py:11528 tauon.py:11535
 msgid "Delete Image File"
 msgstr "Supprimer l'image de la pochette"
 
-#: tauon.py:11527
+#: tauon.py:11543
 msgid "Delete Embedded | Folder"
 msgstr "Supprimer l'image intégrée | Dossier"
 
-#: tauon.py:11529
+#: tauon.py:11545
 msgid "Delete Embedded | Track"
 msgstr "Supprimer l'image intégrée | Piste"
 
-#: tauon.py:11549
+#: tauon.py:11565
 msgid "Quick-Fetch Cover Art"
 msgstr "Récupération rapide de la pochette"
 
-#: tauon.py:11793 tauon.py:33814
+#: tauon.py:11809 tauon.py:33942
 msgid "Rename"
 msgstr "Renommer"
 
-#: tauon.py:11799
+#: tauon.py:11815
 msgid "Unlock"
 msgstr "Déverrouiller"
 
-#: tauon.py:11801 tauon.py:11834
+#: tauon.py:11817 tauon.py:11850
 msgid "Lock"
 msgstr "Vérrouiller"
 
-#: tauon.py:11970 tauon.py:14935 tauon.py:20452 tauon.py:20525
+#: tauon.py:11986 tauon.py:14964 tauon.py:20585 tauon.py:20656
 msgid "Clear"
 msgstr "Vider"
 
-#: tauon.py:12350 tauon.py:33822
+#: tauon.py:12379 tauon.py:33950
 msgid "Delete"
 msgstr "Supprimer"
 
-#: tauon.py:12416 tauon.py:15572
+#: tauon.py:12442 tauon.py:15601
 msgid "New Playlist"
 msgstr "Nouvelle liste de lecture"
 
-#: tauon.py:12420
+#: tauon.py:12444
 msgid "Generate…"
 msgstr "Générer..."
 
-#: tauon.py:12421
+#: tauon.py:12445
 msgid "Sort…"
 msgstr "Trier..."
 
-#: tauon.py:12422
+#: tauon.py:12446
 msgid "From Current…"
 msgstr "À partir de l'actuel..."
 
-#: tauon.py:12427
+#: tauon.py:12451
 msgid "Sort by Filepath"
 msgstr "Trier par chemin"
 
-#: tauon.py:12428
+#: tauon.py:12452
 msgid "Sort Track Numbers"
 msgstr "Trier par numéro de piste"
 
-#: tauon.py:12429
+#: tauon.py:12453
 msgid "Sort Year per Artist"
 msgstr "Trier les années par artistes"
 
-#: tauon.py:12440 tauon.py:13811 tauon.py:14933
+#: tauon.py:12464 tauon.py:13835 tauon.py:14962
 msgid "Paste"
 msgstr "Coller"
 
-#: tauon.py:12441
+#: tauon.py:12465
 msgid "Append Playing"
 msgstr "Ajouter l'élément en cours de lecture"
 
-#: tauon.py:12446
+#: tauon.py:12470
 msgid "Misc…"
 msgstr "Divers..."
 
-#: tauon.py:12454
+#: tauon.py:12478
 msgid "Export Playlist Stats"
 msgstr "Exporter les statistiques de la liste de lecture"
 
-#: tauon.py:12455
+#: tauon.py:12479
 msgid "Transcode All"
 msgstr "Encoder tout"
 
-#: tauon.py:12456
+#: tauon.py:12480
 msgid "Rescan Tags"
 msgstr "Réanalyser les métadonnées"
 
-#: tauon.py:12459
+#: tauon.py:12483
 msgid "Export XSPF"
 msgstr "Exporter en XSPF"
 
-#: tauon.py:12460
+#: tauon.py:12484
 msgid "Toggle Breaks"
 msgstr "Afficher/Masquer les séparateurs"
 
-#: tauon.py:12499 tauon.py:12500
+#: tauon.py:12523 tauon.py:12524
 msgid "Top Played Tracks"
 msgstr "Pistes les plus jouées"
 
-#: tauon.py:12555 tauon.py:12556
+#: tauon.py:12579 tauon.py:12580
 msgid "Top Played Albums"
 msgstr "Albums les plus jouées"
 
-#: tauon.py:12601 tauon.py:12602
+#: tauon.py:12625 tauon.py:12626
 msgid "File Modified"
 msgstr "Fichier modifié"
 
-#: tauon.py:12689 tauon.py:12690
+#: tauon.py:12713 tauon.py:12714
 msgid "Longest Tracks"
 msgstr "Pistes les plus longues"
 
-#: tauon.py:12733 tauon.py:12734
+#: tauon.py:12757 tauon.py:12758
 msgid "Longest Albums"
 msgstr "Albums les plus longs"
 
-#: tauon.py:12785 tauon.py:12786
+#: tauon.py:12809 tauon.py:12810
 msgid "Year by Oldest"
 msgstr "Années croissantes"
 
-#: tauon.py:12793 tauon.py:12794
+#: tauon.py:12817 tauon.py:12818
 msgid "Year by Latest"
 msgstr "Années décroissantes"
 
-#: tauon.py:12815 tauon.py:12816
+#: tauon.py:12839 tauon.py:12840
 #, fuzzy
 msgid "Shuffled Tracks"
 msgstr "Pistes aléatoires"
 
-#: tauon.py:12840 tauon.py:12841
+#: tauon.py:12864 tauon.py:12865
 #, fuzzy
 msgid "Shuffled Albums"
 msgstr "Albums aléatoires"
 
-#: tauon.py:12866 tauon.py:12867
+#: tauon.py:12890 tauon.py:12891
 msgid "Lucky Random"
 msgstr "Aléatoire chanceux"
 
-#: tauon.py:12881 tauon.py:12882
+#: tauon.py:12905 tauon.py:12906
 msgid "Reverse Tracks"
 msgstr "Inverser les pistes"
 
-#: tauon.py:12905 tauon.py:12906
+#: tauon.py:12929 tauon.py:12930
 msgid "Reverse Albums"
 msgstr "Inverser les albums"
 
-#: tauon.py:12923 tauon.py:12924
+#: tauon.py:12947 tauon.py:12948
 msgid "Duplicate"
 msgstr "Doublon"
 
-#: tauon.py:12977 tauon.py:12978 tauon.py:15183
+#: tauon.py:13001 tauon.py:13002 tauon.py:15212
 msgid "Loved"
 msgstr "Favori"
 
-#: tauon.py:12979 tauon.py:12980
+#: tauon.py:13003 tauon.py:13004
 msgid "Has Comment"
 msgstr "Avec commentaires"
 
-#: tauon.py:12981 tauon.py:12982 tauon.py:15179
+#: tauon.py:13005 tauon.py:13006 tauon.py:15208
 msgid "Has Lyrics"
 msgstr "Avec paroles"
 
-#: tauon.py:13031
+#: tauon.py:13055
 msgid "Configuration reloaded"
 msgstr "Configuration rechargée"
 
-#: tauon.py:13043
+#: tauon.py:13067
 msgid "Click \"Reload config file\" if you made any changes"
 msgstr ""
 "Cliquez sur \"Recharger le fichier de configuration\" si vous avez effectué "
 "des modifications"
 
-#: tauon.py:13043
+#: tauon.py:13067
 msgid "Config file opened."
 msgstr "Fichier de configuration ouvert."
 
-#: tauon.py:13682
+#: tauon.py:13706
 msgid "Track Info…"
 msgstr "Informations sur la piste..."
 
-#: tauon.py:13710 tauon.py:15876
+#: tauon.py:13734 tauon.py:15905
 msgid "Un-Love Track"
 msgstr "Retirer des favoris"
 
-#: tauon.py:13712 tauon.py:15879 tauon.py:15881
+#: tauon.py:13736 tauon.py:15908 tauon.py:15910
 msgid "Love Track"
 msgstr "Ajouter aux favoris"
 
-#: tauon.py:13795 tauon.py:27076
+#: tauon.py:13819 tauon.py:27193
 msgid "Add to Queue"
 msgstr "Ajouter à la file d'attente"
 
-#: tauon.py:13797
+#: tauon.py:13821
 msgid "↳ After Current Track"
 msgstr "↳ Après la piste courante"
 
-#: tauon.py:13799
+#: tauon.py:13823
 msgid "Show in Gallery"
 msgstr "Afficher dans la galerie"
 
-#: tauon.py:13802
+#: tauon.py:13826
 msgid "Meta…"
 msgstr "Métadonnées..."
 
-#: tauon.py:13807 tauon.py:14737 tauon.py:14742 tauon.py:14743 tauon.py:14931
+#: tauon.py:13831 tauon.py:14766 tauon.py:14771 tauon.py:14772 tauon.py:14960
 msgid "Copy"
 msgstr "Copier"
 
-#: tauon.py:13853
+#: tauon.py:13877
 msgid "Delete Track File"
 msgstr "Supprimer le fichier de la piste"
 
-#: tauon.py:13873
+#: tauon.py:13897
 msgid "Rename (Single track)"
 msgstr "Renommer (piste unique)"
 
-#: tauon.py:13875 tauon.py:14674 tauon.py:14675
+#: tauon.py:13899 tauon.py:14698 tauon.py:14699
 msgid "Rename Tracks…"
 msgstr "Renommer les pistes..."
 
-#: tauon.py:14077 tauon.py:14666 tauon.py:14667 tauon.py:14672
+#: tauon.py:14101 tauon.py:14690 tauon.py:14691 tauon.py:14696
 #, fuzzy
 msgid "Modify Folder…"
 msgstr "Modifier le dossier..."
 
-#: tauon.py:14388
+#: tauon.py:14412
 msgid "Tag editior app does not appear to be installed."
 msgstr "L'application d'édition des métadonnées ne semble pas être installée."
 
-#: tauon.py:14391
+#: tauon.py:14415
 msgid "App not found on host OR insufficient Flatpak permissions."
 msgstr ""
 "Application non trouvée sur l'hôte OU permissions insuffisantes pour Flatpak."
 
-#: tauon.py:14486 tauon.py:14715 tauon.py:14727
+#: tauon.py:14510 tauon.py:14744 tauon.py:14756
 msgid "Reload Metadata"
 msgstr "Recharger les métadonnées"
 
-#: tauon.py:14507
+#: tauon.py:14531
 msgid "Edit with "
 msgstr "Modifier avec"
 
-#: tauon.py:14519
+#: tauon.py:14543
 msgid "Lyrics..."
 msgstr "Paroles..."
 
-#: tauon.py:14622
+#: tauon.py:14646
 msgid "Fix Mojibake"
 msgstr "Réparer l'encodage de caractères"
 
-#: tauon.py:14710
+#: tauon.py:14739
 msgid "Transcode Single"
 msgstr "Encoder celui-ci"
 
-#: tauon.py:14712 tauon.py:14717 tauon.py:14718 tauon.py:14902
+#: tauon.py:14741 tauon.py:14746 tauon.py:14747 tauon.py:14931
 msgid "Transcode Folder"
 msgstr "Encoder le dossier"
 
-#: tauon.py:14716
+#: tauon.py:14745
 msgid "Vacuum Playtimes"
 msgstr "Réinitialiser le nombre d'écoutes"
 
-#: tauon.py:14722
+#: tauon.py:14751
 msgid "Copy \"Artist - Album\""
 msgstr "Copier \"Arstite - Album\""
 
-#: tauon.py:14738
+#: tauon.py:14767
 msgid "Cut"
 msgstr "Couper"
 
-#: tauon.py:14739 tauon.py:14747 tauon.py:14748
+#: tauon.py:14768 tauon.py:14776 tauon.py:14777
 msgid "Remove"
 msgstr "Retirer"
 
-#: tauon.py:14740
+#: tauon.py:14769
 msgid "Delete Files"
 msgstr "Supprimer les fichiers"
 
-#: tauon.py:14812
+#: tauon.py:14841
 msgid "Search Artist on Wikipedia"
 msgstr "Rechercher l'artiste sur Wikipedia"
 
-#: tauon.py:14814
+#: tauon.py:14843
 msgid "Search Track on Genius"
 msgstr "Rechercher la piste sur Genius"
 
-#: tauon.py:14820
+#: tauon.py:14849
 msgid "Search Artist on Sonemic"
 msgstr "Rechercher l'artiste sur Sonemic"
 
-#: tauon.py:14832
+#: tauon.py:14861
 #, fuzzy
 msgid "Copy \"Artist - Track\""
 msgstr "Copier \"Artiste - Titre\""
 
-#: tauon.py:14908
+#: tauon.py:14937
 msgid "Broadcast This"
 msgstr "Diffuser"
 
-#: tauon.py:14943
+#: tauon.py:14972
 msgid "Off"
 msgstr "Désactivé"
 
-#: tauon.py:14954
+#: tauon.py:14983
 msgid "Level Meter"
 msgstr "Vu-mètre"
 
-#: tauon.py:14959
+#: tauon.py:14988
 msgid "Spectrum Visualizer"
 msgstr "Spectrogramme"
 
-#: tauon.py:14973
+#: tauon.py:15002
 msgid "Spectrogram"
 msgstr "Spectrogramme"
 
-#: tauon.py:15156
+#: tauon.py:15185
 msgid "Time"
 msgstr "Durée"
 
-#: tauon.py:15157 tauon.py:15181
+#: tauon.py:15186 tauon.py:15210
 msgid "Filepath"
 msgstr "Chemin"
 
-#: tauon.py:15160
+#: tauon.py:15189
 msgid "Sort Ascending"
 msgstr "Tri croissant"
 
-#: tauon.py:15161
+#: tauon.py:15190
 msgid "Sort Decending"
 msgstr "Tri décroissant"
 
-#: tauon.py:15163
+#: tauon.py:15192
 msgid "Auto Resize"
 msgstr "Redimensionnement automatique"
 
-#: tauon.py:15164
+#: tauon.py:15193
 msgid "Hide bar"
 msgstr "Masquer la barre"
 
-#: tauon.py:15165
+#: tauon.py:15194
 msgid "Show bar"
 msgstr "Afficher la barre"
 
-#: tauon.py:15167 tauon.py:33515 tauon.py:33521
+#: tauon.py:15196 tauon.py:33643 tauon.py:33649
 msgid "Artist"
 msgstr "Artiste"
 
-#: tauon.py:15168 tauon.py:33495 tauon.py:33501
+#: tauon.py:15197 tauon.py:33623 tauon.py:33629
 msgid "Title"
 msgstr "Titre"
 
-#: tauon.py:15169 tauon.py:33534 tauon.py:33540
+#: tauon.py:15198 tauon.py:33662 tauon.py:33668
 msgid "Album"
 msgstr "Album"
 
-#: tauon.py:15170 tauon.py:33602 tauon.py:33608
+#: tauon.py:15199 tauon.py:33730 tauon.py:33736
 msgid "Album Artist"
 msgstr "Artiste de l'album"
 
-#: tauon.py:15171 tauon.py:33695 tauon.py:33701
+#: tauon.py:15200 tauon.py:33823 tauon.py:33829
 msgid "Composer"
 msgstr "Compositeur"
 
-#: tauon.py:15172 tauon.py:33622 tauon.py:33628
+#: tauon.py:15201 tauon.py:33750 tauon.py:33756
 msgid "Duration"
 msgstr "Durée"
 
-#: tauon.py:15173 tauon.py:33679 tauon.py:33685
+#: tauon.py:15202 tauon.py:33807 tauon.py:33813
 msgid "Date"
 msgstr "Année"
 
-#: tauon.py:15174 tauon.py:33664 tauon.py:33670
+#: tauon.py:15203 tauon.py:33792 tauon.py:33798
 msgid "Genre"
 msgstr "Genre"
 
-#: tauon.py:15175
+#: tauon.py:15204
 msgid "Track Number"
 msgstr "Numéro de piste"
 
-#: tauon.py:15176
+#: tauon.py:15205
 msgid "Play Count"
 msgstr "Nombre de lectures"
 
-#: tauon.py:15177
+#: tauon.py:15206
 msgid "Codec"
 msgstr "Codec"
 
-#: tauon.py:15178 tauon.py:20603 tauon.py:33589
+#: tauon.py:15207 tauon.py:20736 tauon.py:33717
 msgid "Bitrate"
 msgstr "Débit"
 
-#: tauon.py:15180 tauon.py:33750 tauon.py:33756
+#: tauon.py:15209 tauon.py:33878 tauon.py:33884
 msgid "Comment"
 msgstr "Commentaire"
 
-#: tauon.py:15182
+#: tauon.py:15211
 #, fuzzy
 msgid "Starline"
 msgstr "Ligne de lectures"
 
-#: tauon.py:15185 tauon.py:26806
+#: tauon.py:15214 tauon.py:26923
 msgid "Remove This"
 msgstr "Retirer"
 
-#: tauon.py:15575
+#: tauon.py:15604
 msgid "Open Stream…"
 msgstr "Ouvrir le flux..."
 
-#: tauon.py:15598
+#: tauon.py:15627
 msgid "Download URL"
 msgstr "Télécharger l'URL"
 
-#: tauon.py:15617
+#: tauon.py:15646
 msgid "Import Music Folder"
 msgstr "Importer le dossier Musique"
 
-#: tauon.py:15625
+#: tauon.py:15654
 msgid "Settings"
 msgstr "Paramètres"
 
-#: tauon.py:15626
+#: tauon.py:15655
 msgid "Database…"
 msgstr "Base de données..."
 
-#: tauon.py:15695
+#: tauon.py:15724
 msgid "Export as CSV"
 msgstr "Exporter en CSV"
 
-#: tauon.py:15696
+#: tauon.py:15725
 msgid "Play History to Playlist"
 msgstr "Historique vers liste de lecture"
 
-#: tauon.py:15697
+#: tauon.py:15726
 msgid "Reset Image Cache"
 msgstr "Effacer le cache des images"
 
-#: tauon.py:15713
+#: tauon.py:15742
 msgid "Remove Missing Tracks"
 msgstr "Retirer les pistes manquante"
 
-#: tauon.py:15715
+#: tauon.py:15744
 msgid "Mark Missing as Found"
 msgstr "Marquer les éléments manquants comme trouvés"
 
-#: tauon.py:15762
+#: tauon.py:15791
 msgid "Start Broadcast"
 msgstr "Lancer la diffusion"
 
-#: tauon.py:15793
+#: tauon.py:15822
 msgid "Mini"
 msgstr "Mini"
 
-#: tauon.py:15795
+#: tauon.py:15824
 msgid "Square"
 msgstr "Carré"
 
-#: tauon.py:15796
+#: tauon.py:15825
 msgid "Square Large"
 msgstr "Grand carré"
 
-#: tauon.py:15797
+#: tauon.py:15826
 msgid "Micro"
 msgstr "Micro"
 
-#: tauon.py:15814
+#: tauon.py:15843
 msgid "Random Track"
 msgstr "Piste aléatoire"
 
-#: tauon.py:15827
+#: tauon.py:15856
 msgid "Radio Random"
 msgstr "Radio aléatoire"
 
-#: tauon.py:15833
+#: tauon.py:15862
 msgid "Revert"
 msgstr "Annuler"
 
-#: tauon.py:15841 tauon.py:26811
+#: tauon.py:15870 tauon.py:26928
 msgid "Clear Queue"
 msgstr "Vider la file d'attente"
 
-#: tauon.py:15963
+#: tauon.py:15992
 msgid "Global Search"
 msgstr "Recherche générale"
 
-#: tauon.py:15969
+#: tauon.py:15998
 msgid "Locate Artist"
 msgstr "Trouver l'artiste"
 
-#: tauon.py:15970
+#: tauon.py:15999
 msgid "Go To Playing"
 msgstr "Aller à l'élément en cours de lecture"
 
-#: tauon.py:16117
+#: tauon.py:16146
 msgid "ListenBrainz is Paused"
 msgstr "ListenBrainz en pause"
 
-#: tauon.py:16119
+#: tauon.py:16148
 msgid "Scrobbling is Paused"
 msgstr "Scrobbling en cours"
 
-#: tauon.py:16123
+#: tauon.py:16152
 msgid "ListenBrainz is Active"
 msgstr "ListenBrainz en cours"
 
-#: tauon.py:16125
+#: tauon.py:16154
 msgid "Scrobbling is Active"
 msgstr "Scrobbling en cours"
 
-#: tauon.py:16336
+#: tauon.py:16365
 msgid "Disconnecting..."
 msgstr "Déconnexion..."
 
-#: tauon.py:16338
+#: tauon.py:16367
 msgid "Disconnect Discord"
 msgstr "Déconnecter Discord"
 
-#: tauon.py:16340
+#: tauon.py:16369
 msgid "Show playing in Discord"
 msgstr "Afficher la piste en cours dans Discord"
 
-#: tauon.py:16355
+#: tauon.py:16384
 msgid "Exit"
 msgstr "Quitter"
 
-#: tauon.py:19064 tauon.py:19078 tauon.py:19096
+#: tauon.py:19177 tauon.py:19191 tauon.py:19209
 msgid "Change will be applied on restart."
 msgstr "Les changements seront appliqués au redémarrage."
 
-#: tauon.py:19118
+#: tauon.py:19231
 msgid "Show playtime lines"
-msgstr "Afficher le nombre de lectures sous forme de lignes"
+msgstr "Lignes nb écoutes"
 
-#: tauon.py:19119
+#: tauon.py:19232
 msgid "Show playtime stars"
-msgstr "Afficher le nombre de lectures sous forme d'étoiles"
+msgstr "Étoiles nb écoutes"
 
-#: tauon.py:19121
+#: tauon.py:19234
 msgid "Show love hearts"
 msgstr "Afficher le nombre de favoris"
 
-#: tauon.py:19493
+#: tauon.py:19606
 msgid "Add release year to folder title"
 msgstr "Ajouter l'année au titre du dossier"
 
-#: tauon.py:19494
+#: tauon.py:19607
 msgid "Add total duration to folder title"
 msgstr "Ajouter la durée totale au titre du dossier"
 
-#: tauon.py:19547
+#: tauon.py:19660
 msgid "Downloading... Please wait"
 msgstr "Téléchargement en cours..."
 
-#: tauon.py:19577
+#: tauon.py:19690
 msgid "BASS Download Complete."
 msgstr "Téléchargement de BASS terminé."
 
-#: tauon.py:19684
+#: tauon.py:19797
 #, fuzzy
 msgid "Function"
 msgstr "Général"
 
-#: tauon.py:19685
+#: tauon.py:19798
 msgid "Audio"
 msgstr "Audio"
 
-#: tauon.py:19686
+#: tauon.py:19799
 msgid "Tracklist"
 msgstr "Liste de pistes"
 
-#: tauon.py:19687 tauon.py:19727
+#: tauon.py:19800 tauon.py:19848
 msgid "Theme"
 msgstr "Thème"
 
-#: tauon.py:19688
-msgid "View"
-msgstr "Affichage"
+#: tauon.py:19801
+msgid "View 1"
+msgstr "Vue 1"
 
-#: tauon.py:19689
+#: tauon.py:19802
+msgid "View 2"
+msgstr "Vue 2"
+
+#: tauon.py:19803
 msgid "Transcode"
 msgstr "Ecnoder"
 
-#: tauon.py:19690
+#: tauon.py:19804 tauon.py:33866
+msgid "Lyrics"
+msgstr "Paroles"
+
+#: tauon.py:19805
 #, fuzzy
 msgid "Accounts"
 msgstr "Comptes en ligne"
 
-#: tauon.py:19691
+#: tauon.py:19806
 msgid "Stats"
 msgstr "Statistiques"
 
-#: tauon.py:19692
+#: tauon.py:19807
 msgid "About"
 msgstr "À propos"
 
-#: tauon.py:19731
+#: tauon.py:19852
 msgid "Generate theme from album art"
 msgstr "Générer un thème à partir de la pochette"
 
-#: tauon.py:19735
+#: tauon.py:19856
 msgid "Use album art as background"
 msgstr "Utiliser la pochette comme arrière plan"
 
-#: tauon.py:19739
+#: tauon.py:19860
 msgid "Stronger"
 msgstr "Renforcé"
 
-#: tauon.py:19745
+#: tauon.py:19866
 msgid "Blur"
 msgstr "Flou"
 
-#: tauon.py:19748
+#: tauon.py:19869
 msgid "Showcase only"
 msgstr "Mode présentation seulement"
 
-#: tauon.py:19751
+#: tauon.py:19872
 msgid "Always center"
 msgstr "Toujours centré"
 
 #. Limited space. Max 14 chars.
-#: tauon.py:19756
+#: tauon.py:19877
 msgid "Next Theme"
 msgstr "Thème suivant"
 
 #. Limited space. Max 14 chars.
-#: tauon.py:19758
+#: tauon.py:19879
 msgid "Previous Theme"
 msgstr "Thème précédent"
 
-#: tauon.py:19764
+#: tauon.py:19885
 msgid "Gallery"
 msgstr "Galerie"
 
-#: tauon.py:19768
+#: tauon.py:19889
 msgid "Single click to play"
 msgstr "Lire au simple clic"
 
-#: tauon.py:19770
+#: tauon.py:19891
 #, fuzzy
 msgid "Show title text under art"
 msgstr "Afficher le titre sous la pochette"
 
-#: tauon.py:19774
+#: tauon.py:19895
 #, fuzzy
 msgid "Center alignment"
 msgstr "Centrer le texte"
 
-#: tauon.py:19777
+#: tauon.py:19898
 msgid "Prefer thinner padding"
 msgstr "Espacement fin"
 
-#: tauon.py:19781
+#: tauon.py:19904
 msgid "Gallery art size"
 msgstr "Taille des pochettes"
 
 #. Limited width. Max 8 chars.
-#: tauon.py:19794 tauon.py:20107 tauon.py:20949 tauon.py:28565
+#: tauon.py:19915 tauon.py:21077 tauon.py:28682
 msgid "Return"
 msgstr "Retour"
 
+#: tauon.py:19924 tauon.py:20485 tauon.py:20490
+msgid "Enable"
+msgstr "Activer"
+
 #. Limited width. Max 27 chars. Alt: Download BASS
-#: tauon.py:19865
+#: tauon.py:19986
 msgid "Install BASS Audio Library"
 msgstr "Installer la librairie BASS"
 
 #. A button that shows detailed information about context. Max 5 chars.
-#: tauon.py:19871
+#: tauon.py:19992
 msgid "?"
 msgstr " ?"
 
-#: tauon.py:19872
+#: tauon.py:19993
 msgid ""
 "BASS Audio library is not currently installed. Clicking install will "
 "initiate download (<1MB)."
@@ -953,7 +973,7 @@ msgstr ""
 "La librairie BASS n'est pas installée. Cliquez pour lancer le téléchargement "
 "(<1MB)"
 
-#: tauon.py:19873
+#: tauon.py:19994
 msgid ""
 "BASS is proprietary/closed-cource and subject to the BASS license. See "
 "https://un4seen.com for details."
@@ -961,7 +981,7 @@ msgstr ""
 "BASS est une librairie propriétaire sujette à licence, consultez https://"
 "un4seen.com pour plus de détails."
 
-#: tauon.py:19874
+#: tauon.py:19995
 msgid ""
 "Installing will enable features: Crossfade, Broadcasting/Streaming and "
 "Visualisers."
@@ -969,702 +989,706 @@ msgstr ""
 "L'installation permet d'activer le fondu enchaîné, le service de diffusion "
 "et le spectrogramme."
 
-#: tauon.py:19894 tauon.py:19983
+#: tauon.py:20015 tauon.py:20104
 msgid "ReplayGain"
 msgstr "ReplayGain"
 
-#: tauon.py:19899 tauon.py:19990
+#: tauon.py:20020 tauon.py:20111
 msgid "Album gain"
 msgstr "Gain par album"
 
-#: tauon.py:19901 tauon.py:19992
+#: tauon.py:20022 tauon.py:20113
 msgid "Track gain"
 msgstr "Gain par piste"
 
-#: tauon.py:19909
+#: tauon.py:20030
 msgid "Customise GStreamer output"
 msgstr "Personnaliser la sortie de GStreamer"
 
-#: tauon.py:19921
+#: tauon.py:20042 tauon.py:20314
 msgid "Reload"
 msgstr "Recharger"
 
-#: tauon.py:19927 tauon.py:20016
+#: tauon.py:20048 tauon.py:20137
 msgid "Set audio output device"
 msgstr "Définir le périphérique de sortie"
 
-#: tauon.py:19997
+#: tauon.py:20118
 msgid "Transitions"
 msgstr "Transitions"
 
-#: tauon.py:20001
+#: tauon.py:20122
 #, fuzzy
 msgid "Use crossfade"
 msgstr "Utiliser le fondu enchaîné"
 
-#: tauon.py:20005
+#: tauon.py:20126
 #, fuzzy
 msgid "Use gapless playback"
 msgstr "Utiliser la lecture sans blanc"
 
-#: tauon.py:20009
+#: tauon.py:20130
 msgid "Use fade on track jump"
 msgstr "Utiliser le fondu lors du changement de piste"
 
-#: tauon.py:20011
+#: tauon.py:20132
 msgid "Use fade on pause/stop"
 msgstr "Utiliser le fondu lors de l'arrêt"
 
 #. Limited width. Max 17 chars.
-#: tauon.py:20056
+#: tauon.py:20177 tauon.py:20178
 msgid "Uninstall BASS"
 msgstr "Désinstaller BASS"
 
-#: tauon.py:20086
+#: tauon.py:20201
 msgid "Auto search lyrics"
 msgstr "Rechercher automatiquement les paroles"
 
-#: tauon.py:20088
+#: tauon.py:20203
 msgid "Enable chord lyrics"
 msgstr "Activer les partitions"
 
-#: tauon.py:20091
+#: tauon.py:20206
 msgid "Sources:"
 msgstr "Sources : "
 
-#: tauon.py:20093
+#: tauon.py:20208
 msgid "Apiseeds"
 msgstr "Apiseeds"
 
-#: tauon.py:20095
+#: tauon.py:20210
 msgid "LyricWiki*"
 msgstr "LyricWiki*"
 
-#: tauon.py:20098
+#: tauon.py:20213
 msgid "*Uses scraping. Enable at your own discretion."
 msgstr "Utilises du scrapping. À utiliser à votre gré."
 
-#: tauon.py:20101
+#: tauon.py:20216
 msgid "Tip: The order enabled will be the order searched."
 msgstr "Astuce : l'ordre défini sera utilisé lors de la recherche"
 
-#: tauon.py:20121
+#: tauon.py:20229
+msgid "Metadata side panel"
+msgstr "Panneau des métadonnées"
+
+#: tauon.py:20233
+msgid "Use centered style"
+msgstr "Utiliser le style centré"
+
+#: tauon.py:20237
+msgid "Bottom panel"
+msgstr "Panneau inférieur"
+
+#: tauon.py:20240
+msgid "Hide title when already shown"
+msgstr "Masquer le titre losqu'il est déjà affiché"
+
+#: tauon.py:20267
 msgid "Serve webpage for broadcast metadata"
 msgstr "Diffuser les métadonnées via une page web"
 
-#: tauon.py:20127
+#: tauon.py:20273
 msgid "Enable auto fetch artist data"
 msgstr "Activer la récupération automatique des données d'artistes"
 
-#: tauon.py:20130
+#: tauon.py:20276
 msgid "Use tabs on top panel"
 msgstr "Utiliser des onglets dans le panneau supérieur"
 
-#: tauon.py:20143
+#: tauon.py:20289
 msgid "Extract archives on import"
 msgstr "Extraire le contenu des archives lors de l'import"
 
-#: tauon.py:20145
+#: tauon.py:20291
 msgid "Trash archive after extraction"
 msgstr "Supprimer les archives après extration"
 
-#: tauon.py:20147
+#: tauon.py:20293
 msgid "Monitor download folders"
 msgstr "Surveiller le dossier Téléchargements"
 
-#: tauon.py:20149
+#: tauon.py:20295
 msgid "Always extract to Music folder"
 msgstr "Toujours extraire dans le dossier Musique"
 
-#. Limited width. Max 19 chars.
-#: tauon.py:20155
-msgid "Lyrics settings..."
-msgstr "Paramètres des paroles..."
-
-#. Limited width. Max 19 chars.
-#: tauon.py:20160
-msgid "Chart generator..."
-msgstr "Planches de contact"
-
-#: tauon.py:20195
-msgid "Show in context menus:"
-msgstr "Afficher dans les menus contextuels :"
-
-#: tauon.py:20198
-msgid "Wikipedia search"
-msgstr "Rechercher sur Wikipedia"
-
-#: tauon.py:20200
-msgid "Sonemic search"
-msgstr "Rechercher sur Sonemic"
-
-#: tauon.py:20204
-msgid "Genius search"
-msgstr "Rechercher sur Genius"
-
-#: tauon.py:20207
-msgid "Discord RP"
-msgstr "Discord RP"
-
-#. Limited width. Max 19 chars.
-#: tauon.py:20215
+#: tauon.py:20303 tauon.py:20307
 msgid "Open config file"
 msgstr "Ouvrir le fichier de configuration"
 
-#. Limited width. Max 19 chars.
-#: tauon.py:20222
-msgid "Reload config file"
-msgstr "Recharger le fichier de configuration"
-
-#. Limited width. Max 19 chars.
-#: tauon.py:20228
+#: tauon.py:20304 tauon.py:20319
 msgid "Open keymap file"
 msgstr "Ouvrir le fichier des raccourcis clavier"
 
-#. Limited width. Max 19 chars.
-#: tauon.py:20232
+#: tauon.py:20321 tauon.py:20323
 msgid "Open data folder"
 msgstr "Ouvrir le dossier de préférences de l'application"
 
-#: tauon.py:20344 tauon.py:20349
-msgid "Enable"
-msgstr "Activer"
+#: tauon.py:20357
+msgid "Show in context menus:"
+msgstr "Afficher dans les menus contextuels :"
 
-#: tauon.py:20364 tauon.py:20366
+#: tauon.py:20360
+msgid "Wikipedia search"
+msgstr "Rechercher sur Wikipedia"
+
+#: tauon.py:20362
+msgid "Sonemic search"
+msgstr "Rechercher sur Sonemic"
+
+#: tauon.py:20366
+msgid "Genius search"
+msgstr "Rechercher sur Genius"
+
+#: tauon.py:20369
+msgid "Discord RP"
+msgstr "Discord RP"
+
+#: tauon.py:20505 tauon.py:20507
 msgid "Import PLEX music"
 msgstr "Importer la muisque depuis PLEX"
 
-#: tauon.py:20364 tauon.py:20368
+#: tauon.py:20505 tauon.py:20509
 msgid "Import KOEL music"
 msgstr "Importer la musique depuis KOEL"
 
-#: tauon.py:20381
-msgid "Fanart.tv can be used for sourcing of artist images"
-msgstr "Fanart.tv peut être utilisé comme source d'images pour les artistes"
-
-#: tauon.py:20385
-msgid "and cover art."
-msgstr "et les pochettes."
+#: tauon.py:20521
+msgid "Fanart.tv can be used for sourcing of artist images and cover art."
+msgstr ""
+"Fanart.tv peut être utilisé comme source pour les images d'artistes et les "
+"pochettes."
 
 #. Limited space available. Limit 55 chars.
-#: tauon.py:20390 tauon.py:25608
+#: tauon.py:20528 tauon.py:25710
 msgid "They encourage you to contribute at https://fanart.tv"
 msgstr "Contributions bienvenues sur https://fanart.tv"
 
-#: tauon.py:20395
+#: tauon.py:20533
 msgid "Cover art (Manual only)"
 msgstr "Pochette (manuel)"
 
-#: tauon.py:20397
+#: tauon.py:20535
 msgid "Artist images (May be automatic)"
 msgstr "Image de l'artiste (peut être automatisé)"
 
-#: tauon.py:20404
-msgid "Discogs can be used for sourcing artist images."
-msgstr "Discogs peut être utilisé comme source d'images pour les artistes."
+#: tauon.py:20542
+msgid ""
+"Discogs can be used for sourcing artist images. For this you will need a "
+"\"Personal Access Token\".\n"
+"\n"
+"You can generate one with a Discogs account here:"
+msgstr ""
+"Discogs peut être utilisé comme source pour les images d'artistes. Une \"clé "
+"d'autorisation\" est nécessaire pour cela.\n"
+"\n"
+"Vous pouvez en créer une depuis votre compte Discogs ici : "
 
-#: tauon.py:20407
-msgid "For this you will need a \"Personal Access Token\""
-msgstr "Pour cela, il vous faut une \"clé d'autorisation personnelle\""
-
-#: tauon.py:20411
-msgid "You can generate one with a Discogs account here:"
-msgstr "Vous pouvez en générer une à depuis votre compte Discogs ici : "
-
-#: tauon.py:20425 tauon.py:20523 tauon.py:20525
+#: tauon.py:20558 tauon.py:20654 tauon.py:20656
 msgid "Paste Token"
 msgstr "Coller la clé d'autorisation"
 
-#: tauon.py:20468
+#: tauon.py:20601 tauon.py:20602
 msgid "Username:"
 msgstr "Nom d'utilisateur :"
 
-#: tauon.py:20474
+#: tauon.py:20608
 msgid "Login"
-msgstr "Identifiant"
+msgstr "Identification"
 
-#: tauon.py:20475
+#: tauon.py:20609
 msgid "Done"
 msgstr "Terminé"
 
-#: tauon.py:20478
-msgid "Click login to open the last.fm web"
-msgstr "Cliquez sur login pour ouvrir la page d'identification de last.fm"
+#: tauon.py:20612
+msgid ""
+"Click login to open the last.fm web authorisation page and follow prompt. "
+"Then return here and click \"Done\"."
+msgstr ""
+"Cliquez sur \"Identification\" pour ouvrir la page d'autorisation sur last."
+"fm et suivez les instructions, puis revenez ici et cliquez sur \"Terminé\"."
 
-#: tauon.py:20481
-msgid "authorisation page and follow prompt."
-msgstr "et suivez les insctructions."
-
-#: tauon.py:20484
-msgid "Then return here and click \"Done\"."
-msgstr "Puis revenez ici pour cliquer sur \"Terminé\"."
-
-#: tauon.py:20487
+#: tauon.py:20616
 msgid "Forget account"
 msgstr "Oublier le compte"
 
-#: tauon.py:20496
+#: tauon.py:20625 tauon.py:20631
 msgid "Get user loves"
 msgstr "Charger les favoris de l'utilisateur"
 
-#: tauon.py:20499
+#: tauon.py:20626 tauon.py:20634
 msgid "Clear local loves"
 msgstr "Charger les favoris locaux"
 
-#: tauon.py:20504
+#: tauon.py:20627 tauon.py:20638
 msgid "Get friend loves"
 msgstr "Charger les favoris des ami⋅e⋅s"
 
-#: tauon.py:20510
+#: tauon.py:20628 tauon.py:20641
 msgid "Clear friend loves"
 msgstr "Vider les favoris des ami⋅e⋅s"
 
-#: tauon.py:20516 tauon.py:20549
+#: tauon.py:20647 tauon.py:20680
 #, fuzzy
 msgid "Show threshold marker"
 msgstr "Afficher les séparateurs"
 
-#: tauon.py:20581
+#: tauon.py:20712
 msgid "Output codec setting:"
 msgstr "Paramètres du codec"
 
-#: tauon.py:20582
+#: tauon.py:20714 tauon.py:20715
 msgid "Open output folder"
 msgstr "Ouvrir le dossier de sortie"
 
-#: tauon.py:20590
+#: tauon.py:20723
 msgid "Save opus as .ogg extension"
 msgstr "Enregistrer les fichier opus sous l'extension .ogg"
 
-#: tauon.py:20614
+#: tauon.py:20747
 msgid "Save to output folder"
 msgstr "Enregistrer dans le dossier de sortie"
 
-#: tauon.py:20616
+#: tauon.py:20749
 msgid "Save and overwrite files inplace"
 msgstr "Enregistrer et remplacer les fichiers présents"
 
-#: tauon.py:20634
+#: tauon.py:20767
 msgid "Window"
 msgstr "Fenêtre"
 
-#: tauon.py:20639
+#: tauon.py:20772
 msgid "Emit track change notifications"
 msgstr "Afficher les notifications de changement de piste"
 
-#: tauon.py:20645
+#: tauon.py:20778
 msgid "Include album title"
 msgstr "Inclure le titre de l'album"
 
-#: tauon.py:20650
+#: tauon.py:20783
 msgid "Draw own window decorations"
 msgstr "Utiliser la décoration native des fenêtres"
 
-#: tauon.py:20654
+#: tauon.py:20787
 msgid "Show playing in titlebar"
 msgstr "Afficher la piste en cours dans la barre de titre"
 
-#: tauon.py:20666
+#: tauon.py:20799
 msgid "Misc"
 msgstr "Divers"
 
-#: tauon.py:20670
+#: tauon.py:20803
 msgid "Force subpixel text rendering"
 msgstr "Forcer le rendu de texte en sous-pixels"
 
-#: tauon.py:20675
+#: tauon.py:20808
 msgid "Top-panel visualisation"
 msgstr "Visualisation dans le panneau supérieur"
 
-#: tauon.py:20677
+#: tauon.py:20810
 msgid "Showcase visualisation"
 msgstr "Visualisation en mode présentation"
 
-#: tauon.py:20694
-msgid "Metadata side panel"
-msgstr "Panneau des métadonnées"
-
-#: tauon.py:20703
-msgid "Use centered style"
-msgstr "Utiliser le style centré"
-
-#: tauon.py:20707
-msgid "Bottom panel"
-msgstr "Panneau inférieur"
-
-#: tauon.py:20710
-msgid "Hide title when already shown"
-msgstr "Masquer le titre losqu'il est déjà affiché"
-
-#. Limited space. Max 13 chars.
-#: tauon.py:20820
+#: tauon.py:20946 tauon.py:20948
 msgid "Show License"
 msgstr "Licence"
 
-#: tauon.py:20822 tauon.py:20824
+#: tauon.py:20950 tauon.py:20952
 msgid "Credits"
 msgstr "Crédits"
 
-#: tauon.py:20833
+#: tauon.py:20961
 msgid "Chart Grid Generator"
 msgstr "Générateur de planches de contact"
 
-#: tauon.py:20836
+#: tauon.py:20964
 msgid "Target playlist:   "
 msgstr "Liste de lecture cible : "
 
-#: tauon.py:20864
+#: tauon.py:20992
 msgid "Rows"
 msgstr "Lignes"
 
-#: tauon.py:20866
+#: tauon.py:20994
 msgid "Columns"
 msgstr "Colonnes"
 
-#: tauon.py:20873
+#: tauon.py:21001
 msgid "Cascade style"
 msgstr "Styles en cascade"
 
-#: tauon.py:20875
+#: tauon.py:21003
 msgid "Use padding"
 msgstr "Espacer"
 
-#: tauon.py:20877
+#: tauon.py:21005
 msgid "Include text"
 msgstr "Inclure le texte"
 
 #. Limited width. Max 13 chars.
-#: tauon.py:20883
+#: tauon.py:21011
 msgid "Randomise BG"
 msgstr "Fond aléatoire"
 
 #. Limited width. Max 9 chars.
-#: tauon.py:20916
+#: tauon.py:21044
 msgid "Generate"
 msgstr "Générer"
 
-#: tauon.py:20929
+#: tauon.py:21057
 msgid "Generating..."
 msgstr "Génération en cours..."
 
-#: tauon.py:20943
+#: tauon.py:21071
 msgid "Not enough albums in the playlist!"
 msgstr "Pas assez d'albums dnas la liste de lecture !"
 
-#: tauon.py:20994
+#: tauon.py:21091 tauon.py:21092
+msgid "Chart generator..."
+msgstr "Planches de contact"
+
+#: tauon.py:21098 tauon.py:21139
 msgid "Tracks in playlist"
 msgstr "Pistes dans la liste de lecture"
 
-#: tauon.py:20997
+#: tauon.py:21099 tauon.py:21142
 msgid "Albums in playlist"
 msgstr "Albums dans la liste de lecture"
 
-#: tauon.py:21000
+#: tauon.py:21100 tauon.py:21145
 msgid "Playlist duration"
 msgstr "Durée de la liste de lecture"
 
-#: tauon.py:21029
+#: tauon.py:21101 tauon.py:21174
 msgid "Tracks in database"
 msgstr "Pistes dans la base de données"
 
-#: tauon.py:21032
+#: tauon.py:21102 tauon.py:21177
 msgid "Total albums"
 msgstr "Nombre d'albums"
 
-#: tauon.py:21036
+#: tauon.py:21103 tauon.py:21181
 msgid "Total playtime"
 msgstr "Durée totale"
 
-#: tauon.py:21107
+#: tauon.py:21252
 msgid "Font Size"
 msgstr "Taille de la police"
 
-#: tauon.py:21109
+#: tauon.py:21254
 msgid "Row Size"
 msgstr "Taille des lignes"
 
-#: tauon.py:21115
+#: tauon.py:21260
 msgid "Thin default"
 msgstr "Fin par défaut"
 
-#: tauon.py:21117
+#: tauon.py:21262
 msgid "Thick default"
 msgstr "Large par défaut"
 
-#: tauon.py:21123
+#: tauon.py:21268
 msgid "End of playlist action"
 msgstr "Action en fin de playlist"
 
-#: tauon.py:21126
+#: tauon.py:21271 tauon.py:21275
 msgid "Stop playback"
 msgstr "Arrêter la lecture"
 
-#: tauon.py:21128
+#: tauon.py:21272 tauon.py:21277
 msgid "Repeat playlist"
 msgstr "Répéter la liste de lecture"
 
-#: tauon.py:21132
+#: tauon.py:21281
 msgid "Play next playlist"
 msgstr "Lancer la prochaine liste de lecture"
 
-#: tauon.py:21134
+#: tauon.py:21283
 msgid "Cycle all playlists"
 msgstr "Boucler toutes les listes de lecture"
 
-#: tauon.py:22543 tauon.py:33497 tauon.py:33517 tauon.py:33536 tauon.py:33556
-#: tauon.py:33604 tauon.py:33625 tauon.py:33666 tauon.py:33681 tauon.py:33697
-#: tauon.py:33752
+#: tauon.py:22692 tauon.py:33625 tauon.py:33645 tauon.py:33664 tauon.py:33684
+#: tauon.py:33732 tauon.py:33753 tauon.py:33794 tauon.py:33809 tauon.py:33825
+#: tauon.py:33880
 msgid "Copied text to clipboard"
 msgstr "Texte copié dans le presse-papiers"
 
-#: tauon.py:22708
+#: tauon.py:22857
 #, fuzzy
 msgid "Play, RC: Go to playing"
 msgstr "Lecture, RC : aller à l'élément en cours"
 
-#: tauon.py:22736
+#: tauon.py:22885
 msgid "Pause"
 msgstr "Pause"
 
-#: tauon.py:22753
+#: tauon.py:22902
 msgid "Stop, RC: Toggle auto-stop"
 msgstr "Arrêter, RC : activer/ l'arrêt automatique"
 
 #. Shuffle set to on
-#: tauon.py:22776
+#: tauon.py:22925
 msgid "Shuffle On"
 msgstr "Aléatoire activé"
 
 #. Shuffle set to off
-#: tauon.py:22779
+#: tauon.py:22928
 msgid "Shuffle Off"
 msgstr "Aléatoire désactivé"
 
 #. Repeat set to on
-#: tauon.py:22808
+#: tauon.py:22957
 #, fuzzy
 msgid "Repeat On"
 msgstr "Répétition désactivée"
 
 #. Repeat set to off
-#: tauon.py:22811
+#: tauon.py:22960
 #, fuzzy
 msgid "Repeat Off"
 msgstr "Répétition désactivée"
 
-#: tauon.py:22818
+#: tauon.py:22967
 msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr "Retour, RC : basculer la répétition, MC : annuler"
 
-#: tauon.py:22874 tauon.py:22876
+#: tauon.py:23023 tauon.py:23025
 msgid "Shuffle"
 msgstr "Aléatoire"
 
-#: tauon.py:22923 tauon.py:22931
+#: tauon.py:23072 tauon.py:23080
 msgid "Repeat album"
 msgstr "Répéter l'album"
 
-#: tauon.py:22925 tauon.py:22933
+#: tauon.py:23074 tauon.py:23082
 msgid "Repeat track"
 msgstr "Répéter la piste"
 
-#: tauon.py:23917
+#: tauon.py:24066
 msgid "Playlist is empty"
 msgstr "La liste de lecture est vide"
 
-#: tauon.py:23919
+#: tauon.py:24068
 #, fuzzy
 msgid "Drag and drop files to import"
 msgstr "Glisser-déposer des fichiers pour les importer"
 
-#: tauon.py:23932
+#: tauon.py:24081
 msgid "End of Playlist"
 msgstr "Fin de la liste de lecture"
 
-#: tauon.py:25607
+#: tauon.py:25709
 #, fuzzy
 msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Pochette téléchargée depuis fanart.tv"
 
 #. Max 20 chars. Alt: Downloading image, Loading image
-#: tauon.py:26053
+#: tauon.py:26155
 msgid "Downloading data..."
 msgstr "Téléchargement..."
 
-#: tauon.py:26208
+#: tauon.py:26310
 msgid "No artists in playlist"
 msgstr "Aucun artiste dans la liste de lecture"
 
-#: tauon.py:26211
+#: tauon.py:26313
 #, fuzzy
 msgid "Artist threshold not met"
 msgstr "Seuil d'artistes non atteind"
 
-#: tauon.py:26213
+#: tauon.py:26315
 msgid "Loading Artist List..."
 msgstr "Chargement de la liste d'artistes..."
 
-#: tauon.py:26215
+#: tauon.py:26317
 msgid "Busy..."
 msgstr "Occupé..."
 
-#: tauon.py:26412
+#: tauon.py:26525
 msgid "Loading Folder Tree..."
 msgstr "Chargement de l'arborescence..."
 
-#: tauon.py:26420 tauon.py:26436
+#: tauon.py:26533 tauon.py:26549
 msgid "Folder Tree"
 msgstr "Arborescence de dossiers"
 
-#: tauon.py:26774
+#: tauon.py:26891
 msgid "Resume Queue"
 msgstr "Relance la liste d'attente"
 
-#: tauon.py:26776
+#: tauon.py:26893
 msgid "Pause Queue"
 msgstr "Mettre en pause la liste d'attente"
 
-#: tauon.py:26807
+#: tauon.py:26924
 msgid "Play Now"
 msgstr "Lire maintenant"
 
-#: tauon.py:26813
+#: tauon.py:26930
 msgid "↳ Except for This"
 msgstr "↳ Sauf pour celle-ci"
 
-#: tauon.py:26815
+#: tauon.py:26932
 msgid "Queue to New Playlist"
 msgstr "Ajouter à une nouvelle liste de lecture"
 
-#: tauon.py:26960
+#: tauon.py:27077
 msgid "Cancel Auto-Stop"
 msgstr "Annuler l'arrêt automatique"
 
-#: tauon.py:26962
+#: tauon.py:27079
 msgid "Auto-Stop"
 msgstr "Arrêt automatique"
 
-#: tauon.py:27078
+#: tauon.py:27195
 msgid "Queue"
 msgstr "Lsite d'attente"
 
 #. Alt: Looking up artist data...
-#: tauon.py:27809 tauon.py:28064
+#: tauon.py:27926 tauon.py:28181
 msgid "Looking up..."
 msgstr "Recherche en cours..."
 
-#: tauon.py:27851
+#: tauon.py:27968
 msgid "Cooldown..."
 msgstr "Tranquille..."
 
-#: tauon.py:27866
+#: tauon.py:27983
 #, fuzzy
 msgid "Loading..."
 msgstr "Recherche en cours..."
 
 #. Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
-#: tauon.py:28056
+#: tauon.py:28173
 #, fuzzy
 msgid "No artist data downloaded"
 msgstr "Aucune image trouvée pour l'artiste"
 
-#: tauon.py:28070
+#: tauon.py:28187
 msgid "No artist bio found"
 msgstr "Aucune biographie trouvée"
 
-#: tauon.py:28163
+#: tauon.py:28280
 msgid "Download Artist Data"
 msgstr "Télécharger les données de l'artiste"
 
-#: tauon.py:28164
+#: tauon.py:28281
 #, fuzzy
 msgid "Clear Bio"
 msgstr "Vider"
 
-#: tauon.py:28588
+#: tauon.py:28705
 msgid "Playing"
 msgstr "En cours"
 
-#: tauon.py:28638
+#: tauon.py:28755
 msgid "Prefer synced"
 msgstr "Mode synchronisé"
 
-#: tauon.py:28640
+#: tauon.py:28757
 msgid "Prefer static"
 msgstr "Mode statique"
 
-#: tauon.py:28651
+#: tauon.py:28768
 msgid "Auto-Scroll"
 msgstr "Scroll automatique"
 
-#: tauon.py:30616
+#: tauon.py:30733
 msgid "Could not access! Possible insufficient Flatpak permissions."
 msgstr ""
 "Accès impossible ! Les permissions de Flatpak sont peut-être insuffisantes."
 
-#: tauon.py:31196
+#: tauon.py:31313
 msgid "Enabled auto theme"
 msgstr "Thème automatique activé"
 
-#: tauon.py:31198
+#: tauon.py:31315
 msgid "Disabled auto theme"
 msgstr "Thème automatique désactivé"
 
-#: tauon.py:32686
+#: tauon.py:32808
 msgid "Rescan folder complete."
 msgstr "Réanalyser du dossier terminée."
 
-#: tauon.py:33554 tauon.py:33560
+#: tauon.py:33682 tauon.py:33688
 msgid "Path"
 msgstr "Chemin"
 
-#: tauon.py:33575
+#: tauon.py:33703
 msgid "Samplerate"
 msgstr "Taux d'échantillonnage"
 
-#: tauon.py:33635 tauon.py:33652
+#: tauon.py:33763 tauon.py:33780
 msgid " of "
 msgstr " de "
 
-#: tauon.py:33637
+#: tauon.py:33765
 msgid "Track"
 msgstr "Piste"
 
-#: tauon.py:33645
+#: tauon.py:33773
 msgid "File size"
 msgstr "Taille du fichier"
 
-#: tauon.py:33654
+#: tauon.py:33782
 msgid "Disc"
 msgstr "Disque"
 
-#: tauon.py:33719
+#: tauon.py:33847
 msgid "Play count"
 msgstr "Nombre de lectures"
 
-#: tauon.py:33732
+#: tauon.py:33860
 msgid "Play time"
 msgstr "Durée d'écoute"
 
-#: tauon.py:33738
-msgid "Lyrics"
-msgstr "Paroles"
-
-#: tauon.py:33804
+#: tauon.py:33932
 msgid "Folder Modification"
 msgstr "Modifier le répertoire"
 
-#: tauon.py:33819
+#: tauon.py:33947
 msgid "Trash"
 msgstr "Poubelle"
 
-#: tauon.py:33833
+#: tauon.py:33961
 msgid "Raise"
 msgstr "Remonter"
 
-#: tauon.py:33878
+#: tauon.py:34006
 msgid "Open HTTP Audio Stream"
 msgstr "Ouvrir le flux audio"
+
+#~ msgid "View"
+#~ msgstr "Affichage"
+
+#~ msgid "Lyrics settings..."
+#~ msgstr "Paramètres des paroles..."
+
+#~ msgid "Reload config file"
+#~ msgstr "Recharger le fichier de configuration"
+
+#~ msgid "Fanart.tv can be used for sourcing of artist images"
+#~ msgstr "Fanart.tv peut être utilisé comme source d'images pour les artistes"
+
+#~ msgid "and cover art."
+#~ msgstr "et les pochettes."
+
+#~ msgid "Discogs can be used for sourcing artist images."
+#~ msgstr "Discogs peut être utilisé comme source d'images pour les artistes."
+
+#~ msgid "For this you will need a \"Personal Access Token\""
+#~ msgstr "Pour cela, il vous faut une \"clé d'autorisation personnelle\""
+
+#~ msgid "You can generate one with a Discogs account here:"
+#~ msgstr "Vous pouvez en générer une à depuis votre compte Discogs ici : "
+
+#~ msgid "Click login to open the last.fm web"
+#~ msgstr "Cliquez sur login pour ouvrir la page d'identification de last.fm"
+
+#~ msgid "authorisation page and follow prompt."
+#~ msgstr "et suivez les insctructions."
+
+#~ msgid "Then return here and click \"Done\"."
+#~ msgstr "Puis revenez ici pour cliquer sur \"Terminé\"."
 
 #~ msgid "Loading artist image..."
 #~ msgstr "Chargement de l'image de l'artiste"
