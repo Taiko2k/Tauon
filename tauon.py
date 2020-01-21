@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.2.0"
+n_version = "5.2.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -19798,8 +19798,10 @@ class Over:
             [_("Audio"), self.audio],
             [_("Tracklist"), self.config_v],
             [_("Theme"), self.theme],
-            [_("View"), self.config_b],
+            [_("View 1"), self.config_b],
+            [_("View 2"), self.view2],
             [_("Transcode"), self.codec_config],
+            [_("Lyrics"), self.lyrics],
             [_("Accounts"), self.last_fm_box],
             [_("Stats"), self.stats],
             [_("About"), self.about]
@@ -19829,6 +19831,12 @@ class Over:
 
 
 
+    # def config_a(self, x0, y0, w0, h0):
+    #
+    #     y = y0 + 20 * gui.scale
+    #     x = x0 + 25 * gui.scale
+
+        
     def theme(self, x0, y0, w0, h0):
 
         global album_mode_art_size
@@ -19872,7 +19880,7 @@ class Over:
         ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
         y = y0 + 20 * gui.scale
-        x = x0 + 295 * gui.scale
+        x = x0 + 315 * gui.scale
 
         ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
 
@@ -19891,9 +19899,9 @@ class Over:
 
         y += 40 * gui.scale
 
-        ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
+        #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
 
-        album_mode_art_size = self.slide_control(x + 100 * gui.scale, y, None, "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
     def eq(self, x0, y0, w0, h0):
 
@@ -19913,7 +19921,7 @@ class Over:
 
         range = 12
 
-        self.toggle_square(x - 90 * gui.scale, y - 35 * gui.scale, toggle_eq, "Enable")
+        self.toggle_square(x - 90 * gui.scale, y - 35 * gui.scale, toggle_eq, _("Enable"))
 
         ddt.text((x - 17 * gui.scale, y + 2 * gui.scale), "+", colours.grey(130), 16)
         ddt.text((x - 17 * gui.scale, y + base_dis - 15 * gui.scale), "-", colours.grey(130), 16)
@@ -19997,8 +20005,8 @@ class Over:
         # Gstreamer
         if prefs.backend == 2:
 
-            y = y0 + 70 * gui.scale
-            x = x0 + 33 * gui.scale
+            y = y0 + 66 * gui.scale
+            x = x0 + 29 * gui.scale
 
             reload = False
             bk_gain = prefs.replay_gain
@@ -20089,10 +20097,10 @@ class Over:
                 self.eq_view = True
 
 
-            y = y0 + 92 * gui.scale
+            y = y0 + 88 * gui.scale
             x = x0 + 25 * gui.scale
 
-            x += 8 * gui.scale
+            x += 4 * gui.scale
             ddt.text((x, y - 22 * gui.scale), _("ReplayGain"), colours.grey_blend_bg(90), 12)
 
             y += 4 * gui.scale
@@ -20101,9 +20109,9 @@ class Over:
             # y += 23 * gui.scale
 
             self.toggle_square(x, y, switch_rg_album, _("Album gain"))
-            x += 115 * gui.scale
+            y += 23 * gui.scale
             self.toggle_square(x, y, switch_rg_track, _("Track gain"))
-            x -= 115 * gui.scale
+
 
             y += 46 * gui.scale
 
@@ -20166,7 +20174,8 @@ class Over:
             x += 40 * gui.scale
             if os.path.isfile(user_directory + '/lib/libbass.so'):
                 #. Limited width. Max 17 chars.
-                if self.button(x + 130 * gui.scale, y, _("Uninstall BASS")):
+                ww = ddt.get_text_w(_("Uninstall BASS"), 211) + 10 * gui.scale
+                if self.button(x0 + w0 - (ww + 15 * gui.scale), y, _("Uninstall BASS")):
                     shutil.rmtree(user_directory + "/lib")
                     show_message("BASS Deleted.", "Restart app to complete uninstall.",
                                  mode="info")
@@ -20183,6 +20192,55 @@ class Over:
         self.lyrics_panel ^= True
 
 
+    def lyrics(self, x0, y0, w0, h0):
+
+        x = x0 + 25 * gui.scale
+        y = y0 - 10 * gui.scale
+        y += 30 * gui.scale
+
+        self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+
+        y += 40 * gui.scale
+        ddt.text((x, y), _("Sources:"), colours.grey(100), 11)
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_apiseeds, _("Apiseeds"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_lyricwiki, _("LyricWiki*"))
+
+        y += 30 * gui.scale
+        ddt.text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
+                 colours.grey_blend_bg(90), 11)
+        y += 20 * gui.scale
+        ddt.text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
+                 colours.grey_blend_bg(90), 11)
+        y += 20 * gui.scale
+
+        # y += 34 * gui.scale
+
+        #self.button(x, y, _("Return"), self.toggle_lyrics_view, width=65 * gui.scale)
+
+    def view2(self, x0, y0, w0, h0):
+
+        x = x0 + 25 * gui.scale
+        y = y0 + 25 * gui.scale
+
+        ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
+        #
+        y += 25 * gui.scale
+
+        self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
+
+        y += 30 * gui.scale
+
+        ddt.text((x, y), _("Bottom panel"), colours.grey_blend_bg(100), 12)
+
+        y += 25 * gui.scale
+        prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+
+
+
     def funcs(self, x0, y0, w0, h0):
 
         x = x0 + 25 * gui.scale
@@ -20193,31 +20251,6 @@ class Over:
             return
 
         if self.lyrics_panel:
-
-            y += 30 * gui.scale
-
-            self.toggle_square(x, y, toggle_auto_lyrics, _("Auto search lyrics"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
-
-            y += 40 * gui.scale
-            ddt.text((x, y), _("Sources:"), colours.grey(100), 11)
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_apiseeds, _("Apiseeds"))
-            y += 23 * gui.scale
-            self.toggle_square(x, y, toggle_lyricwiki, _("LyricWiki*"))
-
-            y += 30 * gui.scale
-            ddt.text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
-                     colours.grey_blend_bg(90), 11)
-            y += 20 * gui.scale
-            ddt.text((x + 12 * gui.scale, y), _("Tip: The order enabled will be the order searched."),
-                     colours.grey_blend_bg(90), 11)
-            y += 20 * gui.scale
-
-            y += 34 * gui.scale
-
-            self.button(x, y, _("Return"), self.toggle_lyrics_view, width=65*gui.scale)
 
             x = x0 + 25 * gui.scale
             y = y0 - 10 * gui.scale
@@ -20262,16 +20295,32 @@ class Over:
             self.toggle_square(x + 10 * gui.scale, y, toggle_music_ex, _("Always extract to Music folder"))
 
 
-            y += 35 * gui.scale
+            y += 30 * gui.scale
 
             #. Limited width. Max 19 chars.
-            self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
+            # self.button(x, y, _("Lyrics settings..."), self.toggle_lyrics_view, width=115 * gui.scale)
 
-            y += 26 * gui.scale
+            wa = ddt.get_text_w(_("Open config file"), 211) + 10 * gui.scale
+            wb = ddt.get_text_w(_("Open keymap file"), 211) + 10 * gui.scale
+            wc = max(wa, wb)
 
-            #. Limited width. Max 19 chars.
-            if system == 'linux' and self.button(x, y, _("Chart generator..."), width=115 * gui.scale):
-                self.chart_view = 1
+            self.button(x, y, _("Open config file"), open_config_file, width=wc)
+
+
+            #y += 25 * gui.scale
+            bg = None
+            if gui.opened_config_file:
+                bg = [90, 50, 130, 255]
+            self.button(x + wc + 10 * gui.scale, y, _("Reload"), reload_config_file, bg=bg)
+
+            y += 30 * gui.scale
+
+
+            self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
+
+            wa = ddt.get_text_w( _("Open data folder"), 211) + 10 * gui.scale
+            x = x0 + w0
+            self.button(x - (wa + 15 * gui.scale), y, _("Open data folder"), open_data_directory, wa)
 
             x = x0 + 25 * gui.scale
             y = y0 - 10 * gui.scale
@@ -20302,7 +20351,7 @@ class Over:
                     if self.click:
                         webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
-            y += 30 * gui.scale
+            y += 60 * gui.scale
             x += 320 * gui.scale
 
             ddt.text((x, y), _("Show in context menus:"), colours.grey(100), 11)
@@ -20323,27 +20372,6 @@ class Over:
             x -= 55 * gui.scale
 
             y = y0 + 216 * gui.scale
-
-            #. Limited width. Max 19 chars.
-            self.button(x, y, _("Open config file"), open_config_file, 115 * gui.scale)
-
-            bg = None
-            if gui.opened_config_file:
-                bg = [90, 50, 130, 255]
-
-            #. Limited width. Max 19 chars.
-            self.button(x + 122 * gui.scale, y, _("Reload config file"), reload_config_file,
-                        115 * gui.scale, bg=bg)
-
-            y += 27 * gui.scale
-
-            #. Limited width. Max 19 chars.
-            self.button(x + 122 * gui.scale, y, _("Open keymap file"), open_keymap_file,
-                        115 * gui.scale)
-
-            #. Limited width. Max 19 chars.
-            self.button(x, y, _("Open data folder"), open_data_directory, 115 * gui.scale)
-
 
 
     def button(self, x, y, text, plug=None, width=0, bg=None):
@@ -20490,13 +20518,10 @@ class Over:
             ddt.text((x, y), 'fanart.tv', colours.grey_blend_bg(220), 213)
 
             y += 25 * gui.scale
-            # . Limited space available, line 1 of 2. Max 50 chars, overflow onto line 2.
-            ddt.text((x + 0 * gui.scale, y), _("Fanart.tv can be used for sourcing of artist images"),
+            ddt.text((x + 0 * gui.scale, y, 4, 270 * gui.scale, 600), _("Fanart.tv can be used for sourcing of artist images and cover art."),
                      colours.grey_blend_bg(90), 11)
             y += 17 * gui.scale
-            # . Limited space available, line 2 of 2.
-            ddt.text((x + 0 * gui.scale, y), _("and cover art."),
-                     colours.grey_blend_bg(90), 11)
+
 
             y += 22 * gui.scale
             #. Limited space available. Limit 55 chars.
@@ -20514,17 +20539,12 @@ class Over:
             ddt.text((x, y), 'Discogs', colours.grey_blend_bg(220), 213)
 
             y += 25 * gui.scale
-            ddt.text((x + 0 * gui.scale, y), _("Discogs can be used for sourcing artist images."),
+            ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
                      colours.grey_blend_bg(90), 11)
+
             y += 22 * gui.scale
-            ddt.text((x + 0 * gui.scale, y), _("For this you will need a \"Personal Access Token\""),
-                     colours.grey_blend_bg(90), 11)
-
             y += 15 * gui.scale
-            ddt.text((x + 0 * gui.scale, y), _("You can generate one with a Discogs account here:"),
-                     colours.grey_blend_bg(90), 11)
-
-            y += 20 * gui.scale
+            y += 35 * gui.scale
             link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers", colours.grey_blend_bg3(190), 12)
             link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
@@ -20578,53 +20598,51 @@ class Over:
 
             ddt.text((x, y), 'Last.fm', colours.grey_blend_bg(220), 213)
 
-            ddt.text((x + 100 * gui.scale, y - 0 * gui.scale, 2), _("Username:") + " ", colours.grey_blend_bg(60), 212)
-            ddt.text((x + 165 * gui.scale, y - 0 * gui.scale, 2), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
+            ww = ddt.get_text_w(_("Username:"), 212)
+            ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.grey_blend_bg(60), 212)
+            ddt.text((x + ww + 15 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
-            y += 30 * gui.scale
+            y += 25 * gui.scale
 
             if prefs.last_fm_token is None:
                 self.button(x, y, _("Login"), lastfm.auth1, 65 * gui.scale)
                 self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
 
-                y += 30 * gui.scale
-                ddt.text((x + 2 * gui.scale, y), _("Click login to open the last.fm web"),
-                         colours.grey_blend_bg(90), 11)
-                y += 14 * gui.scale
-                ddt.text((x + 2 * gui.scale, y), _("authorisation page and follow prompt."),
-                         colours.grey_blend_bg(90), 11)
-                y += 14 * gui.scale
-                ddt.text((x + 2 * gui.scale, y), _('Then return here and click "Done".'),
-                         colours.grey_blend_bg(90), 11)
+                y += 25 * gui.scale
+                ddt.text((x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale), _("Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."),
+                         colours.grey_blend_bg(90), 11, max_w=270 * gui.scale)
+
             else:
                 self.button(x, y, _("Forget account"), lastfm.auth3)
 
 
 
             x = x0 + 260 * gui.scale
-            y = y0 + round(160 * gui.scale)
+            y = y0 + round(130 * gui.scale)
 
             # self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
-            self.button(x, y, _("Get user loves"), lastfm.dl_love, width=110 * gui.scale)
+            wa = ddt.get_text_w(_("Get user loves"),211) + 10 * gui.scale
+            wb = ddt.get_text_w(_("Clear local loves"),211) + 10 * gui.scale
+            wc = ddt.get_text_w(_("Get friend loves"),211) + 10 * gui.scale
+            wd = ddt.get_text_w(_("Clear friend loves"),211) + 10 * gui.scale
+            ww = max(wa, wb, wc, wd)
+
+            self.button(x, y, _("Get user loves"), lastfm.dl_love, width=ww)
 
             y += 26 * gui.scale
-            self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=110 * gui.scale)
-
-            y = y0 + 160 * gui.scale
-            x = x0 + 380 * gui.scale
-
-            self.button(x, y, _("Get friend loves"), self.get_friend_love, width=110 * gui.scale)
-            # if lastfm.scanning_friends:
-            #     ddt.draw_text((x + 120 * gui.scale, y), "scanning...",
-            #               colours.grey_blend_bg(111), 11)
+            self.button(x, y, _("Clear local loves"), self.clear_local_loves, width=ww)
 
             y += 26 * gui.scale
-            self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=110 * gui.scale)
+
+            self.button(x, y, _("Get friend loves"), self.get_friend_love, width=ww)
+
+            y += 26 * gui.scale
+            self.button(x, y, _("Clear friend loves"), lastfm.clear_friends_love, width=ww)
 
 
             x = x0 + 260 * gui.scale
-            y = y0 + round(230 * gui.scale)
+            y = y0 + round(245 * gui.scale)
 
             self.toggle_square(x, y, toggle_scrobble_mark, _("Show threshold marker"))
 
@@ -20692,7 +20710,9 @@ class Over:
         y += 20 * gui.scale
 
         ddt.text((x, y + 13 * gui.scale), _("Output codec setting:"), colours.grey(100), 11)
-        self.button(x + 380 * gui.scale, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
+
+        ww = ddt.get_text_w(_("Open output folder"), 211) + 25 * gui.scale
+        self.button(x0 + w0 - ww, y - 4 * gui.scale, _("Open output folder"), open_encode_out)
 
 
         y += 40 * gui.scale
@@ -20700,7 +20720,7 @@ class Over:
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_opus, "OPUS")
         if  prefs.transcode_codec == 'opus':
-            self.toggle_square(x + 250 * gui.scale, y, switch_opus_ogg, _("Save opus as .ogg extension"))
+            self.toggle_square(x + 120 * gui.scale, y, switch_opus_ogg, _("Save opus as .ogg extension"))
         y += 25 * gui.scale
         self.toggle_square(x, y, switch_ogg, "OGG")
         y += 25 * gui.scale
@@ -20724,9 +20744,9 @@ class Over:
         x = x0 + round(20 * gui.scale)
         y = y0 + 215 * gui.scale
 
-        self.toggle_square(x + 250 * gui.scale, y, toggle_transcode_output, _("Save to output folder"))
+        self.toggle_square(x, y, toggle_transcode_output, _("Save to output folder"))
         y += 25 * gui.scale
-        self.toggle_square(x + 250 * gui.scale, y, toggle_transcode_inplace, _("Save and overwrite files inplace"))
+        self.toggle_square(x, y, toggle_transcode_inplace, _("Save and overwrite files inplace"))
 
     def devance_theme(self):
         global theme
@@ -20804,23 +20824,15 @@ class Over:
 
         #y += 30 * gui.scale
 
-        ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
-        #
-        y += 25 * gui.scale
+        # ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
+        # #
+        # y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_meta_persists_stop, _("Persist when stopped"))
         #
         # y += 25 * gui.scale
         # self.toggle_square(x, y, toggle_meta_shows_selected, _("Always show selected"))
 
         #y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_side_panel_layout, _("Use centered style"))
-
-        y += 30 * gui.scale
-
-        ddt.text((x, y), _("Bottom panel"), colours.grey_blend_bg(100), 12)
-
-        y += 25 * gui.scale
-        prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
 
     def about(self, x0, y0, w0, h0):
 
@@ -20927,12 +20939,15 @@ class Over:
 
         y = y0 + h0 - round(33 * gui.scale)
 
-        x = x0 + w0 - 100 * gui.scale
+        x = x0 + w0 - 0 * gui.scale
 
         #. Limited space. Max 13 chars.
+
+        x -= ddt.get_text_w(_("Show License"), 211) + round(21 * gui.scale) + 5 * gui.scale
+
         self.button(x, y, _("Show License"), open_license)
 
-        x -= ddt.get_text_w(_("Credits"), 211) + round(21 * gui.scale)
+        x -= ddt.get_text_w(_("Credits"), 211) + round(21 * gui.scale) + 2 * gui.scale
 
         if self.button(x, y, _("Credits")):
             self.ani_cred = 1
@@ -21065,15 +21080,32 @@ class Over:
 
     def stats(self, x0, y0, w0, h0):
 
+
         x = x0 + 10 * gui.scale
         y = y0
+
+        if self.chart_view == 1:
+            self.topchart(x0, y0, w0, h0)
+            return
+
+        ww = ddt.get_text_w(_("Chart generator..."), 211) + 30 * gui.scale
+        if system == 'linux' and self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
+            self.chart_view = 1
 
         lt_font = 312
         lt_colour = colours.grey_blend_bg(85)
 
+        w1 = ddt.get_text_w(_("Tracks in playlist"), 12)
+        w2 = ddt.get_text_w(_("Albums in playlist"), 12)
+        w3 = ddt.get_text_w(_("Playlist duration"), 12)
+        w4 = ddt.get_text_w(_("Tracks in database"), 12)
+        w5 = ddt.get_text_w(_("Total albums"), 12)
+        w6 = ddt.get_text_w(_("Total playtime"), 12)
+
+
         x1 = x + (8 + 10 + 10) * gui.scale
-        x2 = x1 + 125 * gui.scale
-        y1 = y + 40 * gui.scale
+        x2 = x1 + max(w1, w2, w3, w4, w5, w6) + 20 * gui.scale
+        y1 = y + 50 * gui.scale
 
         if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing][6] or self.stats_pl_timer.get() > 5:
             self.stats_pl = pctl.multi_playlist[pctl.active_playlist_viewing][6]
@@ -21213,7 +21245,7 @@ class Over:
             self.toggle_square(x, y, k[1], k[0])
             y += 25 * gui.scale
 
-        x = x0 + 300 * gui.scale
+        x = x0 + 330 * gui.scale
         y = y0 + 25 * gui.scale
 
 
@@ -21236,12 +21268,16 @@ class Over:
         ddt.text((x, y), _("End of playlist action"), colours.grey_blend_bg(90), 12)
 
         y += 25 * gui.scale
+        wa = ddt.get_text_w(_("Stop playback"), 13) + 10 * gui.scale
+        wb = ddt.get_text_w(_("Repeat playlist"), 13) + 10 * gui.scale
+        wc = max(wa, wb) + 20 * gui.scale
+
         self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
         y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
         #y += 25
         y -= 25 * gui.scale
-        x += 140 * gui.scale
+        x += wc
         self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
         y += 25 * gui.scale
         self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
@@ -21381,7 +21417,7 @@ class Over:
             header_width = 60
 
         content_width = round(545 * gui.scale)
-        content_height = round(275 * gui.scale)
+        content_height = round(275 * gui.scale)  # 275
         full_width = content_width
         full_height = content_height
 
@@ -21402,7 +21438,7 @@ class Over:
         ddt.rect_a((x, y), (full_width, full_height), colours.sys_background, True)
 
         current_tab = 0
-        tab_height = 30
+        tab_height = 24 #30
 
         if top_mode:
 
@@ -21457,8 +21493,8 @@ class Over:
                 if self.click and gui.message_box:
                     gui.message_box = False
 
-                box = [x, y + (current_tab * 30 * gui.scale), tab_width, 30 * gui.scale]
-                box2 = [x, y + (current_tab * 30 * gui.scale), tab_width, 29 * gui.scale]
+                box = [x, y + (current_tab * tab_height), tab_width, tab_height]
+                box2 = [x, y + (current_tab * tab_height), tab_width, tab_height - 1]
                 fields.add(box2)
 
                 if self.click and coll(box2):
@@ -21477,10 +21513,10 @@ class Over:
                     ddt.rect(box, [255, 255, 255, 10], True)
 
                 if current_tab == self.tab_active:
-                    ddt.text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0],
+                    ddt.text((box[0] + (tab_width // 2), box[1] + 4 * gui.scale, 2), item[0],
                              alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
                 else:
-                    ddt.text((box[0] + (tab_width // 2), box[1] + 7 * gui.scale, 2), item[0],
+                    ddt.text((box[0] + (tab_width // 2), box[1] + 4 * gui.scale, 2), item[0],
                              alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
 
                 current_tab += 1
@@ -30500,8 +30536,8 @@ for menu in Menu.instances:
                     ww = test_width
 
             if ww > item[4]:
-                print("extend")
-                print(item)
+                # print("extend")
+                # print(item)
                 item[4] = ww
 
     if w > menu.w:
@@ -35052,3 +35088,4 @@ while tm.check_playback_running() or lfm_scrobbler.running:
         break
 
 print("bye")
+
