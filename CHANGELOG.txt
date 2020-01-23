@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.2.1
+
+ - Tweaked layout of settings to allow for localisation
+
 v5.2.0
 
  - Added global search filter keywords: composer, year, album

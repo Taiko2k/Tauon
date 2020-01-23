@@ -20539,12 +20539,12 @@ class Over:
             ddt.text((x, y), 'Discogs', colours.grey_blend_bg(220), 213)
 
             y += 25 * gui.scale
-            ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
+            hh = ddt.text((x + 0 * gui.scale, y, 4, 260 * gui.scale, 300 * gui.scale), _("Discogs can be used for sourcing artist images. For this you will need a \"Personal Access Token\".\n\nYou can generate one with a Discogs account here:"),
                      colours.grey_blend_bg(90), 11)
 
-            y += 22 * gui.scale
-            y += 15 * gui.scale
-            y += 35 * gui.scale
+
+            y += hh
+            #y += 15 * gui.scale
             link_pa2 = draw_linked_text((x + 0 * gui.scale, y), "https://www.discogs.com/settings/developers", colours.grey_blend_bg3(190), 12)
             link_rect2 = [x + 0 * gui.scale, y, link_pa2[1], 20 * gui.scale]
             fields.add(link_rect2)
@@ -20605,8 +20605,9 @@ class Over:
             y += 25 * gui.scale
 
             if prefs.last_fm_token is None:
-                self.button(x, y, _("Login"), lastfm.auth1, 65 * gui.scale)
-                self.button(x + 80 * gui.scale, y, _("Done"), lastfm.auth2, 65 * gui.scale)
+                ww = ddt.get_text_w(_("Login"), 211) + 10 * gui.scale
+                self.button(x, y, _("Login"), lastfm.auth1)
+                self.button(x + ww + 10 * gui.scale, y, _("Done"), lastfm.auth2)
 
                 y += 25 * gui.scale
                 ddt.text((x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale), _("Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."),
