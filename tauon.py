@@ -13064,7 +13064,7 @@ def open_config_file():
         subprocess.call(['open', target])
     else:
         subprocess.call(["xdg-open", target])
-    show_message(_("Config file opened."), _('Click "Reload config file" if you made any changes'), mode='arrow')
+    show_message(_("Config file opened."), _('Click "Reload" if you made any changes'), mode='arrow')
     gui.opened_config_file = True
 
 def open_keymap_file():
@@ -19879,29 +19879,29 @@ class Over:
         self.button(x + 0 * gui.scale, y + 5 * gui.scale, _("Previous Theme"), self.devance_theme, width=105 * gui.scale)
         ddt.text((x + 105 * gui.scale + 6 * gui.scale, y - 20 * gui.scale, 2), gui.theme_name, colours.grey_blend_bg(90), 213)
 
-        y = y0 + 20 * gui.scale
-        x = x0 + 315 * gui.scale
-
-        ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
-
-        y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
-        self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
-        y += 25 * gui.scale
-        self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
-        y += 25 * gui.scale
-        # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
+        # y = y0 + 20 * gui.scale
+        # x = x0 + 315 * gui.scale
+        #
+        # ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+        #
         # y += 25 * gui.scale
-        prefs.center_gallery_text = self.toggle_square(x + round(10 * gui.scale), y, prefs.center_gallery_text, _("Center alignment"))
-        y += 25 * gui.scale
-        if album_mode_art_size < 160:
-            self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
-
-        y += 40 * gui.scale
-
-        #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
-
-        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
+        # # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+        # self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
+        # y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
+        # y += 25 * gui.scale
+        # # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
+        # # y += 25 * gui.scale
+        # prefs.center_gallery_text = self.toggle_square(x + round(10 * gui.scale), y, prefs.center_gallery_text, _("Center alignment"))
+        # y += 25 * gui.scale
+        # if album_mode_art_size < 160:
+        #     self.toggle_square(x, y, toggle_gallery_thin, _("Prefer thinner padding"))
+        #
+        # y += 40 * gui.scale
+        #
+        # #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
+        #
+        # album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
     def eq(self, x0, y0, w0, h0):
 
@@ -20224,7 +20224,7 @@ class Over:
     def view2(self, x0, y0, w0, h0):
 
         x = x0 + 25 * gui.scale
-        y = y0 + 25 * gui.scale
+        y = y0 + 20 * gui.scale
 
         ddt.text((x, y), _("Metadata side panel"), colours.grey_blend_bg(100), 12)
         #
@@ -20238,6 +20238,37 @@ class Over:
 
         y += 25 * gui.scale
         prefs.hide_bottom_title = self.toggle_square(x, y, prefs.hide_bottom_title, _("Hide title when already shown"))
+
+        global album_mode_art_size
+        global update_layout
+        y += 30 * gui.scale
+        ddt.text((x, y), _("Gallery"), colours.grey_blend_bg(100), 12)
+
+        y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_dim_albums, "Dim gallery when playing")
+        self.toggle_square(x, y, toggle_gallery_click, _("Single click to play"))
+        y += 25 * gui.scale
+        self.toggle_square(x, y, toggle_galler_text, _("Show title text under art"))
+        y += 25 * gui.scale
+        # self.toggle_square(x, y, toggle_gallery_row_space, _("Increase row spacing"))
+        # y += 25 * gui.scale
+        prefs.center_gallery_text = self.toggle_square(x + round(10 * gui.scale), y, prefs.center_gallery_text, _("Center alignment"))
+
+
+        y += 30 * gui.scale
+
+        #y += 25 * gui.scale
+
+        x -= 80 * gui.scale
+        x += ddt.get_text_w( _("Gallery art size"), 11)
+        #x += 20 * gui.scale
+
+        if album_mode_art_size < 160:
+            self.toggle_square(x + 235 * gui.scale, y + 2 * gui.scale, toggle_gallery_thin, _("Prefer thinner padding"))
+
+        #ddt.text((x, y), _("Gallery art size"), colours.grey(220), 11)
+
+        album_mode_art_size = self.slide_control(x + 25 * gui.scale, y, _("Gallery art size"), "px", album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
 
 
@@ -21415,7 +21446,7 @@ class Over:
         if window_size[0] < 700 * gui.scale:
             top_mode = True
             side_width = 0 * gui.scale
-            header_width = 60
+            header_width = 48
 
         content_width = round(545 * gui.scale)
         content_height = round(275 * gui.scale)  # 275
@@ -21477,12 +21508,12 @@ class Over:
                 if current_tab == self.tab_active:
                     alpha = 240
 
-                ddt.text((xx + (tab_width // 2), yy + 7 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, alpha], ddt.text_background_colour), 213)
+                ddt.text((xx + (tab_width // 2), yy + 4 * gui.scale, 2), item[0], alpha_blend([240, 240, 240, alpha], ddt.text_background_colour), 212)
 
                 current_tab += 1
                 xx += tab_width
                 if current_tab == 6:
-                    yy += 30
+                    yy += 24 #30
                     xx = x
 
         else:
