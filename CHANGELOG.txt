@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.2.1
 
  - Tweaked layout of settings to allow for localisation
+ - Updated Discord RP with fixed app icon
 
 v5.2.0
 

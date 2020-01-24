@@ -16314,20 +16314,20 @@ def discord_loop():
             if state == 1:
                 print("PLAYING: " + title)
 
-                print(start_time)
+                # print(start_time)
 
                 RPC.update(pid=pid,
                            state=album,
                            details=title,
                            start=int(start_time),
-                           large_image="tauon-large",)
+                           large_image="tauon-standard",)
 
             else:
                 print("STOPPED")
 
                 RPC.update(pid=pid,
                            state="Idle",
-                           large_image="tauon-large",)
+                           large_image="tauon-standard",)
 
             time.sleep(15)
 
