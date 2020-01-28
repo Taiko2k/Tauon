@@ -3343,6 +3343,7 @@ class PlayerCtl:
 
         self.running = True
         self.system = system
+        self.macos = macos
         self.windows_native = windows_native
         self.install_directory = install_directory
         self.user_directory = user_directory
