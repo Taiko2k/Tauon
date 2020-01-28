@@ -44,6 +44,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
     if not os.path.isfile(linux_lib_dir + "libbass.so"):
         linux_lib_dir = pctl.user_directory + '/lib/'
 
+    if pctl.macos:
+        if not os.path.isfile(linux_lib_dir + "libbass.dylib"):
+            linux_lib_dir = pctl.user_directory + '/lib/'
+
     b_linux_lib_dir = linux_lib_dir.encode()
 
     if pctl.system == 'windows':
@@ -55,7 +59,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         ogg_module = ctypes.WinDLL('bassenc_ogg')
 
         function_type = ctypes.WINFUNCTYPE
-    elif pctl.system == 'mac':
+    elif pctl.system == 'linux' and pctl.macos:
         bass_module = ctypes.CDLL(linux_lib_dir + 'libbass.dylib', mode=ctypes.RTLD_GLOBAL)
         enc_module = ctypes.CDLL(linux_lib_dir + 'libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
@@ -352,7 +356,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         BASS_PluginLoad(b'basswv.dll', 0)
         BASS_PluginLoad(b'bassalac.dll', 0)
 
-    elif pctl.system == 'mac':
+    elif pctl.macos:
         BASS_PluginLoad(b_linux_lib_dir + b'libbassopus.dylib', 0)
         BASS_PluginLoad(b_linux_lib_dir + b'libbassflac.dylib', 0)
         BASS_PluginLoad(b_linux_lib_dir + b'libbass_ape.dylib', 0)
