@@ -47,6 +47,7 @@ bass_archive_checksum = "4470bec0a41d3dfb5b402265d2403f44df7e4c5931dfef3489c867b
 
 # Detect platform
 windows_native = False
+macos = False
 if sys.platform == 'win32':
     system = 'windows'
     windows_native = True
@@ -54,6 +55,8 @@ else:
     system = 'linux'
     import fcntl
 
+if sys.platform == "darwin":
+    macos = True
 
 if not windows_native:
     import gi
@@ -599,7 +602,7 @@ if system == "linux":
     from t_modules.t_gdk_extra import *
 
 
-if system == "linux":
+if system == "linux" and not macos:
     c_br = cursor_get_gdk(4)
     c_rs = cursor_get_gdk(8)
     c_ts = cursor_get_gdk(9)
@@ -6328,7 +6331,7 @@ cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
 cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
 
 
-if system == "linux":
+if system == "linux" and not macos:
     cursor_br_corner = cairo_cursor_to_sdl(*c_br, fallback=cursor_standard)
     cursor_right_side = cairo_cursor_to_sdl(*c_rs, fallback=cursor_standard)
     cursor_top_side = cairo_cursor_to_sdl(*c_ts, fallback=cursor_standard)
