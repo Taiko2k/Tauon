@@ -5,6 +5,7 @@ v5.2.1
 
  - Tweaked layout of settings to allow for localisation
  - Updated Discord RP with fixed app icon
+ - Fixed crash with remove embed image function
 
 v5.2.0
 
