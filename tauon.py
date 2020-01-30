@@ -13069,6 +13069,8 @@ def open_config_file():
     else:
         subprocess.call(["xdg-open", target])
     show_message(_("Config file opened."), _('Click "Reload" if you made any changes'), mode='arrow')
+    #reload_config_file()
+    #gui.message_box = False
     gui.opened_config_file = True
 
 def open_keymap_file():
@@ -20967,6 +20969,8 @@ class Over:
 
             ddt.text((x, y + 1 * gui.scale), "Translations", colours.grey(90), 13)
             ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "tyzmodo", colours.grey(220), 13)
+            y += 19 * gui.scale
+            ddt.text((x + 120 * gui.scale, y + 1 * gui.scale), "brunob", colours.grey(220), 13)
 
         ddt.rect((x, block_y, 369 * gui.scale, 100 * gui.scale), alpha_mod(colours.sys_background, fade), True)
 
