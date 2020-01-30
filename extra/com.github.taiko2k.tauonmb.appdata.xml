@@ -56,12 +56,11 @@
 
   <releases>
 
-    <release version="5.2.0" date="2020-01-14">
+    <release version="5.2.1" date="2020-01-31">
       <description>
         <ul>
-          <li>Improved search function speed</li>
-          <li>Improved CUE sheet compatibility</li>
-          <li>Various tweaks and bug fixes</li>
+          <li>Minor tweaks and bug fixes</li>
+          <li>Added French translation</li>
         </ul>
       </description>
     </release>
