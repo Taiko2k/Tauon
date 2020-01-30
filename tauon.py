@@ -11556,7 +11556,7 @@ def delete_track_image(track_object):
     if info and info[0] == 0:
         delete_file_image(track_object)
     elif info and info[0] == 1:
-        remove_embed_deco(track_object)
+        remove_embed_picture(track_object)
 
 picture_menu.add('Delete Image <combined>', delete_track_image, delete_track_image_deco, pass_ref=True, pass_ref_deco=True, icon=delete_icon)
 
