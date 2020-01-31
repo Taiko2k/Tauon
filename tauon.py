@@ -542,6 +542,7 @@ import requests
 import stat
 import hashlib
 import platform
+import gettext
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -2969,29 +2970,48 @@ if 0 < db_version <= 36 and prefs.backend == 1 and system == "linux" and (not os
 
 # Set UI language -----
 
-lc = locale.getlocale()
-print(f"Locale detected: {lc[0]}")
+#lc = locale.getlocale(locale.LC_MESSAGES)
+#print(f"Locale detected: {lc[0]}")
 
-lang = "en"
+lang = ""
 
-if lc[0] is not None and "_" in lc[0]:
-    lang = lc[0]
+# if lc[0] is not None and "_" in lc[0]:
+#     lang = lc[0]
 
-if prefs.ui_lang != "en":
-    lang = prefs.ui_lang
+# if prefs.ui_lang != "en":
+#     lang = prefs.ui_lang
 
 locale_dir = os.path.join(install_directory, "locale")
 
 if flatpak_mode:
     locale_dir = "/app/share/locale"
 
-if lang != 'en':
-    import gettext
 
-    f = gettext.find('tauon', localedir=locale_dir, languages=[lang])
+
+
+lang = []
+if prefs.ui_lang != "auto" or prefs.ui_lang == "":
+    lang = [prefs.ui_lang]
+
+if lang:
+    # Force set lang
+    f = gettext.find('tauon', localedir=locale_dir, languages=lang)
 
     if f:
-        translation = gettext.translation('tauon', localedir=locale_dir, languages=[lang])
+        translation = gettext.translation('tauon', localedir=locale_dir, languages=lang)
+        translation.install()
+        _ = translation.gettext
+
+        print("Translation file loaded")
+    else:
+        print("No translation file available")
+
+else:
+    # Auto detect lang
+    f = gettext.find('tauon', localedir=locale_dir)
+
+    if f:
+        translation = gettext.translation('tauon', localedir=locale_dir)
         translation.install()
         _ = translation.gettext
 
