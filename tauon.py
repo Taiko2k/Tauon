@@ -333,6 +333,11 @@ except:
 
 SDL_Init(SDL_INIT_VIDEO)
 
+err = SDL_GetError()
+if err:
+    print(f"SDL init error: {err.decode()}")
+    SDL_ClearError()
+
 window_title = t_title
 window_title = window_title.encode('utf-8')
 
@@ -346,6 +351,11 @@ t_window = SDL_CreateWindow(window_title,
                             window_size[0], window_size[1],
                             flags)
 
+err = SDL_GetError()
+if err:
+    print(f"SDL window error: {err.decode()}")
+    SDL_ClearError()
+
 if maximized:
     SDL_MaximizeWindow(t_window)
 
@@ -356,6 +366,11 @@ renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
 # window_surface = SDL_GetWindowSurface(t_window)
 
 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+
+err = SDL_GetError()
+if err:
+    print(f"SDL render error: {err.decode()}")
+    SDL_ClearError()
 
 display_index = SDL_GetWindowDisplayIndex(t_window)
 display_bounds = SDL_Rect(0, 0)
