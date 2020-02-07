@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.2.2
+
+ - Fixed column sorting not ignoring case
+
 v5.2.1
 
  - Tweaked layout of settings to allow for localisation
