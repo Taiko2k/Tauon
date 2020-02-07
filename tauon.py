@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.2.1"
+n_version = "5.2.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -15105,22 +15105,22 @@ def key_love(index):
     return get_love_index(index)
 
 def key_artist(index):
-    return pctl.master_library[index].artist
+    return pctl.master_library[index].artist.lower()
 
 def key_album_artist(index):
-    return pctl.master_library[index].album_artist
+    return pctl.master_library[index].album_artist.lower()
 
 def key_composer(index):
-    return pctl.master_library[index].composer
+    return pctl.master_library[index].composer.lower()
 
 def key_comment(index):
     return pctl.master_library[index].comment
 
 def key_title(index):
-    return pctl.master_library[index].title
+    return pctl.master_library[index].title.lower()
 
 def key_album(index):
-    return pctl.master_library[index].album
+    return pctl.master_library[index].album.lower()
 
 def key_duration(index):
     return pctl.master_library[index].length
@@ -15129,7 +15129,7 @@ def key_date(index):
     return pctl.master_library[index].date
 
 def key_genre(index):
-    return pctl.master_library[index].genre
+    return pctl.master_library[index].genre.lower()
 
 def key_t(index):
     #return str(pctl.master_library[index].track_number)
