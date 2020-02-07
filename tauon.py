@@ -15195,10 +15195,7 @@ def sort_ass(h, invert=False):
 
     if key is not None:
         playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
-        playlist.sort(key=key)
-
-        if invert:
-            playlist = list(reversed(playlist))
+        playlist.sort(key=key, reverse=invert)
 
         pctl.multi_playlist[pctl.active_playlist_viewing][2] = playlist
         default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]

@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.2.2
 
  - Fixed column sorting not ignoring case
+ - Fixed column sort ascending not maintaining track order
 
 v5.2.1
 
