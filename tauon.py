@@ -560,7 +560,7 @@ import platform
 import gettext
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, unescape
 from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
@@ -9451,7 +9451,7 @@ def load_xspf(path):
                                     l = l.replace('file:', "")
                                     l = l.lstrip("/")
                                     l = "/" + l
-                                    l = str(urllib.parse.unquote(l))
+                                    l = str(unescape(l)) # str(urllib.parse.unquote(l))
                                 b['location'] = l
                             if 'creator' in field.tag and field.text:
                                 b['artist'] = field.text
@@ -9491,18 +9491,20 @@ def load_xspf(path):
         found = False
 
         # Check if we already have a track with full file path in database
-        if 'location' in track:
+        if not found and 'location' in track:
 
             location = track['location']
             if location in location_dict:
                 playlist.append(location_dict[location])
+                if not os.path.isfile(location):
+                    missing += 1
                 found = True
 
             if found is True:
                 continue
 
         # Then check for title, artist and filename match
-        if 'location' in track and 'duration' in track and 'title' in track and 'artist' in track:
+        if not found and 'location' in track and 'duration' in track and 'title' in track and 'artist' in track:
             base = os.path.basename(track['location'])
             if base in base_names:
                 for index, bn in r_base_names.items():
@@ -9511,22 +9513,26 @@ def load_xspf(path):
                                     os.path.isfile(va.fullpath) and \
                                     va.filename == base:
                         playlist.append(index)
+                        if not os.path.isfile(va.fullpath):
+                            missing += 1
                         found = True
                         break
                 if found is True:
                     continue
 
         # Then check for just title and artist match
-        if 'title' in track and 'artist' in track and track['title'] in titles:
+        if not found and 'title' in track and 'artist' in track and track['title'] in titles:
             for key, value in pctl.master_library.items():
                 if value.artist == track['artist'] and value.title == track['title'] and os.path.isfile(value.fullpath):
                     playlist.append(key)
+                    if not os.path.isfile(value.fullpath):
+                        missing += 1
                     found = True
                     break
             if found is True:
                 continue
 
-        if 'location' in track or 'title' in track:
+        if not found and 'location' in track or 'title' in track:
             nt = TrackClass()
             nt.index = master_count
             nt.found = False
@@ -9540,7 +9546,6 @@ def load_xspf(path):
                 nt.file_ext = os.path.splitext(os.path.basename(location))[1][1:].upper()
                 if os.path.isfile(location):
                     nt.found = True
-                    missing -= 1
             elif 'album' in track:
                 nt.parent_folder_name = track['album']
             if 'artist' in track:
@@ -9552,12 +9557,14 @@ def load_xspf(path):
             if 'album' in track:
                 nt.album = track['album']
             nt.is_cue = False
-            if nt.found is True:
+            if nt.found:
                 nt = tag_scan(nt)
 
             pctl.master_library[master_count] = nt
             playlist.append(master_count)
             master_count += 1
+            if nt.found:
+                continue
 
         missing += 1
         tauon.log("-- Failed to locate track")
@@ -32959,6 +32966,7 @@ while pctl.running:
                             if item.playlist == order.playlist:
                                 break
                         else:
+
                             if "New Playlist" in pctl.multi_playlist[target_pl][0]:
                                 auto_name_pl(target_pl)
 
@@ -32969,6 +32977,10 @@ while pctl.running:
                                     print("Auto sorting")
                                     standard_sort(target_pl)
                                     year_sort(target_pl)
+
+                            if not pctl.multi_playlist[target_pl][2]:
+                                print("Import playlist is empty.. deteting")
+                                delete_playlist(target_pl)
 
                         if not load_orders:
                             loading_in_progress = False

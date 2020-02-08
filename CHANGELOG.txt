@@ -5,6 +5,8 @@ v5.2.2
 
  - Added warning log file to user data folder
  - Added backup database file saving
+ - Fixed XSPF importing filenames with certain characters
+ - Fixed XSPF importing not reporting errors on 2nd try
  - Fixed column sorting not ignoring case
  - Fixed column sort ascending not maintaining track order
 
