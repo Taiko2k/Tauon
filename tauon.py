@@ -14954,6 +14954,7 @@ track_menu.add(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True)
 
 
 def drop_tracks_to_new_playlist(track_list):
+
     pl = new_playlist(False)
     albums = []
     artists = []
@@ -30824,7 +30825,8 @@ while pctl.running:
                     if new_playlist_cooldown:
                         playlist_target = pctl.active_playlist_viewing
                     else:
-                        playlist_target = new_playlist()
+                        if not target.lower().endswith(".xspf"):
+                            playlist_target = new_playlist()
                         new_playlist_cooldown = True
 
             elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
@@ -32978,9 +32980,6 @@ while pctl.running:
                                     standard_sort(target_pl)
                                     year_sort(target_pl)
 
-                            if not pctl.multi_playlist[target_pl][2]:
-                                print("Import playlist is empty.. deteting")
-                                delete_playlist(target_pl)
 
                         if not load_orders:
                             loading_in_progress = False
