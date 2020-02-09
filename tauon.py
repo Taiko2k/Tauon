@@ -9451,7 +9451,8 @@ def load_xspf(path):
                                     l = l.replace('file:', "")
                                     l = l.lstrip("/")
                                     l = "/" + l
-                                    l = str(unescape(l)) # str(urllib.parse.unquote(l))
+                                    l = str(urllib.parse.unquote(unescape(l)))
+
                                 b['location'] = l
                             if 'creator' in field.tag and field.text:
                                 b['artist'] = field.text
