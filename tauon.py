@@ -21734,6 +21734,8 @@ class TopPanel:
         self.menu_space = 17 * gui.scale
         self.click_buffer = 4 * gui.scale
 
+        self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
+
         # ---
         self.space_left = 0
         self.tab_text_spaces = []
@@ -21918,6 +21920,9 @@ class TopPanel:
 
             # Determine the tab width
             tab_width = self.tab_text_spaces[i] + self.tab_extra_width
+
+            # Save the far right boundary of the tabs (hacky)
+            self.tabs_right_x = x + tab_width
 
             # Detect mouse over and add tab to mouse over detection
             f_rect = [x, y + 1, tab_width - 1, self.height - 1]
@@ -30811,14 +30816,22 @@ while pctl.running:
                 for w in range(len(pctl.multi_playlist)):
                     wid = top_panel.tab_text_spaces[w] + top_panel.tab_extra_width
 
+                    # Ignore hidden playlist
+                    if pctl.multi_playlist[w][8]:
+                        continue
+
+                    # Ignore truncated tabs
+                    if i_x > top_panel.tabs_right_x:
+                        continue
+
                     if x < i_x < x + wid:
                         playlist_target = w
                         tab_pulse.pulse()
                         gui.update += 1
                         gui.pl_pulse = True
-
                         print("Direct drop")
                         break
+
                     x += wid
                 else:
                     print("MISS")

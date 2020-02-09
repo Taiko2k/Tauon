@@ -9,6 +9,7 @@ v5.2.2
  - Fixed XSPF importing not reporting errors on 2nd try
  - Fixed column sorting not ignoring case
  - Fixed column sort ascending not maintaining track order
+ - Fixed drag and dropping folders as new tab not working if top panel was full
 
 v5.2.1
 
