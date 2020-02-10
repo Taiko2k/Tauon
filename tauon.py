@@ -65,6 +65,7 @@ if not windows_native:
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get('XDG_CURRENT_DESKTOP')
 #de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
+de_notify_support = False
 
 
 # Find the directory we are running from
