@@ -64,6 +64,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         enc_module = ctypes.CDLL(linux_lib_dir + 'libbassenc.dylib', mode=ctypes.RTLD_GLOBAL)
         mix_module = ctypes.CDLL(linux_lib_dir + 'libbassmix.dylib', mode=ctypes.RTLD_GLOBAL)
         ogg_module = ctypes.CDLL(linux_lib_dir + 'libbassenc_ogg.dylib', mode=ctypes.RTLD_GLOBAL)
+        fx_module = ctypes.CDLL(linux_lib_dir + 'libbass_fx.dylib', mode=ctypes.RTLD_GLOBAL)
         function_type = ctypes.CFUNCTYPE
     else:
         bass_module = ctypes.CDLL(linux_lib_dir + 'libbass.so', mode=ctypes.RTLD_GLOBAL)
@@ -396,7 +397,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         #     #print("Set output device as: " + name)
         #     #bass_ready = True
 
-        # print((name, enabled, default, current))
         # if current > 0:
         #     pctl.set_device = a
         pctl.bass_devices.append((name, enabled, default, current, a))
