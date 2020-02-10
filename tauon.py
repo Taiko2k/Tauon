@@ -70,9 +70,13 @@ de_notify_support = True
 # Find the directory we are running from
 install_directory = sys.path[0]
 
-# Workaround for Py-Installer
+# Workaround for PyInstaller
+pyinstaller_mode = False
 if 'base_library' in install_directory:
+    pyinstaller_mode = True
+if pyinstaller_mode:
     install_directory = os.path.dirname(install_directory)
+
 
 if system == "windows":
     os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
@@ -474,8 +478,6 @@ def asset_loader(name, mod=False):
         return WhiteModImageAsset(target)
     return LoadImageAsset(target)
 
-if scale != 1:
-    scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
 
 loading_image = asset_loader('loading.png')
 
