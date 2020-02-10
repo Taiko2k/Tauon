@@ -4804,7 +4804,7 @@ def open_encode_out():
 def g_open_encode_out(a, b, c):
     open_encode_out()
 #
-if system == 'linux':
+if system == 'linux' and not macos:
 
     try:
         Notify.init("Tauon Music Box")
@@ -6154,16 +6154,16 @@ if system == 'windows':
     keyboardHookThread.daemon = True
     keyboardHookThread.start()
 
-if macos:
-    try:
-        import osxmmkeys
-        tap = osxmmkeys.Tap()
-        tap.on('play_pause', input.m_key_play)
-        tap.on('next_track', input.m_key_next)
-        tap.on('prev_track', input.m_key_previous)
-        tap.start()
-    except ImportError:
-        print("Could not import osxmmkeys")
+# if macos:
+#     try:
+#         import osxmmkeys
+#         tap = osxmmkeys.Tap()
+#         tap.on('play_pause', input.m_key_play)
+#         tap.on('next_track', input.m_key_next)
+#         tap.on('prev_track', input.m_key_previous)
+#         tap.start()
+#     except ImportError:
+#         print("Could not import osxmmkeys")
 
 
 class GStats:
