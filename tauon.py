@@ -615,7 +615,7 @@ if system == 'linux':
 
 from t_modules import t_autodownload
 
-if system == "linux":
+if system == "linux" and not macos:
     from t_modules.t_dbus import Gnome
     from t_modules.t_gdk_extra import *
 
@@ -6073,7 +6073,7 @@ class STray:
         self.active = False
 
 
-if system == "linux":
+if system == "linux" and not macos:
 
     gnome = Gnome(tauon)
 
@@ -31086,7 +31086,7 @@ while pctl.running:
             # print(event.window.event)
 
             if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-                if system == "linux":
+                if system == "linux" and not macos:
                     gnome.focus()
                 k_input = True
 
