@@ -1199,6 +1199,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.gst_use_custom_output = False
         self.gst_device = "PulseAudio"
+        if macos:
+            self.gst_device = "Auto"
 
         self.notify_include_album = True
 
@@ -1707,6 +1709,21 @@ class Input:    # Used to keep track of button states (or should be)
 
         self.media_key = ""
 
+    def m_key_play(self):
+        self.media_key = "Play"
+        gui.update += 1
+    def m_key_pause(self):
+        self.media_key = "Pause"
+        gui.update += 1
+    def m_key_stop(self):
+        self.media_key = "Stop"
+        gui.update += 1
+    def m_key_next(self):
+        self.media_key = "Next"
+        gui.update += 1
+    def m_key_previous(self):
+        self.media_key = "Previous"
+        gui.update += 1
 
 input = Input()
 
@@ -6134,6 +6151,18 @@ if system == 'windows':
     keyboardHookThread = threading.Thread(target=keyboard_hook)
     keyboardHookThread.daemon = True
     keyboardHookThread.start()
+
+if macos:
+    try:
+        import osxmmkeys
+        tap = osxmmkeys.Tap()
+        tap.on('play_pause', input.m_key_play)
+        tap.on('next_track', input.m_key_next)
+        tap.on('prev_track', input.m_key_previous)
+        tap.start()
+    except ImportError:
+        print("Could not import osxmmkeys")
+
 
 class GStats:
     def __init__(self):
@@ -20070,7 +20099,7 @@ class Over:
 
         colour = [220, 220, 220, 255]
 
-        if not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
+        if not macos and system != "windows" and not os.path.isfile(install_directory + '/lib/libbass.so') and not os.path.isfile(user_directory + '/lib/libbass.so'):
             if arch == "x86_64":
                 if not gui.downloading_bass:
                     #. Limited width. Max 27 chars. Alt: Download BASS
@@ -35201,6 +35230,12 @@ else:
     if de_notify_support:
         song_notification.close()
         Notify.uninit()
+
+if macos:
+    try:
+        tap.stop()
+    except:
+        pass
 
 try:
     fp.close()
