@@ -11,6 +11,7 @@ v5.2.2
  - Fixed column sort ascending not maintaining track order
  - Fixed drag and dropping folders as new tab not working if top panel was full
  - Fixed icons not reverting size when changing ui-scale back to 1.0
+ - Fixed a crash in showcase view with large portrait window size
 
 v5.2.1
 
