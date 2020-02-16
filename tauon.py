@@ -28805,6 +28805,8 @@ class Showcase:
 
         box = int(window_size[1] * 0.4 + 120 * gui.scale)
 
+        #box = min(window_size[0] // 2, box)
+
         hide_art = False
         if window_size[0] < 900 * gui.scale:
             hide_art = True
@@ -28816,6 +28818,8 @@ class Showcase:
 
         if hide_art:
             box = 45 * gui.scale
+        elif window_size[1] / window_size[0] > 0.7:
+            x = int(window_size[0] * 0.07)
 
         bbg = colours.grey(30)
         bfg = colours.grey(40)
