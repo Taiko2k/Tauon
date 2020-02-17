@@ -3,6 +3,7 @@ Changelog-------------------------------------
 
 v5.2.2
 
+ - Added regenerate function to playlist tab menu
  - Added playlist generator strings
  - Added warning log file to user data folder
  - Added backup database file saving

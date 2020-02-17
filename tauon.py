@@ -12433,9 +12433,11 @@ def year_s(plt):
     return temp
 
 
-def year_sort(pl):
-
-    playlist = pctl.multi_playlist[pl][2]
+def year_sort(pl, custom_list=None):
+    if custom_list:
+        playlist = custom_list
+    else:
+        playlist = pctl.multi_playlist[pl][2]
     plt = []
     pl2 = []
     artist = ""
@@ -12493,6 +12495,9 @@ def year_sort(pl):
     if plt:
         pl2 += year_s(plt)
         plt = []
+
+    if custom_list is not None:
+        return pl2
 
     # We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
     pctl.multi_playlist[pl][2][:] = pl2[:]
@@ -12613,10 +12618,22 @@ def regenerate_playlist(pl):
 
             selections.clear()
 
+        elif cm == "ypa":
+            playlist = year_sort(0, playlist)
+
+        elif cm == "tn":
+            sort_track_2(0, playlist)
+
+        elif cm == "m":
+            playlist = gen_last_modified(0, playlist)
+
+        elif cm == "l" or cm == "love" or cm == "loved":
+            playlist = gen_love(0, playlist)
+
         elif cm == "clr":
             selections.clear()
 
-        elif cm == "rv":
+        elif cm == "rv" or cm == "reverse":
             playlist = gen_reverse(0, playlist)
 
         elif cm == "rva":
@@ -12906,12 +12923,11 @@ def key_playcount(index):
     # else:
     #     return 0
 
-def gen_top_100(index, custom_list):
+def gen_top_100(index, custom_list=None):
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
-
     playlist = copy.deepcopy(source)
     playlist = sorted(playlist, key=best, reverse=True)
 
@@ -12934,7 +12950,7 @@ extra_tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
 def gen_folder_top(pl, get_sets=False, custom_list=None):
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[pl][2]
 
     if len(source) < 3:
@@ -13024,17 +13040,24 @@ def gen_codec_pl(codec):
 
 
 
-def gen_last_modified(index):
+def gen_last_modified(index, custom_list=None):
+
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[index][2]
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=key_modified, reverse=True)
     sort_track_2(0, playlist)
 
+    if custom_list is not None:
+        return playlist
+
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <File modified>",
                                playlist=copy.deepcopy(playlist),
                                hide_title=0))
 
-
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a m>"
 
 tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
 extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
@@ -13044,18 +13067,26 @@ extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=Tru
 
 
 
-def gen_love(pl):
+def gen_love(pl, custom_list=None):
     playlist = []
 
-    for item in pctl.multi_playlist[pl][2]:
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[pl][2]
+
+    for item in source:
         if get_love_index(item):
             playlist.append(item)
+
+    if custom_list is not None:
+        return playlist
 
     if len(playlist) > 0:
         #pctl.multi_playlist.append(["Interesting Comments", 0, copy.deepcopy(playlist), 0, 0, 0])
         pctl.multi_playlist.append(pl_gen(title="Loved",
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a love>"
     else:
         show_message("No loved tracks were found.")
 
@@ -13107,7 +13138,7 @@ def gen_replay(pl):
 def gen_sort_len(index, custom_list=None):
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
 
     def length(index):
@@ -13195,7 +13226,7 @@ def gen_sort_date(index, rev=False, custom_list=None):
     first = True
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
 
     for item in source:
@@ -13279,7 +13310,7 @@ def gen_folder_shuffle(index, custom_list=None):
     dick = {}
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
 
     for track in source:
@@ -13339,7 +13370,7 @@ extra_tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 def gen_reverse(index, custom_list=None):
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
 
     playlist = list(reversed(source))
@@ -13356,10 +13387,10 @@ def gen_reverse(index, custom_list=None):
 tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
 
-def gen_folder_reverse(index, custom_list):
+def gen_folder_reverse(index, custom_list=None):
 
     source = custom_list
-    if not source:
+    if source is None:
         source = pctl.multi_playlist[index][2]
 
     folders = []
