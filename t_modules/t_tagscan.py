@@ -27,7 +27,7 @@ import io
 def parse_mbids_from_vorbis(object, key, value):
 
     if key == "musicbrainz_artistid":
-        if "'musicbrainz_artistids'" not in object.misc:
+        if "musicbrainz_artistids" not in object.misc:
             object.misc['musicbrainz_artistids'] = []
         object.misc['musicbrainz_artistids'].append(value)
         return True
@@ -212,6 +212,8 @@ class Flac:
                         self.album_gain = float(b.decode("utf-8").strip(" dB"))
                     elif 'composer' == a:
                         self.composer = b.decode("utf-8")
+                    elif "fmps_rating" == a:
+                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
                     # else:
                     #     print("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
                     #     print(b)
@@ -498,6 +500,8 @@ class Opus:
                         self.lyrics = b.decode("utf-8")
                     elif a == "composer":
                         self.composer = b.decode("utf-8")
+                    elif "fmps_rating" == a:
+                        self.misc['FMPS_Rating'] = float(b.decode("utf-8"))
                     else:
                         print("Tag Scanner: Found unhandled Vorbis comment field: " + a)
                         print(b.decode("utf-8"))
