@@ -742,6 +742,8 @@ selection_stage = 0
 
 shift_selection = []
 shift_id_selection = []
+
+gen_codes = {}
 # Control Variables--------------------------------------------------------------------------
 
 mouse_down = False
@@ -2464,6 +2466,8 @@ for t in range(2):
             search_string_cache = save[137]
         if save[138] is not None:
             search_dia_string_cache = save[138]
+        if save[139] is not None:
+            gen_codes = save[139]
 
         state_file.close()
         del save
@@ -3433,6 +3437,8 @@ class PlayerCtl:
         self.master_library = master_library
         #self.star_library = star_library
         self.LoadClass = LoadClass
+
+        self.gen_codes = gen_codes
 
         self.shuffle_pools = {}
 
@@ -7544,13 +7550,17 @@ class TextBox:
         self.selection = len(self.text)
         self.cursor_position = 0
 
+    def highlight_none(self):
+        self.selection = 0
+        self.cursor_position = 0
+
     def eliminate_selection(self):
         if self.selection != self.cursor_position:
             if self.selection > self.cursor_position:
                 self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
                 self.selection = self.cursor_position
             else:
-                self.text = self.text[0: len(self.text) -  self.cursor_position] + self.text[len(self.text) - self.selection:]
+                self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
                 self.cursor_position = self.selection
 
     def get_selection(self, p=1):
@@ -11915,6 +11925,7 @@ tab_menu = Menu(160, show_icons=True)
 def rename_playlist(index):
 
     gui.rename_playlist_box = True
+    rename_playlist_box.edit_generator = False
     rename_playlist_box.playlist_index = index
     rename_playlist_box.x = mouse_position[0]
     rename_playlist_box.y = mouse_position[1]
@@ -12204,17 +12215,19 @@ def delete_playlist(index):
         pctl.active_playlist_playing = pctl.active_playlist_viewing
         pctl.playlist_playing_position = -1
 
-    #reload()
     test_show_add_home_music()
 
-    # Remove any old gallery positions
+    # Cleanup
     ids = []
     for p in pctl.multi_playlist:
         ids.append(p[6])
+
     for key in list(gui.gallery_positions.keys()):
         if key not in ids:
             del gui.gallery_positions[key]
-
+    for key in list(pctl.gen_codes.keys()):
+        if key not in ids:
+            del pctl.gen_codes[key]
 
 
 to_scan = []
@@ -12559,11 +12572,276 @@ def rescan_deco(pl):
 
     return [line_colour, colours.menu_background, None]
 
+def regenerate_deco(pl):
+
+    id = pl_to_id(pl)
+    value = pctl.gen_codes.get(id)
+
+    if value:
+        line_colour = colours.menu_text
+    else:
+        line_colour = colours.menu_text_disabled
+
+    return [line_colour, colours.menu_background, None]
+
+def regenerate_playlist(pl):
+
+    id = pl_to_id(pl)
+    string = pctl.gen_codes.get(id)
+    if not string:
+        show_message("This playlist has no generator")
+        return
+
+    cmds = shlex.split(string)
+
+    playlist = []
+    selections = []
+
+    for cm in cmds:
+
+        if cm == "a":
+            if not selections:
+                for plist in pctl.multi_playlist:
+                    selections.append(plist[2])
+
+            temp = []
+            for selection in selections:
+                temp += selection
+
+
+            playlist += list(set(temp))
+
+            selections.clear()
+
+        elif cm == "clr":
+            selections.clear()
+
+        elif cm == "rv":
+            playlist = gen_reverse(0, playlist)
+
+        elif cm == "rva":
+            playlist = gen_folder_reverse(0, playlist)
+
+        elif cm == "rat>":
+
+            def rat_key(track_id):
+                tr = pctl.g(track_id)
+                if "FMPS_Rating" in tr.misc:
+                    return tr.misc["FMPS_Rating"]
+                else:
+                    return 0
+
+            playlist = sorted(playlist, key=rat_key, reverse=True)
+
+        elif cm[:4] == "rat>":
+            value = cm[4:]
+            try:
+                value = float(value)
+                temp = []
+                for item in playlist:
+                    tr = pctl.g(item)
+                    if "FMPS_Rating" in tr.misc:
+                        if value > tr.misc["FMPS_Rating"]:
+                            temp.append(item)
+                playlist = temp
+            except:
+                pass
+
+        elif cm == "rat":
+            temp = []
+            for item in playlist:
+                tr = pctl.g(item)
+                if "FMPS_Rating" in tr.misc:
+                    temp.append(item)
+            playlist = temp
+
+
+        elif cm == "d>":
+            playlist = gen_sort_len(0, custom_list=playlist)
+
+        elif cm == "d<":
+            playlist = gen_sort_len(0, custom_list=playlist)
+            playlist = list(reversed(playlist))
+
+        elif cm[:2] == "d<":
+            value = cm[2:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    tr = pctl.g(playlist[i])
+                    if not value > tr.length:
+                        del playlist[i]
+
+        elif cm[:2] == "d>":
+            value = cm[2:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    tr = pctl.g(playlist[i])
+                    if not value < tr.length:
+                        del playlist[i]
+
+        elif cm == "pa>":
+            playlist = gen_folder_top(0, custom_list=playlist)
+
+        elif cm == "pa<":
+            playlist = gen_folder_top(0, custom_list=playlist)
+            playlist = gen_folder_reverse(0, playlist)
+
+        elif cm == "pc>":
+            playlist = gen_top_100(0, custom_list=playlist)
+
+        elif cm == "pc<":
+            playlist = gen_top_100(0, custom_list=playlist)
+            playlist = list(reversed(playlist))
+
+        elif cm[:3] == "pc>":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    t_time = star_store.get(playlist[i])
+                    tr = pctl.g(playlist[i])
+                    if tr.length > 0:
+                        if not value < t_time / tr.length:
+                            del playlist[i]
+
+        elif cm[:3] == "pc<":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    t_time = star_store.get(playlist[i])
+                    tr = pctl.g(playlist[i])
+                    if tr.length > 0:
+                        if not value > t_time / tr.length:
+                            del playlist[i]
+
+        elif cm == "y<":
+            playlist = gen_sort_date(0, False, playlist)
+
+        elif cm == "y>":
+            playlist = gen_sort_date(0, True, playlist)
+
+        elif cm[:2] == "y=":
+            value = cm[2:]
+            if value:
+                temp = []
+                for item in playlist:
+                    if value in pctl.master_library[item].date:
+                        temp.append(item)
+                playlist = temp
+
+        elif cm[:3] == "y>=":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                temp = []
+                for item in playlist:
+                    if int(pctl.master_library[item].date[:4]) >= value:
+                        temp.append(item)
+                playlist = temp
+
+        elif cm[:3] == "y<=":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                temp = []
+                for item in playlist:
+                    if int(pctl.master_library[item].date[:4]) <= value:
+                        temp.append(item)
+                playlist = temp
+
+        elif cm[:2] == "y>":
+            value = cm[2:]
+            if value and value.isdigit():
+                value = int(value)
+                temp = []
+                for item in playlist:
+                    if int(pctl.master_library[item].date[:4]) > value:
+                        temp.append(item)
+                playlist = temp
+
+        elif cm[:2] == "y<":
+            value = cm[2:]
+            if value and value.isdigit:
+                value = int(value)
+                temp = []
+                for item in playlist:
+                    if int(pctl.master_library[item].date[:4]) < value:
+                        temp.append(item)
+                playlist = temp
+
+        elif cm == "st" or cm == "rt" or cm == "r":
+            random.shuffle(playlist)
+
+        elif cm == "sf" or cm == "rf" or cm == "ra" or cm == "sa":
+            playlist = gen_folder_shuffle(0, custom_list=playlist)
+
+        elif cm.startswith("n"):
+            value = cm[1:]
+            if value.isdigit():
+                playlist = playlist[:int(value)]
+
+        elif cm.startswith("a"):
+
+            if not selections:
+                for plist in pctl.multi_playlist:
+                    selections.append(plist[2])
+
+            search = cm[1:]
+            search_over.sip = True
+            search_over.search_text.text = "artist " + search
+            try:
+                worker2_lock.release()
+            except:
+                pass
+            while search_over.sip:
+                time.sleep(0.01)
+
+            found_name = ""
+            for result in search_over.results:
+                if result[0] == 0:
+                    found_name = result[1]
+                    break
+            else:
+                print("No artist search result found")
+                continue
+
+
+            # for item in search_over.click_artist(found_name, get_list=True, search_lists=selections):
+            #     playlist.append(item)
+            playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
+
+
+
+        elif cm.startswith("s"):
+            pl_name = cm[1:]
+            target = None
+            for p in pctl.multi_playlist:
+                if p[0].lower() == pl_name.lower():
+                    target = p[2]
+                    break
+            else:
+                for p in pctl.multi_playlist:
+                    if p[0].lower().startswith(pl_name.lower()):
+                        target = p[2]
+                        break
+            if not target:
+                print("Target playlist not found")
+                continue
+
+            selections.append(target)
+
+    pctl.multi_playlist[pl][2][:] = playlist[:]
+    gui.pl_update = 1
+
 
 extra_tab_menu = Menu(155, show_icons=True)
 
 extra_tab_menu.add(_("New Playlist"), new_playlist, icon=add_icon)
 
+tab_menu.add(_("Regenerate"), regenerate_playlist, regenerate_deco, pass_ref=True, pass_ref_deco=True)
 tab_menu.add_sub(_("Generate…"), 150)
 tab_menu.add_sub(_("Sort…"), 170)
 extra_tab_menu.add_sub(_("From Current…"), 133)
@@ -12628,19 +12906,23 @@ def key_playcount(index):
     # else:
     #     return 0
 
-def gen_top_100(index):
+def gen_top_100(index, custom_list):
 
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
 
-    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = copy.deepcopy(source)
     playlist = sorted(playlist, key=best, reverse=True)
 
-    # if len(playlist) > 1000:
-    #     playlist = playlist[:1000]
+    if custom_list is not None:
+        return playlist
 
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Playtime Sorted>",
                                playlist=copy.deepcopy(playlist),
                                hide_title=1))
-    #    [pctl.multi_playlist[index][0] + " <Playtime Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a pc>"
 
 
 tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
@@ -12649,9 +12931,14 @@ extra_tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
 
 
 
-def gen_folder_top(pl, get_sets=False):
-    if len(pctl.multi_playlist[pl][2]) < 3:
-        return
+def gen_folder_top(pl, get_sets=False, custom_list=None):
+
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[pl][2]
+
+    if len(source) < 3:
+        return []
 
     sets = []
     se = []
@@ -12693,11 +12980,15 @@ def gen_folder_top(pl, get_sets=False):
 
     # pctl.multi_playlist.append(
     #     [pctl.multi_playlist[pl][0] + " <Most Played Albums>", 0, copy.deepcopy(playlist), 0, 0, 0])
-
+    if custom_list is not None:
+        return playlist
 
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Most Played Albums>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a pa>"
+
 
 tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
@@ -12813,8 +13104,11 @@ def gen_replay(pl):
         show_message("No replay gain tags were found.")
 
 
-def gen_sort_len(index):
-    global pctl
+def gen_sort_len(index, custom_list=None):
+
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
 
     def length(index):
 
@@ -12823,8 +13117,11 @@ def gen_sort_len(index):
         else:
             return int(pctl.master_library[index].length)
 
-    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
+    playlist = copy.deepcopy(source)
     playlist = sorted(playlist, key=length, reverse=True)
+
+    if custom_list is not None:
+        return playlist
 
     # pctl.multi_playlist.append(
     #     [pctl.multi_playlist[index][0] + " <Duration Sorted>", 0, copy.deepcopy(playlist), 0, 1, 0])
@@ -12832,6 +13129,8 @@ def gen_sort_len(index):
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Duration Sorted>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a d>"
 
 tab_menu.add_to_sub(_("Longest Tracks"), 0, gen_sort_len, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Longest Tracks"), 0, gen_sort_len, pass_ref=True)
@@ -12881,8 +13180,7 @@ tab_menu.add_to_sub(_("Longest Albums"), 0, gen_folder_duration, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Longest Albums"), 0, gen_folder_duration, pass_ref=True)
 
 
-def gen_sort_date(index, rev=False):
-    global pctl
+def gen_sort_date(index, rev=False, custom_list=None):
 
     def g_date(index):
 
@@ -12896,7 +13194,11 @@ def gen_sort_date(index, rev=False):
     highest = 0
     first = True
 
-    for item in pctl.multi_playlist[index][2]:
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
+
+    for item in source:
         date = pctl.master_library[item].date
         if date != "":
             playlist.append(item)
@@ -12915,6 +13217,9 @@ def gen_sort_date(index, rev=False):
 
     playlist = sorted(playlist, key=g_date, reverse=rev)
 
+    if custom_list is not None:
+        return playlist
+
     line = " <Year Sorted>"
     if lowest != highest and lowest != 0 and highest != 0:
         if rev:
@@ -12928,6 +13233,11 @@ def gen_sort_date(index, rev=False):
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + line,
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
+
+    if rev:
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a y>"
+    else:
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a y<"
 
 tab_menu.add_to_sub(_("Year by Oldest"), 0, gen_sort_date, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Year by Oldest"), 0, gen_sort_date, pass_ref=True)
@@ -12945,10 +13255,9 @@ extra_tab_menu.add_to_sub(_("Year by Latest"), 0, gen_sort_date_new, pass_ref=Tr
 # extra_tab_menu.add_to_sub(_("Year by Artist"), 0, year_sort, pass_ref=True)
 
 def gen_500_random(index):
-    global pctl
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
-    playlist = list(set(playlist))
+    # playlist = list(set(playlist))
     random.shuffle(playlist)
 
     # pctl.multi_playlist.append(
@@ -12959,14 +13268,21 @@ def gen_500_random(index):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=1))
 
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a st"
+
 tab_menu.add_to_sub(_("Shuffled Tracks"), 0, gen_500_random, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Shuffled Tracks"), 0, gen_500_random, pass_ref=True)
 
 
-def gen_folder_shuffle(index):
+def gen_folder_shuffle(index, custom_list=None):
     folders = []
     dick = {}
-    for track in pctl.multi_playlist[index][2]:
+
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
+
+    for track in source:
         parent = pctl.master_library[track].parent_folder_path
         if parent not in folders:
             folders.append(parent)
@@ -12980,9 +13296,15 @@ def gen_folder_shuffle(index):
     for folder in folders:
         playlist += dick[folder]
 
+    if custom_list is not None:
+        return playlist
+
+
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled Folders>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a sf"
 
 tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
@@ -13014,24 +13336,35 @@ tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 
 
-def gen_reverse(index):
-    playlist = list(reversed(pctl.multi_playlist[index][2]))
+def gen_reverse(index, custom_list=None):
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Reversed>", 0, copy.deepcopy(playlist), 0, pctl.multi_playlist[index][4],
-    #      0])
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
+
+    playlist = list(reversed(source))
+
+    if custom_list is not None:
+        return playlist
 
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=pctl.multi_playlist[index][4]))
 
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a rv"
+
 tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Reverse Tracks"), 0, gen_reverse, pass_ref=True)
 
-def gen_folder_reverse(index):
+def gen_folder_reverse(index, custom_list):
+
+    source = custom_list
+    if not source:
+        source = pctl.multi_playlist[index][2]
+
     folders = []
     dick = {}
-    for track in pctl.multi_playlist[index][2]:
+    for track in source:
         parent = pctl.master_library[track].parent_folder_path
         if parent not in folders:
             folders.append(parent)
@@ -13045,9 +13378,14 @@ def gen_folder_reverse(index):
     for folder in folders:
         playlist += dick[folder]
 
+    if custom_list is not None:
+        return playlist
+
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Reversed Folders>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a rva"
 
 tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=True)
@@ -16983,11 +17321,17 @@ class SearchOverlay:
         self.animate_timer = Timer(100)
         self.input_timer = Timer(100)
 
-    def click_artist(self, name, get_list=False):
+    def click_artist(self, name, get_list=False, search_lists=None):
 
         playlist = []
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
+
+        if not search_lists:
+            search_lists = []
+            for pl in pctl.multi_playlist:
+                search_lists.append(pl[2])
+
+        for pl in search_lists:
+            for item in pl:
                 tr = pctl.master_library[item]
                 n = name.lower()
                 if tr.artist.lower() == n \
@@ -17005,6 +17349,7 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "a\"" + name + "\""
 
         input.key_return_press = False
 
@@ -25360,6 +25705,32 @@ class RenamePlaylistBox:
         self.y = 300
         self.playlist_index = 0
 
+        self.edit_generator = False
+
+
+    def toggle_edit_gen(self):
+
+        self.edit_generator ^= True
+        if self.edit_generator:
+
+            if len(rename_text_area.text) > 0:
+                pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
+
+            pl = self.playlist_index
+            id = pl_to_id(pl)
+
+            text = pctl.gen_codes.get(id)
+            if not text:
+                text = ""
+
+            rename_text_area.set_text(text)
+            rename_text_area.highlight_none()
+
+
+        else:
+            rename_text_area.set_text(pctl.multi_playlist[self.playlist_index][0])
+            rename_text_area.highlight_none()
+            # rename_text_area.highlight_all()
 
     def render(self):
 
@@ -25367,10 +25738,16 @@ class RenamePlaylistBox:
             input.mouse_click = True
         gui.level_2_click = False
 
+        if key_tab_press:
+
+            self.toggle_edit_gen()
+
         min_w = max(250 * gui.scale, ddt.get_text_w(rename_text_area.text, 315) + 50 * gui.scale)
 
         rect = [self.x, self.y, min_w, 37 * gui.scale]
         bg = [40, 40, 40, 255]
+        if self.edit_generator:
+            bg = [70, 50, 100, 255]
         ddt.text_background_colour = bg
 
         # Draw background
@@ -25384,12 +25761,21 @@ class RenamePlaylistBox:
         rect2 = [self.x, self.y + rect[3] - 4 * gui.scale, min_w, 4 * gui.scale]
         ddt.rect(rect2, [255, 255, 255, 60], True)
 
+        if self.edit_generator:
+            pl = self.playlist_index
+            id = pl_to_id(pl)
+            pctl.gen_codes[id] = rename_text_area.text
+
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
                 or ((input.mouse_click or level_2_right_click) and not coll(rect)):
             gui.rename_playlist_box = False
-            if len(rename_text_area.text) > 0:
-                pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
+
+            if self.edit_generator:
+                pass
+            else:
+                if len(rename_text_area.text) > 0:
+                    pctl.multi_playlist[self.playlist_index][0] = rename_text_area.text
             input.key_return_press = False
 
 
@@ -30577,6 +30963,7 @@ def save_state():
             prefs.gst_device,
             search_string_cache,
             search_dia_string_cache,
+            pctl.gen_codes
         ]
 
 
@@ -30739,6 +31126,7 @@ while pctl.running:
         key_del = False
         input.backspace_press = 0
         key_backspace_press = False
+        key_tab_press = False
         key_c_press = False
         key_v_press = False
         #key_f_press = False
@@ -31005,6 +31393,8 @@ while pctl.running:
                 input.key_return_press = True
             elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
                 input.key_return_press = True
+            elif event.key.keysym.sym == SDLK_TAB:
+                key_tab_press = True
             elif event.key.keysym.sym == SDLK_BACKSPACE:
                 input.backspace_press += 1
                 key_backspace_press = True
@@ -31541,18 +31931,19 @@ while pctl.running:
                 view_box.lyrics(True)
 
             if keymaps.test("toggle-gallery-keycontrol"):
-                if not album_mode:
-                    toggle_album_mode()
-                    gui.gall_tab_enter = True
-                    gui.album_tab_mode = True
-                    show_in_gal(playlist_selected, silent=True)
-                elif gui.gall_tab_enter:
-                    # Exit gallery and tab mode
-                    toggle_album_mode()
-                else:
-                    gui.album_tab_mode ^= True
-                    if gui.album_tab_mode:
+                if is_level_zero():
+                    if not album_mode:
+                        toggle_album_mode()
+                        gui.gall_tab_enter = True
+                        gui.album_tab_mode = True
                         show_in_gal(playlist_selected, silent=True)
+                    elif gui.gall_tab_enter:
+                        # Exit gallery and tab mode
+                        toggle_album_mode()
+                    else:
+                        gui.album_tab_mode ^= True
+                        if gui.album_tab_mode:
+                            show_in_gal(playlist_selected, silent=True)
 
             if keymaps.test("toggle-show-art"):
                 toggle_side_art()
