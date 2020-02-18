@@ -568,6 +568,7 @@ from ctypes import *
 from PyLyrics import *
 from send2trash import send2trash
 from isounidecode import unidecode
+from collections import OrderedDict
 import musicbrainzngs
 import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
@@ -12620,10 +12621,33 @@ def regenerate_playlist(pl):
             for selection in selections:
                 temp += selection
 
-
-            playlist += list(set(temp))
+            playlist += list(OrderedDict.fromkeys(temp))
 
             selections.clear()
+
+        elif cm == "cue":
+
+            for i in reversed(range(len(playlist))):
+                    tr = pctl.g(playlist[i])
+                    if not tr.is_cue:
+                        del playlist[i]
+            playlist += list(OrderedDict.fromkeys(temp))
+
+        elif cm[:3] == "ext":
+            value = cm[3:].upper()
+            if value:
+                if not selections:
+                    for plist in pctl.multi_playlist:
+                        selections.append(plist[2])
+
+                temp = []
+                for selection in selections:
+                    for track in selection:
+                        tr = pctl.g(track)
+                        if tr.file_ext == value:
+                            temp.append(track)
+
+                playlist += list(OrderedDict.fromkeys(temp))
 
         elif cm == "ypa":
             playlist = year_sort(0, playlist)
@@ -12631,8 +12655,14 @@ def regenerate_playlist(pl):
         elif cm == "tn":
             sort_track_2(0, playlist)
 
-        elif cm == "m":
+        elif cm == "m>":
             playlist = gen_last_modified(0, playlist)
+
+        elif cm == "m<":
+            playlist = gen_last_modified(0, playlist, reverse=False)
+
+        elif cm == "ly" or cm == "lyrics":
+            playlist = gen_lyrics(0, playlist)
 
         elif cm == "l" or cm == "love" or cm == "loved":
             playlist = gen_love(0, playlist)
@@ -12712,12 +12742,31 @@ def regenerate_playlist(pl):
             playlist = gen_folder_top(0, custom_list=playlist)
             playlist = gen_folder_reverse(0, playlist)
 
-        elif cm == "pc>":
+        elif cm == "pt>" or cm == "pc>":
             playlist = gen_top_100(0, custom_list=playlist)
 
-        elif cm == "pc<":
+        elif cm == "pt<" or cm == "pc<":
             playlist = gen_top_100(0, custom_list=playlist)
             playlist = list(reversed(playlist))
+
+        elif cm[:3] == "pt>":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    t_time = star_store.get(playlist[i])
+                    if t_time < value:
+                        del playlist[i]
+
+        elif cm[:3] == "pt<":
+            value = cm[3:]
+            if value and value.isdigit():
+                value = int(value)
+                for i in reversed(range(len(playlist))):
+                    t_time = star_store.get(playlist[i])
+                    if t_time > value:
+                        del playlist[i]
+
 
         elif cm[:3] == "pc>":
             value = cm[3:]
@@ -13011,7 +13060,7 @@ def gen_top_100(index, custom_list=None):
                                playlist=copy.deepcopy(playlist),
                                hide_title=1))
 
-    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a pc>"
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a pt>"
 
 
 tab_menu.add_to_sub(_("Top Played Tracks"), 0, gen_top_100, pass_ref=True)
@@ -13083,17 +13132,27 @@ tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=True)
 
 
-def gen_lyrics(pl):
+def gen_lyrics(pl, custom_list=None):
     playlist = []
 
-    for item in pctl.multi_playlist[pl][2]:
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[pl][2]
+
+    for item in source:
         if pctl.master_library[item].lyrics != "":
             playlist.append(item)
+
+    if custom_list is not None:
+        return playlist
 
     if len(playlist) > 0:
         pctl.multi_playlist.append(pl_gen(title="Tracks with lyrics",
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=0))
+
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a ly"
+
     else:
         show_message("No tracks with lyrics were found.")
 
@@ -13113,14 +13172,14 @@ def gen_codec_pl(codec):
 
 
 
-def gen_last_modified(index, custom_list=None):
+def gen_last_modified(index, custom_list=None, reverse=True):
 
     source = custom_list
     if source is None:
         source = pctl.multi_playlist[index][2]
 
-    playlist = copy.deepcopy(pctl.multi_playlist[index][2])
-    playlist = sorted(playlist, key=key_modified, reverse=True)
+    playlist = copy.deepcopy(source)
+    playlist = sorted(playlist, key=key_modified, reverse=reverse)
     sort_track_2(0, playlist)
 
     if custom_list is not None:
@@ -13130,7 +13189,7 @@ def gen_last_modified(index, custom_list=None):
                                playlist=copy.deepcopy(playlist),
                                hide_title=0))
 
-    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a m>"
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a m>"
 
 tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
 extra_tab_menu.add_to_sub(_("File Modified"), 0, gen_last_modified, pass_ref=True)
@@ -13435,6 +13494,8 @@ def gen_best_random(index):
         pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Lucky Random>",
                                           playlist=copy.deepcopy(playlist),
                                           hide_title=1))
+
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a pt>300 rt"
 
 tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
@@ -33768,8 +33829,10 @@ while pctl.running:
                         #         i += 1
                         #
                         #     break
-
-                        ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
+                        if line == "❤":
+                            heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, [230, 230, 230, 255])
+                        else:
+                            ddt.text((box[0] + 10 * gui.scale, top + 4 * gui.scale), line, [240, 240, 240, 255], 312, bg=bg, max_w=box[2] - 25 * gui.scale)
                         run += box[2]
 
 
