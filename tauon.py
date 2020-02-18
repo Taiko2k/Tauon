@@ -12800,6 +12800,65 @@ def regenerate_playlist(pl):
             if value.isdigit():
                 playlist = playlist[:int(value)]
 
+        # SEARCH FOLDER
+        elif cm.startswith("f"):
+
+            if not selections:
+                for plist in pctl.multi_playlist:
+                    selections.append(plist[2])
+
+            search = cm[1:]
+            search_over.sip = True
+            search_over.search_text.text = search
+            try:
+                worker2_lock.release()
+            except:
+                pass
+            while search_over.sip:
+                time.sleep(0.01)
+
+            found_name = ""
+
+            for result in search_over.results:
+                if result[0] == 5:
+                    found_name = result[1]
+                    break
+            else:
+                print("No folder search result found")
+                continue
+
+            playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
+
+        # SEARCH GENRE
+        elif cm.startswith("g"):
+
+            if not selections:
+                for plist in pctl.multi_playlist:
+                    selections.append(plist[2])
+
+            search = cm[1:]
+            search_over.sip = True
+            search_over.search_text.text = search
+            try:
+                worker2_lock.release()
+            except:
+                pass
+            while search_over.sip:
+                time.sleep(0.01)
+
+            found_name = ""
+
+            for result in search_over.results:
+                if result[0] == 3:
+                    found_name = result[1]
+                    break
+            else:
+                print("No genre search result found")
+                continue
+
+            playlist += search_over.click_genre(found_name, get_list=True, search_lists=selections)
+
+        # SEARCH ARTIST
         elif cm.startswith("a"):
 
             if not selections:
@@ -17356,7 +17415,7 @@ class SearchOverlay:
 
         playlist = []
 
-        if not search_lists:
+        if search_lists is None:
             search_lists = []
             for pl in pctl.multi_playlist:
                 search_lists.append(pl[2])
@@ -17427,11 +17486,16 @@ class SearchOverlay:
 
         input.key_return_press = False
 
-    def click_meta(self, name, get_list=False):
+    def click_meta(self, name, get_list=False, search_lists=None):
+
+        if search_lists is None:
+            search_lists = []
+            for pl in pctl.multi_playlist:
+                search_lists.append(pl[2])
 
         playlist = []
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
+        for pl in search_lists:
+            for item in pl:
                 if name in pctl.master_library[item].parent_folder_path:
                     if item not in playlist:
                         playlist.append(item)
@@ -17445,11 +17509,20 @@ class SearchOverlay:
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "f\"" + name + "\""
+
         input.key_return_press = False
 
-    def click_genre(self, name, get_list=False):
+    def click_genre(self, name, get_list=False, search_lists=None):
 
         playlist = []
+
+
+        if search_lists is None:
+            search_lists = []
+            for pl in pctl.multi_playlist:
+                search_lists.append(pl[2])
+
 
         include_multi = False
         if name.endswith("+"):
@@ -17457,8 +17530,8 @@ class SearchOverlay:
             include_multi = True
 
 
-        for pl in pctl.multi_playlist:
-            for item in pl[2]:
+        for pl in search_lists:
+            for item in pl:
                 track = pctl.master_library[item]
                 if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
                     if item not in playlist:
@@ -17479,6 +17552,8 @@ class SearchOverlay:
                                           hide_title=0))
 
         switch_playlist(len(pctl.multi_playlist) - 1)
+
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "g\"" + name + "\""
 
 
         input.key_return_press = False
