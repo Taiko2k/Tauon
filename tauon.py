@@ -12597,7 +12597,14 @@ def regenerate_playlist(pl):
         show_message("This playlist has no generator")
         return
 
-    cmds = shlex.split(string)
+    try:
+        cmds = shlex.split(string)
+    except ValueError as e:
+        show_message("Generator string error", str(e), mode="error")
+        return
+    except Exception as e:
+        show_message("Generator string error", str(e), mode="error")
+        return
 
     playlist = []
     selections = []
@@ -12808,6 +12815,7 @@ def regenerate_playlist(pl):
                     selections.append(plist[2])
 
             search = cm[1:]
+            search_over.all_folders = True
             search_over.sip = True
             search_over.search_text.text = search
             try:
@@ -12826,6 +12834,8 @@ def regenerate_playlist(pl):
             else:
                 print("No folder search result found")
                 continue
+
+            search_over.clear()
 
             playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
@@ -12848,6 +12858,7 @@ def regenerate_playlist(pl):
 
             found_name = ""
 
+
             for result in search_over.results:
                 if result[0] == 3:
                     found_name = result[1]
@@ -12855,6 +12866,8 @@ def regenerate_playlist(pl):
             else:
                 print("No genre search result found")
                 continue
+
+            search_over.clear()
 
             playlist += search_over.click_genre(found_name, get_list=True, search_lists=selections)
 
@@ -12876,6 +12889,7 @@ def regenerate_playlist(pl):
                 time.sleep(0.01)
 
             found_name = ""
+
             for result in search_over.results:
                 if result[0] == 0:
                     found_name = result[1]
@@ -12884,7 +12898,7 @@ def regenerate_playlist(pl):
                 print("No artist search result found")
                 continue
 
-
+            search_over.clear()
             # for item in search_over.click_artist(found_name, get_list=True, search_lists=selections):
             #     playlist.append(item)
             playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
@@ -17410,6 +17424,15 @@ class SearchOverlay:
         self.last_animate_time = 0
         self.animate_timer = Timer(100)
         self.input_timer = Timer(100)
+        self.all_folders = False
+
+
+    def clear(self):
+        self.search_text.text = ""
+        self.results.clear()
+        self.searched_text = ""
+        self.on = 0
+        self.all_folders = False
 
     def click_artist(self, name, get_list=False, search_lists=None):
 
@@ -18329,8 +18352,8 @@ def worker2():
 
                         stem = os.path.dirname(t.parent_folder_path)
 
-
-                        if len(s_text) > 2 and s_text in stem.replace("-", "").lower() and artist not in stem.lower() and album not in stem.lower():
+                        if len(s_text) > 2 and s_text in stem.replace("-", "").lower():
+                            #if search_over.all_folders or (artist not in stem.lower() and album not in stem.lower()):
 
                             if stem in metas:
                                 metas[stem] += 2
@@ -18532,8 +18555,9 @@ def worker2():
                         temp_results[i][4] = genres[item[1]]
                     if item[0] == 5:
                         temp_results[i][4] = metas[item[1]]
-                        if metas[item[1]] < 42:
-                            temp_results[i] = None
+                        if not search_over.all_folders:
+                            if metas[item[1]] < 42:
+                                temp_results[i] = None
                     if item[0] == 6:
                         temp_results[i][4] = composers[item[1]]
                     if item[0] == 7:
@@ -32172,6 +32196,13 @@ while pctl.running:
                     gui.pl_update = 1
                     shift_selection = range(len(default_playlist))
 
+                if keymaps.test("revert"):
+                    pctl.revert()
+
+                if keymaps.test("random-track-start"):
+                    pctl.advance(rr=True)
+
+
             if keymaps.test("vol-down"):
                 if pctl.player_volume > 3:
                     pctl.player_volume -= 3
@@ -32184,13 +32215,6 @@ while pctl.running:
                 if pctl.player_volume > 100:
                     pctl.player_volume = 100
                 pctl.set_volume()
-
-
-
-            if keymaps.test("revert"):
-                pctl.revert()
-            if keymaps.test("random-track-start"):
-                pctl.advance(rr=True)
 
             if keymaps.test("toggle-shuffle"):
                 #pctl.random_mode ^= True
@@ -32207,7 +32231,6 @@ while pctl.running:
 
             if keymaps.test("random-track"):
                 random_track()
-
 
             if keymaps.test('opacity-up'):
                 prefs.window_opacity += .05
