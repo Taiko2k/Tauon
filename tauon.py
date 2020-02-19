@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.2.2"
+n_version = "5.3.0"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -19196,7 +19196,8 @@ def worker1():
                     try:
                         cmds = shlex.split(code)
                         if prefs.always_auto_update_playlists or "auto" in cmds:
-                            regenerate_playlist(i)
+                            if not pl_is_locked(i):
+                                regenerate_playlist(i)
                     except:
                         pass
 
