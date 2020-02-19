@@ -1,13 +1,13 @@
 
 Changelog-------------------------------------
 
-v5.2.2
+v5.3.0
 
  - Added regenerate function to playlist tab menu
  - Added playlist generator strings
  - Added warning log file to user data folder
  - Added backup database file saving
- - Added subsonic support
+ - Added subsonic streaming support
  - Tweaked search results to show more folders
  - Changed love heart column title from emoji to icon
  - Enabled network sources with GStreamer backend

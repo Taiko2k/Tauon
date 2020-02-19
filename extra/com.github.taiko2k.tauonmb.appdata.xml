@@ -56,11 +56,11 @@
 
   <releases>
 
-    <release version="5.2.1" date="2020-01-31">
+    <release version="5.3.0" date="2020-01-31">
       <description>
         <ul>
-          <li>Minor tweaks and bug fixes</li>
-          <li>Added French translation</li>
+          <li>Added Subsonic streaming support</li>
+          <li>Added playlist auto-reload feature</li>
         </ul>
       </description>
     </release>

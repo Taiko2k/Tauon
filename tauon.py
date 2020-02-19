@@ -1062,7 +1062,7 @@ class Prefs:    # Used to hold any kind of settings
 
         self.koel_username = ""
         self.koel_password = ""
-        self.koel_server_url = ""
+        self.koel_server_url = "http://localhost:8050"
 
         self.auto_lyrics = False
         self.auto_lyrics_checked = []
@@ -3009,7 +3009,7 @@ def load_prefs():
     prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername, "Probably your servers hostname.")
 
     cf.br()
-    cf.add_text("[subsonic-account]")
+    cf.add_text("[subsonic_account]")
     prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
     prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
     prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
@@ -3017,8 +3017,8 @@ def load_prefs():
     cf.br()
     cf.add_text("[koel_account]")
     prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
-    prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
-    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://0.0.0.0:8050 or https://0.0.0.0:8060")
+    prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
+    prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
 
     cf.br()
@@ -5964,7 +5964,7 @@ class SubsonicService:
                     nt.index = master_count
 
                     nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-                    nt.parent_folder_path = nt.parent_folder_name
+                    nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
 
                     if "coverArt" in song:
                         nt.art_url_key = song["id"]
@@ -6129,10 +6129,11 @@ class KoelService:
             nt.artist = artist_ids.get(song["artist_id"], "")
             nt.album = album_ids.get(song["album_id"], "")
             nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-            nt.parent_folder_path = nt.parent_folder_name
+            nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
 
             nt.art_url_key = covers.get(song["album_id"], "")
             nt.url_key = song["id"]
+
             nt.is_network = True
             nt.file_ext = "KOEL"
 
@@ -6143,8 +6144,17 @@ class KoelService:
 
         self.scanning = False
 
+        def key(track_id):
+            return pctl.g(track_id).album
+
+
         pctl.multi_playlist.append(pl_gen(title="Koel Collection", playlist=playlist))
         standard_sort(len(pctl.multi_playlist) - 1)
+
+        #pctl.multi_playlist[len(pctl.multi_playlist) - 1][2].sort(key=key)
+
+        #sort_tracK_numbers_album_only(len(pctl.multi_playlist) - 1)
+
         switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -12523,6 +12533,32 @@ def index_key(index):
     except:
         return "a"
 
+
+def sort_tracK_numbers_album_only(pl, custom_list=None):
+    current_folder = ""
+    albums = []
+    if custom_list is None:
+        playlist = pctl.multi_playlist[pl][2]
+    else:
+        playlist = custom_list
+
+    for i in range(len(playlist)):
+        if i == 0:
+            albums.append(i)
+            current_folder = pctl.master_library[playlist[i]].album
+        else:
+            if pctl.master_library[playlist[i]].album != current_folder:
+                current_folder = pctl.master_library[playlist[i]].album
+                albums.append(i)
+
+    i = 0
+    while i < len(albums) - 1:
+        playlist[albums[i]:albums[i + 1]] = sorted(playlist[albums[i]:albums[i + 1]], key=index_key)
+        i += 1
+    if len(albums) > 0:
+        playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
+
+    gui.pl_update += 1
 
 def sort_track_2(pl, custom_list=None):
     current_folder = ""
@@ -32889,7 +32925,7 @@ while pctl.running:
 
         mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
 
-        if not gui.mouse_in_window:
+        if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
             mouse_position[0] = -300
             mouse_position[1] = -300
 
@@ -33015,170 +33051,338 @@ while pctl.running:
             # C-AR
 
             if album_mode:
+                try:
+                    # Arrow key input
+                    if gal_right:
+                        gal_right = False
+                        gal_jump_select(False, 1)
+                        goto_album(playlist_selected)
+                        pctl.playlist_view_position = playlist_selected
+                        gui.pl_update = 1
+                    if gal_down:
+                        gal_down = False
+                        gal_jump_select(False, row_len)
+                        goto_album(playlist_selected, down=True)
+                        pctl.playlist_view_position = playlist_selected
+                        gui.pl_update = 1
+                    if gal_left:
+                        gal_left = False
+                        gal_jump_select(True, 1)
+                        goto_album(playlist_selected)
+                        pctl.playlist_view_position = playlist_selected
+                        gui.pl_update = 1
+                    if gal_up:
+                        gal_up = False
+                        gal_jump_select(True, row_len)
+                        goto_album(playlist_selected)
+                        pctl.playlist_view_position = playlist_selected
+                        gui.pl_update = 1
 
-                # Arrow key input
-                if gal_right:
-                    gal_right = False
-                    gal_jump_select(False, 1)
-                    goto_album(playlist_selected)
-                    pctl.playlist_view_position = playlist_selected
-                    gui.pl_update = 1
-                if gal_down:
-                    gal_down = False
-                    gal_jump_select(False, row_len)
-                    goto_album(playlist_selected, down=True)
-                    pctl.playlist_view_position = playlist_selected
-                    gui.pl_update = 1
-                if gal_left:
-                    gal_left = False
-                    gal_jump_select(True, 1)
-                    goto_album(playlist_selected)
-                    pctl.playlist_view_position = playlist_selected
-                    gui.pl_update = 1
-                if gal_up:
-                    gal_up = False
-                    gal_jump_select(True, row_len)
-                    goto_album(playlist_selected)
-                    pctl.playlist_view_position = playlist_selected
-                    gui.pl_update = 1
+                    w = gui.rspw
 
-                w = gui.rspw
+                    if window_size[0] < 750 * gui.scale:
+                        w = window_size[0] - 20 * gui.scale
+                        if gui.lsp:
+                            w -= gui.lspw
 
-                if window_size[0] < 750 * gui.scale:
-                    w = window_size[0] - 20 * gui.scale
-                    if gui.lsp:
-                        w -= gui.lspw
+                    x = window_size[0] - w
+                    h = window_size[1] - gui.panelY - gui.panelBY
 
-                x = window_size[0] - w
-                h = window_size[1] - gui.panelY - gui.panelBY
+                    if not gui.show_playlist and input.mouse_click:
+                        left = 0
+                        if gui.lsp:
+                            left = gui.lspw
 
-                if not gui.show_playlist and input.mouse_click:
-                    left = 0
-                    if gui.lsp:
-                        left = gui.lspw
+                        if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
+                            toggle_album_mode()
+                            input.mouse_click = False
+                            mouse_down = False
 
-                    if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > mouse_position[1] > gui.panelY:
-                        toggle_album_mode()
-                        input.mouse_click = False
-                        mouse_down = False
+                    rect = [x, gui.panelY, w, h]
+                    ddt.rect(rect, colours.gallery_background, True)
+                    #ddt.rect_r(rect, [255, 0, 0, 200], True)
 
-                rect = [x, gui.panelY, w, h]
-                ddt.rect(rect, colours.gallery_background, True)
-                #ddt.rect_r(rect, [255, 0, 0, 200], True)
+                    area_x = w + 38 * gui.scale
+                    #area_x = w - 40 * gui.scale
 
-                area_x = w + 38 * gui.scale
-                #area_x = w - 40 * gui.scale
+                    row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
 
-                row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
+                    # print(row_len)
 
-                # print(row_len)
+                    compact = 40 * gui.scale
+                    a_offset = 7 * gui.scale
 
-                compact = 40 * gui.scale
-                a_offset = 7 * gui.scale
+                    l_area = x
+                    r_area = w
+                    c_area = r_area // 2 + l_area
 
-                l_area = x
-                r_area = w
-                c_area = r_area // 2 + l_area
+                    ddt.text_background_colour = colours.gallery_background
 
-                ddt.text_background_colour = colours.gallery_background
+                    line1_colour = colours.gallery_artist_line
+                    line2_colour = colours.grey(240)  # colours.side_bar_line1
 
-                line1_colour = colours.gallery_artist_line
-                line2_colour = colours.grey(240)  # colours.side_bar_line1
+                    if colours.side_panel_background != colours.gallery_background:
+                        line2_colour = [240, 240, 240, 255]
+                        line1_colour = alpha_mod([220, 220, 220, 255], 120)
 
-                if colours.side_panel_background != colours.gallery_background:
-                    line2_colour = [240, 240, 240, 255]
-                    line1_colour = alpha_mod([220, 220, 220, 255], 120)
+                    if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
+                        line1_colour = colours.grey(80)
+                        line2_colour = colours.grey(40)
 
-                if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
-                    line1_colour = colours.grey(80)
-                    line2_colour = colours.grey(40)
+                    if row_len == 0:
+                        row_len = 1
 
-                if row_len == 0:
-                    row_len = 1
+                    dev = int((r_area - compact) / (row_len + 0))
 
-                dev = int((r_area - compact) / (row_len + 0))
+                    render_pos = 0
+                    album_on = 0
 
-                render_pos = 0
-                album_on = 0
+                    max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
 
-                max_scroll = round((math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(50 * gui.scale)
+                    # Mouse wheel scrolling
+                    if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
 
-                # Mouse wheel scrolling
-                if mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                        if mouse_wheel != 0:
+                            scroll_gallery_hide_timer.set()
+                            gui.frame_callback_list.append(TestTimer(0.9))
 
-                    if mouse_wheel != 0:
-                        scroll_gallery_hide_timer.set()
-                        gui.frame_callback_list.append(TestTimer(0.9))
+                        if prefs.gallery_row_scroll:
+                            gui.album_scroll_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
+                        else:
+                            gui.album_scroll_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
 
-                    if prefs.gallery_row_scroll:
-                        gui.album_scroll_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
-                    else:
-                        gui.album_scroll_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
-
-                    if gui.album_scroll_px < round(album_v_slide_value * -1):
-                        gui.album_scroll_px = round(album_v_slide_value * -1)
-                        if album_dex:
-                            gallery_pulse_top.pulse()
-
-                    if gui.album_scroll_px > max_scroll:
-                        gui.album_scroll_px = max_scroll
                         if gui.album_scroll_px < round(album_v_slide_value * -1):
                             gui.album_scroll_px = round(album_v_slide_value * -1)
+                            if album_dex:
+                                gallery_pulse_top.pulse()
 
-                gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
+                        if gui.album_scroll_px > max_scroll:
+                            gui.album_scroll_px = max_scroll
+                            if gui.album_scroll_px < round(album_v_slide_value * -1):
+                                gui.album_scroll_px = round(album_v_slide_value * -1)
 
-                rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
+                    gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
 
-                card_mode = False
-                if prefs.use_card_style and colours.lm and gui.gallery_show_text:
-                    card_mode = True
+                    rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
 
-                rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
-                fields.add(rect)
+                    card_mode = False
+                    if prefs.use_card_style and colours.lm and gui.gallery_show_text:
+                        card_mode = True
 
-                # Show scroll area
-                if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
+                    rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
+                    fields.add(rect)
 
-                    if gallery_scroll.held:
-                        while len(gall_ren.queue) > 2:
-                            gall_ren.queue.pop()
+                    # Show scroll area
+                    if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
 
-                    # Draw power bar button
-                    if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
-                        rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 24 * gui.scale)
-                        fields.add(rect)
-                        colour = [255, 255, 255, 35]
-                        if colours.lm:
-                            colour = [0, 0, 0, 30]
-                        if coll(rect) and not gallery_scroll.held:
-                            colour = [255, 220, 100, 245]
+                        if gallery_scroll.held:
+                            while len(gall_ren.queue) > 2:
+                                gall_ren.queue.pop()
+
+                        # Draw power bar button
+                        if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
+                            rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale, 24 * gui.scale)
+                            fields.add(rect)
+                            colour = [255, 255, 255, 35]
                             if colours.lm:
-                                colour = [250, 100, 0, 255]
-                            if input.mouse_click:
-                                gui.pt = 1
+                                colour = [0, 0, 0, 30]
+                            if coll(rect) and not gallery_scroll.held:
+                                colour = [255, 220, 100, 245]
+                                if colours.lm:
+                                    colour = [250, 100, 0, 255]
+                                if input.mouse_click:
+                                    gui.pt = 1
 
-                        power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
+                            power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
 
-                    # Draw scroll bar
-                    if gui.pt == 0:
-                        gui.album_scroll_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), gui.album_scroll_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click, extend_field=15*gui.scale) - album_v_slide_value
+                        # Draw scroll bar
+                        if gui.pt == 0:
+                            gui.album_scroll_px = gallery_scroll.draw(window_size[0] - 16 * gui.scale, gui.panelY, 15 * gui.scale, window_size[1] - (gui.panelY + gui.panelBY), gui.album_scroll_px + album_v_slide_value, max_scroll + album_v_slide_value, jump_distance=1400 * gui.scale, r_click=right_click, extend_field=15*gui.scale) - album_v_slide_value
 
 
-                if last_row != row_len:
-                    last_row = row_len
+                    if last_row != row_len:
+                        last_row = row_len
 
-                    if playlist_selected < len(pctl.playing_playlist()):
-                        goto_album(playlist_selected)
-                    # else:
-                    #     goto_album(pctl.playlist_playing_position)
+                        if playlist_selected < len(pctl.playing_playlist()):
+                            goto_album(playlist_selected)
+                        # else:
+                        #     goto_album(pctl.playlist_playing_position)
 
-                extend = 0
-                if card_mode:  # gui.gallery_show_text:
-                    extend = 40 * gui.scale
+                    extend = 0
+                    if card_mode:  # gui.gallery_show_text:
+                        extend = 40 * gui.scale
 
-                # Process inputs first
-                if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
-                    while render_pos < gui.album_scroll_px + window_size[1]:
+                    # Process inputs first
+                    if (input.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
+                        while render_pos < gui.album_scroll_px + window_size[1]:
+
+                            if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
+                                break
+
+                            if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
+                                # Skip row
+                                render_pos += album_mode_art_size + album_v_gap
+                                album_on += row_len
+                            else:
+                                # render row
+                                y = render_pos - gui.album_scroll_px
+                                row_x = 0
+                                for a in range(row_len):
+                                    if album_on > len(album_dex) - 1:
+                                        break
+
+                                    x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
+                                        compact / 2) - a_offset
+
+                                    if album_dex[album_on] > len(default_playlist):
+                                        break
+
+                                    rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                                    # fields.add(rect)
+                                    m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
+                                    # if m_in:
+                                    #     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
+
+                                    # Quick drag and drop
+                                    if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
+
+                                        print("DROP")
+
+                                        info = get_album_info(album_dex[album_on])
+                                        if info[1]:
+
+                                            track_position = info[1][0]
+
+                                            if track_position > shift_selection[0]:
+                                                track_position = info[1][-1] + 1
+
+                                            ref = []
+                                            for item in shift_selection:
+                                                ref.append(default_playlist[item])
+
+                                            for item in shift_selection:
+                                                default_playlist[item] = 'old'
+
+                                            for item in shift_selection:
+                                                default_playlist.insert(track_position, "new")
+
+                                            for b in reversed(range(len(default_playlist))):
+                                                if default_playlist[b] == 'old':
+                                                    del default_playlist[b]
+                                            shift_selection = []
+                                            for b in range(len(default_playlist)):
+                                                if default_playlist[b] == 'new':
+                                                    shift_selection.append(b)
+                                                    default_playlist[b] = ref.pop(0)
+
+                                            playlist_selected = shift_selection[0]
+                                            gui.pl_update += 1
+
+                                            reload_albums(True)
+                                            tauon.worker_save_state = True
+
+                                    elif not side_drag and is_level_zero():
+
+                                        if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+                                            info = get_album_info(album_dex[album_on])
+
+                                            if m_in and mouse_up and prefs.gallery_single_click:
+
+                                                if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
+
+                                                    if info[0] == 1 and pctl.playing_state == 2:
+                                                        pctl.play()
+                                                    elif info[0] == 1 and pctl.playing_state > 0:
+                                                        pctl.playlist_view_position = album_dex[album_on]
+                                                    else:
+                                                        pctl.playlist_view_position = album_dex[album_on]
+                                                        pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                                    pctl.show_current()
+
+                                            elif mouse_down and not m_in:
+                                                info = get_album_info(album_dex[album_on])
+                                                quick_drag = True
+                                                if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+                                                    playlist_hold = True
+                                                shift_selection = info[1]
+                                                gui.pl_update += 1
+                                                click_location = [0, 0]
+
+                                    if m_in:
+
+                                        info = get_album_info(album_dex[album_on])
+                                        if input.mouse_click:
+
+                                            if prefs.gallery_single_click:
+                                                gui.d_click_ref = album_dex[album_on]
+
+                                            else:
+
+                                                if d_click_timer.get() < 0.5 and gui.d_click_ref == album_dex[album_on]:
+
+                                                    if info[0] == 1 and pctl.playing_state == 2:
+                                                        pctl.play()
+                                                    elif info[0] == 1 and pctl.playing_state > 0:
+                                                        pctl.playlist_view_position = album_dex[album_on]
+                                                    else:
+                                                        pctl.playlist_view_position = album_dex[album_on]
+                                                        pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+                                                else:
+                                                    gui.d_click_ref = album_dex[album_on]
+                                                    d_click_timer.set()
+
+
+                                                pctl.playlist_view_position = album_dex[album_on]
+                                                playlist_selected = album_dex[album_on]
+                                                gui.pl_update += 1
+
+                                        elif middle_click:
+                                            # Middle click to add album to queue
+                                            if key_ctrl_down:
+                                                # Add to queue ungrouped
+                                                album = get_album_info(album_dex[album_on])[1]
+                                                for item in album:
+                                                    pctl.force_queue.append(queue_item_gen(default_playlist[item], item, pl_to_id(
+                                                        pctl.active_playlist_viewing)))
+                                                queue_timer_set(plural=True)
+                                            else:
+                                                # Add to queue grouped
+                                                add_album_to_queue(default_playlist[album_dex[album_on]])
+
+                                        elif right_click:
+                                            playlist_selected = album_dex[album_on]
+                                            #playlist_position = playlist_selected
+                                            shift_selection = [playlist_selected]
+                                            gallery_menu.activate(default_playlist[playlist_selected])
+
+                                            shift_selection = []
+                                            u = playlist_selected
+                                            while u < len(default_playlist) and pctl.master_library[
+                                                        default_playlist[u]].parent_folder_path == \
+                                                    pctl.master_library[
+                                                        default_playlist[playlist_selected]].parent_folder_path:
+                                                shift_selection.append(u)
+                                                u += 1
+                                            pctl.render_playlist()
+
+                                    album_on += 1
+
+                                if album_on > len(album_dex):
+                                    break
+                                render_pos += album_mode_art_size + album_v_gap
+
+
+                    render_pos = 0
+                    album_on = 0
+
+                    if not pref_box.enabled or mouse_wheel != 0:
+                        gui.first_in_grid = None
+
+                    # Render album grid
+                    while render_pos < gui.album_scroll_px + window_size[1] and default_playlist:
 
                         if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
                             break
@@ -33190,8 +33394,15 @@ while pctl.running:
                         else:
                             # render row
                             y = render_pos - gui.album_scroll_px
+
                             row_x = 0
+
+                            if y > window_size[1] - gui.panelBY - 30 * gui.scale and window_size[1] < 340 * gui.scale:
+                                break
+                            # if y >
+
                             for a in range(row_len):
+
                                 if album_on > len(album_dex) - 1:
                                     break
 
@@ -33201,136 +33412,250 @@ while pctl.running:
                                 if album_dex[album_on] > len(default_playlist):
                                     break
 
-                                rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                                track = pctl.master_library[default_playlist[album_dex[album_on]]]
+
+                                info = get_album_info(album_dex[album_on])
+                                #info = (0, 0, 0)
+
+                                # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
                                 # fields.add(rect)
+                                # m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
+                                if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
+                                    gui.first_in_grid = album_dex[album_on]
+
+                                #artisttitle = colours.side_bar_line2
+                                #albumtitle = colours.side_bar_line1  # grey(220)
+
+                                if card_mode:
+                                    ddt.text_background_colour = colours.grey(250)
+                                    drop_shadow.render(x + 3 * gui.scale, y + 3 * gui.scale, album_mode_art_size + 11 * gui.scale, album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
+                                    ddt.rect((x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250), True)
+
+
+                                # White background needs extra border
+                                if colours.lm and not card_mode:
+                                    ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4),
+                                              colours.grey(200), True)
+
+                                if a == row_len - 1:
+
+                                    gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
+
+                                if info[0] == 1 and pctl.playing_state != 0:
+                                    ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                              colours.gallery_highlight, True)
+                                    # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                    #            colours.gallery_background, True)
+
+                                # Draw transcode highlight
+                                if transcode_list and os.path.isdir(prefs.encoder_output):
+
+                                    tr = False
+
+                                    if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
+                                        tr = True
+                                    else:
+                                        for folder in transcode_list:
+                                            if pctl.g(folder[0]).parent_folder_path == track.parent_folder_path:
+                                                tr = True
+                                                break
+                                    if tr:
+                                        c = [244, 212, 66, 255]
+                                        if colours.lm:
+                                            c = [244, 64, 244, 255]
+                                        ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                                  c, True)
+                                        # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                        #            colours.gallery_background, True)
+
+                                # Draw selection
+
+                                if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
+
+                                    c = colours.gallery_highlight
+                                    c = [c[1], c[2], c[0], c[3]]
+                                    ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+                                              c, True) #[150, 80, 222, 255]
+                                    # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+                                    #            colours.gallery_background, True)
+
+                                # Draw selection animation
+                                if gui.gallery_animate_highlight_on == album_dex[album_on] and gallery_select_animate_timer.get() < 1.5:
+
+                                    t = gallery_select_animate_timer.get()
+                                    c = colours.gallery_highlight
+                                    if t < 0.2:
+                                        a = int(255 * (t / 0.2))
+                                    elif t < 0.5:
+                                        a = 255
+                                    else:
+                                        a = int(255 - 255 * (t - 0.5))
+
+
+                                    c = [c[1], c[2], c[0], a]
+                                    ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
+                                              c, True) #[150, 80, 222, 255]
+
+                                    gui.update += 1
+
+
+                                # Draw faint outline
+                                ddt.rect((x - 1, y - 1, album_mode_art_size + 2, album_mode_art_size + 2), [255, 255, 255, 11])
+
+
+                                if gui.album_tab_mode or gallery_menu.active:
+                                    if info[2] is False and info[0] != 1 and not colours.lm:
+                                        ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                        albumtitle = colours.grey(160)
+
+                                else:
+                                    if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
+                                        ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
+                                        albumtitle = colours.grey(160)
+
+
+
+                                # Draw blank back colour
+                                back_colour = [40, 40, 40, 50]
+                                if colours.lm:
+                                    back_colour = [10, 10, 10, 15]
+
+                                back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
+
+                                ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
+
+                                # Draw album art
+                                drawn_art = gall_ren.render(track, (x, y))
+
+                                # Determine mouse collision
+                                rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
                                 m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                                fields.add(rect)
 
-                                # if m_in:
-                                #     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
+                                # Draw mouse-over highlight
+                                if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
+                                    if is_level_zero():
+                                        ddt.rect(rect, [255, 255, 255, 10], True)
 
-                                # Quick drag and drop
-                                if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
+                                if drawn_art is False and gui.gallery_show_text is False:
 
-                                    print("DROP")
+                                    ddt.text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
+                                             pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
+                                             colours.gallery_artist_line,
+                                             13,
+                                             album_mode_art_size - 15 * gui.scale,
+                                             bg=alpha_blend(back_colour, colours.gallery_background))
 
-                                    info = get_album_info(album_dex[album_on])
-                                    if info[1]:
 
-                                        track_position = info[1][0]
+                                if prefs.art_bg and drawn_art:
+                                    rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
+                                    if rect.y < gui.panelY:
+                                        diff = round(gui.panelY - rect.y)
+                                        rect.y += diff
+                                        rect.h -= diff
+                                    elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
+                                        diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
+                                        rect.h -= diff
 
-                                        if track_position > shift_selection[0]:
-                                            track_position = info[1][-1] + 1
+                                    if rect.h > 0:
+                                        style_overlay.hole_punches.append(rect)
 
-                                        ref = []
-                                        for item in shift_selection:
-                                            ref.append(default_playlist[item])
+                                # # Drag over highlight
+                                # if quick_drag and playlist_hold and mouse_down:
+                                #     rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+                                #     m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+                                #     if m_in:
+                                #         ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [120, 10, 255, 100], True)
 
-                                        for item in shift_selection:
-                                            default_playlist[item] = 'old'
+                                if gui.gallery_show_text:
+                                    c_index = default_playlist[album_dex[album_on]]
 
-                                        for item in shift_selection:
-                                            default_playlist.insert(track_position, "new")
-
-                                        for b in reversed(range(len(default_playlist))):
-                                            if default_playlist[b] == 'old':
-                                                del default_playlist[b]
-                                        shift_selection = []
-                                        for b in range(len(default_playlist)):
-                                            if default_playlist[b] == 'new':
-                                                shift_selection.append(b)
-                                                default_playlist[b] = ref.pop(0)
-
-                                        playlist_selected = shift_selection[0]
-                                        gui.pl_update += 1
-
-                                        reload_albums(True)
-                                        tauon.worker_save_state = True
-
-                                elif not side_drag and is_level_zero():
-
-                                    if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
-                                        info = get_album_info(album_dex[album_on])
-
-                                        if m_in and mouse_up and prefs.gallery_single_click:
-
-                                            if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
-
-                                                if info[0] == 1 and pctl.playing_state == 2:
-                                                    pctl.play()
-                                                elif info[0] == 1 and pctl.playing_state > 0:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                else:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
-                                                pctl.show_current()
-
-                                        elif mouse_down and not m_in:
-                                            info = get_album_info(album_dex[album_on])
-                                            quick_drag = True
-                                            if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
-                                                playlist_hold = True
-                                            shift_selection = info[1]
-                                            gui.pl_update += 1
-                                            click_location = [0, 0]
-
-                                if m_in:
-
-                                    info = get_album_info(album_dex[album_on])
-                                    if input.mouse_click:
-
-                                        if prefs.gallery_single_click:
-                                            gui.d_click_ref = album_dex[album_on]
-
+                                    if c_index in album_artist_dict:
+                                        pass
+                                    else:
+                                        i = album_dex[album_on]
+                                        if pctl.master_library[default_playlist[i]].album_artist:
+                                            album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
                                         else:
+                                            while i < len(default_playlist) - 1:
+                                                if pctl.master_library[default_playlist[i]].parent_folder_name != \
+                                                        pctl.master_library[
+                                                            default_playlist[album_dex[album_on]]].parent_folder_name:
+                                                    album_artist_dict[c_index] = pctl.master_library[
+                                                        default_playlist[album_dex[album_on]]].artist
+                                                    break
+                                                if pctl.master_library[default_playlist[i]].artist != pctl.master_library[
+                                                    default_playlist[album_dex[album_on]]].artist:
+                                                    album_artist_dict[c_index] = "Various Artists"
 
-                                            if d_click_timer.get() < 0.5 and gui.d_click_ref == album_dex[album_on]:
-
-                                                if info[0] == 1 and pctl.playing_state == 2:
-                                                    pctl.play()
-                                                elif info[0] == 1 and pctl.playing_state > 0:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                else:
-                                                    pctl.playlist_view_position = album_dex[album_on]
-                                                    pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
+                                                    break
+                                                i += 1
                                             else:
-                                                gui.d_click_ref = album_dex[album_on]
-                                                d_click_timer.set()
+                                                album_artist_dict[c_index] = pctl.master_library[
+                                                    default_playlist[album_dex[album_on]]].artist
 
 
-                                            pctl.playlist_view_position = album_dex[album_on]
-                                            playlist_selected = album_dex[album_on]
-                                            gui.pl_update += 1
+                                    line = album_artist_dict[c_index]
+                                    line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
 
-                                    elif middle_click:
-                                        # Middle click to add album to queue
-                                        if key_ctrl_down:
-                                            # Add to queue ungrouped
-                                            album = get_album_info(album_dex[album_on])[1]
-                                            for item in album:
-                                                pctl.force_queue.append(queue_item_gen(default_playlist[item], item, pl_to_id(
-                                                    pctl.active_playlist_viewing)))
-                                            queue_timer_set(plural=True)
+
+                                    text_align = 0
+                                    if prefs.center_gallery_text:
+                                        x = x + album_mode_art_size // 2
+                                        text_align = 2
+                                    elif card_mode:
+                                        x += round(6 * gui.scale)
+
+                                    if card_mode:
+
+                                        if line2 == "":
+
+                                            ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
+                                                     line,
+                                                     line1_colour,
+                                                     310,
+                                                     album_mode_art_size - 18 * gui.scale,
+                                                     )
                                         else:
-                                            # Add to queue grouped
-                                            add_album_to_queue(default_playlist[album_dex[album_on]])
 
-                                    elif right_click:
-                                        playlist_selected = album_dex[album_on]
-                                        #playlist_position = playlist_selected
-                                        shift_selection = [playlist_selected]
-                                        gallery_menu.activate(default_playlist[playlist_selected])
+                                            ddt.text((x, y + album_mode_art_size + 7 * gui.scale, text_align),
+                                                     line2,
+                                                     line2_colour,
+                                                     311,
+                                                     album_mode_art_size - 18 * gui.scale,
+                                                     )
 
-                                        shift_selection = []
-                                        u = playlist_selected
-                                        while u < len(default_playlist) and pctl.master_library[
-                                                    default_playlist[u]].parent_folder_path == \
-                                                pctl.master_library[
-                                                    default_playlist[playlist_selected]].parent_folder_path:
-                                            shift_selection.append(u)
-                                            u += 1
-                                        pctl.render_playlist()
+                                            ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
+                                                     line,
+                                                     line1_colour,
+                                                     10,
+                                                     album_mode_art_size - 18 * gui.scale,
+                                                     )
+                                    else:
+                                        if line2 == "":
+
+                                            ddt.text((x, y + album_mode_art_size + 9 * gui.scale, text_align),
+                                                     line,
+                                                     line1_colour,
+                                                     311,
+                                                     album_mode_art_size - 5 * gui.scale,
+                                                     )
+                                        else:
+
+                                            ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
+                                                     line2,
+                                                     line2_colour,
+                                                     212,
+                                                     album_mode_art_size,
+                                                     )
+
+                                            ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
+                                                     line,
+                                                     line1_colour,
+                                                     311,
+                                                     album_mode_art_size - 5 * gui.scale,
+                                                     )
 
                                 album_on += 1
 
@@ -33339,415 +33664,127 @@ while pctl.running:
                             render_pos += album_mode_art_size + album_v_gap
 
 
-                render_pos = 0
-                album_on = 0
+                    # POWER TAG BAR --------------
 
-                if not pref_box.enabled or mouse_wheel != 0:
-                    gui.first_in_grid = None
+                    if gui.pt > 0: #gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
 
-                # Render album grid
-                while render_pos < gui.album_scroll_px + window_size[1] and default_playlist:
+                        top = gui.panelY
+                        run_y = top + 1
 
-                    if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
-                        break
+                        hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
+                        fields.add(hot_r)
 
-                    if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
-                        # Skip row
-                        render_pos += album_mode_art_size + album_v_gap
-                        album_on += row_len
-                    else:
-                        # render row
-                        y = render_pos - gui.album_scroll_px
+                        if gui.pt == 0:  # mouse moves in
+                            if coll(hot_r) and window_is_focused():
+                                gui.pt_on.set()
+                                gui.pt = 1
+                        elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
+                            if not coll(hot_r):
+                                gui.pt = 0
+                            elif gui.pt_on.get() > 0.2:
+                                gui.pt = 2
 
-                        row_x = 0
+                                off = 0
+                                for item in gui.power_bar:
+                                    item.ani_timer.force_set(off)
+                                    off -= 0.005
 
-                        if y > window_size[1] - gui.panelBY - 30 * gui.scale and window_size[1] < 340 * gui.scale:
-                            break
-                        # if y >
+                        elif gui.pt == 2: # wait to turn off
 
-                        for a in range(row_len):
+                            if coll(hot_r):
+                                gui.pt_off.set()
+                            if gui.pt_off.get() > 0.6 and not lightning_menu.active:
+                                gui.pt = 3
 
-                            if album_on > len(album_dex) - 1:
-                                break
-
-                            x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
-                                compact / 2) - a_offset
-
-                            if album_dex[album_on] > len(default_playlist):
-                                break
-
-                            track = pctl.master_library[default_playlist[album_dex[album_on]]]
-
-                            info = get_album_info(album_dex[album_on])
-                            #info = (0, 0, 0)
-
-                            # rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                            # fields.add(rect)
-                            # m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-
-                            if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
-                                gui.first_in_grid = album_dex[album_on]
-
-                            #artisttitle = colours.side_bar_line2
-                            #albumtitle = colours.side_bar_line1  # grey(220)
-
-                            if card_mode:
-                                ddt.text_background_colour = colours.grey(250)
-                                drop_shadow.render(x + 3 * gui.scale, y + 3 * gui.scale, album_mode_art_size + 11 * gui.scale, album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
-                                ddt.rect((x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250), True)
+                                off = 0
+                                for item in gui.power_bar:
+                                    item.ani_timer.force_set(off)
+                                    off -= 0.01
 
 
-                            # White background needs extra border
-                            if colours.lm and not card_mode:
-                                ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4),
-                                          colours.grey(200), True)
-
-                            if a == row_len - 1:
-
-                                gui.gallery_scroll_field_left = max(x + album_mode_art_size, window_size[0] - round(50 * gui.scale))
-
-                            if info[0] == 1 and pctl.playing_state != 0:
-                                ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
-                                          colours.gallery_highlight, True)
-                                # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                #            colours.gallery_background, True)
-
-                            # Draw transcode highlight
-                            if transcode_list and os.path.isdir(prefs.encoder_output):
-
-                                tr = False
-
-                                if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
-                                    tr = True
+                        done = True
+                        # Animate tages on
+                        if gui.pt == 2:
+                            for item in gui.power_bar:
+                                t = item.ani_timer.get()
+                                if t < 0:
+                                    break
+                                if t > 0.2:
+                                    item.peak_x = 9 * gui.scale
                                 else:
-                                    for folder in transcode_list:
-                                        if pctl.g(folder[0]).parent_folder_path == track.parent_folder_path:
-                                            tr = True
-                                            break
-                                if tr:
-                                    c = [244, 212, 66, 255]
-                                    if colours.lm:
-                                        c = [244, 64, 244, 255]
-                                    ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
-                                              c, True)
-                                    # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                    #            colours.gallery_background, True)
+                                    item.peak_x = (t / 0.2) * 9 * gui.scale
 
-                            # Draw selection
-
-                            if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
-
-                                c = colours.gallery_highlight
-                                c = [c[1], c[2], c[0], c[3]]
-                                ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
-                                          c, True) #[150, 80, 222, 255]
-                                # ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-                                #            colours.gallery_background, True)
-
-                            # Draw selection animation
-                            if gui.gallery_animate_highlight_on == album_dex[album_on] and gallery_select_animate_timer.get() < 1.5:
-
-                                t = gallery_select_animate_timer.get()
-                                c = colours.gallery_highlight
-                                if t < 0.2:
-                                    a = int(255 * (t / 0.2))
-                                elif t < 0.5:
-                                    a = 255
+                        # Animate tags off
+                        if gui.pt == 3:
+                            for item in gui.power_bar:
+                                t = item.ani_timer.get()
+                                if t < 0:
+                                    done = False
+                                    break
+                                if t > 0.2:
+                                    item.peak_x = 0
                                 else:
-                                    a = int(255 - 255 * (t - 0.5))
-
-
-                                c = [c[1], c[2], c[0], a]
-                                ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10),
-                                          c, True) #[150, 80, 222, 255]
-
+                                    item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
+                                    done = False
+                            if done:
+                                gui.pt = 0
                                 gui.update += 1
 
+                        # Keep draw loop running while on
+                        if gui.pt > 0:
+                            gui.update = 2
 
-                            # Draw faint outline
-                            ddt.rect((x - 1, y - 1, album_mode_art_size + 2, album_mode_art_size + 2), [255, 255, 255, 11])
-
-
-                            if gui.album_tab_mode or gallery_menu.active:
-                                if info[2] is False and info[0] != 1 and not colours.lm:
-                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(160)
-
-                            else:
-                                if info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-                                    ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110], True)
-                                    albumtitle = colours.grey(160)
-
-
-
-                            # Draw blank back colour
-                            back_colour = [40, 40, 40, 50]
-                            if colours.lm:
-                                back_colour = [10, 10, 10, 15]
-
-                            back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
-
-                            ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour, True)
-
-                            # Draw album art
-                            drawn_art = gall_ren.render(track, (x, y))
-
-                            # Determine mouse collision
-                            rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                            m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-                            fields.add(rect)
-
-                            # Draw mouse-over highlight
-                            if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
-                                if is_level_zero():
-                                    ddt.rect(rect, [255, 255, 255, 10], True)
-
-                            if drawn_art is False and gui.gallery_show_text is False:
-
-                                ddt.text((x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
-                                         pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
-                                         colours.gallery_artist_line,
-                                         13,
-                                         album_mode_art_size - 15 * gui.scale,
-                                         bg=alpha_blend(back_colour, colours.gallery_background))
-
-
-                            if prefs.art_bg and drawn_art:
-                                rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
-                                if rect.y < gui.panelY:
-                                    diff = round(gui.panelY - rect.y)
-                                    rect.y += diff
-                                    rect.h -= diff
-                                elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
-                                    diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
-                                    rect.h -= diff
-
-                                if rect.h > 0:
-                                    style_overlay.hole_punches.append(rect)
-
-                            # # Drag over highlight
-                            # if quick_drag and playlist_hold and mouse_down:
-                            #     rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-                            #     m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-                            #     if m_in:
-                            #         ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [120, 10, 255, 100], True)
-
-                            if gui.gallery_show_text:
-                                c_index = default_playlist[album_dex[album_on]]
-
-                                if c_index in album_artist_dict:
-                                    pass
-                                else:
-                                    i = album_dex[album_on]
-                                    if pctl.master_library[default_playlist[i]].album_artist:
-                                        album_artist_dict[c_index] = pctl.master_library[default_playlist[i]].album_artist
-                                    else:
-                                        while i < len(default_playlist) - 1:
-                                            if pctl.master_library[default_playlist[i]].parent_folder_name != \
-                                                    pctl.master_library[
-                                                        default_playlist[album_dex[album_on]]].parent_folder_name:
-                                                album_artist_dict[c_index] = pctl.master_library[
-                                                    default_playlist[album_dex[album_on]]].artist
-                                                break
-                                            if pctl.master_library[default_playlist[i]].artist != pctl.master_library[
-                                                default_playlist[album_dex[album_on]]].artist:
-                                                album_artist_dict[c_index] = "Various Artists"
-
-                                                break
-                                            i += 1
-                                        else:
-                                            album_artist_dict[c_index] = pctl.master_library[
-                                                default_playlist[album_dex[album_on]]].artist
-
-
-                                line = album_artist_dict[c_index]
-                                line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
-
-
-                                text_align = 0
-                                if prefs.center_gallery_text:
-                                    x = x + album_mode_art_size // 2
-                                    text_align = 2
-                                elif card_mode:
-                                    x += round(6 * gui.scale)
-
-                                if card_mode:
-
-                                    if line2 == "":
-
-                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
-                                                 line,
-                                                 line1_colour,
-                                                 310,
-                                                 album_mode_art_size - 18 * gui.scale,
-                                                 )
-                                    else:
-
-                                        ddt.text((x, y + album_mode_art_size + 7 * gui.scale, text_align),
-                                                 line2,
-                                                 line2_colour,
-                                                 311,
-                                                 album_mode_art_size - 18 * gui.scale,
-                                                 )
-
-                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
-                                                 line,
-                                                 line1_colour,
-                                                 10,
-                                                 album_mode_art_size - 18 * gui.scale,
-                                                 )
-                                else:
-                                    if line2 == "":
-
-                                        ddt.text((x, y + album_mode_art_size + 9 * gui.scale, text_align),
-                                                 line,
-                                                 line1_colour,
-                                                 311,
-                                                 album_mode_art_size - 5 * gui.scale,
-                                                 )
-                                    else:
-
-                                        ddt.text((x, y + album_mode_art_size + 8 * gui.scale, text_align),
-                                                 line2,
-                                                 line2_colour,
-                                                 212,
-                                                 album_mode_art_size,
-                                                 )
-
-                                        ddt.text((x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
-                                                 line,
-                                                 line1_colour,
-                                                 311,
-                                                 album_mode_art_size - 5 * gui.scale,
-                                                 )
-
-                            album_on += 1
-
-                        if album_on > len(album_dex):
-                            break
-                        render_pos += album_mode_art_size + album_v_gap
-
-
-                # POWER TAG BAR --------------
-
-                if gui.pt > 0: #gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
-
-                    top = gui.panelY
-                    run_y = top + 1
-
-                    hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
-                    fields.add(hot_r)
-
-                    if gui.pt == 0:  # mouse moves in
-                        if coll(hot_r) and window_is_focused():
-                            gui.pt_on.set()
-                            gui.pt = 1
-                    elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
-                        if not coll(hot_r):
-                            gui.pt = 0
-                        elif gui.pt_on.get() > 0.2:
-                            gui.pt = 2
-
-                            off = 0
-                            for item in gui.power_bar:
-                                item.ani_timer.force_set(off)
-                                off -= 0.005
-
-                    elif gui.pt == 2: # wait to turn off
-
-                        if coll(hot_r):
-                            gui.pt_off.set()
-                        if gui.pt_off.get() > 0.6 and not lightning_menu.active:
-                            gui.pt = 3
-
-                            off = 0
-                            for item in gui.power_bar:
-                                item.ani_timer.force_set(off)
-                                off -= 0.01
-
-
-                    done = True
-                    # Animate tages on
-                    if gui.pt == 2:
-                        for item in gui.power_bar:
-                            t = item.ani_timer.get()
-                            if t < 0:
-                                break
-                            if t > 0.2:
-                                item.peak_x = 9 * gui.scale
-                            else:
-                                item.peak_x = (t / 0.2) * 9 * gui.scale
-
-                    # Animate tags off
-                    if gui.pt == 3:
-                        for item in gui.power_bar:
-                            t = item.ani_timer.get()
-                            if t < 0:
-                                done = False
-                                break
-                            if t > 0.2:
-                                item.peak_x = 0
-                            else:
-                                item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
-                                done = False
-                        if done:
-                            gui.pt = 0
-                            gui.update += 1
-
-                    # Keep draw loop running while on
-                    if gui.pt > 0:
-                        gui.update = 2
-
-
-                    # Draw tags
-
-                    block_h = round(27 * gui.scale)
-                    block_gap = 1 * gui.scale
-                    if gui.scale == 1.25:
-                        block_gap = 1
-
-                    if coll(hot_r) or gui.pt > 0:
-
-                        for i, item in enumerate(gui.power_bar):
-
-                            if run_y + block_h > top + h:
-                                break
-
-
-                            rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
-                            i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
-                            fields.add(i_rect)
-
-                            if (coll(i_rect) or (lightning_menu.active and lightning_menu.reference
-                            == item)) and item.peak_x == 9 * gui.scale:
-
-                                if not lightning_menu.active or lightning_menu.reference == item or right_click:
-
-                                    minx = 100 * gui.scale
-                                    maxx = minx * 2
-
-                                    ww = ddt.get_text_w(item.name, 213)
-
-                                    w = max(minx, ww)
-                                    w = min(maxx, w)
-
-
-                                    ddt.rect((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
-                                    ddt.text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
-
-                                    if input.mouse_click:
-                                        goto_album(item.position)
-                                    if right_click:
-                                        lightning_menu.activate(item, position=(window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
-                                    if middle_click:
-                                        path_stem_to_playlist(item.path, item.name)
-
-
-
-
-                            ddt.rect(rect, item.colour, True)
-                            run_y += block_h + block_gap
 
+                        # Draw tags
+
+                        block_h = round(27 * gui.scale)
+                        block_gap = 1 * gui.scale
+                        if gui.scale == 1.25:
+                            block_gap = 1
+
+                        if coll(hot_r) or gui.pt > 0:
+
+                            for i, item in enumerate(gui.power_bar):
+
+                                if run_y + block_h > top + h:
+                                    break
+
+
+                                rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
+                                i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
+                                fields.add(i_rect)
+
+                                if (coll(i_rect) or (lightning_menu.active and lightning_menu.reference
+                                == item)) and item.peak_x == 9 * gui.scale:
+
+                                    if not lightning_menu.active or lightning_menu.reference == item or right_click:
+
+                                        minx = 100 * gui.scale
+                                        maxx = minx * 2
+
+                                        ww = ddt.get_text_w(item.name, 213)
+
+                                        w = max(minx, ww)
+                                        w = min(maxx, w)
+
+
+                                        ddt.rect((rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h), [230, 230, 230, 255], True)
+                                        ddt.text((rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name, [5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+
+                                        if input.mouse_click:
+                                            goto_album(item.position)
+                                        if right_click:
+                                            lightning_menu.activate(item, position=(window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
+                                        if middle_click:
+                                            path_stem_to_playlist(item.path, item.name)
+
+
+
+
+                                ddt.rect(rect, item.colour, True)
+                                run_y += block_h + block_gap
+                except:
+                    print("Gallery render error!")
                 # END POWER BAR ------------------------
 
             # End of gallery view
