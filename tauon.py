@@ -561,6 +561,7 @@ import stat
 import hashlib
 import platform
 import gettext
+import secrets
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape, unescape
@@ -775,6 +776,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "WV": [229, 23, 18, 255],
     "PLEX": [229, 160, 13, 255],
     "KOEL": [111, 98, 190, 255],
+    "SUB": [235, 120, 20, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -1216,6 +1218,10 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_fanart_cover = True
 
         self.always_auto_update_playlists = False
+
+        self.subsonic_server = "http://localhost:4040"
+        self.subsonic_user = ""
+        self.subsonic_password = ""
 
 
 prefs = Prefs()
@@ -2741,6 +2747,10 @@ def save_prefs():
     cf.update_value("plex-password", prefs.plex_password)
     cf.update_value("plex-servername", prefs.plex_servername)
 
+    cf.update_value("subsonic-username", prefs.subsonic_user)
+    cf.update_value("subsonic-password", prefs.subsonic_password)
+    cf.update_value("subsonic-server-url", prefs.subsonic_server)
+
     cf.update_value("koel-username", prefs.koel_username)
     cf.update_value("koel-password", prefs.koel_password)
     cf.update_value("koel-server-url", prefs.koel_server_url)
@@ -2997,6 +3007,12 @@ def load_prefs():
     prefs.plex_username = cf.sync_add("string", "plex-username", prefs.plex_username, "Probably the email address you used to make your PLEX account.")
     prefs.plex_password = cf.sync_add("string", "plex-password", prefs.plex_password, "The password associated with your PLEX account." )
     prefs.plex_servername = cf.sync_add("string", "plex-servername", prefs.plex_servername, "Probably your servers hostname.")
+
+    cf.br()
+    cf.add_text("[subsonic-account]")
+    prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
+    prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
+    prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
 
     cf.br()
     cf.add_text("[koel_account]")
@@ -3556,6 +3572,9 @@ class PlayerCtl:
 
         if track_object.file_ext == "KOEL":
             return koel.resolve_stream(track_object.url_key)
+
+        if track_object.file_ext == "SUB":
+            return subsonic.resolve_stream(track_object.url_key)
 
         return None
 
@@ -5820,6 +5839,146 @@ class PlexService:
 plex = PlexService()
 tauon.plex = plex
 
+
+class SubsonicService:
+
+    def __init__(self):
+        self.scanning = False
+
+    def r(self, point, p=None, binary=False, get_url=False):
+        salt = secrets.token_hex(8)
+        server = prefs.subsonic_server.rstrip("/") + "/"
+
+        params = {
+            "u": prefs.subsonic_user,
+            "t": hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest(),
+            's': salt,
+            'v': "1.16.1",
+            'c': t_title,
+            'f': "json"
+        }
+
+        if p:
+            params.update(p)
+
+        #print(params)
+
+        #point = "rest/ping"
+
+        point = "rest/" + point
+
+        url = server + point
+
+        if get_url:
+            return url, params
+
+        response = requests.get(url, params=params)
+
+        if binary:
+            return response.content
+
+        d = json.loads(response.text)
+        #print(d)
+
+        if d["subsonic-response"]["status"] != "ok":
+            print("Subsonic Error: " + response.text)
+
+        return d
+
+    def get_cover(self, track_object):
+        response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
+        return io.BytesIO(response)
+
+    def resolve_stream(self, key):
+
+        return self.r("stream", p={"id": key}, get_url=True)
+        #print(responce.content)
+
+    def get_music(self):
+
+        if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
+            show_message("Subsonic config error: Missing username, password and/or servername",
+                         'Enter details in config file then restart app to apply.', mode='warning')
+            self.scanning = False
+            return
+
+        try:
+            d = self.r("getArtists")
+        except:
+            show_message("Subsonic error", "Server not found?", mode="warning")
+            self.scanning = False
+            return
+
+        artists = []
+
+        if d["subsonic-response"]["status"] != "ok":
+            show_message("Subsonic error", d["subsonic-response"]["error"]["message"], mode="warning")
+            self.scanning = False
+            return
+
+        for a in d["subsonic-response"]["artists"]["index"]:
+            artists += a["artist"]
+
+
+        global master_count
+        playlist = []
+
+        for artist in artists:
+            d = self.r("getArtist", p={"id": artist["id"]})
+            albums = d["subsonic-response"]["artist"]["album"]
+
+            for album in albums:
+                b = self.r("getAlbum", p={"id": album["id"]})
+                #print(b)
+                songs = b["subsonic-response"]["album"]["song"]
+
+                for song in songs:
+
+                    nt = TrackClass()
+
+                    if "title" in song:
+                        nt.title = song["title"]
+                    if "artist" in song:
+                        nt.artist = song["artist"]
+                    if "album" in song:
+                        nt.album = song["album"]
+                    if "track" in song:
+                        nt.track_number = song["track"]
+                    if "year" in song:
+                        nt.date = str(song["year"])
+                    if "duration" in song:
+                        nt.length = song["duration"]
+
+                    # if "bitRate" in song:
+                    #     nt.bitrate = song["bitRate"]
+
+                    nt.file_ext = "SUB"
+
+                    nt.index = master_count
+
+                    nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
+                    nt.parent_folder_path = nt.parent_folder_name
+
+                    if "coverArt" in song:
+                        nt.art_url_key = song["id"]
+
+                    nt.url_key = song["id"]
+                    nt.is_network = True
+
+                    pctl.master_library[master_count] = nt
+                    master_count += 1
+
+                    playlist.append(nt.index)
+
+        self.scanning = False
+
+        pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
+        standard_sort(len(pctl.multi_playlist) - 1)
+        switch_playlist(len(pctl.multi_playlist) - 1)
+
+
+subsonic = SubsonicService()
+
 class KoelService:
 
     def __init__(self):
@@ -6014,6 +6173,22 @@ def plex_get_album_thread():
     shoot_dl.daemon = True
     shoot_dl.start()
 
+def sub_get_album_thread():
+
+    if prefs.backend != 1:
+        show_message("This feature is currently only available with the BASS backend")
+        return
+
+    pref_box.close()
+    if subsonic.scanning:
+        input.mouse_click = False
+        show_message("Already scanning!")
+        return
+    subsonic.scanning = True
+
+    shoot_dl = threading.Thread(target=subsonic.get_music)
+    shoot_dl.daemon = True
+    shoot_dl.start()
 
 def koel_get_album_thread():
 
@@ -7921,19 +8096,20 @@ class GallClass:
                         print('load from cache')
                         cache_load = True
 
-                    elif source[0] == 1:
-                        # print('tag')
-                        source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-
-                    elif source[0] == 2:
-                        try:
-                            url = get_network_thumbnail_url(key[0])
-                            response = urllib.request.urlopen(url)
-                            source_image = response
-                        except:
-                            print("IMAGE NETWORK LOAD ERROR")
-                    else:
-                        source_image = open(source[1], 'rb')
+                    # elif source[0] == 1:
+                    #     # print('tag')
+                    #     source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+                    #
+                    # elif source[0] == 2:
+                    #     try:
+                    #         url = get_network_thumbnail_url(key[0])
+                    #         response = urllib.request.urlopen(url)
+                    #         source_image = response
+                    #     except:
+                    #         print("IMAGE NETWORK LOAD ERROR")
+                    # else:
+                    #     source_image = open(source[1], 'rb')
+                    source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
 
                     del source
 
@@ -8116,19 +8292,19 @@ class ThumbTracks:
 
         #print(source[0])
 
-        if source[0] == 1:
-        # print('tag')
-            source_image = io.BytesIO(album_art_gen.get_embed(track))
-
-        elif source[0] == 2:
-            try:
-
-                response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                source_image = response
-            except:
-                print("IMAGE NETWORK LOAD ERROR")
-        else:
-            source_image = open(source[1], 'rb')
+        # if source[0] == 1:
+        # # print('tag')
+        #     source_image = io.BytesIO(album_art_gen.get_embed(track))
+        #
+        # elif source[0] == 2:
+        #     try:
+        #         response = urllib.request.urlopen(get_network_thumbnail_url(track))
+        #         source_image = response
+        #     except:
+        #         print("IMAGE NETWORK LOAD ERROR")
+        # else:
+        #     source_image = open(source[1], 'rb')
+        source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
 
         if not os.path.isdir(cache_directory):
             os.makedirs(cache_directory)
@@ -8271,11 +8447,12 @@ class AlbumArt():
 
     def async_download_network_image(self, track):
 
-        print("start network image download")
-        response = urllib.request.urlopen(get_network_thumbnail_url(track))
-        #r = requests.get(get_network_thumbnail_url(track))
-
-        self.downloaded_image = io.BytesIO(response.read())
+        # print("start network image download")
+        # response = urllib.request.urlopen(get_network_thumbnail_url(track))
+        # #r = requests.get(get_network_thumbnail_url(track))
+        #
+        # self.downloaded_image = io.BytesIO(response.read())
+        self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=None, url_only=True)
         self.downloaded_track = track
         self.download_in_progress = False
         gui.update += 1
@@ -8563,21 +8740,30 @@ class AlbumArt():
             a.close()
             return image
 
-    def get_source_raw(self, offset, source, track):
+    def get_source_raw(self, offset, sources, track, subsource=None, url_only=False):
 
         source_image = None
-        if source[offset][0] == 1:
+
+        if not url_only and subsource is None:
+            subsource = sources[offset]
+
+        if not url_only and subsource[0] == 1:
             # Target is a embedded image
             source_image = io.BytesIO(self.get_embed(track))
-        elif source[offset][0] == 2:
+        elif url_only or subsource[0] == 2:
             try:
-                response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                source_image = response
+
+                if track.file_ext == "SUB":
+                    return subsonic.get_cover(track)
+                else:
+                    response = urllib.request.urlopen(get_network_thumbnail_url(track))
+                    source_image = io.BytesIO(response.read())
             except:
+                #raise
                 print("IMAGE NETWORK LOAD ERROR")
 
         else:
-            source_image = open(source[offset][1], 'rb')
+            source_image = open(subsource[1], 'rb')
         return source_image
 
     def get_base64(self, track, size):
@@ -8677,19 +8863,20 @@ class AlbumArt():
 
         offset = self.get_offset(filepath, sources)
 
-        # Get source IO
-        if sources[offset][0] == 1:
-            # Target is a embedded image
-            source_image = io.BytesIO(self.get_embed(track_object))
-        elif sources[offset][0] == 2:
-            try:
-                response = urllib.request.urlopen(get_network_thumbnail_url(track_object))
-                source_image = response
-            except:
-                print("IMAGE NETWORK LOAD ERROR")
-
-        else:
-            source_image = open(sources[offset][1], 'rb')
+        # # Get source IO
+        # if sources[offset][0] == 1:
+        #     # Target is a embedded image
+        #     source_image = io.BytesIO(self.get_embed(track_object))
+        # elif sources[offset][0] == 2:
+        #     try:
+        #         response = urllib.request.urlopen(get_network_thumbnail_url(track_object))
+        #         source_image = response
+        #     except:
+        #         print("IMAGE NETWORK LOAD ERROR")
+        #
+        # else:
+        #     source_image = open(sources[offset][1], 'rb')
+        source_image = self.get_source_raw(offset, sources, track_object)
 
         im = Image.open(source_image)
         if im.mode != "RGB":
@@ -8797,8 +8984,6 @@ class AlbumArt():
                         else:
                             return 0
 
-                    # response = urllib.request.urlopen(get_network_thumbnail_url(track))
-                    # source_image = response
                 except:
                     print("IMAGE NETWORK LOAD ERROR")
 
@@ -21217,14 +21402,15 @@ class Over:
             self.account_view = 4
 
 
-        y += 100 * gui.scale
+        y += 75 * gui.scale
 
-        w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211)) + 20 * gui.scale)
+        w = round(max(ddt.get_text_w(_("Import PLEX music"), 211), ddt.get_text_w(_("Import KOEL music"), 211), ddt.get_text_w(_("Import SUBSONIC music"), 211)) + 20 * gui.scale)
 
         self.button(x, y, _("Import PLEX music"), plex_get_album_thread, width=w)
         y += 30 * gui.scale
         self.button(x, y, _("Import KOEL music"), koel_get_album_thread, width=w)
-
+        y += 30 * gui.scale
+        self.button(x, y, _("Import SUBSONIC music"), sub_get_album_thread, width=w)
 
         x = x0 + 255 * gui.scale
         y = y0 + round(20 * gui.scale)
@@ -22892,6 +23078,9 @@ class TopPanel:
         elif plex.scanning:
             text = "Accessing PLEX library..."
             bg = [229, 160, 13, 255]
+        elif subsonic.scanning:
+            text = "Accessing SUBSONIC library..."
+            bg = [255, 150, 40, 255]
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
@@ -32086,7 +32275,7 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             pass
             # toggle_broadcast()
-
+            subsonic.get_music()
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
             # window_size[1] = int(900 * gui.scale)
