@@ -7,7 +7,9 @@ v5.2.2
  - Added playlist generator strings
  - Added warning log file to user data folder
  - Added backup database file saving
+ - Added subsonic support
  - Tweaked search results to show more folders
+ - Changed love heart column title from emoji to icon
  - Fixed XSPF importing filenames with certain characters
  - Fixed XSPF importing not reporting errors on 2nd try
  - Fixed column sorting not ignoring case
