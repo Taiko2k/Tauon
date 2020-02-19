@@ -676,6 +676,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             a = 0
             z = 0
+            print(target)
             with open(target, 'wb') as f:
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
@@ -725,6 +726,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 try:
                     url, params = pctl.get_url(target_object)
                 except:
+                    raise
                     gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
                     pctl.stop()
                     return
@@ -1345,6 +1347,11 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             elif status == 2:
 
                 print("Channel has stalled")
+
+                if pctl.target_object.is_network and pctl.playing_time < 5:
+                    pctl.new_time = 0
+                    bass_player.seek()
+                    time.sleep(0.1)
 
                 pctl.playing_time += add_time
                 pctl.decode_time += add_time
