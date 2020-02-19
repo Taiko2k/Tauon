@@ -3020,7 +3020,10 @@ def load_prefs():
     prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password)
     prefs.koel_server_url = cf.sync_add("string", "koel-server-url", prefs.koel_server_url, "The URL or IP:Port where the Koel server is hosted. E.g. http://0.0.0.0:8050 or https://0.0.0.0:8060")
     prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
-    prefs.network_stream_bitrate = cf.sync_add("int", "stream-bitrate", prefs.network_stream_bitrate, "Optional bitrate server should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
+
+    cf.br()
+    cf.add_text("[network]")
+    prefs.network_stream_bitrate = cf.sync_add("int", "stream-bitrate", prefs.network_stream_bitrate, "Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
     cf.br()
     cf.add_text("[broadcasting]")
@@ -5891,6 +5894,10 @@ class SubsonicService:
 
     def resolve_stream(self, key):
 
+        p = {"id": key}
+        if prefs.network_stream_bitrate > 0:
+            p['maxBitRate'] = prefs.network_stream_bitrate
+
         return self.r("stream", p={"id": key}, get_url=True)
         #print(responce.content)
 
@@ -6058,6 +6065,9 @@ class KoelService:
             target = f"{self.server}/api/{id}/play/0/0"
         params = {"jwt-token": self.token,}
 
+        # print(target)
+        # print(urllib.parse.urlencode(params))
+
         return target, params
 
 
@@ -6158,9 +6168,9 @@ def get_network_thumbnail_url(track_object):
 
 def plex_get_album_thread():
 
-    if prefs.backend != 1:
-        show_message("This feature is currently only available with the BASS backend")
-        return
+    # if prefs.backend != 1:
+    #     show_message("This feature is currently only available with the BASS backend")
+    #     return
 
     pref_box.close()
     if plex.scanning:
@@ -6175,9 +6185,9 @@ def plex_get_album_thread():
 
 def sub_get_album_thread():
 
-    if prefs.backend != 1:
-        show_message("This feature is currently only available with the BASS backend")
-        return
+    # if prefs.backend != 1:
+    #     show_message("This feature is currently only available with the BASS backend")
+    #     return
 
     pref_box.close()
     if subsonic.scanning:
@@ -6192,9 +6202,9 @@ def sub_get_album_thread():
 
 def koel_get_album_thread():
 
-    if prefs.backend != 1:
-        show_message("This feature is currently only available with the BASS backend")
-        return
+    # if prefs.backend != 1:
+    #     show_message("This feature is currently only available with the BASS backend")
+    #     return
 
     pref_box.close()
     if koel.scanning:
