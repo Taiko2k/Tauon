@@ -29,6 +29,7 @@ gi.require_version('Gst', '1.0')
 from gi.repository import Gst
 import threading
 import requests
+import urllib.parse
 from hsaudiotag import auto
 
 def player3(tauon):  # GStreamer
@@ -125,9 +126,10 @@ def player3(tauon):  # GStreamer
             # self.playbin.connect("about-to-finish", self.about_to_finish)  # Not used by anything
 
             # # Enable bus to get spectrum messages
-            # bus = self.playbin.get_bus()
-            # bus.add_signal_watch()
-            # bus.connect('message::element', self.on_message)
+            bus = self.playbin.get_bus()
+            bus.add_signal_watch()
+            bus.connect('message::element', self.on_message)
+            bus.connect('message::buffering', self.on_message)
 
             # Variables used with network downloading
             self.temp_id = "a"
@@ -155,9 +157,17 @@ def player3(tauon):  # GStreamer
             self.mainloop.run()
 
         # # Used to get spectrum data and pass onto UI
-        # def on_message(self, bus, msg):
-        #     struct = msg.get_structure()
-        #     if struct.get_name() == 'spectrum':
+        def on_message(self, bus, msg):
+            struct = msg.get_structure()
+            #print(struct.get_name())
+            if struct.get_name() == 'GstMessageBuffering':
+                buff_percent = struct.get_value("buffer-percent")
+
+                if buff_percent < 100 and self.play_state == 1:
+                    self.playbin.set_state(Gst.State.PAUSED)
+                elif buff_percent == 100 and self.play_state == 1:
+                    self.playbin.set_state(Gst.State.PLAYING)
+            # if struct.get_name() == 'spectrum':
         #         struct_str = struct.to_string()
         #         magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
         #         if magnitude_str:
@@ -170,45 +180,6 @@ def player3(tauon):  # GStreamer
         #             gui.spec = k
         #             #print(k)
         #             gui.level_update = True
-
-        # Network file downloader WIP
-        def download_part(self, url, target, params):
-            # This function is to be called in a separate thread to download file async
-            # Note that download from koel server requires special header parameter with token
-
-            self.part = requests.get(url, stream=True, params=params)
-            print(self.part.status_code)
-
-            bitrate = 0
-            a = 0
-            z = 0
-            with open(target, 'wb') as f:
-                for chunk in self.part.iter_content(chunk_size=1024):
-                    if chunk:  # filter out keep-alive new chunks
-                        a += 1
-                        # Disabled, wait for entire file to download, gstreamer doesn't stream part file (by deafult)
-                        # Is there a way to achieve desired behavior?
-                        # if a == 300:  # kilobyes~
-                        #     self.dl_ready = True
-                        if url != self.url:
-                            self.part.close()
-                            break
-
-                        f.write(chunk)
-
-                    # Get track bitrate so we can estimate download progress
-                    z += 1
-                    if z == 60:
-                        z = 0
-                        if bitrate == 0:
-                            audio = auto.File(target)
-                            bitrate = audio.bitrate
-                        if bitrate > 0:
-                            gui.update += 1
-                            pctl.download_time = a * 1024 / (bitrate / 8) / 1000
-
-            pctl.download_time = -1
-            self.dl_ready = True
 
 
         def check_duration(self):
@@ -311,26 +282,12 @@ def player3(tauon):  # GStreamer
                     current_time = 0
                     current_duration = 0
 
-                    # Prepare download of network track WIP --------------
                     if pctl.target_object.is_network:
-                        print(url)
-                        self.temp_path = prefs.cache_directory + "/" + self.temp_id + "-temp.mp3"
-                        if self.temp_id == 'a':
-                            self.temp_id = 'b'
+
+                        if params:
+                            self.url = url + ".view?" + urllib.parse.urlencode(params)
                         else:
-                            self.temp_id = 'a'
-                        self.url = url
-                        self.dl_ready = False
-                        shoot_dl = threading.Thread(target=self.download_part, args=([url, self.temp_path, params]))
-                        shoot_dl.daemon = True
-                        shoot_dl.start()
-                        while not self.dl_ready:
-                            time.sleep(0.02)
-                        if url is None:
-                            pass
-                            # todo abort
-                            #return
-                    # --------------------------------------
+                            self.url = url
 
                     if self.play_state != 0:
                         # Determine time position of currently playing track
@@ -354,7 +311,8 @@ def player3(tauon):  # GStreamer
                     if url:
                         # Play temporary file downloaded from network location
                         self.playbin.set_property('uri',
-                                                  'file://' + urllib.parse.quote(self.temp_path))
+                                                  self.url)
+
                     else:
                         # Play file on disk
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
@@ -440,6 +398,13 @@ def player3(tauon):  # GStreamer
                     if self.play_state > 0:
                         self.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                             (pctl.new_time + pctl.start_time_target) * Gst.SECOND)
+
+                    # It may take a moment for seeking to update when streaming, so for better UI feedback we'll
+                    # update the seek indicator immediately and hold the thread for a moment
+                    if pctl.target_object.is_network:
+                        pctl.playing_time = pctl.new_time + pctl.start_time_target
+                        pctl.decode_time = pctl.playing_time
+                        time.sleep(0.2)
 
                 elif pctl.playerCommand == 'pauseon':
                     self.player_timer.hit()

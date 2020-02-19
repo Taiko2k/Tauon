@@ -10,6 +10,7 @@ v5.2.2
  - Added subsonic support
  - Tweaked search results to show more folders
  - Changed love heart column title from emoji to icon
+ - Enabled network sources with GStreamer backend
  - Fixed XSPF importing filenames with certain characters
  - Fixed XSPF importing not reporting errors on 2nd try
  - Fixed column sorting not ignoring case
