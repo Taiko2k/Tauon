@@ -1215,6 +1215,8 @@ class Prefs:    # Used to hold any kind of settings
         self.enable_fanart_artist = True
         self.enable_fanart_cover = True
 
+        self.always_auto_update_playlists = False
+
 
 prefs = Prefs()
 
@@ -2814,8 +2816,7 @@ def save_prefs():
 
     cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
     cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
-
-
+    cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
 
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
@@ -2971,6 +2972,7 @@ def load_prefs():
     prefs.auto_dl_artist_data = cf.sync_add("bool", "auto-dl-artist-data", prefs.auto_dl_artist_data, "Enable automatic downloading of thumbnails in artist list")
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
+    prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
 
     cf.br()
     cf.add_text("[tokens]")
@@ -3442,6 +3444,7 @@ class PlayerCtl:
         self.gen_codes = gen_codes
 
         self.shuffle_pools = {}
+        self.after_import_flag = False
 
         # Misc player control
 
@@ -15997,6 +16000,8 @@ def path_stem_to_playlist(path, title):  # Used with gallery power bar
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pctl.active_playlist_viewing][0] + "\" f\"" + path + "\""
+
     switch_playlist(len(pctl.multi_playlist) - 1)
 
 
@@ -19180,6 +19185,23 @@ def worker1():
         if prefs.auto_extract and prefs.monitor_downloads:
             dl_mon.scan()
 
+        # Update smart playlists
+        if pctl.after_import_flag and not after_scan and not search_over.active:
+            pctl.after_import_flag = False
+
+            for i, plist in enumerate(pctl.multi_playlist):
+                if pl_to_id(i) in pctl.gen_codes:
+                    print("Reloading smart playlist: " + plist[0])
+                    code = pctl.gen_codes[pl_to_id(i)]
+                    try:
+                        cmds = shlex.split(code)
+                        if prefs.always_auto_update_playlists or "auto" in cmds:
+                            regenerate_playlist(i)
+                    except:
+                        pass
+
+
+
         if tauon.worker_save_state and \
                 not gui.pl_pulse and \
                 not loading_in_progress and \
@@ -20951,19 +20973,23 @@ class Over:
 
         else:
 
-            y += 35 * gui.scale
+            y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_enable_web,
                                _("Serve webpage for broadcast metadata"))
 
 
-            y += 28 * gui.scale
+            y += 25 * gui.scale
 
             self.toggle_square(x, y, toggle_auto_artist_dl,
                                _("Enable auto fetch artist data"))
 
-            y += 28 * gui.scale
+            y += 25 * gui.scale
             self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
+
+            y += 25 * gui.scale
+            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Update generated playlists on import"))
+
             #y += 30 * gui.scale
             # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
             # y += 23 * gui.scale
@@ -20975,7 +21001,7 @@ class Over:
             # y += 30 * gui.scale
 
 
-            y += 30 * gui.scale
+            y += 25 * gui.scale
             self.toggle_square(x, y, toggle_extract, _("Extract archives on import"))
             y += 23 * gui.scale
             self.toggle_square(x + 10 * gui.scale, y, toggle_ex_del, _("Trash archive after extraction"))
@@ -26363,6 +26389,8 @@ def create_artist_pl(artist, replace=False):
                                           playlist=playlist,
                                           hide_title=0,
                                           parent=pl_to_id(pctl.active_playlist_viewing)))
+
+        pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[source_pl][0] + "\" a\"" + artist + "\""
 
         switch_playlist(len(pctl.multi_playlist) - 1)
 
@@ -32366,6 +32394,7 @@ while pctl.running:
 
     if len(load_orders) > 0:
         loading_in_progress = True
+        pctl.after_import_flag = True
         if loaderCommand == LC_None:
             for order in load_orders:
                 if order.stage == 0:
@@ -32393,6 +32422,8 @@ while pctl.running:
         gui.update += 1
         # gui.pl_update = 1
         # loading_in_progress = False
+
+
 
     if update_layout:
 
