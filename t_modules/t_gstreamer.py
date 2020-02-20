@@ -130,6 +130,8 @@ def player3(tauon):  # GStreamer
             bus.add_signal_watch()
             bus.connect('message::element', self.on_message)
             bus.connect('message::buffering', self.on_message)
+            #bus.connect('message::error', self.on_message)
+            #bus.connect('message::eos', self.on_message)
 
             # Variables used with network downloading
             self.temp_id = "a"
@@ -160,12 +162,13 @@ def player3(tauon):  # GStreamer
         def on_message(self, bus, msg):
             struct = msg.get_structure()
             #print(struct.get_name())
+            #print(struct.to_string())
             if struct.get_name() == 'GstMessageBuffering':
                 buff_percent = struct.get_value("buffer-percent")
 
-                if buff_percent < 100 and self.play_state == 1:
+                if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
                     self.playbin.set_state(Gst.State.PAUSED)
-                elif buff_percent == 100 and self.play_state == 1:
+                elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                     self.playbin.set_state(Gst.State.PLAYING)
             # if struct.get_name() == 'spectrum':
         #         struct_str = struct.to_string()
@@ -263,7 +266,10 @@ def player3(tauon):  # GStreamer
                         except:
                             gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
                             pctl.stop()
-                            # todo failure, don't continue down from here
+                            pctl.playerCommand = ""
+                            self.main_callback()
+                            return
+
 
                     elif os.path.isfile(pctl.target_object.fullpath):
                         # File exists so continue
@@ -309,10 +315,8 @@ def player3(tauon):  # GStreamer
                     self.play_state = 1
 
                     if url:
-                        # Play temporary file downloaded from network location
                         self.playbin.set_property('uri',
                                                   self.url)
-
                     else:
                         # Play file on disk
                         self.playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
@@ -370,18 +374,19 @@ def player3(tauon):  # GStreamer
                 #     self.b_playbin.set_property('uri', 'file://' + urllib.parse.quote(os.path.abspath(pctl.target_open)))
                 #     self.b_playbin.set_state(Gst.State.PLAYING)
 
-                # elif pctl.playerCommand == 'url': (todo)
-                #
-                #    # Stop if playing or paused
-                #    if self.play_state == 1 or self.play_state == 2:
-                #        self.playbin.set_state(Gst.State.NULL)
-                #
-                #    # Open URL stream
-                #    self.playbin.set_property('uri', pctl.url)
-                #    self.playbin.set_property('volume', pctl.player_volume / 100)
-                #    self.playbin.set_state(Gst.State.PLAYING)
-                #    self.play_state = 3
-                #    self.player_timer.hit()
+                elif pctl.playerCommand == 'url':
+
+                    # Stop if playing or paused
+                    if self.play_state == 1 or self.play_state == 2:
+                       self.playbin.set_state(Gst.State.READY)
+
+                    # Open URL stream
+                    self.playbin.set_property('uri', pctl.url.decode())
+                    self.playbin.set_property('volume', pctl.player_volume / 100)
+                    self.playbin.set_state(Gst.State.PLAYING)
+                    self.play_state = 3
+                    self.player_timer.hit()
+
 
                 elif pctl.playerCommand == 'volume':
                     if self.play_state == 1:
