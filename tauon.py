@@ -3614,13 +3614,21 @@ class PlayerCtl:
                 if i < pctl.playlist_view_position:
                     pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
                         gui.playlist_view_length / 6))
+                    print(datetime.datetime.now().strftime(
+                        '%H:%M:%S') + " DEBUG: Position changed show selected (a)")
                 elif abs(pctl.playlist_view_position - i) > gui.playlist_view_length:
                     pctl.playlist_view_position = i
+                    print(datetime.datetime.now().strftime(
+                        '%H:%M:%S') + " DEBUG: Position changed show selected (b)")
                     if i > 6:
                         pctl.playlist_view_position -= 5
+                        print(datetime.datetime.now().strftime(
+                            '%H:%M:%S') + " DEBUG: Position changed show selected (c)")
                     if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
                             self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
                         pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
+                        print(datetime.datetime.now().strftime(
+                            '%H:%M:%S') + " DEBUG: Position changed show selected (d)")
                     break
 
         self.render_playlist()
