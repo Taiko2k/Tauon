@@ -1348,7 +1348,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 print("Channel has stalled")
 
-                if pctl.target_object.is_network and pctl.playing_time < 5:
+                if pctl.target_object and pctl.target_object.is_network and pctl.playing_time < 5:
                     pctl.new_time = 0
                     bass_player.seek()
                     time.sleep(0.1)

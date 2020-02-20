@@ -3177,6 +3177,8 @@ def tag_scan(nt):
     try:
         nt.modified_time = os.path.getmtime(nt.fullpath)
 
+        nt.misc.clear()
+
         nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
         if nt.file_ext == "FLAC":
@@ -3401,6 +3403,8 @@ def tag_scan(nt):
                 if TXXX in tag:
                     for item in tag[TXXX]:
                         if hasattr(item, 'description'):
+                            if item.description == "FMPS_Rating":
+                                nt.misc['FMPS_Rating'] = float(item.value)
                             if item.description == "replaygain_album_gain":
                                 nt.album_gain = float(item.value.strip(" dB"))
                             if item.description == "replaygain_track_gain":
@@ -12933,6 +12937,45 @@ def regenerate_playlist(pl):
                     return 0
 
             playlist = sorted(playlist, key=rat_key, reverse=True)
+
+        elif cm == "rat<":
+
+            def rat_key(track_id):
+                tr = pctl.g(track_id)
+                if "FMPS_Rating" in tr.misc:
+                    return tr.misc["FMPS_Rating"]
+                else:
+                    return 0
+
+            playlist = sorted(playlist, key=rat_key)
+
+        elif cm[:4] == "rat=":
+            value = cm[4:]
+            try:
+                value = float(value)
+                temp = []
+                for item in playlist:
+                    tr = pctl.g(item)
+                    if "FMPS_Rating" in tr.misc:
+                        if value == tr.misc["FMPS_Rating"]:
+                            temp.append(item)
+                playlist = temp
+            except:
+                pass
+
+        elif cm[:4] == "rat<":
+            value = cm[4:]
+            try:
+                value = float(value)
+                temp = []
+                for item in playlist:
+                    tr = pctl.g(item)
+                    if "FMPS_Rating" in tr.misc:
+                        if value > tr.misc["FMPS_Rating"]:
+                            temp.append(item)
+                playlist = temp
+            except:
+                pass
 
         elif cm[:4] == "rat>":
             value = cm[4:]
@@ -32393,8 +32436,6 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-            # toggle_broadcast()
-            subsonic.get_music()
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
             # window_size[1] = int(900 * gui.scale)
