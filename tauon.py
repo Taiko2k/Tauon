@@ -13208,6 +13208,7 @@ def regenerate_playlist(pl):
 
     pctl.multi_playlist[pl][2][:] = playlist[:]
     gui.pl_update = 1
+    reload()
 
 
 extra_tab_menu = Menu(155, show_icons=True)
@@ -19426,7 +19427,14 @@ def worker1():
                     code = pctl.gen_codes[pl_to_id(i)]
                     try:
                         cmds = shlex.split(code)
-                        if prefs.always_auto_update_playlists or "auto" in cmds:
+                        if "auto" in cmds or (prefs.always_auto_update_playlists and
+                                not "sf" in cmds and
+                                not "rf" in cmds and
+                                not "ra" in cmds and
+                                not "sa" in cmds and
+                                not "st" in cmds and
+                                not "rt" in cmds and
+                                not "r" in cmds):
                             if not pl_is_locked(i):
                                 regenerate_playlist(i)
                     except:
@@ -26722,6 +26730,7 @@ class ArtistList:
 
         self.current_artists = []
         self.current_album_counts = {}
+        self.current_artist_track_counts = {}
 
         self.thumb_cache = {}
 
@@ -26922,10 +26931,11 @@ class ArtistList:
 
                     if artist:
                         # Confirm to final list if appeared at least 5 timesv
+                        #if artist not in all:
+                        if artist not in counts:
+                            counts[artist] = 0
+                        counts[artist] += 1
                         if artist not in all:
-                            if artist not in counts:
-                                counts[artist] = 0
-                            counts[artist] += 1
                             if counts[artist] > 4:
                                 all.append(artist)
                             elif len(current_pl[2]) < 1000:
@@ -26938,6 +26948,7 @@ class ArtistList:
 
             current_album_counts = artist_parents
 
+
             all.sort(key=lambda y: y.lower())
 
         except:
@@ -26946,7 +26957,7 @@ class ArtistList:
             return
 
         # Artist-list, album-counts, scroll-position, playlist-length
-        save = [all, current_album_counts, 0, len(current_pl[2])]
+        save = [all, current_album_counts, 0, len(current_pl[2]), counts]
 
         # Scroll to playing artist
         scroll = 0
@@ -27147,10 +27158,22 @@ class ArtistList:
         # Draw labels
         if not thin_mode or (coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY):
 
-            album_count = len(self.current_album_counts[artist])
-            text = str(album_count) + " album"
-            if album_count > 1:
-                text += "s"
+            album_mode = False
+            for albums in self.current_album_counts.values():
+                if len(albums) > 1:
+                    album_mode = True
+                    break
+
+            if not album_mode:
+                count = self.current_artist_track_counts[artist]
+                text = str(count) + " track"
+                if count > 1:
+                    text += "s"
+            else:
+                album_count = len(self.current_album_counts[artist])
+                text = str(album_count) + " album"
+                if album_count > 1:
+                    text += "s"
 
             if gui.preview_artist_loading == artist:
                 #. Max 20 chars. Alt: Downloading image, Loading image
@@ -27255,6 +27278,7 @@ class ArtistList:
         if viewing_pl_id in self.saves:
             self.current_artists = self.saves[viewing_pl_id][0]
             self.current_album_counts = self.saves[viewing_pl_id][1]
+            self.current_artist_track_counts = self.saves[viewing_pl_id][4]
             self.scroll_position = self.saves[viewing_pl_id][2]
 
             if self.saves[viewing_pl_id][3] != len(pctl.multi_playlist[id_to_pl(viewing_pl_id)][2]):
@@ -27270,6 +27294,7 @@ class ArtistList:
                 #self.prep()
                 self.current_artists = []
                 self.current_album_counts = []
+                self.current_artist_track_counts = {}
                 self.load = True
 
 
