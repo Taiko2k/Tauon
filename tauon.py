@@ -12948,7 +12948,7 @@ def regenerate_playlist(pl):
                     temp.append(item)
             playlist = temp
 
-        elif cm == "notrat":
+        elif cm == "norat":
             temp = []
             for item in playlist:
                 tr = pctl.g(item)
