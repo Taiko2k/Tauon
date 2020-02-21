@@ -12882,7 +12882,7 @@ def regenerate_playlist(pl):
                     tr = pctl.g(playlist[i])
                     if not tr.is_cue:
                         del playlist[i]
-            playlist += list(OrderedDict.fromkeys(temp))
+            playlist += list(OrderedDict.fromkeys(playlist))
 
         elif cm[:3] == "ext":
             value = cm[3:].upper()
