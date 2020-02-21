@@ -776,7 +776,7 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
     "WV": [229, 23, 18, 255],
     "PLEX": [229, 160, 13, 255],
     "KOEL": [111, 98, 190, 255],
-    "SUB": [235, 120, 20, 255],
+    "SUB": [235, 140, 20, 255],
 }
 
 # These will be the extensions of files to be added when importing
@@ -10889,6 +10889,7 @@ def open_folder(index):
     track = pctl.master_library[index]
     if track.is_network:
         show_message("Can't open folder of a network track.")
+        return
 
     if system == 'windows':
         line = r'explorer /select,"%s"' % (
@@ -23208,7 +23209,7 @@ class TopPanel:
             bg = [229, 160, 13, 255]
         elif subsonic.scanning:
             text = "Accessing SUBSONIC library..."
-            bg = [255, 150, 40, 255]
+            bg = [255, 160, 60, 255]
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
