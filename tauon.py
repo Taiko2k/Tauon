@@ -5871,7 +5871,7 @@ class SubsonicService:
             "u": prefs.subsonic_user,
             "t": hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest(),
             's': salt,
-            'v': "1.16.1",
+            'v': "1.13.0",
             'c': t_title,
             'f': "json"
         }
