@@ -457,13 +457,13 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             gain = None
             if prefs.replay_gain == 1 and pctl.target_object.track_gain is not None:
                 gain = pctl.target_object.track_gain
-                print("Track ReplayGain")
+                gui.console.print("Apply track ReplayGain")
             elif prefs.replay_gain == 2 and pctl.target_object.album_gain is not None:
                 gain = pctl.target_object.album_gain
-                print("Album ReplayGain")
+                gui.console.print("Apply track ReplayGain")
 
             if gain is None and prefs.replay_gain == 2:
-                print("Track ReplayGain Fallback")
+                gui.console.print("Fallback to track ReplayGain")
                 gain = pctl.target_object.track_gain
             if gain is None:
                 return
@@ -472,7 +472,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             volparam = BASS_BFX_VOLUME(0, pow(10, gain / 20))
             BASS_FXSetParameters(volfx, ctypes.pointer(volparam))
 
-            print("Using ReplayGain of " + str(gain))
+            gui.console.print(" -- using gain of: " + str(gain))
             pctl.active_replaygain = round(gain, 2)
 
         if prefs.use_eq:
@@ -669,14 +669,20 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
         def download_part(self, url, target, params):
 
-            self.part = requests.get(url, stream=True, params=params)
-            print(self.part.status_code)
+            try:
+                self.part = requests.get(url, stream=True, params=params)
+            except:
+                gui.show_message("Could not connect to server", mode="error")
+                self.dl_ready = "Failure"
+                return
+
+            #print(self.part.status_code)
 
             bitrate = 0
 
             a = 0
             z = 0
-            print(target)
+            # print(target)
             with open(target, 'wb') as f:
                 for chunk in self.part.iter_content(chunk_size=1024):
                     if chunk:  # filter out keep-alive new chunks
@@ -718,7 +724,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
             if target_object.is_network:
 
-                print("START STREAM")
+                # print("START STREAM")
 
                 self.url = ""
                 params = None
@@ -726,7 +732,6 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 try:
                     url, params = pctl.get_url(target_object)
                 except:
-                    raise
                     gui.show_message("Failed to query url", "Bad login? Server offline?", mode='info')
                     pctl.stop()
                     return
@@ -736,7 +741,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     pctl.stop()
                     return
 
-                print(url)
+                # print(url)
                 self.save_temp = prefs.cache_directory + "/" + self.alt + "-temp.mp3"
 
                 if self.alt == 'a':
@@ -752,6 +757,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
 
                 while not self.dl_ready:
                     time.sleep(0.02)
+
+                if self.dl_ready == "Failure":
+                    self.stop()
+                    return
 
                 if url is None:
                     self.stop()
@@ -888,7 +897,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 err = BASS_ErrorGetCode()
                 #print(err)
 
-                print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
+                # print(f"Track transition... Track is {str(tlen - tpos)[:5]} seconds from end")
 
                 # Try to transition without fade and and on time if possible and permitted
                 if BASS_ChannelIsActive(self.channel) == 1 and not prefs.use_transition_crossfade and not instant and err == 0 and 0.2 < tlen - tpos < 3:
@@ -972,10 +981,10 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     BASS_ChannelSetSync(new_mixer, BASS_SYNC_END | BASS_SYNC_MIXTIME, 0, GapSync2, 0)
 
                     if instant:
-                        print("Do transition QUICK")
+                        gui.console.print("Do transition QUICK")
                         BASS_ChannelSetAttribute(new_mixer, 2, pctl.player_volume / 100)
                     else:
-                        print("Do transition FADE")
+                        gui.console.print("Do transition FADE")
 
                     if not instant:
                         # Fade in new track
@@ -997,7 +1006,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
         bass_player.syncing = False
         #BASS_ChannelRemoveSync(channel, handle)
         # print("Sync GO!")
-        print("Do transition GAPLESS")
+        gui.console.print("Do transition GAPLESS")
         # BASS_ErrorGetCode()
         # BASS_ChannelPlay(user, True)
         BASS_Mixer_StreamAddChannel(channel, user, BASS_STREAM_AUTOFREE | BASS_MIXER_NORAMPIN)
@@ -1033,7 +1042,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
             bass_player.syncing = False
             bass_player.new_handle_for_sync = None
 
-            print("Do transition GAPLESS")
+            gui.console.print("Do transition GAPLESS")
 
 
         #bass_player.syncing = False

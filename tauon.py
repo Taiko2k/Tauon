@@ -680,6 +680,21 @@ vis_update = False
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
 
+class DConsole:
+    def __init__(self):
+        self.messages = []
+        self.show = False
+    def print(self, message, level=0):
+        
+        if len(self.messages) > 20:
+            del self.messages[0]
+        
+        dtime = datetime.datetime.now()
+        self.messages.append((message, level, dtime, Timer()))
+        if level > 0 or True:
+            print(message)
+
+console = DConsole()
 
 resize_mode = False
 
@@ -1581,7 +1596,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.mouse_left_window = False
 
         self.rendered_playlist_position = 0
-
+        
+        self.console = console
 
 gui = GuiVar()
 
@@ -3403,7 +3419,7 @@ def tag_scan(nt):
                 if TXXX in tag:
                     for item in tag[TXXX]:
                         if hasattr(item, 'description'):
-                            if item.description == "FMPS_Rating":
+                            if item.description.lower() == "fmps_rating":
                                 nt.misc['FMPS_Rating'] = float(item.value)
                             if item.description == "replaygain_album_gain":
                                 nt.album_gain = float(item.value.strip(" dB"))
@@ -3618,21 +3634,17 @@ class PlayerCtl:
                 if i < pctl.playlist_view_position:
                     pctl.playlist_view_position = i - random.randint(2, int((gui.playlist_view_length / 3) * 2) + int(
                         gui.playlist_view_length / 6))
-                    print(datetime.datetime.now().strftime(
-                        '%H:%M:%S') + " DEBUG: Position changed show selected (a)")
+                    console.print("DEBUG: Position changed show selected (a)")
                 elif abs(pctl.playlist_view_position - i) > gui.playlist_view_length:
                     pctl.playlist_view_position = i
-                    print(datetime.datetime.now().strftime(
-                        '%H:%M:%S') + " DEBUG: Position changed show selected (b)")
+                    console.print("DEBUG: Position changed show selected (b)")
                     if i > 6:
                         pctl.playlist_view_position -= 5
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed show selected (c)")
+                        console.print("DEBUG: Position changed show selected (c)")
                     if i > gui.playlist_view_length * 1 and i + (gui.playlist_view_length * 2) < len(
                             self.multi_playlist[self.active_playlist_viewing][2]) and i > 10:
                         pctl.playlist_view_position = i - random.randint(2, int(gui.playlist_view_length / 3) * 2)
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed show selected (d)")
+                        console.print("DEBUG: Position changed show selected (d)")
                     break
 
         self.render_playlist()
@@ -3711,7 +3723,7 @@ class PlayerCtl:
         # print(this_only)
         # print(highlight)
         # print("--------")
-        print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position set by show playing")
+        console.print("DEBUG: Position set by show playing")
 
         global playlist_selected
         global shift_selection
@@ -5707,7 +5719,7 @@ class Tauon:
         self.open_uri = open_uri
         self.love = love
         self.snap_mode = snap_mode
-
+        self.console = console
 
     def log(self, line, title=False):
 
@@ -10852,7 +10864,7 @@ def show_in_playlist():
         toggle_album_mode()
 
     pctl.playlist_view_position = playlist_selected
-    print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by show in playlist")
+    console.print("DEBUG: Position changed by show in playlist")
     shift_selection.clear()
     shift_selection.append(playlist_selected)
     pctl.render_playlist()
@@ -12423,7 +12435,7 @@ def delete_playlist(index):
     if old_view_id != pctl.multi_playlist[pctl.active_playlist_viewing][6]:
         default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
         pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
-        print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position reset by playlist delete")
+        console.print("DEBUG: Position reset by playlist delete")
         playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
         shift_selection = [playlist_selected]
 
@@ -16088,7 +16100,7 @@ def sort_ass(h, invert=False):
         default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
 
     pctl.playlist_view_position = 0
-    print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by sort")
+    console.print("DEBUG: Position changed by sort")
     gui.pl_update = 1
 
 
@@ -16304,7 +16316,7 @@ def path_stem_to_playlist(path, title):  # Used with gallery power bar
 
 def goto_album(playlist_no, down=False, force=False):
 
-    print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Album locate")
+    console.print("DEBUG: Postion set by album locate")
 
     if core_timer.get() < 0.5:
         return
@@ -16464,7 +16476,7 @@ def switch_playlist(number, cycle=False):
     default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
     pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing][3]
     playlist_selected = pctl.multi_playlist[pctl.active_playlist_viewing][5]
-    print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by playlist change")
+    console.print("DEBUG: Position changed by playlist change")
     shift_selection = [playlist_selected]
 
 
@@ -16907,7 +16919,7 @@ def locate_artist():
     else:
         show_message("No exact matching artist could be found in this playlist")
 
-    print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by artist locate")
+    console.print("DEBUG: Position changed by artist locate")
 
     gui.pl_update += 1
 
@@ -18261,16 +18273,14 @@ class SearchOverlay:
 
                                 self.click_album(item[2])
                                 pctl.playlist_view_position = playlist_selected
-                                print(datetime.datetime.now().strftime(
-                                    '%H:%M:%S') + " DEBUG: Position changed by global search")
+                                console.print("DEBUG: Position changed by global search")
                                 self.active = False
                                 self.search_text.text = ""
 
                         if level_2_right_click:
                             pctl.show_current(index=item[2], playing=False)
                             pctl.playlist_view_position = playlist_selected
-                            print(datetime.datetime.now().strftime(
-                                '%H:%M:%S') + " DEBUG: Position changed by global search")
+                            console.print("DEBUG: Position changed by global search")
                             self.active = False
                             self.search_text.text = ""
 
@@ -18278,8 +18288,7 @@ class SearchOverlay:
                         self.click_album(item[2])
                         pctl.show_current(index=item[2])
                         pctl.playlist_view_position = playlist_selected
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed by global search")
+                        console.print("DEBUG: Position changed by global search")
                         self.active = False
                         self.search_text.text = ""
 
@@ -23142,8 +23151,7 @@ class TopPanel:
                             switch_playlist(pln)
 
                             pctl.playlist_view_position = len(default_playlist)
-                            print(datetime.datetime.now().strftime(
-                                '%H:%M:%S') + " DEBUG: Position changed by track import")
+                            console.print("DEBUG: Position changed by track import")
                             gui.update += 1
                 else:
                     colour = [60, 60, 60, 255]
@@ -25080,11 +25088,11 @@ class StandardPlaylist:
                 pctl.playlist_view_position -= mouse_wheel
 
             if mouse_wheel:
-                print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by mouse wheel scroll: " + str(mouse_wheel))
+                console.print("DEBUG: Position changed by mouse wheel scroll: " + str(mouse_wheel))
 
             if pctl.playlist_view_position > len(default_playlist):
                 pctl.playlist_view_position = len(default_playlist)
-                print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by range bound")
+                console.print("DEBUG: Position changed by range bound")
             if pctl.playlist_view_position < 1:
                 pctl.playlist_view_position = 0
                 if default_playlist:
@@ -27314,8 +27322,7 @@ class ArtistList:
                     select = block_starts[0]
                     pctl.jump(default_playlist[select])
                     pctl.playlist_view_position = select
-                    print(datetime.datetime.now().strftime(
-                        '%H:%M:%S') + " DEBUG: Position changed by artist click")
+                    console.print("DEBUG: Position changed by artist click")
                     playlist_selected = select
 
                     shift_selection.clear()
@@ -27323,8 +27330,7 @@ class ArtistList:
                 else:
                     #playlist_selected = i
                     pctl.playlist_view_position = select
-                    print(datetime.datetime.now().strftime(
-                        '%H:%M:%S') + " DEBUG: Position changed by artist click")
+                    console.print("DEBUG: Position changed by artist click")
                     playlist_selected = select
                     self.d_click_ref = artist
                     self.d_click_timer.set()
@@ -30943,8 +30949,7 @@ class Undo:
 
                 if not pctl.playlist_view_position < i < pctl.playlist_view_position + gui.playlist_view_length:
                     pctl.playlist_view_position = i
-                    print(datetime.datetime.now().strftime(
-                        '%H:%M:%S') + " DEBUG: Position changed by undo")
+                    console.print("DEBUG: Position changed by undo")
 
         gui.pl_update = 1
 
@@ -31705,6 +31710,7 @@ while pctl.running:
         new_playlist_cooldown = False
         input_text = ''
         input.level_2_enter = False
+        key_backquote = False
 
         mouse_enter_window = False
         gui.mouse_in_window = True
@@ -32005,6 +32011,8 @@ while pctl.running:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = True
+            elif event.key.keysym.sym == SDLK_BACKQUOTE:
+                key_backquote = True
 
         elif event.type == SDL_KEYUP:
             k_input = True
@@ -32150,8 +32158,7 @@ while pctl.running:
     # This section of code controls the internal processing speed or 'frame-rate'.
     # It's pretty messy.
     if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
-        print(datetime.datetime.now().strftime(
-            '%H:%M:%S') + " WARNING: The playlist failed to render at the latest position!!!!")
+        console.print("WARNING: The playlist failed to render at the latest position!!!!")
 
     power += 1
 
@@ -32255,6 +32262,9 @@ while pctl.running:
 
     if k_input:
 
+        if key_backquote:
+            console.show ^= True
+
         if key_ctrl_down:
             gui.pl_update += 1
 
@@ -32329,8 +32339,7 @@ while pctl.running:
 
             if keymaps.test("goto-top"):
                 pctl.playlist_view_position = 0
-                print(datetime.datetime.now().strftime(
-                    '%H:%M:%S') + " DEBUG: Position changed by key")
+                console.print("DEBUG: Position changed by key")
                 playlist_selected = 0
                 gui.pl_update = 1
 
@@ -32339,8 +32348,7 @@ while pctl.running:
                 if n < 0:
                     n = 0
                 pctl.playlist_view_position = n
-                print(datetime.datetime.now().strftime(
-                    '%H:%M:%S') + " DEBUG: Position changed by key")
+                console.print("DEBUG: Position changed by key")
                 playlist_selected = len(default_playlist) - 1
                 gui.pl_update = 1
 
@@ -32437,6 +32445,7 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
+            console.print("Test error message")
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
             # window_size[1] = int(900 * gui.scale)
@@ -32599,8 +32608,7 @@ while pctl.running:
                     pctl.playlist_view_position = len(default_playlist) - 2
                 gui.pl_update = 1
                 playlist_selected = pctl.playlist_view_position
-                print(datetime.datetime.now().strftime(
-                    '%H:%M:%S') + " DEBUG: Position changed by page key")
+                console.print("DEBUG: Position changed by page key")
                 shift_selection.clear()
         if keymaps.test('pageup'):
             if len(default_playlist) > 0:
@@ -32609,8 +32617,7 @@ while pctl.running:
                     pctl.playlist_view_position = 0
                 gui.pl_update = 1
                 playlist_selected = pctl.playlist_view_position
-                print(datetime.datetime.now().strftime(
-                    '%H:%M:%S') + " DEBUG: Position changed by page key")
+                console.print("DEBUG: Position changed by page key")
                 shift_selection.clear()
 
 
@@ -33177,32 +33184,28 @@ while pctl.running:
                         gal_jump_select(False, 1)
                         goto_album(playlist_selected)
                         pctl.playlist_view_position = playlist_selected
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed by gallery key press")
+                        console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_down:
                         gal_down = False
                         gal_jump_select(False, row_len)
                         goto_album(playlist_selected, down=True)
                         pctl.playlist_view_position = playlist_selected
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed by gallery key press")
+                        console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_left:
                         gal_left = False
                         gal_jump_select(True, 1)
                         goto_album(playlist_selected)
                         pctl.playlist_view_position = playlist_selected
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed by gallery key press")
+                        console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
                     if gal_up:
                         gal_up = False
                         gal_jump_select(True, row_len)
                         goto_album(playlist_selected)
                         pctl.playlist_view_position = playlist_selected
-                        print(datetime.datetime.now().strftime(
-                            '%H:%M:%S') + " DEBUG: Position changed by gallery key press")
+                        console.print("DEBUG: Position changed by gallery key press")
                         gui.pl_update = 1
 
                     w = gui.rspw
@@ -33422,12 +33425,10 @@ while pctl.running:
                                                         pctl.play()
                                                     elif info[0] == 1 and pctl.playing_state > 0:
                                                         pctl.playlist_view_position = album_dex[album_on]
-                                                        print(datetime.datetime.now().strftime(
-                                                            '%H:%M:%S') + " DEBUG: Position changed by gallery click")
+                                                        console.print("DEBUG: Position changed by gallery click")
                                                     else:
                                                         pctl.playlist_view_position = album_dex[album_on]
-                                                        print(datetime.datetime.now().strftime(
-                                                            '%H:%M:%S') + " DEBUG: Position changed by gallery click")
+                                                        console.print("DEBUG: Position changed by gallery click")
                                                         pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
                                                     pctl.show_current()
@@ -33457,12 +33458,10 @@ while pctl.running:
                                                         pctl.play()
                                                     elif info[0] == 1 and pctl.playing_state > 0:
                                                         pctl.playlist_view_position = album_dex[album_on]
-                                                        print(datetime.datetime.now().strftime(
-                                                            '%H:%M:%S') + " DEBUG: Position changed by gallery click")
+                                                        console.print("DEBUG: Position changed by gallery click")
                                                     else:
                                                         pctl.playlist_view_position = album_dex[album_on]
-                                                        print(datetime.datetime.now().strftime(
-                                                            '%H:%M:%S') + " DEBUG: Position changed by gallery click")
+                                                        console.print("DEBUG: Position changed by gallery click")
                                                         pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
 
                                                 else:
@@ -33471,8 +33470,7 @@ while pctl.running:
 
 
                                                 pctl.playlist_view_position = album_dex[album_on]
-                                                print(datetime.datetime.now().strftime(
-                                                    '%H:%M:%S') + " DEBUG: Position changed by gallery click")
+                                                console.print("DEBUG: Position changed by gallery click")
                                                 playlist_selected = album_dex[album_on]
                                                 gui.pl_update += 1
 
@@ -34544,8 +34542,7 @@ while pctl.running:
                                 sbp = top
                             per = (sbp - top) / (ey - top - sbl)
                             pctl.playlist_view_position = int(len(default_playlist) * per)
-                            print(datetime.datetime.now().strftime(
-                                '%H:%M:%S') + " DEBUG: Position changed by scroll bar")
+                            console.print("DEBUG: Position set by scroll bar (right click)")
                             if pctl.playlist_view_position < 0:
                                 pctl.playlist_view_position = 0
 
@@ -34577,8 +34574,7 @@ while pctl.running:
                             if sbp < mouse_position[1] < sbp + sbl:
                                 gui.scroll_direction = 0
                             pctl.playlist_view_position += gui.scroll_direction * 2
-                            print(datetime.datetime.now().strftime(
-                                '%H:%M:%S') + " DEBUG: Position set by scroll bar")
+                            console.print("DEBUG: Position set by scroll bar (slide)")
                             if pctl.playlist_view_position < 0:
                                 pctl.playlist_view_position = 0
                             if pctl.playlist_view_position > len(default_playlist):
@@ -34606,7 +34602,7 @@ while pctl.running:
                             sbp = top
                         per = (sbp - top) / (ey - top - sbl)
                         pctl.playlist_view_position = int(len(default_playlist) * per)
-                        print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by scroll bar")
+                        console.print("DEBUG: Position set by scroll bar (drag)")
 
 
                     else:
@@ -35466,8 +35462,7 @@ while pctl.running:
                                 playlist_selected = search_index
                                 if len(default_playlist) > 10 and search_index > 10:
                                     pctl.playlist_view_position = search_index - 7
-                                    print(datetime.datetime.now().strftime(
-                                        '%H:%M:%S') + " DEBUG: Position changed by search")
+                                    console.print("DEBUG: Position changed by search")
                                 else:
                                     pctl.playlist_view_position = 0
 
@@ -35516,8 +35511,7 @@ while pctl.running:
                             playlist_selected = search_index
                             if len(default_playlist) > 10 and search_index > 10:
                                 pctl.playlist_view_position = search_index - 7
-                                print(datetime.datetime.now().strftime(
-                                    '%H:%M:%S') + " DEBUG: Position changed by search")
+                                console.print("DEBUG: Position changed by search")
                             else:
                                 pctl.playlist_view_position = 0
                             if gui.combo_mode:
@@ -35556,7 +35550,7 @@ while pctl.running:
 
                     if pctl.playlist_view_position > 0 and playlist_selected < pctl.playlist_view_position + 2:
                         pctl.playlist_view_position -= 1
-                        print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by key up")
+                        console.print("DEBUG: Position changed by key up")
 
                         scroll_hide_timer.set()
                         gui.frame_callback_list.append(TestTimer(0.9))
@@ -35584,7 +35578,7 @@ while pctl.running:
                     if pctl.playlist_view_position < len(
                             default_playlist) and playlist_selected > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
                         pctl.playlist_view_position += 1
-                        print(datetime.datetime.now().strftime('%H:%M:%S') + " DEBUG: Position changed by key down")
+                        console.print("DEBUG: Position changed by key down")
 
                         scroll_hide_timer.set()
                         gui.frame_callback_list.append(TestTimer(0.9))
@@ -35700,6 +35694,37 @@ while pctl.running:
 
             if not fullscreen and not gui.maximized:
                 draw_window_border()
+
+        if console.show:
+            rect = (20 * gui.scale, 40 * gui.scale, 475 * gui.scale, 170 * gui.scale)
+            ddt.rect(rect, [0, 0, 0, 245], True)
+
+            yy = rect[3] + 15 * gui.scale
+            u = False
+            for item in reversed(console.messages):
+                message = item[0]
+                if yy < rect[1] + 5 * gui.scale:
+                    break
+
+                fade = 255
+                if item[3].get() > 5:
+                    fade = 200
+                else:
+                    u = True
+
+                w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime('%H:%M:%S'), [255, 80, 160, fade], 311, rect[2] - 60 * gui.scale)
+                ddt.text((w + rect[0] + 17 * gui.scale, yy), message, [60, 255, 80, fade], 311, rect[2] - 60 * gui.scale)
+                yy -= 14 * gui.scale
+            if u:
+                gui.delay_frame(5)
+
+            if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
+
+                text = ""
+                for item in console.messages[-15:]:
+                    text += item[2].strftime('%H:%M:%S') + " " + item[0] + "\n"
+                copy_to_clipboard(text)
+                show_message("Lines copied to clipboard", mode="done")
 
         if gui.cursor_is != gui.cursor_want:
 
