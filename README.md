@@ -25,6 +25,7 @@
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
+  - Built-in topchart generator.
   - Background **radio broadcasting**. :radio: :satellite: (Bass only)
   - Stream music from your **PLEX**, **koel** or **Subsonic API** compatible server.
   - **Extract archives** and import your music downloads in **one click**! :zap:
