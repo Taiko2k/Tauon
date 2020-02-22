@@ -130,8 +130,8 @@ def player3(tauon):  # GStreamer
             bus.add_signal_watch()
             bus.connect('message::element', self.on_message)
             bus.connect('message::buffering', self.on_message)
-            #bus.connect('message::error', self.on_message)
-            #bus.connect('message::eos', self.on_message)
+            bus.connect('message::error', self.on_message)
+            # bus.connect('message::eos', self.on_message)
 
             # Variables used with network downloading
             self.temp_id = "a"
@@ -161,8 +161,11 @@ def player3(tauon):  # GStreamer
         # # Used to get spectrum data and pass onto UI
         def on_message(self, bus, msg):
             struct = msg.get_structure()
-            #print(struct.get_name())
-            #print(struct.to_string())
+            # print(struct.get_name())
+            # print(struct.to_string())
+            if struct.get_name() == "GstMessageError":
+                if "Connection" in struct.get_value("debug"):
+                    gui.show_message("Connection error", mode="info")
             if struct.get_name() == 'GstMessageBuffering':
                 buff_percent = struct.get_value("buffer-percent")
 
@@ -264,7 +267,8 @@ def player3(tauon):  # GStreamer
                         try:
                             url, params = pctl.get_url(pctl.target_object)
                         except:
-                            gui.show_message("Failed to query url", "Bad login? Server offline?", 'info')
+                            time.sleep(0.1)
+                            gui.show_message("Connection error", "Bad login? Server offline?", mode='info')
                             pctl.stop()
                             pctl.playerCommand = ""
                             self.main_callback()
@@ -277,7 +281,7 @@ def player3(tauon):  # GStreamer
                     else:
                         # File does not exist, trigger an advance
                         pctl.target_object.found = False
-                        print("Missing File: " + pctl.target_object.fullpath)
+                        tauon.console.print("Missing File: " + pctl.target_object.fullpath, 2)
                         pctl.playing_state = 0
                         pctl.jump_time = 0
                         pctl.advance(inplace=True, nolock=True)
@@ -299,12 +303,12 @@ def player3(tauon):  # GStreamer
                         # Determine time position of currently playing track
                         current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
                         current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
-                        print("We are " + str(current_duration - current_time) + " seconds from end.")
+                        #print("We are " + str(current_duration - current_time) + " seconds from end.")
 
                     # If we are close to the end of the track, try transition gaplessly
                     if self.play_state == 1 and pctl.start_time_target == 0 and pctl.jump_time == 0 and \
                             0.2 < current_duration - current_time < 5.5 and not pctl.playerSubCommand == 'now':
-                        print("Use GStreamer Gapless transition")
+                        #print("Use GStreamer Gapless transition")
                         gapless = True
 
                     # If we are not supposed to be playing, stop (crossfade todo)
@@ -467,7 +471,7 @@ def player3(tauon):  # GStreamer
                     star_store.add(pctl.track_queue[pctl.queue_step], add_time)
 
             if not pctl.running:
-                print("unloading gstreamer")
+                # print("unloading gstreamer")
                 if self.play_state > 0:
                     self.playbin.set_state(Gst.State.NULL)
                     time.sleep(0.5)
