@@ -15,6 +15,7 @@
   - Import tracks and create playlists by simple **drag and drop**.
   - Large album art and gallery displays!
   - Support for **gapless playback**.
+  - Seamless support for CUE sheets.
   - Batch [transcode folders](https://github.com/Taiko2k/tauonmb/wiki/Transcoding-for-PMP-DAP-Smartphone) of music.
   - Last.fm **scrobbling** with track love support :heart:  
   See which of your tracks your friends loved too! :purple_heart: :blue_heart:
@@ -25,6 +26,7 @@
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Linux desktop integration with MPRIS2.
   - Background **radio broadcasting**. :radio: :satellite: (Bass only)
+  - Stream music from your **PLEX**, **koel** or **Subsonic API** compatible server.
   - **Extract archives** and import your music downloads in **one click**! :zap:
 
 
