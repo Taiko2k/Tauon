@@ -1478,6 +1478,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.star_mode = "line"
         self.heart_fields = []
+        self.show_ratings = False
 
         self.web_running = False
 
@@ -1678,13 +1679,29 @@ class StarStore:
             if value < 0 and self.db[key][0] < 0:
                 self.db[key][0] = 0
         else:
-            self.db[key] = [value, ""]
+            self.db[key] = [value, "", 0]
 
 
     # Returns the track play time
     def get(self, index):
-
         return self.db.get(self.key(index), (0,))[0]
+
+    # Returns the track user rating
+    def get_rating(self, index):
+        key = self.key(index)
+        if key in self.db:
+            return self.db[key][2]
+        return 0
+
+    # Sets the track user rating
+    def set_rating(self, index, value):
+        key = self.key(index)
+        if key not in self.db:
+            self.db[key] = self.new_object()
+        self.db[key][2] = value
+
+    def new_object(self):
+        return [0, "", 0]
 
     def get_by_object(self, track):
 
@@ -2497,6 +2514,9 @@ for t in range(2):
             search_dia_string_cache = save[138]
         if save[139] is not None:
             gen_codes = save[139]
+        if save[140] is not None:
+            gui.show_ratings = save[140]
+
 
         state_file.close()
         del save
@@ -2752,6 +2772,17 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("toggle-console `\n")
 
+    if db_version <= 38:
+        print("Updating database to version 39")
+
+        for key, value in star_store.db.items():
+            print(value)
+            if len(value) == 2:
+                value.append(0)
+                star_store.db[key] = value
+
+for key, value in star_store.db.items():
+    print(value)
 # Loading Config -----------------
 
 download_directories = []
@@ -5354,11 +5385,13 @@ class LastFMapi:
                         print("     " + artist + " - " + title)
                         star = star_store.full_get(index)
                         if star is None:
-                            star = [0, ""]
+                            star = star_store.new_object()
                         if "L" not in star[1]:
                             updated += 1
                             print("     NEW LOVE")
-                        star = [star[0], star[1] + "L"]
+                            # star = [star[0], star[1] + "L"]
+                            star[1] = star[1] + "L"
+
                         star_store.insert(index, star)
 
             if len(tracks) == 0:
@@ -13050,22 +13083,24 @@ def regenerate_playlist(pl):
         elif cm == "rat>":
 
             def rat_key(track_id):
-                tr = pctl.g(track_id)
-                if "FMPS_Rating" in tr.misc:
-                    return tr.misc["FMPS_Rating"]
-                else:
-                    return 0
+                #tr = pctl.g(track_id)
+                return star_store.get_rating(track_id)
+                # if "FMPS_Rating" in tr.misc:
+                #     return tr.misc["FMPS_Rating"]
+                # else:
+                #     return 0
 
             playlist = sorted(playlist, key=rat_key, reverse=True)
 
         elif cm == "rat<":
 
             def rat_key(track_id):
-                tr = pctl.g(track_id)
-                if "FMPS_Rating" in tr.misc:
-                    return tr.misc["FMPS_Rating"]
-                else:
-                    return 0
+                return star_store.get_rating(track_id)
+                # tr = pctl.g(track_id)
+                # if "FMPS_Rating" in tr.misc:
+                #     return tr.misc["FMPS_Rating"]
+                # else:
+                #     return 0
 
             playlist = sorted(playlist, key=rat_key)
 
@@ -13075,10 +13110,12 @@ def regenerate_playlist(pl):
                 value = float(value)
                 temp = []
                 for item in playlist:
-                    tr = pctl.g(item)
-                    if "FMPS_Rating" in tr.misc:
-                        if value == tr.misc["FMPS_Rating"]:
-                            temp.append(item)
+                    if value == star_store.get_rating(tr.index):
+                        temp.append(item)
+                    # tr = pctl.g(item)
+                    # if "FMPS_Rating" in tr.misc:
+                    #     if value == tr.misc["FMPS_Rating"]:
+                    #         temp.append(item)
                 playlist = temp
             except:
                 pass
@@ -13089,10 +13126,12 @@ def regenerate_playlist(pl):
                 value = float(value)
                 temp = []
                 for item in playlist:
-                    tr = pctl.g(item)
-                    if "FMPS_Rating" in tr.misc:
-                        if value > tr.misc["FMPS_Rating"]:
-                            temp.append(item)
+                    if value > star_store.get_rating(tr.index):
+                        temp.append(item)
+                    # tr = pctl.g(item)
+                    # if "FMPS_Rating" in tr.misc:
+                    #     if value > tr.misc["FMPS_Rating"]:
+                    #         temp.append(item)
                 playlist = temp
             except:
                 pass
@@ -13103,10 +13142,12 @@ def regenerate_playlist(pl):
                 value = float(value)
                 temp = []
                 for item in playlist:
-                    tr = pctl.g(item)
-                    if "FMPS_Rating" in tr.misc:
-                        if value < tr.misc["FMPS_Rating"]:
-                            temp.append(item)
+                    if value < star_store.get_rating(tr.index):
+                        temp.append(item)
+                    # tr = pctl.g(item)
+                    # if "FMPS_Rating" in tr.misc:
+                    #     if value < tr.misc["FMPS_Rating"]:
+                    #         temp.append(item)
                 playlist = temp
             except:
                 pass
@@ -13114,17 +13155,21 @@ def regenerate_playlist(pl):
         elif cm == "rat":
             temp = []
             for item in playlist:
-                tr = pctl.g(item)
-                if "FMPS_Rating" in tr.misc:
+                #tr = pctl.g(item)
+                if star_store.get_rating(tr.index) > 0:
                     temp.append(item)
+                # if "FMPS_Rating" in tr.misc:
+                #     temp.append(item)
             playlist = temp
 
         elif cm == "norat":
             temp = []
             for item in playlist:
-                tr = pctl.g(item)
-                if "FMPS_Rating" not in tr.misc:
+                if star_store.get_rating(tr.index) == 0:
                     temp.append(item)
+                # tr = pctl.g(item)
+                # if "FMPS_Rating" not in tr.misc:
+                #     temp.append(item)
             playlist = temp
 
         elif cm == "d>":
@@ -16793,6 +16838,18 @@ x_menu.add_to_sub(_("Remove Missing Tracks"), 0, clean_db)
 x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
 
 
+def import_fmps():
+    for playlist in pctl.multi_playlist:
+        for id in playlist[2]:
+            tr = pctl.g(id)
+            if "FMPS_Rating" in tr.misc:
+                rating = round(tr.misc["FMPS_Rating"] * 10)
+                star_store.set_rating(tr.index, rating)
+
+
+x_menu.add_to_sub(_("Import ratings from FMPS tag"), 0, import_fmps, show_test=test_shift)
+
+
 def toggle_broadcast():
 
     if pctl.broadcast_active is not True:
@@ -16932,6 +16989,7 @@ def heart_menu_colour():
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
 star_row_icon = asset_loader('star.png', True)
+star_half_row_icon = asset_loader('star-half.png', True)
 
 heart_colours = ColourGenCache(0.7, 0.7)
 
@@ -17689,9 +17747,11 @@ def transcode_single(item, manual_directroy=None, manual_name=None):
 
                 new_star = star_store.full_get(track)
                 if new_star is None:
-                    new_star = [0, ""]
+                    new_star = star_store.new_object()
 
                 new_star[0] += old_star[0]
+                if old_star[2] > 0 and new_star[2] == 0:
+                    new_star[2] = old_star[2]
                 new_star[1] = "".join(set(new_star[1] + old_star[1]))
 
                 if old_key in star_store.db:
@@ -20212,6 +20272,7 @@ def star_toggle(mode=0):
     else:
         gui.star_mode = 'star'
 
+    gui.show_ratings = False
     gui.update += 1
     gui.pl_update = 1
 
@@ -20221,6 +20282,21 @@ def heart_toggle(mode=0):
         return gui.show_hearts
 
     gui.show_hearts ^= True
+    gui.show_ratings = False
+
+    gui.update += 1
+    gui.pl_update = 1
+
+def rating_toggle(mode=0):
+
+    if mode == 1:
+        return gui.show_ratings
+
+    gui.show_ratings ^= True
+
+    if gui.show_ratings:
+        gui.show_hearts = False
+        gui.star_mode = 'none'
 
     gui.update += 1
     gui.pl_update = 1
@@ -20335,8 +20411,8 @@ def toggle_borderless(mode=0):
 config_items = [
     [_('Show playtime lines'), star_line_toggle],
     [_('Show playtime stars'), star_toggle],
-    #None,
     [_('Show love hearts'), heart_toggle],
+    [_('Show ratings'), rating_toggle],
     None
 ]
 
@@ -21473,7 +21549,7 @@ class Over:
                 # link_rect = [x + 280, y, link_pa[1], 18 * gui.scale]
                 # fields.add(link_rect)
 
-                link_pa2 = draw_linked_text((x + 280 * gui.scale, y + 2 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg3(190), 13)
+                link_pa2 = draw_linked_text((x + 280 * gui.scale, y - 6 * gui.scale), f"http://localhost:{str(prefs.metadata_page_port)}/radio", colours.grey_blend_bg3(190), 13)
                 link_rect2 = [x + 280 * gui.scale, y + 2 * gui.scale, link_pa2[1], 20 * gui.scale]
                 fields.add(link_rect2)
 
@@ -24915,6 +24991,122 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
         #         #         colour = (220, 200, 60, 255)
         #
         #         star_row_icon.render(sx, sy, colour)
+
+        # sx = round(width + start_x - round(40 * gui.scale) - offset_font_extra)
+        # sy = round(ry + (gui.playlist_row_height // 2) - round(7 * gui.scale))
+        # sx -= round(71 * gui.scale)
+        #
+        # por = 0
+        # gui.pl_update += 1
+        # if sy < mouse_position[1] < sy + star_set_icon.h:
+        #     if sx < mouse_position[0] < sx + star_set_icon.w:
+        #         por = (mouse_position[0] - (sx - 8)) / star_set_icon.w
+        #
+        # por *= 1000
+        # blc = 100
+        #
+        # por = por // blc
+        #
+        # print(por)
+        #
+        # #positions = (0, 6, 12, 20, 26, 28, 32, 45, 51, 59, star_set_icon.w)
+        # #por = sy % 10
+        #
+        # xx = round(((star_set_icon.w) / 10) * por)  # round(star_set_icon.w * por)
+        # #xx = positions[int(por)]
+        # #xx = round(por * 8)
+
+        # rect = (sx, sy, star_set_icon.w, star_set_icon.h)
+        # rect2 = (sx, sy, xx, star_set_icon.h)
+        # ddt.rect(rect, colours.grey(40), True)
+        # ddt.rect(rect2, colours.grey(200), True)
+        # star_set_icon.render(sx, sy, ddt.text_background_colour)
+        # print(core_timer.get())
+        if gui.show_ratings:
+
+            sx = round(width + start_x - round(40 * gui.scale) - offset_font_extra)
+            sy = round(ry + (gui.playlist_row_height // 2) - round(7 * gui.scale))
+            sx -= round(68 * gui.scale)
+
+            #gui.pl_update += 1
+
+            #rat = (pctl.master_library[index].length) % 10
+
+            #star_full = star_row_icon2.w
+            # star_half = (star_row_icon2.w // 2) + 1
+
+
+            #rect = [sx, sy, star_half, star_row_icon2.h]
+            # star1
+            spacing = 1
+            # if key_shift_down:
+            #     for ss in range(5):
+            #
+            #         xx = sx + (ss * (star_full + 1))
+            #         rect = (xx, sy, star_full, star_row_icon2.h)
+            #         ddt.rect(rect, colours.grey(40), True)
+            #
+            #         if rat < ss * 2:
+            #             pass
+            #         elif rat == ss * 2:
+            #             rect = (xx, sy, star_half, star_row_icon2.h)
+            #             ddt.rect(rect, colours.grey(200), True)
+            #         else:
+            #             ddt.rect(rect, colours.grey(200), True)
+            #
+            #         star_set_icon.render(xx, sy, ddt.text_background_colour)
+            # else:
+
+            # for ss in range(10):
+            #     xx = round(sx + (ss * (star_half + 0.5))) - (star_half + 6)
+            #
+            #     rect = (xx, sy, star_half + 1, star_row_icon2.h)
+            #     if coll(rect):
+            #         rat = ss
+
+            # for ss in range(5):
+            #     xx = sx + (ss * (star_full + 1))
+            #     rect = (xx, sy, star_full + 1, star_row_icon2.h)
+            #     if coll(rect):
+            #         rat = ss * 2
+            rat = star_store.get_rating(n_track.index)
+
+            rect = (sx - 10, sy - 4, 80, 16)
+            gui.heart_fields.append(rect)
+
+
+            # if sy - 4 < mouse_position[1] < sy + 16:
+            #     if sx - 10 < mouse_position[0] < sx + 80:
+            if coll(rect):
+                gui.pl_update = 2
+                pp = mouse_position[0] - sx
+
+                if pp < 5:
+                    rat = 0
+                elif pp > 70:
+                    rat = 10
+                else:
+                    rat = (pp + 0) // 6
+
+                if input.mouse_click:
+                    star_store.set_rating(n_track.index, rat)
+
+            for ss in range(5):
+
+                xx = sx + (ss * (star_row_icon.w + 0))
+
+                if rat - 1 < ss * 2:
+                    star_row_icon.render(xx, sy, colours.grey(40))
+                elif rat - 1 == ss * 2:
+                    star_row_icon.render(xx, sy, colours.grey(40))
+                    star_half_row_icon.render(xx, sy, colours.grey(200))
+                else:
+                    star_row_icon.render(xx, sy, colours.grey(200))
+
+            star_x += 70
+
+
+
 
 
         if gui.star_mode == 'star' and total > 0 and pctl.master_library[
@@ -31513,7 +31705,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            38,  # Version, used for upgrading
+            39,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -31635,7 +31827,8 @@ def save_state():
             prefs.gst_device,
             search_string_cache,
             search_dia_string_cache,
-            pctl.gen_codes
+            pctl.gen_codes,
+            gui.show_ratings,
         ]
 
 
