@@ -90,4 +90,5 @@ opacity-down - Ctrl
 
 toggle-show-art H Ctrl
 
+toggle-console `
 
