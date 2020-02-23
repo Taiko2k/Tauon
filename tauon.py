@@ -686,7 +686,7 @@ class DConsole:
         self.show = False
     def print(self, message, level=0):
         
-        if len(self.messages) > 20:
+        if len(self.messages) > 50:
             del self.messages[0]
         
         dtime = datetime.datetime.now()
@@ -1237,6 +1237,8 @@ class Prefs:    # Used to hold any kind of settings
         self.subsonic_server = "http://localhost:4040"
         self.subsonic_user = ""
         self.subsonic_password = ""
+
+        self.subsonic_playlists = {}
 
 
 prefs = Prefs()
@@ -5721,12 +5723,11 @@ class Tauon:
         self.snap_mode = snap_mode
         self.console = console
 
-    def log(self, line, title=False):
-
-        log_file = open(user_directory + "/tauon.log", 'a')
-        log_file.writelines(line + "\n")
-        log_file.close()
-
+    # def log(self, line, title=False):
+    #
+    #     log_file = open(user_directory + "/tauon.log", 'a')
+    #     log_file.writelines(line + "\n")
+    #     log_file.close()
 
     def exit(self):
         pctl.running = False
@@ -5831,12 +5832,21 @@ class PlexService:
             parent = (album_artist + " - " + album_title).strip("- ")
 
             for track in album.tracks():
+
+                id = master_count
+                replace_existing = False
+                for track_id, track in pctl.master_library.items():
+                    if track.is_network and track.file_ext == "PLEX" and track.url_key == track.key:
+                        id = track.index
+                        replace_existing = True
+                        break
+
                 title = track.title
                 track_artist = track.grandparentTitle
                 duration = track.duration / 1000
 
                 nt = TrackClass()
-                nt.index = master_count
+                nt.index = id
                 nt.track_number = track.index
                 nt.file_ext = "PLEX"
                 nt.parent_folder_path = parent
@@ -5855,8 +5865,10 @@ class PlexService:
                 nt.url_key = track.key
                 nt.date = str(year)
 
-                pctl.master_library[master_count] = nt
-                master_count += 1
+                pctl.master_library[id] = nt
+
+                if not replace_existing:
+                    master_count += 1
 
                 playlist.append(nt.index)
 
@@ -5874,6 +5886,7 @@ class SubsonicService:
 
     def __init__(self):
         self.scanning = False
+        self.playlists = prefs.subsonic_playlists
 
     def r(self, point, p=None, binary=False, get_url=False):
         salt = secrets.token_hex(8)
@@ -5968,6 +5981,14 @@ class SubsonicService:
 
                 for song in songs:
 
+                    id = master_count
+                    replace_existing = False
+                    for track_id, track in pctl.master_library.items():
+                        if track.is_network and track.file_ext == "SUB" and track.url_key == song["id"]:
+                            id = track.index
+                            replace_existing = True
+                            break
+
                     nt = TrackClass()
 
                     if "title" in song:
@@ -5988,7 +6009,7 @@ class SubsonicService:
 
                     nt.file_ext = "SUB"
 
-                    nt.index = master_count
+                    nt.index = id
 
                     nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
                     nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
@@ -5999,8 +6020,10 @@ class SubsonicService:
                     nt.url_key = song["id"]
                     nt.is_network = True
 
-                    pctl.master_library[master_count] = nt
-                    master_count += 1
+                    pctl.master_library[id] = nt
+
+                    if not replace_existing:
+                        master_count += 1
 
                     playlist.append(nt.index)
 
@@ -6009,6 +6032,13 @@ class SubsonicService:
         pctl.multi_playlist.append(pl_gen(title="Subsonic Collection", playlist=playlist))
         standard_sort(len(pctl.multi_playlist) - 1)
         switch_playlist(len(pctl.multi_playlist) - 1)
+
+        b = self.r("getPlaylists")
+        playlists = b["subsonic-response"]["playlists"]["playlist"]
+
+        for playlist in playlists:
+            print((playlist["name"], playlist["id"], playlist["songCount"]))
+
 
 
 subsonic = SubsonicService()
@@ -6143,10 +6173,19 @@ class KoelService:
                     covers[id] = album["cover"]
 
         for song in songs:
+
+            id = master_count
+            replace_existing = False
+            for track_id, track in pctl.master_library.items():
+                if track.is_network and track.file_ext == "KOEL" and track.url_key == song["id"]:
+                    id = track.index
+                    replace_existing = True
+                    break
+
             nt = TrackClass()
 
             nt.title = song["title"]
-            nt.index = master_count
+            nt.index = id
             if "track" in song and song["track"] is not None:
                 nt.track_number = song["track"]
             if "disc" in song and song["disc"] is not None:
@@ -6164,8 +6203,10 @@ class KoelService:
             nt.is_network = True
             nt.file_ext = "KOEL"
 
-            pctl.master_library[master_count] = nt
-            master_count += 1
+            pctl.master_library[id] = nt
+
+            if not replace_existing:
+                master_count += 1
 
             playlist.append(nt.index)
 
@@ -8191,7 +8232,9 @@ class GallClass:
 
             except:
                 #raise
-                print('Image load failed on track: ' + key[0].fullpath)
+                print('ERROR: Image load failed on track: ' + key[0].fullpath)
+                console.print('ERROR: Image load failed on track: ' , level=5)
+                console.print("- " + key[0].fullpath, level=5)
                 order = [0, None, None, None]
                 self.gall[key] = order
                 gui.update += 1
@@ -9279,9 +9322,10 @@ class AlbumArt():
         except Exception as error:
 
             print("Image processing error: " + str(error))
-            tauon.log("Image processing error", title=True)
-            tauon.log("-- Associated track: " + track.fullpath)
-            tauon.log("-- Exception: " + str(error))
+            console.print("Image processing error", level=5)
+            console.print("-- Associated track: " + track.fullpath)
+            console.print("-- Exception: " + str(error))
+
 
             self.current_wu = None
             del self.source_cache[index][offset]
@@ -9704,7 +9748,8 @@ def load_xspf(path):
     global to_got
 
     name = os.path.basename(path)[:-5]
-    tauon.log("Importing XSPF playlist: " + path, title=True)
+    # tauon.log("Importing XSPF playlist: " + path, title=True)
+    console.print("Importing XSPF playlist: " + path)
 
     try:
         parser = ET.XMLParser(encoding="utf-8")
@@ -9743,7 +9788,8 @@ def load_xspf(path):
 
     except:
         show_message("Error importing XSPF playlist.", "Sorry about that.", mode='warning')
-        tauon.log("-- Error parsing XSPF file")
+        #tauon.log("-- Error parsing XSPF file")
+        console.print("-- Error parsing XSPF file")
         return
 
     playlist = []
@@ -9846,18 +9892,18 @@ def load_xspf(path):
                 continue
 
         missing += 1
-        tauon.log("-- Failed to locate track")
+        console.print("-- Failed to locate track")
         if 'location' in track:
-            tauon.log("-- -- Expected path: " + track['location'])
+            console.print("-- -- Expected path: " + track['location'])
         if 'title' in track:
-            tauon.log("-- -- Title: " + track['title'])
+            console.print("-- -- Title: " + track['title'])
         if 'artist' in track:
-            tauon.log("-- -- Artist: " + track['artist'])
+            console.print("-- -- Artist: " + track['artist'])
         if 'album' in track:
-            tauon.log("-- -- Album: " + track['album'])
+            console.print("-- -- Album: " + track['album'])
 
     if missing > 0:
-        show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.', "See tauon.log file for details.")
+        show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
 
 
     #print(playlist)
@@ -9866,7 +9912,7 @@ def load_xspf(path):
                                       playlist=playlist))
     gui.update = 1
 
-    tauon.log("Finished importing XSPF")
+    # tauon.log("Finished importing XSPF")
 
 
 bb_type = 0
@@ -19594,7 +19640,7 @@ def worker1():
                 to_got += 1
                 if to_got % 100 == 0:
                     gui.update = 1
-                if not os.path.isfile(track.fullpath):
+                if track.is_network or not os.path.isfile(track.fullpath):
 
                     # Remove from all playlists
                     for playlist in pctl.multi_playlist:
@@ -21147,7 +21193,7 @@ class Over:
 
                 if i < self.device_scroll_bar_position:
                     continue
-                if y > self.box_y + self.h - 40 * gui.scale:
+                if y > self.box_y + self.h - 55 * gui.scale:
                     break
 
                 rect = (x, y + 4 * gui.scale, 245 * gui.scale, 13)
@@ -31710,7 +31756,6 @@ while pctl.running:
         new_playlist_cooldown = False
         input_text = ''
         input.level_2_enter = False
-        key_backquote = False
 
         mouse_enter_window = False
         gui.mouse_in_window = True
@@ -32011,8 +32056,6 @@ while pctl.running:
                 key_end_press = True
             elif event.key.keysym.sym == SDLK_LGUI:
                 key_meta = True
-            elif event.key.keysym.sym == SDLK_BACKQUOTE:
-                key_backquote = True
 
         elif event.type == SDL_KEYUP:
             k_input = True
@@ -32262,7 +32305,7 @@ while pctl.running:
 
     if k_input:
 
-        if key_backquote:
+        if keymaps.test('toggle-console'):
             console.show ^= True
 
         if key_ctrl_down:
@@ -32445,7 +32488,9 @@ while pctl.running:
 
         if keymaps.test('testkey'):  # F7: test
             pass
-            console.print("Test error message")
+
+
+
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
             # window_size[1] = int(900 * gui.scale)
@@ -35712,8 +35757,12 @@ while pctl.running:
                 else:
                     u = True
 
+                text_colour = [60, 255, 80, fade]
+                if item[1] == 5:
+                    text_colour = [255, 40, 90, fade]
+
                 w = ddt.text((rect[0] + 10 * gui.scale, yy), item[2].strftime('%H:%M:%S'), [255, 80, 160, fade], 311, rect[2] - 60 * gui.scale)
-                ddt.text((w + rect[0] + 17 * gui.scale, yy), message, [60, 255, 80, fade], 311, rect[2] - 60 * gui.scale)
+                ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale)
                 yy -= 14 * gui.scale
             if u:
                 gui.delay_frame(5)
@@ -35721,7 +35770,7 @@ while pctl.running:
             if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
 
                 text = ""
-                for item in console.messages[-15:]:
+                for item in console.messages[-50:]:
                     text += item[2].strftime('%H:%M:%S') + " " + item[0] + "\n"
                 copy_to_clipboard(text)
                 show_message("Lines copied to clipboard", mode="done")

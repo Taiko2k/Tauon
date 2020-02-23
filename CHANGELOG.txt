@@ -5,7 +5,6 @@ v5.3.0
 
  - Added regenerate function to playlist tab menu
  - Added playlist generator strings
- - Added warning log file to user data folder
  - Added backup database file saving
  - Added subsonic streaming support
  - Tweaked search results to show more folders
