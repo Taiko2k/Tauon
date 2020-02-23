@@ -2745,6 +2745,12 @@ if db_version > 0:
             with open(os.path.join(config_directory, "input.txt"), 'a') as f:
                 f.write("toggle-show-art H Ctrl\n")
 
+    if db_version <= 37:
+        print("Updating database to version 38")
+
+        if install_directory != config_directory and os.path.isfile(os.path.join(config_directory, "input.txt")):
+            with open(os.path.join(config_directory, "input.txt"), 'a') as f:
+                f.write("toggle-console `\n")
 
 # Loading Config -----------------
 
@@ -8233,7 +8239,7 @@ class GallClass:
             except:
                 #raise
                 print('ERROR: Image load failed on track: ' + key[0].fullpath)
-                console.print('ERROR: Image load failed on track: ' , level=5)
+                console.print('ERROR: Image load failed on track: ' , level=3)
                 console.print("- " + key[0].fullpath, level=5)
                 order = [0, None, None, None]
                 self.gall[key] = order
@@ -9892,15 +9898,15 @@ def load_xspf(path):
                 continue
 
         missing += 1
-        console.print("-- Failed to locate track")
+        console.print("-- Failed to locate track", level=2)
         if 'location' in track:
-            console.print("-- -- Expected path: " + track['location'])
+            console.print("-- -- Expected path: " + track['location'], level=2)
         if 'title' in track:
-            console.print("-- -- Title: " + track['title'])
+            console.print("-- -- Title: " + track['title'], level=2)
         if 'artist' in track:
-            console.print("-- -- Artist: " + track['artist'])
+            console.print("-- -- Artist: " + track['artist'], level=2)
         if 'album' in track:
-            console.print("-- -- Album: " + track['album'])
+            console.print("-- -- Album: " + track['album'], level=2)
 
     if missing > 0:
         show_message('Failed to locate ' + str(missing) + ' out of ' + str(len(a)) + ' tracks.')
@@ -31457,7 +31463,7 @@ def save_state():
             folder_image_offsets,
             None, # lfm_username,
             None, # lfm_hash,
-            37,  # Version, used for upgrading
+            38,  # Version, used for upgrading
             view_prefs,
             gui.save_size,
             None,  # old side panel size
@@ -35752,7 +35758,7 @@ while pctl.running:
                     break
 
                 fade = 255
-                if item[3].get() > 5:
+                if item[3].get() > 2:
                     fade = 200
                 else:
                     u = True
