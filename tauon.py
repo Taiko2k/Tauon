@@ -4325,6 +4325,61 @@ class PlayerCtl:
                     self.playing_time = 0
                     self.decode_time = 0
 
+    def advance_broadcast(self, start=False):
+
+        pl_id = id_to_pl(pctl.broadcast_playlist)
+        if pl_id is None or not pctl.multi_playlist[pl_id][2]:
+            pctl.playerCommand = "encstop"
+            pctl.playerCommandReady = True
+            show_message("Broadcast stopped", "The broadcasting playlist no longer has any tracks")
+            return
+
+        pctl.broadcast_position += 1
+        playlist = pctl.multi_playlist[pl_id][2]
+
+        if pctl.broadcast_position > len(playlist) - 1:
+            pctl.broadcast_position = 0
+
+        for p in range(len(playlist)):
+
+            pp = (p + pctl.broadcast_position) % len(playlist)
+
+            track = self.g(playlist[pp])
+            found = pp
+
+            if track.is_network:
+                show_message("Broadcast of network tracks not currently supported", mode="error")
+                continue
+
+            track.found = os.path.isfile(track.fullpath)
+            if track.found:
+                break
+
+        else:
+            if start:
+                show_message("No tracks in this playlist can be broadcasted")
+            else:
+                show_message("Broadcast stopped", "No tracks in the playlist could be streamed", mode="warning")
+                pctl.playerCommand = "encstop"
+                pctl.playerCommandReady = True
+            return
+
+        pctl.broadcast_position = found
+        pctl.broadcast_index = track.index
+        pctl.broadcast_time = 0
+
+        pctl.target_open = track.fullpath
+        pctl.b_start_time = track.start_time
+        pctl.broadcast_line = track.artist + " - " + track.title
+
+        if start:
+            pctl.playerCommand = "encstart"
+            pctl.playerCommandReady = True
+        else:
+            pctl.playerCommand = "cast-next"
+            pctl.playerCommandReady = True
+
+        gui.pl_update += 1
 
     def advance(self, rr=False, quiet=False, gapless=False, inplace=False, end=False, force=False, nolock=False, play=True):
 
@@ -16745,15 +16800,10 @@ def toggle_broadcast():
             show_message("There are no tracks in this playlist to broadcast.", mode='error')
             return 0
         pctl.broadcast_playlist = copy.deepcopy(pctl.multi_playlist[pctl.active_playlist_viewing][6])
-        pctl.broadcast_position = 0
+        pctl.broadcast_position = -1
 
-        pctl.broadcast_index = pctl.multi_playlist[pctl.active_playlist_viewing][2][pctl.broadcast_position]
-        pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
-        pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + \
-                              pctl.master_library[pctl.broadcast_index].title
+        pctl.advance_broadcast(start=True)
 
-        pctl.playerCommand = "encstart"
-        pctl.playerCommandReady = True
     else:
         pctl.playerCommand = "encstop"
         pctl.playerCommandReady = True
@@ -36228,30 +36278,7 @@ while pctl.running:
     # Broadcast control
     if pctl.broadcast_active and pctl.broadcast_time > pctl.master_library[
             pctl.broadcast_index].length:
-        pctl.broadcast_position += 1
-        print('next')
-
-
-        for i, playlist in enumerate(pctl.multi_playlist):
-            if playlist[6] == pctl.broadcast_playlist:
-                broadcast_playlist = i
-                break
-        else:
-            pctl.broadcast_position = 0
-            broadcast_playlist = 0
-
-        if pctl.broadcast_position > len(pctl.multi_playlist[broadcast_playlist][2]) - 1:
-            print('reset')
-            pctl.broadcast_position = 0
-
-        pctl.broadcast_index = pctl.multi_playlist[broadcast_playlist][2][pctl.broadcast_position]
-        pctl.broadcast_time = 0
-        pctl.target_open = pctl.master_library[pctl.broadcast_index].fullpath
-        pctl.b_start_time = pctl.master_library[pctl.broadcast_index].start_time
-        pctl.playerCommand = "cast-next"
-        pctl.playerCommandReady = True
-        pctl.broadcast_line = pctl.master_library[pctl.broadcast_index].artist + " - " + pctl.master_library[
-            pctl.broadcast_index].title
+        pctl.advance_broadcast()
 
     # elif pctl.join_broadcast and pctl.broadcast_active:
     #     pctl.broadcast_index = pctl.track_queue[pctl.queue_step]
@@ -36260,8 +36287,8 @@ while pctl.running:
     if pctl.broadcast_active and pctl.broadcast_time != pctl.broadcast_last_time:
         pctl.broadcast_last_time = pctl.broadcast_time
         gui.update += 1
-    if pctl.broadcast_active and pctl.broadcast_time == 0:
-        gui.pl_update = 1
+    # if pctl.broadcast_active and pctl.broadcast_time == 0:
+    #     gui.pl_update = 1
 
     # Update d-bus metadata on Linux
     if pctl.playing_state == 1 and pctl.mpris is not None:
