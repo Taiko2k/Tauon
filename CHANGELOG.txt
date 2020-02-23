@@ -17,6 +17,7 @@ v5.3.0
  - Fixed drag and dropping folders as new tab not working if top panel was full
  - Fixed icons not reverting size when changing ui-scale back to 1.0
  - Fixed a crash in showcase view with large portrait window size
+ - Fixed tracks not being marked as missing when broadcasting
 
 v5.2.1
 
