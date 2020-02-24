@@ -17122,7 +17122,7 @@ def draw_rating_widget(x, y, n_track, album=False):
     rect = (x - round(5 * gui.scale), y - round(4 * gui.scale), round(80 * gui.scale), round(16 * gui.scale))
     gui.heart_fields.append(rect)
 
-    if coll(rect):
+    if coll(rect) and is_level_zero() and not quick_drag:
         gui.pl_update = 2
         pp = mouse_position[0] - x
 
@@ -25888,8 +25888,10 @@ class StandardPlaylist:
 
                 height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
 
+                star_offset = 0
                 if gui.show_album_ratings:
-                    ex -= 72 * gui.scale
+                    star_offset = round(72 * gui.scale)
+                    ex -= star_offset
                     draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
 
                 light_offset = 0
@@ -25930,14 +25932,20 @@ class StandardPlaylist:
 
                 left_align = highlight_width - date_w - 13 * gui.scale - light_offset
 
+
+                left_align -= star_offset
+
                 extra = aa
+
                 left_align -= extra
+
+
 
                 if ft_width > left_align:
                     date_w += 19 * gui.scale
                     ddt.text((left + highlight_left + 8 * gui.scale + extra, height), line,
                              colours.folder_title,
-                             gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w - extra)
+                             gui.row_font_size + gui.pl_title_font_offset, highlight_width - date_w - extra - star_offset)
 
                 else:
 
