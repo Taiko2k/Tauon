@@ -1602,6 +1602,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.rendered_playlist_position = 0
         
         self.console = console
+        self.show_album_ratings = True
 
 gui = GuiVar()
 
@@ -1730,6 +1731,25 @@ class StarStore:
 
 
 star_store = StarStore()
+
+class AlbumStarStore:
+
+    def __init__(self):
+        self.db = {}
+
+    def get_key(self, track_object):
+        artist = track_object.album_artist
+        if not artist:
+            artist = track_object.artist
+        return artist + ":" + track_object.album
+
+    def get_rating(self, track_object):
+        return self.db.get(self.get_key(track_object), 0)
+
+    def set_rating(self, track_object, rating):
+        self.db[self.get_key(track_object)] = rating
+
+album_star_store = AlbumStarStore()
 
 
 class Fonts:    # Used to hold font sizes (I forget to use this)
@@ -2233,6 +2253,14 @@ try:
 except:
     print('No existing star.p file')
 
+try:
+    album_star_store.db = pickle.load(open(user_directory + "/album-star.p", "rb"))
+
+except:
+    print('No existing album-star.p file')
+
+
+
 perf_timer.set()
 
 for t in range(2):
@@ -2518,7 +2546,8 @@ for t in range(2):
             gen_codes = save[139]
         if save[140] is not None:
             gui.show_ratings = save[140]
-
+        if save[141] is not None:
+            gui.show_album_ratings = save[141]
 
         state_file.close()
         del save
@@ -13092,15 +13121,14 @@ def regenerate_playlist(pl):
         elif cm == "rva":
             playlist = gen_folder_reverse(0, playlist)
 
+        elif cm == "rata>":
+
+            playlist = gen_folder_top_rating(0, custom_list=playlist)
+
         elif cm == "rat>":
 
             def rat_key(track_id):
-                #tr = pctl.g(track_id)
                 return star_store.get_rating(track_id)
-                # if "FMPS_Rating" in tr.misc:
-                #     return tr.misc["FMPS_Rating"]
-                # else:
-                #     return 0
 
             playlist = sorted(playlist, key=rat_key, reverse=True)
 
@@ -13130,7 +13158,8 @@ def regenerate_playlist(pl):
                     #         temp.append(item)
                 playlist = temp
             except:
-                raise
+                pass
+                #raise
 
         elif cm[:4] == "rat<":
             value = cm[4:]
@@ -13147,6 +13176,7 @@ def regenerate_playlist(pl):
                 playlist = temp
             except:
                 pass
+
 
         elif cm[:4] == "rat>":
             value = cm[4:]
@@ -13573,9 +13603,10 @@ def gen_folder_top(pl, get_sets=False, custom_list=None):
 
     sets = []
     se = []
-    last = pctl.master_library[pctl.multi_playlist[pl][2][0]].parent_folder_path
-    last_al = pctl.master_library[pctl.multi_playlist[pl][2][0]].album
-    for track in pctl.multi_playlist[pl][2]:
+    tr = pctl.g(source[0])
+    last = tr.parent_folder_path
+    last_al = tr.album
+    for track in source:
         if last != pctl.master_library[track].parent_folder_path or last_al != pctl.master_library[track].album:
             last = pctl.master_library[track].parent_folder_path
             last_al = pctl.master_library[track].album
@@ -13627,6 +13658,54 @@ extra_tab_menu.add_to_sub(_("Top Played Albums"), 0, gen_folder_top, pass_ref=Tr
 tab_menu.add_to_sub(_("Top Rated Tracks"), 0, gen_top_rating, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Top Rated Tracks"), 0, gen_top_rating, pass_ref=True)
 
+def gen_folder_top_rating(pl, get_sets=False, custom_list=None):
+
+    source = custom_list
+    if source is None:
+        source = pctl.multi_playlist[pl][2]
+
+    if len(source) < 3:
+        return []
+
+    sets = []
+    se = []
+    tr = pctl.g(source[0])
+    last = tr.parent_folder_path
+    last_al = tr.album
+    for track in source:
+        if last != pctl.master_library[track].parent_folder_path or last_al != pctl.master_library[track].album:
+            last = pctl.master_library[track].parent_folder_path
+            last_al = pctl.master_library[track].album
+            sets.append(copy.deepcopy(se))
+            se = []
+        se.append(track)
+    sets.append(copy.deepcopy(se))
+
+    def best(folder):
+        return album_star_store.get_rating((pctl.g(folder[0])))
+
+    if get_sets:
+        r = []
+        for item in sets:
+            r.append((item, best(item)))
+        return r
+
+    sets = sorted(sets, key=best, reverse=True)
+
+    playlist = []
+
+    for se in sets:
+        playlist += se
+
+    if custom_list is not None:
+        return playlist
+
+    pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[pl][0] + " <Top Rated Albums>",
+                                      playlist=copy.deepcopy(playlist),
+                                      hide_title=0))
+
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl][0] + "\" a rata>"
+
 
 def gen_lyrics(pl, custom_list=None):
     playlist = []
@@ -13651,6 +13730,9 @@ def gen_lyrics(pl, custom_list=None):
 
     else:
         show_message("No tracks with lyrics were found.")
+
+tab_menu.add_to_sub(_("Top Rated Albums"), 0, gen_folder_top_rating, pass_ref=True)
+extra_tab_menu.add_to_sub(_("Top Rated Albums"), 0, gen_folder_top_rating, pass_ref=True)
 
 def gen_codec_pl(codec):
 
@@ -17030,10 +17112,13 @@ heart_row_icon = asset_loader('heart-track.png', True)
 star_row_icon = asset_loader('star.png', True)
 star_half_row_icon = asset_loader('star-half.png', True)
 
-def draw_rating_widget(x, y, n_track):
+def draw_rating_widget(x, y, n_track, album=False):
     spacing = 1
 
-    rat = star_store.get_rating(n_track.index)
+    if album:
+        rat = album_star_store.get_rating(n_track)
+    else:
+        rat = star_store.get_rating(n_track.index)
 
     rect = (x - 5, y - 4, 80, 16)
     gui.heart_fields.append(rect)
@@ -17051,7 +17136,10 @@ def draw_rating_widget(x, y, n_track):
 
         if input.mouse_click:
             rat = min(rat, 10)
-            star_store.set_rating(n_track.index, rat)
+            if album:
+                album_star_store.set_rating(n_track, rat)
+            else:
+                star_store.set_rating(n_track.index, rat)
 
     for ss in range(5):
 
@@ -20362,6 +20450,17 @@ def heart_toggle(mode=0):
     gui.update += 1
     gui.pl_update = 1
 
+
+def album_rating_toggle(mode=0):
+
+    if mode == 1:
+        return gui.show_album_ratings
+
+    gui.show_album_ratings ^= True
+
+    gui.update += 1
+    gui.pl_update = 1
+
 def rating_toggle(mode=0):
 
     if mode == 1:
@@ -20372,6 +20471,7 @@ def rating_toggle(mode=0):
     if gui.show_ratings:
         # gui.show_hearts = False
         gui.star_mode = 'none'
+        show_message(_("Note that ratings are stored in the local database only and not read/written to tags."))
 
     gui.update += 1
     gui.pl_update = 1
@@ -20487,8 +20587,9 @@ config_items = [
     [_('Show playtime lines'), star_line_toggle],
     [_('Show playtime stars'), star_toggle],
     [_('Show love hearts'), heart_toggle],
-    [_('Show ratings'), rating_toggle],
-    None
+    [_('Show track ratings'), rating_toggle],
+    [_('Show album ratings'), album_rating_toggle],
+    #None
 ]
 
 
@@ -22530,7 +22631,7 @@ class Over:
     def config_v(self, x0, y0, w0, h0):
 
         x = x0 + self.item_x_offset
-        y = y0 + 25 * gui.scale
+        y = y0 + 17 * gui.scale
 
         for k in config_items:
             if k is None:
@@ -25394,8 +25495,15 @@ class StandardPlaylist:
                         if mouse_up:
                             move_on_title = True
 
+                    # Ignore click in ratings box
+                    click_title = (input.mouse_click or right_click or middle_click) and coll(input_box)
+                    if click_title and gui.show_album_ratings:
+                        if mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
+                            click_title = False
+
+
                     # Detect folder title click
-                    if (input.mouse_click or right_click or middle_click) and coll(input_box) and mouse_position[1] < window_size[1] - gui.panelBY:
+                    if click_title and mouse_position[1] < window_size[1] - gui.panelBY:
 
                         # Add folder to queue if middle click
                         if middle_click:
@@ -25771,6 +25879,12 @@ class StandardPlaylist:
 
                 ex = left + highlight_left + highlight_width - 7 * gui.scale
 
+                height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
+
+                if gui.show_album_ratings:
+                    ex -= 72 * gui.scale
+                    draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
+
                 light_offset = 0
                 if colours.lm:
                     light_offset = 3 * gui.scale
@@ -25780,7 +25894,7 @@ class StandardPlaylist:
                     ex += 1 * gui.scale
 
                 ddt.text_background_colour = colours.playlist_panel_background
-                height = line_y + gui.playlist_row_height - 19 * gui.scale #gui.pl_title_y_offset
+
                 if gui.scale == 2:
                     height += 1
 
@@ -31741,6 +31855,7 @@ def save_state():
             search_dia_string_cache,
             pctl.gen_codes,
             gui.show_ratings,
+            gui.show_album_ratings,
         ]
 
 
@@ -36437,6 +36552,7 @@ pctl.playerCommand = "unload"
 pctl.playerCommandReady = True
 
 pickle.dump(star_store.db, open(user_directory + "/star.p", "wb"))
+pickle.dump(album_star_store.db, open(user_directory + "/album-star.p", "wb"))
 date = datetime.date.today()
 pickle.dump(star_store.db, open(user_directory + "/star.p.backup" + str(date.month), "wb"))
 
