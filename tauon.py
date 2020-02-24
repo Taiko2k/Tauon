@@ -1694,7 +1694,9 @@ class StarStore:
     def get_rating(self, index):
         key = self.key(index)
         if key in self.db:
-            self.db[key]
+            # self.db[key]
+            print(key)
+            print(self.db[key])
             return self.db[key][2]
         return 0
 
@@ -15894,6 +15896,7 @@ def intel_moji(index):
 
 track_menu.add_to_sub(_("Fix Mojibake"), 0, intel_moji, pass_ref=True)
 
+
 def sel_to_car():
 
     global default_playlist
@@ -18911,7 +18914,7 @@ class MessageBox:
         if input.mouse_click or input.key_return_press or right_click or key_esc_press or input.backspace_press \
                 or keymaps.test("quick-find") or (k_input and message_box_min_timer.get() > 1.2):
 
-            if not key_focused:
+            if not key_focused and message_box_min_timer.get() > 0.4:
                 gui.message_box = False
                 gui.update += 1
                 input.key_return_press = False
@@ -22132,8 +22135,11 @@ class Over:
             return
 
         for key, star in star_store.db.items():
-            star = [star[0], star[1].strip("L")]
+            star = [star[0], star[1].strip("L"), star[2]]
             star_store.db[key] = star
+
+        gui.pl_update += 1
+        show_message(_("Cleared all loves"), mode="done")
 
     def get_friend_love(self):
 
