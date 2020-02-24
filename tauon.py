@@ -1695,8 +1695,6 @@ class StarStore:
         key = self.key(index)
         if key in self.db:
             # self.db[key]
-            print(key)
-            print(self.db[key])
             return self.db[key][2]
         return 0
 
@@ -17012,9 +17010,10 @@ def import_fmps():
             if "FMPS_Rating" in tr.misc:
                 rating = round(tr.misc["FMPS_Rating"] * 10)
                 star_store.set_rating(tr.index, rating)
+
     gui.pl_update += 1
 
-x_menu.add_to_sub(_("Import FMPS_Ratings from tag"), 0, import_fmps, show_test=test_shift)
+x_menu.add_to_sub(_("Import FMPS_Ratings from tags"), 0, import_fmps)
 
 
 def toggle_broadcast():
