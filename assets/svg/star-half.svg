@@ -14,11 +14,11 @@
    viewBox="0 0 3.4395833 3.4395834"
    version="1.1"
    id="svg4554"
-   inkscape:export-filename="/home/kai/Tauon/dev/assets/star.png"
-   inkscape:export-xdpi="113.45454"
-   inkscape:export-ydpi="113.45454"
+   inkscape:export-filename="/home/kai/Tauon/dev/assets/star-half.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
    inkscape:version="0.92.4 5da689c313, 2019-01-14"
-   sodipodi:docname="star1.svg">
+   sodipodi:docname="star-half.svg">
   <defs
      id="defs4548" />
   <sodipodi:namedview
@@ -41,8 +41,8 @@
      fit-margin-bottom="0"
      inkscape:window-width="1510"
      inkscape:window-height="653"
-     inkscape:window-x="279"
-     inkscape:window-y="272"
+     inkscape:window-x="223"
+     inkscape:window-y="176"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata4551">
@@ -62,10 +62,9 @@
      id="layer1"
      transform="translate(-93.571011,-119.10251)">
     <path
-       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.13924392;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:17.29999924;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
-       inkscape:transform-center-y="-0.18156052"
-       d="m 95.290803,119.10252 0.522399,1.14532 1.197393,0.16847 -0.874533,0.87634 0.217631,1.24944 -1.06289,-0.60372 -1.062891,0.60372 0.217632,-1.24944 -0.874533,-0.87634 1.197393,-0.16847 z"
-       id="path4542"
-       inkscape:connector-curvature="0" />
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.52627623;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:17.29999924;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       d="M 6.4726562 0.060546875 L 4.5253906 4.328125 L 0 4.9648438 L 3.3046875 8.2773438 L 2.4824219 13 L 6.4726562 10.734375 L 6.4726562 0.060546875 z "
+       transform="matrix(0.26458333,0,0,0.26458333,93.571011,119.10251)"
+       id="path4542" />
   </g>
 </svg>

@@ -17113,23 +17113,22 @@ star_row_icon = asset_loader('star.png', True)
 star_half_row_icon = asset_loader('star-half.png', True)
 
 def draw_rating_widget(x, y, n_track, album=False):
-    spacing = 1
 
     if album:
         rat = album_star_store.get_rating(n_track)
     else:
         rat = star_store.get_rating(n_track.index)
 
-    rect = (x - 5, y - 4, 80, 16)
+    rect = (x - round(5 * gui.scale), y - round(4 * gui.scale), round(80 * gui.scale), round(16 * gui.scale))
     gui.heart_fields.append(rect)
 
     if coll(rect):
         gui.pl_update = 2
         pp = mouse_position[0] - x
 
-        if pp < 5:
+        if pp < 5 * gui.scale:
             rat = 0
-        elif pp > 70:
+        elif pp > 70 * gui.scale:
             rat = 10
         else:
             rat = pp // 6
@@ -17141,17 +17140,24 @@ def draw_rating_widget(x, y, n_track, album=False):
             else:
                 star_store.set_rating(n_track.index, rat)
 
+    bg = colours.grey(40)
+    fg = colours.grey(200)
+
+    if colours.lm:
+        bg = [0, 0, 0, 20]
+        fg = colours.grey(70)
+
     for ss in range(5):
 
         xx = x + ss * star_row_icon.w
 
         if rat - 1 < ss * 2:
-            star_row_icon.render(xx, y, colours.grey(40))
+            star_row_icon.render(xx, y, bg)
         elif rat - 1 == ss * 2:
-            star_row_icon.render(xx, y, colours.grey(40))
-            star_half_row_icon.render(xx, y, colours.grey(200))
+            star_row_icon.render(xx, y, bg)
+            star_half_row_icon.render(xx, y, fg)
         else:
-            star_row_icon.render(xx, y, colours.grey(200))
+            star_row_icon.render(xx, y, fg)
 
 
 heart_colours = ColourGenCache(0.7, 0.7)
@@ -25104,7 +25110,8 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                           star_x + 3 * gui.scale,
                           lh
                           ], alpha_mod(colour, album_fade), True)
-                star_x += 6
+
+                star_x += 6 * gui.scale
 
 
         if gui.show_ratings:
@@ -25115,7 +25122,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
 
             draw_rating_widget(sx, sy, n_track)
 
-            star_x += 70
+            star_x += round(70 * gui.scale)
 
 
         if gui.star_mode == 'star' and total > 0 and pctl.master_library[
