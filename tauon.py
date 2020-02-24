@@ -1241,6 +1241,8 @@ class Prefs:    # Used to hold any kind of settings
 
         self.subsonic_playlists = {}
 
+        self.write_ratings = False
+
 
 prefs = Prefs()
 
@@ -1602,7 +1604,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.rendered_playlist_position = 0
         
         self.console = console
-        self.show_album_ratings = True
+        self.show_album_ratings = False
 
 gui = GuiVar()
 
@@ -1697,11 +1699,42 @@ class StarStore:
         return 0
 
     # Sets the track user rating
-    def set_rating(self, index, value):
+    def set_rating(self, index, value, write=False):
         key = self.key(index)
         if key not in self.db:
             self.db[key] = self.new_object()
         self.db[key][2] = value
+
+        if prefs.write_ratings and write:
+            print("Writing rating..")
+            tr = pctl.g(index)
+            assert value <= 10
+            assert value >= 0
+            if tr.file_ext == "MP3":
+                tag = stagger.read_tag(tr.fullpath)
+                if value == 0:
+                    #del tag[TXXX(description="FMPS_Rating")]
+                    if TXXX in tag:
+                        for item in tag[TXXX]:
+                            if hasattr(item, 'description'):
+                                if item.description.lower() == "fmps_rating":
+                                    tag[TXXX].remove(item)
+                else:
+                    tag[TXXX] = TXXX(encoding="utf-8", description="FMPS_RATING", value='{:.2f}'.format(value / 10))
+                tag.write()
+            elif tr.file_ext == "FLAC":
+                if whicher("metaflac"):
+                    if value == 0:
+                        command = launch_prefix + "metaflac --remove-tag=FMPS_Rating " + tr.fullpath.replace('"', '\\"')
+                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
+                    else:
+                        command = launch_prefix + "metaflac --remove-tag=FMPS_Rating --set-tag=FMPS_Rating=\"" + '{:.2f}'.format(value / 10) + "\" " + tr.fullpath.replace('"', '\\"')
+                        subprocess.call(shlex.split(command), stdout=subprocess.PIPE, shell=False)
+
+            tr.misc["FMPS_Rating"] = float(value / 10)
+            if value == 0:
+                del tr.misc["FMPS_Rating"]
+
 
     def new_object(self):
         return [0, "", 0]
@@ -1891,6 +1924,10 @@ def auto_size_columns():
         if item[0] == "Lyrics":
             item[1] = round(50 * gui.scale)
             total -= round(50 * gui.scale)
+
+        if item[0] == "Rating":
+            item[1] = round(80 * gui.scale)
+            total -= round(80 * gui.scale)
 
         if item[0] == "Starline":
             item[1] = round(78 * gui.scale)
@@ -2812,8 +2849,8 @@ if db_version > 0:
                 value.append(0)
                 star_store.db[key] = value
 
-for key, value in star_store.db.items():
-    print(value)
+# for key, value in star_store.db.items():
+#     print(value)
 # Loading Config -----------------
 
 download_directories = []
@@ -2915,7 +2952,7 @@ def save_prefs():
     cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
     cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
     cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
-
+    cf.update_value("write-ratings-to-tag", prefs.write_ratings)
 
     cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
     cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -2982,6 +3019,7 @@ def load_prefs():
     else:
         prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
         prefs.tag_editor_target = cf.sync_add("string", "tag-editor-target", "picard", "The name of the binary to call.")
+
 
     cf.br()
     cf.add_text("[playback]")
@@ -3071,6 +3109,8 @@ def load_prefs():
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
+    prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires metaflac installed on host system. ")
+
 
     cf.br()
     cf.add_text("[tokens]")
@@ -16966,9 +17006,9 @@ def import_fmps():
             if "FMPS_Rating" in tr.misc:
                 rating = round(tr.misc["FMPS_Rating"] * 10)
                 star_store.set_rating(tr.index, rating)
+    gui.pl_update += 1
 
-
-x_menu.add_to_sub(_("Import ratings from FMPS tag"), 0, import_fmps, show_test=test_shift)
+x_menu.add_to_sub(_("Import FMPS_Ratings from tag"), 0, import_fmps, show_test=test_shift)
 
 
 def toggle_broadcast():
@@ -17122,7 +17162,7 @@ def draw_rating_widget(x, y, n_track, album=False):
     rect = (x - round(5 * gui.scale), y - round(4 * gui.scale), round(80 * gui.scale), round(16 * gui.scale))
     gui.heart_fields.append(rect)
 
-    if coll(rect) and is_level_zero() and not quick_drag:
+    if coll(rect) and (input.mouse_click or (is_level_zero() and not quick_drag)):
         gui.pl_update = 2
         pp = mouse_position[0] - x
 
@@ -17138,7 +17178,7 @@ def draw_rating_widget(x, y, n_track, album=False):
             if album:
                 album_star_store.set_rating(n_track, rat)
             else:
-                star_store.set_rating(n_track.index, rat)
+                star_store.set_rating(n_track.index, rat, write=True)
 
     bg = colours.grey(40)
     fg = colours.grey(200)
@@ -20477,7 +20517,8 @@ def rating_toggle(mode=0):
     if gui.show_ratings:
         # gui.show_hearts = False
         gui.star_mode = 'none'
-        show_message(_("Note that ratings are stored in the local database only and not read/written to tags."))
+        if not prefs.write_ratings:
+            show_message(_("Note that ratings are stored in the local database only and not read/written to tags."))
 
     gui.update += 1
     gui.pl_update = 1
