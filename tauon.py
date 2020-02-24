@@ -13119,10 +13119,10 @@ def regenerate_playlist(pl):
         elif cm[:4] == "rat=":
             value = cm[4:]
             try:
-                value = float(value)
+                value = float(value) * 2
                 temp = []
                 for item in playlist:
-                    if value == star_store.get_rating(tr.index):
+                    if value == star_store.get_rating(item):
                         temp.append(item)
                     # tr = pctl.g(item)
                     # if "FMPS_Rating" in tr.misc:
@@ -13130,15 +13130,15 @@ def regenerate_playlist(pl):
                     #         temp.append(item)
                 playlist = temp
             except:
-                pass
+                raise
 
         elif cm[:4] == "rat<":
             value = cm[4:]
             try:
-                value = float(value)
+                value = float(value) * 2
                 temp = []
                 for item in playlist:
-                    if value > star_store.get_rating(tr.index):
+                    if value > star_store.get_rating(item):
                         temp.append(item)
                     # tr = pctl.g(item)
                     # if "FMPS_Rating" in tr.misc:
@@ -13151,10 +13151,10 @@ def regenerate_playlist(pl):
         elif cm[:4] == "rat>":
             value = cm[4:]
             try:
-                value = float(value)
+                value = float(value) * 2
                 temp = []
                 for item in playlist:
-                    if value < star_store.get_rating(tr.index):
+                    if value < star_store.get_rating(item):
                         temp.append(item)
                     # tr = pctl.g(item)
                     # if "FMPS_Rating" in tr.misc:
@@ -13168,7 +13168,7 @@ def regenerate_playlist(pl):
             temp = []
             for item in playlist:
                 #tr = pctl.g(item)
-                if star_store.get_rating(tr.index) > 0:
+                if star_store.get_rating(item) > 0:
                     temp.append(item)
                 # if "FMPS_Rating" in tr.misc:
                 #     temp.append(item)
@@ -13177,7 +13177,7 @@ def regenerate_playlist(pl):
         elif cm == "norat":
             temp = []
             for item in playlist:
-                if star_store.get_rating(tr.index) == 0:
+                if star_store.get_rating(item) == 0:
                     temp.append(item)
                 # tr = pctl.g(item)
                 # if "FMPS_Rating" not in tr.misc:
