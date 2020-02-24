@@ -11,6 +11,7 @@ v5.3.0
  - Tweaked search results to show more folders
  - Changed love heart column title from emoji to icon
  - Enabled network sources with GStreamer backend
+ - Moved last.fm error message to top panel
  - Fixed XSPF importing filenames with certain characters
  - Fixed XSPF importing not reporting errors on 2nd try
  - Fixed column sorting not ignoring case
