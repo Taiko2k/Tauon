@@ -667,7 +667,7 @@ lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
 queue_add_timer = Timer(100)
 toast_mode_timer = Timer(100)
-scrobble_warning_timer = Timer(100)
+scrobble_warning_timer = Timer(1000)
 
 f_store = FunctionStore()
 
@@ -3109,7 +3109,7 @@ def load_prefs():
     prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
     prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
     prefs.always_auto_update_playlists = cf.sync_add("bool", "auto-update-playlists", prefs.always_auto_update_playlists, "Automatically update generated playlists on any file import")
-    prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires metaflac installed on host system. ")
+    prefs.write_ratings = cf.sync_add("bool", "write-ratings-to-tag", prefs.write_ratings, "This writes FMPS_Rating tag to files. Only MP3 and FLAC supported. FLAC requires flac package installed on host system. ")
 
 
     cf.br()
@@ -5799,6 +5799,9 @@ class LastScrob:
             except:
                 print("SCROBBLE QUEUE ERROR")
                 #raise
+
+        if not self.queue:
+            scrobble_warning_timer.force_set(1000)
 
         self.running = False
 
@@ -23622,11 +23625,7 @@ class TopPanel:
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
-        elif scrobble_warning_timer.get() < 5:
-            text = "Network error. Will try again later."
-            bg = [250, 250, 250, 255]
-            last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
-            x += 21 * gui.scale
+
         # elif transcode_list:
         #     # if key_ctrl_down and key_c_press:
         #     #     del transcode_list[1:]
@@ -23653,6 +23652,12 @@ class TopPanel:
         elif lastfm.scanning_friends:
             text = "Scanning: " + lastfm.scanning_username
             bg = [200, 150, 240, 255]
+
+        elif lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
+            text = "Network error. Will try again later."
+            bg = [250, 250, 250, 255]
+            last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
+            x += 21 * gui.scale
         else:
             status = False
 
