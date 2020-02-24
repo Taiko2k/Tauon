@@ -667,6 +667,7 @@ lyrics_fetch_timer = Timer(10)
 gallery_load_delay = Timer(10)
 queue_add_timer = Timer(100)
 toast_mode_timer = Timer(100)
+scrobble_warning_timer = Timer(100)
 
 f_store = FunctionStore()
 
@@ -5228,6 +5229,8 @@ class LastFMapi:
         album = track_object.album
         artist = get_artist_strip_feat(track_object)
 
+        print("submitting scrobble...")
+
         # Act
         try:
             if title != "" and artist != "":
@@ -5252,8 +5255,14 @@ class LastFMapi:
                 except:
                     pass
 
-            show_message("Error: Could not scrobble. ", str(e), mode='warning')
-            print(e)
+            #show_message("Error: Could not scrobble. ", str(e), mode='warning')
+            console.print("Error connecting to last.fm", level=5)
+            console.print("-- " + str(e), level=5)
+            scrobble_warning_timer.set()
+            gui.update += 1
+            gui.delay_frame(5)
+
+            # print(e)
             return False
         return True
 
@@ -5434,7 +5443,9 @@ class LastFMapi:
                 print("Not sent, incomplete metadata")
         except Exception as e:
 
-            print(e)
+            console.print("Error connecting to last.fm.", level=3)
+            console.print("-- " + str(e), level=3)
+            # print(e)
             if 'retry' in str(e):
                 return 2
                 # show_message("Could not update Last.fm. ", str(e), mode='warning')
@@ -17265,8 +17276,8 @@ def lastfm_colour():
     else:
         return None
 
-
-lastfm_icon = MenuIcon(asset_loader('as.png', True))
+last_fm_icon = asset_loader('as.png', True)
+lastfm_icon = MenuIcon(last_fm_icon)
 
 if gui.scale == 2:
     lastfm_icon.xoff = 0
@@ -21817,7 +21828,7 @@ class Over:
 
             ww = ddt.get_text_w(_("Username:"), 212)
             ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.grey_blend_bg(60), 212)
-            ddt.text((x + ww + 15 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
+            ddt.text((x + ww + 65 * gui.scale + 7 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username, colours.grey_blend_bg(180), 213)
 
             y += 25 * gui.scale
 
@@ -23399,6 +23410,11 @@ class TopPanel:
         elif koel.scanning:
             text = "Accessing KOEL library..."
             bg = [111, 98, 190, 255]
+        elif scrobble_warning_timer.get() < 5:
+            text = "Network error. Will try again later."
+            bg = [250, 250, 250, 255]
+            last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
+            x += 21 * gui.scale
         # elif transcode_list:
         #     # if key_ctrl_down and key_c_press:
         #     #     del transcode_list[1:]
@@ -32867,7 +32883,7 @@ while pctl.running:
         if pref_box.enabled:
 
             if pref_box.inside():
-                if input.mouse_click and not gui.message_box:
+                if input.mouse_click: # and not gui.message_box:
                     pref_box.click = True
                     input.mouse_click = False
                 if right_click:
