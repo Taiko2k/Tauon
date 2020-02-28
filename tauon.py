@@ -575,6 +575,7 @@ import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 arch = platform.machine()
+#print(arch)
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
@@ -17186,7 +17187,7 @@ def draw_rating_widget(x, y, n_track, album=False):
         elif pp > 70 * gui.scale:
             rat = 10
         else:
-            rat = pp // 6
+            rat = pp // (star_row_icon.w // 2)
 
         if input.mouse_click:
             rat = min(rat, 10)
@@ -21830,15 +21831,16 @@ class Over:
 
     def button(self, x, y, text, plug=None, width=0, bg=None):
 
+
         w = width
         if w == 0:
-            w = ddt.get_text_w(text, 211) + 10 * gui.scale
+            w = ddt.get_text_w(text, 211) + round(10 * gui.scale)
 
         h = round(20 * gui.scale)
         border_size = round(2 * gui.scale)
 
-        rect = (x, y, w, h)
-        rect2 = (x - border_size, y - border_size, w + border_size * 2, h + border_size * 2)
+        rect = (round(x), round(y), round(w), round(h))
+        rect2 = (rect[0] - border_size, rect[1] - border_size, rect[2] + border_size * 2, rect[3] + border_size * 2)
 
         if bg is None:
             bg = colours.sys_background
@@ -22899,7 +22901,7 @@ class Over:
         ddt.rect_a((x, y), (full_width, full_height), colours.sys_background, True)
 
         current_tab = 0
-        tab_height = 24 #30
+        tab_height = round(24 * gui.scale) #30
 
         if top_mode:
 
@@ -22972,12 +22974,14 @@ class Over:
 
                 if coll(box2):
                     ddt.rect(box, [255, 255, 255, 10], True)
+                    
+                yy = box[1] + 4 * gui.scale
 
                 if current_tab == self.tab_active:
-                    ddt.text((box[0] + (tab_width // 2), box[1] + 4 * gui.scale, 2), item[0],
+                    ddt.text((box[0] + (tab_width // 2), yy, 2), item[0],
                              alpha_blend([240, 240, 240, 240], ddt.text_background_colour), 213)
                 else:
-                    ddt.text((box[0] + (tab_width // 2), box[1] + 4 * gui.scale, 2), item[0],
+                    ddt.text((box[0] + (tab_width // 2), yy, 2), item[0],
                              alpha_blend([240, 240, 240, 100], ddt.text_background_colour), 213)
 
                 current_tab += 1
@@ -26812,6 +26816,12 @@ class PlaylistBox:
         delete_pl = None
 
         tab_on = 0
+
+        if key_left_press or key_right_press:
+            if pctl.active_playlist_viewing < self.scroll_on:
+                self.scroll_on = pctl.active_playlist_viewing
+            elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
+                self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
         for i, pl in enumerate(pctl.multi_playlist):
 
@@ -36640,8 +36650,12 @@ if system == "windows":
     tray.stop()
 else:
     if de_notify_support:
-        song_notification.close()
-        Notify.uninit()
+        try:
+            song_notification.close()
+            g_tc_notify.close()
+            Notify.uninit()
+        except:
+            print("uninit notification error")
 
 if macos:
     try:
