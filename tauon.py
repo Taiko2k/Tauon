@@ -692,7 +692,7 @@ class DConsole:
         
         dtime = datetime.datetime.now()
         self.messages.append((message, level, dtime, Timer()))
-        if level > 0 or True:
+        if level > 0:
             print(message)
 
 console = DConsole()
@@ -16230,13 +16230,18 @@ def level_on():
 
     gui.vis_want = 1
     gui.update_layout()
+    show_message("Visualisers not implemented in GStreamer mode")
     #gui.turbo = True
 vis_menu.add(_("Level Meter"), level_on)
 
+
 def spec_on():
     gui.vis_want = 2
+    show_message("Visualisers not implemented in GStreamer mode")
     gui.update_layout()
+
 vis_menu.add(_("Spectrum Visualizer"), spec_on)
+
 
 def spec2_def():
 
@@ -16246,6 +16251,7 @@ def spec2_def():
             prefs.spec2_colour_mode = 0
 
     gui.vis_want = 3
+    show_message("Visualisers not implemented in GStreamer mode")
     #gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()
@@ -17004,12 +17010,16 @@ x_menu.add_to_sub(_("Mark Missing as Found"), 0, reset_missing_flags)
 
 
 def import_fmps():
+    unique = set()
     for playlist in pctl.multi_playlist:
         for id in playlist[2]:
             tr = pctl.g(id)
             if "FMPS_Rating" in tr.misc:
                 rating = round(tr.misc["FMPS_Rating"] * 10)
                 star_store.set_rating(tr.index, rating)
+                unique.add(tr.index)
+
+    show_message(str(len(unique)) + " ratings imported", mode="done")
 
     gui.pl_update += 1
 
@@ -31487,7 +31497,7 @@ def update_layout_do():
             gui.turbo = True
 
     # Disable vis when in compact view
-    if gui.mode == 3 or gui.top_bar_mode2:
+    if gui.mode == 3 or gui.top_bar_mode2 or prefs.backend == 2:
         if not gui.combo_mode:
             gui.vis = 0
             gui.turbo = False
