@@ -36637,8 +36637,12 @@ if system == "windows":
     tray.stop()
 else:
     if de_notify_support:
-        song_notification.close()
-        Notify.uninit()
+        try:
+            song_notification.close()
+            g_tc_notify.close()
+            Notify.uninit()
+        except:
+            print("uninit notification error")
 
 if macos:
     try:
