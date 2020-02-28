@@ -17024,8 +17024,21 @@ def import_fmps():
 
     gui.pl_update += 1
 
-x_menu.add_to_sub(_("Import FMPS_Ratings from tags"), 0, import_fmps)
+x_menu.add_to_sub(_("Import FMPS_Ratings from Tags"), 0, import_fmps)
 
+
+def clear_ratings():
+    if not key_shift_down:
+        show_message(_("This will delete all track and album ratings from the local database!"),
+                     _("Press button again while holding shift key if you're sure you want to do that."), mode='warning')
+        return
+    else:
+        for key, star in star_store.db.items():
+            star[2] = 0
+        album_star_store.db.clear()
+    gui.pl_update += 1
+
+x_menu.add_to_sub(_("Reset User Ratings"), 0, clear_ratings)
 
 def toggle_broadcast():
 
@@ -17196,11 +17209,12 @@ def draw_rating_widget(x, y, n_track, album=False):
             else:
                 star_store.set_rating(n_track.index, rat, write=True)
 
-    bg = colours.grey(40)
+    # bg = colours.grey(40)
+    bg = [255, 255, 255, 17]
     fg = colours.grey(200)
 
     if colours.lm:
-        bg = [0, 0, 0, 20]
+        bg = [0, 0, 0, 25]
         fg = colours.grey(70)
 
     for ss in range(5):
@@ -22141,8 +22155,8 @@ class Over:
     def clear_local_loves(self):
 
         if not key_shift_down:
-            show_message("This will mark all tracks in local database as unloved!",
-                         "Press button again while holding shift key if you're sure you want to do that.", mode='warning')
+            show_message(_("This will mark all tracks in local database as unloved!"),
+                         _("Press button again while holding shift key if you're sure you want to do that."), mode='warning')
             return
 
         for key, star in star_store.db.items():
