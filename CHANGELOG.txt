@@ -20,6 +20,7 @@ v5.3.0
  - Fixed icons not reverting size when changing ui-scale back to 1.0
  - Fixed a crash in showcase view with large portrait window size
  - Fixed tracks not being marked as missing when broadcasting
+ - Fixed playlist list not scrolling with arrow key navigation
 
 v5.2.1
 
