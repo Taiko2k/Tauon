@@ -575,6 +575,7 @@ import discogs_client
 musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/TauonMusicBox")
 
 arch = platform.machine()
+#print(arch)
 # -----------------------------------------------------------
 # Detect locale for translations (currently none available)
 
@@ -26802,6 +26803,12 @@ class PlaylistBox:
         delete_pl = None
 
         tab_on = 0
+
+        if key_left_press or key_right_press:
+            if pctl.active_playlist_viewing < self.scroll_on:
+                self.scroll_on = pctl.active_playlist_viewing
+            elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
+                self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
         for i, pl in enumerate(pctl.multi_playlist):
 
