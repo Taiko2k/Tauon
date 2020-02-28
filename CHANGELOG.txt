@@ -2,7 +2,7 @@
 Changelog-------------------------------------
 
 v5.3.0
-  - todo fix ratings ui scaling
+
  - Added user track ratings
  - Added regenerate function to playlist tab menu
  - Added playlist generator strings
@@ -20,6 +20,7 @@ v5.3.0
  - Fixed icons not reverting size when changing ui-scale back to 1.0
  - Fixed a crash in showcase view with large portrait window size
  - Fixed tracks not being marked as missing when broadcasting
+ - Fixed empty visualisers showing in GStreamer mode
 
 v5.2.1
 
