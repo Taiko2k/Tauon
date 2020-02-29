@@ -26357,8 +26357,8 @@ class StandardPlaylist:
                                 if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
                                     #ddt.rect(quick_box, [0, 0, 0, 100], True)
                                     quick_box = (run, ry, item[1], gui.playlist_row_height)
-                                    ddt.rect(quick_box, [0, 0, 0, 70], True)
-                                    ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 100), True)
+                                    ddt.rect(quick_box, [0, 0, 0, 40], True)
+                                    ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
                             tt = ddt.text((run + 6 * gui.scale, y + y_off),
                                           text,
