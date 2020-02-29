@@ -32887,8 +32887,6 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             pass
 
-
-
             # gen_replay(0)
             # window_size[0] = int(1600 * gui.scale)
             # window_size[1] = int(900 * gui.scale)
