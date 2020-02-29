@@ -32524,7 +32524,12 @@ while pctl.running:
                         window_size[0] = max(300, window_size[0])
                         window_size[1] = max(300, window_size[1])
 
-
+                    if prefs.art_bg:
+                        gui.worker4_releases += 2
+                        try:
+                            worker4_lock.release()
+                        except:
+                            pass
                     update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
