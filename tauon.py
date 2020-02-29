@@ -17178,6 +17178,7 @@ def heart_menu_colour():
 
 heart_icon = MenuIcon(asset_loader('heart-menu.png', True))
 heart_row_icon = asset_loader('heart-track.png', True)
+star_pc_icon = asset_loader('star-pc.png', True)
 star_row_icon = asset_loader('star.png', True)
 star_half_row_icon = asset_loader('star-half.png', True)
 
@@ -20497,6 +20498,8 @@ def star_line_toggle(mode=0):
         gui.star_mode = 'none'
     else:
         gui.star_mode = 'line'
+
+    gui.show_ratings = False
 
     gui.update += 1
     gui.pl_update = 1
@@ -25259,7 +25262,7 @@ def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, wid
                 #     if rated_star >= count:
                 #         colour = (220, 200, 60, 255)
 
-                star_row_icon.render(sx, sy, colour)
+                star_pc_icon.render(sx, sy, colour)
 
         if gui.show_hearts:
 
@@ -26153,7 +26156,7 @@ class StandardPlaylist:
                                     for count in range(8):
                                         if star < count or rr > wid + round(6 * gui.scale):
                                             break
-                                        star_row_icon.render(sx, sy, colour)
+                                        star_pc_icon.render(sx, sy, colour)
                                         sx += round(13) * gui.scale
                                         rr += round(13) * gui.scale
 
@@ -26355,12 +26358,11 @@ class StandardPlaylist:
                                 w, h = ddt.get_text_wh(text, font, wid)
                                 quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
                                 if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
-                                    #ddt.rect(quick_box, [0, 0, 0, 100], True)
                                     quick_box = (run, ry, item[1], gui.playlist_row_height)
                                     ddt.rect(quick_box, [0, 0, 0, 40], True)
                                     ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
-                            tt = ddt.text((run + 6 * gui.scale, y + y_off),
+                            ddt.text((run + 6 * gui.scale, y + y_off),
                                           text,
                                           colour,
                                           font,
