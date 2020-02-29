@@ -1243,6 +1243,7 @@ class Prefs:    # Used to hold any kind of settings
         self.subsonic_playlists = {}
 
         self.write_ratings = False
+        self.rating_playtime_stars = False
 
 
 prefs = Prefs()
@@ -2927,6 +2928,7 @@ def save_prefs():
     cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
     cf.update_value("auto-show-playing", prefs.auto_goto_playing)
     cf.update_value("notify-include-album", prefs.notify_include_album)
+    cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
 
     cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
     cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
@@ -3063,6 +3065,7 @@ def load_prefs():
     prefs.auto_goto_playing = cf.sync_add("bool", "auto-show-playing", prefs.auto_goto_playing, "Show playing track in current playlist on track and playlist change even if not the playing playlist")
 
     prefs.notify_include_album = cf.sync_add("bool", "notify-include-album", prefs.notify_include_album, "Include album name in track change notifications")
+    prefs.rating_playtime_stars = cf.sync_add("bool", "show-rating-hint", prefs.rating_playtime_stars, "Indicate playtime in rating stars")
 
     cf.br()
     cf.add_text("[gallery]")
@@ -17218,17 +17221,35 @@ def draw_rating_widget(x, y, n_track, album=False):
         bg = [0, 0, 0, 25]
         fg = colours.grey(70)
 
+    playtime_stars = 0
+    if prefs.rating_playtime_stars and rat == 0 and not album:
+        playtime_stars = star_count3(star_store.get(n_track.index), n_track.length)
+        if colours.lm:
+            fg2 = alpha_blend([0, 0, 0, 70], ddt.text_background_colour)
+        else:
+            fg2 = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
+
     for ss in range(5):
 
         xx = x + ss * star_row_icon.w
 
-        if rat - 1 < ss * 2:
-            star_row_icon.render(xx, y, bg)
-        elif rat - 1 == ss * 2:
-            star_row_icon.render(xx, y, bg)
-            star_half_row_icon.render(xx, y, fg)
+        if playtime_stars:
+            if playtime_stars - 1 < ss * 2:
+                star_row_icon.render(xx, y, bg)
+            elif playtime_stars - 1 == ss * 2:
+                star_row_icon.render(xx, y, bg)
+                star_half_row_icon.render(xx, y, fg2)
+            else:
+                star_row_icon.render(xx, y, fg2)
         else:
-            star_row_icon.render(xx, y, fg)
+
+            if rat - 1 < ss * 2:
+                star_row_icon.render(xx, y, bg)
+            elif rat - 1 == ss * 2:
+                star_row_icon.render(xx, y, bg)
+                star_half_row_icon.render(xx, y, fg)
+            else:
+                star_row_icon.render(xx, y, fg)
 
 
 heart_colours = ColourGenCache(0.7, 0.7)
@@ -20506,15 +20527,21 @@ def star_line_toggle(mode=0):
 
 def star_toggle(mode=0):
 
-    if mode == 1:
-        return gui.star_mode == 'star'
+    if gui.show_ratings:
+        if mode == 1:
+            return prefs.rating_playtime_stars
+        prefs.rating_playtime_stars ^= True
 
-    if gui.star_mode == 'star':
-        gui.star_mode = 'none'
     else:
-        gui.star_mode = 'star'
+        if mode == 1:
+            return gui.star_mode == 'star'
 
-    gui.show_ratings = False
+        if gui.star_mode == 'star':
+            gui.star_mode = 'none'
+        else:
+            gui.star_mode = 'star'
+
+    # gui.show_ratings = False
     gui.update += 1
     gui.pl_update = 1
 
@@ -20663,15 +20690,6 @@ def toggle_borderless(mode=0):
         SDL_SetWindowBordered(t_window, True)
 
 
-config_items = [
-    [_('Show playtime lines'), star_line_toggle],
-    [_('Show playtime stars'), star_toggle],
-    [_('Show love hearts'), heart_toggle],
-    [_('Show track ratings'), rating_toggle],
-    [_('Show album ratings'), album_rating_toggle],
-    #None
-]
-
 
 def toggle_break(mode=0):
     global break_enable
@@ -20680,16 +20698,6 @@ def toggle_break(mode=0):
     else:
         break_enable ^= True
         gui.pl_update = 1
-
-
-# def toggle_dd(mode=0):
-#     global dd_index
-#
-#     if mode == 1:
-#         return dd_index
-#     else:
-#         dd_index ^= True
-#         gui.pl_update = 1
 
 
 def toggle_scroll(mode=0):
@@ -21029,33 +21037,6 @@ def toggle_eq(mode=0):
     pctl.playerCommand = 'reload'
     pctl.playerCommandReady = True
 
-
-# config_items.append(['Hide scroll bar', toggle_scroll])
-
-# config_items.append(['Turn off playlist title breaks', toggle_break])
-
-# config_items.append([_('Use double digit track indices'), toggle_dd])
-
-# config_items.append(['Use custom line format [broken]', toggle_custom_line])
-
-# config_items.append(['Always use folder name as title', toggle_use_title])
-
-config_items.append([_('Add release year to folder title'), toggle_append_date])
-config_items.append([_('Add total duration to folder title'), toggle_append_total_time])
-
-config_items.append(None)
-
-# config_items.append([_('Playback follows selected'), toggle_playback_follow])
-
-# config_items.append([_('Auto sort on import'), toggle_auto_import_sort])
-
-# config_items.append([_('Hide column bar'), toggle_hide_bar])
-
-# config_items.append([_('Shuffle avoids repeats'), toggle_true_shuffle])
-
-# config_items.append([_('Show finish current when queuing album option'), toggle_finish_current])
-
-# config_items.append(['Playback advances to open playlist', toggle_follow])
 
 key_shiftr_down = False
 key_ctrl_down = False
@@ -22717,13 +22698,30 @@ class Over:
         x = x0 + self.item_x_offset
         y = y0 + 17 * gui.scale
 
-        for k in config_items:
-            if k is None:
-                y += 15 * gui.scale
-                continue
+        self.toggle_square(x, y, heart_toggle, _('Show love hearts'))
+        y += round(25 * gui.scale)
 
-            self.toggle_square(x, y, k[1], k[0])
-            y += 25 * gui.scale
+        self.toggle_square(x, y, star_line_toggle, _('Show playtime lines'))
+        y += round(25 * gui.scale)
+
+        self.toggle_square(x, y, rating_toggle, _('Show track ratings'))
+        y += round(25 * gui.scale)
+
+        if gui.show_ratings:
+            x += round(10 * gui.scale)
+        self.toggle_square(x, y, star_toggle, _('Show playtime stars'))
+        if gui.show_ratings:
+            x -= round(10 * gui.scale)
+        y += round(25 * gui.scale)
+
+        self.toggle_square(x, y, album_rating_toggle, _('Show album ratings'))
+        y += round(25 * gui.scale)
+
+        self.toggle_square(x, y, toggle_append_date, _('Add release year to folder title'))
+        y += round(25 * gui.scale)
+
+        self.toggle_square(x, y, toggle_append_total_time, _('Add total duration to folder title'))
+        y += round(25 * gui.scale)
 
         x = x0 + 330 * gui.scale
         y = y0 + 25 * gui.scale

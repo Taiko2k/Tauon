@@ -203,6 +203,33 @@ def star_count(sec, dur):
         stars += 1
     return stars
 
+def star_count3(sec, dur):
+    stars = 0
+    if dur and sec / dur > 0.95:
+        stars += 1
+    if dur and sec / dur > 1.95:
+        stars += 1
+    if sec > 60 * 5:
+        stars += 1
+    if sec > 60 * 10:
+        stars += 1
+    if sec > 60 * 15:
+        stars += 1
+    if sec > 60 * 20:
+        stars += 1
+    if sec > 60 * 30:
+        stars += 1
+    if sec > 60 * 60:
+        stars += 1
+    if sec > 60 * 60 * 1.5:
+        stars += 1
+    if sec > 60 * 60 * 1.75:
+        stars += 1
+    # if sec > 60 * 60 * 2:
+    #     stars += 1
+    return stars
+
+
 # Gives a score from 0.0 - 1.0 based on number of seconds
 def star_count2(sec):
     star = 0
