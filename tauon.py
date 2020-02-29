@@ -17211,7 +17211,7 @@ def draw_rating_widget(x, y, n_track, album=False):
 
     # bg = colours.grey(40)
     bg = [255, 255, 255, 17]
-    fg = colours.grey(200)
+    fg = colours.grey(210)
 
     if colours.lm:
         bg = [0, 0, 0, 25]
@@ -26176,6 +26176,7 @@ class StandardPlaylist:
                         text = ""
                         font = gui.row_font_size
                         colour = [200, 200, 200, 255]
+                        norm_colour = colour
                         y_off = 0
                         if item[0] == "Title":
                             colour = colours.title_text
@@ -26190,11 +26191,13 @@ class StandardPlaylist:
                         elif item[0] == "Artist":
                             text = n_track.artist
                             colour = colours.artist_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.artist_playing
                         elif item[0] == "Album":
                             text = n_track.album
                             colour = colours.album_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.album_playing
                         elif item[0] == "Album Artist":
@@ -26202,16 +26205,19 @@ class StandardPlaylist:
                             if not text and prefs.column_aa_fallback_artist:
                                 text = n_track.artist
                             colour = colours.artist_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.artist_playing
                         elif item[0] == "Composer":
                             text = n_track.composer
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Comment":
                             text = n_track.comment.replace("\n", " ").replace("\r", " ")
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "T":
@@ -26222,19 +26228,23 @@ class StandardPlaylist:
                                 text = track_number_process(n_track.track_number)
 
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Date":
                             text = n_track.date
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Filepath":
                             text = n_track.fullpath
                             colour = colours.index_text
+                            norm_colour = colour
                         elif item[0] == "Codec":
                             text = n_track.file_ext
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Lyrics":
@@ -26242,11 +26252,13 @@ class StandardPlaylist:
                             if n_track.lyrics != "":
                                 text = 'Y'
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Genre":
                             text = n_track.genre
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Bitrate":
@@ -26254,11 +26266,13 @@ class StandardPlaylist:
                             if text == "0":
                                 text = ""
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
                         elif item[0] == "Time":
                             text = get_display_time(n_track.length)
                             colour = colours.bar_time
+                            norm_colour = colour
                             #colour = colours.time_text
                             if this_line_playing is True:
                                 colour = colours.time_text
@@ -26313,6 +26327,7 @@ class StandardPlaylist:
                             if text == "0":
                                 text = ""
                             colour = colours.index_text
+                            norm_colour = colour
                             if this_line_playing is True:
                                 colour = colours.index_playing
 
@@ -26330,13 +26345,20 @@ class StandardPlaylist:
                             if this_line_playing and item[0] in colours.column_colours_playing:
                                 colour = colours.column_colours_playing[item[0]]
 
-                            #
-                            # if run + item[1] > gui.plw - 16:
-                            #     wid = gui.plw - run - 16 * gui.scale
                             if run + 6 * gui.scale + wid > end:
                                 wid = end - run - 40 * gui.scale
 
                             wid = max(0, wid)
+
+                            # Hacky. Places a dark background behind light text for readability over mascot
+                            if pl_bg and gui.set_mode and colour_value(norm_colour) < 400 and not colours.lm:
+                                w, h = ddt.get_text_wh(text, font, wid)
+                                quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
+                                if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
+                                    #ddt.rect(quick_box, [0, 0, 0, 100], True)
+                                    quick_box = (run, ry, item[1], gui.playlist_row_height)
+                                    ddt.rect(quick_box, [0, 0, 0, 70], True)
+                                    ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 100), True)
 
                             tt = ddt.text((run + 6 * gui.scale, y + y_off),
                                           text,
