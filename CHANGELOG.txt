@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.3.1
+
+ - Add Genius lyrics scrape
+
 v5.3.0
 
  - Added user track ratings
