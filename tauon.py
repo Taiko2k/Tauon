@@ -11556,7 +11556,7 @@ def get_lyric_fire(track_object, silent=False):
 
         if source == 'lyricwiki':
 
-            print("Query Lyric Wiki...")
+            print("Scrape Lyric Wiki...")
             try:
 
                 lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
@@ -11591,6 +11591,25 @@ def get_lyric_fire(track_object, silent=False):
                 print("Found")
                 found = True
                 break
+
+            except:
+                if not silent:
+                    print("Apiseeds does not appear to have lyrics for this song")
+                continue
+
+        if source == 'genius':
+
+            print("Scrape Genius...")
+            try:
+                lyrics = ser_gen(track_object.index, get_lyrics=True)
+
+                if lyrics:
+                    track_object.lyrics = lyrics
+                    print("Found")
+                    found = True
+                    break
+                else:
+                    continue
 
             except:
                 if not silent:
@@ -16076,12 +16095,33 @@ def clip_aar_al(index):
     SDL_SetClipboardText(line.encode('utf-8'))
 
 
-def ser_gen(index):
-    if len(pctl.master_library[index].title) < 1:
+def ser_gen(track_id, get_lyrics=False):
+    tr = pctl.master_library[track_id]
+    if len(tr.title) < 1:
         return
 
-    line = "https://genius.com/search?q=" + \
-           urllib.parse.quote(pctl.master_library[index].artist + " " + pctl.master_library[index].title)
+    line = urllib.parse.quote(f"{tr.artist}-{tr.title}".replace(" ", "-").replace("/", "-"))
+    line = f"https://genius.com/{line}-lyrics"
+
+    if get_lyrics:
+        page = requests.get(line)
+        html = BeautifulSoup(page.text, 'html.parser')
+        lyrics = html.find('div', class_='lyrics').get_text()
+
+        lyrics2 = []
+        for line in lyrics.splitlines():
+            if line.startswith("["):
+                pass
+            else:
+                lyrics2.append(line)
+
+        lyrics = "\n".join(lyrics2)
+        lyrics = lyrics.strip("\n")
+        return lyrics
+
+
+    # line = "https://genius.com/search?q=" + \
+    #        urllib.parse.quote(pctl.master_library[index].artist + " " + pctl.master_library[index].title)
     webbrowser.open(line, new=2, autoraise=True)
 
 def ser_wiki(index):
@@ -20892,6 +20932,15 @@ def toggle_apiseeds(mode=0):
     else:
         prefs.lyrics_enables.append("apiseeds")
 
+def toggle_genius_lyrics(mode=0):
+    if mode == 1:
+        return 'genius' in prefs.lyrics_enables
+
+    if 'genius' in prefs.lyrics_enables:
+        prefs.lyrics_enables.clear()
+    else:
+        prefs.lyrics_enables.append("genius")
+
 
 def switch_single(mode=0):
     if mode == 1:
@@ -21609,7 +21658,6 @@ class Over:
     def toggle_lyrics_view(self):
         self.lyrics_panel ^= True
 
-
     def lyrics(self, x0, y0, w0, h0):
 
         x = x0 + 25 * gui.scale
@@ -21626,6 +21674,8 @@ class Over:
         self.toggle_square(x, y, toggle_apiseeds, _("Apiseeds"))
         y += 23 * gui.scale
         self.toggle_square(x, y, toggle_lyricwiki, _("LyricWiki*"))
+        y += 23 * gui.scale
+        self.toggle_square(x, y, toggle_genius_lyrics, _("Genius*"))
 
         y += 30 * gui.scale
         ddt.text((x + 12 * gui.scale, y), _("*Uses scraping. Enable at your own discretion."),
@@ -21635,9 +21685,6 @@ class Over:
                  colours.grey_blend_bg(90), 11)
         y += 20 * gui.scale
 
-        # y += 34 * gui.scale
-
-        #self.button(x, y, _("Return"), self.toggle_lyrics_view, width=65 * gui.scale)
 
     def view2(self, x0, y0, w0, h0):
 
