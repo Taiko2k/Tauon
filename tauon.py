@@ -2155,6 +2155,12 @@ class ColoursClass:     # Used to store colour values for UI elements. These are
         self.menu_text = self.grey(40)
         self.menu_text_disabled = self.grey(180)
         self.menu_highlight_background = [200, 200, 200, 250]
+
+        # self.menu_background = [40, 40, 40, 250]
+        # self.menu_text = self.grey(220)
+        # self.menu_text_disabled = self.grey(120)
+        # self.menu_highlight_background = [120, 80, 220, 250]
+
         self.corner_button = self.grey(160)
         self.corner_button_active = self.grey(35)
         self.window_buttons_bg = [0, 0, 0, 5]
@@ -10166,7 +10172,7 @@ class ToolTip:
 
                 ddt.rect((self.x, self.y, self.w, self.h), colours.menu_background, True)
                 ddt.rect((self.x, self.y, self.w, self.h), colours.grey(45))
-                ddt.text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.message_box_text, self.font, bg=colours.menu_background)
+                ddt.text((self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text, colours.menu_text, self.font, bg=colours.menu_background)
             else:
                 #gui.update += 1
                 pass
@@ -10197,7 +10203,7 @@ def ex_tool_tip(x, y, text1_width, text, font):
     border = 1 * gui.scale
     ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
     ddt.rect((x, y, w, h), colours.menu_background, True)
-    p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.message_box_text, 312, bg=colours.menu_background)
+    p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.menu_text, 312, bg=colours.menu_background)
 
 
 class ToolTip3:
@@ -10263,7 +10269,7 @@ class ToolTip3:
 
         ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
         ddt.rect((x, y, w, h), colours.menu_background, True)
-        p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), self.text, colours.message_box_text, 312,
+        p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), self.text, colours.menu_text, 312,
                      bg=colours.menu_background)
 
         if not coll(self.rect):
@@ -13149,6 +13155,14 @@ def regenerate_playlist(pl, silent=False):
             for i in reversed(range(len(playlist))):
                     tr = pctl.g(playlist[i])
                     if not tr.is_cue:
+                        del playlist[i]
+            playlist += list(OrderedDict.fromkeys(playlist))
+
+        elif cm[:3] == "com":
+            text = cm[3:]
+            for i in reversed(range(len(playlist))):
+                    tr = pctl.g(playlist[i])
+                    if text not in tr.comment:
                         del playlist[i]
             playlist += list(OrderedDict.fromkeys(playlist))
 
@@ -17446,9 +17460,15 @@ def toggle_auto_bg(mode=0):
     prefs.art_bg ^= True
     if prefs.art_bg:
         gui.update = 60
+        gui.worker4_releases += 2
+        try:
+            worker4_lock.release()
+        except:
+            pass
 
     if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
         toggle_auto_theme()
+
 
 def toggle_auto_bg_strong(mode=0):
 
@@ -17460,6 +17480,13 @@ def toggle_auto_bg_strong(mode=0):
     else:
         prefs.art_bg_stronger = 2
     gui.update_layout()
+    if prefs.art_bg:
+        gui.update = 60
+        gui.worker4_releases += 2
+        try:
+            worker4_lock.release()
+        except:
+            pass
 
 def toggle_auto_bg_strong1(mode=0):
 
@@ -17467,6 +17494,13 @@ def toggle_auto_bg_strong1(mode=0):
         return prefs.art_bg_stronger == 1
     prefs.art_bg_stronger = 1
     gui.update_layout()
+    if prefs.art_bg:
+        gui.update = 60
+        gui.worker4_releases += 2
+        try:
+            worker4_lock.release()
+        except:
+            pass
 
 def toggle_auto_bg_strong2(mode=0):
 
@@ -17474,6 +17508,9 @@ def toggle_auto_bg_strong2(mode=0):
         return prefs.art_bg_stronger == 2
     prefs.art_bg_stronger = 2
     gui.update_layout()
+    if prefs.art_bg:
+        gui.update = 60
+
 
 def toggle_auto_bg_strong3(mode=0):
 
@@ -17481,6 +17518,9 @@ def toggle_auto_bg_strong3(mode=0):
         return prefs.art_bg_stronger == 3
     prefs.art_bg_stronger = 3
     gui.update_layout()
+    if prefs.art_bg:
+        gui.update = 60
+
 
 def toggle_auto_bg_blur(mode=0):
 
@@ -17488,6 +17528,13 @@ def toggle_auto_bg_blur(mode=0):
         return prefs.art_bg_always_blur
     prefs.art_bg_always_blur ^= True
     style_overlay.flush()
+    if prefs.art_bg:
+        gui.update = 60
+        gui.worker4_releases += 2
+        try:
+            worker4_lock.release()
+        except:
+            pass
 
 def toggle_auto_bg_showcase(mode=0):
 
@@ -30848,8 +30895,11 @@ class ViewBox:
         #vr = [x, gui.panelY, 52 * gui.scale, 220 * gui.scale]
 
         border_colour = colours.grey(30)
-        #if not colours.lm:
-        ddt.rect((vr[0] - round(4  * gui.scale), vr[1], vr[2] + round(8 * gui.scale), vr[3] + round(4 * gui.scale)), border_colour, True)
+        if colours.lm:
+            ddt.rect((vr[0], vr[1], vr[2] + round(4 * gui.scale), vr[3]),
+                     border_colour, True)
+        else:
+            ddt.rect((vr[0] - round(4  * gui.scale), vr[1], vr[2] + round(8 * gui.scale), vr[3] + round(4 * gui.scale)), border_colour, True)
         ddt.rect(vr, colours.menu_background, True)
 
         x = x + 7 * gui.scale
@@ -33017,11 +33067,10 @@ while pctl.running:
         if keymaps.test('testkey'):  # F7: test
             pass
 
-            # gen_replay(0)
-            # window_size[0] = int(1600 * gui.scale)
-            # window_size[1] = int(900 * gui.scale)
-            # SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-            # gui.update_layout()
+            window_size[0] = int(1280 * gui.scale)
+            window_size[1] = int(720 * gui.scale)
+            SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+            gui.update_layout()
 
         if gui.mode < 3:
             if keymaps.test("toggle-auto-theme"):
@@ -34820,7 +34869,7 @@ while pctl.running:
 
 
                 #edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
-                edge_playlist2.render(gui.playlist_left, gui.panelY, gui.plw, 25 * gui.scale)
+
                 bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 25 * gui.scale)
                 # --------------------------------------------
                 # ALBUM ART
@@ -35063,6 +35112,8 @@ while pctl.running:
             top = gui.panelY
             if gui.artist_info_panel:
                 top += gui.artist_panel_height
+
+            edge_playlist2.render(gui.playlist_left, top, gui.plw, 25 * gui.scale)
 
             width = 15 * gui.scale
 
