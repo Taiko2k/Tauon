@@ -13156,7 +13156,15 @@ def regenerate_playlist(pl, silent=False):
                     tr = pctl.g(playlist[i])
                     if not tr.is_cue:
                         del playlist[i]
-            playlist += list(OrderedDict.fromkeys(playlist))
+            playlist = list(OrderedDict.fromkeys(playlist))
+
+        elif cm == "today":
+            d = datetime.date.today()
+            for i in reversed(range(len(playlist))):
+                    tr = pctl.g(playlist[i])
+                    if not tr.date[5:7] == f"{d:%m}" or not tr.date[8:10] == f"{d:%d}":
+                        del playlist[i]
+            playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm[:3] == "com":
             text = cm[3:]
@@ -13164,7 +13172,7 @@ def regenerate_playlist(pl, silent=False):
                     tr = pctl.g(playlist[i])
                     if text not in tr.comment:
                         del playlist[i]
-            playlist += list(OrderedDict.fromkeys(playlist))
+            playlist = list(OrderedDict.fromkeys(playlist))
 
         elif cm[:3] == "ext":
             value = cm[3:].upper()

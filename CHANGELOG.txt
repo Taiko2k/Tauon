@@ -5,6 +5,7 @@ v5.3.1
 
  - Added Genius lyrics scrape
  - Added "remove duplicates" function
+ - Added comment (com"") and today's day (today) generator filters
  - Improved generator code entry to update on type
  - Improved scroll edge animation
  - Tweaked light theme colours
