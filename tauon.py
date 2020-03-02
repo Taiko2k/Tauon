@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.3.0"
+n_version = "5.3.1"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -1607,6 +1607,9 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         
         self.console = console
         self.show_album_ratings = False
+        self.gen_code_errors = False
+
+        self.regen_single = -1
 
 gui = GuiVar()
 
@@ -12121,8 +12124,8 @@ def remove_embed_picture(track_object):
     if pr == 1:
         pctl.revert()
 
-
-delete_icon = MenuIcon(asset_loader('del.png', True))
+del_icon = asset_loader('del.png', True)
+delete_icon = MenuIcon(del_icon)
 
 
 def delete_file_image(track_object):
@@ -12420,6 +12423,7 @@ def rename_playlist(index):
 
     rename_text_area.set_text(pctl.multi_playlist[index][0])
     rename_text_area.highlight_all()
+    gui.gen_code_errors = False
 
 
 
@@ -13101,25 +13105,29 @@ def regenerate_deco(pl):
 
     return [line_colour, colours.menu_background, None]
 
-def regenerate_playlist(pl):
+def regenerate_playlist(pl, silent=False):
 
     id = pl_to_id(pl)
     string = pctl.gen_codes.get(id)
     if not string:
-        show_message("This playlist has no generator")
+        if not silent:
+            show_message("This playlist has no generator")
         return
 
     try:
         cmds = shlex.split(string)
     except ValueError as e:
-        show_message("Generator string error", str(e), mode="error")
+        if not silent:
+            show_message("Generator string error", str(e), mode="error")
         return
     except Exception as e:
-        show_message("Generator string error", str(e), mode="error")
+        if not silent:
+            show_message("Generator string error", str(e), mode="error")
         return
 
     playlist = []
     selections = []
+    errors = False
 
     for cm in cmds:
 
@@ -13224,6 +13232,7 @@ def regenerate_playlist(pl):
                     #         temp.append(item)
                 playlist = temp
             except:
+                errors = True
                 pass
                 #raise
 
@@ -13241,6 +13250,7 @@ def regenerate_playlist(pl):
                     #         temp.append(item)
                 playlist = temp
             except:
+                errors = True
                 pass
 
 
@@ -13258,6 +13268,7 @@ def regenerate_playlist(pl):
                     #         temp.append(item)
                 playlist = temp
             except:
+                errors = True
                 pass
 
         elif cm == "rat":
@@ -13381,7 +13392,7 @@ def regenerate_playlist(pl):
                 value = int(value)
                 temp = []
                 for item in playlist:
-                    if int(pctl.master_library[item].date[:4]) >= value:
+                    if pctl.master_library[item].date[:4].isdigit() and int(pctl.master_library[item].date[:4]) >= value:
                         temp.append(item)
                 playlist = temp
 
@@ -13391,7 +13402,7 @@ def regenerate_playlist(pl):
                 value = int(value)
                 temp = []
                 for item in playlist:
-                    if int(pctl.master_library[item].date[:4]) <= value:
+                    if pctl.master_library[item].date[:4].isdigit() and int(pctl.master_library[item].date[:4]) <= value:
                         temp.append(item)
                 playlist = temp
 
@@ -13401,7 +13412,7 @@ def regenerate_playlist(pl):
                 value = int(value)
                 temp = []
                 for item in playlist:
-                    if int(pctl.master_library[item].date[:4]) > value:
+                    if pctl.master_library[item].date[:4].isdigit() and int(pctl.master_library[item].date[:4]) > value:
                         temp.append(item)
                 playlist = temp
 
@@ -13411,7 +13422,7 @@ def regenerate_playlist(pl):
                 value = int(value)
                 temp = []
                 for item in playlist:
-                    if int(pctl.master_library[item].date[:4]) < value:
+                    if pctl.master_library[item].date[:4].isdigit() and int(pctl.master_library[item].date[:4]) < value:
                         temp.append(item)
                 playlist = temp
 
@@ -13427,7 +13438,7 @@ def regenerate_playlist(pl):
                 playlist = playlist[:int(value)]
 
         # SEARCH FOLDER
-        elif cm.startswith("f"):
+        elif cm.startswith("f") and len(cm) > 2:
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -13459,7 +13470,7 @@ def regenerate_playlist(pl):
             playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
         # SEARCH GENRE
-        elif cm.startswith("g"):
+        elif cm.startswith("g") and len(cm) > 2:
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -13491,7 +13502,7 @@ def regenerate_playlist(pl):
             playlist += search_over.click_genre(found_name, get_list=True, search_lists=selections)
 
         # SEARCH ARTIST
-        elif cm.startswith("a"):
+        elif cm.startswith("a") and len(cm) > 2:
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -13542,10 +13553,14 @@ def regenerate_playlist(pl):
 
             selections.append(target)
 
+        else:
+            errors = True
+
     pctl.multi_playlist[pl][2][:] = playlist[:]
     gui.pl_update = 1
     reload()
 
+    gui.gen_code_errors = errors
 
 extra_tab_menu = Menu(155, show_icons=True)
 
@@ -19088,6 +19103,7 @@ def worker2():
         if len(search_over.search_text.text) > 1:
             if True:
                 #perf_timer.set()
+
                 temp_results = []
 
                 search_over.searched_text = search_over.search_text.text
@@ -19963,6 +19979,11 @@ def worker1():
             dl_mon.scan()
 
         # Update smart playlists
+        if gui.regen_single > -1:
+            target = gui.regen_single
+            gui.regen_single = -1
+            regenerate_playlist(target, silent=True)
+
         if pctl.after_import_flag and not after_scan and not search_over.active:
             pctl.after_import_flag = False
 
@@ -19981,7 +20002,7 @@ def worker1():
                                 not "rt" in cmds and
                                 not "r" in cmds):
                             if not pl_is_locked(i):
-                                regenerate_playlist(i)
+                                regenerate_playlist(i, silent=True)
                     except:
                         pass
 
@@ -26770,10 +26791,10 @@ class RenamePlaylistBox:
         gui.level_2_click = False
 
         if key_tab_press:
-
             self.toggle_edit_gen()
 
-        min_w = max(250 * gui.scale, ddt.get_text_w(rename_text_area.text, 315) + 50 * gui.scale)
+        text_w = ddt.get_text_w(rename_text_area.text, 315)
+        min_w = max(250 * gui.scale, text_w + 50 * gui.scale)
 
         rect = [self.x, self.y, min_w, 37 * gui.scale]
         bg = [40, 40, 40, 255]
@@ -26796,6 +26817,12 @@ class RenamePlaylistBox:
             pl = self.playlist_index
             id = pl_to_id(pl)
             pctl.gen_codes[id] = rename_text_area.text
+
+            if input_text or key_backspace_press:
+                gui.regen_single = rename_playlist_box.playlist_index
+                #regenerate_playlist(rename_playlist_box.playlist_index)
+            # if gui.gen_code_errors:
+            #     del_icon.render(rect[0] + rect[2] - 21 * gui.scale, rect[1] + 10 * gui.scale, (255, 70, 70, 255))
 
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
