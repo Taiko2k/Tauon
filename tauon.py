@@ -25554,7 +25554,8 @@ class StandardPlaylist:
             if pctl.playlist_view_position < 1:
                 pctl.playlist_view_position = 0
                 if default_playlist:
-                    edge_playlist.pulse()
+                    #edge_playlist.pulse()
+                    edge_playlist2.pulse()
 
             scroll_hide_timer.set()
             gui.frame_callback_list.append(TestTimer(0.9))
@@ -29319,8 +29320,8 @@ class MetaBox:
         ddt.rect((x, y + h - 1, w,
                   1), colours.side_panel_background, True)
 
-        lyric_side_top_pulse.render(x, y, (w - 9 - margin) * gui.scale, 2 * gui.scale)
-        lyric_side_bottom_pulse.render(x, y + h - 2 * gui.scale, w - 17 * gui.scale, 2 * gui.scale)
+        lyric_side_top_pulse.render(x, y, w - round(17 * gui.scale), 16 * gui.scale)
+        lyric_side_bottom_pulse.render(x, y + h, w - round(17 * gui.scale), 15 * gui.scale, bottom=True)
 
     def draw(self, x, y, w ,h, track=None):
 
@@ -31148,13 +31149,54 @@ class EdgePulse:
     def pulse(self):
         self.timer.set()
 
+class EdgePulse2:
 
-edge_playlist = EdgePulse()
-bottom_playlist = EdgePulse()
-gallery_pulse_top = EdgePulse()
+    def __init__(self):
+
+        self.timer = Timer()
+        self.timer.force_set(10)
+        self.ani_duration = 0.22
+
+    def render(self, x, y, w, h, bottom=False):
+
+        time = self.timer.get()
+        if time < self.ani_duration:
+
+            if bottom:
+                if mouse_wheel > 0:
+                    self.timer.force_set(10)
+                    return
+            else:
+                if mouse_wheel < 0:
+                    self.timer.force_set(10)
+                    return
+
+            alpha = 30 - int(25 * (time / self.ani_duration))
+            h_off = (h // 5) * (time / self.ani_duration) * 4
+
+            if colours.lm:
+                colour = (0, 0, 0, alpha)
+            else:
+                colour = (255, 255, 255, alpha)
+
+            if not bottom:
+                ddt.rect((x, y, w, h - h_off), colour, True)
+            else:
+                ddt.rect((x, y - (h - h_off), w, h - h_off), colour, True)
+            gui.update = 2
+            return True
+        else:
+            return False
+
+    def pulse(self):
+        self.timer.set()
+
+edge_playlist2 = EdgePulse2()
+bottom_playlist2 = EdgePulse2()
+gallery_pulse_top = EdgePulse2()
 tab_pulse = EdgePulse()
-lyric_side_top_pulse = EdgePulse()
-lyric_side_bottom_pulse = EdgePulse()
+lyric_side_top_pulse = EdgePulse2()
+lyric_side_bottom_pulse = EdgePulse2()
 
 
 
@@ -33811,7 +33853,6 @@ while pctl.running:
                             if gui.album_scroll_px < round(album_v_slide_value * -1):
                                 gui.album_scroll_px = round(album_v_slide_value * -1)
 
-                    gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw, 2)
 
                     rect = (gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
 
@@ -34438,6 +34479,8 @@ while pctl.running:
 
                                 ddt.rect(rect, item.colour, True)
                                 run_y += block_h + block_gap
+
+                    gallery_pulse_top.render(window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale)
                 except:
                     print("Gallery render error!")
                 # END POWER BAR ------------------------
@@ -34767,8 +34810,9 @@ while pctl.running:
                     vis_menu.activate(None, (window_size[0] - 150 * gui.scale, 30 * gui.scale))
 
 
-                edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
-                bottom_playlist.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 2 * gui.scale)
+                #edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
+                edge_playlist2.render(gui.playlist_left, gui.panelY, gui.plw, 25 * gui.scale)
+                bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY - 2 * gui.scale, gui.plw, 25 * gui.scale)
                 # --------------------------------------------
                 # ALBUM ART
 
@@ -35997,7 +36041,7 @@ while pctl.running:
                             if len(input_text) > 0 or gui.force_search:
                                 gui.search_error = True
                             if key_down_press:
-                                bottom_playlist.pulse()
+                                bottom_playlist2.pulse()
 
                         gui.force_search = False
 

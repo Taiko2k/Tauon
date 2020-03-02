@@ -5,6 +5,7 @@ v5.3.1
 
  - Added Genius lyrics scrape
  - Improved generator code entry to update on type
+ - Improved scroll edge animation
  - Fixed generator code year
 
 v5.3.0
