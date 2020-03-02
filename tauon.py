@@ -13600,6 +13600,14 @@ def forget_pl_import_folder(pl):
 
     pctl.multi_playlist[pl][7] = ""
 
+def remove_duplicates(pl):
+
+    playlist = []
+    for item in pctl.multi_playlist[pl][2]:
+        if item not in playlist:
+            playlist.append(item)
+
+    pctl.multi_playlist[pl][2][:] = playlist[:]
 
 tab_menu.add_to_sub(_("Export Playlist Stats"), 2, export_stats, pass_ref=True)
 tab_menu.add_to_sub(_('Transcode All'), 2, convert_playlist, pass_ref=True)
@@ -13608,6 +13616,7 @@ tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
+tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
