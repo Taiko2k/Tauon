@@ -3,7 +3,9 @@ Changelog-------------------------------------
 
 v5.3.1
 
- - Add Genius lyrics scrape
+ - Added Genius lyrics scrape
+ - Improved generator code entry to update on type
+ - Fixed generator code year
 
 v5.3.0
 
