@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.3.1
 
  - Added Genius lyrics scrape
+ - Added "remove duplicates" function
  - Improved generator code entry to update on type
  - Improved scroll edge animation
  - Fixed generator code year
