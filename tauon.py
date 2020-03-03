@@ -4065,6 +4065,7 @@ class PlayerCtl:
 
         if jump and not prefs.use_jump_crossfade:
             self.playerSubCommand = 'now'
+
         self.playerCommandReady = True
         # else:
         #     self.playerCommand = 'gapless'
@@ -4132,11 +4133,11 @@ class PlayerCtl:
             self.playlist_playing_position -= 1
             self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
             self.queue_step = len(self.track_queue) - 1
-            self.play_target()
+            self.play_target(jump=True)
 
         elif self.random_mode is True and self.queue_step > 0:
             self.queue_step -= 1
-            self.play_target()
+            self.play_target(jump=True)
         else:
             print("BACK: NO CASE!")
             self.show_current()

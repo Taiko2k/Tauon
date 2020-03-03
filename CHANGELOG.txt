@@ -11,6 +11,7 @@ v5.3.1
  - Tweaked light theme colours
  - Fixed generator code year filter
  - Fixed cycle-playlist-left/right not being rebindable
+ - Fixed transition fade not being disabled on previous
 
 v5.3.0
 
