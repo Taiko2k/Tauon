@@ -1874,7 +1874,6 @@ class KeyMap:
 
     def test(self, function):
 
-
         if not self.hits:
             return False
         if function not in self.maps:
@@ -32891,6 +32890,11 @@ while pctl.running:
 
     if k_input:
 
+        if keymaps.test('cycle-playlist-left'):
+            cycle_playlist_pinned(1)
+        if keymaps.test('cycle-playlist-right'):
+            cycle_playlist_pinned(-1)
+
         if keymaps.test('toggle-console'):
             console.show ^= True
 
@@ -32951,10 +32955,6 @@ while pctl.running:
                 gui.pl_update = 1
                 gui.update += 1
 
-                if keymaps.test('cycle-playlist-left'):
-                    cycle_playlist_pinned(1)
-                if keymaps.test('cycle-playlist-right'):
-                    cycle_playlist_pinned(-1)
 
             if keymaps.test("start"):
                 if pctl.playing_time < 4:
