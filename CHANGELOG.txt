@@ -10,6 +10,7 @@ v5.3.1
  - Improved scroll edge animation
  - Tweaked light theme colours
  - Fixed generator code year filter
+ - Fixed cycle-playlist-left/right not being rebindable
 
 v5.3.0
 
