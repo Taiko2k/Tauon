@@ -12418,7 +12418,7 @@ tab_menu = Menu(160, show_icons=True)
 def rename_playlist(index, generator=False):
 
     gui.rename_playlist_box = True
-    rename_playlist_box.edit_generator = generator
+    rename_playlist_box.edit_generator = False
     rename_playlist_box.playlist_index = index
     rename_playlist_box.x = mouse_position[0]
     rename_playlist_box.y = mouse_position[1]
@@ -12437,6 +12437,8 @@ def rename_playlist(index, generator=False):
     rename_text_area.highlight_all()
     gui.gen_code_errors = False
 
+    if generator:
+        rename_playlist_box.toggle_edit_gen()
 
 
 def edit_generator_box(index):
