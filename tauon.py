@@ -3706,13 +3706,6 @@ class PlayerCtl:
         if self.mpris is not None:
             self.mpris.update()
 
-        if prefs.art_bg:
-            gui.worker4_releases += 2
-            try:
-                worker4_lock.release()
-            except:
-                pass
-
     def get_url(self, track_object):
         if track_object.file_ext == "PLEX":
             return plex.resolve_stream(track_object.url_key), None
@@ -9629,6 +9622,13 @@ class StyleOverlay:
         self.parent_path = "None"
         self.stage = 0
 
+        if prefs.art_bg:
+            gui.worker4_releases += 2
+            try:
+                worker4_lock.release()
+            except:
+                pass
+
     def display(self):
 
         if self.min_on_timer.get() < 0:
@@ -9690,6 +9690,13 @@ class StyleOverlay:
                     self.current_track_id = track.index
                     if (self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
                         self.stage = 0
+
+                if prefs.art_bg:
+                    gui.worker4_releases += 2
+                    try:
+                        worker4_lock.release()
+                    except:
+                        pass
 
 
         if prefs.bg_showcase_only:
@@ -10447,14 +10454,21 @@ class Menu:
                 if self.items[i] is None:
 
 
+                    rect = (self.pos[0], y_run, self.w, self.break_height - 1)
+                    if coll(rect):
+                        self.clicked = False
+
                     ddt.rect_a((self.pos[0], y_run), (self.w, self.break_height),
                               colours.menu_background, True)
+
                     ddt.rect_a((self.pos[0], y_run + 2 * gui.scale), (self.w, 2 * gui.scale),
                               [255, 255, 255, 13], True)
+
                     # Draw tab
                     ddt.rect_a((self.pos[0], y_run), (4 * gui.scale, self.break_height),
                               colours.grey(30), True)
                     y_run += self.break_height
+
                     continue
 
                 if self.test_item_active(self.items[i]) is False:
@@ -17505,13 +17519,11 @@ def toggle_auto_bg(mode=0):
     if mode == 1:
         return prefs.art_bg
     prefs.art_bg ^= True
+
     if prefs.art_bg:
         gui.update = 60
-        gui.worker4_releases += 2
-        try:
-            worker4_lock.release()
-        except:
-            pass
+
+    style_overlay.flush()
 
     if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
         toggle_auto_theme()
@@ -17527,13 +17539,6 @@ def toggle_auto_bg_strong(mode=0):
     else:
         prefs.art_bg_stronger = 2
     gui.update_layout()
-    if prefs.art_bg:
-        gui.update = 60
-        gui.worker4_releases += 2
-        try:
-            worker4_lock.release()
-        except:
-            pass
 
 def toggle_auto_bg_strong1(mode=0):
 
@@ -17541,13 +17546,6 @@ def toggle_auto_bg_strong1(mode=0):
         return prefs.art_bg_stronger == 1
     prefs.art_bg_stronger = 1
     gui.update_layout()
-    if prefs.art_bg:
-        gui.update = 60
-        gui.worker4_releases += 2
-        try:
-            worker4_lock.release()
-        except:
-            pass
 
 def toggle_auto_bg_strong2(mode=0):
 
@@ -17575,13 +17573,7 @@ def toggle_auto_bg_blur(mode=0):
         return prefs.art_bg_always_blur
     prefs.art_bg_always_blur ^= True
     style_overlay.flush()
-    if prefs.art_bg:
-        gui.update = 60
-        gui.worker4_releases += 2
-        try:
-            worker4_lock.release()
-        except:
-            pass
+
 
 def toggle_auto_bg_showcase(mode=0):
 
@@ -25252,10 +25244,16 @@ def restore_full_mode():
         window_size[0] = i_x.contents.value
         window_size[1] = i_y.contents.value
 
-        print(window_size)
+        # print(window_size)
 
     gui.update_layout()
 
+    if prefs.art_bg:
+        gui.worker4_releases += 2
+        try:
+            worker4_lock.release()
+        except:
+            pass
 
 def line_render(n_track, p_track, y, this_line_playing, album_fade, start_x, width, style=1, ry=None ):
     timec = colours.bar_time
@@ -25667,8 +25665,6 @@ class StandardPlaylist:
 
 
         # Show notice if playlist empty
-
-
         if len(default_playlist) == 0:
             colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
 
@@ -25679,11 +25675,17 @@ class StandardPlaylist:
             b = window_size[1] - top_a - gui.panelBY
             half = int(top_a + (b * 0.60))
 
+            if pl_bg:
+                rect = (left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale,
+                        190 * gui.scale, 60 * gui.scale)
+                ddt.pretty_rect = rect
 
             ddt.text((left + int(width / 2) + 10 * gui.scale, half, 2),
                      _("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
             ddt.text((left + int(width / 2) + 10 * gui.scale, half + 30 * gui.scale, 2),
                      _("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
+
+            ddt.pretty_rect = None
 
         # Show notice if at end of playlist
         elif pctl.playlist_view_position > len(default_playlist) - 1:
@@ -25696,9 +25698,15 @@ class StandardPlaylist:
             b = window_size[1] - top_a - gui.panelBY
             half = int(top_a + (b * 0.17))
 
+            if pl_bg:
+                rect = (left + int(width / 2) - 60 * gui.scale, half - 5 * gui.scale,
+                        140 * gui.scale, 30 * gui.scale)
+                ddt.pretty_rect = rect
+
             ddt.text((left + int(width / 2) + 10 * gui.scale, half, 2), _("End of Playlist"),
                      colour, 213)
 
+            ddt.pretty_rect = None
 
             # line = "Contains " + str(len(default_playlist)) + ' track'
             # if len(default_playlist) > 1:
@@ -26928,13 +26936,13 @@ class RenamePlaylistBox:
                 #regenerate_playlist(rename_playlist_box.playlist_index)
             # if gui.gen_code_errors:
             #     del_icon.render(rect[0] + rect[2] - 21 * gui.scale, rect[1] + 10 * gui.scale, (255, 70, 70, 255))
-            ddt.text_background_colour = [2, 2, 2, 255]
+            ddt.text_background_colour = [4, 4, 4, 255]
             hint_rect = [rect[0], rect[1] + round(50 * gui.scale), round(560 * gui.scale), round(300 * gui.scale)]
 
             if hint_rect[0] + hint_rect[2] > window_size[0]:
                 hint_rect[0] = window_size[0] - hint_rect[2]
 
-            ddt.rect(hint_rect, [0, 0, 0, 240], True)
+            ddt.rect(hint_rect, [0, 0, 0, 245], True)
             xx0 = hint_rect[0] + round(15 * gui.scale)
             xx = hint_rect[0] + round(25 * gui.scale)
             xx2 = hint_rect[0] + round(85 * gui.scale)
@@ -26948,6 +26956,8 @@ class RenamePlaylistBox:
             title_font = 311
             code_font = 311
             hint_font = 310
+
+            #ddt.pretty_rect = hint_rect
 
             ddt.text((xx0, yy), "Type codes separated by spaces. Codes will be executed left to right.", text_colour, title_font)
             yy += round(18 * gui.scale)
@@ -27080,6 +27090,7 @@ class RenamePlaylistBox:
             else:
                 ddt.text((xx2, yy), "Disabled", [110, 110, 110, 255], 212)
 
+        #ddt.pretty_rect = None
 
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
@@ -27402,9 +27413,9 @@ class PlaylistBox:
                     cl = [0, 0, 0, 50]
                 self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
             elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-                cl = [90, 50, 200, 220]
+                cl = [120, 50, 220, 230]
                 if light_mode:
-                    cl = [90, 50, 255, 200]
+                    cl = [120, 50, 255, 200]
                 self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
 
             # Draw effect of adding tracks to playlist
@@ -32904,12 +32915,6 @@ while pctl.running:
                         window_size[0] = max(300, window_size[0])
                         window_size[1] = max(300, window_size[1])
 
-                    if prefs.art_bg:
-                        gui.worker4_releases += 2
-                        try:
-                            worker4_lock.release()
-                        except:
-                            pass
                     update_layout = True
 
             elif event.window.event == SDL_WINDOWEVENT_ENTER:
