@@ -13137,10 +13137,12 @@ def regenerate_playlist(pl, silent=False):
     try:
         cmds = shlex.split(string)
     except ValueError as e:
+        gui.gen_code_errors = "close"
         if not silent:
             show_message("Generator string error", str(e), mode="error")
         return
     except Exception as e:
+        gui.gen_code_errors = True
         if not silent:
             show_message("Generator string error", str(e), mode="error")
         return
@@ -13576,8 +13578,6 @@ def regenerate_playlist(pl, silent=False):
             #     playlist.append(item)
             playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
 
-
-
         elif cm.startswith("s"):
             pl_name = cm[1:]
             target = None
@@ -13596,6 +13596,7 @@ def regenerate_playlist(pl, silent=False):
                 print(f"not found: {pl_name}")
                 print("Target playlist not found")
                 selections_searched += 1
+                errors = "playlist"
                 continue
             selections_searched += 1
             selections.append(target)
@@ -13608,11 +13609,15 @@ def regenerate_playlist(pl, silent=False):
     gui.pl_update = 1
     reload()
 
+    print(cmds)
+
     gui.gen_code_errors = errors
+    if not playlist and not errors:
+        gui.gen_code_errors = "empty"
 
 
 def make_auto_sorting(pl):
-    pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypn auto"
+    pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypa auto"
     show_message(_("OK. This playlist will automatically sort on import from now on"),
                  _("You can undo this by clicking Rename, press TAB, then clear the code."), mode="done")
 
@@ -26946,7 +26951,7 @@ class RenamePlaylistBox:
 
             ddt.text((xx0, yy), "Type codes separated by spaces. Codes will be executed left to right.", text_colour, title_font)
             yy += round(18 * gui.scale)
-            ddt.text((xx0, yy), "Select specific sources: (optional)", title_colour, title_font)
+            ddt.text((xx0, yy), "Select sources: (default: all playlists)", title_colour, title_font)
             yy += round(14 * gui.scale)
             ddt.text((xx, yy), "s\"name\"", code_colour, code_font)
             ddt.text((xx2, yy), "Select source playlist by name", hint_colour, hint_font)
@@ -27047,7 +27052,7 @@ class RenamePlaylistBox:
             ddt.text((xx, yy), "tn", code_colour, code_font)
             ddt.text((xx2, yy), "Track number per album", hint_colour, hint_font)
             yy += round(12 * gui.scale)
-            ddt.text((xx, yy), "ypn", code_colour, code_font)
+            ddt.text((xx, yy), "ypa", code_colour, code_font)
             ddt.text((xx2, yy), "Year per artist", hint_colour, hint_font)
 
             yy += round(16 * gui.scale)
@@ -27055,6 +27060,26 @@ class RenamePlaylistBox:
             yy += round(14 * gui.scale)
             ddt.text((xx, yy), "auto", code_colour, code_font)
             ddt.text((xx2, yy), "Automatically reload on imports", hint_colour, hint_font)
+
+            yy += round(30 * gui.scale)
+            #xx += round(80 * gui.scale)
+            xx2 = xx
+            xx2 += ddt.text((xx2, yy), "Status:", [90, 90, 90, 255], 212) + round(6 * gui.scale)
+            if rename_text_area.text:
+                if gui.gen_code_errors:
+                    if gui.gen_code_errors == "playlist":
+                        ddt.text((xx2, yy), "Playlist not found", [255, 100, 100, 255], 212)
+                    elif gui.gen_code_errors == "empty":
+                        ddt.text((xx2, yy), "Result is empty", [250, 190, 100, 255], 212)
+                    elif gui.gen_code_errors == "close":
+                        ddt.text((xx2, yy), "Close quotation...", [110, 110, 110, 255], 212)
+                    else:
+                        ddt.text((xx2, yy), "...", [255, 100, 100, 255], 212)
+                else:
+                    ddt.text((xx2, yy), "OK", [100, 255, 100, 255], 212)
+            else:
+                ddt.text((xx2, yy), "Disabled", [110, 110, 110, 255], 212)
+
 
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
