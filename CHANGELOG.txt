@@ -5,13 +5,15 @@ v5.3.1
 
  - Added Genius lyrics scrape
  - Added "remove duplicates" function
- - Added comment (com"") and today's day (today) generator filters
+ - Added "make playlist auto sorting" function
+ - Added 'comment', 'today', 'self' and 'path' generator codes
  - Improved generator code entry to update on type
  - Improved scroll edge animation
  - Tweaked light theme colours
  - Fixed generator code year filter
  - Fixed cycle-playlist-left/right not being rebindable
  - Fixed transition fade not being disabled on previous
+ - Fixed mascot position in "tracks only" view
 
 v5.3.0
 
@@ -36,8 +38,6 @@ v5.3.0
  - Fixes settings box buttons UI scaling
  - Fixed playlist list not scrolling with arrow key navigation
  - Fixed crash on exit on some desktops
-
-
 
 v5.2.1
 
