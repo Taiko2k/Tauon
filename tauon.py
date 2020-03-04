@@ -5945,17 +5945,17 @@ class PlexService:
 
         if not prefs.plex_username:
             show_message("PLEX Account - No username in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.plex_password:
             show_message("PLEX Account - No password in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.plex_servername:
             show_message("PLEX - No name of plex server in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
 
@@ -6136,7 +6136,7 @@ class SubsonicService:
 
         if not prefs.subsonic_password or not prefs.subsonic_server or not prefs.subsonic_user:
             show_message("Subsonic config error: Missing username, password and/or servername",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
 
@@ -6248,17 +6248,17 @@ class KoelService:
 
         if not prefs.koel_username:
             show_message("Koel - No username in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.koel_password:
             show_message("Koel - No password in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
         if not prefs.koel_server_url:
             show_message("Koel - No target url server in config",
-                         'Enter details in config file then restart app to apply.', mode='warning')
+                         'Enter details in config file then reload config to apply.', mode='warning')
             self.scanning = False
             return
 
@@ -12874,13 +12874,18 @@ def sort_track_2(pl, custom_list=None):
     gui.pl_update += 1
 
 
-def sort_path_pl(pl):
+def sort_path_pl(pl, custom_list=None):
+
+    if custom_list is not None:
+        target = custom_list
+    else:
+        target = pctl.multi_playlist[pl][2]
 
     def path(index):
         track = pctl.master_library[index]
         return (track.parent_folder_path.lower(), track.filename)
 
-    pctl.multi_playlist[pl][2].sort(key=path)
+    target.sort(key=path)
 
 def append_current_playing(index):
     if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
@@ -13134,11 +13139,15 @@ def regenerate_playlist(pl, silent=False):
     playlist = []
     selections = []
     errors = False
+    selections_searched = 0
 
     for cm in cmds:
 
-        if cm == "a":
-            if not selections:
+        if cm == "self":
+            selections.append(pctl.multi_playlist[pl][2])
+
+        elif cm == "a":
+            if not selections and not selections_searched:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
@@ -13337,6 +13346,9 @@ def regenerate_playlist(pl, silent=False):
                     tr = pctl.g(playlist[i])
                     if not value < tr.length:
                         del playlist[i]
+
+        elif cm == "path":
+            sort_path_pl(0, custom_list=playlist)
 
         elif cm == "pa>":
             playlist = gen_folder_top(0, custom_list=playlist)
@@ -13566,14 +13578,19 @@ def regenerate_playlist(pl, silent=False):
                     break
             else:
                 for p in pctl.multi_playlist:
+                    print( p[0].lower())
+                    print(pl_name.lower())
                     if p[0].lower().startswith(pl_name.lower()):
                         target = p[2]
                         break
-            if not target:
+            if target is None:
+                print(f"not found: {pl_name}")
                 print("Target playlist not found")
+                selections_searched += 1
                 continue
-
+            selections_searched += 1
             selections.append(target)
+            #print(selections)
 
         else:
             errors = True
@@ -13583,6 +13600,12 @@ def regenerate_playlist(pl, silent=False):
     reload()
 
     gui.gen_code_errors = errors
+
+
+def make_auto_sorting(pl):
+    pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypn auto"
+    show_message(_("OK. This playlist will automatically sort on import from now on"),
+                 _("You can undo this by clicking Rename, press TAB, then clear the code."), mode="done")
 
 extra_tab_menu = Menu(155, show_icons=True)
 
@@ -13599,6 +13622,7 @@ extra_tab_menu.add_sub(_("From Current…"), 133)
 tab_menu.add_to_sub(_("Sort by Filepath"), 1, standard_sort, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Track Numbers'), 1, sort_track_2, pass_ref=True)
 tab_menu.add_to_sub(_('Sort Year per Artist'), 1, year_sort, pass_ref=True)
+tab_menu.add_to_sub(_('Make playlist auto-sorting'), 1, make_auto_sorting, pass_ref=True)
 
 # tab_menu.add('Transcode All Folders', convert_playlist, pass_ref=True)
 # tab_menu.add('Rescan Tags', rescan_tags, pass_ref=True)
@@ -20048,7 +20072,7 @@ def worker1():
             gui.regen_single = -1
             regenerate_playlist(target, silent=True)
 
-        if pctl.after_import_flag and not after_scan and not search_over.active:
+        if pctl.after_import_flag and not after_scan and not search_over.active and not loading_in_progress:
             pctl.after_import_flag = False
 
             for i, plist in enumerate(pctl.multi_playlist):
@@ -25587,7 +25611,8 @@ class StandardPlaylist:
 
         # This draws an optional background image
         if pl_bg:
-            pl_bg.render(left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h)
+            x = highlight_left + highlight_width - pl_bg.w - round(60 * gui.scale)
+            pl_bg.render(x, window_size[1] - gui.panelBY - pl_bg.h)
             if not gui.set_mode:
                 ddt.pretty_rect = (left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
 
@@ -32892,9 +32917,11 @@ while pctl.running:
     if k_input:
 
         if keymaps.test('cycle-playlist-left'):
-            cycle_playlist_pinned(1)
+            if is_level_zero():
+                cycle_playlist_pinned(1)
         if keymaps.test('cycle-playlist-right'):
-            cycle_playlist_pinned(-1)
+            if is_level_zero():
+                cycle_playlist_pinned(-1)
 
         if keymaps.test('toggle-console'):
             console.show ^= True
