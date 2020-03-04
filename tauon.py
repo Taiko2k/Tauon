@@ -13609,7 +13609,7 @@ def regenerate_playlist(pl, silent=False):
     gui.pl_update = 1
     reload()
 
-    print(cmds)
+    # print(cmds)
 
     gui.gen_code_errors = errors
     if not playlist and not errors:
@@ -27400,6 +27400,11 @@ class PlaylistBox:
                 cl = [255, 255, 255, 24]
                 if light_mode:
                     cl = [0, 0, 0, 50]
+                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+            elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
+                cl = [90, 50, 200, 220]
+                if light_mode:
+                    cl = [90, 50, 255, 200]
                 self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
 
             # Draw effect of adding tracks to playlist

@@ -780,7 +780,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                 #if self.state == "suspend":
                 #    target = self.old_target
                 #else:
-                print(f"Open file: {pctl.target_open}")
+                # print(f"Open file: {pctl.target_open}")
                 self.old_target = pctl.target_open.encode('utf-8')
                 target = self.old_target
 
