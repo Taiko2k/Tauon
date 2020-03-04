@@ -13619,7 +13619,7 @@ def regenerate_playlist(pl, silent=False):
 def make_auto_sorting(pl):
     pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypa auto"
     show_message(_("OK. This playlist will automatically sort on import from now on"),
-                 _("You can undo this by clicking Rename, press TAB, then clear the code."), mode="done")
+                 _("You edit this by going \"Misc...\" > \"Edit generator...\""), mode="done")
 
 extra_tab_menu = Menu(155, show_icons=True)
 
