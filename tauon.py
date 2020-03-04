@@ -3096,7 +3096,7 @@ def load_prefs():
     prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
     prefs.column_aa_fallback_artist = cf.sync_add("bool", "column-album-artist-fallsback", prefs.column_aa_fallback_artist, "'Album artist' column shows 'artist' if otherwise blank.")
     prefs.left_align_album_artist_title = cf.sync_add("bool", "left-aligned-album-artist-title", prefs.left_align_album_artist_title, "Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
-    prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort, "Automatically apply 'Filepath' and 'Year per Artist' sorting functions to playlist on import.")
+    prefs.auto_sort = cf.sync_add("bool", "import-auto-sort", prefs.auto_sort, "This setting is deprecated and will be removed in a future version")
 
 
     cf.br()
@@ -12415,14 +12415,20 @@ def parse_template(string, track_object, up_ext=False, strict=False):
 # Create playlist tab menu
 tab_menu = Menu(160, show_icons=True)
 
-
-def rename_playlist(index):
+def rename_playlist(index, generator=False):
 
     gui.rename_playlist_box = True
-    rename_playlist_box.edit_generator = False
+    rename_playlist_box.edit_generator = generator
     rename_playlist_box.playlist_index = index
     rename_playlist_box.x = mouse_position[0]
     rename_playlist_box.y = mouse_position[1]
+
+    if generator:
+        rename_playlist_box.y = window_size[1] // 2 - round(200 * gui.scale)
+        rename_playlist_box.x = window_size[0] // 2 - round(250 * gui.scale)
+
+    if rename_playlist_box.y > round(350 * gui.scale):
+        rename_playlist_box.y = round(350 * gui.scale)
 
     if rename_playlist_box.y < gui.panelY:
         rename_playlist_box.y = gui.panelY + 10 * gui.scale
@@ -12433,7 +12439,8 @@ def rename_playlist(index):
 
 
 
-
+def edit_generator_box(index):
+    rename_playlist(index, generator=True)
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
@@ -13662,6 +13669,7 @@ tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
+tab_menu.add_to_sub(_("Edit generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -26913,6 +26921,138 @@ class RenamePlaylistBox:
                 #regenerate_playlist(rename_playlist_box.playlist_index)
             # if gui.gen_code_errors:
             #     del_icon.render(rect[0] + rect[2] - 21 * gui.scale, rect[1] + 10 * gui.scale, (255, 70, 70, 255))
+            ddt.text_background_colour = [2, 2, 2, 255]
+            hint_rect = [rect[0], rect[1] + round(50 * gui.scale), round(560 * gui.scale), round(300 * gui.scale)]
+
+            if hint_rect[0] + hint_rect[2] > window_size[0]:
+                hint_rect[0] = window_size[0] - hint_rect[2]
+
+            ddt.rect(hint_rect, [0, 0, 0, 240], True)
+            xx0 = hint_rect[0] + round(15 * gui.scale)
+            xx = hint_rect[0] + round(25 * gui.scale)
+            xx2 = hint_rect[0] + round(85 * gui.scale)
+            yy = hint_rect[1] + round(10 * gui.scale)
+
+            text_colour =  [90, 90, 90, 255]
+            title_colour =  text_colour
+            code_colour =  [250, 250, 250, 255]
+            hint_colour =  [60, 60, 60, 255]
+
+            title_font = 311
+            code_font = 311
+            hint_font = 310
+
+            ddt.text((xx0, yy), "Type codes separated by spaces. Codes will be executed left to right.", text_colour, title_font)
+            yy += round(18 * gui.scale)
+            ddt.text((xx0, yy), "Select specific sources: (optional)", title_colour, title_font)
+            yy += round(14 * gui.scale)
+            ddt.text((xx, yy), "s\"name\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Select source playlist by name", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "self", code_colour, code_font)
+            ddt.text((xx2, yy), "Select playlist itself", hint_colour, hint_font)
+
+            yy += round(16 * gui.scale)
+            ddt.text((xx0, yy), "Add tracks: (at least 1 required)", title_colour, title_font)
+            yy += round(14 * gui.scale)
+            ddt.text((xx, yy), "a\"name\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search by artist name", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "g\"genre\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search by genre", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "r\"text\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search by filepath segment", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "a", code_colour, code_font)
+            ddt.text((xx2, yy), "Add all tracks", hint_colour, hint_font)
+
+            yy += round(16 * gui.scale)
+            ddt.text((xx0, yy), "Filters", title_colour, title_font)
+            yy += round(14 * gui.scale)
+            ddt.text((xx, yy), "n123", code_colour, code_font)
+            ddt.text((xx2, yy), "Limit to number of tracks", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "y>1999", code_colour, code_font)
+            ddt.text((xx2, yy), "Year: >, <, =", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "pc>5", code_colour, code_font)
+            ddt.text((xx2, yy), "Play count: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "d>120", code_colour, code_font)
+            ddt.text((xx2, yy), "Duration (seconds): >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "rat>3.5", code_colour, code_font)
+            ddt.text((xx2, yy), "Track rating 0-5: >, <, =", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "l", code_colour, code_font)
+            ddt.text((xx2, yy), "Loved tracks", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "ly", code_colour, code_font)
+            ddt.text((xx2, yy), "Has lyrics", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
+            ddt.text((xx2, yy), "Search comment", hint_colour, hint_font)
+
+            xx += round(260 * gui.scale)
+            xx2 += round(260 * gui.scale)
+            xx0 += round(260 * gui.scale)
+            yy = hint_rect[1] + round(10 * gui.scale)
+            yy += round(18 * gui.scale)
+
+            #yy += round(16 * gui.scale)
+            ddt.text((xx0, yy), "Sorters", title_colour, title_font)
+            yy += round(14 * gui.scale)
+            ddt.text((xx, yy), "st", code_colour, code_font)
+            ddt.text((xx2, yy), "Shuffle tracks", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "ra", code_colour, code_font)
+            ddt.text((xx2, yy), "Shuffle albums", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "y>", code_colour, code_font)
+            ddt.text((xx2, yy), "Year: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "d>", code_colour, code_font)
+            ddt.text((xx2, yy), "Duration: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "pt>", code_colour, code_font)
+            ddt.text((xx2, yy), "Track Playtime: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "pa>", code_colour, code_font)
+            ddt.text((xx2, yy), "Album playtime: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "rv", code_colour, code_font)
+            ddt.text((xx2, yy), "Invert tracks", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "rva", code_colour, code_font)
+            ddt.text((xx2, yy), "Invert albums", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "rat>", code_colour, code_font)
+            ddt.text((xx2, yy), "Track rating: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "rata>", code_colour, code_font)
+            ddt.text((xx2, yy), "Album rating: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "m>", code_colour, code_font)
+            ddt.text((xx2, yy), "Modification date: >, <", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "path", code_colour, code_font)
+            ddt.text((xx2, yy), "Filepath", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "tn", code_colour, code_font)
+            ddt.text((xx2, yy), "Track number per album", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "ypn", code_colour, code_font)
+            ddt.text((xx2, yy), "Year per artist", hint_colour, hint_font)
+
+            yy += round(16 * gui.scale)
+            ddt.text((xx0, yy), "Special", title_colour, title_font)
+            yy += round(14 * gui.scale)
+            ddt.text((xx, yy), "auto", code_colour, code_font)
+            ddt.text((xx2, yy), "Automatically reload on imports", hint_colour, hint_font)
 
         # If enter or click outside of box: save and close
         if input.key_return_press or (key_esc_press and len(editline) == 0) \
