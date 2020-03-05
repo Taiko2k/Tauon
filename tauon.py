@@ -1251,6 +1251,8 @@ class Prefs:    # Used to hold any kind of settings
         self.write_ratings = False
         self.rating_playtime_stars = False
 
+        self.lyrics_subs = {}
+
 
 prefs = Prefs()
 
@@ -1616,6 +1618,7 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
         self.gen_code_errors = False
 
         self.regen_single = -1
+
 
 gui = GuiVar()
 
@@ -2313,6 +2316,12 @@ except:
     print('No existing album-star.p file')
 
 
+try:
+    if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+        with open(user_directory + "/lyrics_substitutions.json", 'r') as f:
+            prefs.lyrics_subs = json.load(f)
+except:
+    print("Error loading lyrics_substitutions.json")
 
 perf_timer.set()
 
@@ -2611,7 +2620,6 @@ for t in range(2):
     except:
         if os.path.isfile(user_directory + "/state.p"):
             print('Error loading save file')
-
 
 core_timer.set()
 print(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
@@ -7728,15 +7736,18 @@ class TextBox2:
         if click is False:
             click = input.mouse_click
 
+        rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
+        select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
+
+        # Activate Menu
+        if coll(rect):
+            if right_click or level_2_right_click:
+                field_menu.activate(self)
+
         if width > 0 and active:
 
-            rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
-            select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
 
-            # Activate Menu
-            if coll(rect):
-                if right_click or level_2_right_click:
-                    field_menu.activate(self)
+
 
             if click and field_menu.active:
                 # field_menu.click()
@@ -7927,6 +7938,13 @@ class TextBox2:
 
             if click:
                 self.selection = self.cursor_position
+
+        else:
+            width -= round(15 * gui.scale)
+            t_len = ddt.get_text_w(self.text, font)
+            ddt.text((0, 0), self.text, colour, font)
+            if coll(rect) and not field_menu.active:
+                gui.cursor_want = 2
 
 
         if active and editline != "" and editline != input_text:
@@ -8276,6 +8294,8 @@ gst_output_field = TextBox2()
 gst_output_field.text = prefs.gst_output
 search_text = TextBox()
 rename_files = TextBox2()
+sub_lyrics_a = TextBox2()
+sub_lyrics_b = TextBox2()
 rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
     rename_files.text = rename_files_previous
@@ -10983,6 +11003,111 @@ class RenameTrackBox:
 rename_track_box = RenameTrackBox()
 
 
+class SubLyricsBox:
+
+    def __init__(self):
+
+        self.active = False
+        self.target_track = None
+        self.active_field = 1
+
+    def activate(self, track):
+
+        self.active = True
+        self.target_track = track
+
+
+        sub_lyrics_a.text = prefs.lyrics_subs.get(self.target_track.artist, "")
+        sub_lyrics_b.text = prefs.lyrics_subs.get(self.target_track.title, "")
+
+        if not sub_lyrics_a.text:
+            sub_lyrics_a.text = self.target_track.artist
+        if not sub_lyrics_b.text:
+            sub_lyrics_b.text = self.target_track.title
+
+    def render(self):
+
+        if not self.active:
+            return
+
+        if gui.level_2_click:
+            input.mouse_click = True
+        gui.level_2_click = False
+
+        w = 400 * gui.scale
+        h = 155 * gui.scale
+        x = int(window_size[0] / 2) - int(w / 2)
+        y = int(window_size[1] / 2) - int(h / 2)
+
+        ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.grey(80),
+                   True)
+        ddt.rect_a((x, y), (w, h), colours.sys_background_3, True)
+        ddt.text_background_colour = colours.sys_background_3
+
+        if key_esc_press or ((input.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+            self.active = False
+
+            if sub_lyrics_a.text and sub_lyrics_a.text != self.target_track.artist:
+                prefs.lyrics_subs[self.target_track.artist] = sub_lyrics_a.text
+            else:
+                if self.target_track.artist in prefs.lyrics_subs:
+                    del prefs.lyrics_subs[self.target_track.artist]
+
+            if sub_lyrics_b.text and sub_lyrics_b.text != self.target_track.title:
+                prefs.lyrics_subs[self.target_track.title] = sub_lyrics_b.text
+            else:
+                if self.target_track.title in prefs.lyrics_subs:
+                    del prefs.lyrics_subs[self.target_track.title]
+
+        ddt.text((x + 10 * gui.scale, y + 8 * gui.scale,), _("Substitute Lyric Search"), colours.grey(230), 213)
+
+        global key_tab_press
+
+        y += round(35 * gui.scale)
+        x += round(23 * gui.scale)
+
+        xx = x
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.grey(130), 212)
+        xx += round(6 * gui.scale)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.grey(90), 312)
+
+        y += round(19 * gui.scale)
+        xx = x
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.grey(130), 212)
+        xx += round(6 * gui.scale)
+        rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
+        fields.add(rect1)
+        ddt.rect(rect1, [40, 40, 40, 255], True)
+        if (coll(rect1) and input.mouse_click) or (key_tab_press and self.active_field == 2):
+            self.active_field = 1
+            key_tab_press = False
+
+        sub_lyrics_a.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 1, width=rect1[2] - 8 * gui.scale)
+
+        y += round(28 * gui.scale)
+
+        xx = x
+        xx += ddt.text((x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.grey(130), 212)
+        xx += round(6 * gui.scale)
+        ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.grey(90), 312)
+
+        y += round(19 * gui.scale)
+        xx = x
+        xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.grey(130), 212)
+        xx += round(6 * gui.scale)
+        rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
+        fields.add(rect1)
+        if (coll(rect1) and input.mouse_click) or (key_tab_press and self.active_field == 1):
+            self.active_field = 2
+        ddt.rect(rect1, [40, 40, 40, 255], True)
+        sub_lyrics_b.draw(xx + round(4 * gui.scale), y, [250, 250, 250, 255], self.active_field == 2, width=rect1[2] - 8 * gui.scale)
+
+
+
+
+sub_lyrics_box = SubLyricsBox()
+
+
 def toggle_repeat():
     pctl.repeat_mode ^= True
     if pctl.mpris is not None:
@@ -11580,6 +11705,16 @@ def get_lyric_fire(track_object, silent=False):
     if not silent:
         show_message(_("Searching..."))
 
+    s_artist = track_object.artist
+    s_title = track_object.title
+
+    if s_artist in prefs.lyrics_subs:
+        s_artist = prefs.lyrics_subs[s_artist]
+    if s_title in prefs.lyrics_subs:
+        s_title = prefs.lyrics_subs[s_title]
+
+    print((s_artist, s_title))
+
     found = False
     for source in prefs.lyrics_enables:
 
@@ -11588,7 +11723,7 @@ def get_lyric_fire(track_object, silent=False):
             print("Scrape Lyric Wiki...")
             try:
 
-                lyrics = PyLyrics.getLyrics(track_object.artist, track_object.title)
+                lyrics = PyLyrics.getLyrics(s_artist, s_title)
 
                 if lyrics and lyrics[0] == "<" and "Instrumental" in lyrics:
                     lyrics = "[Instrumental]"
@@ -11609,8 +11744,8 @@ def get_lyric_fire(track_object, silent=False):
             print("Query Apiseeds...")
             try:
 
-                point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(track_object.artist) + \
-                    "/" + urllib.parse.quote(track_object.title) + "?apikey=" + prefs.apsed_ke
+                point = 'https://orion.apiseeds.com/api/music/lyric/' + urllib.parse.quote(s_artist) + \
+                    "/" + urllib.parse.quote(s_title) + "?apikey=" + prefs.apsed_ke
 
                 r = requests.get(point)
                 d = r.json()['result']['track']['text'].replace("\r\n", "\n")
@@ -11792,9 +11927,12 @@ def split_lyrics(track_object):
     else:
         pass
 
+def show_sub_search(track_object):
+    sub_lyrics_box.activate(track_object)
 
 showcase_menu.add(_('Toggle Lyrics'), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_sub("Misc…", 150)
+showcase_menu.add_to_sub(_('Substitute Search...'), 0, show_sub_search, pass_ref=True)
 showcase_menu.add_to_sub(_('Paste Lyrics'), 0, paste_lyrics, paste_lyrics_deco, pass_ref=True)
 showcase_menu.add_to_sub(_('Copy Lyrics'), 0, copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True)
 showcase_menu.add_to_sub(_('Clear Lyrics'), 0, clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True)
@@ -16205,7 +16343,15 @@ def ser_gen(track_id, get_lyrics=False):
     if len(tr.title) < 1:
         return
 
-    line = urllib.parse.quote(f"{tr.artist}-{tr.title}".replace(" ", "-").replace("/", "-"))
+    s_artist = tr.artist
+    s_title = tr.title
+
+    if s_artist in prefs.lyrics_subs:
+        s_artist = prefs.lyrics_subs[s_artist]
+    if s_title in prefs.lyrics_subs:
+        s_title = prefs.lyrics_subs[s_title]
+
+    line = urllib.parse.quote(f"{s_artist}-{s_title}".replace(" ", "-").replace("/", "-"))
     line = f"https://genius.com/{line}-lyrics"
 
     if get_lyrics:
@@ -18569,7 +18715,7 @@ class SearchOverlay:
             if input_text != "" and gui.layer_focus == 0 and \
                     not key_ctrl_down and not radiobox and not rename_track_box.active and \
                     not quick_search_mode and not pref_box.enabled and not gui.rename_playlist_box \
-                    and not gui.rename_folder_box and input_text.isalnum():
+                    and not gui.rename_folder_box and input_text.isalnum() and not sub_lyrics_box.active:
 
                 # Divert to artist list if mouse over
                 if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < mouse_position[0] < gui.lspw \
@@ -26030,10 +26176,11 @@ class StandardPlaylist:
 
         # This draws an optional background image
         if pl_bg:
-            x = highlight_left + highlight_width - pl_bg.w - round(60 * gui.scale)
+            x = (left + highlight_width) - (pl_bg.w + round(60 * gui.scale))
             pl_bg.render(x, window_size[1] - gui.panelBY - pl_bg.h)
             if not gui.set_mode:
-                ddt.pretty_rect = (left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+                ddt.pretty_rect = ((left + highlight_width) - (pl_bg.w + 60 * gui.scale), window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h)
+                # ddt.rect(ddt.pretty_rect, [255, 0, 0, 100], True)
 
         # Mouse wheel scrolling
         if mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > mouse_position[
@@ -31135,7 +31282,7 @@ class Showcase:
 
                 if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
-                    if showcase_menu.active or gui.message_box or pref_box.enabled:
+                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active:
                         self.render_vis()
                     else:
                         gui.draw_vis4_top = True
@@ -32797,6 +32944,9 @@ def save_state():
 
     pickle.dump(save, open(user_directory + "/window.p", "wb"))
 
+    with open(user_directory + "/lyrics_substitutions.json", 'w') as f:
+        json.dump(prefs.lyrics_subs, f,)
+
     save_prefs()
 
 # SDL_StartTextInput()
@@ -32865,7 +33015,8 @@ def is_level_zero(include_menus=True):
             and not pref_box.enabled \
             and not quick_search_mode \
             and not gui.rename_playlist_box \
-            and not search_over.active
+            and not search_over.active \
+            and not sub_lyrics_box.active
 
 
 # Hold the splash/loading screen for a minimum duration
@@ -33632,7 +33783,7 @@ while pctl.running:
 
         if not quick_search_mode and not pref_box.enabled and not radiobox and not rename_track_box.active \
                 and not gui.rename_folder_box \
-                and not gui.rename_playlist_box and not search_over.active:
+                and not gui.rename_playlist_box and not search_over.active and not sub_lyrics_box.active:
 
             if key_c_press and key_ctrl_down:
                 gui.pl_update = 1
@@ -33831,7 +33982,7 @@ while pctl.running:
                     input.mouse_click = False
                     ab_click = True
 
-        if input.mouse_click and (radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
+        if input.mouse_click and (sub_lyrics_box.active or radiobox or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active) and not gui.message_box:
             input.mouse_click = False
             gui.level_2_click = True
         else:
@@ -36437,6 +36588,9 @@ while pctl.running:
 
             if rename_track_box.active:
                 rename_track_box.render()
+
+            if sub_lyrics_box.active:
+                sub_lyrics_box.render()
 
             if radiobox:
 
