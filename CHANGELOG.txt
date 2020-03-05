@@ -17,6 +17,8 @@ v5.3.1
  - Fixed cycle-playlist-left/right not being rebind-able
  - Fixed transition fade not being disabled on previous
  - Fixed mascot position in "tracks only" view
+ - Fixed click on menu break causing menu to close
+ - Fixed toast text sometimes overflowing box
 
 v5.3.0
 
