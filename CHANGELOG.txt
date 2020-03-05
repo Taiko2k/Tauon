@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.3.1
 
  - Added Genius lyrics scrape
+ - Added substitute lyric search function
  - Added "Remove duplicates" function
  - Added "Edit generator" shortcut function
  - Added hints to edit generator function
