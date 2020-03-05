@@ -678,6 +678,12 @@ search_string_cache = {}
 search_dia_string_cache = {}
 
 vis_update = False
+
+d = datetime.date.today()
+a01 = False
+if "--a01" in str(sys.argv) or (d.month == 4 and d.day == 1):
+    a01 = True
+
 # GUI Variables -------------------------------------------------------------------------------------------
 
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet.
@@ -16958,6 +16964,11 @@ def switch_playlist(number, cycle=False):
     if prefs.auto_goto_playing:
         pctl.show_current(this_only=True, playing=False, highlight=True, no_switch=True)
 
+    if a01:
+        view_box.lyrics(hit=True)
+        if pctl.active_playlist_viewing:
+            pctl.active_playlist_playing = pctl.active_playlist_viewing
+            random_track()
 
 def cycle_playlist_pinned(step):
 
@@ -17894,7 +17905,18 @@ discord_icon.xoff = 3
 
 x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=discord_icon, show_test=discord_show_test)
 
-x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4")
+
+def stop_a01():
+    global a01
+    a01 = False
+
+def show_a01(_):
+    return a01
+
+if a01:
+    x_menu.add("Upgrade to PREMIUM", stop_a01, show_test=show_a01)
+
+x_menu.add(_("Exit"), tauon.exit, hint="Alt+F4", )
 
 
 def view_tracks():
@@ -23286,6 +23308,12 @@ class TopPanel:
         # Draw the background
         ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background, True)
 
+        if a01 and not gui.compact_bar:
+            colour = [250, 250, 250, 255]
+            if colours.lm:
+                colour = [10, 10, 10, 255]
+            ddt.text((window_size[0] // 2, 8 * gui.scale, 2), "Tauon Music Box SHUFFLE!", colour, 212, bg=colours.top_panel_background)
+
         if gui.top_bar_mode2:
             tr = pctl.playing_object()
             if tr:
@@ -23350,13 +23378,13 @@ class TopPanel:
         if gui.lsp:
             colour = colours.corner_button_active
 
-
-        if prefs.left_panel_mode == "artist list":
-            self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
-        elif prefs.left_panel_mode == "folder view":
-            self.folder_list_icon.render(14 * gui.scale, yy + 8 * gui.scale, colour)
-        else:
-            self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+        if not a01:
+            if prefs.left_panel_mode == "artist list":
+                self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
+            elif prefs.left_panel_mode == "folder view":
+                self.folder_list_icon.render(14 * gui.scale, yy + 8 * gui.scale, colour)
+            else:
+                self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
         # if prefs.artist_list:
         #     self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
@@ -23422,7 +23450,7 @@ class TopPanel:
         # TAB INPUT PROCESSING
         for i, tab in enumerate(pctl.multi_playlist):
 
-            if not prefs.tabs_on_top:
+            if not prefs.tabs_on_top or a01:
                 break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
@@ -23532,12 +23560,11 @@ class TopPanel:
         # Reset X draw position
         x = x_start
 
-
         # TAB DRAWING
         shown = []
         for i, tab in enumerate(pctl.multi_playlist):
 
-            if not prefs.tabs_on_top:
+            if not prefs.tabs_on_top or a01:
                 break
 
             if len(pctl.multi_playlist) != len(self.tab_text_spaces):
@@ -24768,6 +24795,385 @@ class BottomBarType1:
 
 
 bottom_bar1 = BottomBarType1()
+
+
+class BottomBarType_ao1:
+    def __init__(self):
+
+        self.mode = 0
+
+        self.seek_time = 0
+
+        self.seek_down = False
+        self.seek_hit = False
+        self.volume_hit = False
+        self.volume_bar_being_dragged = False
+        self.control_line_bottom = 35 * gui.scale
+        self.repeat_click_off = False
+        self.random_click_off = False
+
+        self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
+        self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
+        self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
+        self.volume_bar_position = [0, 45 * gui.scale]
+
+        self.play_button = asset_loader('play.png', True)
+        self.forward_button = asset_loader('ff.png', True)
+        self.back_button = asset_loader('bb.png', True)
+
+        self.scrob_stick = 0
+
+
+    def update(self):
+
+        if self.mode == 0:
+            self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
+            self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
+            self.seek_bar_position[1] = window_size[1] - gui.panelBY
+
+            seek_bar_x = 300 * gui.scale
+            if window_size[0] < 600 * gui.scale:
+                seek_bar_x = 250 * gui.scale
+
+            self.seek_bar_size[0] = window_size[0] - seek_bar_x
+            self.seek_bar_position[0] = seek_bar_x
+
+            # if gui.bb_show_art:
+            #     self.seek_bar_position[0] = 300 + gui.panelBY
+            #     self.seek_bar_size[0] = window_size[0] - 300 - gui.panelBY
+
+            # self.seek_bar_position[0] = 0
+            # self.seek_bar_size[0] = window_size[0]
+
+    def render(self):
+
+        global volume_store
+        global clicked
+        global right_click
+
+        ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour, True)
+
+        right_offset = 0
+        if gui.display_time_mode >= 2:
+            right_offset = 22 * gui.scale
+
+        if window_size[0] < 670 * gui.scale:
+            right_offset -= 90 * gui.scale
+
+
+        # # MINI ALBUM ART
+        # if gui.bb_show_art:
+        #     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
+        #     ddt.rect_r(rect, [255, 255, 255, 8], True)
+        #     if 3 > pctl.playing_state > 0:
+        #         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+
+            #ddt.rect_r(rect, [255, 255, 255, 20])
+
+        # Volume mouse wheel control -----------------------------------------
+        if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(mouse_position,
+                                                                                                     self.seek_bar_position + self.seek_bar_size):
+
+            pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment
+            if pctl.player_volume < 1:
+                pctl.player_volume = 0
+            elif pctl.player_volume > 100:
+                pctl.player_volume = 100
+
+            pctl.player_volume = int(pctl.player_volume)
+            pctl.set_volume()
+
+        # Volume Bar 2 ------------------------------------------------
+        if True:
+            x = window_size[0] - right_offset - 120 * gui.scale
+            y = window_size[1] - round(21 * gui.scale)
+
+            if gui.compact_bar:
+                x -= 90 * gui.scale
+
+            h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
+            if coll(h_rect) and mouse_down:
+                pctl.player_volume = 0
+
+            step = round(1 * gui.scale)
+            min_h = round(4 * gui.scale)
+            spacing = round(5 * gui.scale)
+
+            if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
+                if right_click:
+                    if pctl.player_volume > 0:
+                        volume_store = pctl.player_volume
+                        pctl.player_volume = 0
+                    else:
+                        pctl.player_volume = volume_store
+
+                    pctl.set_volume()
+
+            for bar in range(8):
+
+                h = min_h + bar * step
+                rect = (x, y - h, 3 * gui.scale, h)
+                h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
+
+                if coll(h_rect):
+                    if mouse_down:
+
+                        if bar == 0:
+                            pctl.player_volume = 5
+                        if bar == 1:
+                            pctl.player_volume = 10
+                        if bar == 2:
+                            pctl.player_volume = 20
+                        if bar == 3:
+                            pctl.player_volume = 30
+                        if bar == 4:
+                            pctl.player_volume = 45
+                        if bar == 5:
+                            pctl.player_volume = 55
+                        if bar == 6:
+                            pctl.player_volume = 70
+                        if bar == 7:
+                            pctl.player_volume = 100
+
+                        pctl.set_volume()
+
+                colour = colours.mode_button_off
+
+                if bar == 0 and pctl.player_volume > 0:
+                    colour = colours.mode_button_active
+                elif bar == 1 and pctl.player_volume >= 10:
+                    colour = colours.mode_button_active
+                elif bar == 2 and pctl.player_volume >= 20:
+                    colour = colours.mode_button_active
+                elif bar == 3 and pctl.player_volume >= 30:
+                    colour = colours.mode_button_active
+                elif bar == 4 and pctl.player_volume >= 45:
+                    colour = colours.mode_button_active
+                elif bar == 5 and pctl.player_volume >= 55:
+                    colour = colours.mode_button_active
+                elif bar == 6 and pctl.player_volume >= 70:
+                    colour = colours.mode_button_active
+                elif bar == 7 and pctl.player_volume >= 95:
+                    colour = colours.mode_button_active
+
+                ddt.rect(rect, colour, True)
+                x += spacing
+
+
+        # TIME----------------------
+
+        x = window_size[0] - 57 * gui.scale
+        y = window_size[1] - 35 * gui.scale
+
+        r_start = x - 10 * gui.scale
+        if gui.display_time_mode in (2, 3):
+            r_start -= 20 * gui.scale
+        rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
+        # ddt.rect_r(rect, [255, 0, 0, 40], True)
+        if input.mouse_click and coll(rect):
+            gui.display_time_mode += 1
+            if gui.display_time_mode > 3:
+                gui.display_time_mode = 0
+
+        if gui.display_time_mode == 0:
+            text_time = get_display_time(pctl.playing_time)
+            ddt.text((x + 1 * gui.scale, y), text_time, colours.time_playing,
+                     fonts.bottom_panel_time)
+        elif gui.display_time_mode == 1:
+            if pctl.playing_state == 0:
+                text_time = get_display_time(0)
+            else:
+                text_time = get_display_time(pctl.playing_length - pctl.playing_time)
+            ddt.text((x + 1 * gui.scale, y), text_time, colours.time_playing,
+                     fonts.bottom_panel_time)
+            ddt.text((x - 5 * gui.scale, y), '-', colours.time_playing,
+                     fonts.bottom_panel_time)
+        elif gui.display_time_mode == 2:
+
+            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+
+            x -= 4
+            text_time = get_display_time(pctl.playing_time)
+            ddt.text((x - 25 * gui.scale, y), text_time, colours.time_playing,
+                     fonts.bottom_panel_time)
+
+            offset1 = 10 * gui.scale
+
+            if system == "windows":
+                offset1 += 2 * gui.scale
+
+            offset2 = offset1 + 7 * gui.scale
+
+
+            ddt.text((x + offset1, y), "/", colours.time_sub,
+                     fonts.bottom_panel_time)
+            text_time = get_display_time(pctl.playing_length)
+            if pctl.playing_state == 0:
+                text_time = get_display_time(0)
+            elif pctl.playing_state == 3:
+                text_time = "-- : --"
+            ddt.text((x + offset2, y), text_time, colours.time_sub,
+                     fonts.bottom_panel_time)
+
+        elif gui.display_time_mode == 3:
+
+            colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+
+            track = pctl.playing_object()
+            if track and track.index != gui.dtm3_index:
+
+                gui.dtm3_cum = 0
+                gui.dtm3_total = 0
+                run = True
+                collected = []
+                for item in default_playlist:
+                    if pctl.master_library[item].parent_folder_path == track.parent_folder_path:
+                        if item not in collected:
+                            collected.append(item)
+                            gui.dtm3_total += pctl.master_library[item].length
+                            if item == track.index:
+                                run = False
+                            if run:
+                                gui.dtm3_cum += pctl.master_library[item].length
+                gui.dtm3_index = track.index
+
+            x -= 4
+            text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
+
+            ddt.text((x - 25 * gui.scale, y), text_time, colours.time_playing,
+                     fonts.bottom_panel_time)
+
+            offset1 = 10 * gui.scale
+            if system == "windows":
+                offset1 += 2 * gui.scale
+            offset2 = offset1 + 7 * gui.scale
+
+            ddt.text((x + offset1, y), "/", colours.time_sub,
+                     fonts.bottom_panel_time)
+            text_time = get_display_time(gui.dtm3_total)
+            if pctl.playing_state == 0:
+                text_time = get_display_time(0)
+            elif pctl.playing_state == 3:
+                text_time = "-- : --"
+            ddt.text((x + offset2, y), text_time, colours.time_sub,
+                     fonts.bottom_panel_time)
+
+
+
+        # BUTTONS
+        # bottom buttons
+
+        if gui.mode == 1:
+
+            # PLAY---
+            buttons_x_offset = 0
+            compact = False
+            if window_size[0] < 650 * gui.scale:
+                compact = True
+
+            play_colour = colours.media_buttons_off
+            pause_colour = colours.media_buttons_off
+            stop_colour = colours.media_buttons_off
+            forward_colour = colours.media_buttons_off
+            back_colour = colours.media_buttons_off
+
+            if pctl.playing_state == 1:
+                play_colour = colours.media_buttons_active
+
+            if pctl.auto_stop:
+                stop_colour = colours.media_buttons_active
+
+            if pctl.playing_state == 2:
+                pause_colour = colours.media_buttons_active
+                play_colour = colours.media_buttons_active
+            elif pctl.playing_state == 3:
+                play_colour = colours.media_buttons_active
+                if pctl.record_stream:
+                    play_colour = [220, 50 ,50 , 255]
+
+            if not compact or (compact and pctl.playing_state != 2):
+                rect = (buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale), 50 * gui.scale , 40 * gui.scale)
+                fields.add(rect)
+                if coll(rect):
+                    play_colour = colours.media_buttons_over
+                    if input.mouse_click:
+                        if compact and pctl.playing_state == 1:
+                            pctl.pause()
+                        elif pctl.playing_state == 1:
+                            pctl.show_current(highlight=True)
+                        else:
+                            print("PLAY")
+                            pctl.play()
+                        input.mouse_click = False
+                    tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+
+                    if right_click:
+                        pctl.show_current(highlight=True)
+
+                self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
+                # ddt.rect_r(rect,[255,0,0,255], True)
+
+
+            # PAUSE---
+            if compact:
+                buttons_x_offset = -46 * gui.scale
+
+            x = (75 * gui.scale) + buttons_x_offset
+            y = window_size[1] - self.control_line_bottom
+
+
+            if not compact or (compact and pctl.playing_state == 2):
+
+
+                rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
+                fields.add(rect)
+                if coll(rect):
+                    pause_colour = colours.media_buttons_over
+                    if input.mouse_click:
+                        pctl.pause()
+                    if right_click:
+                        pctl.show_current(highlight=True)
+                    tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+
+
+                # ddt.rect_r(rect,[255,0,0,255], True)
+                ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+                ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour, True)
+
+            # FORWARD---
+            rect = (buttons_x_offset + 125 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale, 50 * gui.scale, 35 * gui.scale)
+            fields.add(rect)
+            if coll(rect):
+                forward_colour = colours.media_buttons_over
+                if input.mouse_click:
+                    pctl.advance()
+                    gui.tool_tip_lock_off_f = True
+                if right_click:
+                    #pctl.random_mode ^= True
+                    toggle_random()
+                    gui.tool_tip_lock_off_f = True
+                    # if window_size[0] < 600 * gui.scale:
+                    #. Shuffle set to on
+                    gui.mode_toast_text = _("Shuffle On")
+                    if not pctl.random_mode:
+                        #. Shuffle set to off
+                        gui.mode_toast_text = _("Shuffle Off")
+                    toast_mode_timer.set()
+                    gui.delay_frame(1)
+                if middle_click:
+                    pctl.advance(rr=True)
+                    gui.tool_tip_lock_off_f = True
+                #tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
+                # if not gui.tool_tip_lock_off_f:
+                #     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+            else:
+                gui.tool_tip_lock_off_f = False
+
+            self.forward_button.render(buttons_x_offset + 125 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
+
+
+
+bottom_bar_ao1 = BottomBarType_ao1()
 
 
 class MiniMode:
@@ -30587,12 +30993,12 @@ class Showcase:
             #gui.vis_4_colour = [180, 160, 250, 255]
             gui.vis_4_colour = [40, 40, 40, 255]
 
-
-        if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
-            switch_showcase()
-            if gui.lyrics_was_album:
-                force_album_view()
-            return 0
+        if not a01:
+            if draw.button(_("Return"), 25 * gui.scale, window_size[1] - gui.panelBY - 40 * gui.scale, bg=bbg, fg=bfg, fore_text=bft, back_text=bbt):
+                switch_showcase()
+                if gui.lyrics_was_album:
+                    force_album_view()
+                return 0
 
         if pctl.playing_state == 3:
 
@@ -31092,6 +31498,10 @@ class ViewBox:
         gui.update_layout()
 
     def render(self):
+
+        if a01:
+            self.active = False
+            return
 
         if not x_menu.active:
             self.active = False
@@ -32502,6 +32912,39 @@ for menu in Menu.instances:
 
     if w > menu.w:
         menu.w = w
+
+if master_count < 10:  # We don't want new users to be too confused.
+    a01 = False
+
+if a01:
+    view_box.lyrics(hit=True)
+    pctl.random_mode = True
+    pctl.repeat_mode = False
+    #prefs.tabs_on_top = True
+
+    target = None
+    for pl in pctl.multi_playlist:
+        if pl[0] == "0401":
+            target = pl[2]
+            break
+    else:
+
+        pctl.multi_playlist.append(pl_gen(title="0401",
+                                          playlist=[],
+                                          hide_title=0))
+
+        target = pctl.multi_playlist[len(pctl.multi_playlist) - 1][2]
+
+        if target is not None:
+            for pl in pctl.multi_playlist:
+                target += pl[2]
+
+    for i, pl in enumerate(pctl.multi_playlist):
+        if pl[0] == "0401":
+            switch_playlist(i)
+            break
+#switch_playlist(len(pctl.multi_playlist) - 1)
+
 
 
 
@@ -35491,7 +35934,10 @@ while pctl.running:
 
             ddt.text_background_colour = colours.bottom_panel_colour
 
-            bottom_bar1.render()
+            if a01:
+                bottom_bar_ao1.render()
+            else:
+                bottom_bar1.render()
 
             if prefs.art_bg:
                 style_overlay.display()

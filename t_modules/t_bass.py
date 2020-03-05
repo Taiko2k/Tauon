@@ -536,7 +536,7 @@ def player(pctl, gui, prefs, lfm_scrobbler, star_store):  # BASS
                     if name != "" and name == prefs.last_device:
                         BassInitSuccess = BASS_Init(a, 48000, init_flag, gui.window_id, 0)
                         pctl.set_device = a
-                        print("Set output device as: " + name)
+                        # print("Set output device as: " + name)
                         bass_ready = True
 
                     # print((name, enabled, default, current))

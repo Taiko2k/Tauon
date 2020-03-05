@@ -9,11 +9,12 @@ v5.3.1
  - Added hints to edit generator function
  - Added "Make playlist auto sorting" function
  - Added 'comment', 'today', 'self' and 'path' generator codes
+ - Added easter egg 0401-2020
  - Improved generator code entry to update on type
  - Improved scroll edge animation
  - Tweaked light theme colours
  - Fixed generator code year filter
- - Fixed cycle-playlist-left/right not being rebindable
+ - Fixed cycle-playlist-left/right not being rebind-able
  - Fixed transition fade not being disabled on previous
  - Fixed mascot position in "tracks only" view
 
