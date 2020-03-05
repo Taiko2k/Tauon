@@ -36939,8 +36939,8 @@ while pctl.running:
         t = toast_mode_timer.get()
         if t < 0.98:
 
-            wid = ddt.get_text_w(gui.mode_toast_text, 312)
-            wid = min(110 * gui.scale, wid)
+            wid = ddt.get_text_w(gui.mode_toast_text, 313)
+            wid = max(round(68 * gui.scale), wid)
 
             ww = 0
             if gui.lsp:
@@ -36952,7 +36952,7 @@ while pctl.running:
             if coll(rect):
                 toast_mode_timer.force_set(10)
             else:
-                ddt.rect(grow_rect(rect, 2 * gui.scale), colours.grey(60), True)
+                ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60), True)
                 ddt.rect(rect, queue_box.card_bg, True)
 
                 ddt.text_background_colour = queue_box.card_bg
