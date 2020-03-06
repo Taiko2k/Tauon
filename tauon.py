@@ -11739,6 +11739,8 @@ def get_lyric_fire(track_object, silent=False):
                     print("LyricWiki does not appear to have lyrics for this song")
                 continue
 
+        # if source == ""
+
         if source == 'apiseeds':
 
             print("Query Apiseeds...")
@@ -13705,7 +13707,7 @@ def regenerate_playlist(pl, silent=False):
             playlist += search_over.click_genre(found_name, get_list=True, search_lists=selections)
 
         # SEARCH ARTIST
-        elif cm.startswith("a") and len(cm) > 2:
+        elif cm.startswith("a") and len(cm) > 2 and cm != "auto":
 
             if not selections:
                 for plist in pctl.multi_playlist:
@@ -13777,7 +13779,7 @@ def regenerate_playlist(pl, silent=False):
 def make_auto_sorting(pl):
     pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypa auto"
     show_message(_("OK. This playlist will automatically sort on import from now on"),
-                 _("You edit this by going \"Misc...\" > \"Edit generator...\""), mode="done")
+                 _("You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""), mode="done")
 
 extra_tab_menu = Menu(155, show_icons=True)
 
@@ -14354,7 +14356,7 @@ def gen_folder_shuffle(index, custom_list=None):
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
 
-    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a sf"
+    pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a ra"
 
 tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Shuffled Albums"), 0, gen_folder_shuffle, pass_ref=True)
@@ -21921,7 +21923,7 @@ class Over:
                         ddt.text((x, y), line, [100, 100, 100, 255], 10)
                 y += 14 * gui.scale
 
-            y = y0 + 240 * gui.scale
+            y = y0 + 245 * gui.scale
             x += 40 * gui.scale
             if os.path.isfile(user_directory + '/lib/libbass.so'):
                 #. Limited width. Max 17 chars.
