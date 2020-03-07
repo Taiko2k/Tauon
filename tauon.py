@@ -1619,6 +1619,8 @@ class GuiVar:   # Use to hold any variables for use in relation to UI
 
         self.regen_single = -1
 
+        self.tracklist_bg_is_light = False
+
 
 gui = GuiVar()
 
@@ -13285,6 +13287,24 @@ def regenerate_deco(pl):
 
     return [line_colour, colours.menu_background, None]
 
+column_names = {
+    "Artist",
+    "Album Artist",
+    "Title",
+    "Composer",
+    "Time",
+    "Date",
+    "Genre",
+    "T",
+    "P",
+    "Starline",
+    "Rating",
+    "Comment",
+    "Codec",
+    "Lyrics",
+    "Bitrate"
+}
+
 def regenerate_playlist(pl, silent=False):
 
     id = pl_to_id(pl)
@@ -13294,25 +13314,71 @@ def regenerate_playlist(pl, silent=False):
             show_message("This playlist has no generator")
         return
 
-    try:
-        cmds = shlex.split(string)
-    except ValueError as e:
+    # try:
+    #     cmds = shlex.split(string)
+    # except ValueError as e:
+    #     gui.gen_code_errors = "close"
+    #     if not silent:
+    #         show_message("Generator string error", str(e), mode="error")
+    #     return
+    # except Exception as e:
+    #     gui.gen_code_errors = True
+    #     if not silent:
+    #         show_message("Generator string error", str(e), mode="error")
+    #     return
+    cmds = []
+    quotes = []
+    current = ""
+    q_string = ""
+    inquote = False
+    for cha in string:
+        if not inquote and cha == " ":
+            if current:
+                cmds.append(current)
+                quotes.append(q_string)
+            q_string = ""
+            current = ""
+            continue
+        elif cha == "\"":
+            inquote ^= True
+
+        current += cha
+
+        if inquote and cha != "\"":
+            q_string += cha
+
+    if inquote:
         gui.gen_code_errors = "close"
-        if not silent:
-            show_message("Generator string error", str(e), mode="error")
         return
-    except Exception as e:
-        gui.gen_code_errors = True
-        if not silent:
-            show_message("Generator string error", str(e), mode="error")
-        return
+
+    if current:
+        cmds.append(current)
+        quotes.append(q_string)
 
     playlist = []
     selections = []
     errors = False
     selections_searched = 0
+    #
+    # print(cmds)
+    # print(quotes)
 
-    for cm in cmds:
+    for i, cm in enumerate(cmds):
+
+        quote = quotes[i]
+
+        if cm.startswith("\"") and (cm.endswith(">") or cm.endswith("<")):
+            cm_found = False
+            for col in column_names:
+                if quote.lower() == col.lower() or _(quote).lower() == col.lower():
+                    cm_found = True
+                    if cm[-1] == ">":
+                        sort_ass(0, invert=False, custom_list=playlist, custom_name=col)
+                    elif cm[-1] == "<":
+                        sort_ass(0, invert=True, custom_list=playlist, custom_name=col)
+                    break
+            if cm_found:
+                continue
 
         if cm == "self":
             selections.append(pctl.multi_playlist[pl][2])
@@ -13346,16 +13412,16 @@ def regenerate_playlist(pl, silent=False):
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
-        elif cm[:3] == "com":
-            text = cm[3:]
+        elif cm.startswith("com\""):
+            text = quote
             for i in reversed(range(len(playlist))):
                     tr = pctl.g(playlist[i])
                     if text not in tr.comment:
                         del playlist[i]
             playlist = list(OrderedDict.fromkeys(playlist))
 
-        elif cm[:3] == "ext":
-            value = cm[3:].upper()
+        elif cm.startswith("ext"):
+            value = quote.upper()
             if value:
                 if not selections:
                     for plist in pctl.multi_playlist:
@@ -13455,7 +13521,6 @@ def regenerate_playlist(pl, silent=False):
                 errors = True
                 pass
 
-
         elif cm[:4] == "rat>":
             value = cm[4:]
             try:
@@ -13553,7 +13618,6 @@ def regenerate_playlist(pl, silent=False):
                     if t_time > value:
                         del playlist[i]
 
-
         elif cm[:3] == "pc>":
             value = cm[3:]
             if value and value.isdigit():
@@ -13643,13 +13707,13 @@ def regenerate_playlist(pl, silent=False):
                 playlist = playlist[:int(value)]
 
         # SEARCH FOLDER
-        elif cm.startswith("f") and len(cm) > 2:
+        elif cm.startswith("f\"") and len(cm) > 3:
 
             if not selections:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            search = cm[1:]
+            search = quote
             search_over.all_folders = True
             search_over.sip = True
             search_over.search_text.text = search
@@ -13675,13 +13739,13 @@ def regenerate_playlist(pl, silent=False):
             playlist += search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
         # SEARCH GENRE
-        elif cm.startswith("g") and len(cm) > 2:
+        elif cm.startswith("g\"") and len(cm) > 3:
 
             if not selections:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            search = cm[1:]
+            search = quote
             search_over.sip = True
             search_over.search_text.text = search
             try:
@@ -13692,7 +13756,6 @@ def regenerate_playlist(pl, silent=False):
                 time.sleep(0.01)
 
             found_name = ""
-
 
             for result in search_over.results:
                 if result[0] == 3:
@@ -13707,13 +13770,13 @@ def regenerate_playlist(pl, silent=False):
             playlist += search_over.click_genre(found_name, get_list=True, search_lists=selections)
 
         # SEARCH ARTIST
-        elif cm.startswith("a") and len(cm) > 2 and cm != "auto":
+        elif cm.startswith("a\"") and len(cm) > 3 and cm != "auto":
 
             if not selections:
                 for plist in pctl.multi_playlist:
                     selections.append(plist[2])
 
-            search = cm[1:]
+            search = quote
             search_over.sip = True
             search_over.search_text.text = "artist " + search
             try:
@@ -13738,8 +13801,8 @@ def regenerate_playlist(pl, silent=False):
             #     playlist.append(item)
             playlist += search_over.click_artist(found_name, get_list=True, search_lists=selections)
 
-        elif cm.startswith("s"):
-            pl_name = cm[1:]
+        elif cm.startswith("s\""):
+            pl_name = quote
             target = None
             for p in pctl.multi_playlist:
                 if p[0].lower() == pl_name.lower():
@@ -13747,7 +13810,7 @@ def regenerate_playlist(pl, silent=False):
                     break
             else:
                 for p in pctl.multi_playlist:
-                    print( p[0].lower())
+                    print(p[0].lower())
                     print(pl_name.lower())
                     if p[0].lower().startswith(pl_name.lower()):
                         target = p[2]
@@ -13765,15 +13828,20 @@ def regenerate_playlist(pl, silent=False):
         else:
             errors = True
 
-    pctl.multi_playlist[pl][2][:] = playlist[:]
+    gui.gen_code_errors = errors
+    if not playlist and not errors:
+        gui.gen_code_errors = "empty"
+
+    if gui.rename_playlist_box and (not playlist or cmds.count("a") > 1):
+        pass
+    else:
+        pctl.multi_playlist[pl][2][:] = playlist[:]
     gui.pl_update = 1
     reload()
 
     # print(cmds)
 
-    gui.gen_code_errors = errors
-    if not playlist and not errors:
-        gui.gen_code_errors = "empty"
+
 
 
 def make_auto_sorting(pl):
@@ -16666,14 +16734,20 @@ def key_hl(index):
     else:
         return 1
 
-def sort_ass(h, invert=False):
+def sort_ass(h, invert=False, custom_list=None, custom_name=""):
     global default_playlist
 
-    if pl_is_locked(pctl.active_playlist_viewing):
-        show_message("Playlist is locked")
-        return
+    if custom_list is None:
+        if pl_is_locked(pctl.active_playlist_viewing):
+            show_message("Playlist is locked")
+            return
 
-    name = gui.pl_st[h][0]
+        name = gui.pl_st[h][0]
+        playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+    else:
+        name = custom_name
+        playlist = custom_list
+
     key = None
 
     if name == "Artist":
@@ -16711,16 +16785,20 @@ def sort_ass(h, invert=False):
     if name == "❤":
         key = key_love
 
-    if key is not None:
-        playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
-        playlist.sort(key=key, reverse=invert)
+    if custom_list is None:
+        if key is not None:
 
-        pctl.multi_playlist[pctl.active_playlist_viewing][2] = playlist
-        default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+            playlist.sort(key=key, reverse=invert)
 
-    pctl.playlist_view_position = 0
-    console.print("DEBUG: Position changed by sort")
-    gui.pl_update = 1
+            pctl.multi_playlist[pctl.active_playlist_viewing][2] = playlist
+            default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing][2]
+
+            pctl.playlist_view_position = 0
+            console.print("DEBUG: Position changed by sort")
+            gui.pl_update = 1
+
+    elif custom_list is not None:
+            playlist.sort(key=key, reverse=invert)
 
 
 def sort_dec(h):
@@ -17515,14 +17593,14 @@ def draw_rating_widget(x, y, n_track, album=False):
     bg = [255, 255, 255, 17]
     fg = colours.grey(210)
 
-    if colours.lm:
+    if gui.tracklist_bg_is_light:
         bg = [0, 0, 0, 25]
         fg = colours.grey(70)
 
     playtime_stars = 0
     if prefs.rating_playtime_stars and rat == 0 and not album:
         playtime_stars = star_count3(star_store.get(n_track.index), n_track.length)
-        if colours.lm:
+        if gui.tracklist_bg_is_light:
             fg2 = alpha_blend([0, 0, 0, 70], ddt.text_background_colour)
         else:
             fg2 = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
@@ -20269,6 +20347,7 @@ def worker1():
                             if not pl_is_locked(i):
                                 regenerate_playlist(i, silent=True)
                     except:
+                        #raise
                         pass
 
 
@@ -26624,6 +26703,7 @@ class StandardPlaylist:
 
         # For every track in view
         #for i in range(gui.playlist_view_length + 1):
+        gui.tracklist_bg_is_light = test_lumi(colours.playlist_panel_background) < 0.55
 
 
         for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
@@ -27578,6 +27658,7 @@ class RenamePlaylistBox:
             #yy += round(16 * gui.scale)
             ddt.text((xx0, yy), "Sorters", title_colour, title_font)
             yy += round(14 * gui.scale)
+
             ddt.text((xx, yy), "st", code_colour, code_font)
             ddt.text((xx2, yy), "Shuffle tracks", hint_colour, hint_font)
             yy += round(12 * gui.scale)
@@ -27619,6 +27700,10 @@ class RenamePlaylistBox:
             yy += round(12 * gui.scale)
             ddt.text((xx, yy), "ypa", code_colour, code_font)
             ddt.text((xx2, yy), "Year per artist", hint_colour, hint_font)
+            yy += round(12 * gui.scale)
+            ddt.text((xx, yy), "\"artist\">", code_colour, code_font)
+            ddt.text((xx2, yy), "Sort by column name: >, <", hint_colour, hint_font)
+
 
             yy += round(16 * gui.scale)
             ddt.text((xx0, yy), "Special", title_colour, title_font)
@@ -27626,7 +27711,7 @@ class RenamePlaylistBox:
             ddt.text((xx, yy), "auto", code_colour, code_font)
             ddt.text((xx2, yy), "Automatically reload on imports", hint_colour, hint_font)
 
-            yy += round(30 * gui.scale)
+            yy += round(24 * gui.scale)
             #xx += round(80 * gui.scale)
             xx2 = xx
             xx2 += ddt.text((xx2, yy), "Status:", [90, 90, 90, 255], 212) + round(6 * gui.scale)
@@ -31284,7 +31369,7 @@ class Showcase:
 
                 if prefs.showcase_vis and window_size[1] > 369 and not search_over.active:
 
-                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active:
+                    if showcase_menu.active or gui.message_box or pref_box.enabled or sub_lyrics_box.active or radiobox:
                         self.render_vis()
                     else:
                         gui.draw_vis4_top = True
@@ -33073,6 +33158,8 @@ if a01:
     view_box.lyrics(hit=True)
     pctl.random_mode = True
     pctl.repeat_mode = False
+    show_message("Your FREE TRIAL of Tauon Music Box has come to an end!",
+                 "Upgrade to a Tauon PREMIUM subscription to play tracks in any order.")
     #prefs.tabs_on_top = True
 
     target = None
@@ -33096,6 +33183,7 @@ if a01:
         if pl[0] == "0401":
             switch_playlist(i)
             break
+
 #switch_playlist(len(pctl.multi_playlist) - 1)
 
 
