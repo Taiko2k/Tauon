@@ -40,8 +40,8 @@
       <caption>Player window showing track-list and album art</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://user-images.githubusercontent.com/17271572/75673721-7565df00-5ce8-11ea-98b1-764c644aca16.png</image>
-      <caption>Main window showing alternate light theme</caption>
+      <image type="source">https://user-images.githubusercontent.com/17271572/76140132-1aebca80-60bc-11ea-9cac-d389dbbbd52c.png</image>
+      <caption>Player window showing track-list and album grid</caption>
     </screenshot>
     <screenshot>
       <image type="source">https://user-images.githubusercontent.com/17271572/68853658-61996b80-073f-11ea-9b64-21e0d5da18a6.png</image>
@@ -63,7 +63,7 @@
     <release version="5.3.1" date="2020-03-05">
       <description>
         <ul>
-          <li>Improved smart playlist code accessibility</li>
+          <li>Improved smart playlist feature accessibility</li>
           <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
