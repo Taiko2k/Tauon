@@ -9,7 +9,7 @@ v5.3.1
  - Added "Edit generator" shortcut function
  - Added hints to edit generator function
  - Added "Make playlist auto sorting" function
- - Added 'comment', 'today', 'self' and 'path' generator codes
+ - Added column, 'comment', 'today', 'self' and 'path' generator codes
  - Added easter egg 0401-2020
  - Improved generator code entry to update on type
  - Improved scroll edge animation
@@ -20,6 +20,7 @@ v5.3.1
  - Fixed mascot position in "tracks only" view
  - Fixed click on menu break causing menu to close
  - Fixed toast text sometimes overflowing box
+ - Fixed rating star colours when using auto theme
 
 v5.3.0
 
