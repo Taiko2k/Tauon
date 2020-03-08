@@ -16436,7 +16436,11 @@ def ser_gen(track_id, get_lyrics=False):
     if s_title in prefs.lyrics_subs:
         s_title = prefs.lyrics_subs[s_title]
 
-    line = urllib.parse.quote(f"{s_artist}-{s_title}".replace(" ", "-").replace("/", "-").replace(" & ", " and "))
+    line = f"{s_artist}-{s_title}"
+    line = line.replace(" ", "-").replace("/", "-")
+    line = line.replace("-&-", "-and-").replace("&", "-and-")
+
+    line = urllib.parse.quote(line)
     line = f"https://genius.com/{line}-lyrics"
 
     if get_lyrics:
