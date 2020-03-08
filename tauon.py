@@ -7401,35 +7401,42 @@ class TimedLyricsRen:
         self.scroll_position = 0
 
 
-    def generate(self, index):
+    def generate(self, track):
 
-        if self.index == index:
+        if self.index == track.index:
             return self.ready
 
         self.ready = False
-        self.index = index
-        self.data = []
+        self.index = track.index
         self.scroll_position = 0
 
-        if pctl.master_library[index].is_network:
+        if track.is_network:
             return False
 
-        track = pctl.master_library[index]
         direc = track.parent_folder_path
         name = track.filename.split(".")[0] + ".lrc"
 
-        if not os.path.isdir(direc):
-            return False
+        # if not os.path.isdir(direc):
+        #     return False
 
-        for file in os.listdir(direc):
-            if file == name:
-                f = open(os.path.join(direc, name), 'r')
-                data = f.readlines()
-                f.close()
-
-                break
+        if os.path.isfile(os.path.join(direc, name)):
+            f = open(os.path.join(direc, name), 'r')
+            self.data = []
+            data = f.readlines()
+            f.close()
         else:
             return False
+
+
+        # for file in os.listdir(direc):
+        #     if file == name:
+        #         f = open(os.path.join(direc, name), 'r')
+        #         data = f.readlines()
+        #         f.close()
+        #
+        #         break
+        # else:
+        #     return False
 
         for line in data:
             if len(line) < 9:
@@ -7470,12 +7477,11 @@ class TimedLyricsRen:
         return True
 
 
-    def render(self, index, x, y):
+    def render(self, index, x, y, side_panel=False):
 
         if index != self.index:
-            #self.index = index
             self.ready = False
-            self.generate(index)
+            self.generate(pctl.master_library[index])
 
         if not self.ready:
             return False
@@ -7484,12 +7490,19 @@ class TimedLyricsRen:
         if pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index:
             self.scroll_position += int(mouse_wheel * 30 * gui.scale)
 
-
-
         line_active = -1
         last = -1
 
         highlight = True
+
+        if side_panel:
+            bg = colours.top_panel_background
+            font_size = 15
+            spacing = round(17 * gui.scale)
+        else:
+            bg = colours.playlist_panel_background
+            font_size = 17
+            spacing = round(23 * gui.scale)
 
         test_time = max(0, pctl.playing_time - (prefs.sync_lyrics_time_offset / 1000))
 
@@ -7511,9 +7524,11 @@ class TimedLyricsRen:
 
 
             if pctl.playing_state == 1:
-                self.scroll_position = (max(0, line_active)) * 23 * gui.scale * -1
+                self.scroll_position = (max(0, line_active)) * spacing * -1
 
         yy = y + self.scroll_position
+
+
 
         for i, line in enumerate(self.data):
 
@@ -7529,9 +7544,9 @@ class TimedLyricsRen:
                         colour = [180, 130, 210, 255]
 
 
-                ddt.text((x, yy), line[1], colour, 17, 2000, colours.playlist_panel_background)
+                ddt.text((x, yy), line[1], colour, font_size, 2000, bg)
 
-            yy += 23 * gui.scale
+            yy += spacing
 
 
 
@@ -11658,8 +11673,8 @@ def toggle_lyrics(track_object):
 
     if gui.combo_mode:
         prefs.show_lyrics_showcase ^= True
-        if prefs.show_lyrics_showcase and track_object.lyrics == "":
-            show_message(_("No lyrics for this track"))
+        # if prefs.show_lyrics_showcase and track_object.lyrics == "":
+        #     show_message(_("No lyrics for this track"))
     else:
 
         # Handling for alt panel layout
@@ -11669,8 +11684,8 @@ def toggle_lyrics(track_object):
         #     return
 
         prefs.show_lyrics_side ^= True
-        if prefs.show_lyrics_side and track_object.lyrics == "":
-            show_message(_("No lyrics for this track"))
+        # if prefs.show_lyrics_side and track_object.lyrics == "":
+        #     show_message(_("No lyrics for this track"))
 
 
 def get_lyric_fire(track_object, silent=False):
@@ -31295,7 +31310,7 @@ class Showcase:
 
             timed_ready = False
             if True and prefs.show_lyrics_showcase:
-                timed_ready = timed_lyrics_ren.generate(track.index)
+                timed_ready = timed_lyrics_ren.generate(track)
 
             if timed_ready and track.lyrics:
 
@@ -35780,14 +35795,17 @@ while pctl.running:
                     if middle_click:
                         if coll((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY)):
 
-                            if target_track and target_track.lyrics and prefs.show_lyrics_side:
+                            if (target_track and target_track.lyrics and prefs.show_lyrics_side) or \
+                                (prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(target_track)):
+
                                 prefs.show_lyrics_side ^= True
                                 prefs.side_panel_layout = 1
                             else:
 
                                 if prefs.side_panel_layout == 0:
 
-                                    if target_track and target_track.lyrics and not prefs.show_lyrics_side:
+                                    if (target_track and target_track.lyrics and not prefs.show_lyrics_side) or \
+                                            (prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(target_track)):
                                         prefs.show_lyrics_side = True
                                         prefs.side_panel_layout = 1
                                     else:
@@ -35795,7 +35813,18 @@ while pctl.running:
                                 else:
                                     prefs.side_panel_layout = 0
 
-                    if prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
+                    if prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(target_track):
+
+                        if prefs.show_side_lyrics_art_panel:
+                            l_panel_h = round(200 * gui.scale)
+                            l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+                            gui.showing_l_panel = True
+                            timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
+                            meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+                        else:
+                            timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale, gui.panelY + 25 * gui.scale, side_panel=True)
+
+                    elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 150 * gui.scale:
 
                         if prefs.show_side_lyrics_art_panel:
                             l_panel_h = round(200 * gui.scale)

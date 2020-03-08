@@ -14,6 +14,7 @@ v5.3.1
  - Improved generator code entry to update on type
  - Improved scroll edge animation
  - Tweaked light theme colours
+ - Enabled synced lyrics in lyrics side panel
  - Fixed generator code year filter
  - Fixed cycle-playlist-left/right not being rebind-able
  - Fixed transition fade not being disabled on previous
