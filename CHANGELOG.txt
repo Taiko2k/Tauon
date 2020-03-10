@@ -7,13 +7,16 @@ v5.3.1
  - Added substitute lyric search function
  - Added "Remove duplicates" function
  - Added "Edit generator" shortcut function
- - Added hints to edit generator function
+ - Added instructions to edit generator box
+ - Added 'auto' indicator to playlist list
  - Added "Make playlist auto sorting" function
  - Added column, 'comment', 'today', 'self' and 'path' generator codes
  - Added easter egg 0401-2020
  - Improved generator code entry to update on type
+ - Tweaked behavior of 'auto' generator code to also apply on track drag and drop
  - Improved scroll edge animation
  - Tweaked light theme colours
+ - Tweaked auto show playing on track transition behavior
  - Enabled synced lyrics in lyrics side panel
  - Fixed generator code year filter
  - Fixed cycle-playlist-left/right not being rebind-able
@@ -22,6 +25,7 @@ v5.3.1
  - Fixed click on menu break causing menu to close
  - Fixed toast text sometimes overflowing box
  - Fixed rating star colours when using auto theme
+ - Fixed text colour in lyrics metadata panel with auto theme
 
 v5.3.0
 

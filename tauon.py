@@ -3893,23 +3893,26 @@ class PlayerCtl:
                     self.playlist_playing_position = i
                     self.active_playlist_playing = self.active_playlist_viewing
 
-                if not (quiet and self.playing_object().length < 15):
+                vl = gui.playlist_view_length
+                if pctl.multi_playlist[pctl.active_playlist_viewing][6] == gui.playlist_current_visible_tracks_id:
+                    vl = gui.playlist_current_visible_tracks
 
-                    vl = gui.playlist_view_length
-                    if pctl.multi_playlist[pctl.active_playlist_viewing][6] == gui.playlist_current_visible_tracks_id:
-                        vl = gui.playlist_current_visible_tracks
+                if not (quiet and self.playing_object().length < 15): #or (abs(pctl.playlist_view_position - i) < vl - 1)):
 
                     # Align to album if in view range (and folder titles are active)
                     ap = get_album_info(i)[1][0]
-                    if (not i - ap > gui.playlist_view_length - 2) and not pctl.multi_playlist[pctl.active_playlist_viewing][4]:
+
+                    if not (quiet and pctl.playlist_view_position <= i <= pctl.playlist_view_position + vl) and (not abs(i - ap) > vl - 2) and not pctl.multi_playlist[pctl.active_playlist_viewing][4]:
                         pctl.playlist_view_position = ap
+
                     else:
                         # Move to a random offset ---
 
                         if i == pctl.playlist_view_position - 1 and pctl.playlist_view_position > 1:
                             pctl.playlist_view_position -= 1
+
                         # Move a bit if its just out of range
-                        elif pctl.playlist_view_position + gui.playlist_view_length - 2 == i and i < len(
+                        elif pctl.playlist_view_position + vl - 2 == i and i < len(
                                 self.multi_playlist[self.active_playlist_viewing][2]) - 5:
                             pctl.playlist_view_position += 3
 
@@ -12616,10 +12619,12 @@ def rename_playlist(index, generator=False):
 
     if generator:
         rename_playlist_box.toggle_edit_gen()
+        gui.regen_single = rename_playlist_box.playlist_index
 
 
 def edit_generator_box(index):
     rename_playlist(index, generator=True)
+
 
 tab_menu.add(_('Rename'), rename_playlist, pass_ref=True, hint="Ctrl+R")
 
@@ -13302,9 +13307,10 @@ def regenerate_deco(pl):
 
     return [line_colour, colours.menu_background, None]
 
-column_names = {
+column_names = (
     "Artist",
     "Album Artist",
+    "Album",
     "Title",
     "Composer",
     "Time",
@@ -13318,7 +13324,7 @@ column_names = {
     "Codec",
     "Lyrics",
     "Bitrate"
-}
+)
 
 def regenerate_playlist(pl, silent=False):
 
@@ -13329,18 +13335,6 @@ def regenerate_playlist(pl, silent=False):
             show_message("This playlist has no generator")
         return
 
-    # try:
-    #     cmds = shlex.split(string)
-    # except ValueError as e:
-    #     gui.gen_code_errors = "close"
-    #     if not silent:
-    #         show_message("Generator string error", str(e), mode="error")
-    #     return
-    # except Exception as e:
-    #     gui.gen_code_errors = True
-    #     if not silent:
-    #         show_message("Generator string error", str(e), mode="error")
-    #     return
     cmds = []
     quotes = []
     current = ""
@@ -13384,9 +13378,12 @@ def regenerate_playlist(pl, silent=False):
 
         if cm.startswith("\"") and (cm.endswith(">") or cm.endswith("<")):
             cm_found = False
+
             for col in column_names:
+
                 if quote.lower() == col.lower() or _(quote).lower() == col.lower():
                     cm_found = True
+
                     if cm[-1] == ">":
                         sort_ass(0, invert=False, custom_list=playlist, custom_name=col)
                     elif cm[-1] == "<":
@@ -13395,7 +13392,7 @@ def regenerate_playlist(pl, silent=False):
             if cm_found:
                 continue
 
-        if cm == "self":
+        elif cm == "self":
             selections.append(pctl.multi_playlist[pl][2])
 
         elif cm == "a":
@@ -14362,9 +14359,6 @@ def gen_sort_date(index, rev=False, custom_list=None):
         else:
             line = " <" + str(lowest) + "-" + str(highest) + ">"
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + line, 0, copy.deepcopy(playlist), 0, 0, 0])
-
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + line,
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
@@ -14392,12 +14386,8 @@ extra_tab_menu.add_to_sub(_("Year by Latest"), 0, gen_sort_date_new, pass_ref=Tr
 def gen_500_random(index):
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
-    # playlist = list(set(playlist))
-    random.shuffle(playlist)
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Shuffled>", 0, copy.deepcopy(playlist), 0,
-    #      1, 0])
+    random.shuffle(playlist)
 
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Shuffled>",
                                       playlist=copy.deepcopy(playlist),
@@ -14454,13 +14444,9 @@ def gen_best_random(index):
 
         if time > 300:
             playlist.append(p)
-        # key = pctl.master_library[p].title + pctl.master_library[p].filename
-        # if key in pctl.star_library:
-        #     if pctl.star_library[key] > 300:
-        #         playlist.append(p)
+
     random.shuffle(playlist)
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Random Played>", 0, copy.deepcopy(playlist), 0, 1, 0])
+
     if len(playlist) > 0:
 
         pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Lucky Random>",
@@ -14468,6 +14454,7 @@ def gen_best_random(index):
                                           hide_title=1))
 
         pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[index][0] + "\" a pt>300 rt"
+
 
 tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
 extra_tab_menu.add_to_sub(_("Lucky Random"), 0, gen_best_random, pass_ref=True)
@@ -14530,11 +14517,6 @@ extra_tab_menu.add_to_sub(_("Reverse Albums"), 0, gen_folder_reverse, pass_ref=T
 def gen_dupe(index):
     playlist = pctl.multi_playlist[index][2]
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0], pctl.multi_playlist[index][1], copy.deepcopy(playlist),
-    #      pctl.multi_playlist[index][3], pctl.multi_playlist[index][4], pctl.multi_playlist[index][5]])
-
-
     pctl.multi_playlist.append(pl_gen(title=gen_unique_pl_title(pctl.multi_playlist[index][0], "Duplicate ", 0),
                                       playing=pctl.multi_playlist[index][1],
                                       playlist=copy.deepcopy(playlist),
@@ -14553,9 +14535,6 @@ def gen_sort_path(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=path)
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Filepath Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
-
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Filepath Sorted>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
@@ -14571,9 +14550,6 @@ def gen_sort_artist(index):
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=artist)
 
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Artist Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
-
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Artist Sorted>",
                                       playlist=copy.deepcopy(playlist),
                                       hide_title=0))
@@ -14587,9 +14563,6 @@ def gen_sort_album(index):
 
     playlist = copy.deepcopy(pctl.multi_playlist[index][2])
     playlist = sorted(playlist, key=album)
-
-    # pctl.multi_playlist.append(
-    #     [pctl.multi_playlist[index][0] + " <Album Sorted>", 0, copy.deepcopy(playlist), 0, 0, 0])
 
     pctl.multi_playlist.append(pl_gen(title=pctl.multi_playlist[index][0] + " <Album Sorted>",
                                       playlist=copy.deepcopy(playlist),
@@ -14706,8 +14679,6 @@ def open_data_directory():
         subprocess.call(["xdg-open", target])
 
 
-
-
 def remove_folder(index):
     global default_playlist
 
@@ -14728,22 +14699,11 @@ def convert_folder(index):
             show_message("Error: Missing ffmpeg.exe from encoder directory",
                          "Expected location: " + user_directory + '/encoder/ffmpeg.exe', mode='warning')
             return
-            # if prefs.transcode_codec == 'opus' and not os.path.isfile(install_directory + '/encoder/opusenc.exe'):
-            #     show_message("Error: Missing opusenc.exe from '/encoder' directory")
-            return
-        # if prefs.transcode_codec == 'mp3' and not os.path.isfile(user_directory + '/encoder/lame.exe'):
-        #     show_message("Error: Missing lame.exe from '/encoder' directory")
-        #     return
-        # if prefs.transcode_codec == 'ogg' and not os.path.isfile(user_directory + '/encoder/oggenc2.exe'):
-        #     show_message("Error: Missing oggenc2.exe from '/encoder' directory")
-        #     return
+
     else:
         if shutil.which('ffmpeg') is None:
             show_message("Error: ffmpeg does not appear to be installed")
             return
-        # if prefs.transcode_codec == 'mp3' and shutil.which('lame') is None:
-        #     show_message("Error: LAME does not appear to be installed")
-        #     return
 
     folder = []
     if key_shift_down or key_shiftr_down:
@@ -14878,72 +14838,6 @@ def s_copy():
     cargo = []
     for item in shift_selection:
         cargo.append(default_playlist[item])
-
-    # # Copy tracks to external clipboard
-    # if 300 > len(cargo) > 0:
-    #
-    #     clips = []
-    #     for i in range(len(cargo)):
-    #         clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
-    #     clips = set(clips)
-    #
-    #     if system == 'windows':
-    #         clip_files(clips)
-    #     elif system == 'linux':
-    #         if 'gnome' in os.environ.get('DESKTOP_SESSION'):
-    #
-    #             content = 'echo "copy\n'
-    #             for i, item in enumerate(cargo):
-    #                 content += "file://" + os.path.abspath(pctl.master_library[item].fullpath).strip("\n")
-    #                 if i == len(cargo) - 1:
-    #                     pass
-    #                 else:
-    #                     print("newline")
-    #                     content += "\n"
-    #
-    #             #content += "\0"
-    #             #content = content.encode()
-    #
-    #             command = content + '" | xclip -i -selection clipboard -t x-special/gnome-copied-files'
-    #
-    #
-    #             print('hit')
-    #         else:
-    #             content = 'echo "'
-    #             for item in cargo:
-    #                 content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
-    #
-    #             command = content + '" | xclip -i -selection clipboard -t text/uri-list'
-    #             #command = command.encode()
-    #
-    #         print(command)
-    #
-    #         subprocess.call(command, shell=True)
-    #         os.system(command)
-
-    # print("COPY")
-    # if len(cargo) > 0:
-    #     if system == 'windows':
-    #
-    #         clips = []
-    #         for i in range(len(cargo)):
-    #             clips.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
-    #         clips = set(clips)
-    #
-    #         clip_files(clips)
-    #
-    #     if system == 'linux' and shutil.which('xclip'):
-    #         if len(cargo) > 1000:
-    #             return
-    #         content = 'echo "'
-    #         for item in cargo:
-    #             content += "file://" + os.path.abspath(pctl.master_library[item].fullpath) + "\n"
-    #
-    #         command = content + '" | xclip -i -selection clipboard -t text/uri-list'
-    #         print(command)
-    #         subprocess.call(shlex.split(command), shell=True)
-    #         os.system(command)
-
 
 
 def directory_size(path):
@@ -15101,80 +14995,6 @@ def lightning_paste():
 
 def paste(playlist=None, position=None):
 
-    # if key_shift_down and gui.lightning_copy:
-    #
-    #     try:
-    #         lightning_paste()
-    #     except OSError as e:
-    #         show_message("An error was encountered", mode='error', str(e))
-    #
-    #     return
-    # items = None
-    # if system == 'windows':
-    #     clp = win32clipboard
-    #     clp.OpenClipboard(None)
-    #     rc = clp.EnumClipboardFormats(0)
-    #     while rc:
-    #         # try:
-    #         #     format_name = clp.GetClipboardFormatName(rc)
-    #         # except win32api.error:
-    #         #     format_name = "?"
-    #         # try:
-    #         #     print("------")
-    #         #     print("Format: " + str(rc))
-    #         #     print("Name: " +  format_name)
-    #         #     print("Raw: ", end="")
-    #         #     print(clp.GetClipboardData(rc))
-    #         #     print("Decode: " + clp.GetClipboardData(rc).decode('utf-8'))
-    #         # except:
-    #         #     print('error')
-    #         if rc == 15:
-    #             items = clp.GetClipboardData(rc)
-    #
-    #         rc = clp.EnumClipboardFormats(rc)
-    #
-    #     clp.CloseClipboard()
-    #     print(items)
-    #
-    # elif system == 'linux' and shutil.which('xclip'):
-    #
-    #     #clip = SDL_GetClipboardText().decode('utf-8')
-    #     command = "xclip -o -selection clipboard"
-    #     p = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
-    #     clip = p.communicate()[0]
-    #
-    #     print(clip)
-    #     clip = clip.decode().split('\n')
-    #
-    #     items = []
-    #     for item in clip:
-    #         if len(item) > 0 and (item[0] == '/' or 'file://' in item):
-    #             if item[:6] == 'file:/':
-    #                 item = item[6:] # = item.lstrip("file:/")
-    #             if item[0] != "/":
-    #                 item = "/" + item
-    #             items.append(item)
-    #
-    #         else:
-    #             items = None
-    #             break
-    #     print(items)
-    # else:
-    #     print("No CLIP")
-    #     return
-    #
-    #
-    # clips = []
-    # cargs = []
-    #
-    # if items is not None:
-    #     for i in range(len(cargo)):
-    #         cargs.append(os.path.abspath(pctl.master_library[cargo[i]].fullpath))
-    #     for i in range(len(items)):
-    #         clips.append(os.path.abspath(items[i]))
-    #
-    # if (len(clips) > 0 and set(clips) == set(cargs)) or items is None:
-    #     print('Matches clipboard, using internal copy')
 
     if playlist is None:
         if position is None:
@@ -15186,31 +15006,6 @@ def paste(playlist=None, position=None):
 
     gui.pl_update += 1
     return
-
-    # print('Importing from clipboard')
-    # # print(clips)
-    #
-    # for item in clips:
-    #     print("load item")
-    #     print(item)
-    #     load_order = LoadClass()
-    #     load_order.target = item
-    #     playlist_target = pctl.playlist_active
-    #     if playlist is not None:
-    #         playlist_target = playlist
-    #     load_order.playlist = pctl.multi_playlist[playlist_target][6]
-    #
-    #     if position is not None:
-    #         insert = pctl.multi_playlist[playlist_target][2].index(position)
-    #         old_insert = insert
-    #
-    #         while insert < len(default_playlist) and pctl.master_library[pctl.multi_playlist[playlist_target][2][insert]].parent_folder_name == \
-    #                 pctl.master_library[pctl.multi_playlist[playlist_target][2][old_insert]].parent_folder_name:
-    #             insert += 1
-    #
-    #         load_order.playlist_position = insert
-    #
-    #     load_orders.append(copy.deepcopy(load_order))
 
 
 def s_cut():
@@ -15477,18 +15272,6 @@ def delete_track(track_ref):
 track_menu.add(_('Delete Track File'), delete_track, pass_ref=True, icon=delete_icon, show_test=test_shift)
 
 track_menu.br()
-
-
-# def rename_tracks(index):
-#     global track_box
-#     global rename_index
-#     global input_text
-#     global rename_track_box.active
-#
-#     track_box = False
-#     rename_index = index
-#     rename_track_box.active = True
-#     input_text = ""
 
 
 def rename_tracks_deco():
@@ -15992,21 +15775,6 @@ def editor(index):
 
         ok = True
 
-    # if flatpak_mode:
-    #     print("Finding app from within Flatpak...")
-    #     complete = subprocess.run(shlex.split("flatpak-spawn --host which " + prefs.tag_editor_target), stdout=subprocess.PIPE,
-    #                               stderr=subprocess.PIPE)
-    #
-    #     print("Host which is:")
-    #     r = complete.stdout.decode()
-    #
-    #     if "bin/" + prefs.tag_editor_target in r:
-    #         ok = True
-    #         prefix = "flatpak-spawn --host "
-    #         print("Found app on host")
-    #
-    # elif shutil.which(prefs.tag_editor_target):
-    #         ok = True
 
     if not ok:
         show_message(_("Tag editior app does not appear to be installed."), mode='warning')
@@ -17987,18 +17755,6 @@ def discord_loop():
 
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-    # if system == 'linux' and not flatpak_mode:
-    #     try:
-    #         print("Try to create link for Flatpak Discord RP")
-    #         xdg_run = os.environ.get('XDG_RUNTIME_DIR')
-    #         if xdg_run:
-    #             discord_link_command = "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0"
-    #             print("Link command: " + discord_link_command)
-    #             os.system(discord_link_command)
-    #             print("Symlink command run")
-    #     except:
-    #         print("Discord flatpak link failed (may already exist)")
-
     try:
 
         print("Attempting to connect to Discord...")
@@ -18154,6 +17910,8 @@ x_menu.add("Show playing in Discord", activate_discord, discord_deco, icon=disco
 def stop_a01():
     global a01
     a01 = False
+    date = datetime.date.today()
+    show_message(f"Upgrade complete. Happy {str(date)}!", mode="done")
 
 def show_a01(_):
     return a01
@@ -20368,8 +20126,6 @@ def worker1():
                     except:
                         #raise
                         pass
-
-
 
         if tauon.worker_save_state and \
                 not gui.pl_pulse and \
@@ -23776,6 +23532,7 @@ class TopPanel:
                             modified = True
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
                         if modified:
+                            pctl.after_import_flag = True
                             tauon.worker_save_state = True
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
@@ -27933,6 +27690,7 @@ class PlaylistBox:
                             self.adds.append([pctl.multi_playlist[i][6], len(shift_selection), Timer()]) # ID, num, timer
                             modified = True
                         if modified:
+                            pctl.after_import_flag = True
                             tauon.worker_save_state = True
                             pctl.update_shuffle_pool(pctl.multi_playlist[i][6], shift_selection)
                             tree_view_box.clear_target_pl(i)
@@ -28001,7 +27759,29 @@ class PlaylistBox:
                 text_start = 32 * gui.scale
 
 
-            ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=tab_width - text_start - 15 * gui.scale, bg=real_bg)
+            text_max_w = tab_width - text_start - 15 * gui.scale
+
+            if not pl[9] and pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
+                cl = [60, 60, 60, 240]
+                if light_mode:
+                    cl = [90, 90, 90, 240]
+
+                c = [240, 240, 240, 255]
+                if light_mode:
+                    c = [240, 240, 240, 255]
+
+                a_rect = ((tab_start + tab_width) - round(35 * gui.scale), yy + round(self.tab_h / 2) - round(7 * gui.scale), round(30 * gui.scale), round(10 * gui.scale))
+
+                ddt.rect(a_rect, cl, True)
+                ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=cl)
+                text_max_w -= a_rect[2] + 2 * gui.scale
+
+                fields.add(a_rect)
+                if coll(a_rect):
+                    tool_tip.test(a_rect[0] + a_rect[2] + 10 * gui.scale, a_rect[1] - 10 * gui.scale, pctl.gen_codes.get(pl[6]) )
+
+
+            ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w, bg=real_bg)
 
             # print(light_mode)
             # print(dark_mode)
@@ -28071,11 +27851,12 @@ class PlaylistBox:
                 if light_mode:
                     cl = [0, 0, 0, 50]
                 self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
-            elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
-                cl = [120, 50, 220, 230]
-                if light_mode:
-                    cl = [120, 50, 255, 200]
-                self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+            # elif pctl.gen_codes.get(pl[6]) and "self" not in pctl.gen_codes.get(pl[6]) and (prefs.always_auto_update_playlists or "auto" in pctl.gen_codes.get(pl[6])):
+            #     cl = [120, 50, 220, 230]
+            #     if light_mode:
+            #         cl = [120, 50, 255, 200]
+            #     self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+
 
             # Draw effect of adding tracks to playlist
             if len(self.adds) > 0:
@@ -30143,7 +29924,7 @@ class MetaBox:
         border_colour = [255, 255, 255, 30]
         line1_colour = [255, 255, 255, 235]
         line2_colour = [255, 255, 255, 200]
-        if test_lumi(colours.playlist_box_background) < 0.55:
+        if test_lumi(colours.gallery_background) < 0.55:
             border_colour = [0, 0, 0, 30]
             line1_colour = [0, 0, 0, 200]
             line2_colour = [0, 0, 0, 230]
