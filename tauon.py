@@ -3847,6 +3847,7 @@ class PlayerCtl:
 
     def show_current(self, select=True, playing=True, quiet=False, this_only=False, highlight=False, index=None, no_switch=False, folder_list=True):
 
+
         # print("show------")
         # print(select)
         # print(playing)
@@ -4345,7 +4346,7 @@ class PlayerCtl:
                     pctl.auto_stop = False
 
                 elif self.force_queue and not self.pause_queue:
-                    self.advance(end=True)
+                    self.advance(end=True, quiet=True)
 
                 elif self.repeat_mode is True:
 

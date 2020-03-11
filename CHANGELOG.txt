@@ -1,6 +1,10 @@
 
 Changelog-------------------------------------
 
+v5.3.2
+
+ - Fixed view jump on queue advance
+
 v5.3.1
 
  - Added Genius lyrics scrape
