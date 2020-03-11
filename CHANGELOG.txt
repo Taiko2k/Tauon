@@ -13,9 +13,9 @@ v5.3.1
  - Added column, 'comment', 'today', 'self' and 'path' generator codes
  - Added easter egg 0401-2020
  - Improved generator code entry to update on type
- - Tweaked behavior of 'auto' generator code to also apply on track drag and drop
  - Improved scroll edge animation
- - Tweaked light theme colours
+ - Tweaked behavior of 'auto' generator code to also apply on track drag and drop
+ - Tweaked light theme and auto theme colours
  - Tweaked auto show playing on track transition behavior
  - Enabled synced lyrics in lyrics side panel
  - Fixed generator code year filter
@@ -26,6 +26,7 @@ v5.3.1
  - Fixed toast text sometimes overflowing box
  - Fixed rating star colours when using auto theme
  - Fixed text colour in lyrics metadata panel with auto theme
+ - Removed restriction on enabling both auto theme and background art
 
 v5.3.0
 

@@ -9387,88 +9387,67 @@ class AlbumArt():
 
                 # print(x_colours)
                 colours.playlist_panel_bg = colours.side_panel_background
+                colours.playlist_box_background = colours.side_panel_background
 
                 colours.playlist_panel_background = x_colours[0] + (255,)
                 if len(x_colours) > 1:
                     colours.side_panel_background = x_colours[1] + (255,)
+                    colours.playlist_box_background = colours.side_panel_background
                     if len(x_colours) > 2:
                         colours.title_text = x_colours[2] + (255,)
                         colours.title_playing = x_colours[2] + (255,)
                         if len(x_colours) > 3:
                             colours.artist_text = x_colours[3] + (255,)
                             colours.artist_playing = x_colours[3] + (255,)
+                            if len(x_colours) > 4:
+                                colours.playlist_box_background =  x_colours[4] + (255,)
 
-                bg = 0
-                ar = 0
-                ti = 0
+                # Check artist text colour
+                if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
 
-                # print("")
+                    black = [25, 25, 25, 255]
+                    white = [220, 220, 220, 255]
 
-                if colour_value(colours.playlist_panel_background) < 120:
-                    # print("Backgroud is dark")
-                    bg = 1
-                if colour_value(colours.playlist_panel_background) > 300:
-                    # print("Backgroud is Light")
-                    bg = 2
-                if colour_value(colours.title_text) < 190:
-                    # print("Title is dark")
-                    ti = 1
-                if colour_value(colours.title_text) > 300:
-                    # print("Title is Light")
-                    ti = 2
-                if colour_value(colours.artist_text) < 190:
-                    # print("Artist is dark")
-                    ar = 1
-                if colour_value(colours.artist_text) > 400:
-                    # print("Artist is Light")
-                    ar = 2
+                    con_b = contrast_ratio(black, colours.playlist_panel_background)
+                    con_w = contrast_ratio(white, colours.playlist_panel_background)
 
-                if bg == 2 and ti == 2:
-                    # print("fix!")
-                    colours.title_text = [40, 40, 40, 255]
-                    colours.title_playing = [40, 40, 40, 255]
+                    choice = black
+                    if con_w > con_b:
+                        choice = white
 
-                if bg == 2 and ar == 2:
-                    # print("fix!")
-                    colours.artist_text = [20, 20, 20, 255]
-                    colours.artist_playing = [20, 20, 20, 255]
+                    colours.artist_text = choice
+                    colours.artist_playing = choice
 
-                if bg == 1 and ti == 1:
-                    # print("fix!")
-                    colours.title_text = [200, 200, 200, 255]
-                    colours.title_playing = [200, 200, 200, 255]
+                # Check title text colour
+                if contrast_ratio(colours.title_text, colours.playlist_panel_background) < 1.9:
 
-                if bg == 1 and ar == 1:
-                    # print("fix!")
-                    colours.artist_text = [170, 170, 170, 255]
-                    colours.artist_playing = [170, 170, 170, 255]
+                    black = [60, 60, 60, 255]
+                    white = [180, 180, 180, 255]
 
-                if (colour_value(colours.side_panel_background)) > 350:
+                    con_b = contrast_ratio(black, colours.playlist_panel_background)
+                    con_w = contrast_ratio(white, colours.playlist_panel_background)
+
+                    choice = black
+                    if con_w > con_b:
+                        choice = white
+
+                    colours.title_text = choice
+                    colours.title_playing = choice
+
+
+                if test_lumi(colours.side_panel_background) < 0.50:
                     colours.side_bar_line1 = [25, 25, 25, 255]
                     colours.side_bar_line2 = [35, 35, 35, 255]
                 else:
-                    colours.side_bar_line1 = [220, 220, 220, 255]
-                    colours.side_bar_line2 = [205, 205, 205, 255]
+                    colours.side_bar_line1 = [250, 250, 250, 255]
+                    colours.side_bar_line2 = [235, 235, 235, 255]
 
                 colours.album_text = colours.title_text
                 colours.album_playing = colours.title_playing
 
                 gui.pl_update = 1
-                # print("Bgr1: ", end="")
-                # print(colours.playlist_panel_background)
-                # print("Bgr2: ", end="")
-                # print(colours.side_panel_background)
-                # print("Txt1: ", end="")
-                # print(colours.artist_text)
-                # print("Txt2: ", end="")
-                # print(colours.title_text)
-                #
-                # print("Colours found: ", end="")
-                # print(len(x_colours))
-                # print("Background perceived lightness: ", end="")
+
                 prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
-                # print(prcl, end="")
-                # print("%")
 
                 if prcl > 45:
                     ce = alpha_blend([0, 0, 0, 180], colours.playlist_panel_background) #[40, 40, 40, 255]
@@ -9495,7 +9474,7 @@ class AlbumArt():
 
                 gui.temp_themes[track.album] = copy.deepcopy(colours)
                 gui.theme_temp_current = index
-                colours.playlist_box_background = colours.side_panel_background
+
 
             if theme_only:
                 return
@@ -13905,9 +13884,16 @@ def forget_pl_import_folder(pl):
 def remove_duplicates(pl):
 
     playlist = []
+
     for item in pctl.multi_playlist[pl][2]:
         if item not in playlist:
             playlist.append(item)
+
+    removed = len(pctl.multi_playlist[pl][2]) - len(playlist)
+    if not removed:
+        show_message(f"No duplicates were found")
+    else:
+        show_message(f"{removed} duplicates removed", mode="done")
 
     pctl.multi_playlist[pl][2][:] = playlist[:]
 
@@ -13918,7 +13904,7 @@ tab_menu.add_to_sub(_('Rescan Tags'), 2, rescan_tags, pass_ref=True)
 # tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, re_import, pass_ref=True)
 tab_menu.add_to_sub(_('Export XSPF'), 2, export_xspf, pass_ref=True)
 tab_menu.add_to_sub(_("Toggle Breaks"), 2, pl_toggle_playlist_break, pass_ref=True)
-tab_menu.add_to_sub(_("Edit generator..."), 2, edit_generator_box, pass_ref=True)
+tab_menu.add_to_sub(_("Edit Generator..."), 2, edit_generator_box, pass_ref=True)
 tab_menu.add_to_sub(_("Remove Duplicates"), 2, remove_duplicates, pass_ref=True)
 
 #tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
@@ -17537,8 +17523,8 @@ def toggle_auto_theme(mode=0):
 
     gui.reload_theme = True
 
-    if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
-        toggle_auto_bg()
+    # if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+    #     toggle_auto_bg()
 
 def toggle_auto_bg(mode=0):
 
@@ -17551,8 +17537,8 @@ def toggle_auto_bg(mode=0):
 
     style_overlay.flush()
 
-    if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
-        toggle_auto_theme()
+    # if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+    #     toggle_auto_theme()
 
 
 def toggle_auto_bg_strong(mode=0):
@@ -27566,14 +27552,15 @@ class PlaylistBox:
 
         tab_title_colour = [230, 230, 230, 255]
 
+        bg_lumi = test_lumi(colours.playlist_box_background)
         light_mode = False
-        # print(test_lumi(colours.side_panel_background))
-        if test_lumi(colours.playlist_box_background) < 0.55:
+
+        if bg_lumi < 0.55:
             light_mode = True
             tab_title_colour = [20, 20, 20, 255]
 
         dark_mode = False
-        if test_lumi(colours.playlist_box_background) > 0.8:
+        if bg_lumi > 0.8:
             dark_mode = True
 
         show_scroll = False
@@ -27786,7 +27773,7 @@ class PlaylistBox:
 
 
             ddt.text((tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w, bg=real_bg)
-
+            #
             # print(light_mode)
             # print(dark_mode)
 
@@ -27794,10 +27781,15 @@ class PlaylistBox:
             indicator_colour = [100, 200, 90, 255]
             if light_mode:
                 indicator_colour = [40, 40, 40, 210]
+
             if hidden:
-                indicator_colour = [60, 60, 60, 245]
-                if not dark_mode:
-                    indicator_colour = [80, 80, 80, 120]
+                indicator_colour = [255, 255, 255, 40]
+                if light_mode:
+                    indicator_colour = [40, 40, 40, 60]
+                # if not dark_mode:
+                #     indicator_colour = [40, 40, 40, 60]
+                # if dark_mode:
+                #     indicator_colour = [255, 255, 255, 50]
 
             # if i == pctl.active_playlist_playing:
             #     indicator_colour = [200, 230, 20, 255]

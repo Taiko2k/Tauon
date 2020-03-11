@@ -129,6 +129,38 @@ def get_filesize_string(file_bytes):
 def test_lumi(c1):
     return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
 
+def rel_luminance(colour):
+    r = colour[0] / 255
+    g = colour[1] / 255
+    b = colour[2] / 255
+
+    if r < 0.03928:
+        r = r / 12.90
+    else:
+        r = ((r + 0.055) / 1.055) ** 2.4
+
+    if g < 0.03928:
+        g = g / 12.90
+    else:
+        g = ((g + 0.055) / 1.055) ** 2.4
+
+    if b < 0.03928:
+        b = b / 12.90
+    else:
+        b = ((b + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def contrast_ratio(c1, c2):
+
+    l1 = rel_luminance(c1)
+    l2 = rel_luminance(c2)
+
+    if l2 > l1:
+        l2, l1 = l1, l2
+
+    return (l1 + 0.05) / (l2 + 0.05)
 
 # Gives the sum of first 3 elements in a list
 def colour_value(c1):
@@ -344,8 +376,8 @@ def is_music_related(string):
 def archive_file_scan(path, extensions, launch_prefix=""):
 
     ext = os.path.splitext(path)[1][1:].lower()
-    print(path)
-    print(ext)
+    # print(path)
+    # print(ext)
     try:
         if ext == 'rar':
             matches = 0
