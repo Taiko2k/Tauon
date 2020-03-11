@@ -3944,8 +3944,8 @@ class PlayerCtl:
         if pctl.playlist_view_position < 0:
             pctl.playlist_view_position = 0
 
-        if pctl.playlist_view_position > len(self.multi_playlist[self.active_playlist_viewing][2]) - 1:
-            print("Run Over")
+        # if pctl.playlist_view_position > len(self.multi_playlist[self.active_playlist_viewing][2]) - 1:
+        #     print("Run Over")
 
         if select:
             shift_selection = []

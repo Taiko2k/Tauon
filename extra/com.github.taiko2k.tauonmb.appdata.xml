@@ -60,10 +60,11 @@
 
   <releases>
 
-    <release version="5.3.1" date="2020-03-05">
+    <release version="5.3.1" date="2020-03-11">
       <description>
         <ul>
           <li>Improved smart playlist feature accessibility</li>
+          <li>Added lyric search substitution feature</li>
           <li>Various tweaks and bug fixes</li>
         </ul>
       </description>
