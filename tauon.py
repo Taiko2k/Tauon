@@ -34,7 +34,7 @@ import os
 import pickle
 import shutil
 
-n_version = "5.3.1"
+n_version = "5.3.2"
 t_version = "v" + n_version
 t_title = 'Tauon Music Box'
 t_id = 'tauonmb'
@@ -16371,14 +16371,16 @@ def level_on():
 
     gui.vis_want = 1
     gui.update_layout()
-    show_message("Visualisers not implemented in GStreamer mode")
+    if prefs.backend == 2:
+        show_message("Visualisers not implemented in GStreamer mode")
     #gui.turbo = True
 vis_menu.add(_("Level Meter"), level_on)
 
 
 def spec_on():
     gui.vis_want = 2
-    show_message("Visualisers not implemented in GStreamer mode")
+    if prefs.backend == 2:
+        show_message("Visualisers not implemented in GStreamer mode")
     gui.update_layout()
 
 vis_menu.add(_("Spectrum Visualizer"), spec_on)
@@ -16392,7 +16394,8 @@ def spec2_def():
             prefs.spec2_colour_mode = 0
 
     gui.vis_want = 3
-    show_message("Visualisers not implemented in GStreamer mode")
+    if prefs.backend == 2:
+        show_message("Visualisers not implemented in GStreamer mode")
     #gui.turbo = True
     prefs.spec2_colour_setting = 'custom'
     gui.update_layout()

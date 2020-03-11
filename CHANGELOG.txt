@@ -4,6 +4,7 @@ Changelog-------------------------------------
 v5.3.2
 
  - Fixed view jump on queue advance
+ - Fixed warning message on visualiser enable
 
 v5.3.1
 
