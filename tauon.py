@@ -12619,7 +12619,6 @@ def rename_playlist(index, generator=False):
 
     if generator:
         rename_playlist_box.toggle_edit_gen()
-        gui.regen_single = rename_playlist_box.playlist_index
 
 
 def edit_generator_box(index):
@@ -13394,6 +13393,9 @@ def regenerate_playlist(pl, silent=False):
 
         elif cm == "self":
             selections.append(pctl.multi_playlist[pl][2])
+
+        elif cm == "auto":
+            pass
 
         elif cm == "a":
             if not selections and not selections_searched:
@@ -21912,7 +21914,7 @@ class Over:
             self.toggle_square(x, y, toggle_top_tabs, _("Use tabs on top panel"))
 
             y += 25 * gui.scale
-            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Update generated playlists on import"))
+            prefs.always_auto_update_playlists = self.toggle_square(x, y, prefs.always_auto_update_playlists, _("Auto update generated playlists"))
 
             #y += 30 * gui.scale
             # self.toggle_square(x + 10 * gui.scale, y, toggle_expose_web, _("Allow external connections"))
@@ -27302,6 +27304,8 @@ class RenamePlaylistBox:
             rename_text_area.set_text(text)
             rename_text_area.highlight_none()
 
+            gui.regen_single = rename_playlist_box.playlist_index
+
 
         else:
             rename_text_area.set_text(pctl.multi_playlist[self.playlist_index][0])
@@ -27773,7 +27777,7 @@ class PlaylistBox:
                 a_rect = ((tab_start + tab_width) - round(35 * gui.scale), yy + round(self.tab_h / 2) - round(7 * gui.scale), round(30 * gui.scale), round(10 * gui.scale))
 
                 ddt.rect(a_rect, cl, True)
-                ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=cl)
+                ddt.text((a_rect[0] + round(2 * gui.scale), a_rect[1] - round(5 * gui.scale)), "AUTO", c, 210, bg=alpha_blend(cl, real_bg))
                 text_max_w -= a_rect[2] + 2 * gui.scale
 
                 fields.add(a_rect)
