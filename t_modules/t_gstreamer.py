@@ -396,7 +396,22 @@ def player3(tauon):  # GStreamer
                     if self.play_state == 1:
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
-                elif pctl.playerCommand == 'stop' or pctl.playerCommand == 'runstop':
+                elif pctl.playerCommand == 'runstop':
+
+                    if self.play_state != 0:
+                        # Determine time position of currently playing track
+                        current_time = self.playbin.query_position(Gst.Format.TIME)[1] / Gst.SECOND
+                        current_duration = self.playbin.query_duration(Gst.Format.TIME)[1] / Gst.SECOND
+                        if current_duration - current_time < 5.5:
+                            pass
+                        else:
+                            self.playbin.set_state(Gst.State.READY)
+                    else:
+                        self.playbin.set_state(Gst.State.READY)
+                    self.play_state = 0
+                    pctl.playerCommand = "stopped"
+
+                elif pctl.playerCommand == 'stop':
 
                     if self.play_state > 0:
                         self.playbin.set_state(Gst.State.READY)

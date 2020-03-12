@@ -4403,12 +4403,12 @@ class PlayerCtl:
                         lfm_scrobbler.start_queue()
 
                     else:
-
-                        self.playing_time = 0
-                        self.decode_time = 0
-                        self.new_time = 0
-                        self.playerCommand = 'seek'
-                        self.playerCommandReady = True
+                        self.play_target(jump=False)
+                        # self.playing_time = 0
+                        # self.decode_time = 0
+                        # self.new_time = 0
+                        # self.playerCommand = 'seek'
+                        # self.playerCommandReady = True
 
                         self.render_playlist()
                         lfm_scrobbler.start_queue()
