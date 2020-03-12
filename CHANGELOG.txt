@@ -5,6 +5,7 @@ v5.3.2
 
  - Fixed view jump on queue advance
  - Fixed warning message on visualiser enable
+ - Fixed end of tracks being cut off when on repeat
 
 v5.3.1
 
