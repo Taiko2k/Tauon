@@ -131,6 +131,8 @@ def player3(tauon):  # GStreamer
             bus.connect('message::element', self.on_message)
             bus.connect('message::buffering', self.on_message)
             bus.connect('message::error', self.on_message)
+            bus.connect('message::tag', self.on_message)
+            # bus.connect('message::warning', self.on_message)
             # bus.connect('message::eos', self.on_message)
 
             # Variables used with network downloading
@@ -163,16 +165,24 @@ def player3(tauon):  # GStreamer
             struct = msg.get_structure()
             # print(struct.get_name())
             # print(struct.to_string())
-            if struct.get_name() == "GstMessageError":
+
+            if self.play_state == 3 and struct.get_name() == "GstMessageTag":
+                data = struct.get_value("taglist").get_string("title")
+                if data[0]:
+                    pctl.tag_meta = data[1]
+
+            elif struct.get_name() == "GstMessageError":
                 if "Connection" in struct.get_value("debug"):
                     gui.show_message("Connection error", mode="info")
-            if struct.get_name() == 'GstMessageBuffering':
+            elif struct.get_name() == 'GstMessageBuffering':
                 buff_percent = struct.get_value("buffer-percent")
 
                 if buff_percent < 100 and (self.play_state == 1 or self.play_state == 3):
                     self.playbin.set_state(Gst.State.PAUSED)
+
                 elif buff_percent == 100 and (self.play_state == 1 or self.play_state == 3):
                     self.playbin.set_state(Gst.State.PLAYING)
+
             # if struct.get_name() == 'spectrum':
         #         struct_str = struct.to_string()
         #         magnitude_str = re.match(r'.*magnitude=\(float\){(.*)}.*', struct_str)
@@ -227,7 +237,7 @@ def player3(tauon):  # GStreamer
                 # open: Start playback of a file
                 #  (Path given by pctl.target_open at position pctl.start_time_target + pctl.jump_time)
                 # stop: Stop playback (OK to unload file from memory)
-                # runstop: Stop playback but let finish if we are near the end of the file (todo)
+                # runstop: Stop playback but let finish if we are near the end of the file
                 # pauseon: Pause playback (be ready to resume)
                 # pauseoff: Resume playback if paused
                 # volume: Set (and remember) the volume specified by pctl.player_volume (0 to 100)
@@ -381,11 +391,12 @@ def player3(tauon):  # GStreamer
                 elif pctl.playerCommand == 'url':
 
                     # Stop if playing or paused
-                    if self.play_state == 1 or self.play_state == 2:
-                       self.playbin.set_state(Gst.State.READY)
+                    if self.play_state == 1 or self.play_state == 2 or self.play_state == 3:
+                        self.playbin.set_state(Gst.State.READY)
+                        time.sleep(0.1)
 
                     # Open URL stream
-                    self.playbin.set_property('uri', pctl.url.decode())
+                    self.playbin.set_property('uri', pctl.url)
                     self.playbin.set_property('volume', pctl.player_volume / 100)
                     self.playbin.set_state(Gst.State.PLAYING)
                     self.play_state = 3
@@ -393,7 +404,7 @@ def player3(tauon):  # GStreamer
 
 
                 elif pctl.playerCommand == 'volume':
-                    if self.play_state == 1:
+                    if self.play_state == 1 or self.play_state == 3:
                         self.playbin.set_property('volume', pctl.player_volume / 100)
 
                 elif pctl.playerCommand == 'runstop':
@@ -448,6 +459,16 @@ def player3(tauon):  # GStreamer
                     self.mainloop.quit()
                     pctl.playerCommand = 'done'
                     return
+
+            if self.play_state == 3:
+                if self.playbin.get_state(0).state == Gst.State.PLAYING:
+                    add_time = self.player_timer.hit()
+                    if add_time > 2:
+                        add_time = 2
+                    if add_time < 0:
+                        add_time = 0
+                    pctl.playing_time += add_time
+                    pctl.decode_time = pctl.playing_time
 
             if self.play_state == 1:
 
